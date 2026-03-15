@@ -411,37 +411,6 @@ export default function Timeline({
                     : item.tip}
                 </div>
 
-                {/* Inline block chips — shown inside Cold Retard step */}
-                {item.stepKind === 'cold' && item.coldBlocks && item.coldBlocks.length > 0 && (
-                  <div style={{ marginTop: '.65rem', display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
-                    <div style={{
-                      fontSize: '.68rem', fontWeight: 600,
-                      color: '#5A7AA8', textTransform: 'uppercase',
-                      letterSpacing: '.07em', fontFamily: 'var(--font-dm-mono)',
-                      marginBottom: '.15rem',
-                    }}>
-                      Fridge windows
-                    </div>
-                    {item.coldBlocks.map((b, bi) => (
-                      <div key={bi} style={{
-                        background: '#EEF2FA', border: '1.5px solid #C4CDE0',
-                        borderRadius: '8px', padding: '.3rem .7rem',
-                        display: 'flex', alignItems: 'center', gap: '.5rem',
-                        fontSize: '.76rem', color: '#3A5A8A',
-                      }}>
-                        <span style={{ flexShrink: 0 }}>❄️</span>
-                        <span style={{ fontWeight: 500, flex: 1 }}>{b.label}</span>
-                        <span style={{
-                          fontFamily: 'var(--font-dm-mono)', fontSize: '.68rem',
-                          color: '#5A7AA8', flexShrink: 0,
-                        }}>
-                          {formatTime(b.from)} → {formatTime(b.to)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
                 {/* Mixing sequence — shown on mixing step only */}
                 {item.stepKind === 'mixing' && (() => {
                   const showOil = oil > 0;
