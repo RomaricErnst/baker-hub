@@ -24,7 +24,7 @@ interface TimelineProps {
 }
 
 // ── Step kinds ────────────────────────────────
-type StepKind = 'mixing' | 'bulk_ferm' | 'final_proof' | 'cold' | 'preheat' | 'eat';
+type StepKind = 'mixing' | 'bulk_ferm' | 'final_proof' | 'cold' | 'rest_rt' | 'preheat' | 'eat';
 
 interface TimelineStep {
   kind: 'step';
@@ -55,6 +55,7 @@ const THEME: Record<StepKind, {
   bulk_ferm:   { dot: 'var(--terra)',  ring: 'rgba(196,82,42,.1)',   line: '#F5C4B0',       pill: '#FEF4EF',      pillText: 'var(--terra)', cardBg: '#FEF8F5', cardBorder: '#F5C4B0' },
   final_proof: { dot: '#7A8C6E',       ring: 'rgba(122,140,110,.1)', line: '#C8D4BA',       pill: '#F2F5EF',      pillText: '#4A5A44', cardBg: '#F5F7F2', cardBorder: '#C8D4BA' },
   cold:        { dot: '#6A7FA8',       ring: 'rgba(106,127,168,.1)', line: '#C4CDE0',       pill: '#EEF2FA',      pillText: '#3A5A8A', cardBg: '#EEF2FA', cardBorder: '#C4CDE0' },
+  rest_rt:     { dot: '#B87850',       ring: 'rgba(184,120,80,.1)', line: '#DDB898',       pill: '#FDF0E8',      pillText: '#7A3A10', cardBg: '#FDF4EE', cardBorder: '#DDB898' },
   preheat:     { dot: '#C4A030',       ring: 'rgba(196,160,48,.12)', line: '#E8D890',       pill: '#FDFBF2',      pillText: '#7A5A10' },
   eat:         { dot: '#5A9A50',       ring: 'rgba(90,154,80,.1)',   line: 'transparent',   pill: '#F2FAF0',      pillText: '#3A6A30' },
 };
@@ -144,7 +145,19 @@ function buildItems(
     });
   }
 
-  // 3 — Preheat
+  // 3 — Rest at room temperature (only when last window was cold)
+  if (schedule.restRtHours > 0 && schedule.coldWindows.length > 0) {
+    const lastCold = [...schedule.coldWindows].sort((a, b) => b.from.getTime() - a.from.getTime())[0];
+    items.push({
+      kind: 'step', id: 'rest_rt', stepKind: 'rest_rt',
+      time: lastCold.to,
+      label: 'Remove from fridge — rest at room temperature',
+      icon: '🌡️',
+      tip: 'Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch and will tear. The poke test will be unreliable until the dough has warmed through.',
+      durationH: schedule.restRtHours,
+    });
+  }
+
   const preheatTime = new Date(eatTime.getTime() - preheatMin * 60000);
   items.push({
     kind: 'step', id: 'preheat', stepKind: 'preheat',
@@ -157,7 +170,7 @@ function buildItems(
     durationH: preheatMin / 60,
   });
 
-  // 4 — Eat
+  // 5 — Eat
   items.push({
     kind: 'step', id: 'eat', stepKind: 'eat',
     time: eatTime,
@@ -473,7 +486,9 @@ export default function Timeline({
                   fontSize: '.77rem', color: 'var(--smoke)',
                   lineHeight: 1.6,
                 }}>
-                  {item.stepKind === 'final_proof'
+                  {item.stepKind === 'rest_rt'
+                    ? <>Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch and will tear. The poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> will be unreliable until the dough has warmed through.</>
+                    : item.stepKind === 'final_proof'
                     ? <>Remove dough from fridge. Allow 30–60 min to come to room temperature before shaping. Passes the poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> when ready.</>
                     : item.tip}
                 </div>
@@ -520,7 +535,7 @@ export default function Timeline({
                     sequence = [
                       { kind: 'step', emoji: '🌊', bold: 'Flour + 90% of water + yeast', note: 'Speed 1, 3 min to combine' },
                       { kind: 'step', emoji: '🧂', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
-                      { kind: 'step', emoji: '🌀', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if FDT exceeds 28°C', noteNode: <>typically 10–15 min, stop if FDT<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</>, term: 'pumpkin' },
+                      { kind: 'step', emoji: '🌀', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if final dough temperature (FDT) exceeds 28°C', noteNode: <>typically 10–15 min, stop if final dough temperature (FDT)<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</>, term: 'pumpkin' },
                       ...(showBassinage ? [{ kind: 'step' as const, emoji: '💧', bold: 'Once pumpkin is stable, add remaining water gradually', note: 'wait for pumpkin to reform after each addition', term: 'bassinage' }] : []),
                       ...(showOil ? [{ kind: 'step' as const, emoji: '🫒', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
                     ];
@@ -598,8 +613,8 @@ export default function Timeline({
                   );
                 })()}
 
-                {/* Cold retard card tint */}
-                {(item.stepKind === 'cold' || item.stepKind === 'bulk_ferm' || item.stepKind === 'final_proof') && th.cardBg && (
+                {/* Step sub-label */}
+                {(item.stepKind === 'cold' || item.stepKind === 'bulk_ferm' || item.stepKind === 'final_proof' || item.stepKind === 'rest_rt') && th.cardBg && (
                   <div style={{
                     marginTop: '.5rem',
                     display: 'flex', gap: '.4rem', alignItems: 'center',
@@ -614,6 +629,7 @@ export default function Timeline({
                     {item.stepKind === 'cold' && `${formatTime(item.time)} → ends at ${formatTime(new Date(item.time.getTime() + (item.durationH ?? 0) * 3600000))}`}
                     {item.stepKind === 'bulk_ferm' && `Room temperature window · ${hoursLabel(item.durationH ?? 0)}`}
                     {item.stepKind === 'final_proof' && `Room temperature window · ${hoursLabel(item.durationH ?? 0)}`}
+                    {item.stepKind === 'rest_rt' && `Room temperature · ${hoursLabel(item.durationH ?? 0)}`}
                   </div>
                 )}
               </div>

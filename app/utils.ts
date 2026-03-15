@@ -322,6 +322,7 @@ export interface ScheduleResult {
   totalRTHours: number;
   totalColdHours: number;
   wasAutoAdjusted: boolean;
+  restRtHours: number; // 0 = no rest step; >0 = warm-up time carved out before preheat
 }
 
 function maxRTHours(kitchenTemp: number): number {
@@ -329,6 +330,19 @@ function maxRTHours(kitchenTemp: number): number {
   if (kitchenTemp >= 25) return 4;
   if (kitchenTemp >= 22) return 6;
   return 8;
+}
+
+function maxFinalProofHours(kitchenTemp: number): number {
+  if (kitchenTemp >= 28) return 1.5;
+  if (kitchenTemp >= 25) return 2.5;
+  if (kitchenTemp >= 22) return 3.5;
+  return 5;
+}
+
+function restRtMinutes(kitchenTemp: number): number {
+  if (kitchenTemp >= 28) return 30;
+  if (kitchenTemp >= 24) return 45;
+  return 60;
 }
 
 export function buildSchedule(
@@ -404,6 +418,44 @@ export function buildSchedule(
     });
   }
 
+  // ── Bug 1: Cap final proof (RT windows after first cold) ──────────────────
+  const firstColdMs = adjusted
+    .filter(w => w.type === 'cold')
+    .reduce((m, w) => Math.min(m, w.from.getTime()), Infinity);
+
+  if (firstColdMs < Infinity) {
+    const maxFinalH = maxFinalProofHours(kitchenTemp);
+    for (let i = 0; i < adjusted.length; i++) {
+      const w = adjusted[i];
+      if (w.type === 'room_temp' && w.from.getTime() >= firstColdMs && w.hours > maxFinalH) {
+        const excess = w.hours - maxFinalH;
+        const newFrom = new Date(w.from.getTime() + excess * 3600000);
+        // Extend the preceding cold window to absorb the excess
+        const prev = adjusted[i - 1];
+        if (prev && prev.type === 'cold') {
+          prev.to = new Date(newFrom);
+          prev.hours += excess;
+        }
+        w.from = newFrom;
+        w.hours = maxFinalH;
+        wasAutoAdjusted = true;
+      }
+    }
+  }
+
+  // ── Bug 2: Reserve warm-up time before baking when last window is cold ────
+  let restRtHours = 0;
+  if (firstColdMs < Infinity) {
+    const lastAdj = adjusted[adjusted.length - 1];
+    if (lastAdj?.type === 'cold') {
+      restRtHours = restRtMinutes(kitchenTemp) / 60;
+      const newEnd = new Date(lastAdj.to.getTime() - restRtHours * 3600000);
+      lastAdj.to = newEnd;
+      lastAdj.hours = Math.max(0, lastAdj.hours - restRtHours);
+      if (lastAdj.hours <= 0) adjusted.pop();
+    }
+  }
+
   const rtWindows   = adjusted.filter(w => w.type === 'room_temp');
   const coldWindows = adjusted.filter(w => w.type === 'cold');
   const totalRTHours   = rtWindows.reduce((s, w) => s + w.hours, 0);
@@ -415,6 +467,7 @@ export function buildSchedule(
     totalRTHours,
     totalColdHours,
     wasAutoAdjusted,
+    restRtHours,
   };
 }
 
