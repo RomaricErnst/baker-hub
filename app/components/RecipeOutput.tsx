@@ -204,7 +204,7 @@ export default function RecipeOutput({
       })()
     : undefined;
 
-  // Filter temperature-related noise — yeast calculation already accounts for these
+  // Only show structural warnings — never temperature context (yeast calc handles that)
   const filteredWarnings = yeastInfo
     ? yeastInfo.warnings.filter(w => {
         const lw = w.toLowerCase();
@@ -212,7 +212,10 @@ export default function RecipeOutput({
                !lw.includes('warm') &&
                !lw.includes('hot') &&
                !lw.includes('cool') &&
-               !lw.includes('reduced yeast');
+               !lw.includes('reduced') &&
+               !lw.includes('°c') &&
+               !lw.includes('temperature') &&
+               !lw.includes('yeast');
       }).filter(w => !yeastInfo.notRecommended || !w.includes('not recommended'))
     : [];
 
@@ -427,10 +430,6 @@ export default function RecipeOutput({
             </div>
           </div>
 
-          {/* Sourdough warning */}
-          {sourdough.warning && (
-            <InfoCard icon="🌡️" level="warn" title="Hot kitchen — watch your starter" body={sourdough.warning} />
-          )}
 
           {/* Bulk fermentation cues */}
           <div style={{
