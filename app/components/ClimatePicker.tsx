@@ -59,39 +59,6 @@ function humidityCategory(pct: number): string {
   return 'very-humid';
 }
 
-// ── Baking advice ────────────────────────────
-type AdviceLevel = 'good' | 'warn' | 'alert';
-
-function bakingAdvice(temp: number, hum: string): { text: string; level: AdviceLevel }[] {
-  const tips: { text: string; level: AdviceLevel }[] = [];
-
-  if (temp >= 30) {
-    tips.push({ level: 'alert', text: `Very hot kitchen (${temp}°C) — use ice-cold water. Move dough to the fridge immediately after mixing.` });
-  } else if (temp >= 28) {
-    tips.push({ level: 'warn', text: `Hot kitchen (${temp}°C) — use cold water from the fridge. Watch fermentation closely.` });
-  } else if (temp >= 25) {
-    tips.push({ level: 'warn', text: `Warm kitchen (${temp}°C) — fermentation will be faster than usual.` });
-  } else if (temp >= 18) {
-    tips.push({ level: 'good', text: `Good conditions (${temp}°C) — standard recipe applies.` });
-  } else {
-    tips.push({ level: 'warn', text: `Cool kitchen (${temp}°C) — expect slower fermentation. Proof somewhere warmer.` });
-  }
-
-  if (hum === 'very-humid') {
-    tips.push({ level: 'warn', text: 'Very humid air — reduce dough hydration by 2–3% to compensate.' });
-  } else if (hum === 'dry') {
-    tips.push({ level: 'warn', text: 'Dry air — keep dough covered tightly to prevent the surface drying out.' });
-  }
-
-  return tips;
-}
-
-const ADVICE_THEME: Record<AdviceLevel, { bg: string; border: string; color: string; dot: string }> = {
-  good:  { bg: '#F2FAF0', border: '#B8D8B0', color: '#3A6A30', dot: '#5A9A50' },
-  warn:  { bg: '#FFF8E8', border: '#E8D080', color: '#7A5A10', dot: '#D4A030' },
-  alert: { bg: '#FEF4EF', border: '#F5C4B0', color: 'var(--terra)', dot: 'var(--terra)' },
-};
-
 // ── Temp badge colour ────────────────────────
 function tempColor(t: number): string {
   if (t >= 30) return 'var(--terra)';
@@ -180,8 +147,6 @@ export default function ClimatePicker({
     if (e.key === 'Enter') fetchClimate();
   }
 
-  const advice = bakingAdvice(kitchenTemp, humidity);
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem' }}>
 
@@ -260,69 +225,42 @@ export default function ClimatePicker({
         {/* Weather card */}
         {weather && !loading && (() => {
           const [wxEmoji, wxDesc] = getWMO(weather.weatherCode);
-          const detectedHum = humidityCategory(weather.humidityPct);
-          const cardAdvice = bakingAdvice(weather.temp, detectedHum);
-          const topLevel = cardAdvice[0]?.level ?? 'good';
-          const theme = ADVICE_THEME[topLevel];
-
           return (
             <div style={{
               marginTop: '.75rem',
-              border: `1.5px solid ${theme.border}`,
+              border: '1.5px solid var(--border)',
               borderRadius: '13px',
-              overflow: 'hidden',
-              background: theme.bg,
+              padding: '1rem 1.3rem',
+              background: 'var(--warm)',
+              display: 'flex', alignItems: 'center', gap: '1rem',
             }}>
-              {/* Card header */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '1rem',
-                padding: '1rem 1.3rem',
-                borderBottom: `1px solid ${theme.border}`,
-              }}>
-                <span style={{ fontSize: '2.2rem', lineHeight: 1 }}>{wxEmoji}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: '.95rem', color: 'var(--char)' }}>
-                    {weather.city}, {weather.country}
-                  </div>
-                  <div style={{
-                    fontSize: '.75rem', color: 'var(--smoke)',
-                    fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem',
-                  }}>
-                    {wxDesc}
-                  </div>
+              <span style={{ fontSize: '2.2rem', lineHeight: 1 }}>{wxEmoji}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: '.95rem', color: 'var(--char)' }}>
+                  {weather.city}, {weather.country}
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{
-                    fontSize: '1.5rem', fontWeight: 700,
-                    color: tempColor(weather.temp),
-                    fontFamily: 'var(--font-dm-mono)',
-                    lineHeight: 1,
-                  }}>
-                    {weather.temp}°C
-                  </div>
-                  <div style={{
-                    fontSize: '.72rem', color: 'var(--smoke)',
-                    fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem',
-                  }}>
-                    {weather.humidityPct}% RH
-                  </div>
+                <div style={{
+                  fontSize: '.75rem', color: 'var(--smoke)',
+                  fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem',
+                }}>
+                  {wxDesc}
                 </div>
               </div>
-
-              {/* Baking advice from outdoor data */}
-              <div style={{ padding: '.75rem 1.3rem', display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
-                {cardAdvice.map((tip, i) => {
-                  const t = ADVICE_THEME[tip.level];
-                  return (
-                    <div key={i} style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-start' }}>
-                      <span style={{
-                        width: '6px', height: '6px', borderRadius: '50%',
-                        background: t.dot, flexShrink: 0, marginTop: '.35rem',
-                      }} />
-                      <span style={{ fontSize: '.78rem', color: t.color, lineHeight: 1.5 }}>{tip.text}</span>
-                    </div>
-                  );
-                })}
+              <div style={{ textAlign: 'right' }}>
+                <div style={{
+                  fontSize: '1.5rem', fontWeight: 700,
+                  color: tempColor(weather.temp),
+                  fontFamily: 'var(--font-dm-mono)',
+                  lineHeight: 1,
+                }}>
+                  {weather.temp}°C
+                </div>
+                <div style={{
+                  fontSize: '.72rem', color: 'var(--smoke)',
+                  fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem',
+                }}>
+                  {weather.humidityPct}% RH
+                </div>
               </div>
             </div>
           );
@@ -402,27 +340,6 @@ export default function ClimatePicker({
         </div>
       </div>
 
-      {/* ── Hot kitchen tip ────────────────────────── */}
-      {kitchenTemp >= 28 && (
-        <div style={{
-          display: 'flex', gap: '.75rem', alignItems: 'flex-start',
-          background: '#EEF2FA', border: '1.5px solid #C4CDE0',
-          borderRadius: '12px', padding: '.85rem 1rem',
-        }}>
-          <span style={{ fontSize: '1.2rem', flexShrink: 0, lineHeight: 1.2 }}>🧊</span>
-          <div>
-            <div style={{ fontSize: '.82rem', fontWeight: 600, color: '#3A5A8A', marginBottom: '.3rem' }}>
-              Hot kitchen tip
-            </div>
-            <div style={{ fontSize: '.78rem', color: '#3A4A6A', lineHeight: 1.65 }}>
-              Prepare ice water 2–3 hours before mixing. Freeze your measured water until a thin ice
-              layer forms on the surface. This is the single most effective way to control dough
-              temperature in a tropical kitchen.
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Fridge temperature (advanced only) ────── */}
       {mode === 'advanced' && (
         <div>
@@ -469,38 +386,6 @@ export default function ClimatePicker({
           )}
         </div>
       )}
-
-      {/* ── Baking advice (from manual controls) ─── */}
-      <div style={{
-        borderTop: '1px solid var(--border)',
-        paddingTop: '1rem',
-        display: 'flex', flexDirection: 'column', gap: '.4rem',
-      }}>
-        <div style={{ ...SECTION_LABEL, marginBottom: '.4rem' }}>Baking advice</div>
-        {advice.map((tip, i) => {
-          const t = ADVICE_THEME[tip.level];
-          return (
-            <div
-              key={i}
-              style={{
-                display: 'flex', gap: '.65rem', alignItems: 'flex-start',
-                padding: '.6rem .85rem',
-                background: t.bg,
-                border: `1px solid ${t.border}`,
-                borderRadius: '9px',
-              }}
-            >
-              <span style={{
-                width: '7px', height: '7px', borderRadius: '50%',
-                background: t.dot, flexShrink: 0, marginTop: '.35rem',
-              }} />
-              <span style={{ fontSize: '.8rem', color: t.color, lineHeight: 1.55 }}>
-                {tip.text}
-              </span>
-            </div>
-          );
-        })}
-      </div>
 
     </div>
   );
