@@ -8,12 +8,14 @@
   --terra: #C4522A;
   --terra-l: #E8714A;
   --gold: #D4A853;
-  --sage: #7A8C6E;
+  --sage: #6B7A5A;
   --smoke: #8C8580;
   --border: #E0D8CC;
   --card: #FFFFFF;
   --bread: #8B6914;
   --bread-l: #F5EDD8;
+  --card-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  --card-shadow-hover: 0 8px 24px rgba(0,0,0,0.10);
 }
 
 * {
@@ -22,9 +24,27 @@
   box-sizing: border-box;
 }
 
+*, *::before, *::after {
+  transition-property: transform, box-shadow, border-color, background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
 body {
   font-family: var(--font-dm-sans), sans-serif;
   background: var(--cream);
   color: var(--char);
   min-height: 100vh;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+@keyframes stepPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(196,82,42,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(196,82,42,0); }
+}
+.step-pulse {
+  animation: stepPulse 2s ease-in-out infinite;
 }

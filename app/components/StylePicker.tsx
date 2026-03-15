@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { PIZZA_STYLES, BREAD_STYLES, type StyleKey, type BakeType } from '../data';
 
 interface StylePickerProps {
@@ -124,6 +125,7 @@ const STYLE_ART: Record<string, { bg: string; svg: string }> = {
 
 export default function StylePicker({ bakeType, selected, onSelect }: StylePickerProps) {
   const styles = bakeType === 'pizza' ? PIZZA_STYLES : BREAD_STYLES;
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   return (
     <div style={{
@@ -141,37 +143,72 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
           <div
             key={key}
             onClick={() => onSelect(key as StyleKey)}
+            onMouseEnter={() => setHoveredKey(key)}
+            onMouseLeave={() => setHoveredKey(null)}
             style={{
               border: `2px solid ${isSelected
                 ? isBread ? 'var(--bread)' : 'var(--terra)'
                 : 'var(--border)'}`,
-              borderRadius: '13px',
+              borderRadius: '18px',
               cursor: 'pointer',
               overflow: 'hidden',
-              background: 'var(--warm)',
+              background: isSelected ? '#FFF8F3' : 'var(--warm)',
               transition: 'all .2s',
-              boxShadow: isSelected
-                ? isBread
-                  ? '0 0 0 3px rgba(139,105,20,.13)'
-                  : '0 0 0 3px rgba(196,82,42,.13)'
-                : 'none',
+              boxShadow: hoveredKey === key ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
+              transform: hoveredKey === key ? 'translateY(-3px)' : 'none',
             }}
           >
             {/* Illustration */}
-            <div style={{
-              height: '115px',
-              overflow: 'hidden',
-              background: art?.bg ?? 'var(--char)',
-            }}>
-              {art && (
-                <svg
-                  viewBox="0 0 240 115"
-                  xmlns="http://www.w3.org/2000/svg"
-                  style={{ width: '100%', height: '115px', display: 'block' }}
-                  dangerouslySetInnerHTML={{ __html: art.svg }}
+            {!isBread ? (
+              <div style={{
+                height: '115px',
+                overflow: 'hidden',
+                background: art?.bg ?? 'var(--char)',
+                borderRadius: '18px 18px 0 0',
+              }}>
+                <img
+                  src={`/${key === 'pan' ? 'Detroit' : key.charAt(0).toUpperCase() + key.slice(1)}.png`}
+                  alt={style.name}
+                  style={{ width: '100%', height: '115px', objectFit: 'cover', display: 'block' }}
+                  onError={(e) => {
+                    const img = e.currentTarget;
+                    img.style.display = 'none';
+                    const svg = img.nextElementSibling as HTMLElement | null;
+                    if (svg) svg.style.display = 'block';
+                  }}
                 />
-              )}
-            </div>
+                {art && (
+                  <svg
+                    viewBox="0 0 240 115"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ width: '100%', height: '115px', display: 'none' }}
+                    dangerouslySetInnerHTML={{ __html: art.svg }}
+                  />
+                )}
+              </div>
+            ) : (
+              <div style={{
+                height: '115px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: art?.bg ?? 'var(--char)',
+              }}>
+                <div style={{
+                  width: '88px', height: '88px',
+                  borderRadius: '50%',
+                  background: '#F7EFE5',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  overflow: 'hidden',
+                  padding: '8px',
+                }}>
+                  {art && (
+                    <svg viewBox="0 0 240 115" xmlns="http://www.w3.org/2000/svg"
+                      style={{ width: '100%', height: '100%', display: 'block' }}
+                      dangerouslySetInnerHTML={{ __html: art.svg }}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Info */}
             <div style={{ padding: '.65rem .8rem .8rem' }}>

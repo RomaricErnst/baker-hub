@@ -41,11 +41,12 @@ function StepCard({
   return (
     <div style={{
       border: `2px solid ${isActive ? 'var(--terra)' : 'var(--border)'}`,
-      borderRadius: '16px',
+      borderRadius: '18px',
       background: isActive ? '#FDFAF7' : 'var(--warm)',
       marginBottom: '1rem',
       opacity: isLocked ? 0.5 : 1,
       transition: 'border-color .2s, opacity .2s',
+      boxShadow: 'var(--card-shadow)',
     }}>
       {/* Header */}
       <div
@@ -57,23 +58,27 @@ function StepCard({
         }}
       >
         {/* Step number / checkmark */}
-        <div style={{
-          width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontWeight: 700, fontSize: '.8rem',
-          ...(isActive
-            ? { background: 'var(--terra)', color: '#fff' }
-            : isCompleted
-              ? { background: '#5A9A50', color: '#fff' }
-              : { background: 'var(--border)', color: 'var(--smoke)' }),
-        }}>
+        <div
+          className={isActive ? 'step-pulse' : undefined}
+          style={{
+            width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: 700, fontSize: '.8rem',
+            fontFamily: isActive ? 'var(--font-dm-mono)' : undefined,
+            ...(isActive
+              ? { background: 'var(--terra)', color: '#fff' }
+              : isCompleted
+                ? { background: 'var(--sage)', color: '#fff' }
+                : { background: 'var(--border)', color: 'var(--smoke)' }),
+          }}
+        >
           {isCompleted ? '✓' : num}
         </div>
 
         {/* Title + summary */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontWeight: 600, fontSize: '.9rem',
+            fontWeight: 700, fontSize: '1.1rem',
             color: isLocked ? 'var(--smoke)' : 'var(--char)',
           }}>
             {title}
@@ -107,6 +112,7 @@ function ContinueBtn({ onClick, label = 'Continue →' }: { onClick: () => void;
   return (
     <button
       onClick={onClick}
+      className="btn"
       style={{
         marginTop: '1.1rem', width: '100%', padding: '.85rem',
         border: 'none', borderRadius: '12px',
@@ -176,6 +182,9 @@ export default function Home() {
   // Large-batch yeast adjustment
   const [yeastMultiplier, setYeastMultiplier]   = useState(1.0); // live stepper value
   const [appliedMultiplier, setAppliedMultiplier] = useState(1.0); // applied to RecipeOutput
+
+  // BakeType card hover state
+  const [hoveredBakeType, setHoveredBakeType] = useState<BakeType | null>(null);
 
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -267,13 +276,13 @@ export default function Home() {
 
       {/* ── Tab navigation ─────────────────── */}
       <div style={{ background: 'var(--warm)', borderBottom: '1px solid var(--border)', position: 'sticky', top: '60px', zIndex: 90 }}>
-        <div style={{ maxWidth: '820px', margin: '0 auto', padding: '0 1.25rem', display: 'flex' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 1.25rem', display: 'flex' }}>
           {(['guided', 'advanced'] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
               style={{
-                padding: '.7rem 1.15rem',
+                padding: '.55rem 1.25rem',
                 background: 'none', border: 'none',
                 borderBottom: `2px solid ${tab === t ? 'var(--terra)' : 'transparent'}`,
                 color: tab === t ? 'var(--terra)' : 'var(--smoke)',
@@ -289,31 +298,31 @@ export default function Home() {
       </div>
 
       {/* ── Main content ───────────────────── */}
-      <div style={{ maxWidth: '820px', margin: '0 auto', padding: '2rem 1.25rem' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 2rem)' }}>
 
         {/* ════════════ GUIDED ════════════ */}
         {tab === 'guided' && (
-          <div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.75rem, 2vw, 1rem)' }}>
 
             {/* ── Hero intro (only before step 1 done) ── */}
             {!bakeType && (
               <div style={{ textAlign: 'center', padding: '1.5rem 0 2rem' }}>
                 <h1 style={{
-                  fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
+                  fontFamily: 'var(--font-playfair)', fontSize: 'clamp(2rem, 5vw, 3rem)',
                   fontWeight: 900, lineHeight: 1.2, marginBottom: '.75rem',
                 }}>
-                  Your dough,{' '}
-                  <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>perfectly planned.</em>
+                  Craft your dough{' '}
+                  <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>with confidence.</em>
                 </h1>
                 <p style={{ color: 'var(--smoke)', fontSize: '.95rem', fontWeight: 300 }}>
-                  Answer 6 questions — get a complete recipe and baking schedule.
+                  Choose your dough style. We&apos;ll shape the plan.
                 </p>
               </div>
             )}
 
             {/* ─── STEP 1: Bake type ───────────────── */}
             <StepCard
-              num={1} title="What are you baking today?"
+              num={1} title="What are you crafting today?"
               activeStep={activeStep}
               summary={bakeType === 'pizza' ? '🍕 Pizza' : bakeType === 'bread' ? '🍞 Bread' : undefined}
               onEdit={() => setActiveStep(1)}
@@ -322,7 +331,7 @@ export default function Home() {
                 {([
                   { type: 'pizza' as BakeType, emoji: '🍕', label: 'Pizza',
                     desc: 'Neapolitan, New York, Roman, Detroit & Sourdough',
-                    active_bg: '#FEF4EF', active_border: 'var(--terra)' },
+                    active_bg: '#FFF8F3', active_border: 'var(--terra)' },
                   { type: 'bread' as BakeType, emoji: '🍞', label: 'Bread',
                     desc: 'Sourdough, Baguette, Focaccia, Ciabatta & Brioche',
                     active_bg: 'var(--bread-l)', active_border: 'var(--bread)' },
@@ -330,12 +339,19 @@ export default function Home() {
                   <div
                     key={opt.type}
                     onClick={() => selectBakeType(opt.type)}
+                    onMouseEnter={() => setHoveredBakeType(opt.type)}
+                    onMouseLeave={() => setHoveredBakeType(null)}
                     style={{
                       padding: '2rem 1rem 1.75rem',
-                      textAlign: 'center', borderRadius: '14px', cursor: 'pointer',
+                      textAlign: 'center', borderRadius: '18px', cursor: 'pointer',
                       border: `2px solid ${bakeType === opt.type ? opt.active_border : 'var(--border)'}`,
                       background: bakeType === opt.type ? opt.active_bg : 'var(--card)',
-                      boxShadow: bakeType === opt.type ? `0 0 0 4px ${opt.type === 'bread' ? 'rgba(139,105,20,.1)' : 'rgba(196,82,42,.1)'}` : 'none',
+                      boxShadow: hoveredBakeType === opt.type
+                        ? 'var(--card-shadow-hover)'
+                        : bakeType === opt.type
+                          ? `0 0 0 4px ${opt.type === 'bread' ? 'rgba(139,105,20,.1)' : 'rgba(196,82,42,.1)'}`
+                          : 'var(--card-shadow)',
+                      transform: hoveredBakeType === opt.type ? 'translateY(-3px)' : 'none',
                       transition: 'all .2s',
                     }}
                   >
@@ -349,7 +365,7 @@ export default function Home() {
 
             {/* ─── STEP 2: Style + quantity ─────────── */}
             <StepCard
-              num={2} title="Choose your style"
+              num={2} title="Choose your dough style"
               activeStep={activeStep}
               summary={styleKey
                 ? `${ALL_STYLES[styleKey].emoji} ${ALL_STYLES[styleKey].name} · ${numItems} × ${itemWeight} g`
@@ -374,6 +390,7 @@ export default function Home() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
                             <button
                               onClick={() => setNumItems(n => Math.max(1, n - 1))}
+                              className="btn"
                               style={{
                                 width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
                                 border: 'none', background: 'var(--char)', color: '#fff',
@@ -399,6 +416,7 @@ export default function Home() {
                             />
                             <button
                               onClick={() => setNumItems(n => n + 1)}
+                              className="btn"
                               style={{
                                 width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
                                 border: 'none', background: 'var(--terra)', color: '#fff',
@@ -458,7 +476,7 @@ export default function Home() {
 
             {/* ─── STEP 3: Oven ──────────────────────── */}
             <StepCard
-              num={3} title="Your oven"
+              num={3} title="Your baking setup"
               activeStep={activeStep}
               summary={`${OVEN_TYPES[ovenType].emoji} ${OVEN_TYPES[ovenType].name}`}
               onEdit={() => setActiveStep(3)}
@@ -471,7 +489,7 @@ export default function Home() {
 
             {/* ─── STEP 4: Mixer ─────────────────────── */}
             <StepCard
-              num={4} title="Your mixer"
+              num={4} title="Your mixing method"
               activeStep={activeStep}
               summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
               onEdit={() => setActiveStep(4)}
@@ -484,7 +502,7 @@ export default function Home() {
 
             {/* ─── STEP 5: Schedule + yeast ──────────── */}
             <StepCard
-              num={5} title="Your schedule & yeast"
+              num={5} title="Your timing"
               activeStep={activeStep}
               summary={`${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'} · ${YEAST_TYPES[yeastType].emoji} ${YEAST_TYPES[yeastType].shortName}`}
               onEdit={() => setActiveStep(5)}
@@ -499,6 +517,7 @@ export default function Home() {
                       <button
                         key={yt}
                         onClick={() => setYeastType(yt)}
+                        className="btn"
                         style={{
                           padding: '.38rem .85rem', borderRadius: '20px',
                           border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
@@ -514,6 +533,7 @@ export default function Home() {
                   })}
                   <button
                     onClick={() => setShowYeastHelper(true)}
+                    className="btn"
                     style={{
                       padding: '.38rem .75rem', borderRadius: '20px',
                       border: '1.5px solid var(--border)', background: 'var(--warm)',
@@ -537,7 +557,7 @@ export default function Home() {
 
             {/* ─── STEP 6: Climate ───────────────────── */}
             <StepCard
-              num={6} title="Kitchen conditions"
+              num={6} title="Your kitchen climate"
               activeStep={activeStep}
               summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
               onEdit={() => setActiveStep(6)}
@@ -550,6 +570,7 @@ export default function Home() {
 
               <button
                 onClick={() => advance(6)}
+                className="btn"
                 style={{
                   marginTop: '1.25rem', width: '100%', padding: '.9rem',
                   border: 'none', borderRadius: '12px',
@@ -558,7 +579,7 @@ export default function Home() {
                   cursor: 'pointer', letterSpacing: '.02em',
                 }}
               >
-                🧮 Calculate Recipe
+                ✦ Craft My Baking Plan
               </button>
             </StepCard>
 
@@ -585,6 +606,7 @@ export default function Home() {
                   </div>
                   <button
                     onClick={startOver}
+                    className="btn"
                     style={{
                       padding: '.5rem 1rem', borderRadius: '8px',
                       border: '1.5px solid rgba(245,240,232,.2)',
@@ -592,7 +614,7 @@ export default function Home() {
                       fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s',
                     }}
                   >
-                    ↺ Start over
+                    ↑ Start a new recipe
                   </button>
                 </div>
 
@@ -667,6 +689,7 @@ export default function Home() {
                               <button
                                 onClick={() => setYeastMultiplier(m => Math.max(0.5, Math.round((m - 0.05) * 100) / 100))}
                                 disabled={yeastMultiplier <= 0.5}
+                                className="btn"
                                 style={{
                                   width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
                                   border: 'none',
@@ -686,6 +709,7 @@ export default function Home() {
                               <button
                                 onClick={() => setYeastMultiplier(m => Math.min(1.5, Math.round((m + 0.05) * 100) / 100))}
                                 disabled={yeastMultiplier >= 1.5}
+                                className="btn"
                                 style={{
                                   width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
                                   border: 'none',
@@ -721,6 +745,7 @@ export default function Home() {
                           <div style={{ display: 'flex', gap: '.6rem' }}>
                             <button
                               onClick={() => setAppliedMultiplier(yeastMultiplier)}
+                              className="btn"
                               style={{
                                 flex: 2, padding: '.65rem',
                                 border: 'none', borderRadius: '10px',
@@ -732,6 +757,7 @@ export default function Home() {
                             </button>
                             <button
                               onClick={() => { setYeastMultiplier(1.0); setAppliedMultiplier(1.0); }}
+                              className="btn"
                               style={{
                                 flex: 1, padding: '.65rem',
                                 border: '1.5px solid #E8D890', borderRadius: '10px',

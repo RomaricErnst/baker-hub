@@ -14,14 +14,30 @@ export default function Header() {
       borderBottom: '2px solid var(--terra)'
     }}>
       <div style={{
-        fontFamily: 'var(--font-playfair)',
-        fontSize: '1.4rem',
-        fontWeight: 900,
         display: 'flex',
-        alignItems: 'center',
-        gap: '0.4rem'
+        flexDirection: 'column',
+        justifyContent: 'center',
       }}>
-        🍞 Baker Hub <span style={{ color: 'var(--gold)', fontStyle: 'italic', fontSize: '0.85rem', fontWeight: 400 }}>beta</span>
+        <div style={{
+          fontFamily: 'var(--font-playfair)',
+          fontSize: '1.4rem',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+          lineHeight: 1.2,
+        }}>
+          🍞 Baker Hub
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-dm-sans)',
+          fontStyle: 'italic',
+          fontSize: '.68rem',
+          color: 'var(--gold)',
+          lineHeight: 1.2,
+        }}>
+          artisan dough planner
+        </div>
       </div>
     </header>
   );

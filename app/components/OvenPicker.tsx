@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { OVEN_TYPES, type OvenType } from '../data';
 
 interface OvenPickerProps {
@@ -7,6 +8,8 @@ interface OvenPickerProps {
 }
 
 export default function OvenPicker({ selected, onSelect }: OvenPickerProps) {
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+
   return (
     <div style={{
       display: 'grid',
@@ -19,14 +22,17 @@ export default function OvenPicker({ selected, onSelect }: OvenPickerProps) {
           <div
             key={key}
             onClick={() => onSelect(key)}
+            onMouseEnter={() => setHoveredKey(key)}
+            onMouseLeave={() => setHoveredKey(null)}
             style={{
               border: `2px solid ${isSelected ? 'var(--terra)' : 'var(--border)'}`,
-              borderRadius: '13px',
+              borderRadius: '18px',
               padding: '1.1rem 1.2rem',
               cursor: 'pointer',
-              background: isSelected ? '#FEF4EF' : 'var(--warm)',
+              background: isSelected ? '#FFF8F3' : 'var(--warm)',
               transition: 'all .2s',
-              boxShadow: isSelected ? '0 0 0 3px rgba(196,82,42,.1)' : 'none',
+              boxShadow: hoveredKey === key ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
+              transform: hoveredKey === key ? 'translateY(-3px)' : 'none',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '.65rem', marginBottom: '.5rem' }}>
