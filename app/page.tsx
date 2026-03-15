@@ -780,6 +780,7 @@ export default function Home() {
                         startTime={startTime}
                         eatTime={eatTime}
                         mixerType={mixerType}
+                        styleKey={styleKey ?? ''}
                         onStartBaking={() => { /* Baking mode — future feature */ }}
                       />
                     )}

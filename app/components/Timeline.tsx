@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import {
   type FermentWindow,
   type AvailabilityBlock,
@@ -7,6 +8,7 @@ import {
   hoursLabel,
 } from '../utils';
 import { MIXER_TYPES, type MixerType } from '../data';
+import LearnModal from './LearnModal';
 
 interface TimelineProps {
   schedule: ScheduleResult;
@@ -15,6 +17,7 @@ interface TimelineProps {
   startTime: Date;
   eatTime: Date;
   mixerType: MixerType;
+  styleKey: string;
   onStartBaking?: () => void;
 }
 
@@ -207,15 +210,40 @@ function buildPhases(schedule: ScheduleResult, preheatMin: number): Phase[] {
   return phases;
 }
 
+// ── ⓘ badge ───────────────────────────────────
+function InfoBadge({ term, onOpen }: { term: string; onOpen: (t: string) => void }) {
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); onOpen(term); }}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        marginLeft: '.3rem',
+        width: '16px', height: '16px', borderRadius: '50%',
+        border: '1.5px solid var(--terra)', color: 'var(--terra)',
+        background: 'transparent', cursor: 'pointer',
+        fontSize: '9px', fontWeight: 700, lineHeight: 1,
+        flexShrink: 0, verticalAlign: 'middle',
+        padding: 0,
+      }}
+    >
+      i
+    </button>
+  );
+}
+
 // ── Component ─────────────────────────────────
 export default function Timeline({
-  schedule, blocks, preheatMin, startTime, eatTime, mixerType, onStartBaking,
+  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, onStartBaking,
 }: TimelineProps) {
+  const [learnTerm, setLearnTerm] = useState<string | null>(null);
+
   const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin);
   const phases = buildPhases(schedule, preheatMin);
 
   const steps = items.filter((it): it is TimelineStep => it.kind === 'step');
   const lastStepId = steps[steps.length - 1]?.id;
+
+  const isSourdough = styleKey === 'sourdough' || styleKey === 'sourdough_bread';
 
   return (
     <div>
@@ -418,6 +446,9 @@ export default function Timeline({
                   }}>
                     <span>{item.icon}</span>
                     <span>{item.label}</span>
+                    {item.stepKind === 'bulk_ferm' && (
+                      <InfoBadge term="bulk_fermentation" onOpen={setLearnTerm} />
+                    )}
                   </div>
 
                   {item.durationH !== null && (
@@ -443,34 +474,98 @@ export default function Timeline({
                   {item.tip}
                 </div>
 
-                {/* Mixer instructions — shown on mixing step only */}
+                {/* Mixing sequence + mixer instructions — shown on mixing step only */}
                 {item.stepKind === 'mixing' && (() => {
                   const mx = MIXER_TYPES[mixerType];
+
+                  type SeqStep = { emoji: string; bold: string; note: string; term?: string };
+                  const sequence: SeqStep[] = isSourdough ? [
+                    { emoji: '🌊', bold: 'Flour + 90% of water', note: 'mix 2 min (autolyse 30 min in fridge in hot kitchens)', term: 'autolyse' },
+                    { emoji: '🫙', bold: 'Add starter', note: 'mix to combine' },
+                    { emoji: '🧂', bold: 'Add salt + remaining 10% water', note: 'mix until absorbed' },
+                    { emoji: '🫒', bold: 'Add oil last if recipe includes it', note: 'oil added late preserves gluten structure' },
+                  ] : [
+                    { emoji: '🌊', bold: 'Flour + 90% of water', note: 'mix 2 min until no dry flour remains (autolyse)', term: 'autolyse' },
+                    { emoji: '🧫', bold: 'Add yeast', note: 'mix to combine, 2 min' },
+                    { emoji: '⏳', bold: 'Rest 5 min', note: 'lets yeast activate before salt is added' },
+                    { emoji: '🧂', bold: 'Add salt', note: 'mix until fully absorbed, 2 min' },
+                    { emoji: '💧', bold: 'Add remaining 10% water gradually (bassinage)', note: 'mix until absorbed', term: 'bassinage' },
+                    { emoji: '🫒', bold: 'Add oil last if recipe includes it', note: 'oil added late preserves gluten structure' },
+                  ];
+
                   return (
-                    <div style={{
-                      marginTop: '.6rem',
-                      border: '1.5px solid var(--border)',
-                      borderRadius: '10px',
-                      padding: '.7rem .9rem',
-                      background: 'var(--cream)',
-                    }}>
+                    <>
+                      {/* Mixing order */}
                       <div style={{
-                        display: 'flex', alignItems: 'center', gap: '.45rem',
-                        marginBottom: '.4rem',
+                        marginTop: '.65rem',
+                        border: '1.5px solid var(--border)',
+                        borderRadius: '10px',
+                        padding: '.7rem .9rem',
+                        background: 'var(--warm)',
                       }}>
-                        <span style={{ fontSize: '1rem' }}>{mx.emoji}</span>
-                        <span style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--char)' }}>
-                          {mx.name}
-                        </span>
+                        <div style={{
+                          fontSize: '.68rem', fontWeight: 600, color: 'var(--smoke)',
+                          textTransform: 'uppercase', letterSpacing: '.07em',
+                          fontFamily: 'var(--font-dm-mono)', marginBottom: '.55rem',
+                        }}>
+                          Mixing order
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
+                          {sequence.map((s, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '.55rem', alignItems: 'baseline' }}>
+                              <span style={{
+                                fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
+                                color: 'var(--smoke)', flexShrink: 0, minWidth: '14px',
+                              }}>
+                                {i + 1}.
+                              </span>
+                              <span style={{ fontSize: '.8rem', flexShrink: 0 }}>{s.emoji}</span>
+                              <span style={{ fontSize: '.76rem', lineHeight: 1.5 }}>
+                                <strong style={{ color: 'var(--char)' }}>{s.bold}</strong>
+                                {s.term && <InfoBadge term={s.term} onOpen={setLearnTerm} />}
+                                {' '}
+                                <em style={{ color: 'var(--smoke)', fontStyle: 'italic' }}>— {s.note}</em>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
+
+                      {/* Mixer instructions */}
                       <div style={{
-                        fontSize: '.72rem', color: 'var(--smoke)',
-                        fontFamily: 'var(--font-dm-mono)',
-                        lineHeight: 1.6,
+                        marginTop: '.5rem',
+                        border: '1.5px solid var(--border)',
+                        borderRadius: '10px',
+                        padding: '.7rem .9rem',
+                        background: 'var(--cream)',
                       }}>
-                        {mx.instructions}
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: '.45rem',
+                          marginBottom: '.4rem',
+                        }}>
+                          <span style={{ fontSize: '1rem' }}>{mx.emoji}</span>
+                          <span style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--char)' }}>
+                            {mx.name}
+                          </span>
+                          {mixerType === 'spiral' && (
+                            <InfoBadge term="pumpkin" onOpen={setLearnTerm} />
+                          )}
+                        </div>
+                        <div style={{
+                          fontSize: '.72rem', color: 'var(--smoke)',
+                          fontFamily: 'var(--font-dm-mono)',
+                          lineHeight: 1.6,
+                        }}>
+                          {mx.instructions}
+                          {(mixerType === 'hand' || mixerType === 'stand') && (
+                            <span style={{ display: 'inline' }}>
+                              {' '}
+                              <InfoBadge term="windowpane" onOpen={setLearnTerm} />
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    </>
                   );
                 })()}
 
@@ -499,6 +594,9 @@ export default function Timeline({
         })}
       </div>
 
+      {learnTerm && (
+        <LearnModal term={learnTerm} onClose={() => setLearnTerm(null)} />
+      )}
     </div>
   );
 }
