@@ -9,45 +9,40 @@ interface SchedulePickerProps {
   onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[]) => void;
 }
 
-const PRESET_EMOJI: Record<string, string> = {
-  'Tonight 10pm–7am':        '🌙',
-  'Tomorrow night 10pm–7am': '🌙',
-  'Work hours 9am–6pm':      '💼',
-};
+// ── Night window helper ───────────────────────
+// A "night" = that day at 23:00 → next day at 07:00
+// Returns nights whose window overlaps [start, end], max 7
+function getNightsInWindow(
+  start: Date,
+  end: Date,
+): Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> {
+  if (end <= start) return [];
 
-function buildPresets(now: Date): { label: string; from: Date; to: Date }[] {
-  // Tonight 10pm → next morning 7am
-  const tonightFrom = new Date(now);
-  tonightFrom.setHours(22, 0, 0, 0);
-  if (tonightFrom <= now) tonightFrom.setDate(tonightFrom.getDate() + 1);
-  const tonightTo = new Date(tonightFrom);
-  tonightTo.setDate(tonightTo.getDate() + 1);
-  tonightTo.setHours(7, 0, 0, 0);
+  const nights: Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> = [];
 
-  // Tomorrow night 10pm → day after 7am
-  const tmrwFrom = new Date(now);
-  tmrwFrom.setDate(tmrwFrom.getDate() + 1);
-  tmrwFrom.setHours(22, 0, 0, 0);
-  const tmrwTo = new Date(tmrwFrom);
-  tmrwTo.setDate(tmrwTo.getDate() + 1);
-  tmrwTo.setHours(7, 0, 0, 0);
+  // Iterate from the day of `start` forward, up to 14 days as search range
+  const cursor = new Date(start);
+  cursor.setHours(0, 0, 0, 0);
 
-  // Next weekday 9am–6pm
-  const workFrom = new Date(now);
-  workFrom.setHours(9, 0, 0, 0);
-  const isWeekend = (d: Date) => d.getDay() === 0 || d.getDay() === 6;
-  if (workFrom <= now || isWeekend(workFrom)) {
-    workFrom.setDate(workFrom.getDate() + 1);
-    while (isWeekend(workFrom)) workFrom.setDate(workFrom.getDate() + 1);
+  for (let i = 0; i < 14 && nights.length < 7; i++) {
+    const nightStart = new Date(cursor);
+    nightStart.setHours(23, 0, 0, 0);
+
+    const nightEnd = new Date(cursor);
+    nightEnd.setDate(nightEnd.getDate() + 1);
+    nightEnd.setHours(7, 0, 0, 0);
+
+    // Include if overlaps with [start, end]
+    if (nightStart < end && nightEnd > start) {
+      const weekday = nightStart.toLocaleDateString('en-US', { weekday: 'long' });
+      const key = nightStart.toISOString().slice(0, 10); // "YYYY-MM-DD"
+      nights.push({ key, label: `${weekday} night`, blockStart: nightStart, blockEnd: nightEnd });
+    }
+
+    cursor.setDate(cursor.getDate() + 1);
   }
-  const workTo = new Date(workFrom);
-  workTo.setHours(18, 0, 0, 0);
 
-  return [
-    { label: 'Tonight 10pm–7am',        from: tonightFrom, to: tonightTo },
-    { label: 'Tomorrow night 10pm–7am', from: tmrwFrom,    to: tmrwTo   },
-    { label: 'Work hours 9am–6pm',      from: workFrom,    to: workTo   },
-  ];
+  return nights;
 }
 
 const INPUT_STYLE: React.CSSProperties = {
@@ -79,9 +74,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
 
-  const presets = useMemo(() => buildPresets(new Date()), []);
   const totalHours = (eatTime.getTime() - startTime.getTime()) / 3600000;
   const timeInvalid = eatTime <= startTime;
+
+  // Recompute nights whenever start/eat time changes
+  const nights = useMemo(
+    () => getNightsInWindow(startTime, eatTime),
+    [startTime, eatTime],
+  );
 
   function handleStartChange(val: string) {
     const d = new Date(val);
@@ -93,15 +93,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
     if (!isNaN(d.getTime())) onChange(startTime, d, blocks);
   }
 
-  function isPresetActive(label: string) {
+  function isNightActive(label: string): boolean {
     return blocks.some(b => b.label === label);
   }
 
-  function togglePreset(preset: { label: string; from: Date; to: Date }) {
-    if (isPresetActive(preset.label)) {
-      onChange(startTime, eatTime, blocks.filter(b => b.label !== preset.label));
+  function toggleNight(night: { key: string; label: string; blockStart: Date; blockEnd: Date }) {
+    if (isNightActive(night.label)) {
+      // Remove this night's block
+      onChange(startTime, eatTime, blocks.filter(b => b.label !== night.label));
     } else {
-      onChange(startTime, eatTime, [...blocks, { from: preset.from, to: preset.to, label: preset.label }]);
+      // Add this night's block
+      onChange(startTime, eatTime, [
+        ...blocks,
+        { from: night.blockStart, to: night.blockEnd, label: night.label },
+      ]);
     }
   }
 
@@ -192,35 +197,44 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
           textTransform: 'uppercase', letterSpacing: '.06em',
           marginBottom: '.6rem', fontFamily: 'var(--font-dm-mono)',
         }}>
-          I won't be available — dough goes in the fridge
+          I won&apos;t be available — dough goes in the fridge
         </div>
 
-        {/* Preset pills + Custom toggle */}
+        {/* Night toggles */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem' }}>
-          {presets.map(preset => {
-            const active = isPresetActive(preset.label);
-            return (
-              <button
-                key={preset.label}
-                onClick={() => togglePreset(preset)}
-                style={{
-                  padding: '.38rem .85rem',
-                  borderRadius: '20px',
-                  border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                  background: active ? '#FEF4EF' : 'var(--warm)',
-                  color: active ? 'var(--terra)' : 'var(--smoke)',
-                  fontSize: '.78rem',
-                  fontWeight: active ? 500 : 400,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-dm-sans)',
-                  transition: 'all .15s',
-                }}
-              >
-                {PRESET_EMOJI[preset.label]} {preset.label}
-                {active && <span style={{ marginLeft: '.35rem', opacity: .7 }}>✓</span>}
-              </button>
-            );
-          })}
+          {nights.length === 0 ? (
+            <div style={{
+              fontSize: '.76rem', color: 'var(--smoke)',
+              fontStyle: 'italic', padding: '.2rem 0',
+            }}>
+              No overnight periods in this schedule.
+            </div>
+          ) : (
+            nights.map(night => {
+              const active = isNightActive(night.label);
+              return (
+                <button
+                  key={night.key}
+                  onClick={() => toggleNight(night)}
+                  style={{
+                    padding: '.38rem .85rem',
+                    borderRadius: '20px',
+                    border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
+                    background: active ? '#FEF4EF' : 'var(--warm)',
+                    color: active ? 'var(--terra)' : 'var(--smoke)',
+                    fontSize: '.78rem',
+                    fontWeight: active ? 500 : 400,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-dm-sans)',
+                    transition: 'all .15s',
+                  }}
+                >
+                  🌙 {night.label}
+                  {active && <span style={{ marginLeft: '.35rem', opacity: .7 }}>✓</span>}
+                </button>
+              );
+            })
+          )}
 
           <button
             onClick={() => setShowCustom(v => !v)}
@@ -343,7 +357,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
           <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
             {blocks.map((block, i) => {
               const durationH = (block.to.getTime() - block.from.getTime()) / 3600000;
-              const emoji = PRESET_EMOJI[block.label] ?? '🕐';
+              const isNightBlock = nights.some(n => n.label === block.label);
+              const emoji = isNightBlock ? '🌙' : '🕐';
               return (
                 <div
                   key={i}
