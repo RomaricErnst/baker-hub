@@ -473,7 +473,9 @@ export default function Timeline({
                   fontSize: '.77rem', color: 'var(--smoke)',
                   lineHeight: 1.6,
                 }}>
-                  {item.tip}
+                  {item.stepKind === 'final_proof'
+                    ? <>Remove dough from fridge. Allow 30–60 min to come to room temperature before shaping. Passes the poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> when ready.</>
+                    : item.tip}
                 </div>
 
                 {/* Mixing sequence — shown on mixing step only */}
@@ -483,8 +485,8 @@ export default function Timeline({
 
                   // Each item is either a regular step or a special 'rest' card
                   type SeqItem =
-                    | { kind: 'step'; emoji: string; bold: string; note: string; term?: string }
-                    | { kind: 'rest'; label: string; note: string; term?: string };
+                    | { kind: 'step'; emoji: string; bold: string; note: string; noteNode?: React.ReactNode; term?: string }
+                    | { kind: 'rest'; label: string; note: string; noteNode?: React.ReactNode; term?: string };
 
                   let sequence: SeqItem[] = [];
 
@@ -518,7 +520,7 @@ export default function Timeline({
                     sequence = [
                       { kind: 'step', emoji: '🌊', bold: 'Flour + 90% of water + yeast', note: 'Speed 1, 3 min to combine' },
                       { kind: 'step', emoji: '🧂', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
-                      { kind: 'step', emoji: '🌀', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if FDT exceeds 28°C', term: 'pumpkin' },
+                      { kind: 'step', emoji: '🌀', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if FDT exceeds 28°C', noteNode: <>typically 10–15 min, stop if FDT<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</>, term: 'pumpkin' },
                       ...(showBassinage ? [{ kind: 'step' as const, emoji: '💧', bold: 'Once pumpkin is stable, add remaining water gradually', note: 'wait for pumpkin to reform after each addition', term: 'bassinage' }] : []),
                       ...(showOil ? [{ kind: 'step' as const, emoji: '🫒', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
                     ];
@@ -566,7 +568,7 @@ export default function Timeline({
                                   <strong style={{ color: 'var(--char)' }}>{s.label}</strong>
                                   {s.term && <InfoBadge term={s.term} onOpen={setLearnTerm} />}
                                   {' '}
-                                  <em style={{ color: 'var(--smoke)', fontStyle: 'italic' }}>— {s.note}</em>
+                                  <em style={{ color: 'var(--smoke)', fontStyle: 'italic' }}>— {s.noteNode ?? s.note}</em>
                                 </span>
                               </div>
                             );
@@ -586,7 +588,7 @@ export default function Timeline({
                                 <strong style={{ color: 'var(--char)' }}>{s.bold}</strong>
                                 {s.term && <InfoBadge term={s.term} onOpen={setLearnTerm} />}
                                 {' '}
-                                <em style={{ color: 'var(--smoke)', fontStyle: 'italic' }}>— {s.note}</em>
+                                <em style={{ color: 'var(--smoke)', fontStyle: 'italic' }}>— {s.noteNode ?? s.note}</em>
                               </span>
                             </div>
                           );

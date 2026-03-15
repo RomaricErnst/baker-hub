@@ -46,6 +46,22 @@ const TERMS: Record<string, TermContent> = {
     tip: 'Wait until the dough forms a cohesive ball (or pumpkin shape in a spiral mixer) before adding the reserved water. Add it in small pours of 30–50g at a time — wait for each addition to be fully absorbed before adding more.',
     secondTip: 'Bassinage is most useful for doughs above 70% hydration. Below 70% just add all the water at once — the technique adds complexity without much benefit at lower hydrations.',
   },
+  fdt: {
+    title: 'Final Dough Temperature',
+    emoji: '🌡️',
+    explanation: 'FDT is the temperature of your dough immediately after mixing. It directly controls how fast fermentation begins — too warm and yeast activates too fast, too cold and it barely moves. Target FDT is 23–25°C for most pizza and bread doughs.',
+    tip: 'To hit your target FDT, adjust your water temperature before mixing. Baker Hub calculates this for you in the recipe output. In hot kitchens use cold or ice water. In cold kitchens use slightly warm water.',
+    secondTip: 'Never let FDT exceed 28°C — above this yeast becomes unpredictable and gluten weakens. If your dough feels warm to the touch after mixing, refrigerate it for 15 min before bulk fermentation.',
+    videoLabel: 'Read full guide →',
+    videoUrl: 'https://www.pizzablab.com/learning-and-resources/mixing-kneading/pizza-dough-kneading-fundamentals/',
+  },
+  poke_test: {
+    title: 'The Poke Test',
+    emoji: '👆',
+    explanation: 'Press a floured finger gently about 1cm into the dough and watch how it responds. This tells you if the final proof is complete and the dough is ready to bake.',
+    tip: 'Springs back immediately and feels tight → needs more proofing time. Springs back slowly and partially → ready to bake, this is what you want. Doesn\'t spring back at all and feels slack → overproofed, bake immediately.',
+    secondTip: 'Do the poke test on a dough ball that has been at room temperature for at least 20 min. Cold dough straight from the fridge will always feel tight regardless of fermentation state.',
+  },
   bulk_fermentation: {
     title: 'Bulk Fermentation',
     emoji: '🌡',
