@@ -781,6 +781,8 @@ export default function Home() {
                         eatTime={eatTime}
                         mixerType={mixerType}
                         styleKey={styleKey ?? ''}
+                        oil={recipe?.oil ?? 0}
+                        hydration={recipe?.hydration ?? 0}
                         onStartBaking={() => { /* Baking mode — future feature */ }}
                       />
                     )}

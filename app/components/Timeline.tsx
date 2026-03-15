@@ -18,6 +18,8 @@ interface TimelineProps {
   eatTime: Date;
   mixerType: MixerType;
   styleKey: string;
+  oil: number;
+  hydration: number;
   onStartBaking?: () => void;
 }
 
@@ -233,7 +235,7 @@ function InfoBadge({ term, onOpen }: { term: string; onOpen: (t: string) => void
 
 // ── Component ─────────────────────────────────
 export default function Timeline({
-  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, onStartBaking,
+  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, oil, hydration, onStartBaking,
 }: TimelineProps) {
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
 
@@ -474,50 +476,110 @@ export default function Timeline({
                   {item.tip}
                 </div>
 
-                {/* Mixing sequence + mixer instructions — shown on mixing step only */}
+                {/* Mixing sequence — shown on mixing step only */}
                 {item.stepKind === 'mixing' && (() => {
-                  const mx = MIXER_TYPES[mixerType];
+                  const showOil = oil > 0;
+                  const showBassinage = hydration > 70;
 
-                  type SeqStep = { emoji: string; bold: string; note: string; term?: string };
-                  const sequence: SeqStep[] = isSourdough ? [
-                    { emoji: '🌊', bold: 'Flour + 90% of water', note: 'mix 2 min (autolyse 30 min in fridge in hot kitchens)', term: 'autolyse' },
-                    { emoji: '🫙', bold: 'Add starter', note: 'mix to combine' },
-                    { emoji: '🧂', bold: 'Add salt + remaining 10% water', note: 'mix until absorbed' },
-                    { emoji: '🫒', bold: 'Add oil last if recipe includes it', note: 'oil added late preserves gluten structure' },
-                  ] : [
-                    { emoji: '🌊', bold: 'Flour + 90% of water', note: 'mix 2 min until no dry flour remains (autolyse)', term: 'autolyse' },
-                    { emoji: '🧫', bold: 'Add yeast', note: 'mix to combine, 2 min' },
-                    { emoji: '⏳', bold: 'Rest 5 min', note: 'lets yeast activate before salt is added' },
-                    { emoji: '🧂', bold: 'Add salt', note: 'mix until fully absorbed, 2 min' },
-                    { emoji: '💧', bold: 'Add remaining 10% water gradually (bassinage)', note: 'mix until absorbed', term: 'bassinage' },
-                    { emoji: '🫒', bold: 'Add oil last if recipe includes it', note: 'oil added late preserves gluten structure' },
-                  ];
+                  // Each item is either a regular step or a special 'rest' card
+                  type SeqItem =
+                    | { kind: 'step'; emoji: string; bold: string; note: string; term?: string }
+                    | { kind: 'rest'; label: string; note: string; term?: string };
+
+                  let sequence: SeqItem[] = [];
+
+                  if (isSourdough) {
+                    sequence = [
+                      { kind: 'step', emoji: '🌊', bold: 'Flour + 90% of water', note: 'mix 2 min until no dry flour remains' },
+                      { kind: 'step', emoji: '🫙', bold: 'Add starter', note: 'mix to combine' },
+                      { kind: 'step', emoji: '🧂', bold: 'Add salt + remaining 10% water', note: 'mix until fully absorbed' },
+                      ...(showOil ? [{ kind: 'step' as const, emoji: '🫒', bold: 'Add oil last', note: 'oil added late preserves gluten structure' }] : []),
+                    ];
+                  } else if (mixerType === 'hand') {
+                    sequence = [
+                      { kind: 'step', emoji: '🌊', bold: 'Flour + 90% of water', note: 'mix until no dry flour remains, ~2 min' },
+                      { kind: 'rest', label: 'Cover and rest 20 min', note: 'flour absorbs water naturally, reduces kneading time', term: 'autolyse' },
+                      { kind: 'step', emoji: '🧫', bold: 'Add yeast', note: 'mix to combine, 2 min' },
+                      { kind: 'step', emoji: '🧂', bold: 'Add salt', note: 'mix until absorbed, 2 min' },
+                      ...(showBassinage ? [{ kind: 'step' as const, emoji: '💧', bold: 'Add remaining 10% water gradually', note: 'mix until absorbed', term: 'bassinage' }] : []),
+                      ...(showOil ? [{ kind: 'step' as const, emoji: '🫒', bold: 'Add oil last', note: 'mix 1 min' }] : []),
+                      { kind: 'step', emoji: '🙌', bold: 'Knead 8–12 min until smooth and elastic', note: 'windowpane test', term: 'windowpane' },
+                    ];
+                  } else if (mixerType === 'stand') {
+                    sequence = [
+                      { kind: 'step', emoji: '🌊', bold: 'Flour + 90% of water', note: 'Speed 1, 2 min to combine' },
+                      { kind: 'step', emoji: '🧫', bold: 'Add yeast', note: 'Speed 1, 2 min' },
+                      { kind: 'step', emoji: '🧂', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
+                      { kind: 'step', emoji: '⚙️', bold: 'Speed 2', note: '6–10 min until dough clears the bowl', term: 'windowpane' },
+                      ...(showBassinage ? [{ kind: 'step' as const, emoji: '💧', bold: 'Add bassinage water gradually at Speed 2', note: 'hydration >70%', term: 'bassinage' }] : []),
+                      ...(showOil ? [{ kind: 'step' as const, emoji: '🫒', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
+                    ];
+                  } else if (mixerType === 'spiral') {
+                    sequence = [
+                      { kind: 'step', emoji: '🌊', bold: 'Flour + 90% of water + yeast', note: 'Speed 1, 3 min to combine' },
+                      { kind: 'step', emoji: '🧂', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
+                      { kind: 'step', emoji: '🌀', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if FDT exceeds 28°C', term: 'pumpkin' },
+                      ...(showBassinage ? [{ kind: 'step' as const, emoji: '💧', bold: 'Once pumpkin is stable, add remaining water gradually', note: 'wait for pumpkin to reform after each addition', term: 'bassinage' }] : []),
+                      ...(showOil ? [{ kind: 'step' as const, emoji: '🫒', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
+                    ];
+                  } else {
+                    // no_knead
+                    sequence = [
+                      { kind: 'step', emoji: '🌊', bold: 'Combine all ingredients including salt', note: 'mix just until no dry flour remains, ~2 min' },
+                      { kind: 'step', emoji: '⏰', bold: 'Cover and rest', note: 'stretch & folds every 30 min for first 2 hours' },
+                      { kind: 'step', emoji: '💡', bold: 'Time does the work', note: 'no kneading needed' },
+                    ];
+                  }
+
+                  // Number only the 'step' items, skip 'rest' cards
+                  let stepCount = 0;
 
                   return (
-                    <>
-                      {/* Mixing order */}
+                    <div style={{
+                      marginTop: '.65rem',
+                      border: '1.5px solid var(--border)',
+                      borderRadius: '10px',
+                      padding: '.7rem .9rem',
+                      background: 'var(--warm)',
+                    }}>
                       <div style={{
-                        marginTop: '.65rem',
-                        border: '1.5px solid var(--border)',
-                        borderRadius: '10px',
-                        padding: '.7rem .9rem',
-                        background: 'var(--warm)',
+                        fontSize: '.68rem', fontWeight: 600, color: 'var(--smoke)',
+                        textTransform: 'uppercase', letterSpacing: '.07em',
+                        fontFamily: 'var(--font-dm-mono)', marginBottom: '.55rem',
                       }}>
-                        <div style={{
-                          fontSize: '.68rem', fontWeight: 600, color: 'var(--smoke)',
-                          textTransform: 'uppercase', letterSpacing: '.07em',
-                          fontFamily: 'var(--font-dm-mono)', marginBottom: '.55rem',
-                        }}>
-                          Mixing order
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
-                          {sequence.map((s, i) => (
+                        Mixing order
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
+                        {sequence.map((s, i) => {
+                          if (s.kind === 'rest') {
+                            return (
+                              <div key={i} style={{
+                                marginLeft: '1.5rem',
+                                background: 'var(--cream)',
+                                border: '1px solid var(--border)',
+                                borderRadius: '8px',
+                                padding: '.45rem .7rem',
+                                display: 'flex', gap: '.5rem', alignItems: 'baseline',
+                              }}>
+                                <span style={{ fontSize: '.8rem', flexShrink: 0 }}>⏳</span>
+                                <span style={{ fontSize: '.76rem', lineHeight: 1.5 }}>
+                                  <strong style={{ color: 'var(--char)' }}>{s.label}</strong>
+                                  {s.term && <InfoBadge term={s.term} onOpen={setLearnTerm} />}
+                                  {' '}
+                                  <em style={{ color: 'var(--smoke)', fontStyle: 'italic' }}>— {s.note}</em>
+                                </span>
+                              </div>
+                            );
+                          }
+                          stepCount += 1;
+                          const n = stepCount;
+                          return (
                             <div key={i} style={{ display: 'flex', gap: '.55rem', alignItems: 'baseline' }}>
                               <span style={{
                                 fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
                                 color: 'var(--smoke)', flexShrink: 0, minWidth: '14px',
                               }}>
-                                {i + 1}.
+                                {n}.
                               </span>
                               <span style={{ fontSize: '.8rem', flexShrink: 0 }}>{s.emoji}</span>
                               <span style={{ fontSize: '.76rem', lineHeight: 1.5 }}>
@@ -527,45 +589,10 @@ export default function Timeline({
                                 <em style={{ color: 'var(--smoke)', fontStyle: 'italic' }}>— {s.note}</em>
                               </span>
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })}
                       </div>
-
-                      {/* Mixer instructions */}
-                      <div style={{
-                        marginTop: '.5rem',
-                        border: '1.5px solid var(--border)',
-                        borderRadius: '10px',
-                        padding: '.7rem .9rem',
-                        background: 'var(--cream)',
-                      }}>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: '.45rem',
-                          marginBottom: '.4rem',
-                        }}>
-                          <span style={{ fontSize: '1rem' }}>{mx.emoji}</span>
-                          <span style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--char)' }}>
-                            {mx.name}
-                          </span>
-                          {mixerType === 'spiral' && (
-                            <InfoBadge term="pumpkin" onOpen={setLearnTerm} />
-                          )}
-                        </div>
-                        <div style={{
-                          fontSize: '.72rem', color: 'var(--smoke)',
-                          fontFamily: 'var(--font-dm-mono)',
-                          lineHeight: 1.6,
-                        }}>
-                          {mx.instructions}
-                          {(mixerType === 'hand' || mixerType === 'stand') && (
-                            <span style={{ display: 'inline' }}>
-                              {' '}
-                              <InfoBadge term="windowpane" onOpen={setLearnTerm} />
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </>
+                    </div>
                   );
                 })()}
 
