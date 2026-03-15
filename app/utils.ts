@@ -314,6 +314,7 @@ export interface FermentWindow {
   to: Date;
   type: 'room_temp' | 'cold';
   hours: number;
+  isFinalProof?: boolean; // true only on the last RT window when cold windows exist
 }
 
 export interface ScheduleResult {
@@ -460,6 +461,14 @@ export function buildSchedule(
   const coldWindows = adjusted.filter(w => w.type === 'cold');
   const totalRTHours   = rtWindows.reduce((s, w) => s + w.hours, 0);
   const totalColdHours = coldWindows.reduce((s, w) => s + w.hours, 0);
+
+  // Mark only the last RT window as final proof (only when cold fermentation exists)
+  if (coldWindows.length > 0 && rtWindows.length > 0) {
+    const lastRt = rtWindows.reduce((latest, w) =>
+      w.from.getTime() > latest.from.getTime() ? w : latest
+    );
+    lastRt.isFinalProof = true;
+  }
 
   return {
     rtWindows,

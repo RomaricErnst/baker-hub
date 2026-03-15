@@ -24,7 +24,7 @@ interface TimelineProps {
 }
 
 // ── Step kinds ────────────────────────────────
-type StepKind = 'mixing' | 'bulk_ferm' | 'final_proof' | 'cold' | 'rest_rt' | 'preheat' | 'eat';
+type StepKind = 'mixing' | 'bulk_ferm' | 'rt_rest' | 'final_proof' | 'cold' | 'rest_rt' | 'preheat' | 'eat';
 
 interface TimelineStep {
   kind: 'step';
@@ -53,6 +53,7 @@ const THEME: Record<StepKind, {
 }> = {
   mixing:      { dot: 'var(--ash)',    ring: 'rgba(61,53,48,.1)',    line: 'var(--border)', pill: 'var(--cream)',  pillText: 'var(--ash)' },
   bulk_ferm:   { dot: 'var(--terra)',  ring: 'rgba(196,82,42,.1)',   line: '#F5C4B0',       pill: '#FEF4EF',      pillText: 'var(--terra)', cardBg: '#FEF8F5', cardBorder: '#F5C4B0' },
+  rt_rest:     { dot: '#A09070',       ring: 'rgba(160,144,112,.1)', line: '#D8CEB8',       pill: '#F8F4EE',      pillText: '#5A4A2A', cardBg: '#F8F4EE', cardBorder: '#D8CEB8' },
   final_proof: { dot: '#7A8C6E',       ring: 'rgba(122,140,110,.1)', line: '#C8D4BA',       pill: '#F2F5EF',      pillText: '#4A5A44', cardBg: '#F5F7F2', cardBorder: '#C8D4BA' },
   cold:        { dot: '#6A7FA8',       ring: 'rgba(106,127,168,.1)', line: '#C4CDE0',       pill: '#EEF2FA',      pillText: '#3A5A8A', cardBg: '#EEF2FA', cardBorder: '#C4CDE0' },
   rest_rt:     { dot: '#B87850',       ring: 'rgba(184,120,80,.1)', line: '#DDB898',       pill: '#FDF0E8',      pillText: '#7A3A10', cardBg: '#FDF4EE', cardBorder: '#DDB898' },
@@ -87,12 +88,21 @@ function buildItems(
         tip: 'Dough rests in the fridge. Cold fermentation builds flavour slowly — no action needed, time works for you.',
       };
     }
-    if (win.from.getTime() >= firstColdMs) {
+    if (win.isFinalProof) {
       return {
         stepKind: 'final_proof',
         label: 'Final Proof',
         icon: '⏰',
         tip: 'Remove dough from fridge. Allow 30–60 min to come to room temperature before shaping. Passes the poke test when ready.',
+      };
+    }
+    if (win.from.getTime() >= firstColdMs) {
+      // Mid-schedule RT window between cold blocks — not the final proof
+      return {
+        stepKind: 'rt_rest',
+        label: 'Room temperature rest',
+        icon: '🌡️',
+        tip: 'Dough continues fermenting at room temperature. No action needed — keep covered and away from drafts.',
       };
     }
     return {
@@ -614,7 +624,7 @@ export default function Timeline({
                 })()}
 
                 {/* Step sub-label */}
-                {(item.stepKind === 'cold' || item.stepKind === 'bulk_ferm' || item.stepKind === 'final_proof' || item.stepKind === 'rest_rt') && th.cardBg && (
+                {(item.stepKind === 'cold' || item.stepKind === 'bulk_ferm' || item.stepKind === 'rt_rest' || item.stepKind === 'final_proof' || item.stepKind === 'rest_rt') && th.cardBg && (
                   <div style={{
                     marginTop: '.5rem',
                     display: 'flex', gap: '.4rem', alignItems: 'center',
@@ -627,8 +637,9 @@ export default function Timeline({
                       background: th.dot, flexShrink: 0,
                     }} />
                     {item.stepKind === 'cold' && `${formatTime(item.time)} → ends at ${formatTime(new Date(item.time.getTime() + (item.durationH ?? 0) * 3600000))}`}
-                    {item.stepKind === 'bulk_ferm' && `Room temperature window · ${hoursLabel(item.durationH ?? 0)}`}
-                    {item.stepKind === 'final_proof' && `Room temperature window · ${hoursLabel(item.durationH ?? 0)}`}
+                    {item.stepKind === 'bulk_ferm' && `Bulk fermentation · ${hoursLabel(item.durationH ?? 0)}`}
+                    {item.stepKind === 'rt_rest' && `Room temperature rest · ${hoursLabel(item.durationH ?? 0)}`}
+                    {item.stepKind === 'final_proof' && `Final proof window · ${hoursLabel(item.durationH ?? 0)}`}
                     {item.stepKind === 'rest_rt' && `Room temperature · ${hoursLabel(item.durationH ?? 0)}`}
                   </div>
                 )}
