@@ -287,46 +287,61 @@ export default function RecipeOutput({
       </div>
 
       {/* ── Water temperature ─────────────────────── */}
-      <div style={{
-        border: '1.5px solid var(--border)',
-        borderRadius: '13px',
-        padding: '1rem 1.2rem',
-        background: waterTemp <= 10 ? '#EEF2FA' : waterTemp <= 18 ? 'var(--warm)' : '#FFF8E8',
-        borderColor: waterTemp <= 10 ? '#C4CDE0' : waterTemp <= 18 ? 'var(--border)' : '#E8D080',
-        display: 'flex', alignItems: 'flex-start', gap: '1rem',
-      }}>
-        <span style={{ fontSize: '1.6rem', lineHeight: 1, flexShrink: 0 }}>
-          {waterTemp <= 10 ? '🧊' : waterTemp <= 18 ? '💧' : '♨️'}
-        </span>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '.6rem', marginBottom: '.3rem' }}>
-            <span style={{ fontWeight: 600, fontSize: '.9rem', color: 'var(--char)' }}>
-              Water temperature
-            </span>
-            <span style={{
-              fontFamily: 'var(--font-dm-mono)',
-              fontSize: '1.15rem', fontWeight: 700,
-              color: waterTemp <= 10 ? '#3A5A8A' : waterTemp <= 18 ? 'var(--sage)' : 'var(--terra)',
-            }}>
-              {waterTemp}°C
-            </span>
-          </div>
-          <div style={{ fontSize: '.76rem', color: 'var(--smoke)', lineHeight: 1.6 }}>
-            <strong>DDT method</strong> — targets a Final Dough Temperature of 24°C.
-            {' '}Formula: (24 × 3) − room temp − flour temp − 3 (friction) = <strong>{waterTemp}°C</strong>.
-          </div>
-          {waterTemp <= 6 && (
-            <div style={{ fontSize: '.74rem', color: '#3A5A8A', marginTop: '.4rem', fontWeight: 500 }}>
-              Use water straight from the fridge, or add a few ice cubes.
+      {(() => {
+        // Practical ice-water guidance by target temp
+        const iceGuide: { label: string; detail: string; color: string } =
+          waterTemp >= 20 ? { label: 'Room temperature tap water',                                                          detail: 'Straight from the tap.',                                                                                  color: 'var(--terra)' }
+          : waterTemp >= 14 ? { label: 'Cold water from the fridge',                                                        detail: 'Use water that has been refrigerating for at least 1 hour.',                                              color: 'var(--sage)' }
+          : waterTemp >= 8  ? { label: 'Very cold fridge water — chill 2 h before mixing',                                  detail: 'Place a jug of water in the back of the fridge 2 hours before you start.',                              color: '#6A7FA8' }
+          : waterTemp >= 4  ? { label: 'Ice water mix: ~1 part ice + 2 parts cold water, stir 30 sec',                     detail: 'Combine ice and cold fridge water in a jug. Stir 30 seconds so the mixture reaches the target temp.',    color: '#4A6A9A' }
+          : waterTemp >= 0  ? { label: 'Mostly ice: fill with ice cubes, top up with cold water',                           detail: 'Fill your measuring jug mostly with ice cubes, then add enough cold water to reach your required volume.', color: '#3A5A8A' }
+          :                   { label: 'Ice slush + cold flour from fridge. Chill mixing bowl too.',                        detail: 'Use a slush of ice and water. Also refrigerate your flour and mixing bowl 1–2 h before mixing.',           color: '#2A4A7A' };
+
+        const bg     = waterTemp <= 7  ? '#EEF2FA' : waterTemp <= 19 ? 'var(--warm)' : '#FFF8E8';
+        const border = waterTemp <= 7  ? '#C4CDE0' : waterTemp <= 19 ? 'var(--border)' : '#E8D080';
+        const icon   = waterTemp <= 7  ? '🧊' : waterTemp <= 19 ? '💧' : '♨️';
+
+        return (
+          <div style={{ border: `1.5px solid ${border}`, borderRadius: '13px', padding: '1rem 1.2rem', background: bg, display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+            <span style={{ fontSize: '1.6rem', lineHeight: 1, flexShrink: 0 }}>{icon}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '.6rem', marginBottom: '.3rem' }}>
+                <span style={{ fontWeight: 600, fontSize: '.9rem', color: 'var(--char)' }}>
+                  Water temperature
+                </span>
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.15rem', fontWeight: 700, color: iceGuide.color }}>
+                  {waterTemp}°C
+                </span>
+              </div>
+              <div style={{ fontSize: '.76rem', color: 'var(--smoke)', lineHeight: 1.6, marginBottom: '.45rem' }}>
+                <strong>DDT method</strong> — targets a Final Dough Temperature of 24°C.
+                {' '}Formula: (24 × 3) − room temp − flour temp − 3 (friction) = <strong>{waterTemp}°C</strong>.
+              </div>
+              {/* Practical guidance */}
+              <div style={{
+                display: 'flex', gap: '.5rem', alignItems: 'flex-start',
+                background: 'rgba(255,255,255,.55)', border: `1px solid ${border}`,
+                borderRadius: '8px', padding: '.5rem .75rem',
+              }}>
+                <span style={{ fontSize: '.82rem', flexShrink: 0 }}>🥛</span>
+                <div>
+                  <div style={{ fontSize: '.78rem', fontWeight: 600, color: iceGuide.color, marginBottom: '.15rem' }}>
+                    {iceGuide.label}
+                  </div>
+                  <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.5 }}>
+                    {iceGuide.detail}
+                  </div>
+                </div>
+              </div>
+              {waterTemp >= 34 && (
+                <div style={{ fontSize: '.74rem', color: 'var(--terra)', marginTop: '.4rem', fontWeight: 500 }}>
+                  Never use water above 40°C — it will kill the yeast.
+                </div>
+              )}
             </div>
-          )}
-          {waterTemp >= 34 && (
-            <div style={{ fontSize: '.74rem', color: 'var(--terra)', marginTop: '.4rem', fontWeight: 500 }}>
-              Never use water above 40°C — it will kill the yeast.
-            </div>
-          )}
-        </div>
-      </div>
+          </div>
+        );
+      })()}
 
       {/* ── Yeast details ─────────────────────────── */}
       {yeastInfo && (

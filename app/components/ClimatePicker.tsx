@@ -402,6 +402,27 @@ export default function ClimatePicker({
         </div>
       </div>
 
+      {/* ── Hot kitchen tip ────────────────────────── */}
+      {kitchenTemp >= 28 && (
+        <div style={{
+          display: 'flex', gap: '.75rem', alignItems: 'flex-start',
+          background: '#EEF2FA', border: '1.5px solid #C4CDE0',
+          borderRadius: '12px', padding: '.85rem 1rem',
+        }}>
+          <span style={{ fontSize: '1.2rem', flexShrink: 0, lineHeight: 1.2 }}>🧊</span>
+          <div>
+            <div style={{ fontSize: '.82rem', fontWeight: 600, color: '#3A5A8A', marginBottom: '.3rem' }}>
+              Hot kitchen tip
+            </div>
+            <div style={{ fontSize: '.78rem', color: '#3A4A6A', lineHeight: 1.65 }}>
+              Prepare ice water 2–3 hours before mixing. Freeze your measured water until a thin ice
+              layer forms on the surface. This is the single most effective way to control dough
+              temperature in a tropical kitchen.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Fridge temperature (advanced only) ────── */}
       {mode === 'advanced' && (
         <div>
