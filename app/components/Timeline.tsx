@@ -52,11 +52,6 @@ const THEME: Record<StepKind, {
   eat:         { dot: '#5A9A50',       ring: 'rgba(90,154,80,.1)',   line: 'transparent',   pill: '#F2FAF0',      pillText: '#3A6A30' },
 };
 
-// Gap threshold — gaps longer than this get an inline annotation
-function gapThresholdH(temp: number): number {
-  return temp >= 25 ? 1.5 : 3;
-}
-
 // ── Build timeline steps ──────────────────────
 function buildItems(
   schedule: ScheduleResult,
@@ -427,42 +422,23 @@ export default function Timeline({
                     }}>
                       Fridge windows
                     </div>
-                    {item.coldBlocks.map((b, bi) => {
-                      const prevBlock = bi > 0 ? item.coldBlocks![bi - 1] : null;
-                      const gapH = prevBlock
-                        ? (b.from.getTime() - prevBlock.to.getTime()) / 3600000
-                        : 0;
-                      const showGap = prevBlock && gapH >= gapThresholdH(schedule.kitchenTemp);
-                      return (
-                        <div key={bi} style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
-                          {showGap && (
-                            <div style={{
-                              fontSize: '.72rem', color: '#7A5A30',
-                              background: '#FDF4EE', border: '1px solid #E0C090',
-                              borderRadius: '8px', padding: '.3rem .65rem',
-                              lineHeight: 1.5,
-                            }}>
-                              💡 {formatTime(prevBlock!.to)} → {formatTime(b.from)} ({hoursLabel(gapH)}) — brief room temp period. Leave dough out or put back in fridge.
-                            </div>
-                          )}
-                          <div style={{
-                            background: '#EEF2FA', border: '1.5px solid #C4CDE0',
-                            borderRadius: '8px', padding: '.3rem .7rem',
-                            display: 'flex', alignItems: 'center', gap: '.5rem',
-                            fontSize: '.76rem', color: '#3A5A8A',
-                          }}>
-                            <span style={{ flexShrink: 0 }}>❄️</span>
-                            <span style={{ fontWeight: 500, flex: 1 }}>{b.label}</span>
-                            <span style={{
-                              fontFamily: 'var(--font-dm-mono)', fontSize: '.68rem',
-                              color: '#5A7AA8', flexShrink: 0,
-                            }}>
-                              {formatTime(b.from)} → {formatTime(b.to)}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {item.coldBlocks.map((b, bi) => (
+                      <div key={bi} style={{
+                        background: '#EEF2FA', border: '1.5px solid #C4CDE0',
+                        borderRadius: '8px', padding: '.3rem .7rem',
+                        display: 'flex', alignItems: 'center', gap: '.5rem',
+                        fontSize: '.76rem', color: '#3A5A8A',
+                      }}>
+                        <span style={{ flexShrink: 0 }}>❄️</span>
+                        <span style={{ fontWeight: 500, flex: 1 }}>{b.label}</span>
+                        <span style={{
+                          fontFamily: 'var(--font-dm-mono)', fontSize: '.68rem',
+                          color: '#5A7AA8', flexShrink: 0,
+                        }}>
+                          {formatTime(b.from)} → {formatTime(b.to)}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
 
