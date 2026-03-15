@@ -46,9 +46,7 @@ export default function MixerPicker({ selected, onSelect }: MixerPickerProps) {
             </div>
 
             {/* Stats row */}
-            <div style={{
-              display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginBottom: '.65rem',
-            }}>
+            <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
               <span style={{
                 fontSize: '.66rem', fontFamily: 'var(--font-dm-mono)',
                 background: isSelected ? '#FCDECE' : 'var(--cream)',
@@ -63,51 +61,9 @@ export default function MixerPicker({ selected, onSelect }: MixerPickerProps) {
                 color: isSelected ? 'var(--terra)' : 'var(--smoke)',
                 borderRadius: '5px', padding: '.2rem .45rem',
               }}>
-                {mixer.kneadMin === 0 ? 'no knead' : `${mixer.kneadMin} min`}
-              </span>
-              <span style={{
-                fontSize: '.66rem', fontFamily: 'var(--font-dm-mono)',
-                background: isSelected ? '#FCDECE' : 'var(--cream)',
-                color: isSelected ? 'var(--terra)' : 'var(--smoke)',
-                borderRadius: '5px', padding: '.2rem .45rem',
-              }}>
                 {mixer.folds}× folds
               </span>
             </div>
-
-            {/* Instructions */}
-            <div style={{
-              fontSize: '.7rem', color: isSelected ? 'var(--terra)' : 'var(--smoke)',
-              fontFamily: 'var(--font-dm-mono)',
-              background: isSelected ? '#FEF4EF' : 'var(--cream)',
-              border: `1px solid ${isSelected ? '#F5C4B0' : 'var(--border)'}`,
-              borderRadius: '6px',
-              padding: '.35rem .55rem',
-              lineHeight: 1.5,
-            }}>
-              {mixer.instructions}
-            </div>
-
-            {/* Temperature tip */}
-            {(key === 'spiral' || key === 'stand') && (
-              <div style={{
-                marginTop: '.5rem',
-                display: 'flex', gap: '.4rem', alignItems: 'flex-start',
-                fontSize: '.68rem', lineHeight: 1.5,
-                color: '#3A5A8A',
-                background: '#EEF2FA',
-                border: '1px solid #C4CDE0',
-                borderRadius: '6px',
-                padding: '.35rem .55rem',
-              }}>
-                <span style={{ flexShrink: 0 }}>🧊</span>
-                <span>
-                  {key === 'spiral'
-                    ? 'Hot kitchen tip: add ice cubes directly into the mixing bowl with the water — the breaker bar will break them down as mixing progresses.'
-                    : 'Hot kitchen tip: use ice-cold water only — do not add ice cubes directly, they can strain the motor.'}
-                </span>
-              </div>
-            )}
           </div>
         );
       })}

@@ -752,6 +752,7 @@ export default function Home() {
                         preheatMin={preheatMin}
                         startTime={startTime}
                         eatTime={eatTime}
+                        mixerType={mixerType}
                         onStartBaking={() => { /* Baking mode — future feature */ }}
                       />
                     )}

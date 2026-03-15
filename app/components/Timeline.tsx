@@ -6,6 +6,7 @@ import {
   formatTime,
   hoursLabel,
 } from '../utils';
+import { MIXER_TYPES, type MixerType } from '../data';
 
 interface TimelineProps {
   schedule: ScheduleResult;
@@ -13,6 +14,7 @@ interface TimelineProps {
   preheatMin: number;
   startTime: Date;
   eatTime: Date;
+  mixerType: MixerType;
   onStartBaking?: () => void;
 }
 
@@ -207,7 +209,7 @@ function buildPhases(schedule: ScheduleResult, preheatMin: number): Phase[] {
 
 // ── Component ─────────────────────────────────
 export default function Timeline({
-  schedule, blocks, preheatMin, startTime, eatTime, onStartBaking,
+  schedule, blocks, preheatMin, startTime, eatTime, mixerType, onStartBaking,
 }: TimelineProps) {
   const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin);
   const phases = buildPhases(schedule, preheatMin);
@@ -440,6 +442,37 @@ export default function Timeline({
                 }}>
                   {item.tip}
                 </div>
+
+                {/* Mixer instructions — shown on mixing step only */}
+                {item.stepKind === 'mixing' && (() => {
+                  const mx = MIXER_TYPES[mixerType];
+                  return (
+                    <div style={{
+                      marginTop: '.6rem',
+                      border: '1.5px solid var(--border)',
+                      borderRadius: '10px',
+                      padding: '.7rem .9rem',
+                      background: 'var(--cream)',
+                    }}>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: '.45rem',
+                        marginBottom: '.4rem',
+                      }}>
+                        <span style={{ fontSize: '1rem' }}>{mx.emoji}</span>
+                        <span style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--char)' }}>
+                          {mx.name}
+                        </span>
+                      </div>
+                      <div style={{
+                        fontSize: '.72rem', color: 'var(--smoke)',
+                        fontFamily: 'var(--font-dm-mono)',
+                        lineHeight: 1.6,
+                      }}>
+                        {mx.instructions}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Cold retard card tint */}
                 {(item.stepKind === 'cold' || item.stepKind === 'bulk_ferm' || item.stepKind === 'final_proof') && th.cardBg && (
