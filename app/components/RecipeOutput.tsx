@@ -9,6 +9,7 @@ interface RecipeOutputProps {
   styleName: string;
   styleEmoji: string;
   mixerType: string;
+  kitchenTemp: number;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -63,8 +64,8 @@ function IngRow({
         </div>
         {sub && (
           <div style={{
-            fontSize: '.68rem',
-            color: D.sub,
+            fontSize: '.78rem',
+            color: 'rgba(255,255,255,.7)',
             fontFamily: 'var(--font-dm-mono)',
             marginTop: '.1rem',
             lineHeight: 1.5,
@@ -135,39 +136,41 @@ function InfoCard({
 }
 
 // ── Water sub-line ────────────────────────────
-function buildWaterSub(waterTemp: number, water: number, isSpiral: boolean): string {
-  const icePct =
-    waterTemp < 0  ? 40 :
-    waterTemp <= 3 ? 30 :
-    waterTemp <= 7 ? 20 :
-    0;
-
-  const iceGrams  = isSpiral && icePct > 0 ? Math.round(water * icePct / 100) : 0;
-  const coldGrams = isSpiral && icePct > 0 ? water - iceGrams : 0;
+function buildWaterSub(
+  targetTemp: number,
+  waterGrams: number,
+  ambientTemp: number,
+  isSpiral: boolean,
+): string {
+  // Physics-based ice split: ice needed to cool tap water from ambient down to target
+  // Using heat balance: iceWeight × 80 + iceWeight × target = tapWater × (ambient - target)
+  // → iceWeight = waterGrams × (ambient - target) / (target + 80)
+  const rawIce = waterGrams * (ambientTemp - targetTemp) / (targetTemp + 80);
+  const iceGrams = Math.max(0, Math.round(rawIce));
+  const tapGrams = waterGrams - iceGrams;
+  const needsIce = iceGrams > 0;
 
   let guidance: string;
-  if (waterTemp < 0) {
-    guidance = isSpiral
-      ? `${iceGrams}g ice slush + ${coldGrams}g cold water — add ice directly to bowl. Chill bowl & flour too.`
-      : 'ice-cold water only — do not add ice cubes, use a jug chilled with ice then strain. Chill bowl & flour too.';
-  } else if (waterTemp <= 7) {
-    guidance = isSpiral
-      ? `${iceGrams}g ice cubes + ${coldGrams}g cold water — add ice directly to mixing bowl`
-      : 'ice-cold water only — do not add ice cubes, use a jug of water chilled with ice then strain';
-  } else if (waterTemp <= 13) {
+  if (needsIce) {
+    if (isSpiral) {
+      guidance = `${iceGrams}g ice + ${tapGrams}g tap water — add ice directly to mixing bowl`;
+    } else {
+      guidance = `fill jug with ${iceGrams}g ice + ${tapGrams}g water, stir 1 min, strain — use chilled water only`;
+    }
+  } else if (targetTemp <= 13) {
     guidance = 'very cold fridge water — chill 2h before mixing';
-  } else if (waterTemp <= 19) {
+  } else if (targetTemp <= 19) {
     guidance = 'cold fridge water';
   } else {
     guidance = 'room temperature tap water';
   }
 
-  return `→ Use at ${waterTemp}°C · ${guidance}`;
+  return `💧 Use at ${targetTemp}°C · ${guidance}`;
 }
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, styleEmoji, mixerType,
+  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp,
 }: RecipeOutputProps) {
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
 
@@ -188,7 +191,7 @@ export default function RecipeOutput({
   const itemLabel = numItems === 1 ? 'ball / loaf' : numItems <= 4 ? 'balls' : 'pieces';
 
   const isSpiral = mixerType === 'spiral';
-  const waterSub = buildWaterSub(waterTemp, water, isSpiral);
+  const waterSub = buildWaterSub(waterTemp, water, kitchenTemp, isSpiral);
 
   // Yeast sub-line: IDY conversion + optional precision scale note
   const yeastSub = yeastInfo
@@ -201,11 +204,15 @@ export default function RecipeOutput({
       })()
     : undefined;
 
-  // Filter out "hot kitchen" and "reduce yeast" noise from warnings
+  // Filter temperature-related noise — yeast calculation already accounts for these
   const filteredWarnings = yeastInfo
     ? yeastInfo.warnings.filter(w => {
         const lw = w.toLowerCase();
-        return !lw.includes('hot kitchen') && !lw.includes('reduce') && !lw.includes('yeast');
+        return !lw.includes('kitchen') &&
+               !lw.includes('warm') &&
+               !lw.includes('hot') &&
+               !lw.includes('cool') &&
+               !lw.includes('reduced yeast');
       }).filter(w => !yeastInfo.notRecommended || !w.includes('not recommended'))
     : [];
 

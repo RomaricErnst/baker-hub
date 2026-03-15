@@ -615,6 +615,7 @@ export default function Home() {
                       styleName={ALL_STYLES[styleKey!].name}
                       styleEmoji={ALL_STYLES[styleKey!].emoji}
                       mixerType={mixerType}
+                      kitchenTemp={kitchenTemp}
                     />
 
                     {/* ── Large-batch yeast adjustment ── */}
