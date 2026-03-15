@@ -13,7 +13,6 @@ interface RecipeOutputProps {
 
 // ── Helpers ──────────────────────────────────
 function pctStr(n: number): string {
-  // Tidy baker's % — no trailing zeros
   return n < 1
     ? `${parseFloat(n.toFixed(3))}%`
     : `${parseFloat(n.toFixed(1))}%`;
@@ -68,6 +67,7 @@ function IngRow({
             color: D.sub,
             fontFamily: 'var(--font-dm-mono)',
             marginTop: '.1rem',
+            lineHeight: 1.5,
           }}>
             {sub}
           </div>
@@ -134,6 +134,37 @@ function InfoCard({
   );
 }
 
+// ── Water sub-line ────────────────────────────
+function buildWaterSub(waterTemp: number, water: number, isSpiral: boolean): string {
+  const icePct =
+    waterTemp < 0  ? 40 :
+    waterTemp <= 3 ? 30 :
+    waterTemp <= 7 ? 20 :
+    0;
+
+  const iceGrams  = isSpiral && icePct > 0 ? Math.round(water * icePct / 100) : 0;
+  const coldGrams = isSpiral && icePct > 0 ? water - iceGrams : 0;
+
+  let guidance: string;
+  if (waterTemp < 0) {
+    guidance = isSpiral
+      ? `${iceGrams}g ice slush + ${coldGrams}g cold water — add ice directly to bowl. Chill bowl & flour too.`
+      : 'ice-cold water only — do not add ice cubes, use a jug chilled with ice then strain. Chill bowl & flour too.';
+  } else if (waterTemp <= 7) {
+    guidance = isSpiral
+      ? `${iceGrams}g ice cubes + ${coldGrams}g cold water — add ice directly to mixing bowl`
+      : 'ice-cold water only — do not add ice cubes, use a jug of water chilled with ice then strain';
+  } else if (waterTemp <= 13) {
+    guidance = 'very cold fridge water — chill 2h before mixing';
+  } else if (waterTemp <= 19) {
+    guidance = 'cold fridge water';
+  } else {
+    guidance = 'room temperature tap water';
+  }
+
+  return `→ Use at ${waterTemp}°C · ${guidance}`;
+}
+
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
   result, numItems, itemWeight, styleName, styleEmoji, mixerType,
@@ -155,6 +186,28 @@ export default function RecipeOutput({
     + oil + sugar;
 
   const itemLabel = numItems === 1 ? 'ball / loaf' : numItems <= 4 ? 'balls' : 'pieces';
+
+  const isSpiral = mixerType === 'spiral';
+  const waterSub = buildWaterSub(waterTemp, water, isSpiral);
+
+  // Yeast sub-line: IDY conversion + optional precision scale note
+  const yeastSub = yeastInfo
+    ? (() => {
+        const isInstant = yeastInfo.yeastType === 'instant';
+        const needsPrecision = yeastInfo.convertedGrams < 0.5;
+        const idyPart = !isInstant ? `= ${gStr(yeastInfo.grams)} IDY` : null;
+        const scalePart = needsPrecision ? '→ precision scale (0.1g) needed to measure this amount' : null;
+        return [idyPart, scalePart].filter(Boolean).join(' · ') || undefined;
+      })()
+    : undefined;
+
+  // Filter out "hot kitchen" and "reduce yeast" noise from warnings
+  const filteredWarnings = yeastInfo
+    ? yeastInfo.warnings.filter(w => {
+        const lw = w.toLowerCase();
+        return !lw.includes('hot kitchen') && !lw.includes('reduce') && !lw.includes('yeast');
+      }).filter(w => !yeastInfo.notRecommended || !w.includes('not recommended'))
+    : [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -218,27 +271,24 @@ export default function RecipeOutput({
           }}>
             <span />
             <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em' }}>Weight</span>
-            <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em', minWidth: '4rem' }}>Baker's %</span>
+            <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em', minWidth: '4rem' }}>Baker&apos;s %</span>
           </div>
         </div>
 
         {/* Rows */}
-        <IngRow label="Flour"  grams={gStr(flour)}  pct="100%"          highlight />
-        <IngRow label="Water"  grams={gStr(water)}  pct={pctStr(waterPct)} />
-        <IngRow label="Salt"   grams={gStr(salt)}   pct={pctStr(saltPct)} />
+        <IngRow label="Flour" grams={gStr(flour)} pct="100%" highlight />
+        <IngRow label="Water" grams={gStr(water)} pct={pctStr(waterPct)} sub={waterSub} />
+        <IngRow label="Salt"  grams={gStr(salt)}  pct={pctStr(saltPct)} />
 
         {/* Yeast — commercial */}
-        {yeastInfo && (() => {
-          const isInstant = yeastInfo.yeastType === 'instant';
-          return (
-            <IngRow
-              label={yeastTypeName}
-              sub={!isInstant ? `= ${gStr(yeastInfo.grams)} IDY` : undefined}
-              grams={gStr(yeastInfo.convertedGrams)}
-              pct={pctStr(yeastInfo.convertedPct)}
-            />
-          );
-        })()}
+        {yeastInfo && (
+          <IngRow
+            label={yeastTypeName}
+            sub={yeastSub}
+            grams={gStr(yeastInfo.convertedGrams)}
+            pct={pctStr(yeastInfo.convertedPct)}
+          />
+        )}
 
         {/* Yeast — sourdough starter range */}
         {sourdough && (
@@ -287,103 +337,6 @@ export default function RecipeOutput({
         </div>
       </div>
 
-      {/* ── Water temperature ─────────────────────── */}
-      {(() => {
-        const isSpiral = mixerType === 'spiral';
-
-        // Ice/water split logic
-        type IceGuide = {
-          label: string;
-          detail: string;
-          color: string;
-          icePct: number | null;   // null = no ice
-        };
-
-        const iceGuide: IceGuide =
-          waterTemp < 0   ? { label: 'Ice slush + cold flour from fridge. Chill mixing bowl too.', detail: 'Use a slush of ice and water. Also refrigerate your flour and mixing bowl 1–2 h before mixing.',          color: '#2A4A7A', icePct: 40 }
-          : waterTemp <= 3  ? { label: 'Mostly ice — 30% ice, 70% cold water',                         detail: 'Combine ice and very cold fridge water. Stir until mixture hits target temperature.',                    color: '#3A5A8A', icePct: 30 }
-          : waterTemp <= 7  ? { label: isSpiral ? 'Ice + cold water — 20% ice, 80% cold water'
-                                                 : 'Ice-cold water from fridge',
-                                detail: isSpiral ? 'Add ice cubes directly to the mixing bowl — the breaker bar will break them down.'
-                                                 : 'Chill a jug of water in the fridge for at least 2 hours. Do not add ice cubes to the mixer.',
-                                color: '#4A6A9A', icePct: isSpiral ? 20 : null }
-          : waterTemp <= 13 ? { label: 'Very cold fridge water — chill 2 h before mixing',             detail: 'Place a jug of water in the back of the fridge 2 hours before you start. No ice needed.',             color: '#6A7FA8', icePct: null }
-          : waterTemp <= 19 ? { label: 'Cold water from the fridge',                                   detail: 'Use water that has been refrigerating for at least 1 hour.',                                           color: 'var(--sage)', icePct: null }
-          :                   { label: 'Room temperature tap water',                                   detail: 'Straight from the tap.',                                                                                color: 'var(--terra)', icePct: null };
-
-        // Gram splits when ice is needed
-        const iceGrams  = iceGuide.icePct != null ? Math.round(water * iceGuide.icePct / 100) : 0;
-        const coldGrams = iceGuide.icePct != null ? water - iceGrams : 0;
-        const showSplit = iceGuide.icePct != null && water > 0;
-
-        const mixerNote = isSpiral
-          ? 'Add ice cubes directly to mixing bowl — breaker bar will break them down.'
-          : (iceGuide.icePct != null ? 'Do not add ice cubes directly — use ice-cold water only.' : null);
-
-        const bg     = waterTemp <= 7  ? '#EEF2FA' : waterTemp <= 19 ? 'var(--warm)' : '#FFF8E8';
-        const border = waterTemp <= 7  ? '#C4CDE0' : waterTemp <= 19 ? 'var(--border)' : '#E8D080';
-        const icon   = waterTemp <= 7  ? '🧊' : waterTemp <= 19 ? '💧' : '♨️';
-
-        return (
-          <div style={{ border: `1.5px solid ${border}`, borderRadius: '13px', padding: '1rem 1.2rem', background: bg, display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-            <span style={{ fontSize: '1.6rem', lineHeight: 1, flexShrink: 0 }}>{icon}</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '.6rem', marginBottom: '.3rem' }}>
-                <span style={{ fontWeight: 600, fontSize: '.9rem', color: 'var(--char)' }}>
-                  Water temperature
-                </span>
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.15rem', fontWeight: 700, color: iceGuide.color }}>
-                  {waterTemp}°C
-                </span>
-              </div>
-              <div style={{ fontSize: '.76rem', color: 'var(--smoke)', lineHeight: 1.6, marginBottom: '.45rem' }}>
-                <strong>DDT method</strong> — targets a Final Dough Temperature of 24°C.
-                {' '}Formula: (24 × 3) − room temp − flour temp − 3 (friction) = <strong>{waterTemp}°C</strong>.
-              </div>
-              {/* Practical guidance */}
-              <div style={{
-                display: 'flex', gap: '.5rem', alignItems: 'flex-start',
-                background: 'rgba(255,255,255,.55)', border: `1px solid ${border}`,
-                borderRadius: '8px', padding: '.5rem .75rem',
-              }}>
-                <span style={{ fontSize: '.82rem', flexShrink: 0 }}>🥛</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '.78rem', fontWeight: 600, color: iceGuide.color, marginBottom: '.15rem' }}>
-                    {iceGuide.label}
-                  </div>
-                  <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.5 }}>
-                    {iceGuide.detail}
-                  </div>
-                  {showSplit && (
-                    <div style={{
-                      marginTop: '.35rem',
-                      fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
-                      color: iceGuide.color, fontWeight: 600,
-                    }}>
-                      → {iceGrams}g ice cubes + {coldGrams}g cold water from fridge
-                    </div>
-                  )}
-                  {mixerNote && (
-                    <div style={{
-                      marginTop: '.3rem', fontSize: '.7rem',
-                      color: isSpiral ? '#3A5A8A' : 'var(--smoke)',
-                      fontStyle: 'italic', lineHeight: 1.5,
-                    }}>
-                      {mixerNote}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {waterTemp >= 34 && (
-                <div style={{ fontSize: '.74rem', color: 'var(--terra)', marginTop: '.4rem', fontWeight: 500 }}>
-                  Never use water above 40°C — it will kill the yeast.
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
-
       {/* ── Yeast details ─────────────────────────── */}
       {yeastInfo && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.65rem' }}>
@@ -396,17 +349,6 @@ export default function RecipeOutput({
             fontFamily: 'var(--font-dm-mono)', lineHeight: 1.55,
           }}>
             {yeastInfo.explanation}
-          </div>
-
-          {/* Scale tip */}
-          <div style={{
-            display: 'flex', gap: '.5rem', alignItems: 'center',
-            fontSize: '.78rem', color: 'var(--smoke)',
-            background: 'var(--cream)', border: '1px solid var(--border)',
-            borderRadius: '8px', padding: '.5rem .85rem',
-          }}>
-            <span>⚖️</span>
-            <span>{yeastInfo.scaleNeeded}</span>
           </div>
 
           {/* Dilution tip */}
@@ -445,8 +387,8 @@ export default function RecipeOutput({
             />
           )}
 
-          {/* Warnings */}
-          {yeastInfo.warnings.filter(w => !yeastInfo.notRecommended || !w.includes('not recommended')).map((w, i) => (
+          {/* Filtered warnings */}
+          {filteredWarnings.map((w, i) => (
             <InfoCard key={i} icon="⚠️" level="warn" title="Watch out" body={w} />
           ))}
         </div>
