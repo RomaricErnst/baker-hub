@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import {
-  type FermentWindow,
   type AvailabilityBlock,
   type ScheduleResult,
   formatTime,
@@ -24,7 +23,7 @@ interface TimelineProps {
 }
 
 // ── Step kinds ────────────────────────────────
-type StepKind = 'mixing' | 'bulk_ferm' | 'rt_rest' | 'final_proof' | 'cold' | 'rest_rt' | 'preheat' | 'eat';
+type StepKind = 'mixing' | 'bulk_ferm' | 'final_proof' | 'cold' | 'rest_rt' | 'preheat' | 'eat';
 
 interface TimelineStep {
   kind: 'step';
@@ -35,15 +34,8 @@ interface TimelineStep {
   tip: string;
   icon: string;
   durationH: number | null;
+  coldBlocks?: AvailabilityBlock[];
 }
-
-interface GapMarker {
-  kind: 'gap';
-  id: string;
-  blockLabel: string;
-}
-
-type TimelineItem = TimelineStep | GapMarker;
 
 // ── Visual themes per step kind ───────────────
 const THEME: Record<StepKind, {
@@ -53,114 +45,73 @@ const THEME: Record<StepKind, {
 }> = {
   mixing:      { dot: 'var(--ash)',    ring: 'rgba(61,53,48,.1)',    line: 'var(--border)', pill: 'var(--cream)',  pillText: 'var(--ash)' },
   bulk_ferm:   { dot: 'var(--terra)',  ring: 'rgba(196,82,42,.1)',   line: '#F5C4B0',       pill: '#FEF4EF',      pillText: 'var(--terra)', cardBg: '#FEF8F5', cardBorder: '#F5C4B0' },
-  rt_rest:     { dot: '#A09070',       ring: 'rgba(160,144,112,.1)', line: '#D8CEB8',       pill: '#F8F4EE',      pillText: '#5A4A2A', cardBg: '#F8F4EE', cardBorder: '#D8CEB8' },
   final_proof: { dot: '#7A8C6E',       ring: 'rgba(122,140,110,.1)', line: '#C8D4BA',       pill: '#F2F5EF',      pillText: '#4A5A44', cardBg: '#F5F7F2', cardBorder: '#C8D4BA' },
   cold:        { dot: '#6A7FA8',       ring: 'rgba(106,127,168,.1)', line: '#C4CDE0',       pill: '#EEF2FA',      pillText: '#3A5A8A', cardBg: '#EEF2FA', cardBorder: '#C4CDE0' },
-  rest_rt:     { dot: '#B87850',       ring: 'rgba(184,120,80,.1)', line: '#DDB898',       pill: '#FDF0E8',      pillText: '#7A3A10', cardBg: '#FDF4EE', cardBorder: '#DDB898' },
+  rest_rt:     { dot: '#B87850',       ring: 'rgba(184,120,80,.1)',  line: '#DDB898',       pill: '#FDF0E8',      pillText: '#7A3A10', cardBg: '#FDF4EE', cardBorder: '#DDB898' },
   preheat:     { dot: '#C4A030',       ring: 'rgba(196,160,48,.12)', line: '#E8D890',       pill: '#FDFBF2',      pillText: '#7A5A10' },
   eat:         { dot: '#5A9A50',       ring: 'rgba(90,154,80,.1)',   line: 'transparent',   pill: '#F2FAF0',      pillText: '#3A6A30' },
 };
 
-// ── Build timeline items ──────────────────────
+// Gap threshold — gaps longer than this get an inline annotation
+function gapThresholdH(temp: number): number {
+  return temp >= 25 ? 1.5 : 3;
+}
+
+// ── Build timeline steps ──────────────────────
 function buildItems(
   schedule: ScheduleResult,
   blocks: AvailabilityBlock[],
   startTime: Date,
   eatTime: Date,
   preheatMin: number,
-): TimelineItem[] {
-  const items: TimelineItem[] = [];
+  mixerType: MixerType,
+): TimelineStep[] {
+  const items: TimelineStep[] = [];
+  const kneadMin = MIXER_TYPES[mixerType].kneadMin;
 
-  const sorted = [...schedule.rtWindows, ...schedule.coldWindows]
-    .sort((a, b) => a.from.getTime() - b.from.getTime());
-
-  // Time of first cold window — RT windows before this are bulk, after are final proof
-  const firstColdMs = schedule.coldWindows.length > 0
-    ? Math.min(...schedule.coldWindows.map(w => w.from.getTime()))
-    : Infinity;
-
-  function windowLabel(win: FermentWindow): { label: string; tip: string; icon: string; stepKind: StepKind } {
-    if (win.type === 'cold') {
-      return {
-        stepKind: 'cold',
-        label: 'Cold Retard',
-        icon: '❄️',
-        tip: 'Dough rests in the fridge. Cold fermentation builds flavour slowly — no action needed, time works for you.',
-      };
-    }
-    if (win.isFinalProof) {
-      return {
-        stepKind: 'final_proof',
-        label: 'Final Proof',
-        icon: '⏰',
-        tip: 'Remove dough from fridge. Allow 30–60 min to come to room temperature before shaping. Passes the poke test when ready.',
-      };
-    }
-    if (win.from.getTime() >= firstColdMs) {
-      // Mid-schedule RT window between cold blocks — not the final proof
-      return {
-        stepKind: 'rt_rest',
-        label: 'Room temperature rest',
-        icon: '🌡️',
-        tip: 'Dough continues fermenting at room temperature. No action needed — keep covered and away from drafts.',
-      };
-    }
-    return {
-      stepKind: 'bulk_ferm',
-      label: 'Bulk Fermentation',
-      icon: '🌡️',
-      tip: 'Cover tightly and place in a warm spot away from drafts. Perform 4 sets of stretch & folds in the first 2 hours, every 30 minutes.',
-    };
-  }
-
-  function findBlock(coldWin: FermentWindow): AvailabilityBlock | null {
-    return blocks.find(b =>
-      Math.abs(b.from.getTime() - coldWin.from.getTime()) <= 60 * 60000
-    ) ?? null;
-  }
-
-  // 1 — Mixing
+  // 1 — Mix & Knead
   items.push({
     kind: 'step', id: 'mixing', stepKind: 'mixing',
     time: startTime,
     label: 'Mix & Knead',
     icon: '🤌',
     tip: 'Combine flour, water, salt and yeast. Knead until smooth and elastic — dough passes the windowpane test. Cover and rest 20 min.',
-    durationH: 20 / 60,
+    durationH: kneadMin > 0 ? kneadMin / 60 : null,
   });
 
-  // 2 — Fermentation windows
-  for (let i = 0; i < sorted.length; i++) {
-    const win = sorted[i];
-    const prev = sorted[i - 1];
-
-    // Gap marker before a cold window (user going away)
-    if (win.type === 'cold') {
-      const block = findBlock(win);
-      items.push({
-        kind: 'gap',
-        id: `gap-${i}`,
-        blockLabel: block?.label ?? 'Away',
-      });
-    }
-
-    // "Return from fridge" note is embedded in final_proof tip; no extra marker needed
-
-    const { label, tip, icon, stepKind } = windowLabel(win);
+  // 2 — Bulk Fermentation
+  if (schedule.bulkFermHours > 0) {
     items.push({
-      kind: 'step', id: `win-${i}`, stepKind,
-      time: win.from,
-      label, tip, icon,
-      durationH: win.hours,
+      kind: 'step', id: 'bulk_ferm', stepKind: 'bulk_ferm',
+      time: schedule.bulkFermStart,
+      label: 'Bulk Fermentation',
+      icon: '🌡️',
+      tip: 'Cover tightly and place in a warm spot away from drafts. Perform 4 sets of stretch & folds in the first 2 hours, every 30 minutes.',
+      durationH: schedule.bulkFermHours,
     });
   }
 
-  // 3 — Rest at room temperature (only when last window was cold)
-  if (schedule.restRtHours > 0 && schedule.coldWindows.length > 0) {
-    const lastCold = [...schedule.coldWindows].sort((a, b) => b.from.getTime() - a.from.getTime())[0];
+  // 3 — Cold Retard (if any)
+  if (schedule.coldRetardStart && schedule.coldRetardEnd) {
+    const coldBlocks = blocks
+      .filter(b => b.from < schedule.coldRetardEnd! && b.to > schedule.coldRetardStart!)
+      .sort((a, b) => a.from.getTime() - b.from.getTime());
+    items.push({
+      kind: 'step', id: 'cold', stepKind: 'cold',
+      time: schedule.coldRetardStart,
+      label: 'Cold Retard',
+      icon: '❄️',
+      tip: 'Dough rests in the fridge. Cold fermentation builds flavour slowly — no action needed, time works for you.',
+      durationH: schedule.coldRetardHours,
+      coldBlocks,
+    });
+  }
+
+  // 4 — Remove from fridge (only if cold retard exists)
+  if (schedule.coldRetardEnd && schedule.restRtHours > 0) {
     items.push({
       kind: 'step', id: 'rest_rt', stepKind: 'rest_rt',
-      time: lastCold.to,
+      time: schedule.coldRetardEnd,
       label: 'Remove from fridge — rest at room temperature',
       icon: '🌡️',
       tip: 'Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch and will tear. The poke test will be unreliable until the dough has warmed through.',
@@ -168,10 +119,24 @@ function buildItems(
     });
   }
 
-  const preheatTime = new Date(eatTime.getTime() - preheatMin * 60000);
+  // 5 — Final Proof
+  if (schedule.finalProofHours > 0) {
+    items.push({
+      kind: 'step', id: 'final_proof', stepKind: 'final_proof',
+      time: schedule.finalProofStart,
+      label: 'Final Proof',
+      icon: '⏰',
+      tip: schedule.coldRetardStart
+        ? 'Shape dough balls if not already done. Cover and leave at room temperature until the poke test confirms they are ready to bake.'
+        : 'Shape dough balls and let them proof covered at room temperature. The poke test tells you when they are ready to bake.',
+      durationH: schedule.finalProofHours,
+    });
+  }
+
+  // 6 — Preheat Oven
   items.push({
     kind: 'step', id: 'preheat', stepKind: 'preheat',
-    time: preheatTime,
+    time: schedule.preheatStart,
     label: 'Preheat Oven',
     icon: '🔥',
     tip: preheatMin >= 45
@@ -180,10 +145,10 @@ function buildItems(
     durationH: preheatMin / 60,
   });
 
-  // 5 — Eat
+  // 7 — Bake & Eat!
   items.push({
     kind: 'step', id: 'eat', stepKind: 'eat',
-    time: eatTime,
+    time: schedule.bakeStart,
     label: 'Bake & Eat!',
     icon: '🎉',
     tip: 'Your dough is perfectly fermented. Score, load, and bake. Buon appetito!',
@@ -202,32 +167,20 @@ interface Phase {
 }
 
 function buildPhases(schedule: ScheduleResult, preheatMin: number): Phase[] {
-  const firstColdMs = schedule.coldWindows.length > 0
-    ? Math.min(...schedule.coldWindows.map(w => w.from.getTime()))
-    : Infinity;
-
-  const bulkH = schedule.rtWindows
-    .filter(w => w.from.getTime() < firstColdMs)
-    .reduce((s, w) => s + w.hours, 0);
-
-  const finalH = schedule.rtWindows
-    .filter(w => w.from.getTime() >= firstColdMs)
-    .reduce((s, w) => s + w.hours, 0);
-
   const phases: Phase[] = [
-    { label: 'Mixing', icon: '🤌', durationH: 20 / 60, stepKind: 'mixing' },
+    { label: 'Mixing', icon: '🤌', durationH: schedule.mixingDurationH || 5 / 60, stepKind: 'mixing' },
   ];
 
-  if (bulkH > 0) {
-    phases.push({ label: 'Bulk Fermentation', icon: '🌡️', durationH: bulkH, stepKind: 'bulk_ferm' });
+  if (schedule.bulkFermHours > 0) {
+    phases.push({ label: 'Bulk Fermentation', icon: '🌡️', durationH: schedule.bulkFermHours, stepKind: 'bulk_ferm' });
   }
 
-  if (schedule.totalColdHours > 0) {
-    phases.push({ label: 'Cold Retard', icon: '❄️', durationH: schedule.totalColdHours, stepKind: 'cold' });
+  if (schedule.coldRetardHours > 0) {
+    phases.push({ label: 'Cold Retard', icon: '❄️', durationH: schedule.coldRetardHours, stepKind: 'cold' });
   }
 
-  if (finalH > 0) {
-    phases.push({ label: 'Final Proof', icon: '⏰', durationH: finalH, stepKind: 'final_proof' });
+  if (schedule.finalProofHours > 0) {
+    phases.push({ label: 'Final Proof', icon: '⏰', durationH: schedule.finalProofHours, stepKind: 'final_proof' });
   }
 
   phases.push({ label: 'Preheat', icon: '🔥', durationH: preheatMin / 60, stepKind: 'preheat' });
@@ -262,11 +215,10 @@ export default function Timeline({
 }: TimelineProps) {
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
 
-  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin);
+  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType);
   const phases = buildPhases(schedule, preheatMin);
 
-  const steps = items.filter((it): it is TimelineStep => it.kind === 'step');
-  const lastStepId = steps[steps.length - 1]?.id;
+  const lastStepId = items[items.length - 1]?.id;
 
   const isSourdough = styleKey === 'sourdough' || styleKey === 'sourdough_bread';
 
@@ -331,7 +283,6 @@ export default function Timeline({
         display: 'flex', gap: '.5rem',
         overflowX: 'auto', paddingBottom: '.35rem',
         marginBottom: '1.75rem',
-        // hide scrollbar
         msOverflowStyle: 'none',
       }}>
         {phases.map((phase, i) => {
@@ -376,45 +327,7 @@ export default function Timeline({
 
       {/* ── Timeline ───────────────────────────── */}
       <div>
-        {items.map((item, idx) => {
-          // ── Gap marker ──
-          if (item.kind === 'gap') {
-            return (
-              <div key={item.id} style={{ display: 'flex', gap: '1rem', alignItems: 'stretch' }}>
-                {/* Time col placeholder */}
-                <div style={{ width: '72px', flexShrink: 0 }} />
-
-                {/* Line column — continues through the gap */}
-                <div style={{
-                  width: '20px', flexShrink: 0,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                }}>
-                  <div style={{ flex: 1, width: '2px', background: '#C4CDE0' }} />
-                </div>
-
-                {/* Gap card */}
-                <div style={{ flex: 1, padding: '.5rem 0' }}>
-                  <div style={{
-                    border: '1.5px dashed #C4CDE0',
-                    borderRadius: '10px',
-                    padding: '.5rem .9rem',
-                    background: '#EEF2FA',
-                    display: 'flex', alignItems: 'center', gap: '.55rem',
-                    fontSize: '.76rem', color: '#3A5A8A',
-                    lineHeight: 1.45,
-                  }}>
-                    <span style={{ fontSize: '.9rem', flexShrink: 0 }}>🌙</span>
-                    <span>
-                      <strong>{item.blockLabel}</strong>
-                      {' '}— dough rests in the fridge while you&apos;re away.
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          }
-
-          // ── Step ──
+        {items.map((item) => {
           const th = THEME[item.stepKind];
           const isLast = item.id === lastStepId;
 
@@ -499,16 +412,65 @@ export default function Timeline({
                   {item.stepKind === 'rest_rt'
                     ? <>Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch and will tear. The poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> will be unreliable until the dough has warmed through.</>
                     : item.stepKind === 'final_proof'
-                    ? <>Remove dough from fridge. Allow 30–60 min to come to room temperature before shaping. Passes the poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> when ready.</>
+                    ? <>Shape dough balls if not already done. Cover and leave at room temperature until the poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> confirms they are ready to bake.</>
                     : item.tip}
                 </div>
+
+                {/* Inline block chips — shown inside Cold Retard step */}
+                {item.stepKind === 'cold' && item.coldBlocks && item.coldBlocks.length > 0 && (
+                  <div style={{ marginTop: '.65rem', display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
+                    <div style={{
+                      fontSize: '.68rem', fontWeight: 600,
+                      color: '#5A7AA8', textTransform: 'uppercase',
+                      letterSpacing: '.07em', fontFamily: 'var(--font-dm-mono)',
+                      marginBottom: '.15rem',
+                    }}>
+                      Fridge windows
+                    </div>
+                    {item.coldBlocks.map((b, bi) => {
+                      const prevBlock = bi > 0 ? item.coldBlocks![bi - 1] : null;
+                      const gapH = prevBlock
+                        ? (b.from.getTime() - prevBlock.to.getTime()) / 3600000
+                        : 0;
+                      const showGap = prevBlock && gapH >= gapThresholdH(schedule.kitchenTemp);
+                      return (
+                        <div key={bi} style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
+                          {showGap && (
+                            <div style={{
+                              fontSize: '.72rem', color: '#7A5A30',
+                              background: '#FDF4EE', border: '1px solid #E0C090',
+                              borderRadius: '8px', padding: '.3rem .65rem',
+                              lineHeight: 1.5,
+                            }}>
+                              💡 {formatTime(prevBlock!.to)} → {formatTime(b.from)} ({hoursLabel(gapH)}) — brief room temp period. Leave dough out or put back in fridge.
+                            </div>
+                          )}
+                          <div style={{
+                            background: '#EEF2FA', border: '1.5px solid #C4CDE0',
+                            borderRadius: '8px', padding: '.3rem .7rem',
+                            display: 'flex', alignItems: 'center', gap: '.5rem',
+                            fontSize: '.76rem', color: '#3A5A8A',
+                          }}>
+                            <span style={{ flexShrink: 0 }}>❄️</span>
+                            <span style={{ fontWeight: 500, flex: 1 }}>{b.label}</span>
+                            <span style={{
+                              fontFamily: 'var(--font-dm-mono)', fontSize: '.68rem',
+                              color: '#5A7AA8', flexShrink: 0,
+                            }}>
+                              {formatTime(b.from)} → {formatTime(b.to)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Mixing sequence — shown on mixing step only */}
                 {item.stepKind === 'mixing' && (() => {
                   const showOil = oil > 0;
                   const showBassinage = hydration > 70;
 
-                  // Each item is either a regular step or a special 'rest' card
                   type SeqItem =
                     | { kind: 'step'; emoji: string; bold: string; note: string; noteNode?: React.ReactNode; term?: string }
                     | { kind: 'rest'; label: string; note: string; noteNode?: React.ReactNode; term?: string };
@@ -558,7 +520,6 @@ export default function Timeline({
                     ];
                   }
 
-                  // Number only the 'step' items, skip 'rest' cards
                   let stepCount = 0;
 
                   return (
@@ -624,7 +585,7 @@ export default function Timeline({
                 })()}
 
                 {/* Step sub-label */}
-                {(item.stepKind === 'cold' || item.stepKind === 'bulk_ferm' || item.stepKind === 'rt_rest' || item.stepKind === 'final_proof' || item.stepKind === 'rest_rt') && th.cardBg && (
+                {(item.stepKind === 'cold' || item.stepKind === 'bulk_ferm' || item.stepKind === 'final_proof' || item.stepKind === 'rest_rt') && th.cardBg && (
                   <div style={{
                     marginTop: '.5rem',
                     display: 'flex', gap: '.4rem', alignItems: 'center',
@@ -638,7 +599,6 @@ export default function Timeline({
                     }} />
                     {item.stepKind === 'cold' && `${formatTime(item.time)} → ends at ${formatTime(new Date(item.time.getTime() + (item.durationH ?? 0) * 3600000))}`}
                     {item.stepKind === 'bulk_ferm' && `Bulk fermentation · ${hoursLabel(item.durationH ?? 0)}`}
-                    {item.stepKind === 'rt_rest' && `Room temperature rest · ${hoursLabel(item.durationH ?? 0)}`}
                     {item.stepKind === 'final_proof' && `Final proof window · ${hoursLabel(item.durationH ?? 0)}`}
                     {item.stepKind === 'rest_rt' && `Room temperature · ${hoursLabel(item.durationH ?? 0)}`}
                   </div>

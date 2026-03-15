@@ -309,21 +309,22 @@ export interface AvailabilityBlock {
   label: string;
 }
 
-export interface FermentWindow {
-  from: Date;
-  to: Date;
-  type: 'room_temp' | 'cold';
-  hours: number;
-  isFinalProof?: boolean; // true only on the last RT window when cold windows exist
-}
-
 export interface ScheduleResult {
-  rtWindows: FermentWindow[];
-  coldWindows: FermentWindow[];
-  totalRTHours: number;
-  totalColdHours: number;
+  mixingDurationH: number;
+  bulkFermStart: Date;
+  bulkFermHours: number;
+  coldRetardStart: Date | null;
+  coldRetardEnd: Date | null;
+  coldRetardHours: number;
+  finalProofStart: Date;
+  finalProofHours: number;
+  restRtHours: number;
+  preheatStart: Date;
+  bakeStart: Date;
+  totalRTHours: number;   // bulkFermHours + finalProofHours
+  totalColdHours: number; // coldRetardHours
   wasAutoAdjusted: boolean;
-  restRtHours: number; // 0 = no rest step; >0 = warm-up time carved out before preheat
+  kitchenTemp: number;
 }
 
 function maxRTHours(kitchenTemp: number): number {
@@ -351,132 +352,115 @@ export function buildSchedule(
   eatTime: Date,
   availabilityBlocks: AvailabilityBlock[],
   kitchenTemp: number,
-  preheatMin: number
+  preheatMin: number,
+  mixerType: MixerType = 'hand',
 ): ScheduleResult {
-  // Adjust eat time backwards for preheat
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
+  const kneadMin = MIXER_TYPES[mixerType].kneadMin;
+  const fermStart = new Date(startTime.getTime() + kneadMin * 60000);
+  const mixingDurationH = kneadMin / 60;
 
-  // Start with one big room temp window
-  let windows: FermentWindow[] = [{
-    from: new Date(startTime),
-    to: new Date(bakeTime),
-    type: 'room_temp',
-    hours: (bakeTime.getTime() - startTime.getTime()) / 3600000,
-  }];
+  const maxBulkH  = maxRTHours(kitchenTemp);
+  const restH     = restRtMinutes(kitchenTemp) / 60;
+  const maxFinalH = maxFinalProofHours(kitchenTemp);
 
-  // Split by availability blocks → cold periods
-  for (const block of availabilityBlocks) {
-    const next: FermentWindow[] = [];
-    for (const w of windows) {
-      if (w.type !== 'room_temp') { next.push(w); continue; }
-      if (block.from >= w.to || block.to <= w.from) {
-        next.push(w); continue;
-      }
-      // Split this window around the block
-      if (block.from > w.from) {
-        next.push({
-          from: w.from, to: block.from, type: 'room_temp',
-          hours: (block.from.getTime() - w.from.getTime()) / 3600000,
-        });
-      }
-      next.push({
-        from: new Date(Math.max(block.from.getTime(), w.from.getTime())),
-        to: new Date(Math.min(block.to.getTime(), w.to.getTime())),
-        type: 'cold',
-        hours: (Math.min(block.to.getTime(), w.to.getTime()) -
-                Math.max(block.from.getTime(), w.from.getTime())) / 3600000,
-      });
-      if (block.to < w.to) {
-        next.push({
-          from: block.to, to: w.to, type: 'room_temp',
-          hours: (w.to.getTime() - block.to.getTime()) / 3600000,
-        });
-      }
-    }
-    windows = next;
+  // Filter blocks overlapping the fermentation window [fermStart, bakeTime)
+  const relevantBlocks = availabilityBlocks
+    .filter(b => b.from < bakeTime && b.to > fermStart)
+    .sort((a, b) => a.from.getTime() - b.from.getTime());
+
+  if (relevantBlocks.length === 0) {
+    // No cold blocks — all RT fermentation
+    const totalH      = Math.max(0, (bakeTime.getTime() - fermStart.getTime()) / 3600000);
+    const finalProofH = Math.min(maxFinalH, totalH);
+    const bulkFermH   = Math.max(0, totalH - finalProofH);
+    const finalProofStart = new Date(fermStart.getTime() + bulkFermH * 3600000);
+
+    return {
+      mixingDurationH,
+      bulkFermStart: fermStart,
+      bulkFermHours: bulkFermH,
+      coldRetardStart: null,
+      coldRetardEnd: null,
+      coldRetardHours: 0,
+      finalProofStart,
+      finalProofHours: finalProofH,
+      restRtHours: 0,
+      preheatStart: bakeTime,
+      bakeStart: eatTime,
+      totalRTHours: totalH,
+      totalColdHours: 0,
+      wasAutoAdjusted: false,
+      kitchenTemp,
+    };
   }
 
-  // Apply max RT rule — auto-split long RT windows
   let wasAutoAdjusted = false;
-  const maxRT = maxRTHours(kitchenTemp);
-  const adjusted: FermentWindow[] = [];
 
-  for (const w of windows) {
-    if (w.type !== 'room_temp' || w.hours <= maxRT) {
-      adjusted.push(w); continue;
-    }
-    // Split: maxRT hours RT, then cold for the rest
+  // Cold retard starts at the first block, but not before fermStart
+  let coldRetardStart = new Date(
+    Math.max(relevantBlocks[0].from.getTime(), fermStart.getTime())
+  );
+  let bulkFermH = Math.max(0,
+    (coldRetardStart.getTime() - fermStart.getTime()) / 3600000
+  );
+
+  // Auto-adjust: cap bulk ferm at maxBulkH
+  if (bulkFermH > maxBulkH) {
     wasAutoAdjusted = true;
-    const splitPoint = new Date(w.from.getTime() + maxRT * 3600000);
-    adjusted.push({
-      from: w.from, to: splitPoint,
-      type: 'room_temp', hours: maxRT,
-    });
-    adjusted.push({
-      from: splitPoint, to: w.to,
-      type: 'cold',
-      hours: (w.to.getTime() - splitPoint.getTime()) / 3600000,
-    });
+    coldRetardStart = new Date(fermStart.getTime() + maxBulkH * 3600000);
+    bulkFermH = maxBulkH;
   }
 
-  // ── Bug 1: Cap final proof (RT windows after first cold) ──────────────────
-  const firstColdMs = adjusted
-    .filter(w => w.type === 'cold')
-    .reduce((m, w) => Math.min(m, w.from.getTime()), Infinity);
-
-  if (firstColdMs < Infinity) {
-    const maxFinalH = maxFinalProofHours(kitchenTemp);
-    for (let i = 0; i < adjusted.length; i++) {
-      const w = adjusted[i];
-      if (w.type === 'room_temp' && w.from.getTime() >= firstColdMs && w.hours > maxFinalH) {
-        const excess = w.hours - maxFinalH;
-        const newFrom = new Date(w.from.getTime() + excess * 3600000);
-        // Extend the preceding cold window to absorb the excess
-        const prev = adjusted[i - 1];
-        if (prev && prev.type === 'cold') {
-          prev.to = new Date(newFrom);
-          prev.hours += excess;
-        }
-        w.from = newFrom;
-        w.hours = maxFinalH;
-        wasAutoAdjusted = true;
-      }
-    }
+  // Cold retard ends at the last block end, no later than bakeTime - restH
+  const lastBlockEnd = new Date(
+    Math.max(...relevantBlocks.map(b => b.to.getTime()))
+  );
+  const maxColdEnd = new Date(bakeTime.getTime() - restH * 3600000);
+  let coldRetardEnd = new Date(
+    Math.min(lastBlockEnd.getTime(), maxColdEnd.getTime())
+  );
+  if (coldRetardEnd.getTime() < coldRetardStart.getTime()) {
+    coldRetardEnd = new Date(coldRetardStart.getTime());
   }
 
-  // ── Bug 2: Reserve warm-up time before baking when last window is cold ────
-  let restRtHours = 0;
-  if (firstColdMs < Infinity) {
-    const lastAdj = adjusted[adjusted.length - 1];
-    if (lastAdj?.type === 'cold') {
-      restRtHours = restRtMinutes(kitchenTemp) / 60;
-      const newEnd = new Date(lastAdj.to.getTime() - restRtHours * 3600000);
-      lastAdj.to = newEnd;
-      lastAdj.hours = Math.max(0, lastAdj.hours - restRtHours);
-      if (lastAdj.hours <= 0) adjusted.pop();
-    }
-  }
+  let coldRetardH = Math.max(0,
+    (coldRetardEnd.getTime() - coldRetardStart.getTime()) / 3600000
+  );
 
-  const rtWindows   = adjusted.filter(w => w.type === 'room_temp');
-  const coldWindows = adjusted.filter(w => w.type === 'cold');
-  const totalRTHours   = rtWindows.reduce((s, w) => s + w.hours, 0);
-  const totalColdHours = coldWindows.reduce((s, w) => s + w.hours, 0);
+  // Final proof starts after rest at room temperature
+  let finalProofStart = new Date(coldRetardEnd.getTime() + restH * 3600000);
+  let finalProofH = Math.max(0,
+    (bakeTime.getTime() - finalProofStart.getTime()) / 3600000
+  );
 
-  // Mark only the last RT window as final proof (only when cold fermentation exists)
-  if (coldWindows.length > 0 && rtWindows.length > 0) {
-    const lastRt = rtWindows.reduce((latest, w) =>
-      w.from.getTime() > latest.from.getTime() ? w : latest
+  // Cap final proof at maxFinalH — push coldRetardEnd earlier if too long
+  if (finalProofH > maxFinalH) {
+    wasAutoAdjusted = true;
+    finalProofH = maxFinalH;
+    finalProofStart = new Date(bakeTime.getTime() - maxFinalH * 3600000);
+    coldRetardEnd = new Date(finalProofStart.getTime() - restH * 3600000);
+    coldRetardH = Math.max(0,
+      (coldRetardEnd.getTime() - coldRetardStart.getTime()) / 3600000
     );
-    lastRt.isFinalProof = true;
   }
 
   return {
-    rtWindows,
-    coldWindows,
-    totalRTHours,
-    totalColdHours,
+    mixingDurationH,
+    bulkFermStart: fermStart,
+    bulkFermHours: bulkFermH,
+    coldRetardStart,
+    coldRetardEnd,
+    coldRetardHours: coldRetardH,
+    finalProofStart,
+    finalProofHours: finalProofH,
+    restRtHours: restH,
+    preheatStart: bakeTime,
+    bakeStart: eatTime,
+    totalRTHours: bulkFermH + finalProofH,
+    totalColdHours: coldRetardH,
     wasAutoAdjusted,
-    restRtHours,
+    kitchenTemp,
   };
 }
 

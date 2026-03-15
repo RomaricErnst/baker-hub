@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
@@ -21,6 +21,11 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "Baker Hub",
   description: "Smart dough planner for pizza and bread",
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({

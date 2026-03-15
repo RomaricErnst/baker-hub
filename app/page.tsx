@@ -200,7 +200,7 @@ export default function Home() {
 
   const schedule = useMemo(() => {
     if (startTime >= eatTime) return null;
-    return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin);
+    return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType);
   }, [startTime, eatTime, blocks, kitchenTemp, preheatMin]);
 
   const recipe = useMemo(() => {
