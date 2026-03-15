@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { type AvailabilityBlock, toDateTimeLocal, formatTime, hoursLabel } from '../utils';
 
 interface SchedulePickerProps {
@@ -7,6 +7,38 @@ interface SchedulePickerProps {
   eatTime: Date;
   blocks: AvailabilityBlock[];
   onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[]) => void;
+}
+
+// ── Workday helper ────────────────────────────
+// Returns Mon–Fri days whose 09:00–18:00 block overlaps [start, end], max 14 days
+function getWorkdaysInWindow(
+  start: Date,
+  end: Date,
+): Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> {
+  if (end <= start) return [];
+
+  const days: Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> = [];
+  const cursor = new Date(start);
+  cursor.setHours(0, 0, 0, 0);
+
+  for (let i = 0; i < 14; i++) {
+    const dow = cursor.getDay(); // 0=Sun, 6=Sat
+    if (dow >= 1 && dow <= 5) {
+      const blockStart = new Date(cursor);
+      blockStart.setHours(9, 0, 0, 0);
+      const blockEnd = new Date(cursor);
+      blockEnd.setHours(18, 0, 0, 0);
+
+      if (blockStart < end && blockEnd > start) {
+        const key = cursor.toISOString().slice(0, 10);
+        const dateLabel = cursor.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        days.push({ key, label: `Work · ${dateLabel}`, blockStart, blockEnd });
+      }
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return days;
 }
 
 // ── Night window helper ───────────────────────
@@ -73,15 +105,39 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
   const [customLabel, setCustomLabel] = useState('');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+  const [isNarrow, setIsNarrow] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsNarrow(window.innerWidth < 600);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const totalHours = (eatTime.getTime() - startTime.getTime()) / 3600000;
   const timeInvalid = eatTime <= startTime;
 
-  // Recompute nights whenever start/eat time changes
+  // Recompute nights and workdays whenever start/eat time changes
   const nights = useMemo(
     () => getNightsInWindow(startTime, eatTime),
     [startTime, eatTime],
   );
+
+  const workdays = useMemo(
+    () => getWorkdaysInWindow(startTime, eatTime),
+    [startTime, eatTime],
+  );
+
+  const isWorkActive = blocks.some(b => b.label.startsWith('Work · '));
+
+  function toggleWork() {
+    if (isWorkActive) {
+      onChange(startTime, eatTime, blocks.filter(b => !b.label.startsWith('Work · ')));
+    } else {
+      const newBlocks = workdays.map(d => ({ from: d.blockStart, to: d.blockEnd, label: d.label }));
+      onChange(startTime, eatTime, [...blocks, ...newBlocks]);
+    }
+  }
 
   function handleStartChange(val: string) {
     const d = new Date(val);
@@ -129,18 +185,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
     && new Date(customTo) > new Date(customFrom);
 
   return (
-    <div>
+    <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
 
       {/* ── Time inputs ─────────────────────────────── */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
+        display: 'flex',
+        flexDirection: isNarrow ? 'column' : 'row',
+        alignItems: isNarrow ? 'stretch' : 'flex-end',
         gap: '.75rem',
-        alignItems: 'end',
         marginBottom: timeInvalid ? '.75rem' : '1.5rem',
       }}>
 
-        <div>
+        <div style={{ flex: 1 }}>
           <label style={LABEL_STYLE}>Start mixing</label>
           <input
             type="datetime-local"
@@ -150,22 +206,24 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
           />
         </div>
 
-        {/* Duration bridge */}
-        <div style={{ textAlign: 'center', paddingBottom: '.6rem' }}>
-          <div style={{
-            fontSize: '.65rem',
-            color: timeInvalid ? 'var(--terra)' : 'var(--smoke)',
-            fontFamily: 'var(--font-dm-mono)',
-            whiteSpace: 'nowrap',
-            marginBottom: '.1rem',
-          }}>
-            {timeInvalid ? '!' : totalHours > 0 ? hoursLabel(totalHours) : '—'}
+        {/* Duration bridge — hide on mobile */}
+        {!isNarrow && (
+          <div style={{ textAlign: 'center', paddingBottom: '.6rem', flexShrink: 0 }}>
+            <div style={{
+              fontSize: '.65rem',
+              color: timeInvalid ? 'var(--terra)' : 'var(--smoke)',
+              fontFamily: 'var(--font-dm-mono)',
+              whiteSpace: 'nowrap',
+              marginBottom: '.1rem',
+            }}>
+              {timeInvalid ? '!' : totalHours > 0 ? hoursLabel(totalHours) : '—'}
+            </div>
+            <div style={{ color: 'var(--border)', fontSize: '.9rem', lineHeight: 1 }}>→</div>
           </div>
-          <div style={{ color: 'var(--border)', fontSize: '.9rem', lineHeight: 1 }}>→</div>
-        </div>
+        )}
 
-        <div>
-          <label style={LABEL_STYLE}>Ready to eat</label>
+        <div style={{ flex: 1 }}>
+          <label style={LABEL_STYLE}>Ready to bake</label>
           <input
             type="datetime-local"
             value={toDateTimeLocal(eatTime)}
@@ -186,7 +244,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
           borderRadius: '8px', padding: '.5rem .85rem',
           marginBottom: '1.25rem',
         }}>
-          Eat time must be after start time.
+          Bake time must be after start time.
         </div>
       )}
 
@@ -195,10 +253,49 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
         <div style={{
           fontSize: '.72rem', color: 'var(--smoke)',
           textTransform: 'uppercase', letterSpacing: '.06em',
-          marginBottom: '.6rem', fontFamily: 'var(--font-dm-mono)',
+          marginBottom: '.75rem', fontFamily: 'var(--font-dm-mono)',
         }}>
           I won&apos;t be available — dough goes in the fridge
         </div>
+
+        {/* Quick presets — work toggle */}
+        {workdays.length > 0 && (
+          <div style={{ marginBottom: '.75rem' }}>
+            <div style={{
+              fontSize: '.65rem', color: 'var(--smoke)', opacity: .7,
+              fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase',
+              letterSpacing: '.06em', marginBottom: '.4rem',
+            }}>
+              Quick presets
+            </div>
+            <button
+              onClick={toggleWork}
+              style={{
+                padding: '.38rem .85rem',
+                borderRadius: '20px',
+                border: `1.5px solid ${isWorkActive ? 'var(--terra)' : 'var(--border)'}`,
+                background: isWorkActive ? '#FEF4EF' : 'var(--warm)',
+                color: isWorkActive ? 'var(--terra)' : 'var(--smoke)',
+                fontSize: '.78rem',
+                fontWeight: isWorkActive ? 500 : 400,
+                cursor: 'pointer',
+                fontFamily: 'var(--font-dm-sans)',
+                transition: 'all .15s',
+                display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+              }}
+            >
+              💼 Weekdays
+              <span style={{
+                fontFamily: 'var(--font-dm-mono)',
+                fontSize: '.7rem',
+                opacity: .65,
+              }}>
+                · 9am → 6pm
+              </span>
+              {isWorkActive && <span style={{ opacity: .7 }}>✓</span>}
+            </button>
+          </div>
+        )}
 
         {/* Night toggles */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem' }}>
@@ -227,10 +324,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
                     cursor: 'pointer',
                     fontFamily: 'var(--font-dm-sans)',
                     transition: 'all .15s',
+                    display: 'inline-flex', alignItems: 'center', gap: '.3rem',
                   }}
                 >
                   🌙 {night.label}
-                  {active && <span style={{ marginLeft: '.35rem', opacity: .7 }}>✓</span>}
+                  <span style={{
+                    fontFamily: 'var(--font-dm-mono)',
+                    fontSize: '.7rem',
+                    opacity: .65,
+                  }}>
+                    · 11pm → 7am
+                  </span>
+                  {active && <span style={{ opacity: .7 }}>✓</span>}
                 </button>
               );
             })
@@ -358,7 +463,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
             {blocks.map((block, i) => {
               const durationH = (block.to.getTime() - block.from.getTime()) / 3600000;
               const isNightBlock = nights.some(n => n.label === block.label);
-              const emoji = isNightBlock ? '🌙' : '🕐';
+              const isWorkBlock = block.label.startsWith('Work · ');
+              const emoji = isNightBlock ? '🌙' : isWorkBlock ? '💼' : '🕐';
               return (
                 <div
                   key={i}
