@@ -204,20 +204,27 @@ export default function RecipeOutput({
       })()
     : undefined;
 
-  // Only show structural warnings — never temperature context (yeast calc handles that)
+  // Allowlist approach: only keep warnings about structural issues, never temperature context
+  const WARN_ALLOWLIST = ['precision scale', 'poolish', 'not recommended', 'dilution'];
+  function isAllowedWarning(w: string): boolean {
+    const lw = w.toLowerCase();
+    return WARN_ALLOWLIST.some(term => lw.includes(term));
+  }
+
   const filteredWarnings = yeastInfo
-    ? yeastInfo.warnings.filter(w => {
-        const lw = w.toLowerCase();
-        return !lw.includes('kitchen') &&
-               !lw.includes('warm') &&
-               !lw.includes('hot') &&
-               !lw.includes('cool') &&
-               !lw.includes('reduced') &&
-               !lw.includes('°c') &&
-               !lw.includes('temperature') &&
-               !lw.includes('yeast');
-      }).filter(w => !yeastInfo.notRecommended || !w.includes('not recommended'))
+    ? yeastInfo.warnings
+        .filter(isAllowedWarning)
+        .filter(w => !yeastInfo.notRecommended || !w.toLowerCase().includes('not recommended'))
     : [];
+
+  // Suppress explanation if it's purely temperature context
+  const EXPLANATION_BLOCKLIST = [
+    'kitchen', 'warm', 'hot', 'cool', 'cold', '°c', 'reduced',
+    'yeast activity', 'temperature', 'ferment faster', 'ferment more',
+  ];
+  const showExplanation = yeastInfo
+    ? !EXPLANATION_BLOCKLIST.some(term => yeastInfo.explanation.toLowerCase().includes(term))
+    : false;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -352,14 +359,16 @@ export default function RecipeOutput({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.65rem' }}>
 
           {/* Explanation */}
-          <div style={{
-            fontSize: '.8rem', color: 'var(--smoke)',
-            background: 'var(--warm)', border: '1px solid var(--border)',
-            borderRadius: '10px', padding: '.65rem .9rem',
-            fontFamily: 'var(--font-dm-mono)', lineHeight: 1.55,
-          }}>
-            {yeastInfo.explanation}
-          </div>
+          {showExplanation && (
+            <div style={{
+              fontSize: '.8rem', color: 'var(--smoke)',
+              background: 'var(--warm)', border: '1px solid var(--border)',
+              borderRadius: '10px', padding: '.65rem .9rem',
+              fontFamily: 'var(--font-dm-mono)', lineHeight: 1.55,
+            }}>
+              {yeastInfo.explanation}
+            </div>
+          )}
 
           {/* Dilution tip */}
           {yeastInfo.dilutionTip && (
