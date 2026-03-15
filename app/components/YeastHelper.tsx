@@ -1,0 +1,184 @@
+'use client';
+import { useState } from 'react';
+import { YEAST_TYPES, type YeastType } from '../data';
+
+interface YeastHelperProps {
+  onSelect: (yeastType: YeastType) => void;
+  onClose: () => void;
+}
+
+export default function YeastHelper({ onSelect, onClose }: YeastHelperProps) {
+  const [step, setStep] = useState(1);
+  const [selected, setSelected] = useState<YeastType | null>(null);
+
+  function confirm(type: YeastType) {
+    setSelected(type);
+    setStep(3);
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 500,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '1rem',
+    }}>
+      <div style={{
+        background: 'var(--card)', borderRadius: '20px',
+        padding: '2rem', maxWidth: '480px', width: '100%',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+      }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div>
+            <div style={{ fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '.2rem' }}>
+              Step {step} of 3
+            </div>
+            <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.2rem', fontWeight: 700 }}>
+              {step === 1 && 'What does your yeast look like?'}
+              {step === 2 && 'What does the packet say?'}
+              {step === 3 && 'Confirmed!'}
+            </h2>
+          </div>
+          <button onClick={onClose} style={{
+            background: 'var(--border)', border: 'none', borderRadius: '50%',
+            width: '32px', height: '32px', cursor: 'pointer',
+            fontSize: '.9rem', color: 'var(--smoke)',
+          }}>✕</button>
+        </div>
+
+        {/* Step 1 — Visual identification */}
+        {step === 1 && (
+          <div>
+            <p style={{ fontSize: '.85rem', color: 'var(--smoke)', marginBottom: '1rem', lineHeight: 1.6 }}>
+              Pick the description that best matches what you have:
+            </p>
+            {[
+              { emoji: '🧱', label: 'Soft block or cube', desc: 'Moist, crumbly, beige/grey. Smells strongly of yeast.', type: 'fresh' as YeastType },
+              { emoji: '🟤', label: 'Large brown granules', desc: 'Tan/brown, slightly coarse. Usually in a small sachet or jar.', type: 'active_dry' as YeastType },
+              { emoji: '🟡', label: 'Fine powder or tiny granules', desc: 'Light beige/cream, very fine. Dissolves almost instantly.', type: 'instant' as YeastType },
+              { emoji: '🫙', label: 'Thick paste or liquid', desc: 'Off-white to grey, bubbly when active. Kept in a jar.', type: 'sourdough' as YeastType },
+            ].map(opt => (
+              <button key={opt.type} onClick={() => { setSelected(opt.type); setStep(2); }}
+                style={{
+                  width: '100%', display: 'flex', gap: '1rem', alignItems: 'flex-start',
+                  padding: '.85rem 1rem', marginBottom: '.5rem',
+                  border: '1.5px solid var(--border)', borderRadius: '12px',
+                  background: 'var(--warm)', cursor: 'pointer', textAlign: 'left',
+                  transition: 'all .2s',
+                }}>
+                <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>{opt.emoji}</span>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '.88rem', marginBottom: '.15rem' }}>{opt.label}</div>
+                  <div style={{ fontSize: '.76rem', color: 'var(--smoke)', lineHeight: 1.4 }}>{opt.desc}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Step 2 — Label guide */}
+        {step === 2 && selected && (
+          <div>
+            <p style={{ fontSize: '.85rem', color: 'var(--smoke)', marginBottom: '1rem', lineHeight: 1.6 }}>
+              Does your packet say any of these?
+            </p>
+            <div style={{
+              background: '#F5F7F0', border: '1px solid #C8D4BA',
+              borderRadius: '12px', padding: '1rem 1.2rem', marginBottom: '1.25rem',
+            }}>
+              <div style={{ fontSize: '.75rem', color: 'var(--smoke)', marginBottom: '.4rem', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                Also known as
+              </div>
+              <div style={{ fontWeight: 600, fontSize: '.9rem', color: 'var(--char)' }}>
+                {YEAST_TYPES[selected].also}
+              </div>
+            </div>
+
+            {/* Comparison table */}
+            <div style={{ fontSize: '.78rem', marginBottom: '1.25rem' }}>
+              {(Object.entries(YEAST_TYPES) as [YeastType, typeof YEAST_TYPES[YeastType]][]).map(([key, y]) => (
+                <div key={key} onClick={() => confirm(key)}
+                  style={{
+                    display: 'flex', gap: '.75rem', padding: '.65rem .85rem',
+                    borderRadius: '9px', marginBottom: '.35rem', cursor: 'pointer',
+                    background: key === selected ? '#FEF4EF' : 'var(--warm)',
+                    border: `1.5px solid ${key === selected ? 'var(--terra)' : 'var(--border)'}`,
+                    transition: 'all .15s',
+                  }}>
+                  <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>{y.emoji}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, color: 'var(--char)', marginBottom: '.1rem' }}>{y.name}</div>
+                    <div style={{ color: 'var(--smoke)', lineHeight: 1.4 }}>{y.also}</div>
+                  </div>
+                  {key === selected && <span style={{ color: 'var(--terra)', alignSelf: 'center' }}>✓</span>}
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '.5rem' }}>
+              <button onClick={() => setStep(1)} style={{
+                flex: 1, padding: '.75rem', border: '1.5px solid var(--border)',
+                borderRadius: '10px', background: 'var(--warm)', cursor: 'pointer',
+                fontSize: '.85rem', color: 'var(--smoke)',
+              }}>← Back</button>
+              <button onClick={() => selected && confirm(selected)} style={{
+                flex: 2, padding: '.75rem', border: 'none',
+                borderRadius: '10px', background: 'var(--terra)', cursor: 'pointer',
+                fontSize: '.85rem', color: '#fff', fontWeight: 500,
+              }}>Confirm {selected ? YEAST_TYPES[selected].name : ''} →</button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3 — Confirmation */}
+        {step === 3 && selected && (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
+              {YEAST_TYPES[selected].emoji}
+            </div>
+            <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.3rem', fontWeight: 700, marginBottom: '.5rem' }}>
+              {YEAST_TYPES[selected].name}
+            </div>
+            <div style={{ fontSize: '.85rem', color: 'var(--smoke)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              {YEAST_TYPES[selected].usage}
+            </div>
+
+            {/* Key facts */}
+            <div style={{
+              background: 'var(--warm)', border: '1px solid var(--border)',
+              borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem',
+              textAlign: 'left',
+            }}>
+              {[
+                { label: 'Form', value: YEAST_TYPES[selected].form },
+                { label: 'Shelf life', value: YEAST_TYPES[selected].shelfLife },
+                { label: 'Common in', value: YEAST_TYPES[selected].commonIn },
+                { label: 'Amount vs instant', value: selected === 'instant' ? '× 1.0 (base reference)' : `× ${YEAST_TYPES[selected].conversion}` },
+              ].map(f => (
+                <div key={f.label} style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  fontSize: '.8rem', padding: '.35rem 0',
+                  borderBottom: '1px solid var(--border)',
+                }}>
+                  <span style={{ color: 'var(--smoke)' }}>{f.label}</span>
+                  <span style={{ fontWeight: 500, color: 'var(--char)' }}>{f.value}</span>
+                </div>
+              ))}
+            </div>
+
+            <button onClick={() => { onSelect(selected); onClose(); }}
+              style={{
+                width: '100%', padding: '1rem', border: 'none',
+                borderRadius: '12px', background: 'var(--char)', color: 'var(--cream)',
+                fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700,
+                cursor: 'pointer',
+              }}>
+              ✓ Use {YEAST_TYPES[selected].name}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

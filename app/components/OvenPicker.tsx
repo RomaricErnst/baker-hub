@@ -1,0 +1,57 @@
+'use client';
+import { OVEN_TYPES, type OvenType } from '../data';
+
+interface OvenPickerProps {
+  selected: OvenType | null;
+  onSelect: (oven: OvenType) => void;
+}
+
+export default function OvenPicker({ selected, onSelect }: OvenPickerProps) {
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+      gap: '.75rem',
+    }}>
+      {(Object.entries(OVEN_TYPES) as [OvenType, typeof OVEN_TYPES[OvenType]][]).map(([key, oven]) => {
+        const isSelected = selected === key;
+        return (
+          <div
+            key={key}
+            onClick={() => onSelect(key)}
+            style={{
+              border: `2px solid ${isSelected ? 'var(--terra)' : 'var(--border)'}`,
+              borderRadius: '13px',
+              padding: '1.1rem 1.2rem',
+              cursor: 'pointer',
+              background: isSelected ? '#FEF4EF' : 'var(--warm)',
+              transition: 'all .2s',
+              boxShadow: isSelected ? '0 0 0 3px rgba(196,82,42,.1)' : 'none',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '.65rem', marginBottom: '.5rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>{oven.emoji}</span>
+              <div style={{ fontWeight: 600, fontSize: '.9rem', color: 'var(--char)' }}>
+                {oven.name}
+              </div>
+              {isSelected && (
+                <span style={{ marginLeft: 'auto', color: 'var(--terra)', fontSize: '.9rem' }}>✓</span>
+              )}
+            </div>
+            <div style={{ fontSize: '.76rem', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '.5rem' }}>
+              {oven.desc}
+            </div>
+            <div style={{
+              fontSize: '.7rem', color: 'var(--terra)',
+              fontFamily: 'var(--font-dm-mono)',
+              background: '#FEF4EF', borderRadius: '6px',
+              padding: '.25rem .5rem', display: 'inline-block',
+            }}>
+              {oven.tempNote}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

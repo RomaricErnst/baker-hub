@@ -1,0 +1,197 @@
+'use client';
+import { PIZZA_STYLES, BREAD_STYLES, type StyleKey, type BakeType } from '../data';
+
+interface StylePickerProps {
+  bakeType: BakeType;
+  selected: StyleKey | null;
+  onSelect: (key: StyleKey) => void;
+}
+
+// SVG illustrations — no external dependencies
+const STYLE_ART: Record<string, { bg: string; svg: string }> = {
+  neapolitan: {
+    bg: 'radial-gradient(ellipse at 50% 110%,#8B2500,#3D1200 50%,#1A0800)',
+    svg: `<circle cx="120" cy="72" r="65" fill="#C4522A" opacity=".88"/>
+      <circle cx="120" cy="72" r="52" fill="#D43020" opacity=".82"/>
+      <ellipse cx="100" cy="65" rx="14" ry="10" fill="#F5F0E8" opacity=".92"/>
+      <ellipse cx="128" cy="62" rx="12" ry="9" fill="#F5F0E8" opacity=".88"/>
+      <ellipse cx="115" cy="71" rx="9" ry="7" fill="#F5F0E8" opacity=".85"/>
+      <circle cx="58" cy="75" r="10" fill="#150500" opacity=".92"/>
+      <circle cx="182" cy="73" r="9" fill="#150500" opacity=".88"/>
+      <ellipse cx="105" cy="59" rx="6" ry="3" fill="#4A7A2A" opacity=".9" transform="rotate(-20 105 59)"/>
+      <ellipse cx="132" cy="57" rx="5" ry="3" fill="#4A7A2A" opacity=".85" transform="rotate(15 132 57)"/>
+      <text x="120" y="106" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Neapolitan</text>`,
+  },
+  newyork: {
+    bg: 'linear-gradient(160deg,#2A1A08,#1A1005)',
+    svg: `<polygon points="120,14 212,84 28,84" fill="#D4A853" opacity=".9"/>
+      <polygon points="120,18 206,82 34,82" fill="#C4522A" opacity=".82"/>
+      <polygon points="120,22 198,80 42,80" fill="#E8D070" opacity=".62"/>
+      <circle cx="95" cy="62" r="8" fill="#8B2515" opacity=".9"/>
+      <circle cx="132" cy="55" r="7" fill="#8B2515" opacity=".85"/>
+      <circle cx="108" cy="70" r="6" fill="#8B2515" opacity=".8"/>
+      <circle cx="150" cy="66" r="7" fill="#8B2515" opacity=".85"/>
+      <text x="120" y="104" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">New York</text>`,
+  },
+  roman: {
+    bg: 'linear-gradient(180deg,#18180E,#2A2010)',
+    svg: `<rect x="22" y="33" width="196" height="50" rx="4" fill="#C4A855" opacity=".9"/>
+      <rect x="22" y="33" width="196" height="43" rx="4" fill="#C4522A" opacity=".72"/>
+      <rect x="22" y="33" width="196" height="41" rx="4" fill="#E8D080" opacity=".5"/>
+      <circle cx="58" cy="51" r="7" fill="#2A1500" opacity=".52"/>
+      <circle cx="100" cy="47" r="6" fill="#2A1500" opacity=".48"/>
+      <circle cx="148" cy="52" r="8" fill="#2A1500" opacity=".5"/>
+      <circle cx="186" cy="49" r="6" fill="#2A1500" opacity=".45"/>
+      <line x1="102" y1="33" x2="102" y2="83" stroke="#8A6010" stroke-width="1.5" opacity=".5"/>
+      <line x1="162" y1="33" x2="162" y2="83" stroke="#8A6010" stroke-width="1.5" opacity=".5"/>
+      <text x="120" y="104" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Roman Teglia</text>`,
+  },
+  pan: {
+    bg: 'linear-gradient(180deg,#1E0E08,#0E0800)',
+    svg: `<rect x="20" y="30" width="200" height="54" rx="3" fill="#4A3020"/>
+      <rect x="24" y="32" width="192" height="50" rx="2" fill="#C47830" opacity=".9"/>
+      <rect x="24" y="32" width="192" height="41" rx="2" fill="#E8C070" opacity=".78"/>
+      <rect x="38" y="34" width="28" height="37" rx="2" fill="#C4522A" opacity=".7"/>
+      <rect x="86" y="34" width="26" height="37" rx="2" fill="#C4522A" opacity=".68"/>
+      <rect x="130" y="34" width="26" height="37" rx="2" fill="#C4522A" opacity=".7"/>
+      <rect x="170" y="34" width="32" height="37" rx="2" fill="#C4522A" opacity=".65"/>
+      <circle cx="65" cy="49" r="7" fill="#8B2515" opacity=".75"/>
+      <circle cx="110" cy="52" r="6.5" fill="#8B2515" opacity=".7"/>
+      <text x="120" y="104" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Pan / Detroit</text>`,
+  },
+  sourdough: {
+    bg: 'radial-gradient(ellipse at 50% 110%,#5A2A00,#1A1005 70%,#0A0800)',
+    svg: `<ellipse cx="120" cy="72" rx="82" ry="13" fill="#2A1205"/>
+      <ellipse cx="120" cy="68" rx="78" ry="12" fill="#D4A053" opacity=".9"/>
+      <ellipse cx="120" cy="64" rx="72" ry="10" fill="#C4522A" opacity=".78"/>
+      <ellipse cx="98" cy="61" rx="13" ry="9" fill="#F5F0E8" opacity=".9" transform="rotate(-10 98 61)"/>
+      <ellipse cx="124" cy="59" rx="12" ry="8" fill="#F5F0E8" opacity=".85" transform="rotate(8 124 59)"/>
+      <ellipse cx="143" cy="63" rx="10" ry="7" fill="#F5F0E8" opacity=".88"/>
+      <text x="120" y="99" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Sourdough</text>`,
+  },
+  sourdough_bread: {
+    bg: 'linear-gradient(160deg,#2A1A08,#1A1005)',
+    svg: `<ellipse cx="120" cy="76" rx="82" ry="14" fill="#8B5A20"/>
+      <ellipse cx="120" cy="68" rx="78" ry="18" fill="#A06828"/>
+      <ellipse cx="120" cy="59" rx="72" ry="15" fill="#C4852A"/>
+      <path d="M55 52 Q120 28 185 52" stroke="#D4952A" stroke-width="3" fill="none" opacity=".75"/>
+      <ellipse cx="176" cy="65" rx="24" ry="17" fill="#F0E0B0"/>
+      <text x="110" y="104" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Sourdough Loaf</text>`,
+  },
+  baguette: {
+    bg: 'linear-gradient(160deg,#18120A,#100C06)',
+    svg: `<rect x="12" y="41" width="216" height="32" rx="16" fill="#8B5A18" transform="rotate(-3 120 57)"/>
+      <rect x="16" y="43" width="208" height="25" rx="13" fill="#C4852A" transform="rotate(-3 120 55)"/>
+      <line x1="55" y1="39" x2="75" y2="75" stroke="#7A4010" stroke-width="2.5" opacity=".55"/>
+      <line x1="92" y1="37" x2="112" y2="73" stroke="#7A4010" stroke-width="2.5" opacity=".55"/>
+      <line x1="128" y1="37" x2="148" y2="71" stroke="#7A4010" stroke-width="2.5" opacity=".5"/>
+      <ellipse cx="220" cy="58" rx="14" ry="11" fill="#F0E0B0" transform="rotate(-3 220 58)"/>
+      <text x="112" y="103" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Baguette</text>`,
+  },
+  focaccia: {
+    bg: 'linear-gradient(180deg,#1A1208,#100C06)',
+    svg: `<rect x="16" y="34" width="208" height="52" rx="4" fill="#C4852A" opacity=".9"/>
+      <rect x="16" y="34" width="208" height="44" rx="4" fill="#E8AA50" opacity=".85"/>
+      <circle cx="56" cy="49" r="6" fill="#8B5010" opacity=".55"/>
+      <circle cx="93" cy="45" r="6.5" fill="#8B5010" opacity=".52"/>
+      <circle cx="130" cy="51" r="6" fill="#8B5010" opacity=".55"/>
+      <circle cx="168" cy="46" r="6.5" fill="#8B5010" opacity=".5"/>
+      <circle cx="76" cy="62" r="5.5" fill="#8B5010" opacity=".48"/>
+      <circle cx="113" cy="59" r="7" fill="#8B5010" opacity=".52"/>
+      <text x="120" y="104" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Focaccia</text>`,
+  },
+  ciabatta: {
+    bg: 'linear-gradient(160deg,#15100A,#0E0A06)',
+    svg: `<ellipse cx="120" cy="75" rx="95" ry="14" fill="#7A4A15"/>
+      <ellipse cx="120" cy="67" rx="90" ry="18" fill="#A06025"/>
+      <ellipse cx="120" cy="59" rx="85" ry="14" fill="#C4852A" opacity=".78"/>
+      <ellipse cx="32" cy="66" rx="19" ry="15" fill="#F0E0B5"/>
+      <circle cx="29" cy="62" r="5.5" fill="#E8D090" opacity=".5"/>
+      <circle cx="37" cy="69" r="7" fill="#E8D090" opacity=".45"/>
+      <text x="118" y="103" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Ciabatta</text>`,
+  },
+  brioche: {
+    bg: 'linear-gradient(180deg,#16100A,#0E0A06)',
+    svg: `<ellipse cx="120" cy="79" rx="82" ry="12" fill="#8B4A10"/>
+      <ellipse cx="120" cy="71" rx="78" ry="17" fill="#D4852A"/>
+      <ellipse cx="120" cy="63" rx="72" ry="15" fill="#E8A040"/>
+      <ellipse cx="120" cy="43" rx="30" ry="20" fill="#E8A040"/>
+      <ellipse cx="120" cy="37" rx="25" ry="15" fill="#F0B050"/>
+      <ellipse cx="118" cy="33" rx="15" ry="9" fill="#FFCC60" opacity=".55"/>
+      <text x="120" y="104" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Brioche</text>`,
+  },
+};
+
+export default function StylePicker({ bakeType, selected, onSelect }: StylePickerProps) {
+  const styles = bakeType === 'pizza' ? PIZZA_STYLES : BREAD_STYLES;
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+      gap: '.75rem',
+    }}>
+      {(Object.entries(styles) as [string, { name: string; desc: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
+
+        const art = STYLE_ART[key];
+        const isSelected = selected === key;
+        const isBread = bakeType === 'bread';
+
+        return (
+          <div
+            key={key}
+            onClick={() => onSelect(key as StyleKey)}
+            style={{
+              border: `2px solid ${isSelected
+                ? isBread ? 'var(--bread)' : 'var(--terra)'
+                : 'var(--border)'}`,
+              borderRadius: '13px',
+              cursor: 'pointer',
+              overflow: 'hidden',
+              background: 'var(--warm)',
+              transition: 'all .2s',
+              boxShadow: isSelected
+                ? isBread
+                  ? '0 0 0 3px rgba(139,105,20,.13)'
+                  : '0 0 0 3px rgba(196,82,42,.13)'
+                : 'none',
+            }}
+          >
+            {/* Illustration */}
+            <div style={{
+              height: '115px',
+              overflow: 'hidden',
+              background: art?.bg ?? 'var(--char)',
+            }}>
+              {art && (
+                <svg
+                  viewBox="0 0 240 115"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ width: '100%', height: '115px', display: 'block' }}
+                  dangerouslySetInnerHTML={{ __html: art.svg }}
+                />
+              )}
+            </div>
+
+            {/* Info */}
+            <div style={{ padding: '.65rem .8rem .8rem' }}>
+              <div style={{ fontWeight: 600, fontSize: '.84rem', marginBottom: '.18rem' }}>
+                {style.name}
+              </div>
+              <div style={{ fontSize: '.7rem', color: 'var(--smoke)', lineHeight: 1.4, fontWeight: 300 }}>
+                {style.desc}
+              </div>
+              <div style={{
+                fontSize: '.65rem', color: 'var(--smoke)',
+                marginTop: '.3rem', fontFamily: 'var(--font-dm-mono)',
+              }}>
+                {style.hydration}% hyd · {style.salt}% salt
+                {'oil' in style && style.oil > 0 ? ` · ${style.oil}% oil` : ''}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
