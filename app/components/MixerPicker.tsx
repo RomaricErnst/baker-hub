@@ -87,6 +87,27 @@ export default function MixerPicker({ selected, onSelect }: MixerPickerProps) {
             }}>
               {mixer.instructions}
             </div>
+
+            {/* Temperature tip */}
+            {(key === 'spiral' || key === 'stand') && (
+              <div style={{
+                marginTop: '.5rem',
+                display: 'flex', gap: '.4rem', alignItems: 'flex-start',
+                fontSize: '.68rem', lineHeight: 1.5,
+                color: '#3A5A8A',
+                background: '#EEF2FA',
+                border: '1px solid #C4CDE0',
+                borderRadius: '6px',
+                padding: '.35rem .55rem',
+              }}>
+                <span style={{ flexShrink: 0 }}>🧊</span>
+                <span>
+                  {key === 'spiral'
+                    ? 'Hot kitchen tip: add ice cubes directly into the mixing bowl with the water — the breaker bar will break them down as mixing progresses.'
+                    : 'Hot kitchen tip: use ice-cold water only — do not add ice cubes directly, they can strain the motor.'}
+                </span>
+              </div>
+            )}
           </div>
         );
       })}

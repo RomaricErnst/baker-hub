@@ -8,6 +8,7 @@ interface RecipeOutputProps {
   itemWeight: number;
   styleName: string;
   styleEmoji: string;
+  mixerType: string;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -135,7 +136,7 @@ function InfoCard({
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, styleEmoji,
+  result, numItems, itemWeight, styleName, styleEmoji, mixerType,
 }: RecipeOutputProps) {
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
 
@@ -288,14 +289,36 @@ export default function RecipeOutput({
 
       {/* ── Water temperature ─────────────────────── */}
       {(() => {
-        // Practical ice-water guidance by target temp
-        const iceGuide: { label: string; detail: string; color: string } =
-          waterTemp >= 20 ? { label: 'Room temperature tap water',                                                          detail: 'Straight from the tap.',                                                                                  color: 'var(--terra)' }
-          : waterTemp >= 14 ? { label: 'Cold water from the fridge',                                                        detail: 'Use water that has been refrigerating for at least 1 hour.',                                              color: 'var(--sage)' }
-          : waterTemp >= 8  ? { label: 'Very cold fridge water — chill 2 h before mixing',                                  detail: 'Place a jug of water in the back of the fridge 2 hours before you start.',                              color: '#6A7FA8' }
-          : waterTemp >= 4  ? { label: 'Ice water mix: ~1 part ice + 2 parts cold water, stir 30 sec',                     detail: 'Combine ice and cold fridge water in a jug. Stir 30 seconds so the mixture reaches the target temp.',    color: '#4A6A9A' }
-          : waterTemp >= 0  ? { label: 'Mostly ice: fill with ice cubes, top up with cold water',                           detail: 'Fill your measuring jug mostly with ice cubes, then add enough cold water to reach your required volume.', color: '#3A5A8A' }
-          :                   { label: 'Ice slush + cold flour from fridge. Chill mixing bowl too.',                        detail: 'Use a slush of ice and water. Also refrigerate your flour and mixing bowl 1–2 h before mixing.',           color: '#2A4A7A' };
+        const isSpiral = mixerType === 'spiral';
+
+        // Ice/water split logic
+        type IceGuide = {
+          label: string;
+          detail: string;
+          color: string;
+          icePct: number | null;   // null = no ice
+        };
+
+        const iceGuide: IceGuide =
+          waterTemp < 0   ? { label: 'Ice slush + cold flour from fridge. Chill mixing bowl too.', detail: 'Use a slush of ice and water. Also refrigerate your flour and mixing bowl 1–2 h before mixing.',          color: '#2A4A7A', icePct: 40 }
+          : waterTemp <= 3  ? { label: 'Mostly ice — 30% ice, 70% cold water',                         detail: 'Combine ice and very cold fridge water. Stir until mixture hits target temperature.',                    color: '#3A5A8A', icePct: 30 }
+          : waterTemp <= 7  ? { label: isSpiral ? 'Ice + cold water — 20% ice, 80% cold water'
+                                                 : 'Ice-cold water from fridge',
+                                detail: isSpiral ? 'Add ice cubes directly to the mixing bowl — the breaker bar will break them down.'
+                                                 : 'Chill a jug of water in the fridge for at least 2 hours. Do not add ice cubes to the mixer.',
+                                color: '#4A6A9A', icePct: isSpiral ? 20 : null }
+          : waterTemp <= 13 ? { label: 'Very cold fridge water — chill 2 h before mixing',             detail: 'Place a jug of water in the back of the fridge 2 hours before you start. No ice needed.',             color: '#6A7FA8', icePct: null }
+          : waterTemp <= 19 ? { label: 'Cold water from the fridge',                                   detail: 'Use water that has been refrigerating for at least 1 hour.',                                           color: 'var(--sage)', icePct: null }
+          :                   { label: 'Room temperature tap water',                                   detail: 'Straight from the tap.',                                                                                color: 'var(--terra)', icePct: null };
+
+        // Gram splits when ice is needed
+        const iceGrams  = iceGuide.icePct != null ? Math.round(water * iceGuide.icePct / 100) : 0;
+        const coldGrams = iceGuide.icePct != null ? water - iceGrams : 0;
+        const showSplit = iceGuide.icePct != null && water > 0;
+
+        const mixerNote = isSpiral
+          ? 'Add ice cubes directly to mixing bowl — breaker bar will break them down.'
+          : (iceGuide.icePct != null ? 'Do not add ice cubes directly — use ice-cold water only.' : null);
 
         const bg     = waterTemp <= 7  ? '#EEF2FA' : waterTemp <= 19 ? 'var(--warm)' : '#FFF8E8';
         const border = waterTemp <= 7  ? '#C4CDE0' : waterTemp <= 19 ? 'var(--border)' : '#E8D080';
@@ -324,13 +347,31 @@ export default function RecipeOutput({
                 borderRadius: '8px', padding: '.5rem .75rem',
               }}>
                 <span style={{ fontSize: '.82rem', flexShrink: 0 }}>🥛</span>
-                <div>
+                <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '.78rem', fontWeight: 600, color: iceGuide.color, marginBottom: '.15rem' }}>
                     {iceGuide.label}
                   </div>
                   <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.5 }}>
                     {iceGuide.detail}
                   </div>
+                  {showSplit && (
+                    <div style={{
+                      marginTop: '.35rem',
+                      fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
+                      color: iceGuide.color, fontWeight: 600,
+                    }}>
+                      → {iceGrams}g ice cubes + {coldGrams}g cold water from fridge
+                    </div>
+                  )}
+                  {mixerNote && (
+                    <div style={{
+                      marginTop: '.3rem', fontSize: '.7rem',
+                      color: isSpiral ? '#3A5A8A' : 'var(--smoke)',
+                      fontStyle: 'italic', lineHeight: 1.5,
+                    }}>
+                      {mixerNote}
+                    </div>
+                  )}
                 </div>
               </div>
               {waterTemp >= 34 && (

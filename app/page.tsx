@@ -614,6 +614,7 @@ export default function Home() {
                       itemWeight={itemWeight}
                       styleName={ALL_STYLES[styleKey!].name}
                       styleEmoji={ALL_STYLES[styleKey!].emoji}
+                      mixerType={mixerType}
                     />
 
                     {/* ── Large-batch yeast adjustment ── */}

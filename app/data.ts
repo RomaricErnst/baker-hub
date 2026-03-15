@@ -180,9 +180,9 @@ export const MIXER_TYPES = {
     emoji: '🌀',
     desc: 'Ooni Halo, Famag, Sunmix',
     maxHydration: 100,
-    kneadMin: 7,
+    kneadMin: 14,
     folds: 1,
-    instructions: '1st speed 3 min, 2nd speed 5–7 min. Handles high hydration effortlessly.',
+    instructions: '1st speed 3 min, 2nd speed 5–7 min. Handles high hydration effortlessly. In hot kitchens (≥26°C): add ice cubes directly into the mixing bowl with the water — the breaker bar will break them down as mixing progresses. This is the professional technique used in pizzerias in warm climates. Aim for roughly 20–30% ice by weight of your total water. For other mixers use ice-cold water only — ice cubes can damage stand mixer hooks.',
   },
   no_knead: {
     name: 'No-Knead',
