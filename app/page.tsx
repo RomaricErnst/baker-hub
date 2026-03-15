@@ -173,6 +173,10 @@ export default function Home() {
   const [showYeastHelper, setShowYeastHelper] = useState(false);
   const [showResults, setShowResults]         = useState(false);
 
+  // Large-batch yeast adjustment
+  const [yeastMultiplier, setYeastMultiplier]   = useState(1.0); // live stepper value
+  const [appliedMultiplier, setAppliedMultiplier] = useState(1.0); // applied to RecipeOutput
+
   const resultsRef = useRef<HTMLDivElement>(null);
 
   // Scroll to results when they appear
@@ -201,6 +205,22 @@ export default function Home() {
       return null;
     }
   }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType]);
+
+  // Recipe with yeast adjusted by appliedMultiplier (large-batch tuning)
+  const displayRecipe = useMemo(() => {
+    if (!recipe || !recipe.yeast || appliedMultiplier === 1.0) return recipe;
+    const y = recipe.yeast;
+    return {
+      ...recipe,
+      yeast: {
+        ...y,
+        pct:            Math.round(y.pct            * appliedMultiplier * 10000) / 10000,
+        grams:          Math.round(y.grams          * appliedMultiplier * 1000)  / 1000,
+        convertedPct:   Math.round(y.convertedPct   * appliedMultiplier * 10000) / 10000,
+        convertedGrams: Math.round(y.convertedGrams * appliedMultiplier * 1000)  / 1000,
+      },
+    };
+  }, [recipe, appliedMultiplier]);
 
   // ── Handlers ──────────────────────────────
   function selectBakeType(bt: BakeType) {
@@ -232,6 +252,7 @@ export default function Home() {
     setBlocks([]); setYeastType('instant');
     setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(4);
     setShowResults(false); setActiveStep(1);
+    setYeastMultiplier(1.0); setAppliedMultiplier(1.0);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -350,28 +371,51 @@ export default function Home() {
                         {/* Num items */}
                         <div>
                           <FieldLabel>Quantity</FieldLabel>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}>
-                            {[
-                              { label: '−', fn: () => setNumItems(n => Math.max(1, n - 1)) },
-                              { label: '+', fn: () => setNumItems(n => Math.min(8, n + 1)) },
-                            ].reduce((_, btn, i) => {
-                              const isPlus = i === 1;
-                              const btn_el = (
-                                <button key={btn.label} onClick={btn.fn} style={{
-                                  width: '30px', height: '30px', borderRadius: '50%',
-                                  border: '1.5px solid var(--border)', background: 'var(--warm)',
-                                  cursor: 'pointer', fontSize: '1.1rem', color: 'var(--ash)',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}>
-                                  {btn.label}
-                                </button>
-                              );
-                              if (!isPlus) return [btn_el,
-                                <span key="n" style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.2rem', fontWeight: 700, minWidth: '22px', textAlign: 'center', color: 'var(--char)' }}>{numItems}</span>
-                              ] as unknown as typeof _;
-                              return [...(_ as unknown as React.ReactNode[]), btn_el] as unknown as typeof _;
-                            }, [] as unknown as React.ReactNode[]) as React.ReactNode}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+                            <button
+                              onClick={() => setNumItems(n => Math.max(1, n - 1))}
+                              style={{
+                                width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                                border: 'none', background: 'var(--char)', color: '#fff',
+                                cursor: 'pointer', fontSize: '1.2rem', fontWeight: 700,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}
+                            >−</button>
+                            <input
+                              type="number"
+                              min={1}
+                              value={numItems}
+                              onChange={e => {
+                                const v = parseInt(e.target.value, 10);
+                                if (!isNaN(v) && v >= 1) setNumItems(v);
+                              }}
+                              style={{
+                                width: '64px', textAlign: 'center',
+                                padding: '.4rem .25rem',
+                                border: '1.5px solid var(--border)', borderRadius: '9px',
+                                fontFamily: 'var(--font-dm-mono)', fontSize: '1.1rem', fontWeight: 700,
+                                color: 'var(--char)', background: 'var(--warm)', outline: 'none',
+                              }}
+                            />
+                            <button
+                              onClick={() => setNumItems(n => n + 1)}
+                              style={{
+                                width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                                border: 'none', background: 'var(--terra)', color: '#fff',
+                                cursor: 'pointer', fontSize: '1.2rem', fontWeight: 700,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}
+                            >+</button>
                           </div>
+                          {numItems > 12 && (
+                            <div style={{
+                              marginTop: '.55rem',
+                              fontSize: '.72rem', color: 'var(--smoke)',
+                              lineHeight: 1.5, maxWidth: '180px',
+                            }}>
+                              🍕 Large batch detected. See recipe output for yeast adjustment.
+                            </div>
+                          )}
                         </div>
 
                         {/* Item weight */}
@@ -565,12 +609,140 @@ export default function Home() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
 
                     <RecipeOutput
-                      result={recipe}
+                      result={displayRecipe ?? recipe}
                       numItems={numItems}
                       itemWeight={itemWeight}
                       styleName={ALL_STYLES[styleKey!].name}
                       styleEmoji={ALL_STYLES[styleKey!].emoji}
                     />
+
+                    {/* ── Large-batch yeast adjustment ── */}
+                    {numItems > 12 && recipe?.yeast && (() => {
+                      const base = recipe.yeast!;
+                      const adjPct   = Math.round(base.convertedPct   * yeastMultiplier * 1000) / 1000;
+                      const adjGrams = Math.round(base.convertedGrams * yeastMultiplier * 100)  / 100;
+
+                      return (
+                        <div style={{
+                          border: '1.5px solid #E8D890',
+                          borderRadius: '16px',
+                          padding: '1.25rem 1.4rem',
+                          background: '#FDFBF2',
+                        }}>
+                          {/* Header */}
+                          <div style={{ marginBottom: '1rem' }}>
+                            <div style={{ fontWeight: 700, fontSize: '.95rem', color: '#6A5000', marginBottom: '.3rem' }}>
+                              ⚖️ Large batch yeast adjustment
+                            </div>
+                            <div style={{ fontSize: '.78rem', color: '#7A6010', lineHeight: 1.55 }}>
+                              Large dough mass retains heat longer — fermentation may be faster than calculated. Fine-tune if needed.
+                            </div>
+                          </div>
+
+                          {/* Recommended row */}
+                          <div style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            padding: '.5rem .75rem',
+                            background: 'rgba(255,255,255,.6)', borderRadius: '8px',
+                            marginBottom: '.65rem',
+                            fontSize: '.78rem',
+                          }}>
+                            <span style={{ color: 'var(--smoke)' }}>Recommended</span>
+                            <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--ash)', fontWeight: 500 }}>
+                              {base.convertedPct}% · {base.convertedGrams} g
+                            </span>
+                          </div>
+
+                          {/* Multiplier stepper */}
+                          <div style={{ marginBottom: '.65rem' }}>
+                            <div style={{
+                              fontSize: '.7rem', color: '#7A6010', textTransform: 'uppercase',
+                              letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.45rem',
+                            }}>
+                              Adjustment multiplier
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}>
+                              <button
+                                onClick={() => setYeastMultiplier(m => Math.max(0.5, Math.round((m - 0.05) * 100) / 100))}
+                                disabled={yeastMultiplier <= 0.5}
+                                style={{
+                                  width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                                  border: 'none',
+                                  background: yeastMultiplier <= 0.5 ? 'var(--border)' : 'var(--char)',
+                                  color: yeastMultiplier <= 0.5 ? 'var(--smoke)' : '#fff',
+                                  cursor: yeastMultiplier <= 0.5 ? 'default' : 'pointer',
+                                  fontSize: '1.1rem', fontWeight: 700,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}
+                              >−</button>
+                              <div style={{
+                                fontFamily: 'var(--font-dm-mono)', fontSize: '1.2rem', fontWeight: 700,
+                                color: '#C4A030', minWidth: '52px', textAlign: 'center',
+                              }}>
+                                {yeastMultiplier.toFixed(2)}×
+                              </div>
+                              <button
+                                onClick={() => setYeastMultiplier(m => Math.min(1.5, Math.round((m + 0.05) * 100) / 100))}
+                                disabled={yeastMultiplier >= 1.5}
+                                style={{
+                                  width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                                  border: 'none',
+                                  background: yeastMultiplier >= 1.5 ? 'var(--border)' : 'var(--terra)',
+                                  color: yeastMultiplier >= 1.5 ? 'var(--smoke)' : '#fff',
+                                  cursor: yeastMultiplier >= 1.5 ? 'default' : 'pointer',
+                                  fontSize: '1.1rem', fontWeight: 700,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}
+                              >+</button>
+                              <div style={{
+                                marginLeft: '.25rem',
+                                fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)',
+                                color: '#C4A030', fontWeight: 600,
+                              }}>
+                                → {adjPct}% · {adjGrams} g
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Applied indicator */}
+                          {appliedMultiplier !== 1.0 && (
+                            <div style={{
+                              fontSize: '.72rem', color: '#7A6010',
+                              fontFamily: 'var(--font-dm-mono)',
+                              marginBottom: '.65rem',
+                            }}>
+                              ✓ Applied: {appliedMultiplier.toFixed(2)}× — recipe above reflects this adjustment.
+                            </div>
+                          )}
+
+                          {/* Action buttons */}
+                          <div style={{ display: 'flex', gap: '.6rem' }}>
+                            <button
+                              onClick={() => setAppliedMultiplier(yeastMultiplier)}
+                              style={{
+                                flex: 2, padding: '.65rem',
+                                border: 'none', borderRadius: '10px',
+                                background: '#C4A030', color: '#fff',
+                                fontSize: '.84rem', fontWeight: 600, cursor: 'pointer',
+                              }}
+                            >
+                              Apply adjustment
+                            </button>
+                            <button
+                              onClick={() => { setYeastMultiplier(1.0); setAppliedMultiplier(1.0); }}
+                              style={{
+                                flex: 1, padding: '.65rem',
+                                border: '1.5px solid #E8D890', borderRadius: '10px',
+                                background: 'transparent', color: '#7A6010',
+                                fontSize: '.84rem', cursor: 'pointer',
+                              }}
+                            >
+                              Reset
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {schedule && (
                       <Timeline
