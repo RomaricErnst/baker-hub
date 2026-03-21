@@ -233,29 +233,27 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   if (phase === 'bake_time') {
     return (
       <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
-        <div style={{ marginBottom: '.35rem' }}>
-          <label style={LABEL_STYLE}>When do you want to bake?</label>
-          <input
-            type="datetime-local"
-            value={toDateTimeLocal(pendingEatTime)}
-            onChange={e => {
-              const d = new Date(e.target.value);
-              if (!isNaN(d.getTime())) setPendingEatTime(d);
-            }}
-            style={INPUT_STYLE}
-          />
+        <div style={{ marginBottom: '.9rem' }}>
+          <div style={{
+            fontWeight: 700, fontSize: '.95rem', color: 'var(--char)',
+            marginBottom: '.25rem',
+          }}>
+            When does the pizza go in the oven?
+          </div>
+          <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5 }}>
+            We&apos;ll work backwards to tell you exactly when to start.
+          </div>
         </div>
-        <div style={{
-          fontSize: '.76rem', color: 'var(--smoke)',
-          marginBottom: '1rem', marginTop: '.45rem',
-          lineHeight: 1.5,
-        }}>
-          We&apos;ll build the perfect timeline around it.
-        </div>
-        <button
-          onClick={confirmBakeTime}
-          style={continueBtnStyle}
-        >
+        <input
+          type="datetime-local"
+          value={toDateTimeLocal(pendingEatTime)}
+          onChange={e => {
+            const d = new Date(e.target.value);
+            if (!isNaN(d.getTime())) setPendingEatTime(d);
+          }}
+          style={{ ...INPUT_STYLE, marginBottom: '1rem' }}
+        />
+        <button onClick={confirmBakeTime} style={continueBtnStyle}>
           Plan my bake →
         </button>
       </div>
