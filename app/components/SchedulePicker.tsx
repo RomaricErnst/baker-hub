@@ -7,6 +7,8 @@ interface SchedulePickerProps {
   eatTime: Date;
   blocks: AvailabilityBlock[];
   preheatMin: number;
+  styleKey: string;
+  kitchenTemp: number;
   onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[]) => void;
   onConfirm?: () => void;
 }
@@ -28,16 +30,57 @@ function formatDayTime(d: Date): string {
   return `${d.toLocaleDateString('en-US', { weekday: 'long' })} at ${timeStr}`;
 }
 
+// ── Per-style optimal fermentation defaults ───
+// coldH = hours in fridge at 4°C, rtH = room-temperature hours
+// Source: Craig's model, Definition B (70-80% max rise, home-baker forgiving)
+const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number }> = {
+  // Pizza
+  neapolitan:      { coldH: 24, rtH: 2  },
+  newyork:         { coldH: 48, rtH: 2  },
+  roman:           { coldH: 0,  rtH: 8  },
+  pan:             { coldH: 0,  rtH: 6  },
+  sourdough:       { coldH: 24, rtH: 4  },
+  // Bread
+  sourdough_bread: { coldH: 24, rtH: 4  },
+  baguette:        { coldH: 24, rtH: 2  },
+  focaccia:        { coldH: 0,  rtH: 8  },
+  ciabatta:        { coldH: 24, rtH: 2  },
+  brioche:         { coldH: 0,  rtH: 4  },
+};
+const FERM_FALLBACK: { coldH: number; rtH: number } = { coldH: 0, rtH: 8 };
+
 // ── Start suggestion engine ───────────────────
-function computeSuggestion(eatTime: Date, preheatMin: number) {
+// Uses Craig's per-stage model:
+//   RT:   IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))
+//   Cold: IDY% = 50.2 / hours^1.313
+// Tropical correction (RT only): 30-32°C → ×1.15, 33-35°C → ×1.25
+// IDY floor 0.05%, ceiling 2.0%
+function computeSuggestion(
+  eatTime: Date,
+  preheatMin: number,
+  styleKey: string,
+  kitchenTemp: number,
+) {
   const now = new Date();
-  const optimalFermH = 8;
-  const mixingH = 0.25; // ~15 min buffer
   const preheatH = preheatMin / 60;
 
-  const optimalStart  = new Date(eatTime.getTime() - (optimalFermH + preheatH + mixingH) * 3600000);
-  const quickerStart  = new Date(eatTime.getTime() - (4 + preheatH + mixingH) * 3600000);
-  const minFeasibleMs = (2.5 + preheatH) * 3600000;
+  // Look up style defaults
+  const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
+
+  // Tropical correction applies only to the RT portion.
+  // Higher temp → faster fermentation → fewer hours needed → divide by factor.
+  let tropicalFactor = 1;
+  if (kitchenTemp >= 33) tropicalFactor = 1.25;
+  else if (kitchenTemp >= 30) tropicalFactor = 1.15;
+
+  const rtH_adjusted = defaults.rtH / tropicalFactor;
+  const optimalFermH = defaults.coldH + rtH_adjusted;
+  const quickerFermH = optimalFermH * 0.5;
+
+  // optimalStart = bakeTime − preheatMin − optimalFermHours  (per spec)
+  const optimalStart = new Date(eatTime.getTime() - (optimalFermH + preheatH) * 3600000);
+  const quickerStart = new Date(eatTime.getTime() - (quickerFermH + preheatH) * 3600000);
+  const minFeasibleMs = (2 + preheatH) * 3600000;
 
   let scenario: Scenario;
   const msUntilOptimal = optimalStart.getTime() - now.getTime();
@@ -135,7 +178,7 @@ const LABEL_STYLE: React.CSSProperties = {
 };
 
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, onChange, onConfirm }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, onChange, onConfirm }: SchedulePickerProps) {
   const [phase, setPhase] = useState<PickerPhase>('bake_time');
   const [pendingEatTime, setPendingEatTime] = useState(eatTime);
   const [pendingStart, setPendingStart] = useState(startTime);
@@ -154,8 +197,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }, []);
 
   const suggestion = useMemo(
-    () => computeSuggestion(pendingEatTime, preheatMin),
-    [pendingEatTime, preheatMin],
+    () => computeSuggestion(pendingEatTime, preheatMin, styleKey, kitchenTemp),
+    [pendingEatTime, preheatMin, styleKey, kitchenTemp],
   );
 
   const nights   = useMemo(() => getNightsInWindow(pendingStart, pendingEatTime), [pendingStart, pendingEatTime]);
