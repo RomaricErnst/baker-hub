@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { type AvailabilityBlock, toDateTimeLocal, formatTime, hoursLabel } from '../utils';
+import { type AvailabilityBlock, toDateTimeLocal, hoursLabel } from '../utils';
 
 interface SchedulePickerProps {
   startTime: Date;
@@ -713,7 +713,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     marginLeft: '.5rem', fontSize: '.72rem',
                     color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
                   }}>
-                    {formatTime(block.from)} → {formatTime(block.to)}
+                    {formatTimeShort(block.from)} → {formatTimeShort(block.to)}
                   </span>
                   <span style={{
                     marginLeft: '.35rem', fontSize: '.7rem',
