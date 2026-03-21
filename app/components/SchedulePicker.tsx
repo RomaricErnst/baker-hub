@@ -4,7 +4,7 @@ import { type AvailabilityBlock, toDateTimeLocal, hoursLabel } from '../utils';
 
 interface SchedulePickerProps {
   startTime: Date;
-  eatTime: Date;
+  eatTime: Date | null;
   blocks: AvailabilityBlock[];
   preheatMin: number;
   styleKey: string;
@@ -269,10 +269,10 @@ const LABEL_STYLE: React.CSSProperties = {
 
 // ── Component ─────────────────────────────────
 export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, onChange, onConfirm }: SchedulePickerProps) {
-  const alreadySet = eatTime > new Date();
+  const alreadySet = eatTime !== null && eatTime > new Date();
   // Skip phase 1 if a future bake time is already set (return-to-edit case)
   const [phase, setPhase] = useState<PickerPhase>(() => alreadySet ? 'start_confirm' : 'bake_time');
-  const [pendingEatTime, setPendingEatTime] = useState(eatTime);
+  const [pendingEatTime, setPendingEatTime] = useState<Date>(eatTime ?? new Date());
   const [pendingStart, setPendingStart] = useState(startTime);
   // eatTimeSet: false on first visit until baker picks a date
   const [eatTimeSet, setEatTimeSet] = useState(alreadySet);
@@ -503,6 +503,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             ...INPUT_STYLE,
             border: `2px solid ${startInvalid ? 'var(--terra)' : 'var(--border)'}`,
             color: startComputed ? 'var(--char)' : 'var(--smoke)',
+            fontWeight: startComputed ? 700 : undefined,
             pointerEvents: 'none',
           }}>
             {startComputed ? formatDayShort(pendingStart) : 'Set by plan above'}

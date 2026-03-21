@@ -163,10 +163,7 @@ export default function Home() {
   const [startTime, setStartTime] = useState<Date>(() => {
     const d = new Date(); d.setMinutes(0, 0, 0); return d;
   });
-  const [eatTime, setEatTime] = useState<Date>(() => {
-    const d = new Date(); d.setMinutes(0, 0, 0);
-    d.setTime(d.getTime() + 24 * 3600000); return d;
-  });
+  const [eatTime, setEatTime] = useState<Date | null>(null);
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
   const [yeastType, setYeastType] = useState<YeastType>('instant');
 
@@ -204,7 +201,7 @@ export default function Home() {
   const preheatMin = OVEN_TYPES[ovenType].preheatMin;
 
   const schedule = useMemo(() => {
-    if (startTime >= eatTime) return null;
+    if (!eatTime || startTime >= eatTime) return null;
     return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType);
   }, [startTime, eatTime, blocks, kitchenTemp, preheatMin]);
 
@@ -270,7 +267,7 @@ export default function Home() {
     setOvenType('home_oven_steel'); setMixerType('hand');
     const now = new Date(); now.setMinutes(0, 0, 0);
     setStartTime(now);
-    setEatTime(new Date(now.getTime() + 24 * 3600000));
+    setEatTime(null);
     setBlocks([]); setYeastType('instant');
     setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(4);
     setShowResults(false); setActiveStep(1);
@@ -574,7 +571,7 @@ export default function Home() {
             <StepCard
               num={8} title="When does the pizza go in the oven?"
               activeStep={activeStep}
-              summary={`${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}`}
+              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
               onEdit={() => setActiveStep(8)}
             >
               <SchedulePicker
@@ -782,7 +779,7 @@ export default function Home() {
                         blocks={blocks}
                         preheatMin={preheatMin}
                         startTime={startTime}
-                        eatTime={eatTime}
+                        eatTime={eatTime!}
                         mixerType={mixerType}
                         styleKey={styleKey ?? ''}
                         oil={recipe?.oil ?? 0}
