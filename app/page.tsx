@@ -248,11 +248,12 @@ export default function Home() {
     setStyleKey(sk);
     setItemWeight(ALL_STYLES[sk].ballW);
     setNumItems(bakeType === 'bread' ? 1 : 2);
+    advance(2);
   }
 
   function advance(from: number) {
     setActiveStep(from + 1);
-    if (from === 6) setShowResults(true);
+    if (from === 8) setShowResults(true);
     else setShowResults(false);
     setTimeout(() => {
       const el = document.getElementById(`step-${from + 1}`);
@@ -375,204 +376,205 @@ export default function Home() {
               </div>
             </StepCard>
 
-            {/* ─── STEP 2: Style + quantity ─────────── */}
+            {/* ─── STEP 2: Style picker ────────────── */}
             <StepCard
               num={2} title="Choose your dough style"
               activeStep={activeStep}
-              summary={styleKey
-                ? `${ALL_STYLES[styleKey].emoji} ${ALL_STYLES[styleKey].name} · ${numItems} × ${itemWeight} g`
-                : undefined}
+              summary={styleKey ? `${ALL_STYLES[styleKey].emoji} ${ALL_STYLES[styleKey].name}` : undefined}
               onEdit={() => setActiveStep(2)}
             >
               {bakeType && (
-                <>
-                  <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
-
-                  {styleKey && (
-                    <>
-                      {/* Quantity row */}
-                      <div style={{
-                        display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap',
-                        background: 'var(--cream)', borderRadius: '12px',
-                        padding: '1rem 1.15rem', marginTop: '1.1rem',
-                      }}>
-                        {/* Num items */}
-                        <div>
-                          <FieldLabel>Quantity</FieldLabel>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-                            <button
-                              onClick={() => setNumItems(n => Math.max(1, n - 1))}
-                              className="btn"
-                              style={{
-                                width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-                                border: 'none', background: 'var(--char)', color: '#fff',
-                                cursor: 'pointer', fontSize: '1.2rem', fontWeight: 700,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              }}
-                            >−</button>
-                            <input
-                              type="number"
-                              min={1}
-                              value={numItems}
-                              onChange={e => {
-                                const v = parseInt(e.target.value, 10);
-                                if (!isNaN(v) && v >= 1) setNumItems(v);
-                              }}
-                              style={{
-                                width: '64px', textAlign: 'center',
-                                padding: '.4rem .25rem',
-                                border: '1.5px solid var(--border)', borderRadius: '9px',
-                                fontFamily: 'var(--font-dm-mono)', fontSize: '1.1rem', fontWeight: 700,
-                                color: 'var(--char)', background: 'var(--warm)', outline: 'none',
-                              }}
-                            />
-                            <button
-                              onClick={() => setNumItems(n => n + 1)}
-                              className="btn"
-                              style={{
-                                width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-                                border: 'none', background: 'var(--terra)', color: '#fff',
-                                cursor: 'pointer', fontSize: '1.2rem', fontWeight: 700,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              }}
-                            >+</button>
-                          </div>
-                          {numItems > 12 && (
-                            <div style={{
-                              marginTop: '.55rem',
-                              fontSize: '.72rem', color: 'var(--smoke)',
-                              lineHeight: 1.5, maxWidth: '180px',
-                            }}>
-                              🍕 Large batch detected. See recipe output for yeast adjustment.
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Item weight */}
-                        <div>
-                          <FieldLabel>Weight per {isBread ? 'loaf' : 'ball'}</FieldLabel>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
-                            <input
-                              type="number" min={100} max={1500} step={10}
-                              value={itemWeight}
-                              onChange={e => setItemWeight(Math.max(100, Number(e.target.value)))}
-                              style={{
-                                width: '80px', padding: '.42rem .65rem',
-                                border: '1.5px solid var(--border)', borderRadius: '8px',
-                                fontFamily: 'var(--font-dm-mono)', fontSize: '.95rem',
-                                background: 'var(--warm)', color: 'var(--char)', outline: 'none',
-                              }}
-                            />
-                            <span style={{ fontSize: '.82rem', color: 'var(--smoke)' }}>g</span>
-                          </div>
-                        </div>
-
-                        {/* Total */}
-                        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                          <FieldLabel>Total dough</FieldLabel>
-                          <span style={{
-                            fontFamily: 'var(--font-dm-mono)', fontSize: '1.3rem',
-                            fontWeight: 700, color: accentColor,
-                          }}>
-                            {numItems * itemWeight} g
-                          </span>
-                        </div>
-                      </div>
-
-                      <ContinueBtn onClick={() => advance(2)} />
-                    </>
-                  )}
-                </>
+                <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
               )}
             </StepCard>
 
-            {/* ─── STEP 3: Oven ──────────────────────── */}
+            {/* ─── STEP 3: Quantity ────────────────── */}
             <StepCard
-              num={3} title="Your baking setup"
+              num={3} title="How many and how big?"
               activeStep={activeStep}
-              summary={`${OVEN_TYPES[ovenType].emoji} ${OVEN_TYPES[ovenType].name}`}
+              summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
               onEdit={() => setActiveStep(3)}
             >
-              <OvenPicker
-                selected={ovenType}
-                onSelect={ot => { setOvenType(ot); advance(3); }}
-              />
-            </StepCard>
+              <div style={{
+                display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap',
+                background: 'var(--cream)', borderRadius: '12px',
+                padding: '1rem 1.15rem',
+              }}>
+                {/* Num items */}
+                <div>
+                  <FieldLabel>Quantity</FieldLabel>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+                    <button
+                      onClick={() => setNumItems(n => Math.max(1, n - 1))}
+                      className="btn"
+                      style={{
+                        width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                        border: 'none', background: 'var(--char)', color: '#fff',
+                        cursor: 'pointer', fontSize: '1.2rem', fontWeight: 700,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >−</button>
+                    <input
+                      type="number"
+                      min={1}
+                      value={numItems}
+                      onChange={e => {
+                        const v = parseInt(e.target.value, 10);
+                        if (!isNaN(v) && v >= 1) setNumItems(v);
+                      }}
+                      style={{
+                        width: '64px', textAlign: 'center',
+                        padding: '.4rem .25rem',
+                        border: '1.5px solid var(--border)', borderRadius: '9px',
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '1.1rem', fontWeight: 700,
+                        color: 'var(--char)', background: 'var(--warm)', outline: 'none',
+                      }}
+                    />
+                    <button
+                      onClick={() => setNumItems(n => n + 1)}
+                      className="btn"
+                      style={{
+                        width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                        border: 'none', background: 'var(--terra)', color: '#fff',
+                        cursor: 'pointer', fontSize: '1.2rem', fontWeight: 700,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >+</button>
+                  </div>
+                  {numItems > 12 && (
+                    <div style={{
+                      marginTop: '.55rem',
+                      fontSize: '.72rem', color: 'var(--smoke)',
+                      lineHeight: 1.5, maxWidth: '180px',
+                    }}>
+                      🍕 Large batch detected. See recipe output for yeast adjustment.
+                    </div>
+                  )}
+                </div>
 
-            {/* ─── STEP 4: Mixer ─────────────────────── */}
-            <StepCard
-              num={4} title="Your mixing method"
-              activeStep={activeStep}
-              summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
-              onEdit={() => setActiveStep(4)}
-            >
-              <MixerPicker
-                selected={mixerType}
-                onSelect={mt => { setMixerType(mt); advance(4); }}
-              />
-            </StepCard>
+                {/* Item weight */}
+                <div>
+                  <FieldLabel>Weight per {isBread ? 'loaf' : 'ball'}</FieldLabel>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                    <input
+                      type="number" min={100} max={1500} step={10}
+                      value={itemWeight}
+                      onChange={e => setItemWeight(Math.max(100, Number(e.target.value)))}
+                      style={{
+                        width: '80px', padding: '.42rem .65rem',
+                        border: '1.5px solid var(--border)', borderRadius: '8px',
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '.95rem',
+                        background: 'var(--warm)', color: 'var(--char)', outline: 'none',
+                      }}
+                    />
+                    <span style={{ fontSize: '.82rem', color: 'var(--smoke)' }}>g</span>
+                  </div>
+                </div>
 
-            {/* ─── STEP 5: Schedule + yeast ──────────── */}
-            <StepCard
-              num={5} title="Your timing"
-              activeStep={activeStep}
-              summary={`${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'} · ${YEAST_TYPES[yeastType].emoji} ${YEAST_TYPES[yeastType].shortName}`}
-              onEdit={() => setActiveStep(5)}
-            >
-              {/* Yeast type */}
-              <div style={{ marginBottom: '1.25rem' }}>
-                <FieldLabel>Yeast type</FieldLabel>
-                <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                  {(Object.keys(YEAST_TYPES) as YeastType[]).map(yt => {
-                    const active = yeastType === yt;
-                    return (
-                      <button
-                        key={yt}
-                        onClick={() => setYeastType(yt)}
-                        className="btn"
-                        style={{
-                          padding: '.38rem .85rem', borderRadius: '20px',
-                          border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                          background: active ? '#FEF4EF' : 'var(--warm)',
-                          color: active ? 'var(--terra)' : 'var(--smoke)',
-                          fontSize: '.78rem', fontWeight: active ? 500 : 400,
-                          cursor: 'pointer', transition: 'all .15s',
-                        }}
-                      >
-                        {YEAST_TYPES[yt].emoji} {YEAST_TYPES[yt].name}
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => setShowYeastHelper(true)}
-                    className="btn"
-                    style={{
-                      padding: '.38rem .75rem', borderRadius: '20px',
-                      border: '1.5px solid var(--border)', background: 'var(--warm)',
-                      color: 'var(--smoke)', fontSize: '.75rem', cursor: 'pointer',
-                    }}
-                  >
-                    🤔 Not sure?
-                  </button>
+                {/* Total */}
+                <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                  <FieldLabel>Total dough</FieldLabel>
+                  <span style={{
+                    fontFamily: 'var(--font-dm-mono)', fontSize: '1.3rem',
+                    fontWeight: 700, color: accentColor,
+                  }}>
+                    {numItems * itemWeight} g
+                  </span>
                 </div>
               </div>
 
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.15rem' }}>
-                <SchedulePicker
-                  startTime={startTime} eatTime={eatTime} blocks={blocks}
-                  preheatMin={preheatMin}
-                  onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
-                  onConfirm={() => advance(5)}
-                />
+              <ContinueBtn onClick={() => advance(3)} />
+            </StepCard>
+
+            {/* ─── STEP 4: Oven ────────────────────── */}
+            <StepCard
+              num={4} title="Your baking setup"
+              activeStep={activeStep}
+              summary={`${OVEN_TYPES[ovenType].emoji} ${OVEN_TYPES[ovenType].name}`}
+              onEdit={() => setActiveStep(4)}
+            >
+              <OvenPicker
+                selected={ovenType}
+                onSelect={ot => { setOvenType(ot); advance(4); }}
+              />
+            </StepCard>
+
+            {/* ─── STEP 5: Mixer ───────────────────── */}
+            <StepCard
+              num={5} title="Your mixing method"
+              activeStep={activeStep}
+              summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
+              onEdit={() => setActiveStep(5)}
+            >
+              <MixerPicker
+                selected={mixerType}
+                onSelect={mt => { setMixerType(mt); advance(5); }}
+              />
+            </StepCard>
+
+            {/* ─── STEP 6: Yeast type ──────────────── */}
+            <StepCard
+              num={6} title="What yeast are you using?"
+              activeStep={activeStep}
+              summary={`${YEAST_TYPES[yeastType].emoji} ${YEAST_TYPES[yeastType].shortName}`}
+              onEdit={() => setActiveStep(6)}
+            >
+              <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                {(Object.keys(YEAST_TYPES) as YeastType[]).map(yt => {
+                  const active = yeastType === yt;
+                  return (
+                    <button
+                      key={yt}
+                      onClick={() => { setYeastType(yt); advance(6); }}
+                      className="btn"
+                      style={{
+                        padding: '.38rem .85rem', borderRadius: '20px',
+                        border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
+                        background: active ? '#FEF4EF' : 'var(--warm)',
+                        color: active ? 'var(--terra)' : 'var(--smoke)',
+                        fontSize: '.78rem', fontWeight: active ? 500 : 400,
+                        cursor: 'pointer', transition: 'all .15s',
+                      }}
+                    >
+                      {YEAST_TYPES[yt].emoji} {YEAST_TYPES[yt].name}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setShowYeastHelper(true)}
+                  className="btn"
+                  style={{
+                    padding: '.38rem .75rem', borderRadius: '20px',
+                    border: '1.5px solid var(--border)', background: 'var(--warm)',
+                    color: 'var(--smoke)', fontSize: '.75rem', cursor: 'pointer',
+                  }}
+                >
+                  🤔 Not sure?
+                </button>
               </div>
             </StepCard>
 
-            {/* ─── STEP 6: Climate ───────────────────── */}
+            {/* ─── STEP 7: Scheduler ───────────────── */}
             <StepCard
-              num={6} title="Your kitchen climate"
+              num={7} title="When does the pizza go in the oven?"
+              activeStep={activeStep}
+              summary={`${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}`}
+              onEdit={() => setActiveStep(7)}
+            >
+              <SchedulePicker
+                startTime={startTime} eatTime={eatTime} blocks={blocks}
+                preheatMin={preheatMin}
+                onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                onConfirm={() => advance(7)}
+              />
+            </StepCard>
+
+            {/* ─── STEP 8: Climate ─────────────────── */}
+            <StepCard
+              num={8} title="Your kitchen climate"
               activeStep={activeStep}
               summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
-              onEdit={() => setActiveStep(6)}
+              onEdit={() => setActiveStep(8)}
             >
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
@@ -581,7 +583,7 @@ export default function Home() {
               />
 
               <button
-                onClick={() => advance(6)}
+                onClick={() => advance(8)}
                 className="btn"
                 style={{
                   marginTop: '1.25rem', width: '100%', padding: '.9rem',
@@ -832,7 +834,7 @@ export default function Home() {
       {/* ── Yeast Helper modal ──────────────── */}
       {showYeastHelper && (
         <YeastHelper
-          onSelect={yt => { setYeastType(yt); setShowYeastHelper(false); }}
+          onSelect={yt => { setYeastType(yt); setShowYeastHelper(false); advance(6); }}
           onClose={() => setShowYeastHelper(false)}
         />
       )}
