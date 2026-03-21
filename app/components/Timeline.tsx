@@ -24,7 +24,7 @@ interface TimelineProps {
 }
 
 // ── Step kinds ────────────────────────────────
-type StepKind = 'mixing' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'preheat' | 'eat';
+type StepKind = 'mixing' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'rt_warmup' | 'preheat' | 'eat';
 
 interface TimelineStep {
   kind: 'step';
@@ -50,6 +50,7 @@ const THEME: Record<StepKind, {
   final_proof: { dot: '#7A8C6E',       ring: 'rgba(122,140,110,.1)', line: '#C8D4BA',       pill: '#F2F5EF',      pillText: '#4A5A44', cardBg: '#F5F7F2', cardBorder: '#C8D4BA' },
   cold:        { dot: '#6A7FA8',       ring: 'rgba(106,127,168,.1)', line: '#C4CDE0',       pill: '#EEF2FA',      pillText: '#3A5A8A', cardBg: '#EEF2FA', cardBorder: '#C4CDE0' },
   rest_rt:     { dot: '#B87850',       ring: 'rgba(184,120,80,.1)',  line: '#DDB898',       pill: '#FDF0E8',      pillText: '#7A3A10', cardBg: '#FDF4EE', cardBorder: '#DDB898' },
+  rt_warmup:   { dot: '#B87850',       ring: 'rgba(184,120,80,.1)',  line: '#DDB898',       pill: '#FDF0E8',      pillText: '#7A3A10', cardBg: '#FDF4EE', cardBorder: '#DDB898' },
   preheat:     { dot: '#C4A030',       ring: 'rgba(196,160,48,.12)', line: '#E8D890',       pill: '#FDFBF2',      pillText: '#7A5A10' },
   eat:         { dot: '#5A9A50',       ring: 'rgba(90,154,80,.1)',   line: 'transparent',   pill: '#F2FAF0',      pillText: '#3A6A30' },
 };
@@ -66,6 +67,37 @@ function buildItems(
 ): TimelineStep[] {
   const items: TimelineStep[] = [];
   const kneadMin = MIXER_TYPES[mixerType].kneadMin;
+  const isTwoPhase = schedule.coldRetard2Start !== null;
+
+  // Divide & ball duration
+  const extraBalls = Math.max(0, numItems - 4);
+  const divideMin  = 15 + 2 * extraBalls;
+  const divideH    = divideMin / 60;
+
+  // Bulk ferm tip — dynamic based on bulkFermHours
+  function bulkFermTip(bulkH: number): string {
+    if (bulkH >= 2) {
+      return 'Cover tightly and place in a warm spot away from drafts. Perform 4 sets of stretch & folds in the first 2 hours, every 30 minutes.';
+    } else if (bulkH >= 1) {
+      return 'Cover tightly. Perform 2–3 sets of stretch & folds every 20–30 minutes.';
+    } else if (bulkH >= 0.5) {
+      return 'Cover tightly. Perform one set of stretch & folds after 15 minutes, then cover and rest.';
+    } else {
+      return 'Cover tightly and rest — dough goes straight to the fridge after this short window.';
+    }
+  }
+
+  // Divide & ball tip
+  function divideBallTip(): string {
+    let tip = `Weigh and divide dough into ${numItems} ball${numItems !== 1 ? 's' : ''}. Pinch the bottom tight for a smooth, taut skin.`;
+    if (schedule.coldRetard1Start) {
+      tip += ' Cold dough is easier to ball — work quickly before it warms up.';
+    }
+    if (schedule.kitchenTemp >= 30 && schedule.coldRetard1Start) {
+      tip += ' ⚠️ Your kitchen is warm — get balls back in the fridge within 20 minutes.';
+    }
+    return tip;
+  }
 
   // 1 — Mix & Knead
   items.push({
@@ -84,62 +116,123 @@ function buildItems(
       time: schedule.bulkFermStart,
       label: 'Bulk Fermentation',
       icon: '🌡️',
-      tip: 'Cover tightly and place in a warm spot away from drafts. Perform 4 sets of stretch & folds in the first 2 hours, every 30 minutes.',
+      tip: bulkFermTip(schedule.bulkFermHours),
       durationH: schedule.bulkFermHours,
     });
   }
 
-  // 2b — Divide & Ball
-  {
-    const divideTime = new Date(schedule.bulkFermStart.getTime() + schedule.bulkFermHours * 3600000);
-    const extraBalls = Math.max(0, numItems - 4);
-    const divideMin  = 15 + 2 * extraBalls;
-    const divideH    = divideMin / 60;
+  if (isTwoPhase) {
+    // ── TWO-PHASE SEQUENCE ──────────────────────────────────────
 
-    // Detect tight window: next step starts within 15 min
-    const nextStepTime = schedule.coldRetardStart ?? schedule.finalProofStart;
-    const windowMin = (nextStepTime.getTime() - divideTime.getTime()) / 60000;
-    const isTight   = windowMin < 15;
+    // 3 — Cold Retard 1 (bulk cold)
+    if (schedule.coldRetard1Start && schedule.coldRetard1End) {
+      const cold1DurationH = Math.max(0,
+        (schedule.coldRetard1End.getTime() - schedule.coldRetard1Start.getTime()) / 3600000
+      );
+      const coldBlocks1 = blocks
+        .filter(b => b.from < schedule.coldRetard1End! && b.to > schedule.coldRetard1Start!)
+        .sort((a, b) => a.from.getTime() - b.from.getTime());
+      items.push({
+        kind: 'step', id: 'cold_1', stepKind: 'cold',
+        time: schedule.coldRetard1Start,
+        label: 'Cold Retard — Bulk',
+        icon: '❄️',
+        tip: 'Whole dough mass goes into the fridge. Cold bulk fermentation slows yeast activity and develops flavour. No action needed.',
+        durationH: cold1DurationH,
+        coldBlocks: coldBlocks1,
+      });
+    }
 
+    // 4 — Divide & Ball (at divideBallTime)
     items.push({
       kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
-      time: divideTime,
+      time: schedule.divideBallTime,
       label: 'Divide & Ball',
       icon: '⚖️',
-      tip: `Weigh and divide dough into ${numItems} balls. Pinch the bottom tight for a smooth, taut skin.${isTight ? ' ⚠️ Tight window — work quickly.' : ''}`,
+      tip: divideBallTip(),
       durationH: divideH,
     });
-  }
 
-  // 3 — Cold Retard (if any)
-  if (schedule.coldRetardStart && schedule.coldRetardEnd) {
-    const coldBlocks = blocks
-      .filter(b => b.from < schedule.coldRetardEnd! && b.to > schedule.coldRetardStart!)
-      .sort((a, b) => a.from.getTime() - b.from.getTime());
+    // 5 — Cold Retard 2 (balls cold)
+    if (schedule.coldRetard2Start && schedule.coldRetard2End) {
+      const cold2DurationH = Math.max(0,
+        (schedule.coldRetard2End.getTime() - schedule.coldRetard2Start.getTime()) / 3600000
+      );
+      const coldBlocks2 = blocks
+        .filter(b => b.from < schedule.coldRetard2End! && b.to > schedule.coldRetard2Start!)
+        .sort((a, b) => a.from.getTime() - b.from.getTime());
+      items.push({
+        kind: 'step', id: 'cold_2', stepKind: 'cold',
+        time: schedule.coldRetard2Start,
+        label: 'Cold Retard — Balls',
+        icon: '❄️',
+        tip: 'Individual dough balls rest in the fridge. This firms them up and makes final proofing more controlled.',
+        durationH: cold2DurationH,
+        coldBlocks: coldBlocks2,
+      });
+    }
+
+    // 6 — RT Warmup
+    if (schedule.rtWarmupStart && schedule.rtWarmupEnd) {
+      const warmupDurationH = Math.max(0,
+        (schedule.rtWarmupEnd.getTime() - schedule.rtWarmupStart.getTime()) / 3600000
+      );
+      items.push({
+        kind: 'step', id: 'rt_warmup', stepKind: 'rt_warmup',
+        time: schedule.rtWarmupStart,
+        label: 'Rest at room temperature',
+        icon: '🌡️',
+        tip: 'Remove dough balls from fridge and let them warm up uncovered. In a hot kitchen, this is short — watch the dough, not the clock. Balls should feel slightly soft before final proof begins.',
+        durationH: warmupDurationH,
+      });
+    }
+
+  } else {
+    // ── SINGLE-PHASE SEQUENCE ───────────────────────────────────
+
+    // 3 — Divide & Ball (after bulk or after coming out of fridge)
     items.push({
-      kind: 'step', id: 'cold', stepKind: 'cold',
-      time: schedule.coldRetardStart,
-      label: 'Cold Retard',
-      icon: '❄️',
-      tip: 'Dough rests in the fridge. Cold fermentation builds flavour slowly — no action needed, time works for you.',
-      durationH: schedule.coldRetardHours,
-      coldBlocks,
+      kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
+      time: schedule.divideBallTime,
+      label: 'Divide & Ball',
+      icon: '⚖️',
+      tip: divideBallTip(),
+      durationH: divideH,
     });
+
+    // 4 — Cold Retard (single-phase, if any)
+    if (schedule.coldRetard1Start && schedule.coldRetard1End) {
+      const coldDurationH = Math.max(0,
+        (schedule.coldRetard1End.getTime() - schedule.coldRetard1Start.getTime()) / 3600000
+      );
+      const coldBlocks = blocks
+        .filter(b => b.from < schedule.coldRetard1End! && b.to > schedule.coldRetard1Start!)
+        .sort((a, b) => a.from.getTime() - b.from.getTime());
+      items.push({
+        kind: 'step', id: 'cold', stepKind: 'cold',
+        time: schedule.coldRetard1Start,
+        label: 'Cold Retard',
+        icon: '❄️',
+        tip: 'Dough rests in the fridge. Cold fermentation builds flavour slowly — no action needed, time works for you.',
+        durationH: coldDurationH,
+        coldBlocks,
+      });
+    }
+
+    // 5 — Remove from fridge (only if cold retard exists and restRtHours > 0)
+    if (schedule.coldRetardEnd && schedule.restRtHours > 0) {
+      items.push({
+        kind: 'step', id: 'rest_rt', stepKind: 'rest_rt',
+        time: schedule.coldRetardEnd,
+        label: 'Remove from fridge — rest at room temperature',
+        icon: '🌡️',
+        tip: 'Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch and will tear. The poke test will be unreliable until the dough has warmed through.',
+        durationH: schedule.restRtHours,
+      });
+    }
   }
 
-  // 4 — Remove from fridge (only if cold retard exists)
-  if (schedule.coldRetardEnd && schedule.restRtHours > 0) {
-    items.push({
-      kind: 'step', id: 'rest_rt', stepKind: 'rest_rt',
-      time: schedule.coldRetardEnd,
-      label: 'Remove from fridge — rest at room temperature',
-      icon: '🌡️',
-      tip: 'Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch and will tear. The poke test will be unreliable until the dough has warmed through.',
-      durationH: schedule.restRtHours,
-    });
-  }
-
-  // 5 — Final Proof
+  // Final Proof (both paths)
   if (schedule.finalProofHours > 0) {
     items.push({
       kind: 'step', id: 'final_proof', stepKind: 'final_proof',
@@ -153,7 +246,7 @@ function buildItems(
     });
   }
 
-  // 6 — Preheat Oven
+  // Preheat Oven
   items.push({
     kind: 'step', id: 'preheat', stepKind: 'preheat',
     time: schedule.preheatStart,
@@ -165,7 +258,7 @@ function buildItems(
     durationH: preheatMin / 60,
   });
 
-  // 7 — Bake & Eat!
+  // Bake & Eat!
   items.push({
     kind: 'step', id: 'eat', stepKind: 'eat',
     time: schedule.bakeStart,
@@ -434,7 +527,7 @@ export default function Timeline({
                     : item.stepKind === 'final_proof'
                     ? <>Shape dough balls if not already done. Cover and leave at room temperature until the poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> confirms they are ready to bake.</>
                     : item.stepKind === 'divide_ball'
-                    ? <>{item.tip}{schedule.coldRetardStart && <><br /><span style={{ marginTop: '.35rem', display: 'inline-block', color: '#6A7FA8', fontStyle: 'italic' }}>Coming from the fridge? Cold dough is easier to ball — work quickly before it warms up.</span></>}</>
+                    ? <>{item.tip}</>
                     : item.tip}
                 </div>
 
@@ -557,7 +650,7 @@ export default function Timeline({
                 })()}
 
                 {/* Step sub-label */}
-                {(item.stepKind === 'cold' || item.stepKind === 'bulk_ferm' || item.stepKind === 'final_proof' || item.stepKind === 'rest_rt') && th.cardBg && (
+                {(item.stepKind === 'cold' || item.stepKind === 'bulk_ferm' || item.stepKind === 'final_proof' || item.stepKind === 'rest_rt' || item.stepKind === 'rt_warmup') && th.cardBg && (
                   <div style={{
                     marginTop: '.5rem',
                     display: 'flex', gap: '.4rem', alignItems: 'center',
@@ -573,6 +666,7 @@ export default function Timeline({
                     {item.stepKind === 'bulk_ferm' && `Bulk fermentation · ${hoursLabel(item.durationH ?? 0)}`}
                     {item.stepKind === 'final_proof' && `Final proof window · ${hoursLabel(item.durationH ?? 0)}`}
                     {item.stepKind === 'rest_rt' && `Room temperature · ${hoursLabel(item.durationH ?? 0)}`}
+                    {item.stepKind === 'rt_warmup' && `Room temperature warmup · ${hoursLabel(item.durationH ?? 0)}`}
                   </div>
                 )}
               </div>
