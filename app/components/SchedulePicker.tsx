@@ -27,19 +27,22 @@ function formatDayTime(d: Date): string {
 
   if (dStart.getTime() === todayStart.getTime()) return `tonight at ${timeStr}`;
   if (dStart.getTime() === tomorrowStart.getTime()) return `tomorrow at ${timeStr}`;
-  return `${d.toLocaleDateString('en-US', { weekday: 'long' })} at ${timeStr}`;
+  const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
+  const month   = d.toLocaleDateString('en-US', { month: 'short' });
+  return `${weekday} ${d.getDate()} ${month} at ${timeStr}`;
 }
 
 // ── Per-style optimal fermentation defaults ───
 // coldH = hours in fridge at 4°C, rtH = room-temperature hours
+// preferredColdH = longer cold option for styles that benefit from extra time
 // Source: Craig's model, Definition B (70-80% max rise, home-baker forgiving)
-const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number }> = {
+const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; preferredColdH?: number }> = {
   // Pizza
-  neapolitan:      { coldH: 24, rtH: 2  },
-  newyork:         { coldH: 48, rtH: 2  },
+  neapolitan:      { coldH: 24, rtH: 2,  preferredColdH: 48 },
+  newyork:         { coldH: 48, rtH: 2,  preferredColdH: 72 },
   roman:           { coldH: 0,  rtH: 8  },
   pan:             { coldH: 0,  rtH: 6  },
-  sourdough:       { coldH: 24, rtH: 4  },
+  sourdough:       { coldH: 24, rtH: 4,  preferredColdH: 48 },
   // Bread
   sourdough_bread: { coldH: 24, rtH: 4  },
   baguette:        { coldH: 24, rtH: 2  },
@@ -48,6 +51,18 @@ const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number }> = {
   brioche:         { coldH: 0,  rtH: 4  },
 };
 const FERM_FALLBACK: { coldH: number; rtH: number } = { coldH: 0, rtH: 8 };
+
+// ── Reasonable hours constraint ───────────────
+// Never suggest a start between 00:00 and 07:00 — push to 07:00 that morning.
+function pushToReasonableHour(d: Date): Date {
+  const h = d.getHours();
+  if (h >= 0 && h < 7) {
+    const pushed = new Date(d);
+    pushed.setHours(7, 0, 0, 0);
+    return pushed;
+  }
+  return d;
+}
 
 // ── Start suggestion engine ───────────────────
 // Uses Craig's per-stage model:
@@ -63,6 +78,8 @@ function computeSuggestion(
 ) {
   const now = new Date();
   const preheatH = preheatMin / 60;
+  const msUntilBake = eatTime.getTime() - now.getTime();
+  const minFeasibleMs = (2 + preheatH) * 3600000;
 
   // Look up style defaults
   const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
@@ -73,36 +90,36 @@ function computeSuggestion(
   if (kitchenTemp >= 33) tropicalFactor = 1.25;
   else if (kitchenTemp >= 30) tropicalFactor = 1.15;
 
-  const rtH_adjusted = defaults.rtH / tropicalFactor;
-  const optimalFermH = defaults.coldH + rtH_adjusted;
-  const quickerFermH = optimalFermH * 0.5;
+  const rtH_adjusted   = defaults.rtH / tropicalFactor;
+  const standardFermH  = defaults.coldH + rtH_adjusted;
 
-  // optimalStart = bakeTime − preheatMin − optimalFermHours  (per spec)
-  let optimalStart = new Date(eatTime.getTime() - (optimalFermH + preheatH) * 3600000);
-  let quickerStart = new Date(eatTime.getTime() - (quickerFermH + preheatH) * 3600000);
-  const minFeasibleMs = (2 + preheatH) * 3600000;
+  // Preferred (longer) fermentation — only for styles with preferredColdH defined.
+  // Baker must have enough time for preferred + preheat + 2h breathing room.
+  const preferredColdH = defaults.preferredColdH ?? null;
+  const preferredFermH = preferredColdH !== null ? preferredColdH + rtH_adjusted : null;
+  const canUsePreferred = preferredFermH !== null
+    && msUntilBake >= (preferredFermH + preheatH + 2) * 3600000;
 
-  // Reasonable hours constraint: never suggest a start between 00:00 and 07:00.
-  // If a suggested time falls in that window, push it forward to 07:00 that morning.
-  function pushToReasonableHour(d: Date): Date {
-    const h = d.getHours();
-    if (h >= 0 && h < 7) {
-      const pushed = new Date(d);
-      pushed.setHours(7, 0, 0, 0);
-      return pushed;
-    }
-    return d;
-  }
-  optimalStart = pushToReasonableHour(optimalStart);
-  quickerStart = pushToReasonableHour(quickerStart);
+  // Best start: preferred if baker has time, otherwise standard
+  const bestFermH = canUsePreferred ? preferredFermH! : standardFermH;
+  let bestStart = new Date(eatTime.getTime() - (bestFermH + preheatH) * 3600000);
+
+  // Alternative start: standard option when in preferred mode, quicker half-time otherwise
+  let altStart = canUsePreferred
+    ? new Date(eatTime.getTime() - (standardFermH + preheatH) * 3600000)
+    : new Date(eatTime.getTime() - (standardFermH * 0.5 + preheatH) * 3600000);
+
+  bestStart = pushToReasonableHour(bestStart);
+  altStart  = pushToReasonableHour(altStart);
+
+  // Scenario is based on the standard window (not preferred) — tight/too_short thresholds unchanged
+  const standardStart = new Date(eatTime.getTime() - (standardFermH + preheatH) * 3600000);
+  const msUntilStandard = standardStart.getTime() - now.getTime();
 
   let scenario: Scenario;
-  const msUntilOptimal = optimalStart.getTime() - now.getTime();
-  const msUntilBake    = eatTime.getTime() - now.getTime();
-
   if (msUntilBake < minFeasibleMs) {
     scenario = 'too_short';
-  } else if (msUntilOptimal < 2 * 3600000) {
+  } else if (msUntilStandard < 2 * 3600000) {
     scenario = 'tight';
   } else {
     scenario = 'plenty';
@@ -110,10 +127,17 @@ function computeSuggestion(
 
   const suggestedStart =
     scenario === 'too_short' ? new Date(now)
-    : scenario === 'tight'   ? new Date(Math.max(now.getTime() + 5 * 60000, optimalStart.getTime()))
-    : optimalStart;
+    : scenario === 'tight'   ? new Date(Math.max(now.getTime() + 5 * 60000, pushToReasonableHour(standardStart).getTime()))
+    : bestStart;
 
-  return { scenario, suggestedStart, optimalStart, quickerStart };
+  return {
+    scenario,
+    suggestedStart,
+    alternativeStart: altStart,
+    isPreferredMode: canUsePreferred && scenario === 'plenty',
+    preferredColdH: preferredColdH ?? 0,
+    standardColdH: defaults.coldH,
+  };
 }
 
 // ── Workday helper ────────────────────────────
@@ -321,7 +345,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── PHASE 2: Start suggestion + confirm ───────
   if (phase === 'start_confirm') {
-    const { scenario, suggestedStart, quickerStart } = suggestion;
+    const { scenario, suggestedStart, alternativeStart, isPreferredMode, preferredColdH, standardColdH } = suggestion;
 
     const scenarioBg    = scenario === 'too_short' ? '#FEF4EF' : scenario === 'tight' ? '#FFF8E8' : '#F2FAF0';
     const scenarioBdr   = scenario === 'too_short' ? '#F5C4B0' : scenario === 'tight' ? '#E8D080' : '#C8D4BA';
@@ -330,7 +354,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     let scenarioMsg: string;
     if (scenario === 'plenty') {
-      scenarioMsg = `Start ${formatDayTime(suggestedStart)} for best results — or ${formatDayTime(quickerStart)} for a quicker plan.`;
+      if (isPreferredMode) {
+        scenarioMsg = `Start ${formatDayTime(suggestedStart)} for best results (${preferredColdH}h) — or ${formatDayTime(alternativeStart)} for a good ${standardColdH}h plan.`;
+      } else {
+        scenarioMsg = `Start ${formatDayTime(suggestedStart)} for best results — or ${formatDayTime(alternativeStart)} for a quicker plan.`;
+      }
     } else if (scenario === 'tight') {
       scenarioMsg = `Start ${formatDayTime(suggestedStart)} for best results.`;
     } else {
