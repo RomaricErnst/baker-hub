@@ -287,7 +287,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   function confirmStart() {
     onChange(pendingStart, pendingEatTime, blocks);
     setPhase('blockers');
-    onConfirm?.();
   }
 
   // ── Handlers ─────────────────────────────────
@@ -775,6 +774,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           </div>
         )}
       </div>
+
+      <button onClick={() => onConfirm?.()} style={continueBtnStyle}>
+        Continue →
+      </button>
     </div>
   );
 }
