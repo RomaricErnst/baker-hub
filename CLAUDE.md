@@ -67,7 +67,7 @@ Implemented via `RT_TABLE` bilinear interpolation in `utils.ts → interpolateRT
 
 ### Cold Retard (IDY % of flour)
 ```
-IDY% = 50.2 / hours^1.313
+IDY% = 7.5 / hours^1.313
 ```
 Implemented via `COLD_TABLE` nearest-neighbor lookup + `coldActivityFactor(fridgeTemp)` Q10 correction.
 

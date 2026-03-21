@@ -16,16 +16,26 @@ interface SchedulePickerProps {
 type PickerPhase = 'bake_time' | 'start_confirm';
 type Scenario = 'plenty' | 'tight' | 'too_short';
 
-// ── Day+time formatter (full precision) ──────
-function formatDayTime(d: Date): string {
+// ── Time formatter ────────────────────────────
+// "4pm" / "4:30pm" — minutes omitted when zero
+function formatTimeShort(d: Date): string {
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h < 12 ? 'am' : 'pm';
+  const h12  = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return m === 0 ? `${h12}${ampm}` : `${h12}:${m.toString().padStart(2, '0')}${ampm}`;
+}
+
+// ── Day+time formatter ────────────────────────
+// "Sat 25 Mar at 4pm" / "tonight at 9pm" / "tomorrow at 9am"
+function formatDayShort(d: Date): string {
   const now = new Date();
-  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+  const todayStart    = new Date(now); todayStart.setHours(0, 0, 0, 0);
   const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(todayStart.getDate() + 1);
   const dStart = new Date(d); dStart.setHours(0, 0, 0, 0);
 
-  const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-  if (dStart.getTime() === todayStart.getTime()) return `tonight at ${timeStr}`;
+  const timeStr = formatTimeShort(d);
+  if (dStart.getTime() === todayStart.getTime())    return `tonight at ${timeStr}`;
   if (dStart.getTime() === tomorrowStart.getTime()) return `tomorrow at ${timeStr}`;
   const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
   const month   = d.toLocaleDateString('en-US', { month: 'short' });
@@ -33,36 +43,16 @@ function formatDayTime(d: Date): string {
 }
 
 // ── Hour-rounded formatters ───────────────────
-// Round to nearest hour, format as "3pm" / "11am" / "12pm" / "12am"
 function roundToNearestHour(d: Date): Date {
   const r = new Date(d);
   if (r.getMinutes() >= 30) r.setHours(r.getHours() + 1);
   r.setMinutes(0, 0, 0);
-  return pushToReasonableHour(r); // keep anti-unsociable guarantee after rounding
+  return pushToReasonableHour(r);
 }
 
-function formatHour(d: Date): string {
-  const h = d.getHours();
-  if (h === 0)  return '12am';
-  if (h < 12)   return `${h}am`;
-  if (h === 12) return '12pm';
-  return `${h - 12}pm`;
-}
-
-// "Thu 26 Mar at 3pm" / "tonight at 11pm" / "tomorrow at 9am"
+// Rounds to nearest hour then formats — used for suggestion messages
 function formatDayHour(d: Date): string {
-  const r = roundToNearestHour(d);
-  const now = new Date();
-  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
-  const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(todayStart.getDate() + 1);
-  const rStart = new Date(r); rStart.setHours(0, 0, 0, 0);
-
-  const hourStr = formatHour(r);
-  if (rStart.getTime() === todayStart.getTime())    return `tonight at ${hourStr}`;
-  if (rStart.getTime() === tomorrowStart.getTime()) return `tomorrow at ${hourStr}`;
-  const weekday = r.toLocaleDateString('en-US', { weekday: 'short' });
-  const month   = r.toLocaleDateString('en-US', { month: 'short' });
-  return `${weekday} ${r.getDate()} ${month} at ${hourStr}`;
+  return formatDayShort(roundToNearestHour(d));
 }
 
 // ── Per-style optimal fermentation defaults ───
@@ -97,10 +87,39 @@ function pushToReasonableHour(d: Date): Date {
   return d;
 }
 
+// ── Blocker overlap resolver ──────────────────
+// If start falls inside any active block, push it forward to the end of that block.
+// Repeats until no more overlaps (handles chained blocks).
+// Returns the resolved start and an optional inline note for the UI.
+function applyBlockerOverlap(
+  start: Date,
+  activeBlocks: AvailabilityBlock[],
+): { resolvedStart: Date; note: string | null } {
+  let resolved = new Date(start);
+  let moved = false;
+  let safety = 0;
+  let changed = true;
+  while (changed && safety++ < 20) {
+    changed = false;
+    for (const b of activeBlocks) {
+      if (resolved >= b.from && resolved < b.to) {
+        resolved = new Date(b.to);
+        moved = true;
+        changed = true;
+        break;
+      }
+    }
+  }
+  return {
+    resolvedStart: moved ? resolved : start,
+    note: moved ? `Start moved to ${formatDayShort(resolved)} to avoid your unavailability block.` : null,
+  };
+}
+
 // ── Start suggestion engine ───────────────────
 // Uses Craig's per-stage model:
 //   RT:   IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))
-//   Cold: IDY% = 50.2 / hours^1.313
+//   Cold: IDY% = 7.5 / hours^1.313
 // Tropical correction (RT only): 30-32°C → ×1.15, 33-35°C → ×1.25
 // IDY floor 0.05%, ceiling 2.0%
 function computeSuggestion(
@@ -259,6 +278,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [isNarrow, setIsNarrow] = useState(false);
+  const [blockerNote, setBlockerNote] = useState<string | null>(null);
 
   useEffect(() => {
     const check = () => setIsNarrow(window.innerWidth < 600);
@@ -298,13 +318,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
   }
 
+  // Apply blocker overlap whenever blocks change
+  function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
+    const { resolvedStart, note } = applyBlockerOverlap(pendingStart, newBlocks);
+    if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
+    setBlockerNote(note);
+    onChange(resolvedStart, pendingEatTime, newBlocks);
+  }
+
   function toggleWork() {
-    if (isWorkActive) {
-      onChange(pendingStart, pendingEatTime, blocks.filter(b => !b.label.startsWith('Work · ')));
-    } else {
-      const newBlocks = workdays.map(d => ({ from: d.blockStart, to: d.blockEnd, label: d.label }));
-      onChange(pendingStart, pendingEatTime, [...blocks, ...newBlocks]);
-    }
+    const newBlocks = isWorkActive
+      ? blocks.filter(b => !b.label.startsWith('Work · '))
+      : [...blocks, ...workdays.map(d => ({ from: d.blockStart, to: d.blockEnd, label: d.label }))];
+    applyAndUpdate(newBlocks);
   }
 
   function isNightActive(label: string): boolean {
@@ -312,22 +338,21 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   function toggleNight(night: { key: string; label: string; blockStart: Date; blockEnd: Date }) {
-    if (isNightActive(night.label)) {
-      onChange(pendingStart, pendingEatTime, blocks.filter(b => b.label !== night.label));
-    } else {
-      onChange(pendingStart, pendingEatTime, [...blocks, { from: night.blockStart, to: night.blockEnd, label: night.label }]);
-    }
+    const newBlocks = isNightActive(night.label)
+      ? blocks.filter(b => b.label !== night.label)
+      : [...blocks, { from: night.blockStart, to: night.blockEnd, label: night.label }];
+    applyAndUpdate(newBlocks);
   }
 
   function removeBlock(index: number) {
-    onChange(pendingStart, pendingEatTime, blocks.filter((_, i) => i !== index));
+    applyAndUpdate(blocks.filter((_, i) => i !== index));
   }
 
   function addCustomBlock() {
     const from = new Date(customFrom);
     const to   = new Date(customTo);
     if (!customLabel.trim() || isNaN(from.getTime()) || isNaN(to.getTime()) || to <= from) return;
-    onChange(pendingStart, pendingEatTime, [...blocks, { from, to, label: customLabel.trim() }]);
+    applyAndUpdate([...blocks, { from, to, label: customLabel.trim() }]);
     setCustomLabel(''); setCustomFrom(''); setCustomTo('');
     setShowCustom(false);
   }
@@ -415,7 +440,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           Bake time
         </span>
         <span style={{ fontSize: '.88rem', fontWeight: 700, color: 'var(--char)', flex: 1 }}>
-          {formatTime(pendingEatTime)}
+          {formatDayShort(pendingEatTime)}
         </span>
         <button
           onClick={() => setPhase('bake_time')}
@@ -481,6 +506,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           marginTop: '.45rem', marginBottom: '.15rem',
         }}>
           {hoursLabel((pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)} total window
+        </div>
+      )}
+
+      {blockerNote && (
+        <div style={{
+          fontSize: '.74rem', color: 'var(--smoke)',
+          marginTop: '.4rem', fontStyle: 'italic', lineHeight: 1.4,
+        }}>
+          {blockerNote}
         </div>
       )}
 
