@@ -554,29 +554,12 @@ export default function Home() {
               </div>
             </StepCard>
 
-            {/* ─── STEP 7: Scheduler ───────────────── */}
+            {/* ─── STEP 7: Climate ─────────────────── */}
             <StepCard
-              num={7} title="When does the pizza go in the oven?"
-              activeStep={activeStep}
-              summary={`${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}`}
-              onEdit={() => setActiveStep(7)}
-            >
-              <SchedulePicker
-                startTime={startTime} eatTime={eatTime} blocks={blocks}
-                preheatMin={preheatMin}
-                styleKey={styleKey ?? ''}
-                kitchenTemp={kitchenTemp}
-                onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
-                onConfirm={() => advance(7)}
-              />
-            </StepCard>
-
-            {/* ─── STEP 8: Climate ─────────────────── */}
-            <StepCard
-              num={8} title="Your kitchen climate"
+              num={7} title="Your kitchen climate"
               activeStep={activeStep}
               summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
-              onEdit={() => setActiveStep(8)}
+              onEdit={() => setActiveStep(7)}
             >
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
@@ -584,19 +567,24 @@ export default function Home() {
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
 
-              <button
-                onClick={() => advance(8)}
-                className="btn"
-                style={{
-                  marginTop: '1.25rem', width: '100%', padding: '.9rem',
-                  border: 'none', borderRadius: '12px',
-                  background: 'var(--char)', color: 'var(--cream)',
-                  fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700,
-                  cursor: 'pointer', letterSpacing: '.02em',
-                }}
-              >
-                ✦ Craft My Baking Plan
-              </button>
+              <ContinueBtn onClick={() => advance(7)} />
+            </StepCard>
+
+            {/* ─── STEP 8: Scheduler ───────────────── */}
+            <StepCard
+              num={8} title="When does the pizza go in the oven?"
+              activeStep={activeStep}
+              summary={`${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}`}
+              onEdit={() => setActiveStep(8)}
+            >
+              <SchedulePicker
+                startTime={startTime} eatTime={eatTime} blocks={blocks}
+                preheatMin={preheatMin}
+                styleKey={styleKey ?? ''}
+                kitchenTemp={kitchenTemp}
+                onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                onConfirm={() => advance(8)}
+              />
             </StepCard>
 
             {/* ─── RESULTS ───────────────────────────── */}

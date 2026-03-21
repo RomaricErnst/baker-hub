@@ -78,9 +78,23 @@ function computeSuggestion(
   const quickerFermH = optimalFermH * 0.5;
 
   // optimalStart = bakeTime − preheatMin − optimalFermHours  (per spec)
-  const optimalStart = new Date(eatTime.getTime() - (optimalFermH + preheatH) * 3600000);
-  const quickerStart = new Date(eatTime.getTime() - (quickerFermH + preheatH) * 3600000);
+  let optimalStart = new Date(eatTime.getTime() - (optimalFermH + preheatH) * 3600000);
+  let quickerStart = new Date(eatTime.getTime() - (quickerFermH + preheatH) * 3600000);
   const minFeasibleMs = (2 + preheatH) * 3600000;
+
+  // Reasonable hours constraint: never suggest a start between 00:00 and 07:00.
+  // If a suggested time falls in that window, push it forward to 07:00 that morning.
+  function pushToReasonableHour(d: Date): Date {
+    const h = d.getHours();
+    if (h >= 0 && h < 7) {
+      const pushed = new Date(d);
+      pushed.setHours(7, 0, 0, 0);
+      return pushed;
+    }
+    return d;
+  }
+  optimalStart = pushToReasonableHour(optimalStart);
+  quickerStart = pushToReasonableHour(quickerStart);
 
   let scenario: Scenario;
   const msUntilOptimal = optimalStart.getTime() - now.getTime();
