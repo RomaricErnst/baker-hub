@@ -8,6 +8,7 @@ interface SchedulePickerProps {
   blocks: AvailabilityBlock[];
   preheatMin: number;
   onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[]) => void;
+  onConfirm?: () => void;
 }
 
 type PickerPhase = 'bake_time' | 'start_confirm' | 'blockers';
@@ -134,7 +135,7 @@ const LABEL_STYLE: React.CSSProperties = {
 };
 
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, onChange }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, onChange, onConfirm }: SchedulePickerProps) {
   const [phase, setPhase] = useState<PickerPhase>('bake_time');
   const [pendingEatTime, setPendingEatTime] = useState(eatTime);
   const [pendingStart, setPendingStart] = useState(startTime);
@@ -172,6 +173,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   function confirmStart() {
     onChange(pendingStart, pendingEatTime, blocks);
     setPhase('blockers');
+    onConfirm?.();
   }
 
   // ── Handlers ─────────────────────────────────

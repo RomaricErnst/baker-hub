@@ -562,10 +562,9 @@ export default function Home() {
                   startTime={startTime} eatTime={eatTime} blocks={blocks}
                   preheatMin={preheatMin}
                   onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                  onConfirm={() => advance(5)}
                 />
               </div>
-
-              <ContinueBtn onClick={() => advance(5)} />
             </StepCard>
 
             {/* ─── STEP 6: Climate ───────────────────── */}
