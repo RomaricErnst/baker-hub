@@ -40,20 +40,22 @@ function StepCard({
 
   return (
     <div id={`step-${num}`} style={{
-      border: `2px solid ${isActive ? 'var(--terra)' : 'var(--border)'}`,
+      border: `2px solid ${isActive ? 'var(--terra)' : isCompleted ? 'rgba(107,122,90,0.25)' : 'var(--border)'}`,
       borderRadius: '18px',
-      background: isActive ? '#FDFAF7' : 'var(--warm)',
+      background: isActive ? '#FDFBF7' : isCompleted ? '#F9FAF7' : 'var(--warm)',
       marginBottom: '1rem',
-      opacity: isLocked ? 0.5 : 1,
-      transition: 'border-color .2s, opacity .2s',
-      boxShadow: 'var(--card-shadow)',
+      opacity: isLocked ? 0.4 : 1,
+      transition: 'all .25s',
+      boxShadow: isActive
+        ? '0 0 0 3px rgba(196,82,42,0.08), 0 2px 16px rgba(26,22,18,0.08)'
+        : '0 2px 12px rgba(26,22,18,0.06)',
     }}>
       {/* Header */}
       <div
         onClick={isCompleted ? onEdit : undefined}
         style={{
-          padding: '1rem 1.3rem',
-          display: 'flex', alignItems: 'center', gap: '.85rem',
+          padding: '1.1rem 1.4rem',
+          display: 'flex', alignItems: 'center', gap: '.9rem',
           cursor: isCompleted ? 'pointer' : 'default',
         }}
       >
@@ -61,10 +63,10 @@ function StepCard({
         <div
           className={isActive ? 'step-pulse' : undefined}
           style={{
-            width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
+            width: '30px', height: '30px', borderRadius: '50%', flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 700, fontSize: '.8rem',
-            fontFamily: isActive ? 'var(--font-dm-mono)' : undefined,
+            fontWeight: 700, fontSize: '.82rem',
+            fontFamily: 'var(--font-dm-mono)',
             ...(isActive
               ? { background: 'var(--terra)', color: '#fff' }
               : isCompleted
@@ -78,20 +80,21 @@ function StepCard({
         {/* Title + summary */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
+            fontFamily: 'var(--font-playfair)',
             fontWeight: 700, fontSize: '1.1rem',
             color: isLocked ? 'var(--smoke)' : 'var(--char)',
           }}>
             {title}
           </div>
           {isCompleted && summary && (
-            <div style={{ fontSize: '.77rem', color: 'var(--smoke)', marginTop: '.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: '.77rem', color: 'var(--smoke)', marginTop: '.15rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {summary}
             </div>
           )}
         </div>
 
         {isCompleted && (
-          <span style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}>
+          <span style={{ fontSize: '.72rem', color: 'var(--sage)', fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}>
             Edit
           </span>
         )}
@@ -99,7 +102,7 @@ function StepCard({
 
       {/* Expanded content */}
       {isActive && (
-        <div style={{ borderTop: '1px solid var(--border)', padding: '1.25rem 1.3rem' }}>
+        <div style={{ borderTop: '1px solid var(--border)', padding: '1.3rem 1.4rem' }}>
           {children}
         </div>
       )}
@@ -114,11 +117,12 @@ function ContinueBtn({ onClick, label = 'Continue →' }: { onClick: () => void;
       onClick={onClick}
       className="btn"
       style={{
-        marginTop: '1.1rem', width: '100%', padding: '.85rem',
+        marginTop: '1.25rem', width: '100%', padding: '.9rem 1.25rem',
         border: 'none', borderRadius: '12px',
         background: 'var(--terra)', color: '#fff',
-        fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700,
+        fontFamily: 'var(--font-playfair)', fontSize: '1.05rem', fontWeight: 700,
         cursor: 'pointer', transition: 'opacity .15s',
+        boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
       }}
     >
       {label}
@@ -286,7 +290,7 @@ export default function Home() {
 
       {/* ── Tab navigation ─────────────────── */}
       <div style={{ background: 'var(--warm)', borderBottom: '1px solid var(--border)', position: 'sticky', top: '60px', zIndex: 90 }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 1.25rem', display: 'flex' }}>
+        <div style={{ maxWidth: '680px', margin: '0 auto', padding: '0 1.25rem', display: 'flex' }}>
           {(['guided', 'advanced'] as const).map(t => (
             <button
               key={t}
@@ -308,11 +312,11 @@ export default function Home() {
       </div>
 
       {/* ── Main content ───────────────────── */}
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 2rem)' }}>
+      <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
 
         {/* ════════════ GUIDED ════════════ */}
         {tab === 'guided' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.75rem, 2vw, 1rem)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
             {/* ── Hero intro (only before step 1 done) ── */}
             {!bakeType && (

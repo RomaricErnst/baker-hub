@@ -369,11 +369,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Shared sub-components ─────────────────────
   const continueBtnStyle: React.CSSProperties = {
-    marginTop: '1rem', width: '100%', padding: '.8rem',
+    marginTop: '1.1rem', width: '100%', padding: '1rem 1.5rem',
     border: 'none', borderRadius: '12px',
     background: 'var(--terra)', color: '#fff',
-    fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700,
+    fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700,
     cursor: 'pointer',
+    boxShadow: '0 3px 10px rgba(196,82,42,0.25)',
+    letterSpacing: '.01em',
   };
 
   // ── PHASE 1: Bake time ────────────────────────
