@@ -28,10 +28,9 @@ function gStr(n: number): string {
 
 // ── Theme tokens for dark card ────────────────
 const D = {
-  row:    'rgba(245,240,232,0.055)',
-  line:   'rgba(245,240,232,0.10)',
-  muted:  'rgba(245,240,232,0.45)',
-  sub:    'rgba(245,240,232,0.30)',
+  line:   'rgba(212,168,83,0.16)',   // gold-tinted dividers — warm, not cold
+  muted:  'rgba(245,240,232,0.60)',  // readable ingredient labels
+  sub:    'rgba(245,240,232,0.38)',  // secondary / column headers
 };
 
 // ── Ingredient row ────────────────────────────
@@ -228,22 +227,27 @@ export default function RecipeOutput({
     : false;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
       {/* ── Summary callout ──────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexWrap: 'wrap', gap: '.75rem',
         background: 'var(--terra)',
-        borderRadius: '13px',
-        padding: '1rem 1.35rem',
+        borderRadius: '18px',
+        padding: '1.1rem 1.4rem',
       }}>
         <div>
-          <div style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.7)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '.15rem' }}>
+          <div style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.7)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '.2rem' }}>
             {styleEmoji} {styleName}
           </div>
-          <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>
-            {numItems} × {itemWeight} g = {totalDough} g total
+          <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.25rem', fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>
+            <span style={{ fontFamily: 'var(--font-dm-mono)' }}>{numItems}</span>
+            {' × '}
+            <span style={{ fontFamily: 'var(--font-dm-mono)' }}>{itemWeight}</span>
+            {' g = '}
+            <span style={{ fontFamily: 'var(--font-dm-mono)' }}>{totalDough}</span>
+            {' g total'}
           </div>
         </div>
         <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
@@ -267,14 +271,15 @@ export default function RecipeOutput({
       {/* ── Ingredients card (dark) ───────────────── */}
       <div style={{
         background: 'var(--char)',
-        borderRadius: '16px',
-        padding: '1.4rem 1.5rem',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
+        borderRadius: '18px',
+        padding: '1.5rem 1.6rem',
+        border: '1px solid rgba(212,168,83,0.12)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.14)',
       }}>
         {/* Card header */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-          marginBottom: '.85rem',
+          marginBottom: '1rem',
         }}>
           <div style={{
             fontFamily: 'var(--font-playfair)',
@@ -370,8 +375,8 @@ export default function RecipeOutput({
             background: 'var(--warm)',
             border: '1px solid var(--border)',
             borderLeft: '3px solid var(--sage)',
-            borderRadius: '10px',
-            padding: '.75rem 1rem',
+            borderRadius: '12px',
+            padding: '.85rem 1.1rem',
           }}>
             <div style={{ fontSize: '.82rem', color: 'var(--char)', lineHeight: 1.55 }}>
               {main}
@@ -449,8 +454,9 @@ export default function RecipeOutput({
           {/* Starter range */}
           <div style={{
             background: 'var(--char)',
-            borderRadius: '13px',
-            padding: '1.1rem 1.3rem',
+            borderRadius: '18px',
+            padding: '1.2rem 1.4rem',
+            border: '1px solid rgba(212,168,83,0.12)',
           }}>
             <div style={{ fontSize: '.7rem', color: D.sub, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem' }}>
               Sourdough Starter 🫙

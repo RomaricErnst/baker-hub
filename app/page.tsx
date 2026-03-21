@@ -590,13 +590,14 @@ export default function Home() {
 
                 {/* Results header */}
                 <div style={{
-                  background: 'var(--char)', borderRadius: '16px',
-                  padding: '1.25rem 1.5rem', marginBottom: '1.75rem',
+                  background: 'var(--char)', borderRadius: '18px',
+                  border: '1px solid rgba(212,168,83,0.15)',
+                  padding: '1.3rem 1.6rem', marginBottom: '2rem',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   flexWrap: 'wrap', gap: '.75rem',
                 }}>
                   <div>
-                    <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--cream)' }}>
+                    <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
                       Your recipe is ready 🎯
                     </div>
                     {styleKey && (
