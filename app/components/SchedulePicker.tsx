@@ -269,7 +269,10 @@ const LABEL_STYLE: React.CSSProperties = {
 
 // ── Component ─────────────────────────────────
 export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, onChange, onConfirm }: SchedulePickerProps) {
-  const [phase, setPhase] = useState<PickerPhase>('bake_time');
+  // Skip phase 1 if a future bake time is already set (return-to-edit case)
+  const [phase, setPhase] = useState<PickerPhase>(() =>
+    eatTime > new Date() ? 'start_confirm' : 'bake_time'
+  );
   const [pendingEatTime, setPendingEatTime] = useState(eatTime);
   const [pendingStart, setPendingStart] = useState(startTime);
 
@@ -429,7 +432,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   return (
     <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
 
-      {/* Bake time summary */}
+      {/* Bake time summary — editable inline, no phase change */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: '.65rem',
         padding: '.5rem .85rem',
@@ -439,20 +442,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <span style={{ fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}>
           Bake time
         </span>
-        <span style={{ fontSize: '.88rem', fontWeight: 700, color: 'var(--char)', flex: 1 }}>
-          {formatDayShort(pendingEatTime)}
-        </span>
-        <button
-          onClick={() => setPhase('bake_time')}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: '.72rem', color: 'var(--smoke)',
-            fontFamily: 'var(--font-dm-mono)', padding: '.15rem .3rem',
-            borderRadius: '4px', flexShrink: 0,
+        <input
+          type="datetime-local"
+          value={toDateTimeLocal(pendingEatTime)}
+          onChange={e => {
+            const d = new Date(e.target.value);
+            if (!isNaN(d.getTime())) {
+              setPendingEatTime(d);
+              onChange(pendingStart, d, blocks);
+            }
           }}
-        >
-          Edit
-        </button>
+          style={{
+            flex: 1, border: 'none', background: 'transparent',
+            color: 'var(--char)', fontSize: '.82rem', fontWeight: 700,
+            fontFamily: 'var(--font-dm-mono)', outline: 'none', cursor: 'pointer',
+            minWidth: 0,
+          }}
+        />
       </div>
 
       {/* Scenario message */}
