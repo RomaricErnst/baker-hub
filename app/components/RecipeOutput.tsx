@@ -38,7 +38,7 @@ function IngRow({
   label, sub, grams, pct, highlight = false, range = false,
 }: {
   label: string;
-  sub?: string;
+  sub?: React.ReactNode;
   grams: string;
   pct: string;
   highlight?: boolean;
@@ -135,37 +135,46 @@ function InfoCard({
   );
 }
 
-// ── Water sub-line ────────────────────────────
-function buildWaterSub(
+// ── Water info ────────────────────────────────
+interface WaterInfo {
+  targetTemp: number;
+  needsIce: boolean;
+  iceGrams: number;
+  tapGrams: number;
+  iceGuidance: string;   // ice protocol text (only when needsIce)
+  tempGuidance: string;  // short guidance for the ingredient sub-line
+}
+
+function computeWaterInfo(
   targetTemp: number,
   waterGrams: number,
   ambientTemp: number,
   isSpiral: boolean,
-): string {
-  // Physics-based ice split: ice needed to cool tap water from ambient down to target
-  // Using heat balance: iceWeight × 80 + iceWeight × target = tapWater × (ambient - target)
+): WaterInfo {
+  // Physics-based ice split: iceWeight × 80 + iceWeight × target = tapWater × (ambient - target)
   // → iceWeight = waterGrams × (ambient - target) / (target + 80)
   const rawIce = waterGrams * (ambientTemp - targetTemp) / (targetTemp + 80);
   const iceGrams = Math.max(0, Math.round(rawIce));
   const tapGrams = waterGrams - iceGrams;
   const needsIce = iceGrams > 0;
 
-  let guidance: string;
+  let iceGuidance = '';
+  let tempGuidance: string;
+
   if (needsIce) {
-    if (isSpiral) {
-      guidance = `${iceGrams}g ice + ${tapGrams}g tap water — add ice directly to mixing bowl`;
-    } else {
-      guidance = `fill jug with ${iceGrams}g ice + ${tapGrams}g water, stir 1 min, strain — use chilled water only`;
-    }
+    tempGuidance = 'ice water — see protocol below';
+    iceGuidance = isSpiral
+      ? `${iceGrams}g ice + ${tapGrams}g tap water — add ice directly to mixing bowl`
+      : `fill jug with ${iceGrams}g ice + ${tapGrams}g water, stir 1 min, strain`;
   } else if (targetTemp <= 13) {
-    guidance = 'very cold fridge water — chill 2h before mixing';
+    tempGuidance = 'very cold fridge water — chill 2h before mixing';
   } else if (targetTemp <= 19) {
-    guidance = 'cold fridge water';
+    tempGuidance = 'cold fridge water';
   } else {
-    guidance = 'room temperature tap water';
+    tempGuidance = 'room temperature tap water';
   }
 
-  return `💧 Use at ${targetTemp}°C · ${guidance}`;
+  return { targetTemp, needsIce, iceGrams, tapGrams, iceGuidance, tempGuidance };
 }
 
 // ── Component ─────────────────────────────────
@@ -191,16 +200,24 @@ export default function RecipeOutput({
   const itemLabel = numItems === 1 ? 'ball / loaf' : numItems <= 4 ? 'balls' : 'pieces';
 
   const isSpiral = mixerType === 'spiral';
-  const waterSub = buildWaterSub(waterTemp, water, kitchenTemp, isSpiral);
+  const waterInfo = computeWaterInfo(waterTemp, water, kitchenTemp, isSpiral);
 
-  // Yeast sub-line: IDY conversion + optional precision scale note
+  // Water row sub-line: bold temperature as a precision signal
+  const waterSubNode: React.ReactNode = (
+    <>
+      {'💧 Use at '}
+      <span style={{ fontWeight: 700 }}>{waterInfo.targetTemp}°C</span>
+      {` · ${waterInfo.tempGuidance}`}
+    </>
+  );
+
+  // Yeast sub-line: IDY conversion only (precision scale moved to its own callout)
+  const needsPrecision = yeastInfo ? yeastInfo.convertedGrams < 0.5 : false;
   const yeastSub = yeastInfo
     ? (() => {
         const isInstant = yeastInfo.yeastType === 'instant';
-        const needsPrecision = yeastInfo.convertedGrams < 0.5;
         const idyPart = !isInstant ? `= ${gStr(yeastInfo.grams)} IDY` : null;
-        const scalePart = needsPrecision ? '→ precision scale (0.1g) needed to measure this amount' : null;
-        return [idyPart, scalePart].filter(Boolean).join(' · ') || undefined;
+        return idyPart || undefined;
       })()
     : undefined;
 
@@ -300,7 +317,7 @@ export default function RecipeOutput({
 
         {/* Rows */}
         <IngRow label="Flour" grams={gStr(flour)} pct="100%" highlight />
-        <IngRow label="Water" grams={gStr(water)} pct={pctStr(waterPct)} sub={waterSub} />
+        <IngRow label="Water" grams={gStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} />
         <IngRow label="Salt"  grams={gStr(salt)}  pct={pctStr(saltPct)} />
 
         {/* Yeast — commercial */}
@@ -360,6 +377,26 @@ export default function RecipeOutput({
         </div>
       </div>
 
+      {/* ── Ice water protocol ───────────────────── */}
+      {waterInfo.needsIce && (
+        <div style={{
+          background: '#F0F6FB',
+          border: '1.5px solid #B8D4E8',
+          borderRadius: '12px',
+          padding: '.85rem 1rem',
+        }}>
+          <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.3rem' }}>
+            <span style={{ fontSize: '1rem' }}>🧊</span>
+            <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#1E4A6A' }}>
+              Ice water protocol
+            </span>
+          </div>
+          <div style={{ fontSize: '.78rem', color: '#2A5070', lineHeight: 1.6, paddingLeft: '1.5rem', fontFamily: 'var(--font-dm-mono)' }}>
+            {waterInfo.iceGuidance}
+          </div>
+        </div>
+      )}
+
       {/* ── Flour note ────────────────────────────── */}
       {(() => {
         let main: string;
@@ -391,6 +428,30 @@ export default function RecipeOutput({
       {/* ── Yeast details ─────────────────────────── */}
       {yeastInfo && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.65rem' }}>
+
+          {/* Precision scale callout */}
+          {needsPrecision && (
+            <div style={{
+              background: '#FFFBEE',
+              border: '1.5px solid #D4A853',
+              borderRadius: '12px',
+              padding: '.85rem 1rem',
+            }}>
+              <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.3rem' }}>
+                <span style={{ fontSize: '1rem' }}>⚠️</span>
+                <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#7A5A10' }}>
+                  Precision scale required
+                </span>
+              </div>
+              <div style={{ fontSize: '.78rem', color: '#5A4010', lineHeight: 1.6, paddingLeft: '1.5rem' }}>
+                {'Your yeast amount is '}
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700, color: '#7A5A10' }}>
+                  {gStr(yeastInfo.convertedGrams)}
+                </span>
+                {' — too small for a standard kitchen scale. Use a precision scale accurate to 0.1g, or use the dilution method.'}
+              </div>
+            </div>
+          )}
 
           {/* Explanation */}
           {showExplanation && (
