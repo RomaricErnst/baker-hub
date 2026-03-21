@@ -388,7 +388,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             When does the pizza go in the oven?
           </div>
           <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5 }}>
-            We&apos;ll work backwards to tell you exactly when to start.
+            We&apos;ll recommend the best window to start your dough.
           </div>
         </div>
         <input
