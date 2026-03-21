@@ -1,0 +1,97 @@
+{
+  "common": {
+    "continue": "Continue →",
+    "edit": "Edit",
+    "notSure": "🤔 Not sure?",
+    "grams": "g",
+    "total": "Total dough",
+    "quantity": "Quantity"
+  },
+
+  "tabs": {
+    "guided": "🧭 Guided",
+    "advanced": "⚙️ Advanced"
+  },
+
+  "hero": {
+    "headline": "Craft your dough",
+    "headlineEm": "with confidence.",
+    "sub": "Choose your dough style. We'll shape the plan."
+  },
+
+  "steps": {
+    "1": { "title": "What are you crafting today?" },
+    "2": { "title": "Choose your dough style" },
+    "3": { "title": "How many and how big?" },
+    "4": { "title": "Your baking setup" },
+    "5": { "title": "Your mixing method" },
+    "6": { "title": "What yeast are you using?" },
+    "7": { "title": "Your kitchen climate" },
+    "8": { "title": "When does the pizza go in the oven?" }
+  },
+
+  "bakeType": {
+    "pizza": {
+      "label": "Pizza",
+      "desc": "Neapolitan, New York, Roman, Detroit & Sourdough"
+    },
+    "bread": {
+      "label": "Bread",
+      "desc": "Sourdough, Baguette, Focaccia, Ciabatta & Brioche"
+    }
+  },
+
+  "quantity": {
+    "weightPerBall": "Weight per ball",
+    "weightPerLoaf": "Weight per loaf",
+    "largeBatchNote": "🍕 Large batch detected. See recipe output for yeast adjustment."
+  },
+
+  "results": {
+    "ready": "Your recipe is ready 🎯",
+    "startNew": "↑ Start a new recipe",
+    "computeError": "Could not compute recipe — please check your style selection and schedule times.",
+    "recommended": "Recommended",
+    "adjustmentMultiplier": "Adjustment multiplier",
+    "largeBatchTitle": "⚖️ Large batch yeast adjustment",
+    "largeBatchDesc": "Large dough mass retains heat longer — fermentation may be faster than calculated. Fine-tune if needed."
+  },
+
+  "scheduler": {
+    "bakeTimeLabel": "When does the pizza go in the oven?",
+    "bakeTimeSub": "We'll work backwards to tell you exactly when to start.",
+    "planMyBake": "Plan my bake →",
+    "bakeTime": "Bake time",
+    "startMixing": "Start mixing",
+    "setByPlan": "Set by plan above",
+    "confirmStart": "Confirm start →",
+    "startBeforeBake": "Start time must be before bake time.",
+    "totalWindow": "{hours} total window",
+    "startMovedNote": "Start moved to {time} to avoid your unavailability block.",
+
+    "scenario": {
+      "plentyPreferred": "Start between {start} and {alt} for best results.",
+      "plentyPreferredSub": "Earlier start = longer cold rest = more complex flavour. Later is still great.",
+      "plenty": "Start {start} for best results — or {alt} for a quicker plan.",
+      "tight": "Start {start} for best results.",
+      "tooShort": "That's very soon — start now for the best you can get."
+    },
+
+    "blockers": {
+      "heading": "Anything in between to work around?",
+      "sub": "Optional — mark windows when you're unavailable and we'll send the dough to the fridge.",
+      "quickPresets": "Quick presets",
+      "weekdays": "💼 Weekdays",
+      "weekdayHours": "· 9am → 6pm",
+      "noOvernights": "No overnight periods in this schedule.",
+      "nightHours": "· 11pm → 7am",
+      "cancel": "✕ Cancel",
+      "addCustom": "＋ Custom",
+      "customTitle": "Custom unavailability block",
+      "customLabelPlaceholder": "Label — e.g. Weekend away",
+      "from": "From",
+      "to": "To",
+      "addBlock": "Add block"
+    }
+  }
+}
