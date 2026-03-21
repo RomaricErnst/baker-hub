@@ -13,7 +13,7 @@ interface SchedulePickerProps {
   onConfirm?: () => void;
 }
 
-type PickerPhase = 'bake_time' | 'start_confirm' | 'blockers';
+type PickerPhase = 'bake_time' | 'start_confirm';
 type Scenario = 'plenty' | 'tight' | 'too_short';
 
 // ── Day+time formatter (full precision) ──────
@@ -286,7 +286,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   function confirmStart() {
     onChange(pendingStart, pendingEatTime, blocks);
-    setPhase('blockers');
+    onConfirm?.();
   }
 
   // ── Handlers ─────────────────────────────────
@@ -375,158 +375,47 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     );
   }
 
-  // ── PHASE 2: Start suggestion + confirm ───────
-  if (phase === 'start_confirm') {
-    const { scenario, suggestedStart, alternativeStart, isPreferredMode, preferredColdH, standardColdH } = suggestion;
+  // ── PHASE 2: Start suggestion + blockers + confirm (merged) ──
+  const { scenario, suggestedStart, alternativeStart, isPreferredMode } = suggestion;
 
-    const scenarioBg    = scenario === 'too_short' ? '#FEF4EF' : scenario === 'tight' ? '#FFF8E8' : '#F2FAF0';
-    const scenarioBdr   = scenario === 'too_short' ? '#F5C4B0' : scenario === 'tight' ? '#E8D080' : '#C8D4BA';
-    const scenarioColor = scenario === 'too_short' ? 'var(--terra)' : scenario === 'tight' ? '#7A5A10' : '#3A6A30';
-    const scenarioIcon  = scenario === 'too_short' ? '⚡' : scenario === 'tight' ? '⏰' : '✨';
+  const scenarioBg    = scenario === 'too_short' ? '#FEF4EF' : scenario === 'tight' ? '#FFF8E8' : '#F2FAF0';
+  const scenarioBdr   = scenario === 'too_short' ? '#F5C4B0' : scenario === 'tight' ? '#E8D080' : '#C8D4BA';
+  const scenarioColor = scenario === 'too_short' ? 'var(--terra)' : scenario === 'tight' ? '#7A5A10' : '#3A6A30';
+  const scenarioIcon  = scenario === 'too_short' ? '⚡' : scenario === 'tight' ? '⏰' : '✨';
 
-    let scenarioMain: string;
-    let scenarioSecondary: string | null = null;
+  let scenarioMain: string;
+  let scenarioSecondary: string | null = null;
 
-    if (scenario === 'plenty') {
-      if (isPreferredMode) {
-        scenarioMain = `Start between ${formatDayHour(suggestedStart)} and ${formatDayHour(alternativeStart)} for best results.`;
-        scenarioSecondary = 'Earlier start = longer cold rest = more complex flavour. Later is still great.';
-      } else {
-        scenarioMain = `Start ${formatDayHour(suggestedStart)} for best results — or ${formatDayHour(alternativeStart)} for a quicker plan.`;
-      }
-    } else if (scenario === 'tight') {
-      scenarioMain = `Start ${formatDayHour(suggestedStart)} for best results.`;
+  if (scenario === 'plenty') {
+    if (isPreferredMode) {
+      scenarioMain = `Start between ${formatDayHour(suggestedStart)} and ${formatDayHour(alternativeStart)} for best results.`;
+      scenarioSecondary = 'Earlier start = longer cold rest = more complex flavour. Later is still great.';
     } else {
-      scenarioMain = `That's very soon — start now for the best you can get.`;
+      scenarioMain = `Start ${formatDayHour(suggestedStart)} for best results — or ${formatDayHour(alternativeStart)} for a quicker plan.`;
     }
-
-    const startInvalid = pendingStart >= pendingEatTime;
-
-    return (
-      <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
-
-        {/* Bake time summary */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '.65rem',
-          padding: '.5rem .85rem',
-          background: 'var(--cream)', border: '1.5px solid var(--border)',
-          borderRadius: '10px', marginBottom: '1rem',
-        }}>
-          <span style={{ fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}>
-            Bake time
-          </span>
-          <span style={{ fontSize: '.88rem', fontWeight: 700, color: 'var(--char)', flex: 1 }}>
-            {formatTime(pendingEatTime)}
-          </span>
-          <button
-            onClick={() => setPhase('bake_time')}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '.72rem', color: 'var(--smoke)',
-              fontFamily: 'var(--font-dm-mono)', padding: '.15rem .3rem',
-              borderRadius: '4px', flexShrink: 0,
-            }}
-          >
-            Edit
-          </button>
-        </div>
-
-        {/* Scenario message */}
-        <div style={{
-          display: 'flex', gap: '.6rem', alignItems: 'flex-start',
-          background: scenarioBg, border: `1.5px solid ${scenarioBdr}`,
-          borderRadius: '10px', padding: '.7rem .9rem',
-          marginBottom: '1.1rem', fontSize: '.82rem',
-          color: scenarioColor, lineHeight: 1.55,
-        }}>
-          <span style={{ flexShrink: 0 }}>{scenarioIcon}</span>
-          <div>
-            <span>{scenarioMain}</span>
-            {scenarioSecondary && (
-              <span style={{
-                display: 'block', marginTop: '.3rem',
-                fontSize: '.74rem', opacity: .7,
-              }}>
-                {scenarioSecondary}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Start time adjuster */}
-        <div style={{ marginBottom: startInvalid ? '.5rem' : '0' }}>
-          <label style={LABEL_STYLE}>Start mixing</label>
-          <input
-            type="datetime-local"
-            value={toDateTimeLocal(pendingStart)}
-            onChange={e => handleStartChange(e.target.value)}
-            style={{
-              ...INPUT_STYLE,
-              border: `2px solid ${startInvalid ? 'var(--terra)' : 'var(--border)'}`,
-            }}
-          />
-        </div>
-
-        {startInvalid && (
-          <div style={{
-            fontSize: '.78rem', color: 'var(--terra)',
-            background: '#FEF4EF', border: '1px solid #F5C4B0',
-            borderRadius: '8px', padding: '.5rem .85rem',
-            marginBottom: '.75rem', marginTop: '.5rem',
-          }}>
-            Start time must be before bake time.
-          </div>
-        )}
-
-        {!startInvalid && (
-          <div style={{
-            fontSize: '.72rem', color: 'var(--smoke)',
-            fontFamily: 'var(--font-dm-mono)',
-            marginTop: '.45rem', marginBottom: '.15rem',
-          }}>
-            {hoursLabel((pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)} total window
-          </div>
-        )}
-
-        <button
-          onClick={confirmStart}
-          disabled={startInvalid}
-          style={{
-            ...continueBtnStyle,
-            background: startInvalid ? 'var(--border)' : 'var(--terra)',
-            color: startInvalid ? 'var(--smoke)' : '#fff',
-            cursor: startInvalid ? 'default' : 'pointer',
-          }}
-        >
-          Confirm start →
-        </button>
-      </div>
-    );
+  } else if (scenario === 'tight') {
+    scenarioMain = `Start ${formatDayHour(suggestedStart)} for best results.`;
+  } else {
+    scenarioMain = `That's very soon — start now for the best you can get.`;
   }
 
-  // ── PHASE 3: Availability blockers ───────────
+  const startInvalid = pendingStart >= pendingEatTime;
+
   return (
     <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
 
-      {/* Schedule summary bar */}
+      {/* Bake time summary */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '.65rem', flexWrap: 'wrap',
+        display: 'flex', alignItems: 'center', gap: '.65rem',
         padding: '.5rem .85rem',
         background: 'var(--cream)', border: '1.5px solid var(--border)',
-        borderRadius: '10px', marginBottom: '1.25rem',
+        borderRadius: '10px', marginBottom: '1rem',
       }}>
         <span style={{ fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}>
-          Schedule
+          Bake time
         </span>
-        <span style={{ fontSize: '.85rem', fontWeight: 700, color: 'var(--char)', flex: 1 }}>
-          {formatTime(pendingStart)} → {formatTime(pendingEatTime)}
-        </span>
-        <span style={{
-          fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
-          background: 'var(--warm)', border: '1px solid var(--border)',
-          borderRadius: '8px', padding: '.15rem .45rem', color: 'var(--smoke)',
-        }}>
-          {hoursLabel((pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)}
+        <span style={{ fontSize: '.88rem', fontWeight: 700, color: 'var(--char)', flex: 1 }}>
+          {formatTime(pendingEatTime)}
         </span>
         <button
           onClick={() => setPhase('bake_time')}
@@ -541,242 +430,294 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </button>
       </div>
 
-      {/* Blocker section */}
-      <div>
-        <div style={{
-          fontSize: '.82rem', color: 'var(--char)', fontWeight: 600,
-          marginBottom: '.3rem',
-        }}>
-          Anything in between to work around?
-        </div>
-        <div style={{
-          fontSize: '.74rem', color: 'var(--smoke)',
-          marginBottom: '.9rem', lineHeight: 1.5,
-        }}>
-          Optional — mark windows when you&apos;re unavailable and we&apos;ll send the dough to the fridge.
-        </div>
-
-        {/* Quick presets — work toggle */}
-        {workdays.length > 0 && (
-          <div style={{ marginBottom: '.75rem' }}>
-            <div style={{
-              fontSize: '.65rem', color: 'var(--smoke)', opacity: .7,
-              fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase',
-              letterSpacing: '.06em', marginBottom: '.4rem',
-            }}>
-              Quick presets
-            </div>
-            <button
-              onClick={toggleWork}
-              style={{
-                padding: '.38rem .85rem', borderRadius: '20px',
-                border: `1.5px solid ${isWorkActive ? 'var(--terra)' : 'var(--border)'}`,
-                background: isWorkActive ? '#FEF4EF' : 'var(--warm)',
-                color: isWorkActive ? 'var(--terra)' : 'var(--smoke)',
-                fontSize: '.78rem', fontWeight: isWorkActive ? 500 : 400,
-                cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
-                transition: 'all .15s',
-                display: 'inline-flex', alignItems: 'center', gap: '.3rem',
-              }}
-            >
-              💼 Weekdays
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
-                · 9am → 6pm
-              </span>
-              {isWorkActive && <span style={{ opacity: .7 }}>✓</span>}
-            </button>
-          </div>
-        )}
-
-        {/* Night toggles */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem' }}>
-          {nights.length === 0 ? (
-            <div style={{ fontSize: '.76rem', color: 'var(--smoke)', fontStyle: 'italic', padding: '.2rem 0' }}>
-              No overnight periods in this schedule.
-            </div>
-          ) : (
-            nights.map(night => {
-              const active = isNightActive(night.label);
-              return (
-                <button
-                  key={night.key}
-                  onClick={() => toggleNight(night)}
-                  style={{
-                    padding: '.38rem .85rem', borderRadius: '20px',
-                    border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                    background: active ? '#FEF4EF' : 'var(--warm)',
-                    color: active ? 'var(--terra)' : 'var(--smoke)',
-                    fontSize: '.78rem', fontWeight: active ? 500 : 400,
-                    cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
-                    transition: 'all .15s',
-                    display: 'inline-flex', alignItems: 'center', gap: '.3rem',
-                  }}
-                >
-                  🌙 {night.label}
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
-                    · 11pm → 7am
-                  </span>
-                  {active && <span style={{ opacity: .7 }}>✓</span>}
-                </button>
-              );
-            })
+      {/* Scenario message */}
+      <div style={{
+        display: 'flex', gap: '.6rem', alignItems: 'flex-start',
+        background: scenarioBg, border: `1.5px solid ${scenarioBdr}`,
+        borderRadius: '10px', padding: '.7rem .9rem',
+        marginBottom: '1.1rem', fontSize: '.82rem',
+        color: scenarioColor, lineHeight: 1.55,
+      }}>
+        <span style={{ flexShrink: 0 }}>{scenarioIcon}</span>
+        <div>
+          <span>{scenarioMain}</span>
+          {scenarioSecondary && (
+            <span style={{ display: 'block', marginTop: '.3rem', fontSize: '.74rem', opacity: .7 }}>
+              {scenarioSecondary}
+            </span>
           )}
-
-          <button
-            onClick={() => setShowCustom(v => !v)}
-            style={{
-              padding: '.38rem .85rem', borderRadius: '20px',
-              border: `1.5px solid ${showCustom ? 'var(--terra)' : 'var(--border)'}`,
-              background: showCustom ? '#FEF4EF' : 'var(--warm)',
-              color: showCustom ? 'var(--terra)' : 'var(--smoke)',
-              fontSize: '.78rem', cursor: 'pointer',
-              fontFamily: 'var(--font-dm-sans)', transition: 'all .15s',
-            }}
-          >
-            {showCustom ? '✕ Cancel' : '＋ Custom'}
-          </button>
         </div>
-
-        {/* Custom block form */}
-        {showCustom && (
-          <div style={{
-            border: '1.5px solid var(--border)', borderRadius: '12px',
-            padding: '1rem 1.1rem', background: 'var(--warm)',
-            marginBottom: '.8rem',
-          }}>
-            <div style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.75rem' }}>
-              Custom unavailability block
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
-              <input
-                type="text"
-                placeholder="Label — e.g. Weekend away"
-                value={customLabel}
-                onChange={e => setCustomLabel(e.target.value)}
-                style={{
-                  padding: '.55rem .75rem',
-                  border: '1.5px solid var(--border)', borderRadius: '8px',
-                  background: 'var(--card)', color: 'var(--char)',
-                  fontSize: '.82rem', fontFamily: 'var(--font-dm-sans)', outline: 'none',
-                }}
-              />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem' }}>
-                <div>
-                  <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
-                    From
-                  </div>
-                  <input
-                    type="datetime-local"
-                    value={customFrom}
-                    onChange={e => setCustomFrom(e.target.value)}
-                    style={{
-                      width: '100%', padding: '.55rem .75rem',
-                      border: '1.5px solid var(--border)', borderRadius: '8px',
-                      background: 'var(--card)', color: 'var(--char)',
-                      fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
-                    }}
-                  />
-                </div>
-                <div>
-                  <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
-                    To
-                  </div>
-                  <input
-                    type="datetime-local"
-                    value={customTo}
-                    onChange={e => setCustomTo(e.target.value)}
-                    style={{
-                      width: '100%', padding: '.55rem .75rem',
-                      border: '1.5px solid var(--border)', borderRadius: '8px',
-                      background: 'var(--card)', color: 'var(--char)',
-                      fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
-                    }}
-                  />
-                </div>
-              </div>
-              <button
-                onClick={addCustomBlock}
-                disabled={!customReady}
-                style={{
-                  alignSelf: 'flex-start', padding: '.55rem 1.1rem',
-                  border: 'none', borderRadius: '8px',
-                  background: customReady ? 'var(--terra)' : 'var(--border)',
-                  color: customReady ? '#fff' : 'var(--smoke)',
-                  fontSize: '.82rem', fontWeight: 500,
-                  cursor: customReady ? 'pointer' : 'default',
-                  transition: 'all .15s',
-                }}
-              >
-                Add block
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Active block chips */}
-        {blocks.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
-            {blocks.map((block, i) => {
-              const durationH = (block.to.getTime() - block.from.getTime()) / 3600000;
-              const isNightBlock = nights.some(n => n.label === block.label);
-              const isWorkBlock  = block.label.startsWith('Work · ');
-              const emoji = isNightBlock ? '🌙' : isWorkBlock ? '💼' : '🕐';
-              return (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '.6rem',
-                    padding: '.5rem .85rem',
-                    background: '#EEF2FA', border: '1.5px solid #C4CDE0',
-                    borderRadius: '10px',
-                  }}
-                >
-                  <span style={{ fontSize: '.95rem', flexShrink: 0 }}>{emoji}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: '.82rem', fontWeight: 500, color: 'var(--char)' }}>
-                      {block.label}
-                    </span>
-                    <span style={{
-                      marginLeft: '.5rem', fontSize: '.72rem',
-                      color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
-                    }}>
-                      {formatTime(block.from)} → {formatTime(block.to)}
-                    </span>
-                    <span style={{
-                      marginLeft: '.35rem', fontSize: '.7rem',
-                      color: '#6A7FA8', fontFamily: 'var(--font-dm-mono)',
-                    }}>
-                      ({hoursLabel(durationH)})
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => removeBlock(i)}
-                    title="Remove"
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'var(--smoke)', fontSize: '.8rem',
-                      padding: '.15rem .3rem', borderRadius: '4px',
-                      lineHeight: 1, flexShrink: 0, transition: 'color .15s',
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div style={{
-            fontSize: '.78rem', color: 'var(--smoke)',
-            fontStyle: 'italic', padding: '.4rem 0',
-          }}>
-            No blocks added — dough will ferment at room temperature throughout.
-          </div>
-        )}
       </div>
 
-      <button onClick={() => onConfirm?.()} style={continueBtnStyle}>
-        Continue →
+      {/* Start time adjuster */}
+      <div style={{ marginBottom: startInvalid ? '.5rem' : '0' }}>
+        <label style={LABEL_STYLE}>Start mixing</label>
+        <input
+          type="datetime-local"
+          value={toDateTimeLocal(pendingStart)}
+          onChange={e => handleStartChange(e.target.value)}
+          style={{
+            ...INPUT_STYLE,
+            border: `2px solid ${startInvalid ? 'var(--terra)' : 'var(--border)'}`,
+          }}
+        />
+      </div>
+
+      {startInvalid && (
+        <div style={{
+          fontSize: '.78rem', color: 'var(--terra)',
+          background: '#FEF4EF', border: '1px solid #F5C4B0',
+          borderRadius: '8px', padding: '.5rem .85rem',
+          marginBottom: '.75rem', marginTop: '.5rem',
+        }}>
+          Start time must be before bake time.
+        </div>
+      )}
+
+      {!startInvalid && (
+        <div style={{
+          fontSize: '.72rem', color: 'var(--smoke)',
+          fontFamily: 'var(--font-dm-mono)',
+          marginTop: '.45rem', marginBottom: '.15rem',
+        }}>
+          {hoursLabel((pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)} total window
+        </div>
+      )}
+
+      {/* Divider */}
+      <div style={{ borderTop: '1px solid var(--border)', margin: '1.1rem 0 1rem' }} />
+
+      {/* Blocker section */}
+      <div style={{ fontSize: '.82rem', color: 'var(--char)', fontWeight: 600, marginBottom: '.3rem' }}>
+        Anything in between to work around?
+      </div>
+      <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.9rem', lineHeight: 1.5 }}>
+        Optional — mark windows when you&apos;re unavailable and we&apos;ll send the dough to the fridge.
+      </div>
+
+      {/* Quick presets — work toggle */}
+      {workdays.length > 0 && (
+        <div style={{ marginBottom: '.75rem' }}>
+          <div style={{
+            fontSize: '.65rem', color: 'var(--smoke)', opacity: .7,
+            fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase',
+            letterSpacing: '.06em', marginBottom: '.4rem',
+          }}>
+            Quick presets
+          </div>
+          <button
+            onClick={toggleWork}
+            style={{
+              padding: '.38rem .85rem', borderRadius: '20px',
+              border: `1.5px solid ${isWorkActive ? 'var(--terra)' : 'var(--border)'}`,
+              background: isWorkActive ? '#FEF4EF' : 'var(--warm)',
+              color: isWorkActive ? 'var(--terra)' : 'var(--smoke)',
+              fontSize: '.78rem', fontWeight: isWorkActive ? 500 : 400,
+              cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+              transition: 'all .15s',
+              display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+            }}
+          >
+            💼 Weekdays
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
+              · 9am → 6pm
+            </span>
+            {isWorkActive && <span style={{ opacity: .7 }}>✓</span>}
+          </button>
+        </div>
+      )}
+
+      {/* Night toggles */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem' }}>
+        {nights.length === 0 ? (
+          <div style={{ fontSize: '.76rem', color: 'var(--smoke)', fontStyle: 'italic', padding: '.2rem 0' }}>
+            No overnight periods in this schedule.
+          </div>
+        ) : (
+          nights.map(night => {
+            const active = isNightActive(night.label);
+            return (
+              <button
+                key={night.key}
+                onClick={() => toggleNight(night)}
+                style={{
+                  padding: '.38rem .85rem', borderRadius: '20px',
+                  border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
+                  background: active ? '#FEF4EF' : 'var(--warm)',
+                  color: active ? 'var(--terra)' : 'var(--smoke)',
+                  fontSize: '.78rem', fontWeight: active ? 500 : 400,
+                  cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                  transition: 'all .15s',
+                  display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+                }}
+              >
+                🌙 {night.label}
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
+                  · 11pm → 7am
+                </span>
+                {active && <span style={{ opacity: .7 }}>✓</span>}
+              </button>
+            );
+          })
+        )}
+
+        <button
+          onClick={() => setShowCustom(v => !v)}
+          style={{
+            padding: '.38rem .85rem', borderRadius: '20px',
+            border: `1.5px solid ${showCustom ? 'var(--terra)' : 'var(--border)'}`,
+            background: showCustom ? '#FEF4EF' : 'var(--warm)',
+            color: showCustom ? 'var(--terra)' : 'var(--smoke)',
+            fontSize: '.78rem', cursor: 'pointer',
+            fontFamily: 'var(--font-dm-sans)', transition: 'all .15s',
+          }}
+        >
+          {showCustom ? '✕ Cancel' : '＋ Custom'}
+        </button>
+      </div>
+
+      {/* Custom block form */}
+      {showCustom && (
+        <div style={{
+          border: '1.5px solid var(--border)', borderRadius: '12px',
+          padding: '1rem 1.1rem', background: 'var(--warm)',
+          marginBottom: '.8rem',
+        }}>
+          <div style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.75rem' }}>
+            Custom unavailability block
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+            <input
+              type="text"
+              placeholder="Label — e.g. Weekend away"
+              value={customLabel}
+              onChange={e => setCustomLabel(e.target.value)}
+              style={{
+                padding: '.55rem .75rem',
+                border: '1.5px solid var(--border)', borderRadius: '8px',
+                background: 'var(--card)', color: 'var(--char)',
+                fontSize: '.82rem', fontFamily: 'var(--font-dm-sans)', outline: 'none',
+              }}
+            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem' }}>
+              <div>
+                <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
+                  From
+                </div>
+                <input
+                  type="datetime-local"
+                  value={customFrom}
+                  onChange={e => setCustomFrom(e.target.value)}
+                  style={{
+                    width: '100%', padding: '.55rem .75rem',
+                    border: '1.5px solid var(--border)', borderRadius: '8px',
+                    background: 'var(--card)', color: 'var(--char)',
+                    fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
+                  }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
+                  To
+                </div>
+                <input
+                  type="datetime-local"
+                  value={customTo}
+                  onChange={e => setCustomTo(e.target.value)}
+                  style={{
+                    width: '100%', padding: '.55rem .75rem',
+                    border: '1.5px solid var(--border)', borderRadius: '8px',
+                    background: 'var(--card)', color: 'var(--char)',
+                    fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
+                  }}
+                />
+              </div>
+            </div>
+            <button
+              onClick={addCustomBlock}
+              disabled={!customReady}
+              style={{
+                alignSelf: 'flex-start', padding: '.55rem 1.1rem',
+                border: 'none', borderRadius: '8px',
+                background: customReady ? 'var(--terra)' : 'var(--border)',
+                color: customReady ? '#fff' : 'var(--smoke)',
+                fontSize: '.82rem', fontWeight: 500,
+                cursor: customReady ? 'pointer' : 'default',
+                transition: 'all .15s',
+              }}
+            >
+              Add block
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Active block chips */}
+      {blocks.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem', marginBottom: '.5rem' }}>
+          {blocks.map((block, i) => {
+            const durationH = (block.to.getTime() - block.from.getTime()) / 3600000;
+            const isNightBlock = nights.some(n => n.label === block.label);
+            const isWorkBlock  = block.label.startsWith('Work · ');
+            const emoji = isNightBlock ? '🌙' : isWorkBlock ? '💼' : '🕐';
+            return (
+              <div
+                key={i}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '.6rem',
+                  padding: '.5rem .85rem',
+                  background: '#EEF2FA', border: '1.5px solid #C4CDE0',
+                  borderRadius: '10px',
+                }}
+              >
+                <span style={{ fontSize: '.95rem', flexShrink: 0 }}>{emoji}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: '.82rem', fontWeight: 500, color: 'var(--char)' }}>
+                    {block.label}
+                  </span>
+                  <span style={{
+                    marginLeft: '.5rem', fontSize: '.72rem',
+                    color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                  }}>
+                    {formatTime(block.from)} → {formatTime(block.to)}
+                  </span>
+                  <span style={{
+                    marginLeft: '.35rem', fontSize: '.7rem',
+                    color: '#6A7FA8', fontFamily: 'var(--font-dm-mono)',
+                  }}>
+                    ({hoursLabel(durationH)})
+                  </span>
+                </div>
+                <button
+                  onClick={() => removeBlock(i)}
+                  title="Remove"
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'var(--smoke)', fontSize: '.8rem',
+                    padding: '.15rem .3rem', borderRadius: '4px',
+                    lineHeight: 1, flexShrink: 0, transition: 'color .15s',
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Single CTA */}
+      <button
+        onClick={confirmStart}
+        disabled={startInvalid}
+        style={{
+          ...continueBtnStyle,
+          background: startInvalid ? 'var(--border)' : 'var(--terra)',
+          color: startInvalid ? 'var(--smoke)' : '#fff',
+          cursor: startInvalid ? 'default' : 'pointer',
+        }}
+      >
+        Confirm start →
       </button>
     </div>
   );
