@@ -304,7 +304,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Phase transitions ────────────────────────
   function confirmBakeTime() {
-    const s = suggestion.suggestedStart;
+    const s = roundToNearestHour(suggestion.suggestedStart);
     setPendingStart(s);
     onChange(s, pendingEatTime, blocks);
     setStartComputed(true);
