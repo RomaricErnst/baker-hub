@@ -10,6 +10,7 @@ interface RecipeOutputProps {
   styleEmoji: string;
   mixerType: string;
   kitchenTemp: number;
+  fermEquivHours: number;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -170,7 +171,7 @@ function buildWaterSub(
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp,
+  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours,
 }: RecipeOutputProps) {
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
 
@@ -353,6 +354,34 @@ export default function RecipeOutput({
           <div style={{ minWidth: '4rem' }} />
         </div>
       </div>
+
+      {/* ── Flour note ────────────────────────────── */}
+      {(() => {
+        let main: string;
+        if (fermEquivHours < 8) {
+          main = 'Pizza or bread flour works well for this plan.';
+        } else if (fermEquivHours < 24) {
+          main = 'Pizza flour gives the best results — 00 or T45 forte if you have it 🌾';
+        } else {
+          main = 'Strong pizza flour recommended for this long fermentation — 00 W270+ or T45 forte 🌾';
+        }
+        return (
+          <div style={{
+            background: 'var(--warm)',
+            border: '1px solid var(--border)',
+            borderLeft: '3px solid var(--sage)',
+            borderRadius: '10px',
+            padding: '.75rem 1rem',
+          }}>
+            <div style={{ fontSize: '.82rem', color: 'var(--char)', lineHeight: 1.55 }}>
+              {main}
+            </div>
+            <div style={{ fontSize: '.75rem', color: 'var(--smoke)', marginTop: '.3rem' }}>
+              Using plain flour or T55? Tap to adapt →
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Yeast details ─────────────────────────── */}
       {yeastInfo && (

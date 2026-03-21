@@ -639,6 +639,7 @@ export default function Home() {
                       styleEmoji={ALL_STYLES[styleKey!].emoji}
                       mixerType={mixerType}
                       kitchenTemp={kitchenTemp}
+                      fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
                     />
 
                     {/* ── Large-batch yeast adjustment ── */}
