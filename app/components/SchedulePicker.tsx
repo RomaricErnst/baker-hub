@@ -16,7 +16,7 @@ interface SchedulePickerProps {
 type PickerPhase = 'bake_time' | 'start_confirm' | 'blockers';
 type Scenario = 'plenty' | 'tight' | 'too_short';
 
-// ── Day+time formatter ────────────────────────
+// ── Day+time formatter (full precision) ──────
 function formatDayTime(d: Date): string {
   const now = new Date();
   const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
@@ -30,6 +30,39 @@ function formatDayTime(d: Date): string {
   const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
   const month   = d.toLocaleDateString('en-US', { month: 'short' });
   return `${weekday} ${d.getDate()} ${month} at ${timeStr}`;
+}
+
+// ── Hour-rounded formatters ───────────────────
+// Round to nearest hour, format as "3pm" / "11am" / "12pm" / "12am"
+function roundToNearestHour(d: Date): Date {
+  const r = new Date(d);
+  if (r.getMinutes() >= 30) r.setHours(r.getHours() + 1);
+  r.setMinutes(0, 0, 0);
+  return pushToReasonableHour(r); // keep anti-unsociable guarantee after rounding
+}
+
+function formatHour(d: Date): string {
+  const h = d.getHours();
+  if (h === 0)  return '12am';
+  if (h < 12)   return `${h}am`;
+  if (h === 12) return '12pm';
+  return `${h - 12}pm`;
+}
+
+// "Thu 26 Mar at 3pm" / "tonight at 11pm" / "tomorrow at 9am"
+function formatDayHour(d: Date): string {
+  const r = roundToNearestHour(d);
+  const now = new Date();
+  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+  const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(todayStart.getDate() + 1);
+  const rStart = new Date(r); rStart.setHours(0, 0, 0, 0);
+
+  const hourStr = formatHour(r);
+  if (rStart.getTime() === todayStart.getTime())    return `tonight at ${hourStr}`;
+  if (rStart.getTime() === tomorrowStart.getTime()) return `tomorrow at ${hourStr}`;
+  const weekday = r.toLocaleDateString('en-US', { weekday: 'short' });
+  const month   = r.toLocaleDateString('en-US', { month: 'short' });
+  return `${weekday} ${r.getDate()} ${month} at ${hourStr}`;
 }
 
 // ── Per-style optimal fermentation defaults ───
@@ -352,17 +385,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const scenarioColor = scenario === 'too_short' ? 'var(--terra)' : scenario === 'tight' ? '#7A5A10' : '#3A6A30';
     const scenarioIcon  = scenario === 'too_short' ? '⚡' : scenario === 'tight' ? '⏰' : '✨';
 
-    let scenarioMsg: string;
+    let scenarioMain: string;
+    let scenarioSecondary: string | null = null;
+
     if (scenario === 'plenty') {
       if (isPreferredMode) {
-        scenarioMsg = `Start ${formatDayTime(suggestedStart)} for best results (${preferredColdH}h) — or ${formatDayTime(alternativeStart)} for a good ${standardColdH}h plan.`;
+        scenarioMain = `Start between ${formatDayHour(suggestedStart)} and ${formatDayHour(alternativeStart)} for best results.`;
+        scenarioSecondary = 'Earlier start = longer cold rest = more complex flavour. Later is still great.';
       } else {
-        scenarioMsg = `Start ${formatDayTime(suggestedStart)} for best results — or ${formatDayTime(alternativeStart)} for a quicker plan.`;
+        scenarioMain = `Start ${formatDayHour(suggestedStart)} for best results — or ${formatDayHour(alternativeStart)} for a quicker plan.`;
       }
     } else if (scenario === 'tight') {
-      scenarioMsg = `Start ${formatDayTime(suggestedStart)} for best results.`;
+      scenarioMain = `Start ${formatDayHour(suggestedStart)} for best results.`;
     } else {
-      scenarioMsg = `That's very soon — start now for the best you can get.`;
+      scenarioMain = `That's very soon — start now for the best you can get.`;
     }
 
     const startInvalid = pendingStart >= pendingEatTime;
@@ -405,7 +441,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           color: scenarioColor, lineHeight: 1.55,
         }}>
           <span style={{ flexShrink: 0 }}>{scenarioIcon}</span>
-          <span>{scenarioMsg}</span>
+          <div>
+            <span>{scenarioMain}</span>
+            {scenarioSecondary && (
+              <span style={{
+                display: 'block', marginTop: '.3rem',
+                fontSize: '.74rem', opacity: .7,
+              }}>
+                {scenarioSecondary}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Start time adjuster */}
