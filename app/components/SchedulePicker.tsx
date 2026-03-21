@@ -558,14 +558,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       {/* Blocker section */}
       <div style={{ fontSize: '.82rem', color: 'var(--char)', fontWeight: 600, marginBottom: '.3rem' }}>
-        {kitchenTemp >= 28
-          ? 'When can you check on your dough?'
-          : 'Anything in between to work around?'}
+        Anything in between to work around?
       </div>
       <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.9rem', lineHeight: 1.5 }}>
-        {kitchenTemp >= 28
-          ? 'These are your natural balling moments — we\u2019ll plan your cold rest around them.'
-          : 'Optional \u2014 mark windows when you\u2019re unavailable and we\u2019ll send the dough to the fridge.'}
+        Optional — mark windows when you&apos;re unavailable and we&apos;ll send the dough to the fridge.
       </div>
 
       {/* Quick presets — work toggle */}
