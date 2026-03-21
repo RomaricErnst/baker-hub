@@ -39,7 +39,7 @@ function StepCard({
   const isLocked    = activeStep < num;
 
   return (
-    <div style={{
+    <div id={`step-${num}`} style={{
       border: `2px solid ${isActive ? 'var(--terra)' : 'var(--border)'}`,
       borderRadius: '18px',
       background: isActive ? '#FDFAF7' : 'var(--warm)',
@@ -188,6 +188,11 @@ export default function Home() {
 
   const resultsRef = useRef<HTMLDivElement>(null);
 
+  // Scroll to top on page load
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Scroll to results when they appear
   useEffect(() => {
     if (showResults) {
@@ -249,6 +254,13 @@ export default function Home() {
     setActiveStep(from + 1);
     if (from === 6) setShowResults(true);
     else setShowResults(false);
+    setTimeout(() => {
+      const el = document.getElementById(`step-${from + 1}`);
+      if (el) {
+        const top = el.getBoundingClientRect().top + window.scrollY - 70;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+    }, 150);
   }
 
   function startOver() {
@@ -548,6 +560,7 @@ export default function Home() {
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.15rem' }}>
                 <SchedulePicker
                   startTime={startTime} eatTime={eatTime} blocks={blocks}
+                  preheatMin={preheatMin}
                   onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 />
               </div>
@@ -783,6 +796,7 @@ export default function Home() {
                         styleKey={styleKey ?? ''}
                         oil={recipe?.oil ?? 0}
                         hydration={recipe?.hydration ?? 0}
+                        numItems={numItems}
                         onStartBaking={() => { /* Baking mode — future feature */ }}
                       />
                     )}

@@ -19,11 +19,12 @@ interface TimelineProps {
   styleKey: string;
   oil: number;
   hydration: number;
+  numItems: number;
   onStartBaking?: () => void;
 }
 
 // ── Step kinds ────────────────────────────────
-type StepKind = 'mixing' | 'bulk_ferm' | 'final_proof' | 'cold' | 'rest_rt' | 'preheat' | 'eat';
+type StepKind = 'mixing' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'preheat' | 'eat';
 
 interface TimelineStep {
   kind: 'step';
@@ -45,6 +46,7 @@ const THEME: Record<StepKind, {
 }> = {
   mixing:      { dot: 'var(--ash)',    ring: 'rgba(61,53,48,.1)',    line: 'var(--border)', pill: 'var(--cream)',  pillText: 'var(--ash)' },
   bulk_ferm:   { dot: 'var(--terra)',  ring: 'rgba(196,82,42,.1)',   line: '#F5C4B0',       pill: '#FEF4EF',      pillText: 'var(--terra)', cardBg: '#FEF8F5', cardBorder: '#F5C4B0' },
+  divide_ball: { dot: '#8A6A4A',       ring: 'rgba(138,106,74,.1)',  line: '#D4B898',       pill: '#FDF4EA',      pillText: '#6A3A10' },
   final_proof: { dot: '#7A8C6E',       ring: 'rgba(122,140,110,.1)', line: '#C8D4BA',       pill: '#F2F5EF',      pillText: '#4A5A44', cardBg: '#F5F7F2', cardBorder: '#C8D4BA' },
   cold:        { dot: '#6A7FA8',       ring: 'rgba(106,127,168,.1)', line: '#C4CDE0',       pill: '#EEF2FA',      pillText: '#3A5A8A', cardBg: '#EEF2FA', cardBorder: '#C4CDE0' },
   rest_rt:     { dot: '#B87850',       ring: 'rgba(184,120,80,.1)',  line: '#DDB898',       pill: '#FDF0E8',      pillText: '#7A3A10', cardBg: '#FDF4EE', cardBorder: '#DDB898' },
@@ -60,6 +62,7 @@ function buildItems(
   eatTime: Date,
   preheatMin: number,
   mixerType: MixerType,
+  numItems: number,
 ): TimelineStep[] {
   const items: TimelineStep[] = [];
   const kneadMin = MIXER_TYPES[mixerType].kneadMin;
@@ -83,6 +86,28 @@ function buildItems(
       icon: '🌡️',
       tip: 'Cover tightly and place in a warm spot away from drafts. Perform 4 sets of stretch & folds in the first 2 hours, every 30 minutes.',
       durationH: schedule.bulkFermHours,
+    });
+  }
+
+  // 2b — Divide & Ball
+  {
+    const divideTime = new Date(schedule.bulkFermStart.getTime() + schedule.bulkFermHours * 3600000);
+    const extraBalls = Math.max(0, numItems - 4);
+    const divideMin  = 15 + 2 * extraBalls;
+    const divideH    = divideMin / 60;
+
+    // Detect tight window: next step starts within 15 min
+    const nextStepTime = schedule.coldRetardStart ?? schedule.finalProofStart;
+    const windowMin = (nextStepTime.getTime() - divideTime.getTime()) / 60000;
+    const isTight   = windowMin < 15;
+
+    items.push({
+      kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
+      time: divideTime,
+      label: 'Divide & Ball',
+      icon: '⚖️',
+      tip: `Weigh and divide dough into ${numItems} balls. Pinch the bottom tight for a smooth, taut skin.${isTight ? ' ⚠️ Tight window — work quickly.' : ''}`,
+      durationH: divideH,
     });
   }
 
@@ -206,11 +231,11 @@ function InfoBadge({ term, onOpen }: { term: string; onOpen: (t: string) => void
 
 // ── Component ─────────────────────────────────
 export default function Timeline({
-  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, oil, hydration, onStartBaking,
+  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, oil, hydration, numItems, onStartBaking,
 }: TimelineProps) {
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
 
-  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType);
+  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems);
   const phases = buildPhases(schedule, preheatMin);
 
   const lastStepId = items[items.length - 1]?.id;
@@ -408,6 +433,8 @@ export default function Timeline({
                     ? <>Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch and will tear. The poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> will be unreliable until the dough has warmed through.</>
                     : item.stepKind === 'final_proof'
                     ? <>Shape dough balls if not already done. Cover and leave at room temperature until the poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> confirms they are ready to bake.</>
+                    : item.stepKind === 'divide_ball'
+                    ? <>{item.tip}{schedule.coldRetardStart && <><br /><span style={{ marginTop: '.35rem', display: 'inline-block', color: '#6A7FA8', fontStyle: 'italic' }}>Coming from the fridge? Cold dough is easier to ball — work quickly before it warms up.</span></>}</>
                     : item.tip}
                 </div>
 

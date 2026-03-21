@@ -6,11 +6,59 @@ interface SchedulePickerProps {
   startTime: Date;
   eatTime: Date;
   blocks: AvailabilityBlock[];
+  preheatMin: number;
   onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[]) => void;
 }
 
+type PickerPhase = 'bake_time' | 'start_confirm' | 'blockers';
+type Scenario = 'plenty' | 'tight' | 'too_short';
+
+// ── Day+time formatter ────────────────────────
+function formatDayTime(d: Date): string {
+  const now = new Date();
+  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+  const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(todayStart.getDate() + 1);
+  const dStart = new Date(d); dStart.setHours(0, 0, 0, 0);
+
+  const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+  if (dStart.getTime() === todayStart.getTime()) return `tonight at ${timeStr}`;
+  if (dStart.getTime() === tomorrowStart.getTime()) return `tomorrow at ${timeStr}`;
+  return `${d.toLocaleDateString('en-US', { weekday: 'long' })} at ${timeStr}`;
+}
+
+// ── Start suggestion engine ───────────────────
+function computeSuggestion(eatTime: Date, preheatMin: number) {
+  const now = new Date();
+  const optimalFermH = 8;
+  const mixingH = 0.25; // ~15 min buffer
+  const preheatH = preheatMin / 60;
+
+  const optimalStart  = new Date(eatTime.getTime() - (optimalFermH + preheatH + mixingH) * 3600000);
+  const quickerStart  = new Date(eatTime.getTime() - (4 + preheatH + mixingH) * 3600000);
+  const minFeasibleMs = (2.5 + preheatH) * 3600000;
+
+  let scenario: Scenario;
+  const msUntilOptimal = optimalStart.getTime() - now.getTime();
+  const msUntilBake    = eatTime.getTime() - now.getTime();
+
+  if (msUntilBake < minFeasibleMs) {
+    scenario = 'too_short';
+  } else if (msUntilOptimal < 2 * 3600000) {
+    scenario = 'tight';
+  } else {
+    scenario = 'plenty';
+  }
+
+  const suggestedStart =
+    scenario === 'too_short' ? new Date(now)
+    : scenario === 'tight'   ? new Date(Math.max(now.getTime() + 5 * 60000, optimalStart.getTime()))
+    : optimalStart;
+
+  return { scenario, suggestedStart, optimalStart, quickerStart };
+}
+
 // ── Workday helper ────────────────────────────
-// Returns Mon–Fri days whose 09:00–18:00 block overlaps [start, end], max 14 days
 function getWorkdaysInWindow(
   start: Date,
   end: Date,
@@ -22,13 +70,10 @@ function getWorkdaysInWindow(
   cursor.setHours(0, 0, 0, 0);
 
   for (let i = 0; i < 14; i++) {
-    const dow = cursor.getDay(); // 0=Sun, 6=Sat
+    const dow = cursor.getDay();
     if (dow >= 1 && dow <= 5) {
-      const blockStart = new Date(cursor);
-      blockStart.setHours(9, 0, 0, 0);
-      const blockEnd = new Date(cursor);
-      blockEnd.setHours(18, 0, 0, 0);
-
+      const blockStart = new Date(cursor); blockStart.setHours(9, 0, 0, 0);
+      const blockEnd   = new Date(cursor); blockEnd.setHours(18, 0, 0, 0);
       if (blockStart < end && blockEnd > start) {
         const key = cursor.toISOString().slice(0, 10);
         const dateLabel = cursor.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -37,13 +82,10 @@ function getWorkdaysInWindow(
     }
     cursor.setDate(cursor.getDate() + 1);
   }
-
   return days;
 }
 
 // ── Night window helper ───────────────────────
-// A "night" = that day at 23:00 → next day at 07:00
-// Returns nights whose window overlaps [start, end], max 7
 function getNightsInWindow(
   start: Date,
   end: Date,
@@ -51,32 +93,23 @@ function getNightsInWindow(
   if (end <= start) return [];
 
   const nights: Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> = [];
-
-  // Iterate from the day of `start` forward, up to 14 days as search range
-  const cursor = new Date(start);
-  cursor.setHours(0, 0, 0, 0);
+  const cursor = new Date(start); cursor.setHours(0, 0, 0, 0);
 
   for (let i = 0; i < 14 && nights.length < 7; i++) {
-    const nightStart = new Date(cursor);
-    nightStart.setHours(23, 0, 0, 0);
+    const nightStart = new Date(cursor); nightStart.setHours(23, 0, 0, 0);
+    const nightEnd   = new Date(cursor); nightEnd.setDate(nightEnd.getDate() + 1); nightEnd.setHours(7, 0, 0, 0);
 
-    const nightEnd = new Date(cursor);
-    nightEnd.setDate(nightEnd.getDate() + 1);
-    nightEnd.setHours(7, 0, 0, 0);
-
-    // Include if overlaps with [start, end]
     if (nightStart < end && nightEnd > start) {
       const weekday = nightStart.toLocaleDateString('en-US', { weekday: 'long' });
-      const key = nightStart.toISOString().slice(0, 10); // "YYYY-MM-DD"
+      const key = nightStart.toISOString().slice(0, 10);
       nights.push({ key, label: `${weekday} night`, blockStart: nightStart, blockEnd: nightEnd });
     }
-
     cursor.setDate(cursor.getDate() + 1);
   }
-
   return nights;
 }
 
+// ── Shared styles ─────────────────────────────
 const INPUT_STYLE: React.CSSProperties = {
   width: '100%',
   padding: '.65rem .85rem',
@@ -100,7 +133,12 @@ const LABEL_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-dm-mono)',
 };
 
-export default function SchedulePicker({ startTime, eatTime, blocks, onChange }: SchedulePickerProps) {
+// ── Component ─────────────────────────────────
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, onChange }: SchedulePickerProps) {
+  const [phase, setPhase] = useState<PickerPhase>('bake_time');
+  const [pendingEatTime, setPendingEatTime] = useState(eatTime);
+  const [pendingStart, setPendingStart] = useState(startTime);
+
   const [showCustom, setShowCustom] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
   const [customFrom, setCustomFrom] = useState('');
@@ -114,39 +152,44 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const totalHours = (eatTime.getTime() - startTime.getTime()) / 3600000;
-  const timeInvalid = eatTime <= startTime;
-
-  // Recompute nights and workdays whenever start/eat time changes
-  const nights = useMemo(
-    () => getNightsInWindow(startTime, eatTime),
-    [startTime, eatTime],
+  const suggestion = useMemo(
+    () => computeSuggestion(pendingEatTime, preheatMin),
+    [pendingEatTime, preheatMin],
   );
 
-  const workdays = useMemo(
-    () => getWorkdaysInWindow(startTime, eatTime),
-    [startTime, eatTime],
-  );
-
+  const nights   = useMemo(() => getNightsInWindow(pendingStart, pendingEatTime), [pendingStart, pendingEatTime]);
+  const workdays = useMemo(() => getWorkdaysInWindow(pendingStart, pendingEatTime), [pendingStart, pendingEatTime]);
   const isWorkActive = blocks.some(b => b.label.startsWith('Work · '));
 
-  function toggleWork() {
-    if (isWorkActive) {
-      onChange(startTime, eatTime, blocks.filter(b => !b.label.startsWith('Work · ')));
-    } else {
-      const newBlocks = workdays.map(d => ({ from: d.blockStart, to: d.blockEnd, label: d.label }));
-      onChange(startTime, eatTime, [...blocks, ...newBlocks]);
+  // ── Phase transitions ────────────────────────
+  function confirmBakeTime() {
+    const s = suggestion.suggestedStart;
+    setPendingStart(s);
+    onChange(s, pendingEatTime, blocks);
+    setPhase('start_confirm');
+  }
+
+  function confirmStart() {
+    onChange(pendingStart, pendingEatTime, blocks);
+    setPhase('blockers');
+  }
+
+  // ── Handlers ─────────────────────────────────
+  function handleStartChange(val: string) {
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+      setPendingStart(d);
+      onChange(d, pendingEatTime, blocks);
     }
   }
 
-  function handleStartChange(val: string) {
-    const d = new Date(val);
-    if (!isNaN(d.getTime())) onChange(d, eatTime, blocks);
-  }
-
-  function handleEatChange(val: string) {
-    const d = new Date(val);
-    if (!isNaN(d.getTime())) onChange(startTime, d, blocks);
+  function toggleWork() {
+    if (isWorkActive) {
+      onChange(pendingStart, pendingEatTime, blocks.filter(b => !b.label.startsWith('Work · ')));
+    } else {
+      const newBlocks = workdays.map(d => ({ from: d.blockStart, to: d.blockEnd, label: d.label }));
+      onChange(pendingStart, pendingEatTime, [...blocks, ...newBlocks]);
+    }
   }
 
   function isNightActive(label: string): boolean {
@@ -155,107 +198,232 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
 
   function toggleNight(night: { key: string; label: string; blockStart: Date; blockEnd: Date }) {
     if (isNightActive(night.label)) {
-      // Remove this night's block
-      onChange(startTime, eatTime, blocks.filter(b => b.label !== night.label));
+      onChange(pendingStart, pendingEatTime, blocks.filter(b => b.label !== night.label));
     } else {
-      // Add this night's block
-      onChange(startTime, eatTime, [
-        ...blocks,
-        { from: night.blockStart, to: night.blockEnd, label: night.label },
-      ]);
+      onChange(pendingStart, pendingEatTime, [...blocks, { from: night.blockStart, to: night.blockEnd, label: night.label }]);
     }
   }
 
   function removeBlock(index: number) {
-    onChange(startTime, eatTime, blocks.filter((_, i) => i !== index));
+    onChange(pendingStart, pendingEatTime, blocks.filter((_, i) => i !== index));
   }
 
   function addCustomBlock() {
     const from = new Date(customFrom);
-    const to = new Date(customTo);
+    const to   = new Date(customTo);
     if (!customLabel.trim() || isNaN(from.getTime()) || isNaN(to.getTime()) || to <= from) return;
-    onChange(startTime, eatTime, [...blocks, { from, to, label: customLabel.trim() }]);
-    setCustomLabel('');
-    setCustomFrom('');
-    setCustomTo('');
+    onChange(pendingStart, pendingEatTime, [...blocks, { from, to, label: customLabel.trim() }]);
+    setCustomLabel(''); setCustomFrom(''); setCustomTo('');
     setShowCustom(false);
   }
 
   const customReady = customLabel.trim() && customFrom && customTo
     && new Date(customTo) > new Date(customFrom);
 
-  return (
-    <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
+  // ── Shared sub-components ─────────────────────
+  const continueBtnStyle: React.CSSProperties = {
+    marginTop: '1rem', width: '100%', padding: '.8rem',
+    border: 'none', borderRadius: '12px',
+    background: 'var(--terra)', color: '#fff',
+    fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700,
+    cursor: 'pointer',
+  };
 
-      {/* ── Time inputs ─────────────────────────────── */}
-      <div style={{
-        display: 'flex',
-        flexDirection: isNarrow ? 'column' : 'row',
-        alignItems: isNarrow ? 'stretch' : 'flex-end',
-        gap: '.75rem',
-        marginBottom: timeInvalid ? '.75rem' : '1.5rem',
-      }}>
-
-        <div style={{ flex: 1 }}>
-          <label style={LABEL_STYLE}>Start mixing</label>
+  // ── PHASE 1: Bake time ────────────────────────
+  if (phase === 'bake_time') {
+    return (
+      <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
+        <div style={{ marginBottom: '.35rem' }}>
+          <label style={LABEL_STYLE}>When do you want to bake?</label>
           <input
             type="datetime-local"
-            value={toDateTimeLocal(startTime)}
-            onChange={e => handleStartChange(e.target.value)}
+            value={toDateTimeLocal(pendingEatTime)}
+            onChange={e => {
+              const d = new Date(e.target.value);
+              if (!isNaN(d.getTime())) setPendingEatTime(d);
+            }}
             style={INPUT_STYLE}
           />
         </div>
+        <div style={{
+          fontSize: '.76rem', color: 'var(--smoke)',
+          marginBottom: '1rem', marginTop: '.45rem',
+          lineHeight: 1.5,
+        }}>
+          We&apos;ll build the perfect timeline around it.
+        </div>
+        <button
+          onClick={confirmBakeTime}
+          style={continueBtnStyle}
+        >
+          Plan my bake →
+        </button>
+      </div>
+    );
+  }
 
-        {/* Duration bridge — hide on mobile */}
-        {!isNarrow && (
-          <div style={{ textAlign: 'center', paddingBottom: '.6rem', flexShrink: 0 }}>
-            <div style={{
-              fontSize: '.65rem',
-              color: timeInvalid ? 'var(--terra)' : 'var(--smoke)',
-              fontFamily: 'var(--font-dm-mono)',
-              whiteSpace: 'nowrap',
-              marginBottom: '.1rem',
-            }}>
-              {timeInvalid ? '!' : totalHours > 0 ? hoursLabel(totalHours) : '—'}
-            </div>
-            <div style={{ color: 'var(--border)', fontSize: '.9rem', lineHeight: 1 }}>→</div>
-          </div>
-        )}
+  // ── PHASE 2: Start suggestion + confirm ───────
+  if (phase === 'start_confirm') {
+    const { scenario, suggestedStart, quickerStart } = suggestion;
 
-        <div style={{ flex: 1 }}>
-          <label style={LABEL_STYLE}>Ready to bake</label>
+    const scenarioBg    = scenario === 'too_short' ? '#FEF4EF' : scenario === 'tight' ? '#FFF8E8' : '#F2FAF0';
+    const scenarioBdr   = scenario === 'too_short' ? '#F5C4B0' : scenario === 'tight' ? '#E8D080' : '#C8D4BA';
+    const scenarioColor = scenario === 'too_short' ? 'var(--terra)' : scenario === 'tight' ? '#7A5A10' : '#3A6A30';
+    const scenarioIcon  = scenario === 'too_short' ? '⚡' : scenario === 'tight' ? '⏰' : '✨';
+
+    let scenarioMsg: string;
+    if (scenario === 'plenty') {
+      scenarioMsg = `Start ${formatDayTime(suggestedStart)} for best results — or ${formatDayTime(quickerStart)} for a quicker plan.`;
+    } else if (scenario === 'tight') {
+      scenarioMsg = `Start ${formatDayTime(suggestedStart)} for best results.`;
+    } else {
+      scenarioMsg = `That's very soon — start now for the best you can get.`;
+    }
+
+    const startInvalid = pendingStart >= pendingEatTime;
+
+    return (
+      <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
+
+        {/* Bake time summary */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '.65rem',
+          padding: '.5rem .85rem',
+          background: 'var(--cream)', border: '1.5px solid var(--border)',
+          borderRadius: '10px', marginBottom: '1rem',
+        }}>
+          <span style={{ fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}>
+            Bake time
+          </span>
+          <span style={{ fontSize: '.88rem', fontWeight: 700, color: 'var(--char)', flex: 1 }}>
+            {formatTime(pendingEatTime)}
+          </span>
+          <button
+            onClick={() => setPhase('bake_time')}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: '.72rem', color: 'var(--smoke)',
+              fontFamily: 'var(--font-dm-mono)', padding: '.15rem .3rem',
+              borderRadius: '4px', flexShrink: 0,
+            }}
+          >
+            Edit
+          </button>
+        </div>
+
+        {/* Scenario message */}
+        <div style={{
+          display: 'flex', gap: '.6rem', alignItems: 'flex-start',
+          background: scenarioBg, border: `1.5px solid ${scenarioBdr}`,
+          borderRadius: '10px', padding: '.7rem .9rem',
+          marginBottom: '1.1rem', fontSize: '.82rem',
+          color: scenarioColor, lineHeight: 1.55,
+        }}>
+          <span style={{ flexShrink: 0 }}>{scenarioIcon}</span>
+          <span>{scenarioMsg}</span>
+        </div>
+
+        {/* Start time adjuster */}
+        <div style={{ marginBottom: startInvalid ? '.5rem' : '0' }}>
+          <label style={LABEL_STYLE}>Start mixing</label>
           <input
             type="datetime-local"
-            value={toDateTimeLocal(eatTime)}
-            onChange={e => handleEatChange(e.target.value)}
+            value={toDateTimeLocal(pendingStart)}
+            onChange={e => handleStartChange(e.target.value)}
             style={{
               ...INPUT_STYLE,
-              border: `2px solid ${timeInvalid ? 'var(--terra)' : 'var(--border)'}`,
+              border: `2px solid ${startInvalid ? 'var(--terra)' : 'var(--border)'}`,
             }}
           />
         </div>
+
+        {startInvalid && (
+          <div style={{
+            fontSize: '.78rem', color: 'var(--terra)',
+            background: '#FEF4EF', border: '1px solid #F5C4B0',
+            borderRadius: '8px', padding: '.5rem .85rem',
+            marginBottom: '.75rem', marginTop: '.5rem',
+          }}>
+            Start time must be before bake time.
+          </div>
+        )}
+
+        {!startInvalid && (
+          <div style={{
+            fontSize: '.72rem', color: 'var(--smoke)',
+            fontFamily: 'var(--font-dm-mono)',
+            marginTop: '.45rem', marginBottom: '.15rem',
+          }}>
+            {hoursLabel((pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)} total window
+          </div>
+        )}
+
+        <button
+          onClick={confirmStart}
+          disabled={startInvalid}
+          style={{
+            ...continueBtnStyle,
+            background: startInvalid ? 'var(--border)' : 'var(--terra)',
+            color: startInvalid ? 'var(--smoke)' : '#fff',
+            cursor: startInvalid ? 'default' : 'pointer',
+          }}
+        >
+          Confirm start →
+        </button>
+      </div>
+    );
+  }
+
+  // ── PHASE 3: Availability blockers ───────────
+  return (
+    <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
+
+      {/* Schedule summary bar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '.65rem', flexWrap: 'wrap',
+        padding: '.5rem .85rem',
+        background: 'var(--cream)', border: '1.5px solid var(--border)',
+        borderRadius: '10px', marginBottom: '1.25rem',
+      }}>
+        <span style={{ fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}>
+          Schedule
+        </span>
+        <span style={{ fontSize: '.85rem', fontWeight: 700, color: 'var(--char)', flex: 1 }}>
+          {formatTime(pendingStart)} → {formatTime(pendingEatTime)}
+        </span>
+        <span style={{
+          fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
+          background: 'var(--warm)', border: '1px solid var(--border)',
+          borderRadius: '8px', padding: '.15rem .45rem', color: 'var(--smoke)',
+        }}>
+          {hoursLabel((pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)}
+        </span>
+        <button
+          onClick={() => setPhase('bake_time')}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: '.72rem', color: 'var(--smoke)',
+            fontFamily: 'var(--font-dm-mono)', padding: '.15rem .3rem',
+            borderRadius: '4px', flexShrink: 0,
+          }}
+        >
+          Edit
+        </button>
       </div>
 
-      {/* Invalid time warning */}
-      {timeInvalid && (
-        <div style={{
-          fontSize: '.78rem', color: 'var(--terra)',
-          background: '#FEF4EF', border: '1px solid #F5C4B0',
-          borderRadius: '8px', padding: '.5rem .85rem',
-          marginBottom: '1.25rem',
-        }}>
-          Bake time must be after start time.
-        </div>
-      )}
-
-      {/* ── Availability blocks ──────────────────────── */}
+      {/* Blocker section */}
       <div>
         <div style={{
-          fontSize: '.72rem', color: 'var(--smoke)',
-          textTransform: 'uppercase', letterSpacing: '.06em',
-          marginBottom: '.75rem', fontFamily: 'var(--font-dm-mono)',
+          fontSize: '.82rem', color: 'var(--char)', fontWeight: 600,
+          marginBottom: '.3rem',
         }}>
-          I won&apos;t be available — dough goes in the fridge
+          Anything in between to work around?
+        </div>
+        <div style={{
+          fontSize: '.74rem', color: 'var(--smoke)',
+          marginBottom: '.9rem', lineHeight: 1.5,
+        }}>
+          Optional — mark windows when you&apos;re unavailable and we&apos;ll send the dough to the fridge.
         </div>
 
         {/* Quick presets — work toggle */}
@@ -271,25 +439,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
             <button
               onClick={toggleWork}
               style={{
-                padding: '.38rem .85rem',
-                borderRadius: '20px',
+                padding: '.38rem .85rem', borderRadius: '20px',
                 border: `1.5px solid ${isWorkActive ? 'var(--terra)' : 'var(--border)'}`,
                 background: isWorkActive ? '#FEF4EF' : 'var(--warm)',
                 color: isWorkActive ? 'var(--terra)' : 'var(--smoke)',
-                fontSize: '.78rem',
-                fontWeight: isWorkActive ? 500 : 400,
-                cursor: 'pointer',
-                fontFamily: 'var(--font-dm-sans)',
+                fontSize: '.78rem', fontWeight: isWorkActive ? 500 : 400,
+                cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
                 transition: 'all .15s',
                 display: 'inline-flex', alignItems: 'center', gap: '.3rem',
               }}
             >
               💼 Weekdays
-              <span style={{
-                fontFamily: 'var(--font-dm-mono)',
-                fontSize: '.7rem',
-                opacity: .65,
-              }}>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
                 · 9am → 6pm
               </span>
               {isWorkActive && <span style={{ opacity: .7 }}>✓</span>}
@@ -300,10 +461,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
         {/* Night toggles */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem' }}>
           {nights.length === 0 ? (
-            <div style={{
-              fontSize: '.76rem', color: 'var(--smoke)',
-              fontStyle: 'italic', padding: '.2rem 0',
-            }}>
+            <div style={{ fontSize: '.76rem', color: 'var(--smoke)', fontStyle: 'italic', padding: '.2rem 0' }}>
               No overnight periods in this schedule.
             </div>
           ) : (
@@ -314,25 +472,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
                   key={night.key}
                   onClick={() => toggleNight(night)}
                   style={{
-                    padding: '.38rem .85rem',
-                    borderRadius: '20px',
+                    padding: '.38rem .85rem', borderRadius: '20px',
                     border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
                     background: active ? '#FEF4EF' : 'var(--warm)',
                     color: active ? 'var(--terra)' : 'var(--smoke)',
-                    fontSize: '.78rem',
-                    fontWeight: active ? 500 : 400,
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-dm-sans)',
+                    fontSize: '.78rem', fontWeight: active ? 500 : 400,
+                    cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
                     transition: 'all .15s',
                     display: 'inline-flex', alignItems: 'center', gap: '.3rem',
                   }}
                 >
                   🌙 {night.label}
-                  <span style={{
-                    fontFamily: 'var(--font-dm-mono)',
-                    fontSize: '.7rem',
-                    opacity: .65,
-                  }}>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
                     · 11pm → 7am
                   </span>
                   {active && <span style={{ opacity: .7 }}>✓</span>}
@@ -344,15 +495,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
           <button
             onClick={() => setShowCustom(v => !v)}
             style={{
-              padding: '.38rem .85rem',
-              borderRadius: '20px',
+              padding: '.38rem .85rem', borderRadius: '20px',
               border: `1.5px solid ${showCustom ? 'var(--terra)' : 'var(--border)'}`,
               background: showCustom ? '#FEF4EF' : 'var(--warm)',
               color: showCustom ? 'var(--terra)' : 'var(--smoke)',
-              fontSize: '.78rem',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-dm-sans)',
-              transition: 'all .15s',
+              fontSize: '.78rem', cursor: 'pointer',
+              fontFamily: 'var(--font-dm-sans)', transition: 'all .15s',
             }}
           >
             {showCustom ? '✕ Cancel' : '＋ Custom'}
@@ -362,16 +510,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
         {/* Custom block form */}
         {showCustom && (
           <div style={{
-            border: '1.5px solid var(--border)',
-            borderRadius: '12px',
-            padding: '1rem 1.1rem',
-            background: 'var(--warm)',
+            border: '1.5px solid var(--border)', borderRadius: '12px',
+            padding: '1rem 1.1rem', background: 'var(--warm)',
             marginBottom: '.8rem',
           }}>
             <div style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.75rem' }}>
               Custom unavailability block
             </div>
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
               <input
                 type="text"
@@ -380,16 +525,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
                 onChange={e => setCustomLabel(e.target.value)}
                 style={{
                   padding: '.55rem .75rem',
-                  border: '1.5px solid var(--border)',
-                  borderRadius: '8px',
-                  background: 'var(--card)',
-                  color: 'var(--char)',
-                  fontSize: '.82rem',
-                  fontFamily: 'var(--font-dm-sans)',
-                  outline: 'none',
+                  border: '1.5px solid var(--border)', borderRadius: '8px',
+                  background: 'var(--card)', color: 'var(--char)',
+                  fontSize: '.82rem', fontFamily: 'var(--font-dm-sans)', outline: 'none',
                 }}
               />
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem' }}>
                 <div>
                   <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
@@ -400,15 +540,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
                     value={customFrom}
                     onChange={e => setCustomFrom(e.target.value)}
                     style={{
-                      width: '100%',
-                      padding: '.55rem .75rem',
-                      border: '1.5px solid var(--border)',
-                      borderRadius: '8px',
-                      background: 'var(--card)',
-                      color: 'var(--char)',
-                      fontSize: '.78rem',
-                      fontFamily: 'var(--font-dm-mono)',
-                      outline: 'none',
+                      width: '100%', padding: '.55rem .75rem',
+                      border: '1.5px solid var(--border)', borderRadius: '8px',
+                      background: 'var(--card)', color: 'var(--char)',
+                      fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
                     }}
                   />
                 </div>
@@ -421,32 +556,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
                     value={customTo}
                     onChange={e => setCustomTo(e.target.value)}
                     style={{
-                      width: '100%',
-                      padding: '.55rem .75rem',
-                      border: '1.5px solid var(--border)',
-                      borderRadius: '8px',
-                      background: 'var(--card)',
-                      color: 'var(--char)',
-                      fontSize: '.78rem',
-                      fontFamily: 'var(--font-dm-mono)',
-                      outline: 'none',
+                      width: '100%', padding: '.55rem .75rem',
+                      border: '1.5px solid var(--border)', borderRadius: '8px',
+                      background: 'var(--card)', color: 'var(--char)',
+                      fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
                     }}
                   />
                 </div>
               </div>
-
               <button
                 onClick={addCustomBlock}
                 disabled={!customReady}
                 style={{
-                  alignSelf: 'flex-start',
-                  padding: '.55rem 1.1rem',
-                  border: 'none',
-                  borderRadius: '8px',
+                  alignSelf: 'flex-start', padding: '.55rem 1.1rem',
+                  border: 'none', borderRadius: '8px',
                   background: customReady ? 'var(--terra)' : 'var(--border)',
                   color: customReady ? '#fff' : 'var(--smoke)',
-                  fontSize: '.82rem',
-                  fontWeight: 500,
+                  fontSize: '.82rem', fontWeight: 500,
                   cursor: customReady ? 'pointer' : 'default',
                   transition: 'all .15s',
                 }}
@@ -463,18 +589,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
             {blocks.map((block, i) => {
               const durationH = (block.to.getTime() - block.from.getTime()) / 3600000;
               const isNightBlock = nights.some(n => n.label === block.label);
-              const isWorkBlock = block.label.startsWith('Work · ');
+              const isWorkBlock  = block.label.startsWith('Work · ');
               const emoji = isNightBlock ? '🌙' : isWorkBlock ? '💼' : '🕐';
               return (
                 <div
                   key={i}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '.6rem',
+                    display: 'flex', alignItems: 'center', gap: '.6rem',
                     padding: '.5rem .85rem',
-                    background: '#EEF2FA',
-                    border: '1.5px solid #C4CDE0',
+                    background: '#EEF2FA', border: '1.5px solid #C4CDE0',
                     borderRadius: '10px',
                   }}
                 >
@@ -484,18 +607,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
                       {block.label}
                     </span>
                     <span style={{
-                      marginLeft: '.5rem',
-                      fontSize: '.72rem',
-                      color: 'var(--smoke)',
-                      fontFamily: 'var(--font-dm-mono)',
+                      marginLeft: '.5rem', fontSize: '.72rem',
+                      color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
                     }}>
                       {formatTime(block.from)} → {formatTime(block.to)}
                     </span>
                     <span style={{
-                      marginLeft: '.35rem',
-                      fontSize: '.7rem',
-                      color: '#6A7FA8',
-                      fontFamily: 'var(--font-dm-mono)',
+                      marginLeft: '.35rem', fontSize: '.7rem',
+                      color: '#6A7FA8', fontFamily: 'var(--font-dm-mono)',
                     }}>
                       ({hoursLabel(durationH)})
                     </span>
@@ -504,16 +623,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
                     onClick={() => removeBlock(i)}
                     title="Remove"
                     style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: 'var(--smoke)',
-                      fontSize: '.8rem',
-                      padding: '.15rem .3rem',
-                      borderRadius: '4px',
-                      lineHeight: 1,
-                      flexShrink: 0,
-                      transition: 'color .15s',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--smoke)', fontSize: '.8rem',
+                      padding: '.15rem .3rem', borderRadius: '4px',
+                      lineHeight: 1, flexShrink: 0, transition: 'color .15s',
                     }}
                   >
                     ✕
@@ -524,10 +637,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, onChange }:
           </div>
         ) : (
           <div style={{
-            fontSize: '.78rem',
-            color: 'var(--smoke)',
-            fontStyle: 'italic',
-            padding: '.4rem 0',
+            fontSize: '.78rem', color: 'var(--smoke)',
+            fontStyle: 'italic', padding: '.4rem 0',
           }}>
             No blocks added — dough will ferment at room temperature throughout.
           </div>
