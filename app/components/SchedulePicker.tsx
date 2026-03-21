@@ -269,12 +269,15 @@ const LABEL_STYLE: React.CSSProperties = {
 
 // ── Component ─────────────────────────────────
 export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, onChange, onConfirm }: SchedulePickerProps) {
+  const alreadySet = eatTime > new Date();
   // Skip phase 1 if a future bake time is already set (return-to-edit case)
-  const [phase, setPhase] = useState<PickerPhase>(() =>
-    eatTime > new Date() ? 'start_confirm' : 'bake_time'
-  );
+  const [phase, setPhase] = useState<PickerPhase>(() => alreadySet ? 'start_confirm' : 'bake_time');
   const [pendingEatTime, setPendingEatTime] = useState(eatTime);
   const [pendingStart, setPendingStart] = useState(startTime);
+  // eatTimeSet: false on first visit until baker picks a date
+  const [eatTimeSet, setEatTimeSet] = useState(alreadySet);
+  // startComputed: false until engine runs at least once; true on return-to-edit
+  const [startComputed, setStartComputed] = useState(alreadySet);
 
   const [showCustom, setShowCustom] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
@@ -304,6 +307,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const s = suggestion.suggestedStart;
     setPendingStart(s);
     onChange(s, pendingEatTime, blocks);
+    setStartComputed(true);
     setPhase('start_confirm');
   }
 
@@ -389,14 +393,26 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
         <input
           type="datetime-local"
-          value={toDateTimeLocal(pendingEatTime)}
+          value={eatTimeSet ? toDateTimeLocal(pendingEatTime) : ''}
           onChange={e => {
             const d = new Date(e.target.value);
-            if (!isNaN(d.getTime())) setPendingEatTime(d);
+            if (!isNaN(d.getTime())) {
+              setPendingEatTime(d);
+              setEatTimeSet(true);
+            }
           }}
           style={{ ...INPUT_STYLE, marginBottom: '1rem' }}
         />
-        <button onClick={confirmBakeTime} style={continueBtnStyle}>
+        <button
+          onClick={confirmBakeTime}
+          disabled={!eatTimeSet}
+          style={{
+            ...continueBtnStyle,
+            background: eatTimeSet ? 'var(--terra)' : 'var(--border)',
+            color: eatTimeSet ? '#fff' : 'var(--smoke)',
+            cursor: eatTimeSet ? 'pointer' : 'default',
+          }}
+        >
           Plan my bake →
         </button>
       </div>
@@ -427,12 +443,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     scenarioMain = `That's very soon — start now for the best you can get.`;
   }
 
-  const startInvalid = pendingStart >= pendingEatTime;
+  const startInvalid = startComputed && pendingStart >= pendingEatTime;
 
   return (
     <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
 
-      {/* Bake time summary — editable inline, no phase change */}
+      {/* Bake time summary — click Edit to go back to phase 1 */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: '.65rem',
         padding: '.5rem .85rem',
@@ -442,23 +458,21 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <span style={{ fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}>
           Bake time
         </span>
-        <input
-          type="datetime-local"
-          value={toDateTimeLocal(pendingEatTime)}
-          onChange={e => {
-            const d = new Date(e.target.value);
-            if (!isNaN(d.getTime())) {
-              setPendingEatTime(d);
-              onChange(pendingStart, d, blocks);
-            }
-          }}
+        <span style={{ flex: 1, fontSize: '.82rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+          {formatDayShort(pendingEatTime)}
+        </span>
+        <button
+          onClick={() => { setPhase('bake_time'); setStartComputed(false); }}
           style={{
-            flex: 1, border: 'none', background: 'transparent',
-            color: 'var(--char)', fontSize: '.82rem', fontWeight: 700,
-            fontFamily: 'var(--font-dm-mono)', outline: 'none', cursor: 'pointer',
-            minWidth: 0,
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--smoke)', fontSize: '.72rem',
+            fontFamily: 'var(--font-dm-mono)', padding: '.1rem .35rem',
+            borderRadius: '5px', flexShrink: 0,
+            textDecoration: 'underline', textUnderlineOffset: '2px',
           }}
-        />
+        >
+          Edit
+        </button>
       </div>
 
       {/* Scenario message */}
@@ -483,15 +497,27 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Start time adjuster */}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '0' }}>
         <label style={LABEL_STYLE}>Start mixing</label>
-        <input
-          type="datetime-local"
-          value={toDateTimeLocal(pendingStart)}
-          onChange={e => handleStartChange(e.target.value)}
-          style={{
+        {/* CSS overlay: formatted text visible, invisible datetime-local on top for editing */}
+        <div style={{ position: 'relative' }}>
+          <div style={{
             ...INPUT_STYLE,
             border: `2px solid ${startInvalid ? 'var(--terra)' : 'var(--border)'}`,
-          }}
-        />
+            color: startComputed ? 'var(--char)' : 'var(--smoke)',
+            pointerEvents: 'none',
+          }}>
+            {startComputed ? formatDayShort(pendingStart) : 'Set by plan above'}
+          </div>
+          <input
+            type="datetime-local"
+            value={startComputed ? toDateTimeLocal(pendingStart) : ''}
+            onChange={e => handleStartChange(e.target.value)}
+            style={{
+              position: 'absolute', inset: 0, opacity: 0,
+              width: '100%', height: '100%', cursor: 'pointer',
+              border: 'none', padding: 0, margin: 0,
+            }}
+          />
+        </div>
       </div>
 
       {startInvalid && (
@@ -749,12 +775,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Single CTA */}
       <button
         onClick={confirmStart}
-        disabled={startInvalid}
+        disabled={startInvalid || !startComputed}
         style={{
           ...continueBtnStyle,
-          background: startInvalid ? 'var(--border)' : 'var(--terra)',
-          color: startInvalid ? 'var(--smoke)' : '#fff',
-          cursor: startInvalid ? 'default' : 'pointer',
+          background: (startInvalid || !startComputed) ? 'var(--border)' : 'var(--terra)',
+          color: (startInvalid || !startComputed) ? 'var(--smoke)' : '#fff',
+          cursor: (startInvalid || !startComputed) ? 'default' : 'pointer',
         }}
       >
         Confirm start →
