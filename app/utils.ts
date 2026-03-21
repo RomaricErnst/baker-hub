@@ -315,6 +315,7 @@ export function buildSchedule(
   const fermStart = new Date(startTime.getTime() + kneadMin * 60000);
   const mixingDurationH = kneadMin / 60;
 
+  const totalWindowH = (eatTime.getTime() - startTime.getTime()) / 3600000;
   const maxBulkH  = maxRTHours(kitchenTemp);
   const restH     = restRtMinutes(kitchenTemp) / 60;
   const maxFinalH = maxFinalProofHours(kitchenTemp);
@@ -324,86 +325,127 @@ export function buildSchedule(
     .filter(b => b.from < bakeTime && b.to > fermStart)
     .sort((a, b) => a.from.getTime() - b.from.getTime());
 
-  if (relevantBlocks.length === 0) {
-    // No cold blocks — all RT fermentation
-    const totalH      = Math.max(0, (bakeTime.getTime() - fermStart.getTime()) / 3600000);
-    const finalProofH = Math.min(maxFinalH, totalH);
-    const bulkFermH   = Math.max(0, totalH - finalProofH);
-    const finalProofStart = new Date(fermStart.getTime() + bulkFermH * 3600000);
+  // ── SHORT WINDOW (≤8h): existing logic unchanged ─────────────
+  if (totalWindowH <= 8) {
+    if (relevantBlocks.length === 0) {
+      // All RT fermentation
+      const totalH      = Math.max(0, (bakeTime.getTime() - fermStart.getTime()) / 3600000);
+      const finalProofH = Math.min(maxFinalH, totalH);
+      const bulkFermH   = Math.max(0, totalH - finalProofH);
+      const finalProofStart = new Date(fermStart.getTime() + bulkFermH * 3600000);
+      return {
+        mixingDurationH,
+        bulkFermStart: fermStart,
+        bulkFermHours: bulkFermH,
+        coldRetardStart: null,
+        coldRetardEnd: null,
+        coldRetardHours: 0,
+        finalProofStart,
+        finalProofHours: finalProofH,
+        restRtHours: 0,
+        preheatStart: bakeTime,
+        bakeStart: eatTime,
+        totalRTHours: totalH,
+        totalColdHours: 0,
+        wasAutoAdjusted: false,
+        kitchenTemp,
+      };
+    }
 
+    // Short window + blocks: block-based cold retard
+    let wasAutoAdjusted = false;
+    let coldRetardStart = new Date(
+      Math.max(relevantBlocks[0].from.getTime(), fermStart.getTime())
+    );
+    let bulkFermH = Math.max(0,
+      (coldRetardStart.getTime() - fermStart.getTime()) / 3600000
+    );
+    if (bulkFermH > maxBulkH) {
+      wasAutoAdjusted = true;
+      coldRetardStart = new Date(fermStart.getTime() + maxBulkH * 3600000);
+      bulkFermH = maxBulkH;
+    }
+    const lastBlockEndShort = new Date(Math.max(...relevantBlocks.map(b => b.to.getTime())));
+    const maxColdEndShort = new Date(bakeTime.getTime() - restH * 3600000);
+    let coldRetardEnd = new Date(Math.min(lastBlockEndShort.getTime(), maxColdEndShort.getTime()));
+    if (coldRetardEnd.getTime() < coldRetardStart.getTime()) {
+      coldRetardEnd = new Date(coldRetardStart.getTime());
+    }
+    let coldRetardH = Math.max(0,
+      (coldRetardEnd.getTime() - coldRetardStart.getTime()) / 3600000
+    );
+    let finalProofStart = new Date(coldRetardEnd.getTime() + restH * 3600000);
+    let finalProofH = Math.max(0, (bakeTime.getTime() - finalProofStart.getTime()) / 3600000);
+    if (finalProofH > maxFinalH) {
+      wasAutoAdjusted = true;
+      finalProofH = maxFinalH;
+      finalProofStart = new Date(bakeTime.getTime() - maxFinalH * 3600000);
+      coldRetardEnd = new Date(finalProofStart.getTime() - restH * 3600000);
+      coldRetardH = Math.max(0,
+        (coldRetardEnd.getTime() - coldRetardStart.getTime()) / 3600000
+      );
+    }
     return {
       mixingDurationH,
       bulkFermStart: fermStart,
       bulkFermHours: bulkFermH,
-      coldRetardStart: null,
-      coldRetardEnd: null,
-      coldRetardHours: 0,
+      coldRetardStart,
+      coldRetardEnd,
+      coldRetardHours: coldRetardH,
       finalProofStart,
       finalProofHours: finalProofH,
-      restRtHours: 0,
+      restRtHours: restH,
       preheatStart: bakeTime,
       bakeStart: eatTime,
-      totalRTHours: totalH,
-      totalColdHours: 0,
-      wasAutoAdjusted: false,
+      totalRTHours: bulkFermH + finalProofH,
+      totalColdHours: coldRetardH,
+      wasAutoAdjusted,
       kitchenTemp,
     };
   }
 
+  // ── LONG WINDOW (>8h): auto cold retard ──────────────────────
+  // Structure: Mix → initial bulk RT (1.5h) → Cold Retard → Rest RT → Final Proof → Preheat → Bake
+  // Cold retard is auto-calculated; availability blocks can only extend its end.
+  const INITIAL_BULK_H = 1.5;
+
+  // Cold retard always starts after the initial bulk RT
+  const coldRetardStart = new Date(fermStart.getTime() + INITIAL_BULK_H * 3600000);
+
+  // Auto cold retard end: leave restH + maxFinalH before bake
+  let coldRetardEnd = new Date(bakeTime.getTime() - (restH + maxFinalH) * 3600000);
+
+  // Blocks can extend cold retard end, but not past bakeTime - restH
+  // (preserve at least restH for divide & ball before final proof)
   let wasAutoAdjusted = false;
-
-  // Cold retard starts at the first block, but not before fermStart
-  let coldRetardStart = new Date(
-    Math.max(relevantBlocks[0].from.getTime(), fermStart.getTime())
-  );
-  let bulkFermH = Math.max(0,
-    (coldRetardStart.getTime() - fermStart.getTime()) / 3600000
-  );
-
-  // Auto-adjust: cap bulk ferm at maxBulkH
-  if (bulkFermH > maxBulkH) {
-    wasAutoAdjusted = true;
-    coldRetardStart = new Date(fermStart.getTime() + maxBulkH * 3600000);
-    bulkFermH = maxBulkH;
+  if (relevantBlocks.length > 0) {
+    const lastBlockEnd = new Date(Math.max(...relevantBlocks.map(b => b.to.getTime())));
+    const maxColdEnd = new Date(bakeTime.getTime() - restH * 3600000);
+    if (lastBlockEnd.getTime() > coldRetardEnd.getTime()) {
+      coldRetardEnd = new Date(Math.min(lastBlockEnd.getTime(), maxColdEnd.getTime()));
+      wasAutoAdjusted = true;
+    }
   }
 
-  // Cold retard ends at the last block end, no later than bakeTime - restH
-  const lastBlockEnd = new Date(
-    Math.max(...relevantBlocks.map(b => b.to.getTime()))
-  );
-  const maxColdEnd = new Date(bakeTime.getTime() - restH * 3600000);
-  let coldRetardEnd = new Date(
-    Math.min(lastBlockEnd.getTime(), maxColdEnd.getTime())
-  );
+  // Safety: end must not precede start
   if (coldRetardEnd.getTime() < coldRetardStart.getTime()) {
     coldRetardEnd = new Date(coldRetardStart.getTime());
   }
 
-  let coldRetardH = Math.max(0,
+  const coldRetardH = Math.max(0,
     (coldRetardEnd.getTime() - coldRetardStart.getTime()) / 3600000
   );
 
-  // Final proof starts after rest at room temperature
-  let finalProofStart = new Date(coldRetardEnd.getTime() + restH * 3600000);
-  let finalProofH = Math.max(0,
-    (bakeTime.getTime() - finalProofStart.getTime()) / 3600000
+  const finalProofStart = new Date(coldRetardEnd.getTime() + restH * 3600000);
+  const finalProofH = Math.min(
+    maxFinalH,
+    Math.max(0, (bakeTime.getTime() - finalProofStart.getTime()) / 3600000)
   );
-
-  // Cap final proof at maxFinalH — push coldRetardEnd earlier if too long
-  if (finalProofH > maxFinalH) {
-    wasAutoAdjusted = true;
-    finalProofH = maxFinalH;
-    finalProofStart = new Date(bakeTime.getTime() - maxFinalH * 3600000);
-    coldRetardEnd = new Date(finalProofStart.getTime() - restH * 3600000);
-    coldRetardH = Math.max(0,
-      (coldRetardEnd.getTime() - coldRetardStart.getTime()) / 3600000
-    );
-  }
 
   return {
     mixingDurationH,
     bulkFermStart: fermStart,
-    bulkFermHours: bulkFermH,
+    bulkFermHours: INITIAL_BULK_H,
     coldRetardStart,
     coldRetardEnd,
     coldRetardHours: coldRetardH,
@@ -412,7 +454,7 @@ export function buildSchedule(
     restRtHours: restH,
     preheatStart: bakeTime,
     bakeStart: eatTime,
-    totalRTHours: bulkFermH + finalProofH,
+    totalRTHours: INITIAL_BULK_H + finalProofH,
     totalColdHours: coldRetardH,
     wasAutoAdjusted,
     kitchenTemp,
