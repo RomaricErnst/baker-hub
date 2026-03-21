@@ -2,7 +2,7 @@
 // BAKER HUB — Utils & Engine
 // ══════════════════════════════════════════
 // Contains:
-//   1. Yeast Engine (lookup table)
+//   1. Yeast Engine (Craig's formula)
 //   2. Schedule Engine
 //   3. Recipe Calculator
 //   4. DDT Calculator
@@ -24,81 +24,44 @@ import {
 // ══════════════════════════════════════════
 // 1. YEAST ENGINE
 // ══════════════════════════════════════════
-// Lookup table validated against:
-// - PizzaBlab (primary source)
-// - dough.school reference table
-// - CrustKingdom tested values
-// - Craig's Baker's Yeast Prediction Model
-//
+// Craig's validated formula constants
 // All values = Instant Dry Yeast (IDY) % of flour
-// null = not recommended at this combination
+//   RT:   IDY% = 9.5  / (hours^1.65 × 2.5^((temp−25)/10))
+//   Cold: IDY% = 7.5  / hours^1.313
+//   Tropical (RT only): ÷1.15 @30-32°C, ÷1.25 @33-35°C
+//   Fridge correction: Q10 — 2^((fridgeTemp−4)/10)
 // ══════════════════════════════════════════
 
-const RT_TABLE: Record<number, Record<number, number | null>> = {
-   2: {18:1.20, 20:1.00, 22:0.80, 25:0.50, 28:0.30, 30:0.20},
-   4: {18:0.60, 20:0.45, 22:0.35, 25:0.20, 28:0.12, 30:0.08},
-   6: {18:0.35, 20:0.25, 22:0.18, 25:0.10, 28:0.06, 30:0.04},
-   8: {18:0.20, 20:0.14, 22:0.10, 25:0.06, 28:0.04, 30:0.03},
-  12: {18:0.10, 20:0.07, 22:0.05, 25:0.03, 28:0.02, 30:0.015},
-  18: {18:0.06, 20:0.04, 22:0.03, 25:0.018,28:0.012,30:0.010},
-  24: {18:0.04, 20:0.025,22:0.018,25:0.010,28:0.008,30:0.006},
-  30: {18:0.025,20:0.015,22:0.012,25:0.006,28:null, 30:null },
-  36: {18:0.015,20:0.010,22:0.008,25:null, 28:null, 30:null },
-};
-
-const COLD_TABLE: Record<number, number> = {
-  12: 0.25,
-  24: 0.12,
-  36: 0.08,
-  48: 0.06,
-  60: 0.04,
-  72: 0.03,
-  96: 0.02,
-  120: 0.015,
-};
-
-const TEMPS    = [18, 20, 22, 25, 28, 30];
-const HOURS_RT = [2, 4, 6, 8, 12, 18, 24, 30, 36];
-const HOURS_COLD = [12, 24, 36, 48, 60, 72, 96, 120];
-
 // Practical limits
-const YEAST_MIN_PCT   = 0.05;   // hard floor for cold ferments
+const YEAST_MIN_PCT   = 0.05;   // hard floor
 const YEAST_MIN_GRAMS = 0.1;    // minimum weighable on 0.1g scale
 const YEAST_RT_MAX_H  = 8;      // max RT hours before poolish recommended
 
-function nearest(val: number, arr: number[]): number {
-  return arr.reduce((a, b) =>
-    Math.abs(b - val) < Math.abs(a - val) ? b : a
-  );
+// Tropical correction divisor (RT phases only)
+function tropicalFactor(temp: number): number {
+  if (temp >= 33 && temp <= 35) return 1.25;
+  if (temp >= 30 && temp <= 32) return 1.15;
+  return 1.0;
 }
 
-function interpolateRT(hours: number, temp: number): number | null {
-  const h1 = HOURS_RT.filter(x => x <= hours).pop() ?? HOURS_RT[0];
-  const h2 = HOURS_RT.filter(x => x >= hours)[0] ?? HOURS_RT[HOURS_RT.length - 1];
-  const t1 = TEMPS.filter(x => x <= temp).pop() ?? TEMPS[0];
-  const t2 = TEMPS.filter(x => x >= temp)[0] ?? TEMPS[TEMPS.length - 1];
-
-  const v11 = RT_TABLE[h1]?.[t1];
-  const v12 = RT_TABLE[h1]?.[t2];
-  const v21 = RT_TABLE[h2]?.[t1];
-  const v22 = RT_TABLE[h2]?.[t2];
-
-  if (v11 === null || v12 === null || v21 === null || v22 === null) return null;
-  if (v11 === undefined || v12 === undefined ||
-      v21 === undefined || v22 === undefined) return 0.01;
-
-  const fh = h1 === h2 ? 0 : (hours - h1) / (h2 - h1);
-  const ft = t1 === t2 ? 0 : (temp - t1) / (t2 - t1);
-
-  return (
-    (1 - fh) * ((1 - ft) * v11 + ft * v12) +
-    fh       * ((1 - ft) * v21 + ft * v22)
-  );
-}
-
-// Q10 factor: yeast activity doubles every 10°C
+// Q10 factor: yeast activity doubles every 10°C above reference 4°C
 function coldActivityFactor(fridgeTemp: number): number {
   return Math.pow(2.0, (fridgeTemp - 4) / 10);
+}
+
+// RT formula: IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10)) ÷ tropicalFactor
+// Returns null for extreme combos that will over-ferment at room temp
+function rtIDY(hours: number, temp: number): number | null {
+  if (hours >= 30 && temp >= 28) return null;
+  if (hours >= 36 && temp >= 25) return null;
+  const raw = 9.5 / (Math.pow(hours, 1.65) * Math.pow(2.5, (temp - 25) / 10));
+  return raw / tropicalFactor(temp);
+}
+
+// Cold formula: IDY% = 7.5 / hours^1.313, corrected for fridge temperature
+function coldIDY(hours: number, fridgeTemp: number): number {
+  const raw = 7.5 / Math.pow(Math.max(1, hours), 1.313);
+  return raw / coldActivityFactor(fridgeTemp);
 }
 
 export interface YeastResult {
@@ -129,23 +92,15 @@ export function recommendYeast(
   let recommendPoolish = false;
   let rec: number;
 
-  const temp = Math.max(18, Math.min(30, kitchenTemp));
-
   if (totalColdHours > 0 && totalRTHours <= 4) {
     // Primarily cold fermentation
-    const ch = nearest(Math.max(12, totalColdHours), HOURS_COLD);
-    rec = COLD_TABLE[ch] ?? 0.10;
-    // Adjust for actual fridge temperature
-    const factor = coldActivityFactor(fridgeTemp);
-    rec = rec / factor;
-    // Floor for cold ferments
+    rec = coldIDY(totalColdHours, fridgeTemp);
     rec = Math.max(YEAST_MIN_PCT, rec);
 
   } else if (totalColdHours > 0) {
     // Mixed: room temp + cold
-    const rtRec = interpolateRT(totalRTHours, temp);
-    const ch = nearest(Math.max(12, totalColdHours), HOURS_COLD);
-    const coldRec = (COLD_TABLE[ch] ?? 0.10) / coldActivityFactor(fridgeTemp);
+    const rtRec = rtIDY(totalRTHours, kitchenTemp);
+    const coldRec = coldIDY(totalColdHours, fridgeTemp);
     if (rtRec === null) {
       rec = Math.max(YEAST_MIN_PCT, coldRec);
     } else {
@@ -161,7 +116,7 @@ export function recommendYeast(
         `A Poolish preferment gives you better control and more flavour.`
       );
     }
-    const rtRec = interpolateRT(totalRTHours, temp);
+    const rtRec = rtIDY(totalRTHours, kitchenTemp);
     if (rtRec === null) {
       notRecommended = true;
       warnings.push(
