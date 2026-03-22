@@ -4,32 +4,35 @@
     "edit": "Modifier",
     "notSure": "🤔 Pas sûr ?",
     "grams": "g",
-    "total": "Poids total de pâte",
-    "quantity": "Quantité"
+    "total": "Pâte totale",
+    "quantity": "Quantité",
+    "startOver": "↑ Nouvelle recette",
+    "saving": "Enregistrement…",
+    "saved": "✓ Enregistré !",
+    "saveFailed": "Échec de l'enregistrement",
+    "saveRecipe": "💾 Sauvegarder la recette"
   },
-
   "tabs": {
     "guided": "🧭 Guidé",
     "advanced": "⚙️ Avancé"
   },
-
   "hero": {
     "headline": "Préparez votre pâte",
     "headlineEm": "avec confiance.",
-    "sub": "Choisissez votre style de pâte. Nous construirons le plan."
+    "sub": "Choisissez votre style. On s'occupe du plan."
   },
-
   "steps": {
-    "1": { "title": "Qu'est-ce que vous préparez aujourd'hui ?" },
+    "1": { "title": "Qu'est-ce que vous préparez ?" },
     "2": { "title": "Choisissez votre style de pâte" },
     "3": { "title": "Combien et quelle taille ?" },
-    "4": { "title": "Votre équipement de cuisson" },
+    "4": { "title": "Votre four" },
     "5": { "title": "Votre méthode de pétrissage" },
-    "6": { "title": "Quel type de levure utilisez-vous ?" },
+    "6": { "title": "Quelle levure utilisez-vous ?" },
     "7": { "title": "Le climat de votre cuisine" },
-    "8": { "title": "À quelle heure enfournez-vous ?" }
+    "8pizza": { "title": "Quand la pizza va au four ?" },
+    "8bread": { "title": "Quand le pain va au four ?" },
+    "flour": { "title": "Votre farine" }
   },
-
   "bakeType": {
     "pizza": {
       "label": "Pizza",
@@ -37,61 +40,124 @@
     },
     "bread": {
       "label": "Pain",
-      "desc": "Sourdough, Baguette, Focaccia, Ciabatta & Brioche"
+      "desc": "Pain au levain, Pain de campagne, Baguette & plus"
     }
   },
-
   "quantity": {
-    "weightPerBall": "Poids par pâton",
-    "weightPerLoaf": "Poids par miche",
-    "largeBatchNote": "🍕 Grande fournée détectée. Voir la recette pour l'ajustement de levure."
+    "weightPerBall": "Poids par boule",
+    "weightPerLoaf": "Poids par pain",
+    "largeBatchNote": "Grande quantité détectée. Voir l'ajustement de levure dans la recette."
   },
-
   "results": {
     "ready": "Votre recette est prête 🎯",
     "startNew": "↑ Nouvelle recette",
-    "computeError": "Impossible de calculer la recette — vérifiez votre style et les horaires.",
+    "computeError": "Impossible de calculer la recette — vérifiez votre style et vos horaires.",
     "recommended": "Recommandé",
     "adjustmentMultiplier": "Multiplicateur d'ajustement",
-    "largeBatchTitle": "⚖️ Ajustement levure grande fournée",
-    "largeBatchDesc": "Une grande masse de pâte retient la chaleur plus longtemps — la fermentation peut être plus rapide que prévu. Ajustez si nécessaire."
+    "largeBatchTitle": "⚖️ Ajustement levure grande quantité",
+    "largeBatchDesc": "Une grande masse de pâte retient plus la chaleur — la fermentation peut être plus rapide. Ajustez si nécessaire.",
+    "saveRecipe": "💾 Sauvegarder la recette",
+    "saving": "Enregistrement…",
+    "saved": "✓ Enregistré !",
+    "saveFailed": "Échec de l'enregistrement"
   },
-
   "scheduler": {
-    "bakeTimeLabel": "À quelle heure enfournez-vous ?",
-    "bakeTimeSub": "Nous calculerons à rebours l'heure exacte de début.",
-    "planMyBake": "Planifier ma cuisson →",
-    "bakeTime": "Heure d'enfournement",
+    "bakeTimeLabelPizza": "Quand la pizza va au four ?",
+    "bakeTimeLabelBread": "Quand le pain va au four ?",
+    "bakeTimeSub": "On vous recommandera le meilleur moment pour commencer votre pâte.",
+    "planMyBake": "Planifier ma fournée →",
+    "bakeTime": "Heure de cuisson",
     "startMixing": "Début du pétrissage",
+    "orPickDay": "Ou choisir un autre jour →",
     "setByPlan": "Défini par le plan ci-dessus",
-    "confirmStart": "Confirmer le début →",
-    "startBeforeBake": "L'heure de début doit être avant l'heure d'enfournement.",
+    "confirmStart": "Confirmer le départ →",
+    "startBeforeBake": "L'heure de départ doit être avant la cuisson.",
     "totalWindow": "{hours} de fenêtre totale",
-    "startMovedNote": "Début déplacé à {time} pour éviter votre créneau d'indisponibilité.",
-
+    "startMovedNote": "Départ déplacé à {time} pour éviter votre indisponibilité.",
     "scenario": {
-      "plentyPreferred": "Commencez entre {start} et {alt} pour de meilleurs résultats.",
-      "plentyPreferredSub": "Début plus tôt = repos au froid plus long = arômes plus complexes. Plus tard reste excellent.",
-      "plenty": "Commencez à {start} pour de meilleurs résultats — ou {alt} pour un plan plus rapide.",
-      "tight": "Commencez à {start} pour de meilleurs résultats.",
-      "tooShort": "C'est très bientôt — commencez maintenant pour le meilleur résultat possible."
+      "plentyPreferred": "Commencez entre {start} et {end}.",
+      "plentyPreferredSub": "Commencer un peu plus tard reste très bien — juste une pousse au froid plus courte.",
+      "plenty": "Idéalement commencez vers {start}.",
+      "plentySub": "N'importe quand entre {start} et {end} convient.",
+      "tight": "Fenêtre serrée — commencez dès que possible.",
+      "tooShort": "Très peu de temps — commencez maintenant pour le meilleur résultat possible."
     },
-
+    "conflict": {
+      "message": "Votre planning empiète sur le pointage de {minutes} min. Commencer {minutes} min plus tôt vous donne une fenêtre complète.",
+      "startEarlier": "Commencer {minutes} min plus tôt",
+      "continueAnyway": "Continuer quand même"
+    },
     "blockers": {
-      "heading": "Des contraintes à intégrer ?",
-      "sub": "Optionnel — indiquez les créneaux où vous êtes indisponible et nous mettrons la pâte au frigo.",
-      "quickPresets": "Présélections rapides",
-      "weekdays": "💼 Semaine",
+      "heading": "Des contraintes à gérer entre les deux ?",
+      "sub": "Optionnel — indiquez vos indisponibilités et on enverra la pâte au frigo.",
+      "quickPresets": "Raccourcis",
+      "weekdays": "💼 Jours ouvrés",
       "weekdayHours": "· 9h → 18h",
-      "noOvernights": "Pas de nuits dans ce planning.",
-      "nightHours": "· 23h → 7h",
+      "noOvernights": "Pas de nuit dans ce planning.",
+      "nightHours": "· 22h → 7h",
       "cancel": "✕ Annuler",
       "addCustom": "＋ Personnalisé",
-      "customTitle": "Créneau d'indisponibilité personnalisé",
+      "customTitle": "Indisponibilité personnalisée",
       "customLabelPlaceholder": "Libellé — ex. Week-end en déplacement",
       "from": "De",
       "to": "À",
-      "addBlock": "Ajouter le créneau"
+      "addBlock": "Ajouter"
     }
+  },
+  "climate": {
+    "getConditions": "Obtenir les conditions extérieures",
+    "cityPlaceholder": "Ville — ex. Naples, Tokyo, Chicago",
+    "getClimate": "Obtenir le climat",
+    "fetching": "Chargement…",
+    "cityNotFound": "Ville introuvable. Essayez une autre orthographe ou une ville proche.",
+    "kitchenTemp": "Température de la cuisine",
+    "humidity": "Humidité de la cuisine",
+    "fridgeTemp": "Température du frigo",
+    "warmNudge": "Dans un climat chaud, les températures de l'après-midi peuvent dépasser 28°C. Si votre cuisine se réchauffe en journée, entrez plutôt la température maximale attendue.",
+    "fridgeWarning": "Frigo à {temp}°C — plus chaud que les 4°C standard. La levure sera plus active pendant la pousse au froid.",
+    "priority": "Priorité de fermentation",
+    "priorityFlavour": "🐢 Saveur avant tout",
+    "priorityBalanced": "⚖️ Équilibré",
+    "prioritySpeed": "⚡ Pousse rapide"
+  },
+  "timeline": {
+    "bakingSchedule": "Planning de panification",
+    "startBaking": "Démarrer le mode cuisson",
+    "autoAdjusted": "Planning ajusté automatiquement — une fenêtre à température ambiante était trop longue. Une phase de pousse au froid a été ajoutée pour éviter la surfermentation.",
+    "steps": {
+      "mixing": "Frasage & Pétrissage",
+      "bulkFerm": "Pointage",
+      "coldBulk": "Pousse au froid — pâton",
+      "divideBall": "Divisage & Boulage",
+      "coldBalls": "Pousse au froid — boules",
+      "restRT": "Sortir du froid — détente",
+      "rtWarmup": "Détente à température ambiante",
+      "finalProof": "Apprêt",
+      "preheat": "Préchauffage du four",
+      "eat": "Cuisson & Dégustation !"
+    }
+  },
+  "recipe": {
+    "ingredients": "Ingrédients",
+    "weight": "Poids",
+    "bakersPercent": "% boulanger",
+    "flour": "Farine",
+    "water": "Eau",
+    "salt": "Sel",
+    "oil": "Huile d'olive",
+    "sugar": "Sucre",
+    "total": "Total",
+    "flourNote": {
+      "short": "Une farine à pizza ou à pain convient bien pour ce plan.",
+      "medium": "La farine à pizza donne les meilleurs résultats — 00 italienne idéale. T45 forte fonctionne aussi 🌾",
+      "long": "Farine à pizza forte recommandée — 00 italienne W270+. Alternative : T45 forte W260+ 🌾",
+      "adapt": "Vous utilisez de la farine ordinaire ou T55 ? Touchez pour adapter →",
+      "breadShort": "Une farine à pain convient bien pour ce plan.",
+      "breadMedium": "Farine à pain forte recommandée — T65 ou W200+ 🌾",
+      "breadLong": "Farine riche en protéines indispensable — T65 forte ou W260+ 🌾"
+    },
+    "yeastReassurance": "C'est intentionnel — moins de levure, plus de temps = saveur plus profonde. Faites confiance au processus. 🍕",
+    "iceProtocol": "Protocole eau glacée",
+    "precisionScale": "Balance de précision recommandée — c'est une très petite quantité de levure."
   }
 }

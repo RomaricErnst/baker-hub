@@ -5,20 +5,22 @@
     "notSure": "🤔 Not sure?",
     "grams": "g",
     "total": "Total dough",
-    "quantity": "Quantity"
+    "quantity": "Quantity",
+    "startOver": "↑ Start a new recipe",
+    "saving": "Saving…",
+    "saved": "✓ Saved!",
+    "saveFailed": "Save failed",
+    "saveRecipe": "💾 Save recipe"
   },
-
   "tabs": {
     "guided": "🧭 Guided",
     "advanced": "⚙️ Advanced"
   },
-
   "hero": {
     "headline": "Craft your dough",
     "headlineEm": "with confidence.",
     "sub": "Choose your dough style. We'll shape the plan."
   },
-
   "steps": {
     "1": { "title": "What are you crafting today?" },
     "2": { "title": "Choose your dough style" },
@@ -27,9 +29,10 @@
     "5": { "title": "Your mixing method" },
     "6": { "title": "What yeast are you using?" },
     "7": { "title": "Your kitchen climate" },
-    "8": { "title": "When does the pizza go in the oven?" }
+    "8pizza": { "title": "When does the pizza go in the oven?" },
+    "8bread": { "title": "When does the bread go in the oven?" },
+    "flour": { "title": "Your flour" }
   },
-
   "bakeType": {
     "pizza": {
       "label": "Pizza",
@@ -37,16 +40,14 @@
     },
     "bread": {
       "label": "Bread",
-      "desc": "Sourdough, Baguette, Focaccia, Ciabatta & Brioche"
+      "desc": "Pain au levain, Pain de campagne, Baguette & more"
     }
   },
-
   "quantity": {
     "weightPerBall": "Weight per ball",
     "weightPerLoaf": "Weight per loaf",
-    "largeBatchNote": "🍕 Large batch detected. See recipe output for yeast adjustment."
+    "largeBatchNote": "Large batch detected. See recipe output for yeast adjustment."
   },
-
   "results": {
     "ready": "Your recipe is ready 🎯",
     "startNew": "↑ Start a new recipe",
@@ -54,29 +55,38 @@
     "recommended": "Recommended",
     "adjustmentMultiplier": "Adjustment multiplier",
     "largeBatchTitle": "⚖️ Large batch yeast adjustment",
-    "largeBatchDesc": "Large dough mass retains heat longer — fermentation may be faster than calculated. Fine-tune if needed."
+    "largeBatchDesc": "Large dough mass retains heat longer — fermentation may be faster than calculated. Fine-tune if needed.",
+    "saveRecipe": "💾 Save recipe",
+    "saving": "Saving…",
+    "saved": "✓ Saved!",
+    "saveFailed": "Save failed"
   },
-
   "scheduler": {
-    "bakeTimeLabel": "When does the pizza go in the oven?",
-    "bakeTimeSub": "We'll work backwards to tell you exactly when to start.",
+    "bakeTimeLabelPizza": "When does the pizza go in the oven?",
+    "bakeTimeLabelBread": "When does the bread go in the oven?",
+    "bakeTimeSub": "We'll recommend the best window to start your dough.",
     "planMyBake": "Plan my bake →",
     "bakeTime": "Bake time",
     "startMixing": "Start mixing",
+    "orPickDay": "Or pick a different day →",
     "setByPlan": "Set by plan above",
     "confirmStart": "Confirm start →",
     "startBeforeBake": "Start time must be before bake time.",
     "totalWindow": "{hours} total window",
     "startMovedNote": "Start moved to {time} to avoid your unavailability block.",
-
     "scenario": {
-      "plentyPreferred": "Start between {start} and {alt} for best results.",
-      "plentyPreferredSub": "Earlier start = longer cold rest = more complex flavour. Later is still great.",
-      "plenty": "Start {start} for best results — or {alt} for a quicker plan.",
-      "tight": "Start {start} for best results.",
-      "tooShort": "That's very soon — start now for the best you can get."
+      "plentyPreferred": "Aim to start between {start} and {end}.",
+      "plentyPreferredSub": "Starting a few hours later is still great — just a shorter cold rest.",
+      "plenty": "Best to start around {start}.",
+      "plentySub": "Anywhere from {start} to {end} gives good results.",
+      "tight": "Tight window — start as soon as possible.",
+      "tooShort": "Very little time — start now for the best you can get."
     },
-
+    "conflict": {
+      "message": "Your schedule cuts into bulk fermentation by {minutes} min. Starting {minutes} min earlier gives you a full window — or continue with a shorter bulk.",
+      "startEarlier": "Start {minutes} min earlier",
+      "continueAnyway": "Continue anyway"
+    },
     "blockers": {
       "heading": "Anything in between to work around?",
       "sub": "Optional — mark windows when you're unavailable and we'll send the dough to the fridge.",
@@ -84,7 +94,7 @@
       "weekdays": "💼 Weekdays",
       "weekdayHours": "· 9am → 6pm",
       "noOvernights": "No overnight periods in this schedule.",
-      "nightHours": "· 11pm → 7am",
+      "nightHours": "· 10pm → 7am",
       "cancel": "✕ Cancel",
       "addCustom": "＋ Custom",
       "customTitle": "Custom unavailability block",
@@ -93,5 +103,61 @@
       "to": "To",
       "addBlock": "Add block"
     }
+  },
+  "climate": {
+    "getConditions": "Get outdoor conditions",
+    "cityPlaceholder": "City — e.g. Naples, Tokyo, Chicago",
+    "getClimate": "Get Climate",
+    "fetching": "Fetching…",
+    "cityNotFound": "City not found. Try a different spelling or nearby city.",
+    "kitchenTemp": "Kitchen temperature",
+    "humidity": "Kitchen humidity",
+    "fridgeTemp": "Fridge temperature",
+    "warmNudge": "In a warm climate, afternoon temps can push above 28°C. If your kitchen heats up during the day, consider entering your expected peak temperature instead.",
+    "fridgeWarning": "Fridge at {temp}°C is warmer than the standard 4°C — yeast will be more active during cold retard.",
+    "priority": "Fermentation priority",
+    "priorityFlavour": "🐢 Flavour first",
+    "priorityBalanced": "⚖️ Balanced",
+    "prioritySpeed": "⚡ Faster proof"
+  },
+  "timeline": {
+    "bakingSchedule": "Baking Schedule",
+    "startBaking": "Start Baking Mode",
+    "autoAdjusted": "Schedule auto-adjusted — a room temperature window was too long for your kitchen temperature. A cold retard phase was added automatically to prevent over-fermentation.",
+    "steps": {
+      "mixing": "Mix & Knead",
+      "bulkFerm": "Bulk Fermentation",
+      "coldBulk": "Cold Retard — Bulk",
+      "divideBall": "Divide & Ball",
+      "coldBalls": "Cold Retard — Balls",
+      "restRT": "Remove from fridge — rest at room temperature",
+      "rtWarmup": "Rest at room temperature",
+      "finalProof": "Final Proof",
+      "preheat": "Preheat Oven",
+      "eat": "Bake & Eat!"
+    }
+  },
+  "recipe": {
+    "ingredients": "Ingredients",
+    "weight": "Weight",
+    "bakersPercent": "Baker's %",
+    "flour": "Flour",
+    "water": "Water",
+    "salt": "Salt",
+    "oil": "Olive Oil",
+    "sugar": "Sugar",
+    "total": "Total",
+    "flourNote": {
+      "short": "Pizza or bread flour works well for this plan.",
+      "medium": "Pizza flour gives the best results — Italian 00 is ideal. French T45 forte works too 🌾",
+      "long": "Strong pizza flour recommended — Italian 00 W270+. French alternative: T45 forte W260+ 🌾",
+      "adapt": "Using plain flour or T55? Tap to adapt →",
+      "breadShort": "Bread flour works well for this plan.",
+      "breadMedium": "Strong bread flour recommended — T65 or bread flour W200+ 🌾",
+      "breadLong": "High-protein flour essential — T65 forte or bread flour W260+ 🌾"
+    },
+    "yeastReassurance": "Yes, that's intentional — less yeast, more time = deeper flavour. Trust the process. 🍕",
+    "iceProtocol": "Ice water protocol",
+    "precisionScale": "Precision scale recommended — this is a very small amount of yeast."
   }
 }
