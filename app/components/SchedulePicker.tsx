@@ -77,11 +77,15 @@ const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; preferre
   pan:             { coldH: 0,  rtH: 6  },
   sourdough:       { coldH: 24, rtH: 4,  preferredColdH: 48 },
   // Bread
-  sourdough_bread: { coldH: 24, rtH: 4  },
+  pain_campagne:   { coldH: 12, rtH: 4  },
+  pain_levain:     { coldH: 24, rtH: 4  },
   baguette:        { coldH: 24, rtH: 2  },
-  focaccia:        { coldH: 0,  rtH: 8  },
-  ciabatta:        { coldH: 24, rtH: 2  },
+  pain_complet:    { coldH: 12, rtH: 3  },
+  pain_seigle:     { coldH: 0,  rtH: 4  },
+  fougasse:        { coldH: 0,  rtH: 3  },
   brioche:         { coldH: 0,  rtH: 4  },
+  pain_mie:        { coldH: 0,  rtH: 3  },
+  pain_viennois:   { coldH: 0,  rtH: 3  },
 };
 const FERM_FALLBACK: { coldH: number; rtH: number } = { coldH: 0, rtH: 8 };
 
