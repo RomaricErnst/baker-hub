@@ -397,6 +397,34 @@ export default function RecipeOutput({
         </div>
       </div>
 
+      {/* ── Flour note ────────────────────────────── */}
+      {(() => {
+        let main: string;
+        if (fermEquivHours < 8) {
+          main = 'Pizza or bread flour works well for this plan.';
+        } else if (fermEquivHours < 24) {
+          main = 'Pizza flour gives the best results — 00 or T45 forte if you have it 🌾';
+        } else {
+          main = 'Strong pizza flour recommended — 00 W270+ or T45 forte 🌾';
+        }
+        return (
+          <div style={{
+            background: 'var(--warm)',
+            border: '1px solid var(--border)',
+            borderLeft: '3px solid var(--sage)',
+            borderRadius: '10px',
+            padding: '.75rem 1rem',
+          }}>
+            <div style={{ fontSize: '.8rem', fontFamily: 'var(--font-dm-sans)', color: 'var(--char)', lineHeight: 1.55 }}>
+              {main}
+            </div>
+            <div style={{ fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', textDecoration: 'underline', cursor: 'pointer', marginTop: '.3rem' }}>
+              Using plain flour or T55? Tap to adapt →
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Ice water protocol ───────────────────── */}
       {waterInfo.needsIce && (
         <div style={{
@@ -416,34 +444,6 @@ export default function RecipeOutput({
           </div>
         </div>
       )}
-
-      {/* ── Flour note ────────────────────────────── */}
-      {(() => {
-        let main: string;
-        if (fermEquivHours < 8) {
-          main = 'Pizza or bread flour works well for this plan.';
-        } else if (fermEquivHours < 24) {
-          main = 'Pizza flour gives the best results — 00 or T45 forte if you have it 🌾';
-        } else {
-          main = 'Strong pizza flour recommended for this long fermentation — 00 W270+ or T45 forte 🌾';
-        }
-        return (
-          <div style={{
-            background: 'var(--warm)',
-            border: '1px solid var(--border)',
-            borderLeft: '3px solid var(--sage)',
-            borderRadius: '10px',
-            padding: '.75rem 1rem',
-          }}>
-            <div style={{ fontSize: '.8rem', fontFamily: 'var(--font-dm-sans)', color: 'var(--char)', lineHeight: 1.55 }}>
-              {main}
-            </div>
-            <div style={{ fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', textDecoration: 'underline', cursor: 'pointer', marginTop: '.3rem' }}>
-              Using plain flour or T55? Tap to adapt →
-            </div>
-          </div>
-        );
-      })()}
 
       {/* ── Yeast details ─────────────────────────── */}
       {yeastInfo && (
