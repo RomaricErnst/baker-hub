@@ -365,7 +365,7 @@ export default function Home() {
                     desc: 'Neapolitan, New York, Roman, Detroit & Sourdough',
                     active_bg: '#FFF8F3', active_border: 'var(--terra)' },
                   { type: 'bread' as BakeType, emoji: '🍞', label: 'Bread',
-                    desc: 'Sourdough, Baguette, Focaccia, Ciabatta & Brioche',
+                    desc: 'Pain au levain, Pain de campagne, Baguette & more',
                     active_bg: 'var(--bread-l)', active_border: 'var(--bread)' },
                 ]).map(opt => (
                   <div
@@ -840,7 +840,7 @@ export default function Home() {
                     desc: 'Neapolitan, New York, Roman, Detroit & Sourdough',
                     active_bg: '#FFF8F3', active_border: 'var(--terra)' },
                   { type: 'bread' as BakeType, emoji: '🍞', label: 'Bread',
-                    desc: 'Sourdough, Baguette, Focaccia, Ciabatta & Brioche',
+                    desc: 'Pain au levain, Pain de campagne, Baguette & more',
                     active_bg: 'var(--bread-l)', active_border: 'var(--bread)' },
                 ]).map(opt => (
                   <div
