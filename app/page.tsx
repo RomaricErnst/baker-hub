@@ -583,6 +583,7 @@ export default function Home() {
                 preheatMin={preheatMin}
                 styleKey={styleKey ?? ''}
                 kitchenTemp={kitchenTemp}
+                schedule={schedule}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onConfirm={() => advance(8)}
               />

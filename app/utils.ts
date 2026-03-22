@@ -300,6 +300,7 @@ export interface ScheduleResult {
   divideBallTime: Date;            // when divide & ball happens
   rtWarmupStart: Date | null;      // tropical warmup start (null if single-phase)
   rtWarmupEnd: Date | null;        // tropical warmup end (null if single-phase)
+  bulkConflict: null | { missingMin: number; suggestEarlierByMin: number };
 }
 
 function maxRTHours(kitchenTemp: number): number {
@@ -322,6 +323,17 @@ function restRtMinutes(kitchenTemp: number): number {
   return 60;
 }
 
+function roundTo15(d: Date | null): Date | null {
+  if (!d) return null;
+  const r = new Date(d);
+  const m = r.getMinutes();
+  const rounded = Math.round(m / 15) * 15;
+  if (rounded === 60) { r.setHours(r.getHours() + 1); r.setMinutes(0); }
+  else r.setMinutes(rounded);
+  r.setSeconds(0, 0);
+  return r;
+}
+
 export function buildSchedule(
   startTime: Date,
   eatTime: Date,
@@ -335,6 +347,9 @@ export function buildSchedule(
   const fermStart = new Date(startTime.getTime() + kneadMin * 60000);
   const mixingDurationH = kneadMin / 60;
   const preheatH = preheatMin / 60;
+
+  const r15  = (d: Date) => roundTo15(d) as Date;
+  const r15n = (d: Date | null) => roundTo15(d);
 
   const totalWindowH = (eatTime.getTime() - startTime.getTime()) / 3600000;
   const maxBulkH  = maxRTHours(kitchenTemp);
@@ -358,7 +373,19 @@ export function buildSchedule(
 
   // ── TWO-PHASE: Long window AND tropical ──────────────────────
   if (isLongWindow && isTropical) {
-    const coldRetard1Start = new Date(fermStart.getTime() + initialBulkH * 3600000);
+    const naturalBulkEnd = new Date(fermStart.getTime() + initialBulkH * 3600000);
+    const firstBlock = relevantBlocks[0] ?? null;
+    let bulkConflict: ScheduleResult['bulkConflict'] = null;
+    let actualBulkH = initialBulkH;
+    if (firstBlock && firstBlock.from < naturalBulkEnd && firstBlock.from > fermStart) {
+      const availableBulkH = (firstBlock.from.getTime() - fermStart.getTime()) / 3600000;
+      const missingMin = Math.round((initialBulkH - availableBulkH) * 60);
+      if (missingMin > 15) {
+        bulkConflict = { missingMin, suggestEarlierByMin: missingMin };
+      }
+      actualBulkH = availableBulkH;
+    }
+    const coldRetard1Start = new Date(fermStart.getTime() + actualBulkH * 3600000);
 
     // Total available cold time
     const totalColdAvailableH = totalWindowH - mixingDurationH - initialBulkH - rtWarmupH - maxFinalH - preheatH;
@@ -425,29 +452,30 @@ export function buildSchedule(
 
     return {
       mixingDurationH,
-      bulkFermStart: fermStart,
-      bulkFermHours: initialBulkH,
+      bulkFermStart: r15(fermStart),
+      bulkFermHours: actualBulkH,
       // Backward compat: map to two-phase ends
-      coldRetardStart: coldRetard1Start,
-      coldRetardEnd: coldRetard2End,
+      coldRetardStart: r15(coldRetard1Start),
+      coldRetardEnd: r15(coldRetard2End),
       coldRetardHours: totalColdHours,
-      finalProofStart,
+      finalProofStart: r15(finalProofStart),
       finalProofHours: actualFinalProofH,
       restRtHours: 0,
-      preheatStart: bakeTime,
-      bakeStart: eatTime,
-      totalRTHours: initialBulkH + rtWarmupH + actualFinalProofH,
+      preheatStart: r15(bakeTime),
+      bakeStart: r15(eatTime),
+      totalRTHours: actualBulkH + rtWarmupH + actualFinalProofH,
       totalColdHours,
       wasAutoAdjusted,
       kitchenTemp,
       // Two-phase fields
-      coldRetard1Start,
-      coldRetard1End,
-      coldRetard2Start,
-      coldRetard2End,
-      divideBallTime,
-      rtWarmupStart,
-      rtWarmupEnd,
+      coldRetard1Start: r15(coldRetard1Start),
+      coldRetard1End: r15n(coldRetard1End),
+      coldRetard2Start: r15n(coldRetard2Start),
+      coldRetard2End: r15n(coldRetard2End),
+      divideBallTime: r15(divideBallTime),
+      rtWarmupStart: r15n(rtWarmupStart),
+      rtWarmupEnd: r15n(rtWarmupEnd),
+      bulkConflict,
     };
   }
 
@@ -464,16 +492,16 @@ export function buildSchedule(
       const divideBallTime  = finalProofStart;
       return {
         mixingDurationH,
-        bulkFermStart: fermStart,
+        bulkFermStart: r15(fermStart),
         bulkFermHours: bulkFermH,
         coldRetardStart: null,
         coldRetardEnd: null,
         coldRetardHours: 0,
-        finalProofStart,
+        finalProofStart: r15(finalProofStart),
         finalProofHours: finalProofH,
         restRtHours: 0,
-        preheatStart: bakeTime,
-        bakeStart: eatTime,
+        preheatStart: r15(bakeTime),
+        bakeStart: r15(eatTime),
         totalRTHours: totalH,
         totalColdHours: 0,
         wasAutoAdjusted: false,
@@ -482,9 +510,10 @@ export function buildSchedule(
         coldRetard1End: null,
         coldRetard2Start: null,
         coldRetard2End: null,
-        divideBallTime,
+        divideBallTime: r15(divideBallTime),
         rtWarmupStart: null,
         rtWarmupEnd: null,
+        bulkConflict: null,
       };
     }
 
@@ -524,27 +553,28 @@ export function buildSchedule(
     const divideBallTime = coldRetardEnd;
     return {
       mixingDurationH,
-      bulkFermStart: fermStart,
+      bulkFermStart: r15(fermStart),
       bulkFermHours: bulkFermH,
-      coldRetardStart,
-      coldRetardEnd,
+      coldRetardStart: r15(coldRetardStart),
+      coldRetardEnd: r15(coldRetardEnd),
       coldRetardHours: coldRetardH,
-      finalProofStart,
+      finalProofStart: r15(finalProofStart),
       finalProofHours: finalProofH,
       restRtHours: restH,
-      preheatStart: bakeTime,
-      bakeStart: eatTime,
+      preheatStart: r15(bakeTime),
+      bakeStart: r15(eatTime),
       totalRTHours: bulkFermH + finalProofH,
       totalColdHours: coldRetardH,
       wasAutoAdjusted,
       kitchenTemp,
-      coldRetard1Start: coldRetardStart,
-      coldRetard1End: coldRetardEnd,
+      coldRetard1Start: r15(coldRetardStart),
+      coldRetard1End: r15(coldRetardEnd),
       coldRetard2Start: null,
       coldRetard2End: null,
-      divideBallTime,
+      divideBallTime: r15(divideBallTime),
       rtWarmupStart: null,
       rtWarmupEnd: null,
+      bulkConflict: null,
     };
   }
 
@@ -552,8 +582,21 @@ export function buildSchedule(
   // Structure: Mix → initial bulk RT (1.5h) → Cold Retard → Rest RT → Final Proof → Preheat → Bake
   const INITIAL_BULK_H = initialBulkH; // 1.5h for temperate; already non-tropical here
 
-  // Cold retard always starts after the initial bulk RT
-  const coldRetardStart = new Date(fermStart.getTime() + INITIAL_BULK_H * 3600000);
+  const naturalBulkEnd = new Date(fermStart.getTime() + INITIAL_BULK_H * 3600000);
+  const firstBlock = relevantBlocks[0] ?? null;
+  let bulkConflict: ScheduleResult['bulkConflict'] = null;
+  let actualBulkH = INITIAL_BULK_H;
+  if (firstBlock && firstBlock.from < naturalBulkEnd && firstBlock.from > fermStart) {
+    const availableBulkH = (firstBlock.from.getTime() - fermStart.getTime()) / 3600000;
+    const missingMin = Math.round((INITIAL_BULK_H - availableBulkH) * 60);
+    if (missingMin > 15) {
+      bulkConflict = { missingMin, suggestEarlierByMin: missingMin };
+    }
+    actualBulkH = availableBulkH;
+  }
+
+  // Cold retard starts when bulk ferm ends (at scheduled end or at blocker start)
+  const coldRetardStart = new Date(fermStart.getTime() + actualBulkH * 3600000);
 
   // Auto cold retard end: leave restH + maxFinalH before bake
   let coldRetardEnd = new Date(bakeTime.getTime() - (restH + maxFinalH) * 3600000);
@@ -589,27 +632,28 @@ export function buildSchedule(
 
   return {
     mixingDurationH,
-    bulkFermStart: fermStart,
-    bulkFermHours: INITIAL_BULK_H,
-    coldRetardStart,
-    coldRetardEnd,
+    bulkFermStart: r15(fermStart),
+    bulkFermHours: actualBulkH,
+    coldRetardStart: r15(coldRetardStart),
+    coldRetardEnd: r15(coldRetardEnd),
     coldRetardHours: coldRetardH,
-    finalProofStart,
+    finalProofStart: r15(finalProofStart),
     finalProofHours: finalProofH,
     restRtHours: restH,
-    preheatStart: bakeTime,
-    bakeStart: eatTime,
-    totalRTHours: INITIAL_BULK_H + finalProofH,
+    preheatStart: r15(bakeTime),
+    bakeStart: r15(eatTime),
+    totalRTHours: actualBulkH + finalProofH,
     totalColdHours: coldRetardH,
     wasAutoAdjusted,
     kitchenTemp,
-    coldRetard1Start: coldRetardStart,
-    coldRetard1End: coldRetardEnd,
+    coldRetard1Start: r15(coldRetardStart),
+    coldRetard1End: r15(coldRetardEnd),
     coldRetard2Start: null,
     coldRetard2End: null,
-    divideBallTime,
+    divideBallTime: r15(divideBallTime),
     rtWarmupStart: null,
     rtWarmupEnd: null,
+    bulkConflict,
   };
 }
 

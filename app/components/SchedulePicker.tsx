@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { type AvailabilityBlock, toDateTimeLocal, hoursLabel } from '../utils';
+import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
 
 interface SchedulePickerProps {
   startTime: Date;
@@ -9,6 +9,7 @@ interface SchedulePickerProps {
   preheatMin: number;
   styleKey: string;
   kitchenTemp: number;
+  schedule?: ScheduleResult | null;
   onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[]) => void;
   onConfirm?: () => void;
 }
@@ -53,6 +54,15 @@ function roundToNearestHour(d: Date): Date {
 // Rounds to nearest hour then formats — used for suggestion messages
 function formatDayHour(d: Date): string {
   return formatDayShort(roundToNearestHour(d));
+}
+
+// ── Hour select label ─────────────────────────
+// "12am", "1am", ..., "11am", "12pm", "1pm", ..., "11pm"
+function hourLabel(h: number): string {
+  if (h === 0) return '12am';
+  if (h < 12) return `${h}am`;
+  if (h === 12) return '12pm';
+  return `${h - 12}pm`;
 }
 
 // ── Per-style optimal fermentation defaults ───
@@ -266,7 +276,7 @@ const LABEL_STYLE: React.CSSProperties = {
 };
 
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, onChange, onConfirm }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, onConfirm }: SchedulePickerProps) {
   const alreadySet = eatTime !== null && eatTime > new Date();
   // Skip phase 1 if a future bake time is already set (return-to-edit case)
   const [phase, setPhase] = useState<PickerPhase>(() => alreadySet ? 'start_confirm' : 'bake_time');
@@ -283,6 +293,24 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [customTo, setCustomTo] = useState('');
   const [isNarrow, setIsNarrow] = useState(false);
   const [blockerNote, setBlockerNote] = useState<string | null>(null);
+  const [pickerDate, setPickerDate] = useState<string>(() => {
+    if (alreadySet) {
+      const d = eatTime!;
+      const p = (n: number) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    }
+    return '';
+  });
+  const [pickerHour, setPickerHour] = useState<number>(() => alreadySet ? eatTime!.getHours() : 20);
+  const [dismissedConflict, setDismissedConflict] = useState(false);
+
+  function updateEatTime(dateStr: string, hour: number) {
+    if (!dateStr) return;
+    const parts = dateStr.split('-').map(Number);
+    const d = new Date(parts[0], parts[1] - 1, parts[2], hour, 0, 0, 0);
+    setPendingEatTime(d);
+    setEatTimeSet(true);
+  }
 
   useEffect(() => {
     const check = () => setIsNarrow(window.innerWidth < 600);
@@ -306,6 +334,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setPendingStart(s);
     onChange(s, pendingEatTime, blocks);
     setStartComputed(true);
+    setDismissedConflict(false);
     setPhase('start_confirm');
   }
 
@@ -390,19 +419,33 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             We&apos;ll recommend the best window to start your dough.
           </div>
         </div>
-        <input
-          type="datetime-local"
-          value={eatTimeSet ? toDateTimeLocal(pendingEatTime) : ''}
-          onChange={e => {
-            const d = new Date(e.target.value);
-            if (!isNaN(d.getTime())) {
-              d.setMinutes(0, 0, 0); // force to hour boundary
-              setPendingEatTime(d);
-              setEatTimeSet(true);
-            }
-          }}
-          style={{ ...INPUT_STYLE, marginBottom: '1rem' }}
-        />
+        <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1rem' }}>
+          <input
+            type="date"
+            value={pickerDate}
+            onChange={e => {
+              setPickerDate(e.target.value);
+              if (e.target.value) updateEatTime(e.target.value, pickerHour);
+            }}
+            style={{ ...INPUT_STYLE, flex: 1, width: undefined }}
+          />
+          <select
+            value={pickerHour}
+            onChange={e => {
+              const h = Number(e.target.value);
+              setPickerHour(h);
+              if (pickerDate) updateEatTime(pickerDate, h);
+            }}
+            style={{
+              ...INPUT_STYLE, width: 'auto', flex: '0 0 auto',
+              appearance: 'none' as React.CSSProperties['appearance'],
+            }}
+          >
+            {Array.from({ length: 24 }, (_, h) => (
+              <option key={h} value={h}>{hourLabel(h)}</option>
+            ))}
+          </select>
+        </div>
         <button
           onClick={confirmBakeTime}
           disabled={!eatTimeSet}
@@ -445,6 +488,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   const startInvalid = startComputed && pendingStart >= pendingEatTime;
+  const bulkConflict = schedule?.bulkConflict ?? null;
 
   return (
     <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
@@ -543,6 +587,47 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           </button>
         </div>
       </div>
+
+      {bulkConflict && !dismissedConflict && (
+        <div style={{
+          background: '#FFF8E8', border: '1.5px solid #E8D080',
+          borderRadius: '10px', padding: '.75rem 1rem',
+          marginTop: '.75rem', fontSize: '.8rem', color: '#7A5A10',
+          lineHeight: 1.5,
+        }}>
+          <div style={{ marginBottom: '.5rem' }}>
+            ⏰ Your schedule cuts into bulk fermentation by {bulkConflict.missingMin} min.{' '}
+            Starting {bulkConflict.suggestEarlierByMin} min earlier gives you a full window — or continue with a shorter bulk.
+          </div>
+          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => {
+                adjustStart(-(bulkConflict.suggestEarlierByMin / 60));
+                setDismissedConflict(true);
+              }}
+              style={{
+                padding: '.4rem .9rem', border: 'none', borderRadius: '8px',
+                background: 'var(--terra)', color: '#fff',
+                fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
+                fontFamily: 'var(--font-dm-sans)',
+              }}
+            >
+              Start {bulkConflict.suggestEarlierByMin} min earlier
+            </button>
+            <button
+              onClick={() => setDismissedConflict(true)}
+              style={{
+                padding: '.4rem .9rem', borderRadius: '8px',
+                border: '1.5px solid #E8D080', background: 'transparent',
+                color: '#7A5A10', fontSize: '.78rem', fontWeight: 500,
+                cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+              }}
+            >
+              Continue anyway
+            </button>
+          </div>
+        </div>
+      )}
 
       {startInvalid && (
         <div style={{
