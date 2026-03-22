@@ -9,6 +9,7 @@ import ClimatePicker from './components/ClimatePicker';
 import RecipeOutput from './components/RecipeOutput';
 import Timeline from './components/Timeline';
 import YeastHelper from './components/YeastHelper';
+import FlourPicker, { type FlourCategory } from './components/FlourPicker';
 import {
   ALL_STYLES, OVEN_TYPES, MIXER_TYPES, YEAST_TYPES,
   type BakeType, type StyleKey, type OvenType, type MixerType, type YeastType,
@@ -25,7 +26,7 @@ const HUMIDITY_LABEL: Record<string, string> = {
 
 // ── Step card ────────────────────────────────
 function StepCard({
-  num, title, activeStep, summary, onEdit, children,
+  num, title, activeStep, summary, onEdit, children, idPrefix = 'step',
 }: {
   num: number;
   title: string;
@@ -33,13 +34,14 @@ function StepCard({
   summary?: string;
   onEdit: () => void;
   children: React.ReactNode;
+  idPrefix?: string;
 }) {
   const isActive    = activeStep === num;
   const isCompleted = activeStep > num;
   const isLocked    = activeStep < num;
 
   return (
-    <div id={`step-${num}`} className={isActive ? 'step-card-active' : undefined} style={{
+    <div id={`${idPrefix}-${num}`} className={isActive ? 'step-card-active' : undefined} style={{
       border: `2px solid ${isActive ? 'var(--terra)' : isCompleted ? 'rgba(107,122,90,0.25)' : 'var(--border)'}`,
       borderRadius: '18px',
       background: isActive ? '#FDFBF7' : isCompleted ? '#F9FAF7' : 'var(--warm)',
@@ -148,6 +150,8 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 export default function Home() {
   const [tab, setTab] = useState<'guided' | 'advanced'>('guided');
   const [activeStep, setActiveStep] = useState(1);
+  const [advancedStep, setAdvancedStep] = useState(1);
+  const [flourCategory, setFlourCategory] = useState<FlourCategory>('pizza00');
 
   // Step 1 — bake type
   const [bakeType, setBakeType] = useState<BakeType | null>(null);
@@ -265,6 +269,19 @@ export default function Home() {
     }, 150);
   }
 
+  function advanceAdv(from: number) {
+    setAdvancedStep(from + 1);
+    if (from === 9) setShowResults(true);
+    else setShowResults(false);
+    setTimeout(() => {
+      const el = document.getElementById(`adv-step-${from + 1}`);
+      if (el) {
+        const top = el.getBoundingClientRect().top + window.scrollY - 70;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+    }, 150);
+  }
+
   function startOver() {
     setBakeType(null); setStyleKey(null);
     setNumItems(2); setItemWeight(270);
@@ -276,6 +293,7 @@ export default function Home() {
     setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(4);
     setShowResults(false); setActiveStep(1);
     setYeastMultiplier(1.0); setAppliedMultiplier(1.0);
+    setAdvancedStep(1); setFlourCategory('pizza00');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -314,8 +332,8 @@ export default function Home() {
       {/* ── Main content ───────────────────── */}
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
 
-        {/* ════════════ GUIDED ════════════ */}
-        {tab === 'guided' && (
+        {/* ════════════ GUIDED / ADVANCED ════════════ */}
+        {(tab === 'guided' || tab === 'advanced') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
             {/* ── Hero intro (only before step 1 done) ── */}
@@ -647,6 +665,7 @@ export default function Home() {
                       kitchenTemp={kitchenTemp}
                       fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
                       totalColdHours={schedule ? schedule.totalColdHours : 0}
+                      mode={tab}
                     />
 
                     {/* ── Large-batch yeast adjustment ── */}
@@ -805,23 +824,312 @@ export default function Home() {
 
         {/* ════════════ ADVANCED ════════════ */}
         {tab === 'advanced' && (
-          <div style={{
-            textAlign: 'center', padding: '5rem 2rem',
-            background: 'var(--warm)', border: '1.5px solid var(--border)',
-            borderRadius: '16px',
-          }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚙️</div>
-            <div style={{
-              fontFamily: 'var(--font-playfair)', fontSize: '1.5rem',
-              fontWeight: 700, marginBottom: '.75rem',
-            }}>
-              Advanced Mode
-            </div>
-            <div style={{ fontSize: '.9rem', color: 'var(--smoke)', lineHeight: 1.7, maxWidth: '380px', margin: '0 auto' }}>
-              Full control over hydration, oil, sugar, fridge temperature, and fermentation parameters.
-              <br /><br />
-              <span style={{ color: 'var(--gold)', fontWeight: 500 }}>Coming soon.</span>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+            {/* ─── ADV STEP 1: Bake type ───────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={1} title="What are you crafting today?"
+              activeStep={advancedStep}
+              summary={bakeType === 'pizza' ? '🍕 Pizza' : bakeType === 'bread' ? '🍞 Bread' : undefined}
+              onEdit={() => setAdvancedStep(1)}
+            >
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                {([
+                  { type: 'pizza' as BakeType, emoji: '🍕', label: 'Pizza',
+                    desc: 'Neapolitan, New York, Roman, Detroit & Sourdough',
+                    active_bg: '#FFF8F3', active_border: 'var(--terra)' },
+                  { type: 'bread' as BakeType, emoji: '🍞', label: 'Bread',
+                    desc: 'Sourdough, Baguette, Focaccia, Ciabatta & Brioche',
+                    active_bg: 'var(--bread-l)', active_border: 'var(--bread)' },
+                ]).map(opt => (
+                  <div
+                    key={opt.type}
+                    onClick={() => { setBakeType(opt.type); setStyleKey(null); setShowResults(false); setAdvancedStep(2); }}
+                    style={{
+                      padding: '2rem 1rem 1.75rem',
+                      textAlign: 'center', borderRadius: '18px', cursor: 'pointer',
+                      border: `2px solid ${bakeType === opt.type ? opt.active_border : 'var(--border)'}`,
+                      background: bakeType === opt.type ? opt.active_bg : 'var(--card)',
+                      boxShadow: bakeType === opt.type
+                        ? `0 0 0 4px ${opt.type === 'bread' ? 'rgba(139,105,20,.1)' : 'rgba(196,82,42,.1)'}`
+                        : 'var(--card-shadow)',
+                      transition: 'all .2s',
+                    }}
+                  >
+                    <div style={{ fontSize: '3rem', marginBottom: '.6rem' }}>{opt.emoji}</div>
+                    <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '.3rem' }}>{opt.label}</div>
+                    <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.5 }}>{opt.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </StepCard>
+
+            {/* ─── ADV STEP 2: Style picker ────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={2} title="Choose your dough style"
+              activeStep={advancedStep}
+              summary={styleKey ? `${ALL_STYLES[styleKey].emoji} ${ALL_STYLES[styleKey].name}` : undefined}
+              onEdit={() => setAdvancedStep(2)}
+            >
+              {bakeType && (
+                <StylePicker
+                  bakeType={bakeType}
+                  selected={styleKey}
+                  onSelect={sk => { setStyleKey(sk); setItemWeight(ALL_STYLES[sk].ballW); setNumItems(bakeType === 'bread' ? 1 : 2); setAdvancedStep(3); }}
+                />
+              )}
+            </StepCard>
+
+            {/* ─── ADV STEP 3: Flour ───────────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={3} title="Your flour"
+              activeStep={advancedStep}
+              summary={(() => {
+                const map: Record<FlourCategory, string> = {
+                  allpurpose: '🌾 All-purpose / T55',
+                  bread:      '🌾 Bread flour / T65',
+                  pizza00:    '⭐ Pizza flour 00 / T45',
+                  strong00:   '💪 Strong 00 W270+',
+                };
+                return map[flourCategory];
+              })()}
+              onEdit={() => setAdvancedStep(3)}
+            >
+              <FlourPicker
+                selected={flourCategory}
+                onSelect={cat => { setFlourCategory(cat); advanceAdv(3); }}
+              />
+            </StepCard>
+
+            {/* ─── ADV STEP 4: Quantity ────────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={4} title="How many and how big?"
+              activeStep={advancedStep}
+              summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
+              onEdit={() => setAdvancedStep(4)}
+            >
+              <div style={{
+                display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap',
+                background: 'var(--cream)', borderRadius: '12px',
+                padding: '1rem 1.15rem',
+              }}>
+                <div>
+                  <FieldLabel>Quantity</FieldLabel>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+                    <button
+                      onClick={() => setNumItems(n => Math.max(1, n - 1))}
+                      className="btn"
+                      style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >−</button>
+                    <input
+                      type="number" min={1} value={numItems}
+                      onChange={e => { const v = parseInt(e.target.value, 10); if (!isNaN(v) && v >= 1) setNumItems(v); }}
+                      style={{ width: '64px', textAlign: 'center', padding: '.4rem .25rem', border: '1.5px solid var(--border)', borderRadius: '8px', fontFamily: 'var(--font-dm-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--char)', background: 'var(--warm)', outline: 'none' }}
+                    />
+                    <button
+                      onClick={() => setNumItems(n => n + 1)}
+                      className="btn"
+                      style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >+</button>
+                  </div>
+                </div>
+                <div>
+                  <FieldLabel>Weight per {isBread ? 'loaf' : 'ball'}</FieldLabel>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                    <input
+                      type="number" min={100} max={1500} step={10}
+                      value={itemWeight}
+                      onChange={e => setItemWeight(Math.max(100, Number(e.target.value)))}
+                      style={{ width: '80px', padding: '.42rem .65rem', border: '1.5px solid var(--border)', borderRadius: '8px', fontFamily: 'var(--font-dm-mono)', fontSize: '.95rem', background: 'var(--warm)', color: 'var(--char)', outline: 'none' }}
+                    />
+                    <span style={{ fontSize: '.82rem', color: 'var(--smoke)' }}>g</span>
+                  </div>
+                </div>
+                <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                  <FieldLabel>Total dough</FieldLabel>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.3rem', fontWeight: 700, color: accentColor }}>
+                    {numItems * itemWeight} g
+                  </span>
+                </div>
+              </div>
+              <ContinueBtn onClick={() => advanceAdv(4)} />
+            </StepCard>
+
+            {/* ─── ADV STEP 5: Oven ────────────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={5} title="Your baking setup"
+              activeStep={advancedStep}
+              summary={`${OVEN_TYPES[ovenType].emoji} ${OVEN_TYPES[ovenType].name}`}
+              onEdit={() => setAdvancedStep(5)}
+            >
+              <OvenPicker
+                selected={ovenType}
+                onSelect={ot => { setOvenType(ot); advanceAdv(5); }}
+              />
+            </StepCard>
+
+            {/* ─── ADV STEP 6: Mixer ───────────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={6} title="Your mixing method"
+              activeStep={advancedStep}
+              summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
+              onEdit={() => setAdvancedStep(6)}
+            >
+              <MixerPicker
+                selected={mixerType}
+                onSelect={mt => { setMixerType(mt); advanceAdv(6); }}
+              />
+            </StepCard>
+
+            {/* ─── ADV STEP 7: Yeast ───────────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={7} title="What yeast are you using?"
+              activeStep={advancedStep}
+              summary={`${YEAST_TYPES[yeastType].emoji} ${YEAST_TYPES[yeastType].shortName}`}
+              onEdit={() => setAdvancedStep(7)}
+            >
+              <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                {(Object.keys(YEAST_TYPES) as YeastType[]).map(yt => {
+                  const active = yeastType === yt;
+                  return (
+                    <button
+                      key={yt}
+                      onClick={() => { setYeastType(yt); advanceAdv(7); }}
+                      className="btn"
+                      style={{
+                        padding: '.38rem .85rem', borderRadius: '20px',
+                        border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
+                        background: active ? '#FEF4EF' : 'var(--warm)',
+                        color: active ? 'var(--terra)' : 'var(--smoke)',
+                        fontSize: '.78rem', fontWeight: active ? 500 : 400,
+                        cursor: 'pointer', transition: 'all .15s',
+                      }}
+                    >
+                      {YEAST_TYPES[yt].emoji} {YEAST_TYPES[yt].name}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setShowYeastHelper(true)}
+                  className="btn"
+                  style={{ padding: '.38rem .75rem', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '.75rem', cursor: 'pointer' }}
+                >
+                  🤔 Not sure?
+                </button>
+              </div>
+            </StepCard>
+
+            {/* ─── ADV STEP 8: Climate ─────────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={8} title="Your kitchen climate"
+              activeStep={advancedStep}
+              summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
+              onEdit={() => setAdvancedStep(8)}
+            >
+              <ClimatePicker
+                kitchenTemp={kitchenTemp} humidity={humidity}
+                fridgeTemp={fridgeTemp} mode="advanced"
+                onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
+              />
+              <ContinueBtn onClick={() => advanceAdv(8)} />
+            </StepCard>
+
+            {/* ─── ADV STEP 9: Scheduler ───────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={9} title="When does the pizza go in the oven?"
+              activeStep={advancedStep}
+              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
+              onEdit={() => setAdvancedStep(9)}
+            >
+              <SchedulePicker
+                startTime={startTime} eatTime={eatTime} blocks={blocks}
+                preheatMin={preheatMin}
+                styleKey={styleKey ?? ''}
+                kitchenTemp={kitchenTemp}
+                schedule={schedule}
+                onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                onConfirm={() => advanceAdv(9)}
+              />
+            </StepCard>
+
+            {/* ─── RESULTS (Advanced) ───────────────── */}
+            {showResults && (
+              <div ref={resultsRef} style={{ marginTop: '2rem' }}>
+                <div style={{
+                  background: 'var(--char)', borderRadius: '18px',
+                  border: '1px solid rgba(212,168,83,0.15)',
+                  padding: '1.3rem 1.6rem', marginBottom: '2rem',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  flexWrap: 'wrap', gap: '.75rem',
+                }}>
+                  <div>
+                    <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
+                      Your recipe is ready 🎯
+                    </div>
+                    {styleKey && (
+                      <div style={{ fontSize: '.78rem', color: 'rgba(245,240,232,.55)', marginTop: '.2rem', fontFamily: 'var(--font-dm-mono)' }}>
+                        {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {OVEN_TYPES[ovenType].name} · {(() => {
+                          const map: Record<FlourCategory, string> = { allpurpose: 'T55', bread: 'T65', pizza00: '00', strong00: '00 W270+' };
+                          return map[flourCategory];
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={startOver}
+                    className="btn"
+                    style={{ padding: '.5rem 1rem', borderRadius: '8px', border: '1.5px solid rgba(245,240,232,.2)', background: 'transparent', color: 'rgba(245,240,232,.7)', fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s' }}
+                  >
+                    ↑ Start a new recipe
+                  </button>
+                </div>
+
+                {!recipe ? (
+                  <div style={{ background: '#FEF4EF', border: '1.5px solid #F5C4B0', borderRadius: '12px', padding: '1.25rem', textAlign: 'center', color: 'var(--terra)', fontSize: '.88rem' }}>
+                    Could not compute recipe — please check your style selection and schedule times.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                    <RecipeOutput
+                      result={displayRecipe ?? recipe}
+                      numItems={numItems}
+                      itemWeight={itemWeight}
+                      styleName={ALL_STYLES[styleKey!].name}
+                      styleEmoji={ALL_STYLES[styleKey!].emoji}
+                      mixerType={mixerType}
+                      kitchenTemp={kitchenTemp}
+                      fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
+                      totalColdHours={schedule ? schedule.totalColdHours : 0}
+                      mode={tab}
+                    />
+                    {schedule && (
+                      <Timeline
+                        schedule={schedule}
+                        blocks={blocks}
+                        preheatMin={preheatMin}
+                        startTime={startTime}
+                        eatTime={eatTime!}
+                        mixerType={mixerType}
+                        styleKey={styleKey ?? ''}
+                        oil={recipe?.oil ?? 0}
+                        hydration={recipe?.hydration ?? 0}
+                        numItems={numItems}
+                        onStartBaking={() => { /* Baking mode — future feature */ }}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
