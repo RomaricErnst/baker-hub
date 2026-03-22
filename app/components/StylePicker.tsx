@@ -133,9 +133,8 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
       gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
       gap: '.75rem',
     }}>
-      {(Object.entries(styles) as [string, { name: string; desc: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
+      {(Object.entries(styles) as [string, { name: string; emoji: string; image?: string; desc: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
 
-        const art = STYLE_ART[key];
         const isSelected = selected === key;
         const isBread = bakeType === 'bread';
 
@@ -156,62 +155,31 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
               transition: 'all .25s',
               boxShadow: hoveredKey === key ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
               transform: hoveredKey === key ? 'translateY(-3px)' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '.65rem',
+              padding: '.75rem',
             }}
           >
-            {/* Illustration */}
-            {!isBread ? (
-              <div style={{
-                height: '115px',
-                overflow: 'hidden',
-                background: art?.bg ?? 'var(--char)',
-                borderRadius: '18px 18px 0 0',
-              }}>
-                <img
-                  src={`/${key === 'pan' ? 'Detroit' : key.charAt(0).toUpperCase() + key.slice(1)}.png`}
-                  alt={style.name}
-                  style={{ width: '100%', height: '115px', objectFit: 'cover', display: 'block' }}
-                  onError={(e) => {
-                    const img = e.currentTarget;
-                    img.style.display = 'none';
-                    const svg = img.nextElementSibling as HTMLElement | null;
-                    if (svg) svg.style.display = 'block';
-                  }}
-                />
-                {art && (
-                  <svg
-                    viewBox="0 0 240 115"
-                    xmlns="http://www.w3.org/2000/svg"
-                    style={{ width: '100%', height: '115px', display: 'none' }}
-                    dangerouslySetInnerHTML={{ __html: art.svg }}
-                  />
-                )}
-              </div>
+            {/* Thumbnail or emoji fallback */}
+            {style.image ? (
+              <img
+                src={style.image}
+                alt={style.name}
+                style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
+              />
             ) : (
               <div style={{
-                height: '115px',
+                width: 60, height: 60, borderRadius: 8, flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: art?.bg ?? 'var(--char)',
+                background: 'var(--cream)', fontSize: '1.75rem',
               }}>
-                <div style={{
-                  width: '88px', height: '88px',
-                  borderRadius: '50%',
-                  background: '#F7EFE5',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  overflow: 'hidden',
-                  padding: '8px',
-                }}>
-                  {art && (
-                    <svg viewBox="0 0 240 115" xmlns="http://www.w3.org/2000/svg"
-                      style={{ width: '100%', height: '100%', display: 'block' }}
-                      dangerouslySetInnerHTML={{ __html: art.svg }}
-                    />
-                  )}
-                </div>
+                {style.emoji}
               </div>
             )}
 
             {/* Info */}
-            <div style={{ padding: '.65rem .8rem .8rem' }}>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 600, fontSize: '.84rem', marginBottom: '.18rem' }}>
                 {style.name}
               </div>

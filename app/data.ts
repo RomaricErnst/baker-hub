@@ -8,6 +8,7 @@ export const PIZZA_STYLES = {
   neapolitan: {
     name: 'Classic Neapolitan',
     emoji: '🔥',
+    image: '/Neapolitan.png',
     desc: 'Light, airy, charred cornicione.',
     hydration: 62, salt: 2.8, yeast: 0.08,
     oil: 0, sugar: 0,
@@ -18,6 +19,7 @@ export const PIZZA_STYLES = {
   newyork: {
     name: 'New York Style',
     emoji: '🗽',
+    image: '/Newyork.png',
     desc: 'Foldable, crispy-edged big slices.',
     hydration: 62, salt: 2.5, yeast: 0.3,
     oil: 2, sugar: 0.8,
@@ -28,6 +30,7 @@ export const PIZZA_STYLES = {
   roman: {
     name: 'Roman Teglia',
     emoji: '🏛️',
+    image: '/Roman.png',
     desc: 'High-hydration, ultra-crispy rectangular.',
     hydration: 78, salt: 2.5, yeast: 0.2,
     oil: 3, sugar: 0,
@@ -38,6 +41,7 @@ export const PIZZA_STYLES = {
   pan: {
     name: 'Pan / Detroit',
     emoji: '🍞',
+    image: '/Detroit.png',
     desc: 'Thick, fluffy, crispy-bottomed.',
     hydration: 70, salt: 2.5, yeast: 0.5,
     oil: 4, sugar: 0.5,
@@ -48,6 +52,7 @@ export const PIZZA_STYLES = {
   sourdough: {
     name: 'Sourdough Pizza',
     emoji: '🌾',
+    image: '/Sourdough.png',
     desc: 'Complex, tangy, naturally leavened.',
     hydration: 72, salt: 2.5, yeast: 0,
     oil: 0, sugar: 0,
@@ -62,6 +67,7 @@ export const BREAD_STYLES = {
   pain_campagne: {
     name: 'Pain de campagne',
     emoji: '🍞',
+    image: '/pain_campagne.png',
     desc: 'Rustic country bread. Wheat and rye blend, thick crust.',
     hydration: 72,
     salt: 2.0,
@@ -77,6 +83,7 @@ export const BREAD_STYLES = {
   pain_levain: {
     name: 'Pain au levain',
     emoji: '🫙',
+    image: '/pain_levain.png',
     desc: 'Wild yeast sourdough. Deep flavour, open crumb.',
     hydration: 75,
     salt: 2.0,
@@ -92,6 +99,7 @@ export const BREAD_STYLES = {
   baguette: {
     name: 'Baguette',
     emoji: '🥖',
+    image: '/baguette.png',
     desc: 'Crispy crust, airy crumb. The French classic.',
     hydration: 68,
     salt: 2.2,
@@ -107,6 +115,7 @@ export const BREAD_STYLES = {
   pain_complet: {
     name: 'Pain complet',
     emoji: '🌾',
+    image: '/pain_complet.png',
     desc: 'Wholemeal loaf. Nutty, dense, nutritious.',
     hydration: 70,
     salt: 2.0,
@@ -122,6 +131,7 @@ export const BREAD_STYLES = {
   pain_seigle: {
     name: 'Pain de seigle',
     emoji: '🌑',
+    image: '/pain_seigle.png',
     desc: 'Dark rye bread. Dense, earthy, long-lasting.',
     hydration: 78,
     salt: 2.2,
@@ -137,6 +147,7 @@ export const BREAD_STYLES = {
   fougasse: {
     name: 'Fougasse',
     emoji: '🌿',
+    image: '/fougasse.png',
     desc: 'Provençal flatbread. Olive oil, scored leaf pattern.',
     hydration: 70,
     salt: 2.2,
@@ -152,6 +163,7 @@ export const BREAD_STYLES = {
   brioche: {
     name: 'Brioche',
     emoji: '🥐',
+    image: '/brioche.png',
     desc: 'Enriched, buttery, pillowy soft.',
     hydration: 55,
     salt: 2.0,
@@ -167,6 +179,7 @@ export const BREAD_STYLES = {
   pain_mie: {
     name: 'Pain de mie',
     emoji: '🍞',
+    image: '/pain_mie.png',
     desc: 'Soft sandwich loaf. Fine crumb, thin crust.',
     hydration: 62,
     salt: 1.8,
@@ -182,6 +195,7 @@ export const BREAD_STYLES = {
   pain_viennois: {
     name: 'Pain viennois',
     emoji: '🥐',
+    image: '/pain_viennois.png',
     desc: 'Viennese soft roll. Slightly sweet, milk-enriched.',
     hydration: 58,
     salt: 1.8,
