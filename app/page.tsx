@@ -643,7 +643,7 @@ export default function Home() {
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
             <StepCard
-              num={8} title="When does the pizza go in the oven?"
+              num={8} title={isBread ? 'When does the bread go in the oven?' : 'When does the pizza go in the oven?'}
               activeStep={activeStep}
               summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
               onEdit={() => setActiveStep(8)}
@@ -654,6 +654,7 @@ export default function Home() {
                 styleKey={styleKey ?? ''}
                 kitchenTemp={kitchenTemp}
                 schedule={schedule}
+                bakeType={bakeType ?? 'pizza'}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onConfirm={() => advance(8)}
               />
@@ -718,6 +719,7 @@ export default function Home() {
                       fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
                       totalColdHours={schedule ? schedule.totalColdHours : 0}
                       mode={tab}
+                      bakeType={bakeType ?? 'pizza'}
                     />
 
                     {/* ── Large-batch yeast adjustment ── */}
@@ -1099,7 +1101,7 @@ export default function Home() {
             {/* ─── ADV STEP 9: Scheduler ───────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={9} title="When does the pizza go in the oven?"
+              num={9} title={isBread ? 'When does the bread go in the oven?' : 'When does the pizza go in the oven?'}
               activeStep={advancedStep}
               summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
               onEdit={() => setAdvancedStep(9)}
@@ -1110,6 +1112,7 @@ export default function Home() {
                 styleKey={styleKey ?? ''}
                 kitchenTemp={kitchenTemp}
                 schedule={schedule}
+                bakeType={bakeType ?? 'pizza'}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onConfirm={() => advanceAdv(9)}
               />
@@ -1282,6 +1285,7 @@ export default function Home() {
                       fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
                       totalColdHours={schedule ? schedule.totalColdHours : 0}
                       mode={tab}
+                      bakeType={bakeType ?? 'pizza'}
                     />
                     {schedule && (
                       <Timeline

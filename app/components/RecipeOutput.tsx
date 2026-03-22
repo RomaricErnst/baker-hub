@@ -13,6 +13,7 @@ interface RecipeOutputProps {
   fermEquivHours: number;
   totalColdHours?: number;
   mode?: 'guided' | 'advanced';
+  bakeType?: 'pizza' | 'bread';
 }
 
 // ── Helpers ──────────────────────────────────
@@ -187,7 +188,7 @@ function computeWaterInfo(
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'guided',
+  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'guided', bakeType = 'pizza',
 }: RecipeOutputProps) {
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
 
@@ -427,12 +428,22 @@ export default function RecipeOutput({
       {/* ── Flour note ────────────────────────────── */}
       {(() => {
         let main: string;
-        if (fermEquivHours < 8) {
-          main = 'Pizza or bread flour works well for this plan.';
-        } else if (fermEquivHours < 24) {
-          main = 'Pizza flour gives the best results — Italian 00 or French T45 forte 🌾';
+        if (bakeType === 'bread') {
+          if (fermEquivHours < 8) {
+            main = 'Bread flour works well for this plan.';
+          } else if (fermEquivHours < 24) {
+            main = 'Strong bread flour recommended — T65 or bread flour W200+ 🌾';
+          } else {
+            main = 'High-protein flour essential — T65 forte or bread flour W260+ 🌾';
+          }
         } else {
-          main = 'Strong pizza flour recommended — Italian 00 W270+ or French T45 forte 🌾';
+          if (fermEquivHours < 8) {
+            main = 'Pizza or bread flour works well for this plan.';
+          } else if (fermEquivHours < 24) {
+            main = 'Pizza flour gives the best results — Italian 00 or French T45 forte 🌾';
+          } else {
+            main = 'Strong pizza flour recommended — Italian 00 W270+ or French T45 forte 🌾';
+          }
         }
         return (
           <div style={{

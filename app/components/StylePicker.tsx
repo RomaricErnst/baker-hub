@@ -70,15 +70,6 @@ const STYLE_ART: Record<string, { bg: string; svg: string }> = {
       <ellipse cx="143" cy="63" rx="10" ry="7" fill="#F5F0E8" opacity=".88"/>
       <text x="120" y="99" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Sourdough</text>`,
   },
-  sourdough_bread: {
-    bg: 'linear-gradient(160deg,#2A1A08,#1A1005)',
-    svg: `<ellipse cx="120" cy="76" rx="82" ry="14" fill="#8B5A20"/>
-      <ellipse cx="120" cy="68" rx="78" ry="18" fill="#A06828"/>
-      <ellipse cx="120" cy="59" rx="72" ry="15" fill="#C4852A"/>
-      <path d="M55 52 Q120 28 185 52" stroke="#D4952A" stroke-width="3" fill="none" opacity=".75"/>
-      <ellipse cx="176" cy="65" rx="24" ry="17" fill="#F0E0B0"/>
-      <text x="110" y="104" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Sourdough Loaf</text>`,
-  },
   baguette: {
     bg: 'linear-gradient(160deg,#18120A,#100C06)',
     svg: `<rect x="12" y="41" width="216" height="32" rx="16" fill="#8B5A18" transform="rotate(-3 120 57)"/>
@@ -88,28 +79,6 @@ const STYLE_ART: Record<string, { bg: string; svg: string }> = {
       <line x1="128" y1="37" x2="148" y2="71" stroke="#7A4010" stroke-width="2.5" opacity=".5"/>
       <ellipse cx="220" cy="58" rx="14" ry="11" fill="#F0E0B0" transform="rotate(-3 220 58)"/>
       <text x="112" y="103" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Baguette</text>`,
-  },
-  focaccia: {
-    bg: 'linear-gradient(180deg,#1A1208,#100C06)',
-    svg: `<rect x="16" y="34" width="208" height="52" rx="4" fill="#C4852A" opacity=".9"/>
-      <rect x="16" y="34" width="208" height="44" rx="4" fill="#E8AA50" opacity=".85"/>
-      <circle cx="56" cy="49" r="6" fill="#8B5010" opacity=".55"/>
-      <circle cx="93" cy="45" r="6.5" fill="#8B5010" opacity=".52"/>
-      <circle cx="130" cy="51" r="6" fill="#8B5010" opacity=".55"/>
-      <circle cx="168" cy="46" r="6.5" fill="#8B5010" opacity=".5"/>
-      <circle cx="76" cy="62" r="5.5" fill="#8B5010" opacity=".48"/>
-      <circle cx="113" cy="59" r="7" fill="#8B5010" opacity=".52"/>
-      <text x="120" y="104" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Focaccia</text>`,
-  },
-  ciabatta: {
-    bg: 'linear-gradient(160deg,#15100A,#0E0A06)',
-    svg: `<ellipse cx="120" cy="75" rx="95" ry="14" fill="#7A4A15"/>
-      <ellipse cx="120" cy="67" rx="90" ry="18" fill="#A06025"/>
-      <ellipse cx="120" cy="59" rx="85" ry="14" fill="#C4852A" opacity=".78"/>
-      <ellipse cx="32" cy="66" rx="19" ry="15" fill="#F0E0B5"/>
-      <circle cx="29" cy="62" r="5.5" fill="#E8D090" opacity=".5"/>
-      <circle cx="37" cy="69" r="7" fill="#E8D090" opacity=".45"/>
-      <text x="118" y="103" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Ciabatta</text>`,
   },
   brioche: {
     bg: 'linear-gradient(180deg,#16100A,#0E0A06)',
@@ -127,16 +96,17 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
   const styles = bakeType === 'pizza' ? PIZZA_STYLES : BREAD_STYLES;
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
+  const isBread = bakeType === 'bread';
+
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+      gridTemplateColumns: isBread ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
       gap: '.75rem',
     }}>
       {(Object.entries(styles) as [string, { name: string; emoji: string; image?: string; desc: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
 
         const isSelected = selected === key;
-        const isBread = bakeType === 'bread';
 
         return (
           <div
@@ -156,9 +126,10 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
               boxShadow: hoveredKey === key ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
               transform: hoveredKey === key ? 'translateY(-3px)' : 'none',
               display: 'flex',
-              alignItems: 'center',
-              gap: '.65rem',
-              padding: '.75rem',
+              ...(isBread
+                ? { flexDirection: 'column' as const, alignItems: 'center', padding: '.65rem .5rem', textAlign: 'center' as const, gap: '.35rem' }
+                : { flexDirection: 'row' as const, alignItems: 'center', gap: '.65rem', padding: '.75rem' }
+              ),
             }}
           >
             {/* Thumbnail or emoji */}
@@ -166,33 +137,41 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
               <img
                 src={style.image}
                 alt={style.name}
-                style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
+                style={{
+                  width: isBread ? 56 : 60,
+                  height: isBread ? 56 : 60,
+                  borderRadius: 8, objectFit: 'cover', flexShrink: 0,
+                }}
               />
             ) : (
               <div style={{
-                width: 60, height: 60, borderRadius: 8, flexShrink: 0,
+                width: isBread ? 56 : 60,
+                height: isBread ? 56 : 60,
+                borderRadius: 8, flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--cream)', fontSize: '1.75rem',
+                background: 'var(--cream)', fontSize: isBread ? '1.5rem' : '1.75rem',
               }}>
                 {style.emoji}
               </div>
             )}
 
             {/* Info */}
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: '.84rem', marginBottom: '.18rem' }}>
+            <div style={{ minWidth: 0, width: isBread ? '100%' : undefined }}>
+              <div style={{ fontWeight: 600, fontSize: isBread ? '.78rem' : '.84rem', marginBottom: '.15rem' }}>
                 {style.name}
               </div>
-              <div style={{ fontSize: '.7rem', color: 'var(--smoke)', lineHeight: 1.4, fontWeight: 300 }}>
+              <div style={{ fontSize: isBread ? '.65rem' : '.7rem', color: 'var(--smoke)', lineHeight: 1.4, fontWeight: 300 }}>
                 {style.desc}
               </div>
-              <div style={{
-                fontSize: '.65rem', color: 'var(--smoke)',
-                marginTop: '.3rem', fontFamily: 'var(--font-dm-mono)',
-              }}>
-                {style.hydration}% hyd · {style.salt}% salt
-                {'oil' in style && style.oil > 0 ? ` · ${style.oil}% oil` : ''}
-              </div>
+              {!isBread && (
+                <div style={{
+                  fontSize: '.65rem', color: 'var(--smoke)',
+                  marginTop: '.3rem', fontFamily: 'var(--font-dm-mono)',
+                }}>
+                  {style.hydration}% hyd · {style.salt}% salt
+                  {'oil' in style && style.oil > 0 ? ` · ${style.oil}% oil` : ''}
+                </div>
+              )}
             </div>
           </div>
         );

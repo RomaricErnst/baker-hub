@@ -12,6 +12,7 @@ interface SchedulePickerProps {
   schedule?: ScheduleResult | null;
   onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[]) => void;
   onConfirm?: () => void;
+  bakeType?: 'pizza' | 'bread';
 }
 
 type PickerPhase = 'bake_time' | 'start_confirm';
@@ -280,7 +281,7 @@ const LABEL_STYLE: React.CSSProperties = {
 };
 
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, onConfirm }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, onConfirm, bakeType = 'pizza' }: SchedulePickerProps) {
   const alreadySet = eatTime !== null && eatTime > new Date();
   // Skip phase 1 if a future bake time is already set (return-to-edit case)
   const [phase, setPhase] = useState<PickerPhase>(() => alreadySet ? 'start_confirm' : 'bake_time');
@@ -441,7 +442,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             fontWeight: 700, fontSize: '.95rem', color: 'var(--char)',
             marginBottom: '.25rem',
           }}>
-            When does the pizza go in the oven?
+            {bakeType === 'bread' ? 'When does the bread go in the oven?' : 'When does the pizza go in the oven?'}
           </div>
           <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5 }}>
             We&apos;ll recommend the best window to start your dough.
