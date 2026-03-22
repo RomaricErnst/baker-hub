@@ -300,6 +300,21 @@ export default function ClimatePicker({
           <span>30°C hot</span>
           <span>38°C</span>
         </div>
+
+        {/* Warm climate nudge */}
+        {kitchenTemp >= 25 && kitchenTemp <= 27 && (
+          <div style={{
+            background: '#FFF8E8',
+            border: '1.5px solid #E8D080',
+            borderRadius: '10px',
+            padding: '.6rem .9rem',
+            fontSize: '.76rem',
+            color: '#7A5A10',
+            marginTop: '.75rem',
+          }}>
+            🌡️ In a warm climate, afternoon temps can push above 28°C. If your kitchen heats up during the day, consider entering your expected peak temperature instead.
+          </div>
+        )}
       </div>
 
       {/* ── Humidity ────────────────────────────── */}
