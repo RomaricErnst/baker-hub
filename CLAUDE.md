@@ -1,125 +1,126 @@
 # Baker Hub — CLAUDE.md
 
 ## NVM / Node Setup
-
 ```bash
-nvm use          # picks version from .nvmrc
-npm run dev      # Next.js dev server on http://localhost:3000
-npx tsc --noEmit # type-check without emitting
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+npm run dev        # Next.js dev server on http://localhost:3000
+npx tsc --noEmit   # type-check without emitting
+npm run build      # full build — must pass before every commit
 ```
 
 ## Stack
-
 | Layer | Choice |
 |---|---|
-| Framework | Next.js 16 (App Router, `'use client'` throughout) |
+| Framework | Next.js (App Router, `'use client'` throughout) |
 | Language | TypeScript strict |
-| Styling | Inline `style` objects only — no CSS modules, no Tailwind |
+| Styling | Inline `style` objects only — no Tailwind, no CSS modules |
 | Fonts | DM Sans, DM Mono, Playfair Display (via `next/font`) |
+| Backend | Supabase — account created, not yet wired |
+| Deploy | Vercel — auto-deploys on git push to main |
 
 ## Design Tokens (CSS vars in `app/globals.css`)
-
-```
---terra      warm terracotta CTA colour
---cream      page background
---warm       card/input background
---char       near-black text
---smoke      secondary text
---border     subtle borders
---ash        dark neutral
---sage       success green
---bread      bread-mode accent
---gold       gold/warning
---card-shadow / --card-shadow-hover
-```
-
-## Current Branch
-
-`main` — all work lands here directly (no feature branches in use).
+--terra    #C4522A   primary CTA — use sparingly
+--cream    #F5F0E8   page background
+--warm     #FDFBF7   card/input background
+--char     #1A1612   body text
+--smoke    #8A7F78   secondary text
+--border   #E8E0D5   subtle borders
+--ash      #3D3530   dark neutral
+--sage     #6B7A5A   success/natural
+--gold     #D4A853   trust signals, achievement
+--bread    #8B6914   bread mode accent
+--card-shadow: 0 2px 12px rgba(26,22,18,0.06)
 
 ## File Map
-
-```
 app/
-  page.tsx               — guided wizard (8 steps + results)
-  data.ts                — style/oven/mixer/yeast definitions
-  utils.ts               — yeast engine, schedule engine, recipe calculator
-  components/
-    SchedulePicker.tsx   — bake-time-first 2-phase flow (bake_time → start_confirm)
-    Timeline.tsx         — step-by-step baking schedule (single- and two-phase cold retard)
-    RecipeOutput.tsx     — ingredient card
-    ClimatePicker.tsx    — temp/humidity/fridge inputs
-    StylePicker.tsx      — dough style cards
-    OvenPicker.tsx       — oven type cards
-    MixerPicker.tsx      — mixer type cards
-    YeastHelper.tsx      — yeast identification modal
-    LearnModal.tsx       — term glossary modal
-    Header.tsx
+page.tsx          — guided wizard (8 steps + results)
+data.ts           — style/oven/mixer/yeast definitions
+utils.ts          — yeast engine, schedule engine, recipe calculator
+globals.css       — CSS variables and global styles
+components/
+SchedulePicker.tsx  — 2-phase flow: bake_time → start_confirm
+Timeline.tsx        — baking schedule (single + two-phase cold retard)
+RecipeOutput.tsx    — ingredient card + flour note + yeast note
+ClimatePicker.tsx   — temp/humidity/fridge inputs + warm climate nudge
+StylePicker.tsx     — dough style cards
+OvenPicker.tsx      — oven type cards
+MixerPicker.tsx     — mixer type cards
+YeastHelper.tsx     — yeast identification + transparency panel
+LearnModal.tsx      — term glossary modal
+Header.tsx
 messages/
-  en.json                — English copy (next-intl pending proper setup)
-  fr.json                — French copy (next-intl pending proper setup)
-```
+en.json           — English copy (next-intl pending proper setup)
+fr.json           — French copy
 
-## Yeast Engine Formulas
+## Yeast Engine — Craig's Model v1.1
 
-### Room Temperature (IDY % of flour)
-```
+### RT formula
 IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))
-```
-Direct formula — no lookup table.
+### Cold formula
+IDY% = 7.5 / hours^1.313 × coldActivityFactor(fridgeTemp)
+coldActivityFactor = 2^((fridgeTemp−4)/10)
+### Tropical corrections (RT phases only)
+- 30–32°C → ÷1.15
+- 33–35°C → ÷1.25
 
-### Cold Retard (IDY % of flour)
-```
-IDY% = 7.5 / hours^1.313
-```
-Direct formula + `coldActivityFactor(fridgeTemp)` Q10 correction.
+### Practical floors
+- IDY minimum: 0.5g hard floor regardless of formula
+- When convertedGrams < 1g: show sachet dilution note
+- When hitMinFloor: show gold ⚠️ callout
 
-### Conversion factors (relative to IDY)
-- Active Dry Yeast: ×1.33
-- Fresh Yeast: ×3.0
+### Yeast conversions
+- ADY: IDY × 1.33
+- Fresh: IDY × 3.0
 
-## Schedule Engine — Temperature-Aware Two-Phase Model
+## Schedule Engine
 
-### ScheduleResult fields
-Standard fields: `mixingDurationH`, `bulkFermStart`, `bulkFermHours`, `coldRetardStart`, `coldRetardEnd`, `coldRetardHours`, `finalProofStart`, `finalProofHours`, `restRtHours`, `preheatStart`, `bakeStart`, `totalRTHours`, `totalColdHours`, `wasAutoAdjusted`, `kitchenTemp`
-
-New two-phase fields: `coldRetard1Start/End`, `coldRetard2Start/End`, `divideBallTime`, `rtWarmupStart/End`
-
-Backward-compat mapping: `coldRetardStart` = `coldRetard1Start`, `coldRetardEnd` = last cold phase end, `coldRetardHours` = sum of both phases.
-
-### Case 1 — Short window (<16h) OR temperate (<28°C)
-Single cold retard path:
+### Two paths
+**Single-phase** (window <16h OR kitchen <28°C):
 Mix → Bulk RT (1.5h) → Cold Retard → Divide & Ball → Rest RT → Final Proof → Preheat → Bake
 
-### Case 2 — Long window (≥16h) AND tropical (≥28°C)
-Two-phase cold retard path:
-Mix → Bulk RT (30min@≥30°C / 45min@28-29°C) → Cold Retard 1 (bulk mass) → Divide & Ball → Cold Retard 2 (individual balls) → RT Warmup (30-45min) → Final Proof → Preheat → Bake
+**Two-phase tropical** (window ≥16h AND kitchen ≥28°C):
+Mix → Bulk RT (30–45min) → Cold Retard 1 (bulk) → Divide & Ball → Cold Retard 2 (balls) → RT Warmup → Final Proof → Preheat → Bake
 
 ### Key rules
-- `maxRTHours(temp)`: 2h @≥28°C, 4h @≥25°C, 6h @≥22°C, 8h cooler
-- `maxFinalProofHours(temp)`: 1.5h / 2.5h / 3.5h / 5h
-- Divide & Ball: 15 min base + 2 min per ball over 4
-- Bulk ferm tip is dynamic (4 tiers based on actual duration)
-- Blocker blocks mapped to cold retard boundary in Case 3
+- All schedule times rounded to nearest 15min (roundTo15 helper)
+- Divide & Ball is always pushed out of any blocker window
+- Bulk ferm conflict: if blocker cuts >15min into bulk, surface yellow banner with "start earlier" / "continue anyway" options
+- maxRTHours: 2h @≥28°C / 4h @≥25°C / 6h @≥22°C / 8h cooler
+- maxFinalProofHours: 1.5h / 2.5h / 3.5h / 5h
+- Night blockers: 10pm → 7am
+- formatTime() shows HH:MM (real minutes, 15min rounded)
+- hoursLabel() rounds to nearest 15min
+
+### ScheduleResult key fields
+Standard: mixingDurationH, bulkFermStart, bulkFermHours, coldRetardStart/End/Hours, finalProofStart/Hours, restRtHours, preheatStart, bakeStart, totalRTHours, totalColdHours, wasAutoAdjusted, kitchenTemp, bulkConflict
+Two-phase: coldRetard1Start/End, coldRetard2Start/End, divideBallTime, rtWarmupStart/End
+
+## Scheduler (SchedulePicker)
+
+### Phase 1 — Bake time
+- Date input + hour select (no minutes)
+- "Plan my bake →" disabled until date picked
+
+### Phase 2 — Start confirmation
+- Scenario engine: too_short / tight / plenty
+- ±1h stepper + date+hour picker for jumping days
+- ±4h range shown in suggestion message
+- Blocker presets: Weekdays 9am–6pm, nights 10pm–7am, custom
+- bulkConflict banner when blocker cuts >15min into bulk ferm
 
 ## i18n Status
+next-intl removed — caused Vercel build failures. messages/en.json and fr.json exist. Re-add in dedicated session with proper App Router setup.
 
-Message files exist at `messages/en.json` and `messages/fr.json`. The `next-intl` plugin was **removed** from `next.config.ts` (and uninstalled) because it caused Vercel build failures when misconfigured without middleware and `[locale]` routing. Re-add in a dedicated session with proper App Router i18n setup.
-
-## Session 3 Priorities
-
-1. Fix start time field — should be editable (currently read-only display)
-2. Fix final proof copy — should be dynamic for two-phase schedules (tip mentions cold dough context)
-3. Verify yeast IDY% is correct for two-phase schedules (totalRTHours and totalColdHours plumbed correctly)
-4. Design polish pass
+## Current Priorities (Session 4)
+- Advanced mode minimal for testers:
+  - Baker's percentages (% + grams simultaneously in RecipeOutput)
+  - Flour category picker (4 options)
+  - Yeast transparency panel (done — YeastHelper.tsx)
+- Supabase + auth (Google OAuth)
+- Connect bakerhub.app domain to Vercel
 
 ## Session-End Checklist
-
-- [ ] `npx tsc --noEmit` passes with zero errors
-- [ ] `npm run build` clean
-- [ ] SchedulePicker phases: bake_time → start_confirm functional
-- [ ] Timeline shows correct steps for both single-phase and two-phase schedules
-- [ ] Two-phase triggers at ≥28°C + ≥16h window
-- [ ] Divide & Ball step always present
-- [ ] Scroll-to-step fires on each advance (70px offset, 150ms delay)
-- [ ] `git add . && git commit && git push`
+- [ ] `npx tsc --noEmit` — zero errors
+- [ ] `npm run build` — clean
+- [ ] git add . && git commit -m "[message]" && git push
+- [ ] Update CLAUDE.md if architecture changed
