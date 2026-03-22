@@ -9,10 +9,10 @@ const FLOUR_OPTIONS: {
   name: string;
   sub: string;
 }[] = [
-  { key: 'allpurpose', emoji: '🌾', name: 'All-purpose / T55',        sub: 'Works fine, slightly less structure'   },
-  { key: 'bread',      emoji: '🌾', name: 'Bread flour / T65',        sub: 'Good gluten, reliable results'         },
-  { key: 'pizza00',    emoji: '⭐', name: 'Pizza flour 00 / T45',     sub: 'Recommended for most styles'           },
-  { key: 'strong00',   emoji: '💪', name: 'Strong 00 W270+ / T45 forte', sub: 'Best for long cold ferments'       },
+  { key: 'pizza00',    emoji: '⭐', name: 'Pizza flour 00',            sub: 'Italian 00 — ideal for most pizza and bread styles' },
+  { key: 'strong00',   emoji: '💪', name: 'Strong 00 W270+',          sub: 'Best for long cold ferments — maximum flavour'      },
+  { key: 'bread',      emoji: '🌾', name: 'Bread flour / T65',        sub: 'Good gluten, reliable results'                      },
+  { key: 'allpurpose', emoji: '🏠', name: 'All-purpose / T55',        sub: 'Works fine, slightly less structure'                },
 ];
 
 interface FlourPickerProps {
