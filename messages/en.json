@@ -13,8 +13,8 @@
     "saveRecipe": "💾 Save recipe"
   },
   "tabs": {
-    "guided": "🧭 Guided",
-    "advanced": "⚙️ Advanced"
+    "guided": "🧭 Simple",
+    "advanced": "🎛️ Complet"
   },
   "hero": {
     "headline": "Craft your dough",

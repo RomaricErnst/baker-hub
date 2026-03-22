@@ -33,7 +33,7 @@ npm run build      # full build — must pass before every commit
 
 ## File Map
 app/
-page.tsx          — guided wizard (8 steps + results)
+page.tsx          — Simple mode wizard (8 steps) / Complet mode (9 steps) + results
 data.ts           — style/oven/mixer/yeast definitions
 utils.ts          — yeast engine, schedule engine, recipe calculator
 globals.css       — CSS variables and global styles

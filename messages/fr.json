@@ -13,8 +13,8 @@
     "saveRecipe": "💾 Sauvegarder la recette"
   },
   "tabs": {
-    "guided": "🧭 Guidé",
-    "advanced": "⚙️ Avancé"
+    "guided": "🧭 Simple",
+    "advanced": "🎛️ Complet"
   },
   "hero": {
     "headline": "Préparez votre pâte",
