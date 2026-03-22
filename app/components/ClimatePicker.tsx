@@ -164,7 +164,7 @@ export default function ClimatePicker({
               flex: 1,
               padding: '.65rem .9rem',
               border: '2px solid var(--border)',
-              borderRadius: '10px',
+              borderRadius: '8px',
               background: 'var(--warm)',
               color: 'var(--char)',
               fontSize: '.88rem',
@@ -178,7 +178,7 @@ export default function ClimatePicker({
             style={{
               padding: '.65rem 1.15rem',
               border: 'none',
-              borderRadius: '10px',
+              borderRadius: '12px',
               background: loading || !city.trim() ? 'var(--border)' : 'var(--terra)',
               color: loading || !city.trim() ? 'var(--smoke)' : '#fff',
               fontSize: '.85rem',
@@ -381,7 +381,7 @@ export default function ClimatePicker({
               background: '#EEF2FA', border: '1px solid #C4CDE0',
               borderRadius: '8px', padding: '.45rem .8rem',
             }}>
-              Fridge at {fridgeTemp}°C is warmer than the standard 4°C — yeast will be more active during cold retard.
+              Fridge at <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{fridgeTemp}°C</span> is warmer than the standard 4°C — yeast will be more active during cold retard.
             </div>
           )}
         </div>

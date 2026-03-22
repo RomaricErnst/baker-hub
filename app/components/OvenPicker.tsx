@@ -27,10 +27,10 @@ export default function OvenPicker({ selected, onSelect }: OvenPickerProps) {
             style={{
               border: `2px solid ${isSelected ? 'var(--terra)' : 'var(--border)'}`,
               borderRadius: '18px',
-              padding: '1.1rem 1.2rem',
+              padding: '1.5rem',
               cursor: 'pointer',
               background: isSelected ? '#FFF8F3' : 'var(--warm)',
-              transition: 'all .2s',
+              transition: 'all .25s',
               boxShadow: hoveredKey === key ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
               transform: hoveredKey === key ? 'translateY(-3px)' : 'none',
             }}

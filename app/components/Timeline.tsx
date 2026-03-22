@@ -350,7 +350,7 @@ export default function Timeline({
           }}>
             Baking Schedule
           </div>
-          <div style={{ fontSize: '.75rem', color: 'var(--smoke)', marginTop: '.1rem' }}>
+          <div style={{ fontSize: '.75rem', color: 'var(--smoke)', marginTop: '.1rem', fontFamily: 'var(--font-dm-mono)' }}>
             {formatTime(startTime)} → {formatTime(eatTime)}
             {' · '}{hoursLabel((eatTime.getTime() - startTime.getTime()) / 3600000)} total
           </div>
@@ -362,7 +362,7 @@ export default function Timeline({
             display: 'flex', alignItems: 'center', gap: '.45rem',
             padding: '.55rem 1.1rem',
             background: 'var(--char)', color: 'var(--cream)',
-            border: 'none', borderRadius: '10px',
+            border: 'none', borderRadius: '12px',
             fontSize: '.8rem', fontWeight: 500,
             cursor: 'pointer',
             transition: 'opacity .15s',

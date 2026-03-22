@@ -119,12 +119,12 @@ export default function YeastHelper({ onSelect, onClose }: YeastHelperProps) {
             <div style={{ display: 'flex', gap: '.5rem' }}>
               <button onClick={() => setStep(1)} style={{
                 flex: 1, padding: '.75rem', border: '1.5px solid var(--border)',
-                borderRadius: '10px', background: 'var(--warm)', cursor: 'pointer',
+                borderRadius: '12px', background: 'var(--warm)', cursor: 'pointer',
                 fontSize: '.85rem', color: 'var(--smoke)',
               }}>← Back</button>
               <button onClick={() => selected && confirm(selected)} style={{
                 flex: 2, padding: '.75rem', border: 'none',
-                borderRadius: '10px', background: 'var(--terra)', cursor: 'pointer',
+                borderRadius: '12px', background: 'var(--terra)', cursor: 'pointer',
                 fontSize: '.85rem', color: '#fff', fontWeight: 500,
               }}>Confirm {selected ? YEAST_TYPES[selected].name : ''} →</button>
             </div>

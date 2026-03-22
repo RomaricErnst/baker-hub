@@ -14,7 +14,7 @@
   --card: #FFFFFF;
   --bread: #8B6914;
   --bread-l: #F5EDD8;
-  --card-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  --card-shadow: 0 2px 12px rgba(26,22,18,0.06);
   --card-shadow-hover: 0 8px 24px rgba(0,0,0,0.10);
 }
 

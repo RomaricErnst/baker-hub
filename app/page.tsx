@@ -70,7 +70,7 @@ function StepCard({
             ...(isActive
               ? { background: 'var(--terra)', color: '#fff' }
               : isCompleted
-                ? { background: 'var(--sage)', color: '#fff' }
+                ? { background: 'rgba(212,168,83,0.15)', color: 'var(--gold)' }
                 : { background: 'var(--border)', color: 'var(--smoke)' }),
           }}
         >
@@ -87,7 +87,7 @@ function StepCard({
             {title}
           </div>
           {isCompleted && summary && (
-            <div style={{ fontSize: '.77rem', color: 'var(--smoke)', marginTop: '.15rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: '.77rem', color: 'var(--smoke)', marginTop: '.15rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-dm-mono)' }}>
               {summary}
             </div>
           )}
@@ -102,7 +102,7 @@ function StepCard({
 
       {/* Expanded content */}
       {isActive && (
-        <div style={{ borderTop: '1px solid var(--border)', padding: '1.3rem 1.4rem' }}>
+        <div style={{ borderTop: '1px solid var(--border)', padding: '1.5rem' }}>
           {children}
         </div>
       )}
@@ -426,7 +426,7 @@ export default function Home() {
                       style={{
                         width: '64px', textAlign: 'center',
                         padding: '.4rem .25rem',
-                        border: '1.5px solid var(--border)', borderRadius: '9px',
+                        border: '1.5px solid var(--border)', borderRadius: '8px',
                         fontFamily: 'var(--font-dm-mono)', fontSize: '1.1rem', fontWeight: 700,
                         color: 'var(--char)', background: 'var(--warm)', outline: 'none',
                       }}
@@ -709,7 +709,7 @@ export default function Home() {
                               >−</button>
                               <div style={{
                                 fontFamily: 'var(--font-dm-mono)', fontSize: '1.2rem', fontWeight: 700,
-                                color: '#C4A030', minWidth: '52px', textAlign: 'center',
+                                color: 'var(--gold)', minWidth: '52px', textAlign: 'center',
                               }}>
                                 {yeastMultiplier.toFixed(2)}×
                               </div>
@@ -730,7 +730,7 @@ export default function Home() {
                               <div style={{
                                 marginLeft: '.25rem',
                                 fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)',
-                                color: '#C4A030', fontWeight: 600,
+                                color: 'var(--gold)', fontWeight: 600,
                               }}>
                                 → {adjPct}% · {adjGrams} g
                               </div>
@@ -755,8 +755,8 @@ export default function Home() {
                               className="btn"
                               style={{
                                 flex: 2, padding: '.65rem',
-                                border: 'none', borderRadius: '10px',
-                                background: '#C4A030', color: '#fff',
+                                border: 'none', borderRadius: '12px',
+                                background: 'var(--gold)', color: '#fff',
                                 fontSize: '.84rem', fontWeight: 600, cursor: 'pointer',
                               }}
                             >
@@ -767,7 +767,7 @@ export default function Home() {
                               className="btn"
                               style={{
                                 flex: 1, padding: '.65rem',
-                                border: '1.5px solid #E8D890', borderRadius: '10px',
+                                border: '1.5px solid #E8D890', borderRadius: '12px',
                                 background: 'transparent', color: '#7A6010',
                                 fontSize: '.84rem', cursor: 'pointer',
                               }}

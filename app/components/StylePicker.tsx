@@ -153,7 +153,7 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
               cursor: 'pointer',
               overflow: 'hidden',
               background: isSelected ? '#FFF8F3' : 'var(--warm)',
-              transition: 'all .2s',
+              transition: 'all .25s',
               boxShadow: hoveredKey === key ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
               transform: hoveredKey === key ? 'translateY(-3px)' : 'none',
             }}

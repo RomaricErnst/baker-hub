@@ -206,7 +206,7 @@ export default function RecipeOutput({
   const waterSubNode: React.ReactNode = (
     <>
       {'💧 Use at '}
-      <span style={{ fontWeight: 700 }}>{waterInfo.targetTemp}°C</span>
+      <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{waterInfo.targetTemp}°C</span>
       {` · ${waterInfo.tempGuidance}`}
     </>
   );
@@ -258,7 +258,7 @@ export default function RecipeOutput({
         flexWrap: 'wrap', gap: '.75rem',
         background: 'var(--terra)',
         borderRadius: '18px',
-        padding: '1.1rem 1.4rem',
+        padding: '1.5rem',
       }}>
         <div>
           <div style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.7)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '.2rem' }}>
@@ -563,7 +563,7 @@ export default function RecipeOutput({
               <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
                 {sourdough.starterGramsMin}–{sourdough.starterGramsMax} g
               </span>
-              <span style={{ fontSize: '.8rem', color: D.muted }}>
+              <span style={{ fontSize: '.8rem', color: D.muted, fontFamily: 'var(--font-dm-mono)' }}>
                 ({sourdough.starterPctMin}–{sourdough.starterPctMax}% of flour)
               </span>
             </div>

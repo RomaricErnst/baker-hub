@@ -198,7 +198,7 @@ export default function LearnModal({ term, onClose }: LearnModalProps) {
                 gap: '.5rem',
                 padding: '.65rem 1rem',
                 background: 'var(--terra)', color: '#fff',
-                borderRadius: '10px', textDecoration: 'none',
+                borderRadius: '12px', textDecoration: 'none',
                 fontSize: '.83rem', fontWeight: 600,
               }}
             >
