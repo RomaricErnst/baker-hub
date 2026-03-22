@@ -65,27 +65,35 @@ export default function YeastHelper({ onSelect, onClose, calcData }: YeastHelper
             <p style={{ fontSize: '.85rem', color: 'var(--smoke)', marginBottom: '1rem', lineHeight: 1.6 }}>
               Pick the description that best matches what you have:
             </p>
-            {[
-              { emoji: '🧱', label: 'Soft block or cube', desc: 'Moist, crumbly, beige/grey. Smells strongly of yeast.', type: 'fresh' as YeastType },
-              { emoji: '🟤', label: 'Large brown granules', desc: 'Tan/brown, slightly coarse. Usually in a small sachet or jar.', type: 'active_dry' as YeastType },
-              { emoji: '🟡', label: 'Fine powder or tiny granules', desc: 'Light beige/cream, very fine. Dissolves almost instantly.', type: 'instant' as YeastType },
-              { emoji: '🫙', label: 'Thick paste or liquid', desc: 'Off-white to grey, bubbly when active. Kept in a jar.', type: 'sourdough' as YeastType },
-            ].map(opt => (
-              <button key={opt.type} onClick={() => { setSelected(opt.type); setStep(2); }}
-                style={{
-                  width: '100%', display: 'flex', gap: '1rem', alignItems: 'flex-start',
-                  padding: '.85rem 1rem', marginBottom: '.5rem',
-                  border: '1.5px solid var(--border)', borderRadius: '12px',
-                  background: 'var(--warm)', cursor: 'pointer', textAlign: 'left',
-                  transition: 'all .2s',
-                }}>
-                <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>{opt.emoji}</span>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '.88rem', marginBottom: '.15rem' }}>{opt.label}</div>
-                  <div style={{ fontSize: '.76rem', color: 'var(--smoke)', lineHeight: 1.4 }}>{opt.desc}</div>
-                </div>
-              </button>
-            ))}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.65rem' }}>
+              {[
+                { label: 'Soft block or cube', desc: 'Moist, crumbly, beige/grey.', type: 'fresh' as YeastType },
+                { label: 'Large brown granules', desc: 'Tan/brown, coarse. Small sachet or jar.', type: 'active_dry' as YeastType },
+                { label: 'Fine powder / granules', desc: 'Light beige, very fine. Dissolves instantly.', type: 'instant' as YeastType },
+                { label: 'Thick paste or liquid', desc: 'Off-white to grey, bubbly. Kept in a jar.', type: 'sourdough' as YeastType },
+              ].map(opt => (
+                <button key={opt.type} onClick={() => { setSelected(opt.type); setStep(2); }}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+                    padding: '.75rem .6rem',
+                    border: '1.5px solid var(--border)', borderRadius: '14px',
+                    background: 'var(--warm)', cursor: 'pointer',
+                    transition: 'all .2s',
+                  }}>
+                  {YEAST_TYPES[opt.type].image ? (
+                    <img
+                      src={YEAST_TYPES[opt.type].image as string}
+                      alt={opt.label}
+                      style={{ width: '100%', height: '70px', objectFit: 'cover', borderRadius: '8px', marginBottom: '.5rem' }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: '1.5rem', marginBottom: '.5rem' }}>{YEAST_TYPES[opt.type].emoji}</span>
+                  )}
+                  <div style={{ fontWeight: 600, fontSize: '.78rem', marginBottom: '.15rem', color: 'var(--char)' }}>{opt.label}</div>
+                  <div style={{ fontSize: '.68rem', color: 'var(--smoke)', lineHeight: 1.4 }}>{opt.desc}</div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -109,23 +117,30 @@ export default function YeastHelper({ onSelect, onClose, calcData }: YeastHelper
 
             {/* Comparison table */}
             <div style={{ fontSize: '.78rem', marginBottom: '1.25rem' }}>
-              {(Object.entries(YEAST_TYPES) as [YeastType, typeof YEAST_TYPES[YeastType]][]).map(([key, y]) => (
-                <div key={key} onClick={() => confirm(key)}
-                  style={{
-                    display: 'flex', gap: '.75rem', padding: '.65rem .85rem',
-                    borderRadius: '9px', marginBottom: '.35rem', cursor: 'pointer',
-                    background: key === selected ? '#FEF4EF' : 'var(--warm)',
-                    border: `1.5px solid ${key === selected ? 'var(--terra)' : 'var(--border)'}`,
-                    transition: 'all .15s',
-                  }}>
-                  <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>{y.emoji}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, color: 'var(--char)', marginBottom: '.1rem' }}>{y.name}</div>
-                    <div style={{ color: 'var(--smoke)', lineHeight: 1.4 }}>{y.also}</div>
+              {(Object.entries(YEAST_TYPES) as [YeastType, typeof YEAST_TYPES[YeastType]][]).map(([key, y]) => {
+                const yImg = (y as { image?: string }).image;
+                return (
+                  <div key={key} onClick={() => confirm(key)}
+                    style={{
+                      display: 'flex', gap: '.75rem', padding: '.65rem .85rem',
+                      borderRadius: '9px', marginBottom: '.35rem', cursor: 'pointer',
+                      background: key === selected ? '#FEF4EF' : 'var(--warm)',
+                      border: `1.5px solid ${key === selected ? 'var(--terra)' : 'var(--border)'}`,
+                      transition: 'all .15s',
+                    }}>
+                    {yImg ? (
+                      <img src={yImg} alt={y.name} style={{ width: '28px', height: '28px', objectFit: 'cover', borderRadius: '5px', flexShrink: 0 }} />
+                    ) : (
+                      <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>{y.emoji}</span>
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: 'var(--char)', marginBottom: '.1rem' }}>{y.name}</div>
+                      <div style={{ color: 'var(--smoke)', lineHeight: 1.4 }}>{y.also}</div>
+                    </div>
+                    {key === selected && <span style={{ color: 'var(--terra)', alignSelf: 'center' }}>✓</span>}
                   </div>
-                  {key === selected && <span style={{ color: 'var(--terra)', alignSelf: 'center' }}>✓</span>}
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div style={{ display: 'flex', gap: '.5rem' }}>
               <button onClick={() => setStep(1)} style={{
@@ -210,9 +225,15 @@ export default function YeastHelper({ onSelect, onClose, calcData }: YeastHelper
         {/* Step 3 — Confirmation */}
         {step === 3 && selected && (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-              {YEAST_TYPES[selected].emoji}
-            </div>
+            {(YEAST_TYPES[selected] as { image?: string }).image ? (
+              <img
+                src={(YEAST_TYPES[selected] as { image?: string }).image!}
+                alt={YEAST_TYPES[selected].name}
+                style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '12px', marginBottom: '1rem' }}
+              />
+            ) : (
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{YEAST_TYPES[selected].emoji}</div>
+            )}
             <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.3rem', fontWeight: 700, marginBottom: '.5rem' }}>
               {YEAST_TYPES[selected].name}
             </div>

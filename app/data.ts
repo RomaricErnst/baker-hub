@@ -215,6 +215,7 @@ export const OVEN_TYPES = {
   pizza_oven: {
     name: 'Pizza oven',
     emoji: '🔥',
+    image: '/oven_fire.png',
     desc: 'Ooni, Gozney, wood-fired. 450°C+',
     hydrationDelta: -3,
     forceOil: 0,
@@ -223,9 +224,10 @@ export const OVEN_TYPES = {
     tempNote: 'Preheat 45 min. Cook 60–90 seconds.',
   },
   home_oven_steel: {
-    name: 'Home oven + steel/stone',
+    name: 'Home oven + stone',
     emoji: '🪨',
-    desc: 'Standard oven with baking steel or stone.',
+    image: '/oven_stone.png',
+    desc: 'Baking stone or steel. Better crust, crispier base.',
     hydrationDelta: 3,
     forceOil: null,
     forceSugar: null,
@@ -235,6 +237,7 @@ export const OVEN_TYPES = {
   home_oven_standard: {
     name: 'Home oven (standard)',
     emoji: '🏠',
+    image: '/oven_standard.png',
     desc: 'Standard oven, no steel or stone.',
     hydrationDelta: 5,
     forceOil: null,
@@ -245,6 +248,7 @@ export const OVEN_TYPES = {
   electric_pizza: {
     name: 'Electric pizza oven',
     emoji: '⚡',
+    image: '/oven_electric.png',
     desc: 'Breville, Effeuno, G3 Ferrari. 400°C.',
     hydrationDelta: -1,
     forceOil: 0,
@@ -259,6 +263,7 @@ export const MIXER_TYPES = {
   hand: {
     name: 'By Hand',
     emoji: '🙌',
+    image: '/mixer_hand.png',
     desc: 'Classic technique',
     maxHydration: 70,
     kneadMin: 10,
@@ -268,6 +273,7 @@ export const MIXER_TYPES = {
   stand: {
     name: 'Stand Mixer',
     emoji: '⚙️',
+    image: '/mixer_stand.png',
     desc: 'KitchenAid, Kenwood, Bosch',
     maxHydration: 72,
     kneadMin: 8,
@@ -277,6 +283,7 @@ export const MIXER_TYPES = {
   spiral: {
     name: 'Spiral Mixer',
     emoji: '🌀',
+    image: '/mixer_spiral.png',
     desc: 'Ooni Halo, Famag, Sunmix',
     maxHydration: 100,
     kneadMin: 14,
@@ -286,6 +293,7 @@ export const MIXER_TYPES = {
   no_knead: {
     name: 'No-Knead',
     emoji: '⏰',
+    image: '/mixer_noknead.png',
     desc: 'Time does the work',
     maxHydration: 100,
     kneadMin: 0,
@@ -300,6 +308,7 @@ export const YEAST_TYPES = {
     name: 'Instant Dry',
     shortName: 'IDY',
     emoji: '🟡',
+    image: '/yeast_instant.png',
     also: 'Rapid rise, Fast action, Easy bake',
     form: 'Fine powder or tiny granules',
     color: 'Light beige/cream',
@@ -312,6 +321,7 @@ export const YEAST_TYPES = {
     name: 'Active Dry',
     shortName: 'ADY',
     emoji: '🟤',
+    image: '/yeast_active.png',
     also: 'Traditional yeast, Dry yeast',
     form: 'Larger brown granules',
     color: 'Tan/brown',
@@ -324,6 +334,7 @@ export const YEAST_TYPES = {
     name: 'Fresh Yeast',
     shortName: 'Fresh',
     emoji: '🧱',
+    image: '/yeast_fresh.png',
     also: 'Cake yeast, Compressed yeast',
     form: 'Soft block, crumbly',
     color: 'Beige/grey, slightly moist',
@@ -336,6 +347,7 @@ export const YEAST_TYPES = {
     name: 'Sourdough Starter',
     shortName: 'Starter',
     emoji: '🫙',
+    image: '/yeast_sourdough.png',
     also: 'Levain, Wild yeast',
     form: 'Thick paste or liquid',
     color: 'Off-white to grey',

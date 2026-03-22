@@ -13,11 +13,12 @@ export default function MixerPicker({ selected, onSelect }: MixerPickerProps) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
       gap: '.75rem',
     }}>
       {(Object.entries(MIXER_TYPES) as [MixerType, typeof MIXER_TYPES[MixerType]][]).map(([key, mixer]) => {
         const isSelected = selected === key;
+        const imgSrc = (mixer as { image?: string }).image;
         return (
           <div
             key={key}
@@ -27,49 +28,51 @@ export default function MixerPicker({ selected, onSelect }: MixerPickerProps) {
             style={{
               border: `2px solid ${isSelected ? 'var(--terra)' : 'var(--border)'}`,
               borderRadius: '18px',
-              padding: '1.5rem',
+              padding: '1rem .75rem',
               cursor: 'pointer',
               background: isSelected ? '#FFF8F3' : 'var(--warm)',
               transition: 'all .25s',
               boxShadow: hoveredKey === key ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
               transform: hoveredKey === key ? 'translateY(-3px)' : 'none',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
             }}
           >
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '.65rem', marginBottom: '.5rem' }}>
-              <span style={{ fontSize: '1.5rem' }}>{mixer.emoji}</span>
-              <div style={{ fontWeight: 600, fontSize: '.9rem', color: 'var(--char)' }}>
-                {mixer.name}
-              </div>
-              {isSelected && (
-                <span style={{ marginLeft: 'auto', color: 'var(--terra)', fontSize: '.9rem' }}>✓</span>
-              )}
+            {imgSrc ? (
+              <img
+                src={imgSrc}
+                alt={mixer.name}
+                style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '10px', marginBottom: '.6rem' }}
+              />
+            ) : (
+              <span style={{ fontSize: '2rem', marginBottom: '.6rem' }}>{mixer.emoji}</span>
+            )}
+            <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.25rem', color: 'var(--char)' }}>
+              {mixer.name}
             </div>
-
-            {/* Description */}
-            <div style={{ fontSize: '.76rem', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '.65rem' }}>
+            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.5rem' }}>
               {mixer.desc}
             </div>
-
-            {/* Stats row */}
-            <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'center' }}>
               <span style={{
-                fontSize: '.66rem', fontFamily: 'var(--font-dm-mono)',
-                background: isSelected ? '#FCDECE' : 'var(--cream)',
+                fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+                background: isSelected ? '#FCDECE' : '#F5F7F0',
                 color: isSelected ? 'var(--terra)' : 'var(--smoke)',
-                borderRadius: '5px', padding: '.2rem .45rem',
+                borderRadius: '5px', padding: '.2rem .4rem',
               }}>
-                max {mixer.maxHydration === 100 ? '∞' : `${mixer.maxHydration}%`} hyd
+                max {mixer.maxHydration === 100 ? '∞' : `${mixer.maxHydration}%`}
               </span>
               <span style={{
-                fontSize: '.66rem', fontFamily: 'var(--font-dm-mono)',
-                background: isSelected ? '#FCDECE' : 'var(--cream)',
+                fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+                background: isSelected ? '#FCDECE' : '#F5F7F0',
                 color: isSelected ? 'var(--terra)' : 'var(--smoke)',
-                borderRadius: '5px', padding: '.2rem .45rem',
+                borderRadius: '5px', padding: '.2rem .4rem',
               }}>
                 {mixer.folds}× folds
               </span>
             </div>
+            {isSelected && (
+              <div style={{ marginTop: '.5rem', color: 'var(--terra)', fontSize: '.8rem', fontWeight: 600 }}>✓</div>
+            )}
           </div>
         );
       })}
