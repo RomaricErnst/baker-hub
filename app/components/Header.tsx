@@ -1,14 +1,12 @@
 'use client';
 import { useLocale } from 'next-intl';
+import { useRouter, usePathname } from '../navigation';
 import AuthButton from './AuthButton';
 
 export default function Header() {
   const locale = useLocale();
-
-  function switchLocale(l: string) {
-    document.cookie = `NEXT_LOCALE=${l};path=/;max-age=31536000`;
-    window.location.reload();
-  }
+  const router = useRouter();
+  const pathname = usePathname();
 
   return (
     <header style={{
@@ -57,18 +55,18 @@ export default function Header() {
           {(['en', 'fr'] as const).map(l => (
             <button
               key={l}
-              onClick={() => switchLocale(l)}
+              onClick={() => router.replace(pathname, { locale: l })}
               style={{
-                background: 'none',
+                background: locale === l ? 'var(--terra)' : 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 fontFamily: 'var(--font-dm-mono)',
                 fontSize: '.78rem',
-                fontWeight: locale === l ? 700 : 400,
-                color: locale === l ? 'var(--terra)' : 'var(--smoke)',
-                padding: '.2rem .4rem',
+                fontWeight: 600,
+                color: locale === l ? '#fff' : 'var(--smoke)',
+                padding: '.2rem .45rem',
                 borderRadius: '4px',
-                transition: 'color .15s',
+                transition: 'background .15s, color .15s',
                 textTransform: 'uppercase',
               }}
             >

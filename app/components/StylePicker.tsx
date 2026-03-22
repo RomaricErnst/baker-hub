@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useLocale } from 'next-intl';
 import { PIZZA_STYLES, BREAD_STYLES, type StyleKey, type BakeType } from '../data';
 
 interface StylePickerProps {
@@ -95,6 +96,7 @@ const STYLE_ART: Record<string, { bg: string; svg: string }> = {
 export default function StylePicker({ bakeType, selected, onSelect }: StylePickerProps) {
   const styles = bakeType === 'pizza' ? PIZZA_STYLES : BREAD_STYLES;
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const locale = useLocale();
 
   const isBread = bakeType === 'bread';
 
@@ -106,7 +108,7 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
       gridTemplateColumns: isBread ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
       gap: isBread ? '.75rem' : '1rem',
     }}>
-      {(Object.entries(styles) as [string, { name: string; emoji: string; image?: string; desc: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
+      {(Object.entries(styles) as [string, { name: string; nameFr?: string; emoji: string; image?: string; desc: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
 
         const isSelected = selected === key;
         const art = STYLE_ART[key];
@@ -180,7 +182,7 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
             {/* Text */}
             <div style={{ width: '100%' }}>
               <div style={{ fontWeight: 700, fontSize: isBread ? '.78rem' : '.88rem', color: 'var(--char)', marginBottom: '.2rem' }}>
-                {style.name}
+                {locale === 'fr' && style.nameFr ? style.nameFr : style.name}
               </div>
               <div style={{
                 fontSize: isBread ? '.65rem' : '.7rem',

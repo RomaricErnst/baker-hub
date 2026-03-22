@@ -7,6 +7,7 @@
 export const PIZZA_STYLES = {
   neapolitan: {
     name: 'Classic Neapolitan',
+    nameFr: 'Napolitaine Classique',
     emoji: '🔥',
     image: '/Neapolitan.png',
     desc: 'Light, airy, charred cornicione.',
@@ -18,6 +19,7 @@ export const PIZZA_STYLES = {
   },
   newyork: {
     name: 'New York Style',
+    nameFr: 'New York Style',
     emoji: '🗽',
     image: '/Newyork.png',
     desc: 'Foldable, crispy-edged big slices.',
@@ -29,6 +31,7 @@ export const PIZZA_STYLES = {
   },
   roman: {
     name: 'Roman Teglia',
+    nameFr: 'Teglia Romaine',
     emoji: '🏛️',
     image: '/Roman.png',
     desc: 'High-hydration, ultra-crispy rectangular.',
@@ -40,6 +43,7 @@ export const PIZZA_STYLES = {
   },
   pan: {
     name: 'Pan / Detroit',
+    nameFr: 'Pan / Detroit',
     emoji: '🍞',
     image: '/Detroit.png',
     desc: 'Thick, fluffy, crispy-bottomed.',
@@ -51,6 +55,7 @@ export const PIZZA_STYLES = {
   },
   sourdough: {
     name: 'Sourdough Pizza',
+    nameFr: 'Pizza au levain',
     emoji: '🌾',
     image: '/Sourdough.png',
     desc: 'Complex, tangy, naturally leavened.',
@@ -66,6 +71,7 @@ export const PIZZA_STYLES = {
 export const BREAD_STYLES = {
   pain_campagne: {
     name: 'Pain de campagne',
+    nameFr: 'Pain de campagne',
     emoji: '🍞',
     image: '/pain_campagne.png',
     desc: 'Rustic country bread. Wheat and rye blend, thick crust.',
@@ -82,6 +88,7 @@ export const BREAD_STYLES = {
   },
   pain_levain: {
     name: 'Pain au levain',
+    nameFr: 'Pain au levain',
     emoji: '🫙',
     image: '/pain_levain.png',
     desc: 'Wild yeast sourdough. Deep flavour, open crumb.',
@@ -98,6 +105,7 @@ export const BREAD_STYLES = {
   },
   baguette: {
     name: 'Baguette',
+    nameFr: 'Baguette',
     emoji: '🥖',
     image: '/baguette.png',
     desc: 'Crispy crust, airy crumb. The French classic.',
@@ -114,6 +122,7 @@ export const BREAD_STYLES = {
   },
   pain_complet: {
     name: 'Pain complet',
+    nameFr: 'Pain complet',
     emoji: '🌾',
     image: '/pain_complet.png',
     desc: 'Wholemeal loaf. Nutty, dense, nutritious.',
@@ -130,6 +139,7 @@ export const BREAD_STYLES = {
   },
   pain_seigle: {
     name: 'Pain de seigle',
+    nameFr: 'Pain de seigle',
     emoji: '🌑',
     image: '/pain_seigle.png',
     desc: 'Dark rye bread. Dense, earthy, long-lasting.',
@@ -146,6 +156,7 @@ export const BREAD_STYLES = {
   },
   fougasse: {
     name: 'Fougasse',
+    nameFr: 'Fougasse',
     emoji: '🌿',
     image: '/fougasse.png',
     desc: 'Provençal flatbread. Olive oil, scored leaf pattern.',
@@ -162,6 +173,7 @@ export const BREAD_STYLES = {
   },
   brioche: {
     name: 'Brioche',
+    nameFr: 'Brioche',
     emoji: '🥐',
     image: '/brioche.png',
     desc: 'Enriched, buttery, pillowy soft.',
@@ -178,6 +190,7 @@ export const BREAD_STYLES = {
   },
   pain_mie: {
     name: 'Pain de mie',
+    nameFr: 'Pain de mie',
     emoji: '🍞',
     image: '/pain_mie.png',
     desc: 'Soft sandwich loaf. Fine crumb, thin crust.',
@@ -194,6 +207,7 @@ export const BREAD_STYLES = {
   },
   pain_viennois: {
     name: 'Pain viennois',
+    nameFr: 'Pain viennois',
     emoji: '🥐',
     image: '/pain_viennois.png',
     desc: 'Viennese soft roll. Slightly sweet, milk-enriched.',
