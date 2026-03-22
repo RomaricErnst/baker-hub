@@ -1118,6 +1118,124 @@ export default function Home() {
             {/* ─── RESULTS (Advanced) ───────────────── */}
             {showResults && (
               <div ref={resultsRef} style={{ marginTop: '2rem' }}>
+
+                {/* ── Manual adjustments — BEFORE results header ── */}
+                {advancedRecipe && (
+                  <div style={{
+                    background: 'var(--warm)', border: '1.5px solid var(--border)',
+                    borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.5rem',
+                  }}>
+                    {/* Hydration slider */}
+                    <div style={{ marginBottom: '.85rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.4rem' }}>
+                        <FieldLabel>Hydration</FieldLabel>
+                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', fontWeight: 700, color: 'var(--terra)' }}>
+                          {manualHydration ?? advancedRecipe.hydration}%
+                        </span>
+                      </div>
+                      <input
+                        type="range" min={50} max={85} step={1}
+                        value={manualHydration ?? advancedRecipe.hydration}
+                        onChange={e => setManualHydration(Number(e.target.value))}
+                        style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer' }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.62rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem' }}>
+                        <span>50%</span><span>85%</span>
+                      </div>
+                      {/* Difficulty pill + fold guidance */}
+                      {(() => {
+                        const hyd = manualHydration ?? advancedRecipe.hydration;
+                        let diffLabel: string, diffBg: string, diffColor: string;
+                        if (mixerType === 'hand') {
+                          if (hyd <= 65)      { diffLabel = 'Easy';        diffBg = 'var(--sage)';  diffColor = '#fff'; }
+                          else if (hyd <= 70) { diffLabel = 'Standard';    diffBg = 'var(--gold)';  diffColor = '#fff'; }
+                          else if (hyd <= 75) { diffLabel = 'Challenging'; diffBg = 'var(--terra)'; diffColor = '#fff'; }
+                          else                { diffLabel = 'Expert';      diffBg = 'var(--char)';  diffColor = 'var(--cream)'; }
+                        } else if (mixerType === 'stand') {
+                          if (hyd <= 68)      { diffLabel = 'Easy';        diffBg = 'var(--sage)';  diffColor = '#fff'; }
+                          else if (hyd <= 73) { diffLabel = 'Standard';    diffBg = 'var(--gold)';  diffColor = '#fff'; }
+                          else if (hyd <= 78) { diffLabel = 'Challenging'; diffBg = 'var(--terra)'; diffColor = '#fff'; }
+                          else                { diffLabel = 'Expert';      diffBg = 'var(--char)';  diffColor = 'var(--cream)'; }
+                        } else {
+                          if (hyd <= 72)      { diffLabel = 'Easy';        diffBg = 'var(--sage)';  diffColor = '#fff'; }
+                          else if (hyd <= 78) { diffLabel = 'Standard';    diffBg = 'var(--gold)';  diffColor = '#fff'; }
+                          else if (hyd <= 85) { diffLabel = 'Challenging'; diffBg = 'var(--terra)'; diffColor = '#fff'; }
+                          else                { diffLabel = 'Expert';      diffBg = 'var(--char)';  diffColor = 'var(--cream)'; }
+                        }
+                        const foldGuide = hyd <= 65
+                          ? 'No folds needed — dough is stiff enough to hold structure.'
+                          : hyd <= 72 ? '3–4 stretch & fold sets every 30 min.'
+                          : hyd <= 78 ? '4–6 sets + coil folds recommended.'
+                          : 'Lamination + coil folds — advanced technique.';
+                        return (
+                          <div style={{ marginTop: '.5rem', display: 'flex', flexDirection: 'column', gap: '.3rem' }}>
+                            <span style={{
+                              display: 'inline-block', alignSelf: 'flex-start',
+                              fontSize: '.7rem', fontFamily: 'var(--font-dm-mono)',
+                              padding: '.15rem .55rem', borderRadius: '20px',
+                              background: diffBg, color: diffColor,
+                            }}>
+                              {diffLabel}
+                            </span>
+                            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic' }}>
+                              {foldGuide}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Oil + Sugar side by side */}
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <FieldLabel>Oil %</FieldLabel>
+                        <input
+                          type="number" min={0} max={10} step={0.5}
+                          value={manualOil ?? advancedRecipe.oil / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1)}
+                          onChange={e => setManualOil(Number(e.target.value))}
+                          style={{
+                            width: '100%', padding: '.45rem .6rem', borderRadius: '8px',
+                            border: '1.5px solid var(--border)', background: 'var(--cream)',
+                            fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
+                            color: 'var(--char)', outline: 'none',
+                          }}
+                        />
+                        {(() => {
+                          const v = manualOil ?? advancedRecipe.oil / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1);
+                          const g = v === 0 ? 'Traditional — no oil. Best for high-temp ovens.'
+                            : v <= 3  ? 'Adds tenderness and slight browning.'
+                            : v <= 6  ? 'Pan pizza range — creates crispy base.'
+                            : 'Enriched dough territory. Consider osmotolerant yeast.';
+                          return <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', marginTop: '.3rem' }}>{g}</div>;
+                        })()}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <FieldLabel>Sugar %</FieldLabel>
+                        <input
+                          type="number" min={0} max={10} step={0.5}
+                          value={manualSugar ?? advancedRecipe.sugar / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1)}
+                          onChange={e => setManualSugar(Number(e.target.value))}
+                          style={{
+                            width: '100%', padding: '.45rem .6rem', borderRadius: '8px',
+                            border: '1.5px solid var(--border)', background: 'var(--cream)',
+                            fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
+                            color: 'var(--char)', outline: 'none',
+                          }}
+                        />
+                        {(() => {
+                          const v = manualSugar ?? advancedRecipe.sugar / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1);
+                          const g = v === 0 ? 'No sugar — traditional.'
+                            : v <= 1  ? 'Slight colour boost at lower oven temps.'
+                            : v <= 4  ? 'Noticeable sweetness, good browning.'
+                            : 'Enriched range — use osmotolerant yeast (SAF Gold).';
+                          return <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', marginTop: '.3rem' }}>{g}</div>;
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Results header ── */}
                 <div style={{
                   background: 'var(--char)', borderRadius: '18px',
                   border: '1px solid rgba(212,168,83,0.15)',
@@ -1153,64 +1271,6 @@ export default function Home() {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-
-                    {/* ── Manual adjustments ── */}
-                    <div style={{
-                      background: 'var(--warm)', border: '1.5px solid var(--border)',
-                      borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '-1rem',
-                    }}>
-                      {/* Hydration slider */}
-                      <div style={{ marginBottom: '.85rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.4rem' }}>
-                          <FieldLabel>Hydration</FieldLabel>
-                          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', fontWeight: 700, color: 'var(--terra)' }}>
-                            {manualHydration ?? advancedRecipe.hydration}%
-                          </span>
-                        </div>
-                        <input
-                          type="range" min={50} max={85} step={1}
-                          value={manualHydration ?? advancedRecipe.hydration}
-                          onChange={e => setManualHydration(Number(e.target.value))}
-                          style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer' }}
-                        />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.62rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem' }}>
-                          <span>50%</span><span>85%</span>
-                        </div>
-                      </div>
-
-                      {/* Oil + Sugar side by side */}
-                      <div style={{ display: 'flex', gap: '1rem' }}>
-                        <div style={{ flex: 1 }}>
-                          <FieldLabel>Oil %</FieldLabel>
-                          <input
-                            type="number" min={0} max={10} step={0.5}
-                            value={manualOil ?? advancedRecipe.oil / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1)}
-                            onChange={e => setManualOil(Number(e.target.value))}
-                            style={{
-                              width: '100%', padding: '.45rem .6rem', borderRadius: '8px',
-                              border: '1.5px solid var(--border)', background: 'var(--cream)',
-                              fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
-                              color: 'var(--char)', outline: 'none',
-                            }}
-                          />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <FieldLabel>Sugar %</FieldLabel>
-                          <input
-                            type="number" min={0} max={10} step={0.5}
-                            value={manualSugar ?? advancedRecipe.sugar / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1)}
-                            onChange={e => setManualSugar(Number(e.target.value))}
-                            style={{
-                              width: '100%', padding: '.45rem .6rem', borderRadius: '8px',
-                              border: '1.5px solid var(--border)', background: 'var(--cream)',
-                              fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
-                              color: 'var(--char)', outline: 'none',
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
                     <RecipeOutput
                       result={advancedDisplayRecipe ?? advancedRecipe}
                       numItems={numItems}
