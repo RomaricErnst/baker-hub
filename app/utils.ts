@@ -351,6 +351,23 @@ export function buildSchedule(
   const r15  = (d: Date) => roundTo15(d) as Date;
   const r15n = (d: Date | null) => roundTo15(d);
 
+  function pushOutOfBlockers(t: Date, bks: AvailabilityBlock[]): Date {
+    let result = new Date(t);
+    let changed = true;
+    let safety = 0;
+    while (changed && safety++ < 10) {
+      changed = false;
+      for (const b of bks) {
+        if (result >= b.from && result < b.to) {
+          result = new Date(b.to);
+          changed = true;
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
   const totalWindowH = (eatTime.getTime() - startTime.getTime()) / 3600000;
   const maxBulkH  = maxRTHours(kitchenTemp);
   const restH     = restRtMinutes(kitchenTemp) / 60;
@@ -404,8 +421,8 @@ export function buildSchedule(
       coldRetard1End = new Date(coldRetard1Start.getTime());
     }
 
-    // Divide & Ball happens when phase 1 ends
-    const divideBallTime = coldRetard1End;
+    // Divide & Ball happens when phase 1 ends (pushed out of any blocker)
+    const divideBallTime = pushOutOfBlockers(coldRetard1End, relevantBlocks);
 
     // Divide & ball duration
     // numItems not available here; use a placeholder of 4 balls (15 min base)
@@ -489,7 +506,7 @@ export function buildSchedule(
       const finalProofH = Math.min(maxFinalH, totalH);
       const bulkFermH   = Math.max(0, totalH - finalProofH);
       const finalProofStart = new Date(fermStart.getTime() + bulkFermH * 3600000);
-      const divideBallTime  = finalProofStart;
+      const divideBallTime  = pushOutOfBlockers(finalProofStart, relevantBlocks);
       return {
         mixingDurationH,
         bulkFermStart: r15(fermStart),
@@ -550,7 +567,7 @@ export function buildSchedule(
         (coldRetardEnd.getTime() - coldRetardStart.getTime()) / 3600000
       );
     }
-    const divideBallTime = coldRetardEnd;
+    const divideBallTime = pushOutOfBlockers(coldRetardEnd, relevantBlocks);
     return {
       mixingDurationH,
       bulkFermStart: r15(fermStart),
@@ -627,8 +644,8 @@ export function buildSchedule(
     Math.max(0, (bakeTime.getTime() - finalProofStart.getTime()) / 3600000)
   );
 
-  // Divide & Ball happens when dough comes out of fridge
-  const divideBallTime = coldRetardEnd;
+  // Divide & Ball happens when dough comes out of fridge (pushed out of any blocker)
+  const divideBallTime = pushOutOfBlockers(coldRetardEnd, relevantBlocks);
 
   return {
     mixingDurationH,

@@ -304,6 +304,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [pickerHour, setPickerHour] = useState<number>(() => alreadySet ? eatTime!.getHours() : 20);
   const [dismissedConflict, setDismissedConflict] = useState(false);
 
+  // Start picker state — synced with pendingStart after confirmBakeTime runs
+  function toPickerDate(d: Date): string {
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  }
+  const [startPickerDate, setStartPickerDate] = useState<string>(() =>
+    alreadySet ? toPickerDate(startTime) : ''
+  );
+  const [startPickerHour, setStartPickerHour] = useState<number>(() =>
+    alreadySet ? startTime.getHours() : 8
+  );
+
   function updateEatTime(dateStr: string, hour: number) {
     if (!dateStr) return;
     const parts = dateStr.split('-').map(Number);
@@ -332,6 +344,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   function confirmBakeTime() {
     const s = suggestion.suggestedStart;
     setPendingStart(s);
+    setStartPickerDate(toPickerDate(s));
+    setStartPickerHour(s.getHours());
     onChange(s, pendingEatTime, blocks);
     setStartComputed(true);
     setDismissedConflict(false);
@@ -347,6 +361,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   function adjustStart(deltaH: number) {
     const d = new Date(pendingStart.getTime() + deltaH * 3600000);
+    setPendingStart(d);
+    setStartPickerDate(toPickerDate(d));
+    setStartPickerHour(d.getHours());
+    onChange(d, pendingEatTime, blocks);
+  }
+
+  function setStartFromPicker(dateStr: string, hour: number) {
+    if (!dateStr) return;
+    const parts = dateStr.split('-').map(Number);
+    const d = new Date(parts[0], parts[1] - 1, parts[2], hour, 0, 0, 0);
     setPendingStart(d);
     onChange(d, pendingEatTime, blocks);
   }
@@ -587,6 +611,40 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           </button>
         </div>
       </div>
+
+      {/* Date+hour picker for jumping to a different day */}
+      {startComputed && (
+        <div style={{ marginTop: '.5rem' }}>
+          <label style={LABEL_STYLE}>Or pick a different day →</label>
+          <div style={{ display: 'flex', gap: '.5rem' }}>
+            <input
+              type="date"
+              value={startPickerDate}
+              onChange={e => {
+                setStartPickerDate(e.target.value);
+                if (e.target.value) setStartFromPicker(e.target.value, startPickerHour);
+              }}
+              style={{ ...INPUT_STYLE, flex: 2, width: undefined }}
+            />
+            <select
+              value={startPickerHour}
+              onChange={e => {
+                const h = Number(e.target.value);
+                setStartPickerHour(h);
+                if (startPickerDate) setStartFromPicker(startPickerDate, h);
+              }}
+              style={{
+                ...INPUT_STYLE, width: 'auto', flex: 1,
+                appearance: 'none' as React.CSSProperties['appearance'],
+              }}
+            >
+              {Array.from({ length: 24 }, (_, h) => (
+                <option key={h} value={h}>{hourLabel(h)}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
       {bulkConflict && !dismissedConflict && (
         <div style={{
