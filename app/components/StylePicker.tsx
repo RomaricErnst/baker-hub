@@ -98,15 +98,18 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
 
   const isBread = bakeType === 'bread';
 
+  const imgHeight = isBread ? 90 : 110;
+
   return (
     <div style={{
       display: 'grid',
       gridTemplateColumns: isBread ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
-      gap: '.75rem',
+      gap: isBread ? '.75rem' : '1rem',
     }}>
       {(Object.entries(styles) as [string, { name: string; emoji: string; image?: string; desc: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
 
         const isSelected = selected === key;
+        const art = STYLE_ART[key];
 
         return (
           <div
@@ -118,7 +121,7 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
               border: `2px solid ${isSelected
                 ? isBread ? 'var(--bread)' : 'var(--terra)'
                 : 'var(--border)'}`,
-              borderRadius: '18px',
+              borderRadius: '16px',
               cursor: 'pointer',
               overflow: 'hidden',
               background: isSelected ? '#FFF8F3' : 'var(--warm)',
@@ -126,41 +129,67 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
               boxShadow: hoveredKey === key ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
               transform: hoveredKey === key ? 'translateY(-3px)' : 'none',
               display: 'flex',
-              ...(isBread
-                ? { flexDirection: 'column' as const, alignItems: 'center', padding: '.65rem .5rem', textAlign: 'center' as const, gap: '.35rem' }
-                : { flexDirection: 'row' as const, alignItems: 'center', gap: '.65rem', padding: '.75rem' }
-              ),
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              padding: '1rem .75rem .85rem',
             }}
           >
-            {/* Thumbnail or emoji */}
+            {/* Image / SVG illustration */}
             {style.image ? (
               <img
                 src={style.image}
                 alt={style.name}
                 style={{
-                  width: isBread ? 56 : 60,
-                  height: isBread ? 56 : 60,
-                  borderRadius: 8, objectFit: 'cover', flexShrink: 0,
+                  width: '100%',
+                  height: imgHeight,
+                  borderRadius: 10,
+                  objectFit: 'cover',
+                  marginBottom: '.6rem',
+                  display: 'block',
+                }}
+              />
+            ) : art ? (
+              <div
+                style={{
+                  width: '100%',
+                  height: imgHeight,
+                  borderRadius: 10,
+                  marginBottom: '.6rem',
+                  background: art.bg,
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: `<svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">${art.svg}</svg>`,
                 }}
               />
             ) : (
               <div style={{
-                width: isBread ? 56 : 60,
-                height: isBread ? 56 : 60,
-                borderRadius: 8, flexShrink: 0,
+                width: '100%',
+                height: imgHeight,
+                borderRadius: 10,
+                marginBottom: '.6rem',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--cream)', fontSize: isBread ? '1.5rem' : '1.75rem',
+                background: 'var(--cream)', fontSize: '2rem',
               }}>
                 {style.emoji}
               </div>
             )}
 
-            {/* Info */}
-            <div style={{ minWidth: 0, width: isBread ? '100%' : undefined }}>
-              <div style={{ fontWeight: 600, fontSize: isBread ? '.78rem' : '.84rem', marginBottom: '.15rem' }}>
+            {/* Text */}
+            <div style={{ width: '100%' }}>
+              <div style={{ fontWeight: 700, fontSize: isBread ? '.78rem' : '.88rem', color: 'var(--char)', marginBottom: '.2rem' }}>
                 {style.name}
               </div>
-              <div style={{ fontSize: isBread ? '.65rem' : '.7rem', color: 'var(--smoke)', lineHeight: 1.4, fontWeight: 300 }}>
+              <div style={{
+                fontSize: isBread ? '.65rem' : '.7rem',
+                color: 'var(--smoke)', lineHeight: 1.4, fontWeight: 300,
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+              } as React.CSSProperties}>
                 {style.desc}
               </div>
               {!isBread && (

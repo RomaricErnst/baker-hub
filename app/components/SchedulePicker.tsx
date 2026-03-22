@@ -445,7 +445,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             {bakeType === 'bread' ? 'When does the bread go in the oven?' : 'When does the pizza go in the oven?'}
           </div>
           <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5 }}>
-            We&apos;ll recommend the best window to start your dough.
+            {bakeType === 'bread'
+              ? "We\u2019ll build your fermentation schedule around your availability."
+              : "We\u2019ll recommend the best window to start your dough."}
           </div>
         </div>
         <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1rem' }}>
