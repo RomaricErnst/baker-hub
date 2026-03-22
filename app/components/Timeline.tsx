@@ -525,7 +525,9 @@ export default function Timeline({
                   {item.stepKind === 'rest_rt'
                     ? <>Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch and will tear. The poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> will be unreliable until the dough has warmed through.</>
                     : item.stepKind === 'final_proof'
-                    ? <>Shape dough balls if not already done. Cover and leave at room temperature until the poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> confirms they are ready to bake.</>
+                    ? schedule.coldRetard2Start !== null
+                      ? <>Balls are already shaped — cover and leave at room temperature until the poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> confirms ready.</>
+                      : <>Shape your balls if not done. Cover and leave at room temperature until the poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> confirms ready.</>
                     : item.stepKind === 'divide_ball'
                     ? <>{item.tip}</>
                     : item.tip}

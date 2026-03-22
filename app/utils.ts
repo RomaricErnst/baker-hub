@@ -72,6 +72,7 @@ export interface YeastResult {
   yeastType: YeastType;
   scaleNeeded: string;
   dilutionTip: string | null;
+  hitMinFloor: boolean;  // true when 0.5g IDY floor was applied
   recommendPoolish: boolean;
   notRecommended: boolean;
   explanation: string;
@@ -143,10 +144,19 @@ export function recommendYeast(
     );
   }
 
+  // Absolute 0.5g IDY floor — never output less than this
+  const YEAST_FLOOR_GRAMS = 0.5;
+  let rawGrams = flour * rec / 100;
+  const hitMinFloor = rawGrams < YEAST_FLOOR_GRAMS;
+  if (hitMinFloor) {
+    rawGrams = YEAST_FLOOR_GRAMS;
+    rec = rawGrams / flour * 100;
+  }
+
   // Convert to selected yeast type
   const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
+  const grams          = Math.round(rawGrams * 1000) / 1000;
   const convertedPct   = Math.round(rec * conversion * 10000) / 10000;
-  const grams          = Math.round(flour * rec / 100 * 1000) / 1000;
   const convertedGrams = Math.round(flour * convertedPct / 100 * 1000) / 1000;
 
   // Scale tip
@@ -197,6 +207,7 @@ export function recommendYeast(
     yeastType,
     scaleNeeded,
     dilutionTip,
+    hitMinFloor,
     recommendPoolish,
     notRecommended,
     explanation,

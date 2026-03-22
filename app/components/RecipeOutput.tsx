@@ -221,6 +221,12 @@ export default function RecipeOutput({
       })()
     : undefined;
 
+  // Sachet dilution note: when convertedGrams < 1g
+  // X = needed_grams × 10 (ml of solution to use from a 70ml batch)
+  const sachetDilutionNote = yeastInfo && yeastInfo.convertedGrams < 1
+    ? `Can't measure this precisely? Dissolve your full yeast sachet in 10× its weight in water. Use ${Math.round(yeastInfo.convertedGrams * 10 * 10) / 10}ml of that solution.`
+    : null;
+
   // Allowlist approach: only keep warnings about structural issues, never temperature context
   const WARN_ALLOWLIST = ['precision scale', 'poolish', 'not recommended', 'dilution'];
   function isAllowedWarning(w: string): boolean {
@@ -330,6 +336,20 @@ export default function RecipeOutput({
           />
         )}
 
+        {/* Sachet dilution note — shown when convertedGrams < 1g */}
+        {sachetDilutionNote && (
+          <div style={{
+            fontFamily: 'var(--font-dm-mono)',
+            fontSize: '.73rem',
+            color: 'rgba(245,240,232,0.50)',
+            padding: '.4rem .1rem .35rem',
+            lineHeight: 1.55,
+            borderBottom: `1px solid ${D.line}`,
+          }}>
+            {sachetDilutionNote}
+          </div>
+        )}
+
         {/* Yeast — sourdough starter range */}
         {sourdough && (
           <IngRow
@@ -428,6 +448,23 @@ export default function RecipeOutput({
       {/* ── Yeast details ─────────────────────────── */}
       {yeastInfo && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.65rem' }}>
+
+          {/* Min floor callout — shown when 0.5g IDY floor was applied */}
+          {yeastInfo.hitMinFloor && (
+            <div style={{
+              background: '#FFFBEE',
+              border: '1.5px solid #D4A853',
+              borderRadius: '12px',
+              padding: '.85rem 1rem',
+            }}>
+              <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+                <span style={{ fontSize: '1rem' }}>⚠️</span>
+                <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#7A5A10' }}>
+                  Precision scale recommended — this is a very small amount of yeast.
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Precision scale callout */}
           {needsPrecision && (
