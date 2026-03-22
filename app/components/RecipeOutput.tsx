@@ -432,13 +432,13 @@ export default function RecipeOutput({
             background: 'var(--warm)',
             border: '1px solid var(--border)',
             borderLeft: '3px solid var(--sage)',
-            borderRadius: '12px',
-            padding: '.85rem 1.1rem',
+            borderRadius: '10px',
+            padding: '.75rem 1rem',
           }}>
-            <div style={{ fontSize: '.82rem', color: 'var(--char)', lineHeight: 1.55 }}>
+            <div style={{ fontSize: '.8rem', fontFamily: 'var(--font-dm-sans)', color: 'var(--char)', lineHeight: 1.55 }}>
               {main}
             </div>
-            <div style={{ fontSize: '.75rem', color: 'var(--smoke)', marginTop: '.3rem' }}>
+            <div style={{ fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', textDecoration: 'underline', cursor: 'pointer', marginTop: '.3rem' }}>
               Using plain flour or T55? Tap to adapt →
             </div>
           </div>
