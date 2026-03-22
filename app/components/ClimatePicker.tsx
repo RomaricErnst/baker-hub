@@ -2,7 +2,7 @@
 import { useState } from 'react';
 
 const PRIORITY_OPTIONS: { value: string | null; label: string; sub: string }[] = [
-  { value: 'flavor', label: '🍷 Flavour first', sub: '−30% yeast' },
+  { value: 'flavor', label: '🌿 Flavour first', sub: '−30% yeast' },
   { value: null,     label: '⚖️ Balanced',      sub: 'Standard'   },
   { value: 'speed',  label: '⚡ Faster proof',  sub: '+80% yeast' },
 ];
