@@ -190,17 +190,7 @@ function buildItems(
   } else {
     // ── SINGLE-PHASE SEQUENCE ───────────────────────────────────
 
-    // 3 — Divide & Ball (after bulk or after coming out of fridge)
-    items.push({
-      kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
-      time: schedule.divideBallTime,
-      label: 'Divide & Ball',
-      icon: '⚖️',
-      tip: divideBallTip(),
-      durationH: divideH,
-    });
-
-    // 4 — Cold Retard (single-phase, if any)
+    // 3 — Cold Retard (whole dough mass goes in fridge first)
     if (schedule.coldRetard1Start && schedule.coldRetard1End) {
       const coldDurationH = Math.max(0,
         (schedule.coldRetard1End.getTime() - schedule.coldRetard1Start.getTime()) / 3600000
@@ -219,7 +209,17 @@ function buildItems(
       });
     }
 
-    // 5 — Remove from fridge (only if cold retard exists and restRtHours > 0)
+    // 4 — Divide & Ball (when dough comes OUT of fridge)
+    items.push({
+      kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
+      time: schedule.divideBallTime,
+      label: 'Divide & Ball',
+      icon: '⚖️',
+      tip: divideBallTip(),
+      durationH: divideH,
+    });
+
+    // 5 — Remove from fridge / rest at RT (only if restRtHours > 0)
     if (schedule.coldRetardEnd && schedule.restRtHours > 0) {
       items.push({
         kind: 'step', id: 'rest_rt', stepKind: 'rest_rt',

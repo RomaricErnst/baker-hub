@@ -175,9 +175,9 @@ function computeSuggestion(
       : pushToReasonableHour(roundToNearestHour(now));
   }
 
-  // ±2h range — early end respects reasonable-hour rule; late end is unconstrained
-  const rangeEarly  = pushToReasonableHour(new Date(suggestedStart.getTime() - 2 * 3600000));
-  const rangeLatest = new Date(suggestedStart.getTime() + 2 * 3600000);
+  // ±4h range — early end respects reasonable-hour rule; late end is unconstrained
+  const rangeEarly  = pushToReasonableHour(new Date(suggestedStart.getTime() - 4 * 3600000));
+  const rangeLatest = new Date(suggestedStart.getTime() + 4 * 3600000);
 
   return {
     scenario,
@@ -396,6 +396,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           onChange={e => {
             const d = new Date(e.target.value);
             if (!isNaN(d.getTime())) {
+              d.setMinutes(0, 0, 0); // force to hour boundary
               setPendingEatTime(d);
               setEatTimeSet(true);
             }
@@ -432,10 +433,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   if (scenario === 'plenty') {
     if (isPreferredMode) {
       scenarioMain = `Aim to start between ${formatDayHour(rangeEarly)} and ${formatDayHour(rangeLatest)}.`;
-      scenarioSecondary = 'Earlier = longer cold rest = deeper flavour.';
+      scenarioSecondary = 'Starting a few hours later is still great — just a shorter cold rest.';
     } else {
       scenarioMain = `Best to start around ${formatDayHour(suggestedStart)}.`;
-      scenarioSecondary = `Anywhere from ${formatDayHour(rangeEarly)} to ${formatDayHour(rangeLatest)} works.`;
+      scenarioSecondary = `Anywhere from ${formatDayHour(rangeEarly)} to ${formatDayHour(rangeLatest)} gives good results.`;
     }
   } else if (scenario === 'tight') {
     scenarioMain = `Tight window — start as soon as possible.`;
