@@ -11,6 +11,7 @@ interface RecipeOutputProps {
   mixerType: string;
   kitchenTemp: number;
   fermEquivHours: number;
+  totalColdHours?: number;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -179,7 +180,7 @@ function computeWaterInfo(
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours,
+  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0,
 }: RecipeOutputProps) {
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
 
@@ -334,6 +335,21 @@ export default function RecipeOutput({
             grams={gStr(yeastInfo.convertedGrams)}
             pct={pctStr(yeastInfo.convertedPct)}
           />
+        )}
+
+        {/* Reassurance note — quiet whisper for long cold plans with small yeast */}
+        {yeastInfo && yeastInfo.convertedGrams < 2 && totalColdHours >= 24 && (
+          <span style={{
+            fontSize: '.72rem',
+            color: 'rgba(245,240,232,0.50)',
+            fontFamily: 'var(--font-dm-sans)',
+            fontStyle: 'italic',
+            marginTop: '.25rem',
+            display: 'block',
+            padding: '0 .1rem',
+          }}>
+            Yes, that&apos;s intentional — less yeast, more time = deeper flavour. Trust the process. 🍕
+          </span>
         )}
 
         {/* Sachet dilution note — shown when convertedGrams < 1g */}

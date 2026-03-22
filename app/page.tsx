@@ -646,6 +646,7 @@ export default function Home() {
                       mixerType={mixerType}
                       kitchenTemp={kitchenTemp}
                       fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
+                      totalColdHours={schedule ? schedule.totalColdHours : 0}
                     />
 
                     {/* ── Large-batch yeast adjustment ── */}
