@@ -809,7 +809,7 @@ export function mixerHydrationWarning(
 export function formatTime(d: Date): string {
   if (!(d instanceof Date) || isNaN(d.getTime())) return '—';
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  return `${days[d.getDay()]} ${String(d.getHours()).padStart(2, '0')}:00`;
+  return `${days[d.getDay()]} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 export function toDateTimeLocal(d: Date): string {
@@ -818,8 +818,9 @@ export function toDateTimeLocal(d: Date): string {
 }
 
 export function hoursLabel(h: number): string {
-  if (h < 1) return `${Math.round(h * 60)} min`;
-  const hrs = Math.floor(h);
-  const mins = Math.round((h - hrs) * 60);
+  const rounded = Math.round(h * 4) / 4; // round to nearest 0.25h = 15min
+  if (rounded < 1) return `${Math.round(rounded * 60)} min`;
+  const hrs = Math.floor(rounded);
+  const mins = Math.round((rounded - hrs) * 60);
   return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
 }

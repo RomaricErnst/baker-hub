@@ -427,7 +427,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               setPickerDate(e.target.value);
               if (e.target.value) updateEatTime(e.target.value, pickerHour);
             }}
-            style={{ ...INPUT_STYLE, flex: 1, width: undefined }}
+            style={{ ...INPUT_STYLE, flex: 2, width: undefined }}
           />
           <select
             value={pickerHour}
@@ -437,7 +437,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               if (pickerDate) updateEatTime(pickerDate, h);
             }}
             style={{
-              ...INPUT_STYLE, width: 'auto', flex: '0 0 auto',
+              ...INPUT_STYLE, width: 'auto', flex: 1,
               appearance: 'none' as React.CSSProperties['appearance'],
             }}
           >
