@@ -642,13 +642,19 @@ export default function Home() {
                   {(Object.entries(YEAST_TYPES) as [YeastType, typeof YEAST_TYPES[YeastType]][]).map(([yt, y]) => {
                     const active = yeastType === yt;
                     const yImg = (y as { image?: string }).image;
+                    const guidedDesc: Record<string, string> = {
+                      instant: 'Fine powder sachet. Most reliable, longest shelf life.',
+                      active_dry: 'Brown granules. Widely available. Dissolve in warm water first.',
+                      fresh: 'Soft beige block. Slightly richer flavour. Use within 2 weeks.',
+                      sourdough: 'Wild fermentation. Deeper flavour, better digestibility. Needs an active starter.',
+                    };
                     return (
                       <div
                         key={yt}
                         onClick={() => { setYeastType(yt); advance(6); }}
                         style={{
                           border: `2px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                          borderRadius: '14px', padding: '.65rem .5rem',
+                          borderRadius: '14px', padding: '.75rem .6rem',
                           cursor: 'pointer', background: active ? '#FEF4EF' : 'var(--warm)',
                           transition: 'all .15s', textAlign: 'center',
                           display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -660,9 +666,16 @@ export default function Home() {
                         ) : (
                           <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '.4rem' }}>{y.emoji}</span>
                         )}
-                        <div style={{ fontWeight: 600, fontSize: '.8rem', color: 'var(--char)' }}>
+                        <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--char)', marginBottom: '.2rem' }}>
                           {y.name}
                         </div>
+                        <span style={{
+                          fontSize: '.65rem', fontFamily: 'var(--font-dm-sans)',
+                          color: 'var(--smoke)', textAlign: 'center', lineHeight: 1.45,
+                          maxWidth: '140px', display: 'block', marginTop: '.1rem',
+                        }}>
+                          {guidedDesc[yt]}
+                        </span>
                       </div>
                     );
                   })}
@@ -1129,30 +1142,40 @@ export default function Home() {
                   {(Object.entries(YEAST_TYPES) as [YeastType, typeof YEAST_TYPES[YeastType]][]).map(([yt, y]) => {
                     const active = yeastType === yt;
                     const yImg = (y as { image?: string }).image;
+                    const advDesc: Record<string, string> = {
+                      instant: 'Fine powder · ×1.0 reference · most precise',
+                      active_dry: 'Brown granules · ×1.33 vs IDY · proof in 38°C water',
+                      fresh: 'Soft block · ×3.0 vs IDY · keep refrigerated',
+                      sourdough: 'Wild yeast · replaces formula · needs active starter at peak',
+                    };
                     return (
                       <div
                         key={yt}
                         onClick={() => { setYeastType(yt); advanceAdv(7); }}
                         style={{
                           border: `2px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                          borderRadius: '14px', padding: '.65rem .75rem',
+                          borderRadius: '14px', padding: '.75rem .6rem',
                           cursor: 'pointer', background: active ? '#FEF4EF' : 'var(--warm)',
                           transition: 'all .15s', textAlign: 'center',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center',
                         }}
                       >
                         {yImg ? (
                           <img src={yImg} alt={y.name}
-                            style={{ width: '100%', height: '72px', objectFit: 'cover', borderRadius: '8px', marginBottom: '.4rem' }} />
+                            style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '10px', marginBottom: '.4rem' }} />
                         ) : (
                           <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '.4rem' }}>{y.emoji}</span>
                         )}
-                        <div style={{ fontSize: '.78rem', fontWeight: active ? 600 : 500, color: active ? 'var(--terra)' : 'var(--char)' }}>
+                        <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--char)', marginBottom: '.2rem' }}>
                           {y.name}
                         </div>
-                        <div style={{ fontSize: '.68rem', color: 'var(--smoke)', marginTop: '.15rem' }}>
-                          {y.shortName}
-                        </div>
-                        {active && <div style={{ color: 'var(--terra)', fontSize: '.75rem', marginTop: '.25rem' }}>✓</div>}
+                        <span style={{
+                          fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+                          color: 'var(--smoke)', textAlign: 'center', lineHeight: 1.45,
+                          maxWidth: '140px', display: 'block', marginTop: '.1rem',
+                        }}>
+                          {advDesc[yt]}
+                        </span>
                       </div>
                     );
                   })}
