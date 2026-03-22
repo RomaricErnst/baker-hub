@@ -440,9 +440,9 @@ export default function RecipeOutput({
           if (fermEquivHours < 8) {
             main = 'Pizza or bread flour works well for this plan.';
           } else if (fermEquivHours < 24) {
-            main = 'Pizza flour gives the best results — Italian 00 or French T45 forte 🌾';
+            main = 'Pizza flour gives the best results — Italian 00 is ideal. French T45 forte works too 🌾';
           } else {
-            main = 'Strong pizza flour recommended — Italian 00 W270+ or French T45 forte 🌾';
+            main = 'Strong pizza flour recommended — Italian 00 W270+. French alternative: T45 forte W260+ 🌾';
           }
         }
         return (
