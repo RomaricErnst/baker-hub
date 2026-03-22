@@ -1,4 +1,26 @@
+'use client';
+import { useState, useEffect } from 'react';
+import AuthButton from './AuthButton';
+
+function getLocale(): string {
+  if (typeof document === 'undefined') return 'en';
+  const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/);
+  return match ? match[1] : 'en';
+}
+
 export default function Header() {
+  const [locale, setLocale] = useState('en');
+
+  useEffect(() => {
+    setLocale(getLocale());
+  }, []);
+
+  function switchLocale(l: string) {
+    document.cookie = `NEXT_LOCALE=${l};path=/;max-age=31536000`;
+    setLocale(l);
+    window.location.reload();
+  }
+
   return (
     <header style={{
       background: 'var(--char)',
@@ -38,6 +60,34 @@ export default function Header() {
         }}>
           artisan dough planner
         </div>
+      </div>
+
+      {/* Right side: language toggle + auth */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+        <div style={{ display: 'flex', gap: '.25rem', alignItems: 'center' }}>
+          {(['en', 'fr'] as const).map(l => (
+            <button
+              key={l}
+              onClick={() => switchLocale(l)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-dm-mono)',
+                fontSize: '.78rem',
+                fontWeight: locale === l ? 700 : 400,
+                color: locale === l ? 'var(--terra)' : 'var(--smoke)',
+                padding: '.2rem .4rem',
+                borderRadius: '4px',
+                transition: 'color .15s',
+                textTransform: 'uppercase',
+              }}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+        <AuthButton />
       </div>
     </header>
   );
