@@ -179,6 +179,7 @@ export default function Home() {
   const [kitchenTemp, setKitchenTemp] = useState(22);
   const [humidity, setHumidity] = useState('normal');
   const [fridgeTemp, setFridgeTemp] = useState(4);
+  const [priority, setPriority] = useState<string | null>(null);
 
   // Modals & results
   const [showYeastHelper, setShowYeastHelper] = useState(false);
@@ -187,6 +188,11 @@ export default function Home() {
   // Large-batch yeast adjustment
   const [yeastMultiplier, setYeastMultiplier]   = useState(1.0); // live stepper value
   const [appliedMultiplier, setAppliedMultiplier] = useState(1.0); // applied to RecipeOutput
+
+  // Advanced mode manual overrides
+  const [manualHydration, setManualHydration] = useState<number | undefined>(undefined);
+  const [manualOil, setManualOil]             = useState<number | undefined>(undefined);
+  const [manualSugar, setManualSugar]         = useState<number | undefined>(undefined);
 
   // BakeType card hover state
   const [hoveredBakeType, setHoveredBakeType] = useState<BakeType | null>(null);
@@ -241,6 +247,36 @@ export default function Home() {
     };
   }, [recipe, appliedMultiplier]);
 
+  // Advanced recipe — includes manual hydration/oil/sugar overrides
+  const advancedRecipe = useMemo(() => {
+    if (!styleKey || !schedule) return null;
+    try {
+      return calculateRecipe(
+        styleKey, ovenType, numItems, itemWeight,
+        kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, 'advanced',
+        manualHydration, manualOil, manualSugar,
+      );
+    } catch {
+      return null;
+    }
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, manualHydration, manualOil, manualSugar]);
+
+  // Advanced recipe with yeast multiplier applied
+  const advancedDisplayRecipe = useMemo(() => {
+    if (!advancedRecipe || !advancedRecipe.yeast || appliedMultiplier === 1.0) return advancedRecipe;
+    const y = advancedRecipe.yeast;
+    return {
+      ...advancedRecipe,
+      yeast: {
+        ...y,
+        pct:            Math.round(y.pct            * appliedMultiplier * 10000) / 10000,
+        grams:          Math.round(y.grams          * appliedMultiplier * 1000)  / 1000,
+        convertedPct:   Math.round(y.convertedPct   * appliedMultiplier * 10000) / 10000,
+        convertedGrams: Math.round(y.convertedGrams * appliedMultiplier * 1000)  / 1000,
+      },
+    };
+  }, [advancedRecipe, appliedMultiplier]);
+
   // ── Handlers ──────────────────────────────
   function selectBakeType(bt: BakeType) {
     setBakeType(bt);
@@ -253,6 +289,9 @@ export default function Home() {
     setStyleKey(sk);
     setItemWeight(ALL_STYLES[sk].ballW);
     setNumItems(bakeType === 'bread' ? 1 : 2);
+    setManualHydration(undefined);
+    setManualOil(undefined);
+    setManualSugar(undefined);
     advance(2);
   }
 
@@ -293,7 +332,8 @@ export default function Home() {
     setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(4);
     setShowResults(false); setActiveStep(1);
     setYeastMultiplier(1.0); setAppliedMultiplier(1.0);
-    setAdvancedStep(1); setFlourCategory('pizza00');
+    setAdvancedStep(1); setFlourCategory('pizza00'); setPriority(null);
+    setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -312,7 +352,19 @@ export default function Home() {
           {(['guided', 'advanced'] as const).map(t => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              onClick={() => {
+                setTab(t);
+                if (t === 'advanced' && styleKey) {
+                  const s = ALL_STYLES[styleKey];
+                  setManualHydration(s.hydration);
+                  setManualOil(s.oil);
+                  setManualSugar(s.sugar);
+                } else if (t === 'guided') {
+                  setManualHydration(undefined);
+                  setManualOil(undefined);
+                  setManualSugar(undefined);
+                }
+              }}
               style={{
                 padding: '.55rem 1.25rem',
                 background: 'none', border: 'none',
@@ -1038,6 +1090,8 @@ export default function Home() {
                 kitchenTemp={kitchenTemp} humidity={humidity}
                 fridgeTemp={fridgeTemp} mode="advanced"
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
+                priority={priority}
+                onPriorityChange={setPriority}
               />
               <ContinueBtn onClick={() => advanceAdv(8)} />
             </StepCard>
@@ -1093,14 +1147,72 @@ export default function Home() {
                   </button>
                 </div>
 
-                {!recipe ? (
+                {!advancedRecipe ? (
                   <div style={{ background: '#FEF4EF', border: '1.5px solid #F5C4B0', borderRadius: '12px', padding: '1.25rem', textAlign: 'center', color: 'var(--terra)', fontSize: '.88rem' }}>
                     Could not compute recipe — please check your style selection and schedule times.
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+
+                    {/* ── Manual adjustments ── */}
+                    <div style={{
+                      background: 'var(--warm)', border: '1.5px solid var(--border)',
+                      borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '-1rem',
+                    }}>
+                      {/* Hydration slider */}
+                      <div style={{ marginBottom: '.85rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.4rem' }}>
+                          <FieldLabel>Hydration</FieldLabel>
+                          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', fontWeight: 700, color: 'var(--terra)' }}>
+                            {manualHydration ?? advancedRecipe.hydration}%
+                          </span>
+                        </div>
+                        <input
+                          type="range" min={50} max={85} step={1}
+                          value={manualHydration ?? advancedRecipe.hydration}
+                          onChange={e => setManualHydration(Number(e.target.value))}
+                          style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer' }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.62rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem' }}>
+                          <span>50%</span><span>85%</span>
+                        </div>
+                      </div>
+
+                      {/* Oil + Sugar side by side */}
+                      <div style={{ display: 'flex', gap: '1rem' }}>
+                        <div style={{ flex: 1 }}>
+                          <FieldLabel>Oil %</FieldLabel>
+                          <input
+                            type="number" min={0} max={10} step={0.5}
+                            value={manualOil ?? advancedRecipe.oil / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1)}
+                            onChange={e => setManualOil(Number(e.target.value))}
+                            style={{
+                              width: '100%', padding: '.45rem .6rem', borderRadius: '8px',
+                              border: '1.5px solid var(--border)', background: 'var(--cream)',
+                              fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
+                              color: 'var(--char)', outline: 'none',
+                            }}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <FieldLabel>Sugar %</FieldLabel>
+                          <input
+                            type="number" min={0} max={10} step={0.5}
+                            value={manualSugar ?? advancedRecipe.sugar / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1)}
+                            onChange={e => setManualSugar(Number(e.target.value))}
+                            style={{
+                              width: '100%', padding: '.45rem .6rem', borderRadius: '8px',
+                              border: '1.5px solid var(--border)', background: 'var(--cream)',
+                              fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
+                              color: 'var(--char)', outline: 'none',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     <RecipeOutput
-                      result={displayRecipe ?? recipe}
+                      result={advancedDisplayRecipe ?? advancedRecipe}
                       numItems={numItems}
                       itemWeight={itemWeight}
                       styleName={ALL_STYLES[styleKey!].name}
@@ -1120,8 +1232,8 @@ export default function Home() {
                         eatTime={eatTime!}
                         mixerType={mixerType}
                         styleKey={styleKey ?? ''}
-                        oil={recipe?.oil ?? 0}
-                        hydration={recipe?.hydration ?? 0}
+                        oil={advancedRecipe?.oil ?? 0}
+                        hydration={advancedRecipe?.hydration ?? 0}
                         numItems={numItems}
                         onStartBaking={() => { /* Baking mode — future feature */ }}
                       />

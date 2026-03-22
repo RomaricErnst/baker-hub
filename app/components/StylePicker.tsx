@@ -161,7 +161,7 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
               padding: '.75rem',
             }}
           >
-            {/* Thumbnail or emoji fallback */}
+            {/* Thumbnail or emoji */}
             {style.image ? (
               <img
                 src={style.image}

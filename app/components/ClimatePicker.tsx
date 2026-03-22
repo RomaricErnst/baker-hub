@@ -1,12 +1,20 @@
 'use client';
 import { useState } from 'react';
 
+const PRIORITY_OPTIONS: { value: string | null; label: string; sub: string }[] = [
+  { value: 'flavor', label: '🍷 Flavour first', sub: '−30% yeast' },
+  { value: null,     label: '⚖️ Balanced',      sub: 'Standard'   },
+  { value: 'speed',  label: '⚡ Faster proof',  sub: '+80% yeast' },
+];
+
 interface ClimatePickerProps {
   kitchenTemp: number;
   humidity: string;
   fridgeTemp: number;
   mode: 'guided' | 'advanced';
   onChange: (kitchenTemp: number, humidity: string, fridgeTemp: number) => void;
+  priority?: string | null;
+  onPriorityChange?: (p: string | null) => void;
 }
 
 // ── WMO weather codes ────────────────────────
@@ -89,6 +97,7 @@ interface WeatherData {
 // ── Component ────────────────────────────────
 export default function ClimatePicker({
   kitchenTemp, humidity, fridgeTemp, mode, onChange,
+  priority = null, onPriorityChange,
 }: ClimatePickerProps) {
   const [city, setCity] = useState('');
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -400,6 +409,40 @@ export default function ClimatePicker({
               Fridge at <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{fridgeTemp}°C</span> is warmer than the standard 4°C — yeast will be more active during cold retard.
             </div>
           )}
+
+          {/* ── Fermentation priority ──────────── */}
+          <div style={{ marginTop: '1.2rem' }}>
+            <label style={SECTION_LABEL}>Fermentation priority</label>
+            <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
+              {PRIORITY_OPTIONS.map(opt => {
+                const active = priority === opt.value;
+                return (
+                  <button
+                    key={String(opt.value)}
+                    onClick={() => onPriorityChange?.(opt.value)}
+                    style={{
+                      padding: '.45rem .95rem',
+                      borderRadius: '20px',
+                      border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
+                      background: active ? '#FEF4EF' : 'var(--warm)',
+                      color: active ? 'var(--terra)' : 'var(--smoke)',
+                      fontSize: '.8rem',
+                      fontWeight: active ? 500 : 400,
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-dm-sans)',
+                      transition: 'all .15s',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '.05rem',
+                    }}
+                  >
+                    <span>{opt.label}</span>
+                    <span style={{ fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', opacity: .65 }}>
+                      {opt.sub}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
