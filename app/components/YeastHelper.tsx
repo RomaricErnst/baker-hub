@@ -2,14 +2,25 @@
 import { useState } from 'react';
 import { YEAST_TYPES, type YeastType } from '../data';
 
+interface CalcData {
+  rtHours: number;
+  coldHours: number;
+  kitchenTemp: number;
+  fridgeTemp: number;
+  idyPct: number;
+  idyGrams: number;
+}
+
 interface YeastHelperProps {
   onSelect: (yeastType: YeastType) => void;
   onClose: () => void;
+  calcData?: CalcData;
 }
 
-export default function YeastHelper({ onSelect, onClose }: YeastHelperProps) {
+export default function YeastHelper({ onSelect, onClose, calcData }: YeastHelperProps) {
   const [step, setStep] = useState(1);
   const [selected, setSelected] = useState<YeastType | null>(null);
+  const [showCalc, setShowCalc] = useState(false);
 
   function confirm(type: YeastType) {
     setSelected(type);
@@ -128,6 +139,71 @@ export default function YeastHelper({ onSelect, onClose }: YeastHelperProps) {
                 fontSize: '.85rem', color: '#fff', fontWeight: 500,
               }}>Confirm {selected ? YEAST_TYPES[selected].name : ''} →</button>
             </div>
+          </div>
+        )}
+
+        {/* ── Yeast transparency panel ─────────────── */}
+        {calcData && (
+          <div>
+            <button
+              onClick={() => setShowCalc(v => !v)}
+              style={{
+                fontSize: '.72rem',
+                color: 'var(--smoke)',
+                fontFamily: 'var(--font-dm-mono)',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                marginTop: '.75rem',
+              }}
+            >
+              {showCalc ? 'Hide calculation ↑' : 'How was this calculated? ↓'}
+            </button>
+
+            {showCalc && (
+              <div style={{
+                background: 'var(--cream)',
+                border: '1.5px solid var(--border)',
+                borderRadius: '10px',
+                padding: '.85rem 1rem',
+                marginTop: '.5rem',
+                fontSize: '.75rem',
+                color: 'var(--ash)',
+                lineHeight: 1.7,
+              }}>
+                <div>Model: Craig&apos;s per-stage formula v1.1</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)' }}>
+                  RT phases: IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))
+                </div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)' }}>
+                  Cold phase: IDY% = 7.5 / hours^1.313
+                </div>
+                {calcData.kitchenTemp >= 30 && (
+                  <div>
+                    Tropical correction applied:{' '}
+                    <span style={{ fontFamily: 'var(--font-dm-mono)' }}>
+                      ÷{calcData.kitchenTemp <= 32 ? '1.15' : '1.25'} at {calcData.kitchenTemp <= 32 ? '30–32°C' : '33–35°C'}
+                    </span>
+                  </div>
+                )}
+                <div style={{ marginTop: '.35rem' }}>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)' }}>
+                    RT hours: {calcData.rtHours}h
+                    {' · '}Cold hours: {calcData.coldHours}h
+                    {' · '}Kitchen: {calcData.kitchenTemp}°C
+                    {' · '}Fridge: {calcData.fridgeTemp}°C
+                  </span>
+                </div>
+                <div>
+                  Result:{' '}
+                  <span style={{ fontFamily: 'var(--font-dm-mono)' }}>
+                    IDY: {calcData.idyPct}% → {calcData.idyGrams}g
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
