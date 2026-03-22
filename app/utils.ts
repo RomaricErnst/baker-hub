@@ -765,7 +765,7 @@ export function mixerHydrationWarning(
 export function formatTime(d: Date): string {
   if (!(d instanceof Date) || isNaN(d.getTime())) return '—';
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  return `${days[d.getDay()]} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${days[d.getDay()]} ${String(d.getHours()).padStart(2, '0')}:00`;
 }
 
 export function toDateTimeLocal(d: Date): string {

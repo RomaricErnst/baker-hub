@@ -228,7 +228,7 @@ function getNightsInWindow(
   const cursor = new Date(start); cursor.setHours(0, 0, 0, 0);
 
   for (let i = 0; i < 14 && nights.length < 7; i++) {
-    const nightStart = new Date(cursor); nightStart.setHours(23, 0, 0, 0);
+    const nightStart = new Date(cursor); nightStart.setHours(22, 0, 0, 0);
     const nightEnd   = new Date(cursor); nightEnd.setDate(nightEnd.getDate() + 1); nightEnd.setHours(7, 0, 0, 0);
 
     if (nightStart < end && nightEnd > start) {
@@ -643,7 +643,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               >
                 🌙 {night.label}
                 <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
-                  · 11pm → 7am
+                  · 10pm → 7am
                 </span>
                 {active && <span style={{ opacity: .7 }}>✓</span>}
               </button>
