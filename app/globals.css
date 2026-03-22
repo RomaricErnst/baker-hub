@@ -48,3 +48,11 @@ body {
 .step-pulse {
   animation: stepPulse 2s ease-in-out infinite;
 }
+
+.step-card-active {
+  transition: transform 250ms ease, box-shadow 250ms ease !important;
+}
+.step-card-active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(26,22,18,0.10) !important;
+}

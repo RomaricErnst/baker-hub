@@ -39,7 +39,7 @@ function StepCard({
   const isLocked    = activeStep < num;
 
   return (
-    <div id={`step-${num}`} style={{
+    <div id={`step-${num}`} className={isActive ? 'step-card-active' : undefined} style={{
       border: `2px solid ${isActive ? 'var(--terra)' : isCompleted ? 'rgba(107,122,90,0.25)' : 'var(--border)'}`,
       borderRadius: '18px',
       background: isActive ? '#FDFBF7' : isCompleted ? '#F9FAF7' : 'var(--warm)',
