@@ -41,7 +41,7 @@ export default function MixerPicker({ selected, onSelect }: MixerPickerProps) {
               <img
                 src={imgSrc}
                 alt={mixer.name}
-                style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '10px', marginBottom: '.6rem' }}
+                style={{ width: '100%', height: '90px', objectFit: 'cover', borderRadius: '10px', marginBottom: '.6rem' }}
               />
             ) : (
               <span style={{ fontSize: '2rem', marginBottom: '.6rem' }}>{mixer.emoji}</span>

@@ -75,7 +75,7 @@ export default function YeastHelper({ onSelect, onClose, calcData }: YeastHelper
                 <button key={opt.type} onClick={() => { setSelected(opt.type); setStep(2); }}
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-                    padding: '.75rem .6rem',
+                    padding: '.75rem .5rem',
                     border: '1.5px solid var(--border)', borderRadius: '14px',
                     background: 'var(--warm)', cursor: 'pointer',
                     transition: 'all .2s',
@@ -84,13 +84,13 @@ export default function YeastHelper({ onSelect, onClose, calcData }: YeastHelper
                     <img
                       src={YEAST_TYPES[opt.type].image as string}
                       alt={opt.label}
-                      style={{ width: '100%', height: '70px', objectFit: 'cover', borderRadius: '8px', marginBottom: '.5rem' }}
+                      style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '10px', marginBottom: '.5rem' }}
                     />
                   ) : (
                     <span style={{ fontSize: '1.5rem', marginBottom: '.5rem' }}>{YEAST_TYPES[opt.type].emoji}</span>
                   )}
-                  <div style={{ fontWeight: 600, fontSize: '.78rem', marginBottom: '.15rem', color: 'var(--char)' }}>{opt.label}</div>
-                  <div style={{ fontSize: '.68rem', color: 'var(--smoke)', lineHeight: 1.4 }}>{opt.desc}</div>
+                  <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--char)', marginBottom: '.15rem' }}>{opt.label}</div>
+                  <div style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.4 }}>{YEAST_TYPES[opt.type].shortName}</div>
                 </button>
               ))}
             </div>

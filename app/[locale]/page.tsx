@@ -648,24 +648,24 @@ export default function Home() {
                         onClick={() => { setYeastType(yt); advance(6); }}
                         style={{
                           border: `2px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                          borderRadius: '14px', padding: '.65rem .75rem',
+                          borderRadius: '14px', padding: '.75rem .5rem',
                           cursor: 'pointer', background: active ? '#FEF4EF' : 'var(--warm)',
                           transition: 'all .15s', textAlign: 'center',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center',
                         }}
                       >
                         {yImg ? (
                           <img src={yImg} alt={y.name}
-                            style={{ width: '100%', height: '72px', objectFit: 'cover', borderRadius: '8px', marginBottom: '.4rem' }} />
+                            style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '10px', marginBottom: '.5rem' }} />
                         ) : (
-                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '.4rem' }}>{y.emoji}</span>
+                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '.5rem' }}>{y.emoji}</span>
                         )}
-                        <div style={{ fontSize: '.78rem', fontWeight: active ? 600 : 500, color: active ? 'var(--terra)' : 'var(--char)' }}>
+                        <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--char)' }}>
                           {y.name}
                         </div>
-                        <div style={{ fontSize: '.68rem', color: 'var(--smoke)', marginTop: '.15rem' }}>
+                        <div style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem' }}>
                           {y.shortName}
                         </div>
-                        {active && <div style={{ color: 'var(--terra)', fontSize: '.75rem', marginTop: '.25rem' }}>✓</div>}
                       </div>
                     );
                   })}
