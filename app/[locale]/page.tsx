@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import Header from '../components/Header';
 import StylePicker from '../components/StylePicker';
@@ -151,6 +152,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 // PAGE
 // ══════════════════════════════════════════════
 export default function Home() {
+  const t = useTranslations();
   const [tab, setTab] = useState<'guided' | 'advanced'>('guided');
   const [activeStep, setActiveStep] = useState(1);
   const [advancedStep, setAdvancedStep] = useState(1);
@@ -396,17 +398,17 @@ export default function Home() {
       {/* ── Tab navigation ─────────────────── */}
       <div style={{ background: 'var(--warm)', borderBottom: '1px solid var(--border)', position: 'sticky', top: '60px', zIndex: 90 }}>
         <div style={{ maxWidth: '680px', margin: '0 auto', padding: '0 1.25rem', display: 'flex' }}>
-          {(['guided', 'advanced'] as const).map(t => (
+          {(['guided', 'advanced'] as const).map(tabKey => (
             <button
-              key={t}
+              key={tabKey}
               onClick={() => {
-                setTab(t);
-                if (t === 'advanced' && styleKey) {
+                setTab(tabKey);
+                if (tabKey === 'advanced' && styleKey) {
                   const s = ALL_STYLES[styleKey];
                   setManualHydration(s.hydration);
                   setManualOil(s.oil);
                   setManualSugar(s.sugar);
-                } else if (t === 'guided') {
+                } else if (tabKey === 'guided') {
                   setManualHydration(undefined);
                   setManualOil(undefined);
                   setManualSugar(undefined);
@@ -415,14 +417,14 @@ export default function Home() {
               style={{
                 padding: '.55rem 1.25rem',
                 background: 'none', border: 'none',
-                borderBottom: `2px solid ${tab === t ? 'var(--terra)' : 'transparent'}`,
-                color: tab === t ? 'var(--terra)' : 'var(--smoke)',
-                fontSize: '.88rem', fontWeight: tab === t ? 600 : 400,
+                borderBottom: `2px solid ${tab === tabKey ? 'var(--terra)' : 'transparent'}`,
+                color: tab === tabKey ? 'var(--terra)' : 'var(--smoke)',
+                fontSize: '.88rem', fontWeight: tab === tabKey ? 600 : 400,
                 cursor: 'pointer', marginBottom: '-1px',
                 transition: 'color .15s',
               }}
             >
-              {t === 'guided' ? '🧭 Guided' : '⚙️ Advanced'}
+              {tabKey === 'guided' ? t('tabs.guided') : t('tabs.advanced')}
             </button>
           ))}
         </div>
@@ -442,29 +444,29 @@ export default function Home() {
                   fontFamily: 'var(--font-playfair)', fontSize: 'clamp(2rem, 5vw, 3rem)',
                   fontWeight: 900, lineHeight: 1.2, marginBottom: '.75rem',
                 }}>
-                  Craft your dough{' '}
-                  <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>with confidence.</em>
+                  {t('hero.headline')}{' '}
+                  <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>{t('hero.headlineEm')}</em>
                 </h1>
                 <p style={{ color: 'var(--smoke)', fontSize: '.95rem', fontWeight: 300 }}>
-                  Choose your dough style. We&apos;ll shape the plan.
+                  {t('hero.sub')}
                 </p>
               </div>
             )}
 
             {/* ─── STEP 1: Bake type ───────────────── */}
             <StepCard
-              num={1} title="What are you crafting today?"
+              num={1} title={t('steps.1.title')}
               activeStep={activeStep}
               summary={bakeType === 'pizza' ? '🍕 Pizza' : bakeType === 'bread' ? '🍞 Bread' : undefined}
               onEdit={() => setActiveStep(1)}
             >
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 {([
-                  { type: 'pizza' as BakeType, emoji: '🍕', image: '/bake_pizza.png', label: 'Pizza',
-                    desc: 'Neapolitan, New York, Roman, Detroit & Sourdough',
+                  { type: 'pizza' as BakeType, emoji: '🍕', image: '/bake_pizza.png', label: t('bakeType.pizza.label'),
+                    desc: t('bakeType.pizza.desc'),
                     active_bg: '#FFF8F3', active_border: 'var(--terra)' },
-                  { type: 'bread' as BakeType, emoji: '🍞', image: '/bake_bread.png', label: 'Bread',
-                    desc: 'Pain au levain, Pain de campagne, Baguette & more',
+                  { type: 'bread' as BakeType, emoji: '🍞', image: '/bake_bread.png', label: t('bakeType.bread.label'),
+                    desc: t('bakeType.bread.desc'),
                     active_bg: 'var(--bread-l)', active_border: 'var(--bread)' },
                 ]).map(opt => (
                   <div
@@ -496,7 +498,7 @@ export default function Home() {
 
             {/* ─── STEP 2: Style picker ────────────── */}
             <StepCard
-              num={2} title="Choose your dough style"
+              num={2} title={t('steps.2.title')}
               activeStep={activeStep}
               summary={styleKey ? `${ALL_STYLES[styleKey].emoji} ${ALL_STYLES[styleKey].name}` : undefined}
               onEdit={() => setActiveStep(2)}
@@ -508,7 +510,7 @@ export default function Home() {
 
             {/* ─── STEP 3: Quantity ────────────────── */}
             <StepCard
-              num={3} title="How many and how big?"
+              num={3} title={t('steps.3.title')}
               activeStep={activeStep}
               summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
               onEdit={() => setActiveStep(3)}
@@ -520,7 +522,7 @@ export default function Home() {
               }}>
                 {/* Num items */}
                 <div>
-                  <FieldLabel>Quantity</FieldLabel>
+                  <FieldLabel>{t('common.quantity')}</FieldLabel>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
                     <button
                       onClick={() => setNumItems(n => Math.max(1, n - 1))}
@@ -565,14 +567,14 @@ export default function Home() {
                       fontSize: '.72rem', color: 'var(--smoke)',
                       lineHeight: 1.5, maxWidth: '180px',
                     }}>
-                      🍕 Large batch detected. See recipe output for yeast adjustment.
+                      🍕 {t('quantity.largeBatchNote')}
                     </div>
                   )}
                 </div>
 
                 {/* Item weight */}
                 <div>
-                  <FieldLabel>Weight per {isBread ? 'loaf' : 'ball'}</FieldLabel>
+                  <FieldLabel>{isBread ? t('quantity.weightPerLoaf') : t('quantity.weightPerBall')}</FieldLabel>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
                     <input
                       type="number" min={100} max={1500} step={10}
@@ -606,7 +608,7 @@ export default function Home() {
 
             {/* ─── STEP 4: Oven ────────────────────── */}
             <StepCard
-              num={4} title="Your baking setup"
+              num={4} title={t('steps.4.title')}
               activeStep={activeStep}
               summary={`${OVEN_TYPES[ovenType].emoji} ${OVEN_TYPES[ovenType].name}`}
               onEdit={() => setActiveStep(4)}
@@ -619,7 +621,7 @@ export default function Home() {
 
             {/* ─── STEP 5: Mixer ───────────────────── */}
             <StepCard
-              num={5} title="Your mixing method"
+              num={5} title={t('steps.5.title')}
               activeStep={activeStep}
               summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
               onEdit={() => setActiveStep(5)}
@@ -632,7 +634,7 @@ export default function Home() {
 
             {/* ─── STEP 6: Yeast type ──────────────── */}
             <StepCard
-              num={6} title="What yeast are you using?"
+              num={6} title={t('steps.6.title')}
               activeStep={activeStep}
               summary={`${YEAST_TYPES[yeastType].emoji} ${YEAST_TYPES[yeastType].shortName}`}
               onEdit={() => setActiveStep(6)}
@@ -696,7 +698,7 @@ export default function Home() {
 
             {/* ─── STEP 7: Climate ─────────────────── */}
             <StepCard
-              num={7} title="Your kitchen climate"
+              num={7} title={t('steps.7.title')}
               activeStep={activeStep}
               summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
               onEdit={() => setActiveStep(7)}
@@ -712,7 +714,7 @@ export default function Home() {
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
             <StepCard
-              num={8} title={isBread ? 'When does the bread go in the oven?' : 'When does the pizza go in the oven?'}
+              num={8} title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
               activeStep={activeStep}
               summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
               onEdit={() => setActiveStep(8)}
@@ -743,7 +745,7 @@ export default function Home() {
                 }}>
                   <div>
                     <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
-                      Your recipe is ready 🎯
+                      {t('results.ready')}
                     </div>
                     {styleKey && (
                       <div style={{ fontSize: '.78rem', color: 'rgba(245,240,232,.55)', marginTop: '.2rem', fontFamily: 'var(--font-dm-mono)' }}>
@@ -766,7 +768,7 @@ export default function Home() {
                           transition: 'all .15s',
                         }}
                       >
-                        {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? '✓ Saved!' : saveStatus === 'error' ? 'Save failed' : '💾 Save recipe'}
+                        {saveStatus === 'saving' ? t('results.saving') : saveStatus === 'saved' ? t('results.saved') : saveStatus === 'error' ? t('results.saveFailed') : t('results.saveRecipe')}
                       </button>
                     )}
                     <button
@@ -779,7 +781,7 @@ export default function Home() {
                         fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s',
                       }}
                     >
-                      ↑ Start a new recipe
+                      {t('results.startNew')}
                     </button>
                   </div>
                 </div>
@@ -791,7 +793,7 @@ export default function Home() {
                     borderRadius: '12px', padding: '1.25rem', textAlign: 'center',
                     color: 'var(--terra)', fontSize: '.88rem',
                   }}>
-                    Could not compute recipe — please check your style selection and schedule times.
+                    {t('results.computeError')}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
@@ -826,10 +828,10 @@ export default function Home() {
                           {/* Header */}
                           <div style={{ marginBottom: '1rem' }}>
                             <div style={{ fontWeight: 700, fontSize: '.95rem', color: '#6A5000', marginBottom: '.3rem' }}>
-                              ⚖️ Large batch yeast adjustment
+                              {t('results.largeBatchTitle')}
                             </div>
                             <div style={{ fontSize: '.78rem', color: '#7A6010', lineHeight: 1.55 }}>
-                              Large dough mass retains heat longer — fermentation may be faster than calculated. Fine-tune if needed.
+                              {t('results.largeBatchDesc')}
                             </div>
                           </div>
 
@@ -971,18 +973,18 @@ export default function Home() {
             {/* ─── ADV STEP 1: Bake type ───────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={1} title="What are you crafting today?"
+              num={1} title={t('steps.1.title')}
               activeStep={advancedStep}
               summary={bakeType === 'pizza' ? '🍕 Pizza' : bakeType === 'bread' ? '🍞 Bread' : undefined}
               onEdit={() => setAdvancedStep(1)}
             >
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 {([
-                  { type: 'pizza' as BakeType, emoji: '🍕', image: '/bake_pizza.png', label: 'Pizza',
-                    desc: 'Neapolitan, New York, Roman, Detroit & Sourdough',
+                  { type: 'pizza' as BakeType, emoji: '🍕', image: '/bake_pizza.png', label: t('bakeType.pizza.label'),
+                    desc: t('bakeType.pizza.desc'),
                     active_bg: '#FFF8F3', active_border: 'var(--terra)' },
-                  { type: 'bread' as BakeType, emoji: '🍞', image: '/bake_bread.png', label: 'Bread',
-                    desc: 'Pain au levain, Pain de campagne, Baguette & more',
+                  { type: 'bread' as BakeType, emoji: '🍞', image: '/bake_bread.png', label: t('bakeType.bread.label'),
+                    desc: t('bakeType.bread.desc'),
                     active_bg: 'var(--bread-l)', active_border: 'var(--bread)' },
                 ]).map(opt => (
                   <div
@@ -1010,7 +1012,7 @@ export default function Home() {
             {/* ─── ADV STEP 2: Style picker ────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={2} title="Choose your dough style"
+              num={2} title={t('steps.2.title')}
               activeStep={advancedStep}
               summary={styleKey ? `${ALL_STYLES[styleKey].emoji} ${ALL_STYLES[styleKey].name}` : undefined}
               onEdit={() => setAdvancedStep(2)}
@@ -1027,7 +1029,7 @@ export default function Home() {
             {/* ─── ADV STEP 3: Flour ───────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={3} title="Your flour"
+              num={3} title={t('steps.flour.title')}
               activeStep={advancedStep}
               summary={(() => {
                 const map: Record<FlourCategory, string> = {
@@ -1049,7 +1051,7 @@ export default function Home() {
             {/* ─── ADV STEP 4: Quantity ────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={4} title="How many and how big?"
+              num={4} title={t('steps.3.title')}
               activeStep={advancedStep}
               summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
               onEdit={() => setAdvancedStep(4)}
@@ -1060,7 +1062,7 @@ export default function Home() {
                 padding: '1rem 1.15rem',
               }}>
                 <div>
-                  <FieldLabel>Quantity</FieldLabel>
+                  <FieldLabel>{t('common.quantity')}</FieldLabel>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
                     <button
                       onClick={() => setNumItems(n => Math.max(1, n - 1))}
@@ -1080,7 +1082,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div>
-                  <FieldLabel>Weight per {isBread ? 'loaf' : 'ball'}</FieldLabel>
+                  <FieldLabel>{isBread ? t('quantity.weightPerLoaf') : t('quantity.weightPerBall')}</FieldLabel>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
                     <input
                       type="number" min={100} max={1500} step={10}
@@ -1104,7 +1106,7 @@ export default function Home() {
             {/* ─── ADV STEP 5: Oven ────────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={5} title="Your baking setup"
+              num={5} title={t('steps.4.title')}
               activeStep={advancedStep}
               summary={`${OVEN_TYPES[ovenType].emoji} ${OVEN_TYPES[ovenType].name}`}
               onEdit={() => setAdvancedStep(5)}
@@ -1118,7 +1120,7 @@ export default function Home() {
             {/* ─── ADV STEP 6: Mixer ───────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={6} title="Your mixing method"
+              num={6} title={t('steps.5.title')}
               activeStep={advancedStep}
               summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
               onEdit={() => setAdvancedStep(6)}
@@ -1132,7 +1134,7 @@ export default function Home() {
             {/* ─── ADV STEP 7: Yeast ───────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={7} title="What yeast are you using?"
+              num={7} title={t('steps.6.title')}
               activeStep={advancedStep}
               summary={`${YEAST_TYPES[yeastType].emoji} ${YEAST_TYPES[yeastType].shortName}`}
               onEdit={() => setAdvancedStep(7)}
@@ -1193,7 +1195,7 @@ export default function Home() {
             {/* ─── ADV STEP 8: Climate ─────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={8} title="Your kitchen climate"
+              num={8} title={t('steps.7.title')}
               activeStep={advancedStep}
               summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
               onEdit={() => setAdvancedStep(8)}
@@ -1211,7 +1213,7 @@ export default function Home() {
             {/* ─── ADV STEP 9: Scheduler ───────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={9} title={isBread ? 'When does the bread go in the oven?' : 'When does the pizza go in the oven?'}
+              num={9} title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
               activeStep={advancedStep}
               summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
               onEdit={() => setAdvancedStep(9)}
@@ -1358,7 +1360,7 @@ export default function Home() {
                 }}>
                   <div>
                     <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
-                      Your recipe is ready 🎯
+                      {t('results.ready')}
                     </div>
                     {styleKey && (
                       <div style={{ fontSize: '.78rem', color: 'rgba(245,240,232,.55)', marginTop: '.2rem', fontFamily: 'var(--font-dm-mono)' }}>
@@ -1384,7 +1386,7 @@ export default function Home() {
                           transition: 'all .15s',
                         }}
                       >
-                        {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? '✓ Saved!' : saveStatus === 'error' ? 'Save failed' : '💾 Save recipe'}
+                        {saveStatus === 'saving' ? t('results.saving') : saveStatus === 'saved' ? t('results.saved') : saveStatus === 'error' ? t('results.saveFailed') : t('results.saveRecipe')}
                       </button>
                     )}
                     <button
@@ -1392,14 +1394,14 @@ export default function Home() {
                       className="btn"
                       style={{ padding: '.5rem 1rem', borderRadius: '8px', border: '1.5px solid rgba(245,240,232,.2)', background: 'transparent', color: 'rgba(245,240,232,.7)', fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s' }}
                     >
-                      ↑ Start a new recipe
+                      {t('results.startNew')}
                     </button>
                   </div>
                 </div>
 
                 {!advancedRecipe ? (
                   <div style={{ background: '#FEF4EF', border: '1.5px solid #F5C4B0', borderRadius: '12px', padding: '1.25rem', textAlign: 'center', color: 'var(--terra)', fontSize: '.88rem' }}>
-                    Could not compute recipe — please check your style selection and schedule times.
+                    {t('results.computeError')}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
