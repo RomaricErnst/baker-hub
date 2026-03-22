@@ -12,6 +12,7 @@ interface RecipeOutputProps {
   kitchenTemp: number;
   fermEquivHours: number;
   totalColdHours?: number;
+  mode?: 'guided' | 'advanced';
 }
 
 // ── Helpers ──────────────────────────────────
@@ -36,7 +37,7 @@ const D = {
 
 // ── Ingredient row ────────────────────────────
 function IngRow({
-  label, sub, grams, pct, highlight = false, range = false,
+  label, sub, grams, pct, highlight = false, range = false, advancedPct,
 }: {
   label: string;
   sub?: React.ReactNode;
@@ -44,6 +45,7 @@ function IngRow({
   pct: string;
   highlight?: boolean;
   range?: boolean;
+  advancedPct?: string;
 }) {
   return (
     <div style={{
@@ -85,6 +87,11 @@ function IngRow({
         whiteSpace: 'nowrap',
       }}>
         {grams}
+        {advancedPct && (
+          <span style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginLeft: '.35rem' }}>
+            · {advancedPct}
+          </span>
+        )}
       </div>
 
       <div style={{
@@ -180,7 +187,7 @@ function computeWaterInfo(
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0,
+  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'guided',
 }: RecipeOutputProps) {
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
 
@@ -203,11 +210,14 @@ export default function RecipeOutput({
   const isSpiral = mixerType === 'spiral';
   const waterInfo = computeWaterInfo(waterTemp, water, kitchenTemp, isSpiral);
 
+  // Water temp colour: terra when ice-cold, gold when cool, plain when normal
+  const waterTempColor = waterTemp < 10 ? 'var(--terra)' : waterTemp <= 18 ? 'var(--gold)' : undefined;
+
   // Water row sub-line: bold temperature as a precision signal
   const waterSubNode: React.ReactNode = (
     <>
       {'💧 Use at '}
-      <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{waterInfo.targetTemp}°C</span>
+      <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', fontSize: '.9rem', color: waterTempColor }}>{waterInfo.targetTemp}°C</span>
       {` · ${waterInfo.tempGuidance}`}
     </>
   );
@@ -323,9 +333,9 @@ export default function RecipeOutput({
         </div>
 
         {/* Rows */}
-        <IngRow label="Flour" grams={gStr(flour)} pct="100%" highlight />
-        <IngRow label="Water" grams={gStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} />
-        <IngRow label="Salt"  grams={gStr(salt)}  pct={pctStr(saltPct)} />
+        <IngRow label="Flour" grams={gStr(flour)} pct="100%" highlight advancedPct={mode === 'advanced' ? '100%' : undefined} />
+        <IngRow label="Water" grams={gStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} advancedPct={mode === 'advanced' ? pctStr(waterPct) : undefined} />
+        <IngRow label="Salt"  grams={gStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'advanced' ? pctStr(saltPct) : undefined} />
 
         {/* Yeast — commercial */}
         {yeastInfo && (
@@ -334,6 +344,7 @@ export default function RecipeOutput({
             sub={yeastSub}
             grams={gStr(yeastInfo.convertedGrams)}
             pct={pctStr(yeastInfo.convertedPct)}
+            advancedPct={mode === 'advanced' ? pctStr(yeastInfo.convertedPct) : undefined}
           />
         )}
 
@@ -379,12 +390,12 @@ export default function RecipeOutput({
 
         {/* Optional: oil */}
         {oil > 0 && (
-          <IngRow label="Olive Oil" grams={gStr(oil)} pct={pctStr(oilPct)} />
+          <IngRow label="Olive Oil" grams={gStr(oil)} pct={pctStr(oilPct)} advancedPct={mode === 'advanced' ? pctStr(oilPct) : undefined} />
         )}
 
         {/* Optional: sugar */}
         {sugar > 0 && (
-          <IngRow label="Sugar" grams={gStr(sugar)} pct={pctStr(sugarPct)} />
+          <IngRow label="Sugar" grams={gStr(sugar)} pct={pctStr(sugarPct)} advancedPct={mode === 'advanced' ? pctStr(sugarPct) : undefined} />
         )}
 
         {/* Total row */}
@@ -442,21 +453,25 @@ export default function RecipeOutput({
       })()}
 
       {/* ── Ice water protocol ───────────────────── */}
-      {waterInfo.needsIce && (
+      {waterTemp < 15 && (
         <div style={{
-          background: '#F0F6FB',
-          border: '1.5px solid #B8D4E8',
-          borderRadius: '12px',
-          padding: '.85rem 1rem',
+          background: '#EEF6FF',
+          border: '1.5px solid #B0CDE8',
+          borderRadius: '10px',
+          padding: '.75rem 1rem',
         }}>
-          <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.3rem' }}>
+          <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.4rem' }}>
             <span style={{ fontSize: '1rem' }}>🧊</span>
-            <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#1E4A6A' }}>
-              Ice water protocol
-            </span>
+            <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#1E4A6A' }}>Ice water protocol</span>
           </div>
-          <div style={{ fontSize: '.78rem', color: '#2A5070', lineHeight: 1.6, paddingLeft: '1.5rem', fontFamily: 'var(--font-dm-mono)' }}>
-            {waterInfo.iceGuidance}
+          <div style={{ fontSize: '.78rem', color: '#2A5070', lineHeight: 1.6 }}>
+            {'Your dough needs very cold water. Mix '}
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{Math.round(water * 0.3)}g</span>
+            {' of ice with '}
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{water - Math.round(water * 0.3)}g</span>
+            {' of cold water. Remove ice just before adding to flour — you want water at '}
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{waterInfo.targetTemp}°C</span>
+            {'.'}
           </div>
         </div>
       )}

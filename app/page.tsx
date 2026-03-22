@@ -332,8 +332,8 @@ export default function Home() {
       {/* ── Main content ───────────────────── */}
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
 
-        {/* ════════════ GUIDED / ADVANCED ════════════ */}
-        {(tab === 'guided' || tab === 'advanced') && (
+        {/* ════════════ GUIDED ════════════ */}
+        {tab === 'guided' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
             {/* ── Hero intro (only before step 1 done) ── */}
