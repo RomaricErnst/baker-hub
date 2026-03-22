@@ -311,6 +311,7 @@ export default function ClimatePicker({
             fontSize: '.76rem',
             color: '#7A5A10',
             marginTop: '.75rem',
+            lineHeight: 1.5,
           }}>
             🌡️ In a warm climate, afternoon temps can push above 28°C. If your kitchen heats up during the day, consider entering your expected peak temperature instead.
           </div>
