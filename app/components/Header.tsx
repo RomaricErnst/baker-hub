@@ -1,23 +1,12 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useLocale } from 'next-intl';
 import AuthButton from './AuthButton';
 
-function getLocale(): string {
-  if (typeof document === 'undefined') return 'en';
-  const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/);
-  return match ? match[1] : 'en';
-}
-
 export default function Header() {
-  const [locale, setLocale] = useState('en');
-
-  useEffect(() => {
-    setLocale(getLocale());
-  }, []);
+  const locale = useLocale();
 
   function switchLocale(l: string) {
     document.cookie = `NEXT_LOCALE=${l};path=/;max-age=31536000`;
-    setLocale(l);
     window.location.reload();
   }
 

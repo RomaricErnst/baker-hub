@@ -1,26 +1,26 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
-import Header from './components/Header';
-import StylePicker from './components/StylePicker';
-import OvenPicker from './components/OvenPicker';
-import MixerPicker from './components/MixerPicker';
-import SchedulePicker from './components/SchedulePicker';
-import ClimatePicker from './components/ClimatePicker';
-import RecipeOutput from './components/RecipeOutput';
-import Timeline from './components/Timeline';
-import YeastHelper from './components/YeastHelper';
-import FlourPicker, { type FlourCategory } from './components/FlourPicker';
-import { createClient } from './lib/supabase/client';
-import { saveRecipe } from './lib/supabase/saveRecipe';
+import Header from '../components/Header';
+import StylePicker from '../components/StylePicker';
+import OvenPicker from '../components/OvenPicker';
+import MixerPicker from '../components/MixerPicker';
+import SchedulePicker from '../components/SchedulePicker';
+import ClimatePicker from '../components/ClimatePicker';
+import RecipeOutput from '../components/RecipeOutput';
+import Timeline from '../components/Timeline';
+import YeastHelper from '../components/YeastHelper';
+import FlourPicker, { type FlourCategory } from '../components/FlourPicker';
+import { createClient } from '../lib/supabase/client';
+import { saveRecipe } from '../lib/supabase/saveRecipe';
 import {
   ALL_STYLES, OVEN_TYPES, MIXER_TYPES, YEAST_TYPES,
   type BakeType, type StyleKey, type OvenType, type MixerType, type YeastType,
-} from './data';
+} from '../data';
 import {
   buildSchedule, calculateRecipe, formatTime,
   type AvailabilityBlock,
-} from './utils';
+} from '../utils';
 
 // ── Constants ────────────────────────────────
 const HUMIDITY_LABEL: Record<string, string> = {
