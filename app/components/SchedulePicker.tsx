@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
 
 interface SchedulePickerProps {
@@ -109,7 +110,7 @@ function pushToReasonableHour(d: Date): Date {
 function applyBlockerOverlap(
   start: Date,
   activeBlocks: AvailabilityBlock[],
-): { resolvedStart: Date; note: string | null } {
+): { resolvedStart: Date; moved: boolean; resolvedDate: Date } {
   let resolved = new Date(start);
   let moved = false;
   let safety = 0;
@@ -127,7 +128,8 @@ function applyBlockerOverlap(
   }
   return {
     resolvedStart: moved ? resolved : start,
-    note: moved ? `Start moved to ${formatDayShort(resolved)} to avoid your unavailability block.` : null,
+    moved,
+    resolvedDate: resolved,
   };
 }
 
@@ -282,6 +284,8 @@ const LABEL_STYLE: React.CSSProperties = {
 
 // ── Component ─────────────────────────────────
 export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, onConfirm, bakeType = 'pizza' }: SchedulePickerProps) {
+  const t = useTranslations('scheduler');
+  const tCommon = useTranslations('common');
   const alreadySet = eatTime !== null && eatTime > new Date();
   // Skip phase 1 if a future bake time is already set (return-to-edit case)
   const [phase, setPhase] = useState<PickerPhase>(() => alreadySet ? 'start_confirm' : 'bake_time');
@@ -382,9 +386,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // Apply blocker overlap whenever blocks change
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
-    const { resolvedStart, note } = applyBlockerOverlap(pendingStart, newBlocks);
+    const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(pendingStart, newBlocks);
     if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
-    setBlockerNote(note);
+    setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
     onChange(resolvedStart, pendingEatTime, newBlocks);
   }
 
@@ -442,12 +446,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             fontWeight: 700, fontSize: '.95rem', color: 'var(--char)',
             marginBottom: '.25rem',
           }}>
-            {bakeType === 'bread' ? 'When does the bread go in the oven?' : 'When does the pizza go in the oven?'}
+            {bakeType === 'bread' ? t('bakeTimeLabelBread') : t('bakeTimeLabelPizza')}
           </div>
           <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5 }}>
-            {bakeType === 'bread'
-              ? "We\u2019ll build your fermentation schedule around your availability."
-              : "We\u2019ll recommend the best window to start your dough."}
+            {t('bakeTimeSub')}
           </div>
         </div>
         <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1rem' }}>
@@ -487,7 +489,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             cursor: eatTimeSet ? 'pointer' : 'default',
           }}
         >
-          Plan my bake →
+          {t('planMyBake')}
         </button>
       </div>
     );
@@ -506,16 +508,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   if (scenario === 'plenty') {
     if (isPreferredMode) {
-      scenarioMain = `Aim to start between ${formatDayHour(rangeEarly)} and ${formatDayHour(rangeLatest)}.`;
-      scenarioSecondary = 'Starting a few hours later is still great — just a shorter cold rest.';
+      scenarioMain = t('scenario.plentyPreferred', { start: formatDayHour(rangeEarly), end: formatDayHour(rangeLatest) });
+      scenarioSecondary = t('scenario.plentyPreferredSub');
     } else {
-      scenarioMain = `Best to start around ${formatDayHour(suggestedStart)}.`;
-      scenarioSecondary = `Anywhere from ${formatDayHour(rangeEarly)} to ${formatDayHour(rangeLatest)} gives good results.`;
+      scenarioMain = t('scenario.plenty', { start: formatDayHour(suggestedStart) });
+      scenarioSecondary = t('scenario.plentySub', { start: formatDayHour(rangeEarly), end: formatDayHour(rangeLatest) });
     }
   } else if (scenario === 'tight') {
-    scenarioMain = `Tight window — start as soon as possible.`;
+    scenarioMain = t('scenario.tight');
   } else {
-    scenarioMain = `Very little time — start now for the best you can get.`;
+    scenarioMain = t('scenario.tooShort');
   }
 
   const startInvalid = startComputed && pendingStart >= pendingEatTime;
@@ -532,7 +534,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         borderRadius: '10px', marginBottom: '1rem',
       }}>
         <span style={{ fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}>
-          Bake time
+          {t('bakeTime')}
         </span>
         <span style={{ flex: 1, fontSize: '.82rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
           {formatDayShort(pendingEatTime)}
@@ -547,7 +549,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             textDecoration: 'underline', textUnderlineOffset: '2px',
           }}
         >
-          Edit
+          {tCommon('edit')}
         </button>
       </div>
 
@@ -572,7 +574,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       {/* Start time adjuster — ±1h stepper */}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '0' }}>
-        <label style={LABEL_STYLE}>Start mixing</label>
+        <label style={LABEL_STYLE}>{t('startMixing')}</label>
         <div style={{
           display: 'flex', alignItems: 'center',
           border: `2px solid ${startInvalid ? 'var(--terra)' : 'var(--border)'}`,
@@ -600,7 +602,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             color: startComputed ? 'var(--char)' : 'var(--smoke)',
             fontWeight: startComputed ? 700 : undefined,
           }}>
-            {startComputed ? formatDayShort(pendingStart) : 'Set by plan above'}
+            {startComputed ? formatDayShort(pendingStart) : t('setByPlan')}
           </div>
           <button
             onClick={() => adjustStart(1)}
@@ -622,7 +624,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Date+hour picker for jumping to a different day */}
       {startComputed && (
         <div style={{ marginTop: '.5rem' }}>
-          <label style={LABEL_STYLE}>Or pick a different day →</label>
+          <label style={LABEL_STYLE}>{t('orPickDay')}</label>
           <div style={{ display: 'flex', gap: '.5rem' }}>
             <input
               type="date"
@@ -661,8 +663,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           lineHeight: 1.5,
         }}>
           <div style={{ marginBottom: '.5rem' }}>
-            ⏰ Your schedule cuts into bulk fermentation by {bulkConflict.missingMin} min.{' '}
-            Starting {bulkConflict.suggestEarlierByMin} min earlier gives you a full window — or continue with a shorter bulk.
+            ⏰ {t('conflict.message', { minutes: bulkConflict.missingMin })}
           </div>
           <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
             <button
@@ -677,7 +678,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 fontFamily: 'var(--font-dm-sans)',
               }}
             >
-              Start {bulkConflict.suggestEarlierByMin} min earlier
+              {t('conflict.startEarlier', { minutes: bulkConflict.suggestEarlierByMin })}
             </button>
             <button
               onClick={() => setDismissedConflict(true)}
@@ -688,7 +689,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
               }}
             >
-              Continue anyway
+              {t('conflict.continueAnyway')}
             </button>
           </div>
         </div>
@@ -701,7 +702,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           borderRadius: '8px', padding: '.5rem .85rem',
           marginBottom: '.75rem', marginTop: '.5rem',
         }}>
-          Start time must be before bake time.
+          {t('startBeforeBake')}
         </div>
       )}
 
@@ -711,7 +712,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           fontFamily: 'var(--font-dm-mono)',
           marginTop: '.45rem', marginBottom: '.15rem',
         }}>
-          {hoursLabel((pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)} total window
+          {t('totalWindow', { hours: hoursLabel((pendingEatTime.getTime() - pendingStart.getTime()) / 3600000) })}
         </div>
       )}
 
@@ -729,10 +730,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       {/* Blocker section */}
       <div style={{ fontSize: '.82rem', color: 'var(--char)', fontWeight: 600, marginBottom: '.3rem' }}>
-        Anything in between to work around?
+        {t('blockers.heading')}
       </div>
       <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.9rem', lineHeight: 1.5 }}>
-        Optional — mark windows when you&apos;re unavailable and we&apos;ll send the dough to the fridge.
+        {t('blockers.sub')}
       </div>
 
       {/* Quick presets — work toggle */}
@@ -743,7 +744,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase',
             letterSpacing: '.06em', marginBottom: '.4rem',
           }}>
-            Quick presets
+            {t('blockers.quickPresets')}
           </div>
           <button
             onClick={toggleWork}
@@ -758,9 +759,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               display: 'inline-flex', alignItems: 'center', gap: '.3rem',
             }}
           >
-            💼 Weekdays
+            {t('blockers.weekdays')}
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
-              · 9am → 6pm
+              {t('blockers.weekdayHours')}
             </span>
             {isWorkActive && <span style={{ opacity: .7 }}>✓</span>}
           </button>
@@ -771,7 +772,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem' }}>
         {nights.length === 0 ? (
           <div style={{ fontSize: '.76rem', color: 'var(--smoke)', fontStyle: 'italic', padding: '.2rem 0' }}>
-            No overnight periods in this schedule.
+            {t('blockers.noOvernights')}
           </div>
         ) : (
           nights.map(night => {
@@ -793,7 +794,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               >
                 🌙 {night.label}
                 <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
-                  · 10pm → 7am
+                  {t('blockers.nightHours')}
                 </span>
                 {active && <span style={{ opacity: .7 }}>✓</span>}
               </button>
@@ -812,7 +813,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             fontFamily: 'var(--font-dm-sans)', transition: 'all .15s',
           }}
         >
-          {showCustom ? '✕ Cancel' : '＋ Custom'}
+          {showCustom ? t('blockers.cancel') : t('blockers.addCustom')}
         </button>
       </div>
 
@@ -824,12 +825,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           marginBottom: '.8rem',
         }}>
           <div style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.75rem' }}>
-            Custom unavailability block
+            {t('blockers.customTitle')}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
             <input
               type="text"
-              placeholder="Label — e.g. Weekend away"
+              placeholder={t('blockers.customLabelPlaceholder')}
               value={customLabel}
               onChange={e => setCustomLabel(e.target.value)}
               style={{
@@ -842,7 +843,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem' }}>
               <div>
                 <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
-                  From
+                  {t('blockers.from')}
                 </div>
                 <input
                   type="datetime-local"
@@ -858,7 +859,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               </div>
               <div>
                 <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
-                  To
+                  {t('blockers.to')}
                 </div>
                 <input
                   type="datetime-local"
@@ -886,7 +887,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 transition: 'all .15s',
               }}
             >
-              Add block
+              {t('blockers.addBlock')}
             </button>
           </div>
         </div>
@@ -957,7 +958,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           cursor: (startInvalid || !startComputed) ? 'default' : 'pointer',
         }}
       >
-        Confirm start →
+        {t('confirmStart')}
       </button>
     </div>
   );
