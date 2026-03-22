@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
+import type { User } from '@supabase/supabase-js';
 import Header from './components/Header';
 import StylePicker from './components/StylePicker';
 import OvenPicker from './components/OvenPicker';
@@ -10,6 +11,8 @@ import RecipeOutput from './components/RecipeOutput';
 import Timeline from './components/Timeline';
 import YeastHelper from './components/YeastHelper';
 import FlourPicker, { type FlourCategory } from './components/FlourPicker';
+import { createClient } from './lib/supabase/client';
+import { saveRecipe } from './lib/supabase/saveRecipe';
 import {
   ALL_STYLES, OVEN_TYPES, MIXER_TYPES, YEAST_TYPES,
   type BakeType, type StyleKey, type OvenType, type MixerType, type YeastType,
@@ -197,11 +200,25 @@ export default function Home() {
   // BakeType card hover state
   const [hoveredBakeType, setHoveredBakeType] = useState<BakeType | null>(null);
 
+  // Auth
+  const [user, setUser] = useState<User | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
   const resultsRef = useRef<HTMLDivElement>(null);
 
   // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, []);
+
+  // Auth state
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // Scroll to results when they appear
@@ -337,6 +354,36 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  async function handleSaveRecipe(mode: 'guided' | 'advanced') {
+    if (!styleKey || !schedule) return;
+    const activeRecipe = mode === 'advanced' ? (advancedDisplayRecipe ?? advancedRecipe) : (displayRecipe ?? recipe);
+    if (!activeRecipe) return;
+    setSaveStatus('saving');
+    const result = await saveRecipe({
+      styleKey,
+      bakeType: bakeType ?? 'pizza',
+      numItems,
+      itemWeight,
+      ovenType,
+      mixerType,
+      yeastType,
+      kitchenTemp,
+      humidity,
+      fridgeTemp,
+      startTime,
+      eatTime,
+      flour: activeRecipe.flour,
+      water: activeRecipe.water,
+      salt: activeRecipe.salt,
+      yeastGrams: activeRecipe.yeast?.convertedGrams ?? null,
+      hydration: activeRecipe.hydration,
+      totalColdHours: schedule.totalColdHours,
+      totalRTHours: schedule.totalRTHours,
+    });
+    setSaveStatus(result.success ? 'saved' : 'error');
+    if (result.success) setTimeout(() => setSaveStatus('idle'), 3000);
+  }
+
   // ── Styles ────────────────────────────────
   const isBread = bakeType === 'bread';
   const accentColor = isBread ? 'var(--bread)' : 'var(--terra)';
@@ -413,10 +460,10 @@ export default function Home() {
             >
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 {([
-                  { type: 'pizza' as BakeType, emoji: '🍕', label: 'Pizza',
+                  { type: 'pizza' as BakeType, emoji: '🍕', image: '/bake_pizza.png', label: 'Pizza',
                     desc: 'Neapolitan, New York, Roman, Detroit & Sourdough',
                     active_bg: '#FFF8F3', active_border: 'var(--terra)' },
-                  { type: 'bread' as BakeType, emoji: '🍞', label: 'Bread',
+                  { type: 'bread' as BakeType, emoji: '🍞', image: '/bake_bread.png', label: 'Bread',
                     desc: 'Pain au levain, Pain de campagne, Baguette & more',
                     active_bg: 'var(--bread-l)', active_border: 'var(--bread)' },
                 ]).map(opt => (
@@ -439,7 +486,7 @@ export default function Home() {
                       transition: 'all .2s',
                     }}
                   >
-                    <div style={{ fontSize: '3rem', marginBottom: '.6rem' }}>{opt.emoji}</div>
+                    <img src={opt.image} alt={opt.label} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '12px', marginBottom: '.75rem' }} />
                     <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '.3rem' }}>{opt.label}</div>
                     <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.5 }}>{opt.desc}</div>
                   </div>
@@ -590,27 +637,39 @@ export default function Home() {
               summary={`${YEAST_TYPES[yeastType].emoji} ${YEAST_TYPES[yeastType].shortName}`}
               onEdit={() => setActiveStep(6)}
             >
-              <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                {(Object.keys(YEAST_TYPES) as YeastType[]).map(yt => {
-                  const active = yeastType === yt;
-                  return (
-                    <button
-                      key={yt}
-                      onClick={() => { setYeastType(yt); advance(6); }}
-                      className="btn"
-                      style={{
-                        padding: '.38rem .85rem', borderRadius: '20px',
-                        border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                        background: active ? '#FEF4EF' : 'var(--warm)',
-                        color: active ? 'var(--terra)' : 'var(--smoke)',
-                        fontSize: '.78rem', fontWeight: active ? 500 : 400,
-                        cursor: 'pointer', transition: 'all .15s',
-                      }}
-                    >
-                      {YEAST_TYPES[yt].emoji} {YEAST_TYPES[yt].name}
-                    </button>
-                  );
-                })}
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.65rem', marginBottom: '.65rem' }}>
+                  {(Object.entries(YEAST_TYPES) as [YeastType, typeof YEAST_TYPES[YeastType]][]).map(([yt, y]) => {
+                    const active = yeastType === yt;
+                    const yImg = (y as { image?: string }).image;
+                    return (
+                      <div
+                        key={yt}
+                        onClick={() => { setYeastType(yt); advance(6); }}
+                        style={{
+                          border: `2px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
+                          borderRadius: '14px', padding: '.65rem .75rem',
+                          cursor: 'pointer', background: active ? '#FEF4EF' : 'var(--warm)',
+                          transition: 'all .15s', textAlign: 'center',
+                        }}
+                      >
+                        {yImg ? (
+                          <img src={yImg} alt={y.name}
+                            style={{ width: '100%', height: '72px', objectFit: 'cover', borderRadius: '8px', marginBottom: '.4rem' }} />
+                        ) : (
+                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '.4rem' }}>{y.emoji}</span>
+                        )}
+                        <div style={{ fontSize: '.78rem', fontWeight: active ? 600 : 500, color: active ? 'var(--terra)' : 'var(--char)' }}>
+                          {y.name}
+                        </div>
+                        <div style={{ fontSize: '.68rem', color: 'var(--smoke)', marginTop: '.15rem' }}>
+                          {y.shortName}
+                        </div>
+                        {active && <div style={{ color: 'var(--terra)', fontSize: '.75rem', marginTop: '.25rem' }}>✓</div>}
+                      </div>
+                    );
+                  })}
+                </div>
                 <button
                   onClick={() => setShowYeastHelper(true)}
                   className="btn"
@@ -682,18 +741,37 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={startOver}
-                    className="btn"
-                    style={{
-                      padding: '.5rem 1rem', borderRadius: '8px',
-                      border: '1.5px solid rgba(245,240,232,.2)',
-                      background: 'transparent', color: 'rgba(245,240,232,.7)',
-                      fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s',
-                    }}
-                  >
-                    ↑ Start a new recipe
-                  </button>
+                  <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+                    {user && (
+                      <button
+                        onClick={() => handleSaveRecipe('guided')}
+                        disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+                        className="btn"
+                        style={{
+                          padding: '.5rem 1rem', borderRadius: '8px',
+                          border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'rgba(212,168,83,0.4)'}`,
+                          background: saveStatus === 'saved' ? 'rgba(107,122,90,0.15)' : 'transparent',
+                          color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--gold)',
+                          fontSize: '.8rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
+                          transition: 'all .15s',
+                        }}
+                      >
+                        {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? '✓ Saved!' : saveStatus === 'error' ? 'Save failed' : '💾 Save recipe'}
+                      </button>
+                    )}
+                    <button
+                      onClick={startOver}
+                      className="btn"
+                      style={{
+                        padding: '.5rem 1rem', borderRadius: '8px',
+                        border: '1.5px solid rgba(245,240,232,.2)',
+                        background: 'transparent', color: 'rgba(245,240,232,.7)',
+                        fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s',
+                      }}
+                    >
+                      ↑ Start a new recipe
+                    </button>
+                  </div>
                 </div>
 
                 {/* Recipe null-guard */}
@@ -890,10 +968,10 @@ export default function Home() {
             >
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 {([
-                  { type: 'pizza' as BakeType, emoji: '🍕', label: 'Pizza',
+                  { type: 'pizza' as BakeType, emoji: '🍕', image: '/bake_pizza.png', label: 'Pizza',
                     desc: 'Neapolitan, New York, Roman, Detroit & Sourdough',
                     active_bg: '#FFF8F3', active_border: 'var(--terra)' },
-                  { type: 'bread' as BakeType, emoji: '🍞', label: 'Bread',
+                  { type: 'bread' as BakeType, emoji: '🍞', image: '/bake_bread.png', label: 'Bread',
                     desc: 'Pain au levain, Pain de campagne, Baguette & more',
                     active_bg: 'var(--bread-l)', active_border: 'var(--bread)' },
                 ]).map(opt => (
@@ -911,7 +989,7 @@ export default function Home() {
                       transition: 'all .2s',
                     }}
                   >
-                    <div style={{ fontSize: '3rem', marginBottom: '.6rem' }}>{opt.emoji}</div>
+                    <img src={opt.image} alt={opt.label} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '12px', marginBottom: '.75rem' }} />
                     <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '.3rem' }}>{opt.label}</div>
                     <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.5 }}>{opt.desc}</div>
                   </div>
@@ -1049,27 +1127,39 @@ export default function Home() {
               summary={`${YEAST_TYPES[yeastType].emoji} ${YEAST_TYPES[yeastType].shortName}`}
               onEdit={() => setAdvancedStep(7)}
             >
-              <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                {(Object.keys(YEAST_TYPES) as YeastType[]).map(yt => {
-                  const active = yeastType === yt;
-                  return (
-                    <button
-                      key={yt}
-                      onClick={() => { setYeastType(yt); advanceAdv(7); }}
-                      className="btn"
-                      style={{
-                        padding: '.38rem .85rem', borderRadius: '20px',
-                        border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                        background: active ? '#FEF4EF' : 'var(--warm)',
-                        color: active ? 'var(--terra)' : 'var(--smoke)',
-                        fontSize: '.78rem', fontWeight: active ? 500 : 400,
-                        cursor: 'pointer', transition: 'all .15s',
-                      }}
-                    >
-                      {YEAST_TYPES[yt].emoji} {YEAST_TYPES[yt].name}
-                    </button>
-                  );
-                })}
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.65rem', marginBottom: '.65rem' }}>
+                  {(Object.entries(YEAST_TYPES) as [YeastType, typeof YEAST_TYPES[YeastType]][]).map(([yt, y]) => {
+                    const active = yeastType === yt;
+                    const yImg = (y as { image?: string }).image;
+                    return (
+                      <div
+                        key={yt}
+                        onClick={() => { setYeastType(yt); advanceAdv(7); }}
+                        style={{
+                          border: `2px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
+                          borderRadius: '14px', padding: '.65rem .75rem',
+                          cursor: 'pointer', background: active ? '#FEF4EF' : 'var(--warm)',
+                          transition: 'all .15s', textAlign: 'center',
+                        }}
+                      >
+                        {yImg ? (
+                          <img src={yImg} alt={y.name}
+                            style={{ width: '100%', height: '72px', objectFit: 'cover', borderRadius: '8px', marginBottom: '.4rem' }} />
+                        ) : (
+                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '.4rem' }}>{y.emoji}</span>
+                        )}
+                        <div style={{ fontSize: '.78rem', fontWeight: active ? 600 : 500, color: active ? 'var(--terra)' : 'var(--char)' }}>
+                          {y.name}
+                        </div>
+                        <div style={{ fontSize: '.68rem', color: 'var(--smoke)', marginTop: '.15rem' }}>
+                          {y.shortName}
+                        </div>
+                        {active && <div style={{ color: 'var(--terra)', fontSize: '.75rem', marginTop: '.25rem' }}>✓</div>}
+                      </div>
+                    );
+                  })}
+                </div>
                 <button
                   onClick={() => setShowYeastHelper(true)}
                   className="btn"
@@ -1259,13 +1349,32 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={startOver}
-                    className="btn"
-                    style={{ padding: '.5rem 1rem', borderRadius: '8px', border: '1.5px solid rgba(245,240,232,.2)', background: 'transparent', color: 'rgba(245,240,232,.7)', fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s' }}
-                  >
-                    ↑ Start a new recipe
-                  </button>
+                  <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+                    {user && (
+                      <button
+                        onClick={() => handleSaveRecipe('advanced')}
+                        disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+                        className="btn"
+                        style={{
+                          padding: '.5rem 1rem', borderRadius: '8px',
+                          border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'rgba(212,168,83,0.4)'}`,
+                          background: saveStatus === 'saved' ? 'rgba(107,122,90,0.15)' : 'transparent',
+                          color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--gold)',
+                          fontSize: '.8rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
+                          transition: 'all .15s',
+                        }}
+                      >
+                        {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? '✓ Saved!' : saveStatus === 'error' ? 'Save failed' : '💾 Save recipe'}
+                      </button>
+                    )}
+                    <button
+                      onClick={startOver}
+                      className="btn"
+                      style={{ padding: '.5rem 1rem', borderRadius: '8px', border: '1.5px solid rgba(245,240,232,.2)', background: 'transparent', color: 'rgba(245,240,232,.7)', fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s' }}
+                    >
+                      ↑ Start a new recipe
+                    </button>
+                  </div>
                 </div>
 
                 {!advancedRecipe ? (
