@@ -15,7 +15,7 @@ npm run build      # full build — must pass before every commit
 | Language | TypeScript strict |
 | Styling | Inline `style` objects only — no Tailwind, no CSS modules |
 | Fonts | DM Sans, DM Mono, Playfair Display (via `next/font`) |
-| Backend | Supabase — account created, not yet wired |
+| Backend | Supabase — wired (auth + DB) |
 | Deploy | Vercel — auto-deploys on git push to main |
 
 ## Design Tokens (CSS vars in `app/globals.css`)
@@ -108,16 +108,33 @@ Two-phase: coldRetard1Start/End, coldRetard2Start/End, divideBallTime, rtWarmupS
 - Blocker presets: Weekdays 9am–6pm, nights 10pm–7am, custom
 - bulkConflict banner when blocker cuts >15min into bulk ferm
 
-## i18n Status
-next-intl removed — caused Vercel build failures. messages/en.json and fr.json exist. Re-add in dedicated session with proper App Router setup.
+## Supabase & Auth
+- Project URL: https://mguwsdonfsyioyelseuf.supabase.co
+- Anon key: stored in .env.local as NEXT_PUBLIC_SUPABASE_ANON_KEY
+- Auth provider: Google OAuth configured in Supabase dashboard
+- Google Client ID: 1094526045258-8k41mv9dap6dd5goqu3p2kfetlnimqn6.apps.googleusercontent.com
+- Callback URL: https://www.bakerhub.app/auth/callback
+- Local callback: http://localhost:3000/auth/callback
+- Client files: app/lib/supabase/client.ts (browser) + server.ts (server)
+- Auth callback route: app/auth/callback/route.ts
+- NEVER commit .env.local to git
 
-## Current Priorities (Session 4)
-- Advanced mode minimal for testers:
-  - Baker's percentages (% + grams simultaneously in RecipeOutput)
-  - Flour category picker (4 options)
-  - Yeast transparency panel (done — YeastHelper.tsx)
-- Supabase + auth (Google OAuth)
-- Connect bakerhub.app domain to Vercel
+## i18n Architecture
+- next-intl installed
+- Locales: en (default), fr
+- Strategy: localePrefix 'as-needed' — English has no prefix (/), French uses /fr/
+- Middleware: middleware.ts in project root
+- Request config: app/i18n/request.ts
+- Language toggle: cookie NEXT_LOCALE, set in Header.tsx
+- String migration: Session 6 (replace hardcoded strings with t('key'))
+
+## Current Priorities (Session 5)
+- Supabase + Google OAuth — wired up
+- i18n infrastructure — installed, toggle in header
+- Session 6: French string migration (replace all hardcoded strings with t('key'))
+- Session 6: Save recipe to Supabase
+- Session 7: Baking Mode V1
+- Testers: Friday — French speakers, need French translation before then
 
 ## Session-End Checklist
 - [ ] `npx tsc --noEmit` — zero errors
