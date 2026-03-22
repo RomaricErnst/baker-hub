@@ -117,11 +117,11 @@ function applyBlockerOverlap(
 }
 
 // ── Start suggestion engine ───────────────────
-// Uses Craig's per-stage model:
-//   RT:   IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))
-//   Cold: IDY% = 7.5 / hours^1.313
-// Tropical correction (RT only): 30-32°C → ×1.15, 33-35°C → ×1.25
-// IDY floor 0.05%, ceiling 2.0%
+// Default suggestion = NOW (rounded to nearest hour).
+// Only suggest a later start when baker has more time than the preferred
+// fermentation window — in that case, push start to eatTime − (targetFermH + preheatH)
+// so the full fermentation window is used.
+// Returns a ±2h range around the suggestion; never suggests midnight–7am.
 function computeSuggestion(
   eatTime: Date,
   preheatMin: number,
@@ -130,63 +130,61 @@ function computeSuggestion(
 ) {
   const now = new Date();
   const preheatH = preheatMin / 60;
-  const msUntilBake = eatTime.getTime() - now.getTime();
-  const minFeasibleMs = (2 + preheatH) * 3600000;
+  const totalAvailableH = (eatTime.getTime() - now.getTime()) / 3600000;
+  const minFeasibleH = 2 + preheatH;
 
-  // Look up style defaults
   const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
 
-  // Tropical correction applies only to the RT portion.
-  // Higher temp → faster fermentation → fewer hours needed → divide by factor.
   let tropicalFactor = 1;
   if (kitchenTemp >= 33) tropicalFactor = 1.25;
   else if (kitchenTemp >= 30) tropicalFactor = 1.15;
 
-  const rtH_adjusted   = defaults.rtH / tropicalFactor;
-  const standardFermH  = defaults.coldH + rtH_adjusted;
-
-  // Preferred (longer) fermentation — only for styles with preferredColdH defined.
-  // Baker must have enough time for preferred + preheat + 2h breathing room.
+  const rtH_adjusted  = defaults.rtH / tropicalFactor;
+  const standardFermH = defaults.coldH + rtH_adjusted;
   const preferredColdH = defaults.preferredColdH ?? null;
   const preferredFermH = preferredColdH !== null ? preferredColdH + rtH_adjusted : null;
-  const canUsePreferred = preferredFermH !== null
-    && msUntilBake >= (preferredFermH + preheatH + 2) * 3600000;
 
-  // Best start: preferred if baker has time, otherwise standard
-  const bestFermH = canUsePreferred ? preferredFermH! : standardFermH;
-  let bestStart = new Date(eatTime.getTime() - (bestFermH + preheatH) * 3600000);
-
-  // Alternative start: standard option when in preferred mode, quicker half-time otherwise
-  let altStart = canUsePreferred
-    ? new Date(eatTime.getTime() - (standardFermH + preheatH) * 3600000)
-    : new Date(eatTime.getTime() - (standardFermH * 0.5 + preheatH) * 3600000);
-
-  bestStart = pushToReasonableHour(bestStart);
-  altStart  = pushToReasonableHour(altStart);
-
-  // Scenario is based on the standard window (not preferred) — tight/too_short thresholds unchanged
-  const standardStart = new Date(eatTime.getTime() - (standardFermH + preheatH) * 3600000);
-  const msUntilStandard = standardStart.getTime() - now.getTime();
-
+  // Scenario: too_short → can't make it; tight → just enough for standard; plenty → extra time
   let scenario: Scenario;
-  if (msUntilBake < minFeasibleMs) {
+  if (totalAvailableH < minFeasibleH) {
     scenario = 'too_short';
-  } else if (msUntilStandard < 2 * 3600000) {
+  } else if (totalAvailableH < standardFermH + preheatH + 1) {
     scenario = 'tight';
   } else {
     scenario = 'plenty';
   }
 
-  const suggestedStart =
-    scenario === 'too_short' ? new Date(now)
-    : scenario === 'tight'   ? new Date(Math.max(now.getTime() + 5 * 60000, pushToReasonableHour(standardStart).getTime()))
-    : bestStart;
+  // Suggested start:
+  //   too_short / tight → NOW (start ASAP)
+  //   plenty → push to eatTime − (targetFermH + preheatH) so window is fully used,
+  //            but never earlier than NOW
+  let suggestedStart: Date;
+  let isPreferredMode = false;
+
+  if (scenario !== 'plenty') {
+    suggestedStart = pushToReasonableHour(roundToNearestHour(now));
+  } else {
+    const canUsePreferred = preferredFermH !== null
+      && totalAvailableH >= preferredFermH + preheatH;
+    const targetFermH = canUsePreferred ? preferredFermH! : standardFermH;
+    isPreferredMode = canUsePreferred;
+
+    const rawStart = new Date(eatTime.getTime() - (targetFermH + preheatH) * 3600000);
+    suggestedStart = rawStart > now
+      ? pushToReasonableHour(roundToNearestHour(rawStart))
+      : pushToReasonableHour(roundToNearestHour(now));
+  }
+
+  // ±2h range — early end respects reasonable-hour rule; late end is unconstrained
+  const rangeEarly  = pushToReasonableHour(new Date(suggestedStart.getTime() - 2 * 3600000));
+  const rangeLatest = new Date(suggestedStart.getTime() + 2 * 3600000);
 
   return {
     scenario,
     suggestedStart,
-    alternativeStart: altStart,
-    isPreferredMode: canUsePreferred && scenario === 'plenty',
+    rangeEarly,
+    rangeLatest,
+    isPreferredMode,
     preferredColdH: preferredColdH ?? 0,
     standardColdH: defaults.coldH,
   };
@@ -248,7 +246,7 @@ const INPUT_STYLE: React.CSSProperties = {
   width: '100%',
   padding: '.65rem .85rem',
   border: '2px solid var(--border)',
-  borderRadius: '10px',
+  borderRadius: '8px',
   background: 'var(--warm)',
   color: 'var(--char)',
   fontSize: '.85rem',
@@ -304,7 +302,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Phase transitions ────────────────────────
   function confirmBakeTime() {
-    const s = roundToNearestHour(suggestion.suggestedStart);
+    const s = suggestion.suggestedStart;
     setPendingStart(s);
     onChange(s, pendingEatTime, blocks);
     setStartComputed(true);
@@ -317,12 +315,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   // ── Handlers ─────────────────────────────────
-  function handleStartChange(val: string) {
-    const d = new Date(val);
-    if (!isNaN(d.getTime())) {
-      setPendingStart(d);
-      onChange(d, pendingEatTime, blocks);
-    }
+
+  function adjustStart(deltaH: number) {
+    const d = new Date(pendingStart.getTime() + deltaH * 3600000);
+    setPendingStart(d);
+    onChange(d, pendingEatTime, blocks);
   }
 
   // Apply blocker overlap whenever blocks change
@@ -422,7 +419,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   // ── PHASE 2: Start suggestion + blockers + confirm (merged) ──
-  const { scenario, suggestedStart, alternativeStart, isPreferredMode } = suggestion;
+  const { scenario, suggestedStart, rangeEarly, rangeLatest, isPreferredMode } = suggestion;
 
   const scenarioBg    = scenario === 'too_short' ? '#FEF4EF' : scenario === 'tight' ? '#FFF8E8' : '#F2FAF0';
   const scenarioBdr   = scenario === 'too_short' ? '#F5C4B0' : scenario === 'tight' ? '#E8D080' : '#C8D4BA';
@@ -434,15 +431,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   if (scenario === 'plenty') {
     if (isPreferredMode) {
-      scenarioMain = `Start between ${formatDayHour(suggestedStart)} and ${formatDayHour(alternativeStart)} for best results.`;
-      scenarioSecondary = 'Earlier start = longer cold rest = more complex flavour. Later is still great.';
+      scenarioMain = `Aim to start between ${formatDayHour(rangeEarly)} and ${formatDayHour(rangeLatest)}.`;
+      scenarioSecondary = 'Earlier = longer cold rest = deeper flavour.';
     } else {
-      scenarioMain = `Start ${formatDayHour(suggestedStart)} for best results — or ${formatDayHour(alternativeStart)} for a quicker plan.`;
+      scenarioMain = `Best to start around ${formatDayHour(suggestedStart)}.`;
+      scenarioSecondary = `Anywhere from ${formatDayHour(rangeEarly)} to ${formatDayHour(rangeLatest)} works.`;
     }
   } else if (scenario === 'tight') {
-    scenarioMain = `Start ${formatDayHour(suggestedStart)} for best results.`;
+    scenarioMain = `Tight window — start as soon as possible.`;
   } else {
-    scenarioMain = `That's very soon — start now for the best you can get.`;
+    scenarioMain = `Very little time — start now for the best you can get.`;
   }
 
   const startInvalid = startComputed && pendingStart >= pendingEatTime;
@@ -496,30 +494,52 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       </div>
 
-      {/* Start time adjuster */}
+      {/* Start time adjuster — ±1h stepper */}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '0' }}>
         <label style={LABEL_STYLE}>Start mixing</label>
-        {/* CSS overlay: formatted text visible, invisible datetime-local on top for editing */}
-        <div style={{ position: 'relative' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          border: `2px solid ${startInvalid ? 'var(--terra)' : 'var(--border)'}`,
+          borderRadius: '10px', background: 'var(--warm)', overflow: 'hidden',
+        }}>
+          <button
+            onClick={() => adjustStart(-1)}
+            disabled={!startComputed}
+            style={{
+              padding: '.65rem .9rem', background: 'none',
+              border: 'none', borderRight: '1.5px solid var(--border)',
+              cursor: startComputed ? 'pointer' : 'default',
+              color: startComputed ? 'var(--char)' : 'var(--smoke)',
+              fontSize: '1.1rem', flexShrink: 0,
+              fontFamily: 'var(--font-dm-mono)', lineHeight: 1,
+            }}
+          >
+            −
+          </button>
           <div style={{
-            ...INPUT_STYLE,
-            border: `2px solid ${startInvalid ? 'var(--terra)' : 'var(--border)'}`,
+            flex: 1, textAlign: 'center',
+            padding: '.65rem .5rem',
+            fontSize: '.85rem',
+            fontFamily: 'var(--font-dm-mono)',
             color: startComputed ? 'var(--char)' : 'var(--smoke)',
             fontWeight: startComputed ? 700 : undefined,
-            pointerEvents: 'none',
           }}>
             {startComputed ? formatDayShort(pendingStart) : 'Set by plan above'}
           </div>
-          <input
-            type="datetime-local"
-            value={startComputed ? toDateTimeLocal(pendingStart) : ''}
-            onChange={e => handleStartChange(e.target.value)}
+          <button
+            onClick={() => adjustStart(1)}
+            disabled={!startComputed}
             style={{
-              position: 'absolute', inset: 0, opacity: 0,
-              width: '100%', height: '100%', cursor: 'pointer',
-              border: 'none', padding: 0, margin: 0,
+              padding: '.65rem .9rem', background: 'none',
+              border: 'none', borderLeft: '1.5px solid var(--border)',
+              cursor: startComputed ? 'pointer' : 'default',
+              color: startComputed ? 'var(--char)' : 'var(--smoke)',
+              fontSize: '1.1rem', flexShrink: 0,
+              fontFamily: 'var(--font-dm-mono)', lineHeight: 1,
             }}
-          />
+          >
+            +
+          </button>
         </div>
       </div>
 
@@ -707,7 +727,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               disabled={!customReady}
               style={{
                 alignSelf: 'flex-start', padding: '.55rem 1.1rem',
-                border: 'none', borderRadius: '8px',
+                border: 'none', borderRadius: '12px',
                 background: customReady ? 'var(--terra)' : 'var(--border)',
                 color: customReady ? '#fff' : 'var(--smoke)',
                 fontSize: '.82rem', fontWeight: 500,
