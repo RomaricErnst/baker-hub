@@ -32,9 +32,10 @@ const HUMIDITY_LABEL: Record<string, string> = {
 
 // ── Step card ────────────────────────────────
 function StepCard({
-  num, title, activeStep, summary, onEdit, children, idPrefix = 'step',
+  num, badge, title, activeStep, summary, onEdit, children, idPrefix = 'step',
 }: {
   num: number;
+  badge?: number;
   title: string;
   activeStep: number;
   summary?: React.ReactNode;
@@ -82,7 +83,7 @@ function StepCard({
                 : { background: 'var(--border)', color: 'var(--smoke)' }),
           }}
         >
-          {isCompleted ? '✓' : num}
+          {isCompleted ? '✓' : (badge ?? num)}
         </div>
 
         {/* Title + summary */}
@@ -1037,61 +1038,13 @@ export default function Home() {
               )}
             </StepCard>
 
-            {/* ─── ADV STEP 3: Flour ───────────────── */}
+            {/* ─── ADV STEP 3: Quantity ────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={3} title={t('steps.flour.title')}
-              activeStep={advancedStep}
-              summary={computeBlendProfile(flourBlend).displayName}
-              onEdit={() => setAdvancedStep(3)}
-            >
-              <FlourPicker
-                blend={flourBlend}
-                onBlendChange={b => { setFlourBlend(b); if (b.flour2 === null) advanceAdv(3); }}
-                bakeType={bakeType ?? 'pizza'}
-                mode="custom"
-              />
-              {flourBlend.flour2 === null && (
-                <div style={{ marginTop: '.85rem' }}>
-                  <button
-                    onClick={() => advanceAdv(3)}
-                    className="btn"
-                    style={{
-                      width: '100%', padding: '.9rem 1.25rem',
-                      border: 'none', borderRadius: '12px',
-                      background: 'var(--terra)', color: '#fff',
-                      fontFamily: 'var(--font-playfair)', fontSize: '1.05rem', fontWeight: 700,
-                      cursor: 'pointer', boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
-                    }}
-                  >
-                    Continue →
-                  </button>
-                </div>
-              )}
-            </StepCard>
-
-            {/* ─── ADV STEP 4: Preferment ──────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={4} title="Preferment method"
-              activeStep={advancedStep}
-              summary={prefermentType !== 'none' ? `${PREFERMENT_TYPES[prefermentType].emoji} ${PREFERMENT_TYPES[prefermentType].name}` : '⚡ Direct'}
-              onEdit={() => setAdvancedStep(4)}
-            >
-              <PrefermentPicker
-                selected={prefermentType}
-                onSelect={pt => { setPrefermentType(pt); advanceAdv(4); }}
-                styleKey={styleKey ?? undefined}
-              />
-            </StepCard>
-
-            {/* ─── ADV STEP 5: Quantity ────────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={5} title={t('steps.3.title')}
+              num={3} title={t('steps.3.title')}
               activeStep={advancedStep}
               summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
-              onEdit={() => setAdvancedStep(5)}
+              onEdit={() => setAdvancedStep(3)}
             >
               <div style={{
                 display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap',
@@ -1137,47 +1090,80 @@ export default function Home() {
                   </span>
                 </div>
               </div>
-              <ContinueBtn onClick={() => advanceAdv(5)} />
+              <ContinueBtn onClick={() => advanceAdv(3)} />
             </StepCard>
 
-            {/* ─── ADV STEP 6: Oven ────────────────── */}
+            {/* ─── ADV STEP 4: Oven ────────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={6} title={t('steps.4.title')}
+              num={4} title={t('steps.4.title')}
               activeStep={advancedStep}
               summary={ovenData ? `${ovenData.emoji} ${ovenData.name}` : ''}
-              onEdit={() => setAdvancedStep(6)}
+              onEdit={() => setAdvancedStep(4)}
             >
               <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
                 selected={ovenType}
-                onSelect={ot => { setOvenType(ot); advanceAdv(6); }}
+                onSelect={ot => { setOvenType(ot); advanceAdv(4); }}
               />
             </StepCard>
 
-            {/* ─── ADV STEP 7: Mixer ───────────────── */}
+            {/* ─── ADV STEP 5: Mixer ───────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={7} title={t('steps.5.title')}
+              num={5} title={t('steps.5.title')}
               activeStep={advancedStep}
               summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
-              onEdit={() => setAdvancedStep(7)}
+              onEdit={() => setAdvancedStep(5)}
             >
               <MixerPicker
                 selected={mixerType}
-                onSelect={mt => { setMixerType(mt); advanceAdv(7); }}
+                onSelect={mt => { setMixerType(mt); advanceAdv(5); }}
                 styleKey={styleKey ?? undefined}
                 bakeType={bakeType ?? undefined}
               />
             </StepCard>
 
-            {/* ─── ADV STEP 8: Yeast ───────────────── */}
+            {/* ─── ADV STEP 6: Flour ───────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={8} title={t('steps.6.title')}
+              num={6} title={t('steps.flour.title')}
+              activeStep={advancedStep}
+              summary={computeBlendProfile(flourBlend).displayName}
+              onEdit={() => setAdvancedStep(6)}
+            >
+              <FlourPicker
+                blend={flourBlend}
+                onBlendChange={b => { setFlourBlend(b); if (b.flour2 === null) advanceAdv(6); }}
+                bakeType={bakeType ?? 'pizza'}
+                mode="custom"
+              />
+              {flourBlend.flour2 === null && (
+                <div style={{ marginTop: '.85rem' }}>
+                  <button
+                    onClick={() => advanceAdv(6)}
+                    className="btn"
+                    style={{
+                      width: '100%', padding: '.9rem 1.25rem',
+                      border: 'none', borderRadius: '12px',
+                      background: 'var(--terra)', color: '#fff',
+                      fontFamily: 'var(--font-playfair)', fontSize: '1.05rem', fontWeight: 700,
+                      cursor: 'pointer', boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
+                    }}
+                  >
+                    Continue →
+                  </button>
+                </div>
+              )}
+            </StepCard>
+
+            {/* ─── ADV STEP 7: Yeast ───────────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={7} title={t('steps.6.title')}
               activeStep={advancedStep}
               summary={<>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{YEAST_TYPES[yeastType].shortName}</span></>}
-              onEdit={() => setAdvancedStep(8)}
+              onEdit={() => setAdvancedStep(7)}
             >
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.65rem', marginBottom: '.65rem' }}>
@@ -1193,7 +1179,22 @@ export default function Home() {
                     return (
                       <div
                         key={yt}
-                        onClick={() => { setYeastType(yt); advanceAdv(8); }}
+                        onClick={() => {
+                          setYeastType(yt);
+                          if (yt === 'sourdough') {
+                            setPrefermentType('levain');
+                            setAdvancedStep(9);
+                            setTimeout(() => {
+                              const el = document.getElementById('adv-step-9');
+                              if (el) {
+                                const top = el.getBoundingClientRect().top + window.scrollY - 70;
+                                window.scrollTo({ top, behavior: 'smooth' });
+                              }
+                            }, 150);
+                          } else {
+                            advanceAdv(7);
+                          }
+                        }}
                         style={{
                           border: `2px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
                           borderRadius: '14px', padding: '.75rem .6rem',
@@ -1232,10 +1233,28 @@ export default function Home() {
               </div>
             </StepCard>
 
+            {/* ─── ADV STEP 8: Preferment (hidden for sourdough) ── */}
+            {yeastType !== 'sourdough' && (
+              <StepCard
+                idPrefix="adv-step"
+                num={8} title="Preferment method"
+                activeStep={advancedStep}
+                summary={prefermentType !== 'none' ? `${PREFERMENT_TYPES[prefermentType].emoji} ${PREFERMENT_TYPES[prefermentType].name}` : '⚡ Direct'}
+                onEdit={() => setAdvancedStep(8)}
+              >
+                <PrefermentPicker
+                  selected={prefermentType}
+                  onSelect={pt => { setPrefermentType(pt); advanceAdv(8); }}
+                  styleKey={styleKey ?? undefined}
+                />
+              </StepCard>
+            )}
+
             {/* ─── ADV STEP 9: Climate ─────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={9} title={t('steps.7.title')}
+              num={9} badge={yeastType === 'sourdough' ? 8 : 9}
+              title={t('steps.7.title')}
               activeStep={advancedStep}
               summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
               onEdit={() => setAdvancedStep(9)}
@@ -1253,7 +1272,8 @@ export default function Home() {
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={10} title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
+              num={10} badge={yeastType === 'sourdough' ? 9 : 10}
+              title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
               activeStep={advancedStep}
               summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
               onEdit={() => setAdvancedStep(10)}
