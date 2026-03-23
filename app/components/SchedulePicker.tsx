@@ -386,8 +386,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   function handleSlider(val: number, sliderMin: number, totalMs: number) {
-    const ms = sliderMin + (val / 100) * totalMs;
-    const d = pushToReasonableHour(new Date(ms));
+    const rawMs = sliderMin + (val / 100) * totalMs;
+    const rawDate = new Date(rawMs);
+    const minutes = rawDate.getMinutes();
+    const snapped = Math.round(minutes / 15) * 15;
+    rawDate.setMinutes(snapped, 0, 0);
+    const d = pushToReasonableHour(rawDate);
     const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(d, blocks);
     setPendingStart(resolvedStart);
     setStartPickerDate(toPickerDate(resolvedStart));
@@ -516,7 +520,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   // ── PHASE 2: Start suggestion + blockers + confirm (merged) ──
-  const { scenario, suggestedStart, rangeEarly, rangeLatest, isPreferredMode } = suggestion;
+  const { scenario, rangeEarly, rangeLatest } = suggestion;
 
   // Slider bounds — capped at 72h window so slider stays useful for long ferments
   const sliderNow = new Date();
@@ -529,28 +533,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const earlyPct   = Math.max(0, Math.min(100, ((rangeEarly.getTime()  - sliderMin) / totalMs) * 100));
   const latestPct  = Math.max(0, Math.min(100, ((rangeLatest.getTime() - sliderMin) / totalMs) * 100));
   const currentPct = Math.max(0, Math.min(100, ((pendingStart.getTime() - sliderMin) / totalMs) * 100));
-
-  const scenarioBg    = scenario === 'too_short' ? '#FEF4EF' : scenario === 'tight' ? '#FFF8E8' : '#F2FAF0';
-  const scenarioBdr   = scenario === 'too_short' ? '#F5C4B0' : scenario === 'tight' ? '#E8D080' : '#C8D4BA';
-  const scenarioColor = scenario === 'too_short' ? 'var(--terra)' : scenario === 'tight' ? '#7A5A10' : '#3A6A30';
-  const scenarioIcon  = scenario === 'too_short' ? '⚡' : scenario === 'tight' ? '⏰' : '✨';
-
-  let scenarioMain: string;
-  let scenarioSecondary: string | null = null;
-
-  if (scenario === 'plenty') {
-    if (isPreferredMode) {
-      scenarioMain = t('scenario.plentyPreferred', { start: formatDayHour(rangeEarly), end: formatDayHour(rangeLatest) });
-      scenarioSecondary = t('scenario.plentyPreferredSub');
-    } else {
-      scenarioMain = t('scenario.plenty', { start: formatDayHour(suggestedStart) });
-      scenarioSecondary = t('scenario.plentySub', { start: formatDayHour(rangeEarly), end: formatDayHour(rangeLatest) });
-    }
-  } else if (scenario === 'tight') {
-    scenarioMain = t('scenario.tight');
-  } else {
-    scenarioMain = t('scenario.tooShort');
-  }
 
   const startInvalid = startComputed && pendingStart >= pendingEatTime;
   const bulkConflict = schedule?.bulkConflict ?? null;
@@ -585,24 +567,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </button>
       </div>
 
-      {/* Scenario message */}
-      <div style={{
-        display: 'flex', gap: '.6rem', alignItems: 'flex-start',
-        background: scenarioBg, border: `1.5px solid ${scenarioBdr}`,
-        borderRadius: '10px', padding: '.7rem .9rem',
-        marginBottom: '1.1rem', fontSize: '.82rem',
-        color: scenarioColor, lineHeight: 1.55,
-      }}>
-        <span style={{ flexShrink: 0 }}>{scenarioIcon}</span>
-        <div>
-          <span>{scenarioMain}</span>
-          {scenarioSecondary && (
-            <span style={{ display: 'block', marginTop: '.3rem', fontSize: '.74rem', opacity: .7 }}>
-              {scenarioSecondary}
-            </span>
-          )}
+      {/* too_short compact note */}
+      {scenario === 'too_short' && (
+        <div style={{ fontSize: '.78rem', color: 'var(--terra)', marginBottom: '.9rem', lineHeight: 1.5 }}>
+          ⚡ {t('scenario.tooShort')}
         </div>
-      </div>
+      )}
 
       {/* Blocker section — moved above slider */}
       <div style={{ fontSize: '.82rem', color: 'var(--char)', fontWeight: 600, marginBottom: '.3rem' }}>
@@ -897,16 +867,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
         {/* Slider track + zones */}
         <div style={{ position: 'relative', height: '32px', display: 'flex', alignItems: 'center' }}>
-          {/* Three-zone track */}
+          {/* Gradient zone track */}
           <div style={{
             position: 'absolute', top: '50%', transform: 'translateY(-50%)',
             left: 0, right: 0, height: '10px', borderRadius: '5px',
-            overflow: 'hidden', display: 'flex', pointerEvents: 'none', zIndex: 0,
-          }}>
-            <div style={{ width: `${earlyPct}%`, background: '#C8D8E8', flexShrink: 0 }} />
-            <div style={{ width: `${Math.max(0, latestPct - earlyPct)}%`, background: '#B8D4A8', flexShrink: 0 }} />
-            <div style={{ flex: 1, background: '#E8D890' }} />
-          </div>
+            pointerEvents: 'none', zIndex: 0,
+            background: `linear-gradient(to right, #C8D8E8 0%, #C8D8E8 ${earlyPct}%, #B8D4A8 ${earlyPct}%, #B8D4A8 ${latestPct}%, #E8D890 ${latestPct}%, #D4A853 ${Math.min(100, latestPct + 15)}%, #D4A853 100%)`,
+          }} />
 
           {/* Diamond position marker */}
           <div style={{
@@ -955,7 +922,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               color: 'var(--sage)', flexShrink: 0,
               overflow: 'hidden', whiteSpace: 'nowrap',
             }}>
-              Sweet Zone
+              Sweet Spot
             </div>
           )}
           <div style={{
@@ -963,7 +930,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             color: '#8A7A30',
             overflow: 'hidden', whiteSpace: 'nowrap',
           }}>
-            Rush Zone
+            {currentPct > 85 ? (
+              <span style={{ color: 'var(--terra)' }}>Getting Short</span>
+            ) : 'Still Good'}
           </div>
         </div>
       </div>
@@ -1016,16 +985,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           marginBottom: '.75rem', marginTop: '.5rem',
         }}>
           {t('startBeforeBake')}
-        </div>
-      )}
-
-      {!startInvalid && (
-        <div style={{
-          fontSize: '.72rem', color: 'var(--smoke)',
-          fontFamily: 'var(--font-dm-mono)',
-          marginTop: '.45rem', marginBottom: '.15rem',
-        }}>
-          {t('totalWindow', { hours: hoursLabel((pendingEatTime.getTime() - pendingStart.getTime()) / 3600000) })}
         </div>
       )}
 
