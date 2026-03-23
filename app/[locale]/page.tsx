@@ -35,7 +35,7 @@ function StepCard({
   num: number;
   title: string;
   activeStep: number;
-  summary?: string;
+  summary?: React.ReactNode;
   onEdit: () => void;
   children: React.ReactNode;
   idPrefix?: string;
@@ -641,7 +641,7 @@ export default function Home() {
             <StepCard
               num={6} title={t('steps.6.title')}
               activeStep={activeStep}
-              summary={`${YEAST_TYPES[yeastType].emoji} ${YEAST_TYPES[yeastType].shortName}`}
+              summary={<>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name}</>}
               onEdit={() => setActiveStep(6)}
             >
               <div>
@@ -1142,7 +1142,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={7} title={t('steps.6.title')}
               activeStep={advancedStep}
-              summary={`${YEAST_TYPES[yeastType].emoji} ${YEAST_TYPES[yeastType].shortName}`}
+              summary={<>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{YEAST_TYPES[yeastType].shortName}</span></>}
               onEdit={() => setAdvancedStep(7)}
             >
               <div>
