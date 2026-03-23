@@ -1,9 +1,10 @@
 'use client';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '../navigation';
 import AuthButton from './AuthButton';
 
 export default function Header() {
+  const t = useTranslations('header');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -45,7 +46,7 @@ export default function Header() {
           color: 'var(--gold)',
           lineHeight: 1.2,
         }}>
-          artisan dough planner
+          {t('tagline')}
         </div>
       </div>
 

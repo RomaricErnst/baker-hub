@@ -1,4 +1,6 @@
 {
+  "header": { "tagline": "artisan dough planner" },
+  "auth": { "signIn": "🔑 Sign in", "signOut": "Sign out" },
   "common": {
     "continue": "Continue →",
     "edit": "Edit",

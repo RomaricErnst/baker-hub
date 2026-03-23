@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { createClient } from '@/app/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
 export default function AuthButton() {
+  const t = useTranslations('auth');
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
@@ -20,11 +22,14 @@ export default function AuthButton() {
   }, []);
 
   async function signInWithGoogle() {
+    const redirectTo = typeof window !== 'undefined'
+      ? window.location.hostname === 'localhost'
+        ? 'http://localhost:3000/auth/callback'
+        : 'https://www.bakerhub.app/auth/callback'
+      : 'https://www.bakerhub.app/auth/callback';
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { redirectTo },
     });
   }
 
@@ -46,7 +51,7 @@ export default function AuthButton() {
           border: '1.5px solid var(--border)', background: 'transparent',
           color: 'var(--smoke)', fontSize: '.72rem', cursor: 'pointer',
         }}>
-          Sign out
+          {t('signOut')}
         </button>
       </div>
     );
@@ -60,7 +65,7 @@ export default function AuthButton() {
       color: 'var(--char)', fontSize: '.78rem', cursor: 'pointer',
       fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
     }}>
-      <span>🔑</span> Sign in
+      {t('signIn')}
     </button>
   );
 }

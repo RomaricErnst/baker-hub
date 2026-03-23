@@ -1,4 +1,6 @@
 {
+  "header": { "tagline": "planificateur de pâte artisanal" },
+  "auth": { "signIn": "🔑 Se connecter", "signOut": "Se déconnecter" },
   "common": {
     "continue": "Continuer →",
     "edit": "Modifier",
