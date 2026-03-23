@@ -541,6 +541,133 @@ export const FLOUR_BRANDS = {
 
 export type BrandKey = keyof typeof FLOUR_BRANDS;
 
+// ── PREFERMENT TYPES ──────────────────────
+export const PREFERMENT_TYPES = {
+  none: {
+    name: 'Direct',
+    nameFr: 'Direct',
+    emoji: '⚡',
+    desc: 'No preferment — mix everything together.',
+    descFr: 'Sans pré-ferment — tout mélanger directement.',
+    flourPct: 0,
+    hydration: 0,
+    yeastPct: 0,
+    fermentHours: 0,
+    fermentTemp: 0,
+    cold: false,
+    yeastReduction: 0,
+    flavourNote: '',
+    bestFor: [] as string[],
+  },
+  poolish: {
+    name: 'Poolish',
+    nameFr: 'Poolish',
+    emoji: '🏺',
+    desc: 'Liquid pre-ferment. Adds extensibility and complex flavour.',
+    descFr: 'Pré-ferment liquide. Apporte extensibilité et saveur complexe.',
+    flourPct: 50,
+    hydration: 100,
+    yeastPct: 0.2,
+    fermentHoursMin: 8,
+    fermentHoursMax: 16,
+    fermentTemp: 20,
+    cold: false,
+    yeastReduction: 0.30,
+    flavourNote: 'Extensible, open crumb, mild tang.',
+    flavourNoteFr: 'Pâte extensible, mie ouverte, légèrement acidulé.',
+    bestFor: ['baguette', 'newyork', 'roman'] as string[],
+  },
+  biga: {
+    name: 'Biga',
+    nameFr: 'Biga',
+    emoji: '🧱',
+    desc: 'Stiff Italian pre-ferment. Adds structure, strength and complex flavour.',
+    descFr: 'Pré-ferment rigide italien. Structure, force et saveur complexe.',
+    flourPct: 45,
+    hydration: 45,
+    yeastPct: 0.5,
+    fermentHoursMin: 16,
+    fermentHoursMax: 48,
+    fermentTemp: 4,
+    cold: true,
+    yeastReduction: 0.40,
+    flavourNote: 'Strong structure, complex flavour, ideal for high hydration.',
+    flavourNoteFr: 'Structure forte, saveur complexe, idéal pour haute hydratation.',
+    bestFor: ['roman', 'newyork', 'pain_campagne'] as string[],
+  },
+  levain: {
+    name: 'Levain / Sourdough',
+    nameFr: 'Levain',
+    emoji: '🫙',
+    desc: 'Wild yeast preferment. Deep flavour, better digestibility.',
+    descFr: 'Pré-ferment au levain naturel. Saveur profonde, meilleure digestibilité.',
+    flourPct: 20,
+    hydration: 100,
+    yeastPct: 0,
+    fermentHoursMin: 4,
+    fermentHoursMax: 12,
+    fermentTemp: 24,
+    cold: false,
+    yeastReduction: 1.0,
+    flavourNote: 'Tangy, digestible, unique wild yeast character.',
+    flavourNoteFr: 'Acidulé, digestible, caractère unique du levain naturel.',
+    bestFor: ['neapolitan', 'pain_levain', 'baguette'] as string[],
+  },
+} as const;
+
+export type PrefermentType = keyof typeof PREFERMENT_TYPES;
+
+export function computePrefermentRecipe(
+  prefermentType: PrefermentType,
+  totalFlourGrams: number,
+  totalWaterGrams: number,
+): {
+  prefFlour: number;
+  prefWater: number;
+  prefYeastGrams: number;
+  finalFlour: number;
+  finalWater: number;
+  fermentHoursMin: number;
+  fermentHoursMax: number;
+  cold: boolean;
+  schedule: string;
+  scheduleFr: string;
+} | null {
+  if (prefermentType === 'none') return null;
+  const p = PREFERMENT_TYPES[prefermentType];
+
+  const prefFlour = Math.round(totalFlourGrams * p.flourPct / 100);
+  const prefWater = Math.round(prefFlour * p.hydration / 100);
+  const prefYeastGrams = Math.round(prefFlour * p.yeastPct / 100 * 10) / 10;
+  const finalFlour = totalFlourGrams - prefFlour;
+  const finalWater = totalWaterGrams - prefWater;
+
+  const cold = p.cold;
+  const fermentHoursMin = p.fermentHoursMin;
+  const fermentHoursMax = p.fermentHoursMax;
+
+  const schedule = cold
+    ? `Mix preferment ${fermentHoursMax}h before baking. Ferment in fridge at ${p.fermentTemp}°C.`
+    : `Mix preferment ${fermentHoursMin}–${fermentHoursMax}h before baking. Ferment at room temperature.`;
+
+  const scheduleFr = cold
+    ? `Préparez le pré-ferment ${fermentHoursMax}h avant la cuisson. Fermentez au frigo à ${p.fermentTemp}°C.`
+    : `Préparez le pré-ferment ${fermentHoursMin}–${fermentHoursMax}h avant la cuisson. Fermentez à température ambiante.`;
+
+  return {
+    prefFlour,
+    prefWater,
+    prefYeastGrams,
+    finalFlour,
+    finalWater,
+    fermentHoursMin,
+    fermentHoursMax,
+    cold,
+    schedule,
+    scheduleFr,
+  };
+}
+
 export interface FlourBlend {
   flour1: FlourKey;
   flour2: FlourKey | null;
