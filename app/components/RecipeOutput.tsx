@@ -39,20 +39,21 @@ const D = {
 
 // ── Ingredient row ────────────────────────────
 function IngRow({
-  label, sub, grams, pct, highlight = false, range = false, advancedPct,
+  label, sub, grams, pct = '', highlight = false, range = false, advancedPct, noPct = false,
 }: {
   label: string;
   sub?: React.ReactNode;
   grams: string;
-  pct: string;
+  pct?: string;
   highlight?: boolean;
   range?: boolean;
   advancedPct?: string;
+  noPct?: boolean;
 }) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: '1fr auto auto',
+      gridTemplateColumns: noPct ? '1fr auto' : '1fr auto auto',
       gap: '0 1.5rem',
       alignItems: 'center',
       padding: '.6rem .1rem',
@@ -96,16 +97,18 @@ function IngRow({
         )}
       </div>
 
-      <div style={{
-        fontFamily: 'var(--font-dm-mono)',
-        fontSize: '.72rem',
-        color: 'var(--gold)',
-        textAlign: 'right',
-        minWidth: '4rem',
-        whiteSpace: 'nowrap',
-      }}>
-        {pct}
-      </div>
+      {!noPct && (
+        <div style={{
+          fontFamily: 'var(--font-dm-mono)',
+          fontSize: '.72rem',
+          color: 'var(--gold)',
+          textAlign: 'right',
+          minWidth: '4rem',
+          whiteSpace: 'nowrap',
+        }}>
+          {pct}
+        </div>
+      )}
     </div>
   );
 }
@@ -304,210 +307,136 @@ export default function RecipeOutput({
         </div>
       </div>
 
-      {/* ── Ingredients card (dark) ───────────────── */}
-      <div style={{
-        background: 'var(--char)',
-        borderRadius: '18px',
-        padding: '1.5rem 1.6rem',
-        border: '1px solid rgba(212,168,83,0.12)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.14)',
-      }}>
-        {/* Card header */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-          marginBottom: '1rem',
-        }}>
-          <div style={{
-            fontFamily: 'var(--font-playfair)',
-            fontSize: '1.1rem', fontWeight: 700,
-            color: 'var(--cream)',
-          }}>
-            Ingredients
-          </div>
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr auto auto',
-            gap: '0 1.5rem', width: '100%', maxWidth: '75%',
-          }}>
-            <span />
-            <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em' }}>Weight</span>
-            <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em', minWidth: '4rem' }}>Baker&apos;s %</span>
-          </div>
-        </div>
-
-        {/* Rows */}
-        <IngRow label="Flour" grams={gStr(flour)} pct="100%" highlight advancedPct={mode === 'custom' ? '100%' : undefined} />
-        <IngRow label="Water" grams={gStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
-        <IngRow label="Salt"  grams={gStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
-
-        {/* Yeast — commercial */}
-        {yeastInfo && (
-          <IngRow
-            label={yeastTypeName}
-            sub={yeastSub}
-            grams={gStr(yeastInfo.convertedGrams)}
-            pct={pctStr(yeastInfo.convertedPct)}
-            advancedPct={mode === 'custom' ? pctStr(yeastInfo.convertedPct) : undefined}
-          />
-        )}
-
-        {/* Reassurance note — quiet whisper for long cold plans with small yeast */}
-        {yeastInfo && yeastInfo.convertedGrams < 2 && totalColdHours >= 24 && (
-          <span style={{
-            fontSize: '.72rem',
-            color: 'rgba(245,240,232,0.50)',
-            fontFamily: 'var(--font-dm-sans)',
-            fontStyle: 'italic',
-            marginTop: '.25rem',
-            display: 'block',
-            padding: '0 .1rem',
-          }}>
-            Yes, that&apos;s intentional — less yeast, more time = deeper flavour. Trust the process. 🍕
-          </span>
-        )}
-
-        {/* Sachet dilution note — shown when convertedGrams < 1g */}
-        {sachetDilutionNote && (
-          <div style={{
-            fontFamily: 'var(--font-dm-mono)',
-            fontSize: '.73rem',
-            color: 'rgba(245,240,232,0.50)',
-            padding: '.4rem .1rem .35rem',
-            lineHeight: 1.55,
-            borderBottom: `1px solid ${D.line}`,
-          }}>
-            {sachetDilutionNote}
-          </div>
-        )}
-
-        {/* Yeast — sourdough starter range */}
-        {sourdough && (
-          <IngRow
-            label="Sourdough Starter"
-            sub="add to flour + water"
-            grams={`${sourdough.starterGramsMin}–${sourdough.starterGramsMax} g`}
-            pct={`${sourdough.starterPctMin}–${sourdough.starterPctMax}%`}
-            range
-          />
-        )}
-
-        {/* Optional: oil */}
-        {oil > 0 && (
-          <IngRow label="Olive Oil" grams={gStr(oil)} pct={pctStr(oilPct)} advancedPct={mode === 'custom' ? pctStr(oilPct) : undefined} />
-        )}
-
-        {/* Optional: sugar */}
-        {sugar > 0 && (
-          <IngRow label="Sugar" grams={gStr(sugar)} pct={pctStr(sugarPct)} advancedPct={mode === 'custom' ? pctStr(sugarPct) : undefined} />
-        )}
-
-        {/* Total row */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto auto',
-          gap: '0 1.5rem',
-          alignItems: 'center',
-          padding: '.65rem .1rem 0',
-          marginTop: '.1rem',
-        }}>
-          <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
-            Total{sourdough ? ' (excl. starter)' : ''}
-          </div>
-          <div style={{
-            fontFamily: 'var(--font-dm-mono)',
-            fontSize: '1rem', fontWeight: 700,
-            color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap',
-          }}>
-            {sourdough
-              ? `~${Math.round(ingredientTotal)} g`
-              : gStr(ingredientTotal)
-            }
-          </div>
-          <div style={{ minWidth: '4rem' }} />
-        </div>
-      </div>
-
-      {/* ── Preferment card ──────────────────────── */}
-      {prefermentType && prefermentType !== 'none' && result.preferment && (() => {
-        const pf = result.preferment;
+      {/* ── Ingredients / Preferment cards ──────── */}
+      {result.preferment && prefermentType && prefermentType !== 'none' ? (() => {
+        const pf = result.preferment!;
         const pd = PREFERMENT_TYPES[prefermentType];
+        const prefTotal = Math.round(pf.prefFlour + pf.prefWater + pf.prefYeastGrams);
+
         return (
-          <div style={{
-            background: '#1E1A14',
-            borderRadius: '18px',
-            padding: '1.5rem 1.6rem',
-            border: '1px solid rgba(212,168,83,0.20)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
-          }}>
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', marginBottom: '1rem' }}>
-              <span style={{ fontSize: '1.3rem' }}>{pd.emoji}</span>
-              <div>
-                <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)' }}>
-                  {pd.name}
+          <>
+            {/* CARD 1: Make your preferment */}
+            <div style={{ background: 'var(--char)', borderRadius: '18px', padding: '1.5rem 1.6rem', border: '1px solid rgba(212,168,83,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
+              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--cream)', marginBottom: '.3rem' }}>
+                {pd.emoji} Make your {pd.name}
+              </div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'var(--gold)', marginBottom: '1rem' }}>
+                {pf.schedule}
+              </div>
+              <IngRow label="Flour" grams={gStr(pf.prefFlour)} noPct highlight />
+              <IngRow label="Water" grams={gStr(pf.prefWater)} noPct />
+              {pf.prefYeastGrams > 0 && (
+                <IngRow label="Yeast (IDY)" grams={gStr(pf.prefYeastGrams)} noPct />
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
+                <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
+                  {pd.name} total
                 </div>
-                <div style={{ fontSize: '.72rem', color: 'rgba(212,168,83,0.65)', fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem' }}>
-                  Pre-ferment · mix {pf.fermentHoursMin}–{pf.fermentHoursMax}h before your main dough
-                  {pf.cold && <span style={{ color: '#7BAFD4', marginLeft: '.4rem' }}>· ❄️ cold</span>}
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  ~{prefTotal} g
                 </div>
               </div>
             </div>
 
-            {/* Two columns */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem', marginBottom: '1rem' }}>
-              {/* Preferment ingredients */}
-              <div>
-                <div style={{ fontSize: '.62rem', color: 'rgba(245,240,232,0.38)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '.5rem' }}>
-                  Preferment
-                </div>
-                {[
-                  { label: 'Flour', value: `${pf.prefFlour} g` },
-                  { label: 'Water', value: `${pf.prefWater} g` },
-                  ...(pf.prefYeastGrams > 0 ? [{ label: 'IDY', value: `${pf.prefYeastGrams} g` }] : []),
-                ].map(row => (
-                  <div key={row.label} style={{
-                    display: 'flex', justifyContent: 'space-between',
-                    padding: '.3rem 0', borderBottom: `1px solid ${D.line}`,
-                  }}>
-                    <span style={{ fontSize: '.78rem', color: D.muted }}>{row.label}</span>
-                    <span style={{ fontSize: '.82rem', fontFamily: 'var(--font-dm-mono)', fontWeight: 700, color: 'var(--cream)' }}>{row.value}</span>
-                  </div>
-                ))}
+            {/* CARD 2: Final dough */}
+            <div style={{ background: 'var(--char)', borderRadius: '18px', padding: '1.5rem 1.6rem', border: '1px solid rgba(212,168,83,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
+              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--cream)', marginBottom: '.3rem' }}>
+                Final dough
               </div>
-
-              {/* Final dough */}
-              <div>
-                <div style={{ fontSize: '.62rem', color: 'rgba(245,240,232,0.38)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '.5rem' }}>
-                  Final dough
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: D.muted, marginBottom: '1rem' }}>
+                Add your {pd.name} to the remaining ingredients
+              </div>
+              <IngRow label={`Your ${pd.name} (all of it)`} grams={gStr(prefTotal)} noPct highlight />
+              <IngRow label="Remaining flour" grams={gStr(pf.finalFlour)} noPct />
+              <IngRow label="Remaining water" grams={gStr(pf.finalWater)} noPct sub={waterSubNode} />
+              <IngRow label="Salt" grams={gStr(salt)} noPct />
+              {oil > 0 && <IngRow label="Olive Oil" grams={gStr(oil)} noPct />}
+              {sugar > 0 && <IngRow label="Sugar" grams={gStr(sugar)} noPct />}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
+                <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
+                  Total Dough
                 </div>
-                {[
-                  { label: 'Flour', value: `${pf.finalFlour} g` },
-                  { label: 'Water', value: `${pf.finalWater} g` },
-                ].map(row => (
-                  <div key={row.label} style={{
-                    display: 'flex', justifyContent: 'space-between',
-                    padding: '.3rem 0', borderBottom: `1px solid ${D.line}`,
-                  }}>
-                    <span style={{ fontSize: '.78rem', color: D.muted }}>{row.label}</span>
-                    <span style={{ fontSize: '.82rem', fontFamily: 'var(--font-dm-mono)', fontWeight: 700, color: 'var(--cream)' }}>{row.value}</span>
-                  </div>
-                ))}
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  {numItems * itemWeight} g
+                </div>
               </div>
             </div>
-
-            {/* Timing note */}
-            <div style={{
-              fontSize: '.75rem', fontStyle: 'italic',
-              color: 'rgba(212,168,83,0.70)',
-              lineHeight: 1.55,
-            }}>
-              {pf.schedule}
+          </>
+        );
+      })() : (
+        /* SCENARIO A: Single ingredients card */
+        <div style={{ background: 'var(--char)', borderRadius: '18px', padding: '1.5rem 1.6rem', border: '1px solid rgba(212,168,83,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
+          {/* Card header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem' }}>
+            <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--cream)' }}>
+              Ingredients
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', width: '100%', maxWidth: '75%' }}>
+              <span />
+              <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em' }}>Weight</span>
+              <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em', minWidth: '4rem' }}>Baker&apos;s %</span>
             </div>
           </div>
-        );
-      })()}
 
-      {/* ── Flour note ────────────────────────────── */}
-      {(() => {
+          <IngRow label="Flour" grams={gStr(flour)} pct="100%" highlight advancedPct={mode === 'custom' ? '100%' : undefined} />
+          <IngRow label="Water" grams={gStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
+          <IngRow label="Salt"  grams={gStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
+
+          {yeastInfo && (
+            <IngRow
+              label={yeastTypeName}
+              sub={yeastSub}
+              grams={gStr(yeastInfo.convertedGrams)}
+              pct={pctStr(yeastInfo.convertedPct)}
+              advancedPct={mode === 'custom' ? pctStr(yeastInfo.convertedPct) : undefined}
+            />
+          )}
+
+          {yeastInfo && yeastInfo.convertedGrams < 2 && totalColdHours >= 24 && (
+            <span style={{ fontSize: '.72rem', color: 'rgba(245,240,232,0.50)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', marginTop: '.25rem', display: 'block', padding: '0 .1rem' }}>
+              Yes, that&apos;s intentional — less yeast, more time = deeper flavour. Trust the process. 🍕
+            </span>
+          )}
+
+          {sachetDilutionNote && (
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.73rem', color: 'rgba(245,240,232,0.50)', padding: '.4rem .1rem .35rem', lineHeight: 1.55, borderBottom: `1px solid ${D.line}` }}>
+              {sachetDilutionNote}
+            </div>
+          )}
+
+          {sourdough && (
+            <IngRow
+              label="Sourdough Starter"
+              sub="add to flour + water"
+              grams={`${sourdough.starterGramsMin}–${sourdough.starterGramsMax} g`}
+              pct={`${sourdough.starterPctMin}–${sourdough.starterPctMax}%`}
+              range
+            />
+          )}
+
+          {oil > 0 && (
+            <IngRow label="Olive Oil" grams={gStr(oil)} pct={pctStr(oilPct)} advancedPct={mode === 'custom' ? pctStr(oilPct) : undefined} />
+          )}
+
+          {sugar > 0 && (
+            <IngRow label="Sugar" grams={gStr(sugar)} pct={pctStr(sugarPct)} advancedPct={mode === 'custom' ? pctStr(sugarPct) : undefined} />
+          )}
+
+          {/* TOTAL DOUGH row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
+            <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
+              Total Dough
+            </div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+              {numItems * itemWeight} g
+            </div>
+            <div style={{ minWidth: '4rem' }} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Flour note (Simple mode only) ───────── */}
+      {mode === 'simple' && (() => {
         let main: string;
         if (bakeType === 'bread') {
           if (fermEquivHours < 8) {
