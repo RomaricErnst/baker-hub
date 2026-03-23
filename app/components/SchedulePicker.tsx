@@ -934,45 +934,79 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       </div>
 
-      {bulkConflict && !dismissedConflict && (
-        <div style={{
-          background: '#FFF8E8', border: '1.5px solid #E8D080',
-          borderRadius: '10px', padding: '.75rem 1rem',
-          marginTop: '.75rem', fontSize: '.8rem', color: '#7A5A10',
-          lineHeight: 1.5,
-        }}>
-          <div style={{ marginBottom: '.5rem' }}>
-            ⏰ {t('conflict.message', { minutes: bulkConflict.missingMin })}
+      {bulkConflict && !dismissedConflict && (() => {
+        const MIN_REASONABLE_HOUR = 7;
+        const earlierStart = bulkConflict.suggestedEarlierStart;
+        const earlierIsReasonable = earlierStart
+          ? earlierStart.getHours() >= MIN_REASONABLE_HOUR
+          : false;
+        function formatDuration(min: number): string {
+          const snapped = Math.round(min / 15) * 15;
+          const h = Math.floor(snapped / 60);
+          const m = snapped % 60;
+          if (h === 0) return `${m}min`;
+          if (m === 0) return `${h}h`;
+          return `${h}h${m}`;
+        }
+        return (
+          <div style={{
+            background: '#FFF8E8', border: '1.5px solid #E8D080',
+            borderRadius: '10px', padding: '.75rem 1rem',
+            marginTop: '.75rem', color: '#7A5A10',
+          }}>
+            <div style={{ marginBottom: '.5rem' }}>
+              {earlierIsReasonable && earlierStart ? (
+                <>
+                  <div style={{ fontSize: '.82rem', fontWeight: 600, lineHeight: 1.55 }}>
+                    ⏰ Your morning schedule overlaps with bulk fermentation.
+                  </div>
+                  <div style={{ fontSize: '.74rem', opacity: .8, marginTop: '.2rem', lineHeight: 1.55 }}>
+                    Starting at {formatSliderDisplay(earlierStart)} gives you a full bulk before your day starts.
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: '.82rem', fontWeight: 600, lineHeight: 1.55 }}>
+                    ⏰ Your schedule overlaps with bulk fermentation.
+                  </div>
+                  <div style={{ fontSize: '.74rem', opacity: .8, marginTop: '.2rem', lineHeight: 1.55 }}>
+                    A shorter bulk still makes great dough — the difference is minimal.
+                  </div>
+                </>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+              {earlierIsReasonable && earlierStart && (
+                <button
+                  onClick={() => {
+                    adjustStart(-(bulkConflict.suggestEarlierByMin / 60));
+                    setDismissedConflict(true);
+                  }}
+                  style={{
+                    padding: '.4rem .9rem', border: 'none', borderRadius: '8px',
+                    background: 'var(--terra)', color: '#fff',
+                    fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
+                    fontFamily: 'var(--font-dm-sans)',
+                  }}
+                >
+                  Start at {formatTimeShort(earlierStart)}
+                </button>
+              )}
+              <button
+                onClick={() => setDismissedConflict(true)}
+                style={{
+                  padding: '.4rem .9rem', borderRadius: '8px',
+                  border: '1.5px solid #E8D080', background: 'transparent',
+                  color: '#7A5A10', fontSize: '.78rem', fontWeight: 500,
+                  cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                }}
+              >
+                {t('conflict.continueAnyway')}
+              </button>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => {
-                adjustStart(-(bulkConflict.suggestEarlierByMin / 60));
-                setDismissedConflict(true);
-              }}
-              style={{
-                padding: '.4rem .9rem', border: 'none', borderRadius: '8px',
-                background: 'var(--terra)', color: '#fff',
-                fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
-                fontFamily: 'var(--font-dm-sans)',
-              }}
-            >
-              {t('conflict.startEarlier', { minutes: bulkConflict.suggestEarlierByMin })}
-            </button>
-            <button
-              onClick={() => setDismissedConflict(true)}
-              style={{
-                padding: '.4rem .9rem', borderRadius: '8px',
-                border: '1.5px solid #E8D080', background: 'transparent',
-                color: '#7A5A10', fontSize: '.78rem', fontWeight: 500,
-                cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
-              }}
-            >
-              {t('conflict.continueAnyway')}
-            </button>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {startInvalid && (
         <div style={{

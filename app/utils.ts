@@ -300,7 +300,7 @@ export interface ScheduleResult {
   divideBallTime: Date;            // when divide & ball happens
   rtWarmupStart: Date | null;      // tropical warmup start (null if single-phase)
   rtWarmupEnd: Date | null;        // tropical warmup end (null if single-phase)
-  bulkConflict: null | { missingMin: number; suggestEarlierByMin: number };
+  bulkConflict: null | { missingMin: number; suggestEarlierByMin: number; suggestedEarlierStart?: Date };
 }
 
 function maxRTHours(kitchenTemp: number): number {
@@ -398,7 +398,8 @@ export function buildSchedule(
       const availableBulkH = (firstBlock.from.getTime() - fermStart.getTime()) / 3600000;
       const missingMin = Math.round((initialBulkH - availableBulkH) * 60);
       if (missingMin > 15) {
-        bulkConflict = { missingMin, suggestEarlierByMin: missingMin };
+        const earlierStart = new Date(startTime.getTime() - missingMin * 60000);
+        bulkConflict = { missingMin, suggestEarlierByMin: missingMin, suggestedEarlierStart: earlierStart };
       }
       actualBulkH = availableBulkH;
     }
@@ -607,7 +608,8 @@ export function buildSchedule(
     const availableBulkH = (firstBlock.from.getTime() - fermStart.getTime()) / 3600000;
     const missingMin = Math.round((INITIAL_BULK_H - availableBulkH) * 60);
     if (missingMin > 15) {
-      bulkConflict = { missingMin, suggestEarlierByMin: missingMin };
+      const earlierStart = new Date(startTime.getTime() - missingMin * 60000);
+      bulkConflict = { missingMin, suggestEarlierByMin: missingMin, suggestedEarlierStart: earlierStart };
     }
     actualBulkH = availableBulkH;
   }

@@ -85,9 +85,7 @@
       "tooShort": "Very little time — start now for the best you can get."
     },
     "conflict": {
-      "message": "Your schedule cuts into bulk fermentation by {minutes} min. Starting {minutes} min earlier gives you a full window — or continue with a shorter bulk.",
-      "startEarlier": "Start {minutes} min earlier",
-      "continueAnyway": "Continue anyway"
+      "continueAnyway": "Shorter bulk is fine"
     },
     "blockers": {
       "heading": "Any time constraints?",

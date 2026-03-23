@@ -85,9 +85,7 @@
       "tooShort": "Très peu de temps — commencez maintenant pour le meilleur résultat possible."
     },
     "conflict": {
-      "message": "Votre planning empiète sur le pointage de {minutes} min. Commencer {minutes} min plus tôt vous donne une fenêtre complète.",
-      "startEarlier": "Commencer {minutes} min plus tôt",
-      "continueAnyway": "Continuer quand même"
+      "continueAnyway": "Un pointage plus court, c'est bien"
     },
     "blockers": {
       "heading": "Des contraintes horaires ?",
