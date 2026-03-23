@@ -342,16 +342,6 @@ export const BREAD_OVEN_TYPES = {
 
 // ── MIXER TYPES ───────────────────────────
 export const MIXER_TYPES = {
-  hand: {
-    name: 'By Hand',
-    emoji: '🙌',
-    image: '/mixer_hand.png',
-    desc: 'Classic technique',
-    maxHydration: 70,
-    kneadMin: 10,
-    folds: 4,
-    instructions: 'Mix until shaggy, rest 20 min (autolyse), then knead 8–10 min until smooth and elastic. Dough passes windowpane test.',
-  },
   stand: {
     name: 'Stand Mixer',
     emoji: '⚙️',
@@ -362,15 +352,15 @@ export const MIXER_TYPES = {
     folds: 2,
     instructions: 'Speed 1 for 2 min to combine, Speed 2 for 6–8 min until dough clears the bowl.',
   },
-  spiral: {
-    name: 'Spiral Mixer',
-    emoji: '🌀',
-    image: '/mixer_spiral.png',
-    desc: 'Ooni Halo, Famag, Sunmix',
-    maxHydration: 100,
-    kneadMin: 14,
-    folds: 1,
-    instructions: '1st speed 3 min, 2nd speed 5–7 min. Handles high hydration effortlessly. In hot kitchens (≥26°C): add ice cubes directly into the mixing bowl with the water — the breaker bar will break them down as mixing progresses. This is the professional technique used in pizzerias in warm climates. Aim for roughly 20–30% ice by weight of your total water. For other mixers use ice-cold water only — ice cubes can damage stand mixer hooks.',
+  hand: {
+    name: 'By Hand',
+    emoji: '🙌',
+    image: '/mixer_hand.png',
+    desc: 'Classic technique',
+    maxHydration: 70,
+    kneadMin: 10,
+    folds: 4,
+    instructions: 'Mix until shaggy, rest 20 min (autolyse), then knead 8–10 min until smooth and elastic. Dough passes windowpane test.',
   },
   no_knead: {
     name: 'No-Knead',
@@ -381,6 +371,16 @@ export const MIXER_TYPES = {
     kneadMin: 0,
     folds: 4,
     instructions: 'Mix just until no dry flour remains (~2 min). Time and stretch & folds develop the gluten.',
+  },
+  spiral: {
+    name: 'Spiral Mixer',
+    emoji: '🌀',
+    image: '/mixer_spiral.png',
+    desc: 'Ooni Halo, Famag, Sunmix',
+    maxHydration: 100,
+    kneadMin: 14,
+    folds: 1,
+    instructions: '1st speed 3 min, 2nd speed 5–7 min. Handles high hydration effortlessly. In hot kitchens (≥26°C): add ice cubes directly into the mixing bowl with the water — the breaker bar will break them down as mixing progresses. This is the professional technique used in pizzerias in warm climates. Aim for roughly 20–30% ice by weight of your total water. For other mixers use ice-cold water only — ice cubes can damage stand mixer hooks.',
   },
 } as const;
 

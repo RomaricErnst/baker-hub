@@ -5,12 +5,20 @@ import { MIXER_TYPES, type MixerType } from '../data';
 interface MixerPickerProps {
   selected: MixerType | null;
   onSelect: (mixer: MixerType) => void;
+  styleKey?: string;
+  bakeType?: 'pizza' | 'bread';
 }
 
-export default function MixerPicker({ selected, onSelect }: MixerPickerProps) {
+const NO_KNEAD_WARNING: Partial<Record<string, string>> = {
+  neapolitan: 'No-knead produces too slack a dough for Neapolitan. Hand or stand mixing gives better cornicione structure.',
+  newyork: 'No-knead gives marginal structure for New York slices. Stand mixing recommended for a foldable crust.',
+};
+
+export default function MixerPicker({ selected, onSelect, styleKey, bakeType }: MixerPickerProps) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   return (
+    <>
     <div style={{
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
@@ -77,5 +85,24 @@ export default function MixerPicker({ selected, onSelect }: MixerPickerProps) {
         );
       })}
     </div>
+    {selected === 'no_knead' && bakeType === 'pizza' && styleKey && NO_KNEAD_WARNING[styleKey] && (
+      <div style={{
+        marginTop: '.75rem',
+        background: '#FFF8E8',
+        border: '1.5px solid #E8D080',
+        borderRadius: '10px',
+        padding: '.7rem .9rem',
+        fontSize: '.78rem',
+        color: '#7A5A10',
+        lineHeight: 1.55,
+        display: 'flex',
+        gap: '.5rem',
+        alignItems: 'flex-start',
+      }}>
+        <span>⚠️</span>
+        <span>{NO_KNEAD_WARNING[styleKey]}</span>
+      </div>
+    )}
+    </>
   );
 }

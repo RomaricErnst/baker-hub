@@ -634,6 +634,8 @@ export default function Home() {
               <MixerPicker
                 selected={mixerType}
                 onSelect={mt => { setMixerType(mt); advance(5); }}
+                styleKey={styleKey ?? undefined}
+                bakeType={bakeType ?? undefined}
               />
             </StepCard>
 
@@ -1134,6 +1136,8 @@ export default function Home() {
               <MixerPicker
                 selected={mixerType}
                 onSelect={mt => { setMixerType(mt); advanceAdv(6); }}
+                styleKey={styleKey ?? undefined}
+                bakeType={bakeType ?? undefined}
               />
             </StepCard>
 
