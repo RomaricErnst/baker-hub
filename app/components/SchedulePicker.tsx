@@ -320,6 +320,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   });
   const [pickerHour, setPickerHour] = useState<number>(() => alreadySet ? eatTime!.getHours() : 20);
   const [dismissedConflict, setDismissedConflict] = useState(false);
+  const [editingStart, setEditingStart] = useState(false);
 
   // Start picker state — synced with pendingStart after confirmBakeTime runs
   function toPickerDate(d: Date): string {
@@ -517,11 +518,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // ── PHASE 2: Start suggestion + blockers + confirm (merged) ──
   const { scenario, suggestedStart, rangeEarly, rangeLatest, isPreferredMode } = suggestion;
 
-  // Slider bounds — from now to bakeTime − preheat − 1h
+  // Slider bounds — capped at 72h window so slider stays useful for long ferments
   const sliderNow = new Date();
-  const sliderMin = sliderNow.getTime();
-  const sliderMax = pendingEatTime.getTime() - preheatMin * 60000 - 3600000;
-  const totalMs   = Math.max(sliderMax - sliderMin, 1);
+  const MAX_SLIDER_H = 72;
+  const naturalMax = pendingEatTime.getTime() - preheatMin * 60000 - 3600000;
+  const cappedMin = Math.max(sliderNow.getTime(), naturalMax - MAX_SLIDER_H * 3600000);
+  const sliderMin = cappedMin;
+  const sliderMax = naturalMax;
+  const totalMs = Math.max(sliderMax - sliderMin, 1);
   const earlyPct   = Math.max(0, Math.min(100, ((rangeEarly.getTime()  - sliderMin) / totalMs) * 100));
   const latestPct  = Math.max(0, Math.min(100, ((rangeLatest.getTime() - sliderMin) / totalMs) * 100));
   const currentPct = Math.max(0, Math.min(100, ((pendingStart.getTime() - sliderMin) / totalMs) * 100));
@@ -600,199 +604,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       </div>
 
-      {/* Start time slider */}
-      <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
-        <label style={LABEL_STYLE}>{t('startMixing')}</label>
-
-        {/* Large time display */}
-        <div style={{
-          textAlign: 'center',
-          fontFamily: 'var(--font-dm-mono)',
-          fontSize: '1.35rem',
-          fontWeight: 700,
-          color: startInvalid ? 'var(--terra)' : 'var(--char)',
-          marginBottom: '.9rem',
-          letterSpacing: '-.01em',
-        }}>
-          {startComputed ? formatSliderDisplay(pendingStart) : t('setByPlan')}
-        </div>
-
-        {/* Slider track + zones */}
-        <div style={{ position: 'relative', height: '32px', display: 'flex', alignItems: 'center' }}>
-          {/* Zone background strip */}
-          <div style={{
-            position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-            left: 0, right: 0, height: '8px', borderRadius: '4px',
-            overflow: 'hidden', display: 'flex', pointerEvents: 'none',
-          }}>
-            <div style={{ width: `${earlyPct}%`, background: '#C0D4E8', flexShrink: 0 }} />
-            <div style={{ width: `${Math.max(0, latestPct - earlyPct)}%`, background: '#B8D4A8', flexShrink: 0 }} />
-            <div style={{ flex: 1, background: '#E8D890' }} />
-          </div>
-
-          {/* Terra fill left of thumb */}
-          <div style={{
-            position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-            left: 0, width: `${currentPct}%`, height: '8px',
-            background: startComputed ? 'var(--terra)' : 'var(--border)',
-            borderRadius: '4px 0 0 4px',
-            pointerEvents: 'none', zIndex: 0,
-          }} />
-
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            value={Math.round(currentPct)}
-            onChange={e => handleSlider(Number(e.target.value), sliderMin, totalMs)}
-            disabled={!startComputed}
-            className="start-slider"
-            style={{ position: 'relative', zIndex: 1 }}
-          />
-        </div>
-
-        {/* Zone labels */}
-        <div style={{
-          display: 'flex', marginTop: '.3rem',
-          fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
-        }}>
-          {earlyPct > 8 && (
-            <div style={{
-              width: `${earlyPct}%`, textAlign: 'center',
-              color: '#6A88A8', flexShrink: 0,
-              overflow: 'hidden', whiteSpace: 'nowrap',
-            }}>
-              Too Early
-            </div>
-          )}
-          {(latestPct - earlyPct) > 8 && (
-            <div style={{
-              width: `${Math.max(0, latestPct - earlyPct)}%`, textAlign: 'center',
-              color: 'var(--sage)', flexShrink: 0,
-              overflow: 'hidden', whiteSpace: 'nowrap',
-            }}>
-              Sweet Zone
-            </div>
-          )}
-          <div style={{
-            flex: 1, textAlign: 'center',
-            color: '#8A7A30',
-            overflow: 'hidden', whiteSpace: 'nowrap',
-          }}>
-            Getting Tight
-          </div>
-        </div>
-      </div>
-
-      {/* Date+hour picker for jumping to a different day */}
-      {startComputed && (
-        <div style={{ marginTop: '.5rem' }}>
-          <label style={LABEL_STYLE}>{t('orPickDay')}</label>
-          <div style={{ display: 'flex', gap: '.5rem' }}>
-            <input
-              type="date"
-              value={startPickerDate}
-              onChange={e => {
-                setStartPickerDate(e.target.value);
-                if (e.target.value) setStartFromPicker(e.target.value, startPickerHour);
-              }}
-              style={{ ...INPUT_STYLE, flex: 2, width: undefined }}
-            />
-            <select
-              value={startPickerHour}
-              onChange={e => {
-                const h = Number(e.target.value);
-                setStartPickerHour(h);
-                if (startPickerDate) setStartFromPicker(startPickerDate, h);
-              }}
-              style={{
-                ...INPUT_STYLE, width: 'auto', flex: 1,
-                appearance: 'none' as React.CSSProperties['appearance'],
-              }}
-            >
-              {Array.from({ length: 24 }, (_, h) => (
-                <option key={h} value={h}>{hourLabel(h)}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
-
-      {bulkConflict && !dismissedConflict && (
-        <div style={{
-          background: '#FFF8E8', border: '1.5px solid #E8D080',
-          borderRadius: '10px', padding: '.75rem 1rem',
-          marginTop: '.75rem', fontSize: '.8rem', color: '#7A5A10',
-          lineHeight: 1.5,
-        }}>
-          <div style={{ marginBottom: '.5rem' }}>
-            ⏰ {t('conflict.message', { minutes: bulkConflict.missingMin })}
-          </div>
-          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => {
-                adjustStart(-(bulkConflict.suggestEarlierByMin / 60));
-                setDismissedConflict(true);
-              }}
-              style={{
-                padding: '.4rem .9rem', border: 'none', borderRadius: '8px',
-                background: 'var(--terra)', color: '#fff',
-                fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
-                fontFamily: 'var(--font-dm-sans)',
-              }}
-            >
-              {t('conflict.startEarlier', { minutes: bulkConflict.suggestEarlierByMin })}
-            </button>
-            <button
-              onClick={() => setDismissedConflict(true)}
-              style={{
-                padding: '.4rem .9rem', borderRadius: '8px',
-                border: '1.5px solid #E8D080', background: 'transparent',
-                color: '#7A5A10', fontSize: '.78rem', fontWeight: 500,
-                cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
-              }}
-            >
-              {t('conflict.continueAnyway')}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {startInvalid && (
-        <div style={{
-          fontSize: '.78rem', color: 'var(--terra)',
-          background: '#FEF4EF', border: '1px solid #F5C4B0',
-          borderRadius: '8px', padding: '.5rem .85rem',
-          marginBottom: '.75rem', marginTop: '.5rem',
-        }}>
-          {t('startBeforeBake')}
-        </div>
-      )}
-
-      {!startInvalid && (
-        <div style={{
-          fontSize: '.72rem', color: 'var(--smoke)',
-          fontFamily: 'var(--font-dm-mono)',
-          marginTop: '.45rem', marginBottom: '.15rem',
-        }}>
-          {t('totalWindow', { hours: hoursLabel((pendingEatTime.getTime() - pendingStart.getTime()) / 3600000) })}
-        </div>
-      )}
-
-      {blockerNote && (
-        <div style={{
-          fontSize: '.74rem', color: 'var(--smoke)',
-          marginTop: '.4rem', fontStyle: 'italic', lineHeight: 1.4,
-        }}>
-          {blockerNote}
-        </div>
-      )}
-
-      {/* Divider */}
-      <div style={{ borderTop: '1px solid var(--border)', margin: '1.1rem 0 1rem' }} />
-
-      {/* Blocker section */}
+      {/* Blocker section — moved above slider */}
       <div style={{ fontSize: '.82rem', color: 'var(--char)', fontWeight: 600, marginBottom: '.3rem' }}>
         {t('blockers.heading')}
       </div>
@@ -1011,7 +823,217 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
-      {/* Single CTA */}
+      {/* Divider */}
+      <div style={{ borderTop: '1px solid var(--border)', margin: '1.1rem 0 1rem' }} />
+
+      {/* Start time slider — moved below blockers */}
+      <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
+        <label style={LABEL_STYLE}>{t('startMixing')}</label>
+
+        {/* Large time display — click to edit inline */}
+        {startComputed && editingStart ? (
+          <div style={{ display: 'flex', gap: '.5rem', marginBottom: '.9rem' }}>
+            <input
+              type="date"
+              value={toPickerDate(pendingStart)}
+              onChange={e => {
+                if (!e.target.value) return;
+                const parts = e.target.value.split('-').map(Number);
+                const h = pendingStart.getHours();
+                const m = Math.round(pendingStart.getMinutes() / 15) * 15 % 60;
+                const d = new Date(parts[0], parts[1] - 1, parts[2], h, m, 0, 0);
+                setPendingStart(d);
+                setStartPickerDate(toPickerDate(d));
+                setStartPickerHour(d.getHours());
+                onChange(d, pendingEatTime, blocks);
+                setEditingStart(false);
+              }}
+              style={{ ...INPUT_STYLE, flex: 2, width: undefined }}
+              autoFocus
+            />
+            <select
+              value={pendingStart.getHours() * 60 + Math.round(pendingStart.getMinutes() / 15) * 15}
+              onChange={e => {
+                const totalMin = Number(e.target.value);
+                const h = Math.floor(totalMin / 60);
+                const m = totalMin % 60;
+                const d = new Date(pendingStart.getFullYear(), pendingStart.getMonth(), pendingStart.getDate(), h, m, 0, 0);
+                setPendingStart(d);
+                setStartPickerDate(toPickerDate(d));
+                setStartPickerHour(h);
+                onChange(d, pendingEatTime, blocks);
+                setEditingStart(false);
+              }}
+              style={{
+                ...INPUT_STYLE, width: 'auto', flex: 1,
+                appearance: 'none' as React.CSSProperties['appearance'],
+              }}
+            >
+              {Array.from({ length: 96 }, (_, i) => {
+                const h = Math.floor(i / 4);
+                const m = (i % 4) * 15;
+                const label = `${hourLabel(h)}${m > 0 ? `:${String(m).padStart(2, '0')}` : ''}`;
+                return <option key={i} value={h * 60 + m}>{label}</option>;
+              })}
+            </select>
+          </div>
+        ) : (
+          <div
+            onClick={() => { if (startComputed) setEditingStart(true); }}
+            style={{
+              textAlign: 'center',
+              fontFamily: 'var(--font-dm-mono)',
+              fontSize: '1.35rem',
+              fontWeight: 700,
+              color: startInvalid ? 'var(--terra)' : 'var(--char)',
+              marginBottom: '.9rem',
+              letterSpacing: '-.01em',
+              cursor: startComputed ? 'pointer' : 'default',
+            }}
+          >
+            {startComputed ? formatSliderDisplay(pendingStart) : t('setByPlan')}
+          </div>
+        )}
+
+        {/* Slider track + zones */}
+        <div style={{ position: 'relative', height: '32px', display: 'flex', alignItems: 'center' }}>
+          {/* Zone background strip */}
+          <div style={{
+            position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+            left: 0, right: 0, height: '8px', borderRadius: '4px',
+            overflow: 'hidden', display: 'flex', pointerEvents: 'none',
+          }}>
+            <div style={{ width: `${earlyPct}%`, background: '#C0D4E8', flexShrink: 0 }} />
+            <div style={{ width: `${Math.max(0, latestPct - earlyPct)}%`, background: '#B8D4A8', flexShrink: 0 }} />
+            <div style={{ flex: 1, background: '#E8D890' }} />
+          </div>
+
+          {/* Terra fill left of thumb */}
+          <div style={{
+            position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+            left: 0, width: `${currentPct}%`, height: '8px',
+            background: startComputed ? 'var(--terra)' : 'var(--border)',
+            borderRadius: '4px 0 0 4px',
+            pointerEvents: 'none', zIndex: 0,
+          }} />
+
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={Math.round(currentPct)}
+            onChange={e => handleSlider(Number(e.target.value), sliderMin, totalMs)}
+            disabled={!startComputed}
+            className="start-slider"
+            style={{ position: 'relative', zIndex: 1 }}
+          />
+        </div>
+
+        {/* Zone labels */}
+        <div style={{
+          display: 'flex', marginTop: '.3rem',
+          fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
+        }}>
+          {earlyPct > 8 && (
+            <div style={{
+              width: `${earlyPct}%`, textAlign: 'center',
+              color: '#6A88A8', flexShrink: 0,
+              overflow: 'hidden', whiteSpace: 'nowrap',
+            }}>
+              Too Early
+            </div>
+          )}
+          {(latestPct - earlyPct) > 8 && (
+            <div style={{
+              width: `${Math.max(0, latestPct - earlyPct)}%`, textAlign: 'center',
+              color: 'var(--sage)', flexShrink: 0,
+              overflow: 'hidden', whiteSpace: 'nowrap',
+            }}>
+              Sweet Zone
+            </div>
+          )}
+          <div style={{
+            flex: 1, textAlign: 'center',
+            color: '#8A7A30',
+            overflow: 'hidden', whiteSpace: 'nowrap',
+          }}>
+            Rush Zone
+          </div>
+        </div>
+      </div>
+
+      {bulkConflict && !dismissedConflict && (
+        <div style={{
+          background: '#FFF8E8', border: '1.5px solid #E8D080',
+          borderRadius: '10px', padding: '.75rem 1rem',
+          marginTop: '.75rem', fontSize: '.8rem', color: '#7A5A10',
+          lineHeight: 1.5,
+        }}>
+          <div style={{ marginBottom: '.5rem' }}>
+            ⏰ {t('conflict.message', { minutes: bulkConflict.missingMin })}
+          </div>
+          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => {
+                adjustStart(-(bulkConflict.suggestEarlierByMin / 60));
+                setDismissedConflict(true);
+              }}
+              style={{
+                padding: '.4rem .9rem', border: 'none', borderRadius: '8px',
+                background: 'var(--terra)', color: '#fff',
+                fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
+                fontFamily: 'var(--font-dm-sans)',
+              }}
+            >
+              {t('conflict.startEarlier', { minutes: bulkConflict.suggestEarlierByMin })}
+            </button>
+            <button
+              onClick={() => setDismissedConflict(true)}
+              style={{
+                padding: '.4rem .9rem', borderRadius: '8px',
+                border: '1.5px solid #E8D080', background: 'transparent',
+                color: '#7A5A10', fontSize: '.78rem', fontWeight: 500,
+                cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+              }}
+            >
+              {t('conflict.continueAnyway')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {startInvalid && (
+        <div style={{
+          fontSize: '.78rem', color: 'var(--terra)',
+          background: '#FEF4EF', border: '1px solid #F5C4B0',
+          borderRadius: '8px', padding: '.5rem .85rem',
+          marginBottom: '.75rem', marginTop: '.5rem',
+        }}>
+          {t('startBeforeBake')}
+        </div>
+      )}
+
+      {!startInvalid && (
+        <div style={{
+          fontSize: '.72rem', color: 'var(--smoke)',
+          fontFamily: 'var(--font-dm-mono)',
+          marginTop: '.45rem', marginBottom: '.15rem',
+        }}>
+          {t('totalWindow', { hours: hoursLabel((pendingEatTime.getTime() - pendingStart.getTime()) / 3600000) })}
+        </div>
+      )}
+
+      {blockerNote && (
+        <div style={{
+          fontSize: '.74rem', color: 'var(--smoke)',
+          marginTop: '.4rem', fontStyle: 'italic', lineHeight: 1.4,
+        }}>
+          {blockerNote}
+        </div>
+      )}
+
+      {/* Confirm */}
       <button
         onClick={confirmStart}
         disabled={startInvalid || !startComputed}

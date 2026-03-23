@@ -90,8 +90,8 @@
       "continueAnyway": "Continuer quand même"
     },
     "blockers": {
-      "heading": "Des contraintes à gérer entre les deux ?",
-      "sub": "Optionnel — indiquez vos indisponibilités et on enverra la pâte au frigo.",
+      "heading": "Quand êtes-vous occupé ?",
+      "sub": "On adapte le planning à vos contraintes pour trouver le meilleur moment de démarrage.",
       "quickPresets": "Raccourcis",
       "weekdays": "💼 Jours ouvrés",
       "weekdayHours": "· 9h → 18h",

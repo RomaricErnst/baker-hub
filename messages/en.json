@@ -90,8 +90,8 @@
       "continueAnyway": "Continue anyway"
     },
     "blockers": {
-      "heading": "Anything in between to work around?",
-      "sub": "Optional — mark windows when you're unavailable and we'll send the dough to the fridge.",
+      "heading": "When are you busy?",
+      "sub": "We'll work around your schedule to suggest the best start time.",
       "quickPresets": "Quick presets",
       "weekdays": "💼 Weekdays",
       "weekdayHours": "· 9am → 6pm",
