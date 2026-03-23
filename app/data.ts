@@ -440,6 +440,123 @@ export const YEAST_TYPES = {
   },
 } as const;
 
+// ── FLOUR DATA ────────────────────────────
+export const FLOUR_DATA = {
+  pizza00: {
+    name: 'Pizza flour 00',
+    nameFr: 'Farine à pizza 00',
+    w: 250,
+    protein: 12.5,
+    hydrationBase: 62,
+    hydrationDelta: 0,
+    fermTolerance: 1.0,
+    absorbency: 1.0,
+  },
+  strong00: {
+    name: 'Strong 00 W270+',
+    nameFr: 'Farine 00 forte W270+',
+    w: 300,
+    protein: 13.5,
+    hydrationBase: 65,
+    hydrationDelta: +2,
+    fermTolerance: 1.2,
+    absorbency: 1.05,
+  },
+  bread: {
+    name: 'Bread flour / T65',
+    nameFr: 'Farine à pain / T65',
+    w: 200,
+    protein: 11.5,
+    hydrationBase: 65,
+    hydrationDelta: +1,
+    fermTolerance: 0.9,
+    absorbency: 1.02,
+  },
+  allpurpose: {
+    name: 'All-purpose / T55',
+    nameFr: 'Farine tout usage / T55',
+    w: 130,
+    protein: 10.0,
+    hydrationBase: 60,
+    hydrationDelta: -2,
+    fermTolerance: 0.75,
+    absorbency: 0.97,
+  },
+  semolina: {
+    name: 'Semolina / Semola rimacinata',
+    nameFr: 'Semoule fine / Semola',
+    w: 180,
+    protein: 12.0,
+    hydrationBase: 60,
+    hydrationDelta: -1,
+    fermTolerance: 0.85,
+    absorbency: 0.95,
+  },
+  wholemeal: {
+    name: 'Wholemeal / T110',
+    nameFr: 'Farine complète / T110',
+    w: 160,
+    protein: 13.0,
+    hydrationBase: 72,
+    hydrationDelta: +4,
+    fermTolerance: 0.8,
+    absorbency: 1.10,
+  },
+  rye: {
+    name: 'Rye / T130',
+    nameFr: 'Seigle / T130',
+    w: 120,
+    protein: 8.0,
+    hydrationBase: 75,
+    hydrationDelta: +6,
+    fermTolerance: 0.7,
+    absorbency: 1.15,
+  },
+} as const;
+
+export type FlourKey = keyof typeof FLOUR_DATA;
+
+export interface FlourBlend {
+  flour1: FlourKey;
+  flour2: FlourKey | null;
+  ratio1: number; // 0-100, percentage of flour1
+}
+
+export interface BlendProfile {
+  blendedW: number;
+  hydrationDelta: number;
+  fermToleranceMultiplier: number;
+  displayName: string;
+  displayNameFr: string;
+}
+
+export function computeBlendProfile(blend: FlourBlend): BlendProfile {
+  const f1 = FLOUR_DATA[blend.flour1];
+  if (!blend.flour2 || blend.ratio1 === 100) {
+    return {
+      blendedW: f1.w,
+      hydrationDelta: f1.hydrationDelta,
+      fermToleranceMultiplier: f1.fermTolerance,
+      displayName: f1.name,
+      displayNameFr: f1.nameFr,
+    };
+  }
+  const f2 = FLOUR_DATA[blend.flour2];
+  const r1 = blend.ratio1 / 100;
+  const r2 = 1 - r1;
+  return {
+    blendedW: Math.round(f1.w * r1 + f2.w * r2),
+    hydrationDelta: Math.round((f1.hydrationDelta * r1 + f2.hydrationDelta * r2) * 10) / 10,
+    fermToleranceMultiplier: Math.round((f1.fermTolerance * r1 + f2.fermTolerance * r2) * 100) / 100,
+    displayName: blend.ratio1 === 50
+      ? `${f1.name} + ${f2.name}`
+      : `${blend.ratio1}% ${f1.name} + ${100 - blend.ratio1}% ${f2.name}`,
+    displayNameFr: blend.ratio1 === 50
+      ? `${f1.nameFr} + ${f2.nameFr}`
+      : `${blend.ratio1}% ${f1.nameFr} + ${100 - blend.ratio1}% ${f2.nameFr}`,
+  };
+}
+
 // ── TYPE EXPORTS ──────────────────────────
 export type PizzaStyleKey = keyof typeof PIZZA_STYLES;
 export type BreadStyleKey = keyof typeof BREAD_STYLES;
