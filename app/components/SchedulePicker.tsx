@@ -802,33 +802,32 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             return !isNightBlock && !isWorkBlock;
           }).map((block, i) => {
             const durationH = (block.to.getTime() - block.from.getTime()) / 3600000;
-            const isNightBlock = nights.some(n => n.label === block.label);
-            const isWorkBlock  = block.label.startsWith('Work · ');
-            const emoji = isNightBlock ? '🌙' : isWorkBlock ? '💼' : '🕐';
+            const emoji = '🚫';
             return (
               <div
                 key={i}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '.6rem',
                   padding: '.5rem .85rem',
-                  background: '#EEF2FA', border: '1.5px solid #C4CDE0',
+                  background: '#FEF4EF', border: '1.5px solid var(--terra)',
                   borderRadius: '10px',
                 }}
               >
                 <span style={{ fontSize: '.95rem', flexShrink: 0 }}>{emoji}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: '.82rem', fontWeight: 500, color: 'var(--char)' }}>
+                  <span style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--terra)' }}>
                     {block.label}
                   </span>
+                  <span style={{ opacity: .7, marginLeft: '.3rem', fontSize: '.8rem' }}>✓</span>
                   <span style={{
                     marginLeft: '.5rem', fontSize: '.72rem',
-                    color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                    color: 'var(--terra)', opacity: .75, fontFamily: 'var(--font-dm-mono)',
                   }}>
                     {formatTimeShort(block.from)} → {formatTimeShort(block.to)}
                   </span>
                   <span style={{
                     marginLeft: '.35rem', fontSize: '.7rem',
-                    color: '#6A7FA8', fontFamily: 'var(--font-dm-mono)',
+                    color: 'var(--terra)', opacity: .5, fontFamily: 'var(--font-dm-mono)',
                   }}>
                     ({hoursLabel(durationH)})
                   </span>
