@@ -321,6 +321,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [pickerHour, setPickerHour] = useState<number>(() => alreadySet ? eatTime!.getHours() : 20);
   const [dismissedConflict, setDismissedConflict] = useState(false);
   const [editingStart, setEditingStart] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPct, setDragPct] = useState<number | null>(null);
 
   // Start picker state — synced with pendingStart after confirmBakeTime runs
   function toPickerDate(d: Date): string {
@@ -398,6 +400,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setStartPickerHour(resolvedStart.getHours());
     setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
     onChange(resolvedStart, pendingEatTime, blocks);
+  }
+
+  function snapToNonBlocked(date: Date, activeBlocks: AvailabilityBlock[]): Date {
+    const inBlock = activeBlocks.find(b => date >= b.from && date < b.to);
+    if (!inBlock) return date;
+    const forward = new Date(inBlock.to);
+    const backward = new Date(inBlock.from.getTime() - 15 * 60000);
+    const distForward = Math.abs(forward.getTime() - date.getTime());
+    const distBackward = Math.abs(backward.getTime() - date.getTime());
+    return distForward <= distBackward ? forward : backward;
   }
 
   function setStartFromPicker(dateStr: string, hour: number) {
@@ -872,10 +884,31 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             background: `linear-gradient(to right, #C8D8E8 0%, #C8D8E8 ${earlyPct}%, #B8D4A8 ${earlyPct}%, #B8D4A8 ${latestPct}%, #E8D890 ${latestPct}%, #D4A853 ${Math.min(100, latestPct + 15)}%, #D4A853 100%)`,
           }} />
 
-          {/* Diamond position marker */}
+          {/* Blocker zone overlays — only while dragging */}
+          {isDragging && blocks.map(block => {
+            const blockStartPct = Math.max(0, Math.min(100, (block.from.getTime() - sliderMin) / totalMs * 100));
+            const blockEndPct   = Math.max(0, Math.min(100, (block.to.getTime()   - sliderMin) / totalMs * 100));
+            if (blockEndPct <= blockStartPct) return null;
+            return (
+              <div key={block.label} style={{
+                position: 'absolute',
+                left: `${blockStartPct}%`,
+                width: `${blockEndPct - blockStartPct}%`,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                height: '10px',
+                background: 'rgba(180,180,180,0.5)',
+                pointerEvents: 'none',
+                zIndex: 1,
+                borderRadius: '2px',
+              }} />
+            );
+          })}
+
+          {/* Diamond position marker — follows dragPct while dragging */}
           <div style={{
             position: 'absolute',
-            left: `calc(${currentPct}% - 10px)`,
+            left: `calc(${isDragging && dragPct !== null ? dragPct : currentPct}% - 10px)`,
             top: '50%',
             width: '20px', height: '20px',
             background: '#fff',
@@ -891,8 +924,28 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             min={0}
             max={100}
             step={1}
-            value={Math.round(currentPct)}
-            onChange={e => handleSlider(Number(e.target.value), sliderMin, totalMs)}
+            value={isDragging && dragPct !== null ? Math.round(dragPct) : Math.round(currentPct)}
+            onPointerDown={() => setIsDragging(true)}
+            onPointerUp={(e) => {
+              setIsDragging(false);
+              setDragPct(null);
+              const val = Number((e.target as HTMLInputElement).value);
+              const rawMs = sliderMin + (val / 100) * totalMs;
+              const rawDate = new Date(rawMs);
+              const snapped = Math.round(rawDate.getMinutes() / 15) * 15;
+              rawDate.setMinutes(snapped, 0, 0);
+              const reasonable = pushToReasonableHour(rawDate);
+              const nonBlocked = snapToNonBlocked(reasonable, blocks);
+              const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(nonBlocked, blocks);
+              setPendingStart(resolvedStart);
+              setStartPickerDate(toPickerDate(resolvedStart));
+              setStartPickerHour(resolvedStart.getHours());
+              setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
+              onChange(resolvedStart, pendingEatTime, blocks);
+            }}
+            onChange={e => {
+              if (isDragging) setDragPct(Number(e.target.value));
+            }}
             disabled={!startComputed}
             className="start-slider"
             style={{ position: 'absolute', left: 0, right: 0, zIndex: 3, opacity: 0 }}
@@ -958,16 +1011,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               {earlierIsReasonable && earlierStart ? (
                 <>
                   <div style={{ fontSize: '.82rem', fontWeight: 600, lineHeight: 1.55 }}>
-                    ⏰ Your morning schedule overlaps with bulk fermentation.
+                    ⏰ Your unavailability window overlaps with bulk fermentation.
                   </div>
                   <div style={{ fontSize: '.74rem', opacity: .8, marginTop: '.2rem', lineHeight: 1.55 }}>
-                    Starting at {formatSliderDisplay(earlierStart)} gives you a full bulk before your day starts.
+                    Starting at {formatSliderDisplay(earlierStart)} clears the window before it starts.
                   </div>
                 </>
               ) : (
                 <>
                   <div style={{ fontSize: '.82rem', fontWeight: 600, lineHeight: 1.55 }}>
-                    ⏰ Your schedule overlaps with bulk fermentation.
+                    ⏰ Your unavailability window overlaps with bulk fermentation.
                   </div>
                   <div style={{ fontSize: '.74rem', opacity: .8, marginTop: '.2rem', lineHeight: 1.55 }}>
                     A shorter bulk still makes great dough — the difference is minimal.
