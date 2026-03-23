@@ -237,7 +237,6 @@ export const OVEN_TYPES = {
     forceOil: 0,
     forceSugar: 0,
     preheatMin: 45,
-    tempNote: 'Preheat 45 min. Cook 60–90 seconds.',
   },
   home_oven_steel: {
     name: 'Home oven + stone',
@@ -250,7 +249,6 @@ export const OVEN_TYPES = {
     forceOil: null,
     forceSugar: null,
     preheatMin: 60,
-    tempNote: 'Preheat steel/stone 1h at max temp. Cook 5–7 min.',
   },
   home_oven_standard: {
     name: 'Home oven (standard)',
@@ -263,7 +261,6 @@ export const OVEN_TYPES = {
     forceOil: null,
     forceSugar: null,
     preheatMin: 30,
-    tempNote: 'Preheat 30 min at 230°C. Cook 8–12 min.',
   },
   electric_pizza: {
     name: 'Electric pizza oven',
@@ -276,7 +273,6 @@ export const OVEN_TYPES = {
     forceOil: 0,
     forceSugar: 0,
     preheatMin: 30,
-    tempNote: 'Preheat 30 min at max. Cook 2–4 min.',
   },
 } as const;
 

@@ -27,7 +27,7 @@ export default function OvenPicker({ bakeType, selected, onSelect }: OvenPickerP
         const isSelected = selected === key;
         const o = oven as {
           name: string; nameFr?: string; emoji: string; image?: string;
-          desc: string; descFr?: string; tempNote?: string;
+          desc: string; descFr?: string;
         };
         const imgSrc = o.image;
         const displayName = locale === 'fr' && o.nameFr ? o.nameFr : o.name;
@@ -62,19 +62,9 @@ export default function OvenPicker({ bakeType, selected, onSelect }: OvenPickerP
             <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.25rem', color: 'var(--char)' }}>
               {displayName}
             </div>
-            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: o.tempNote ? '.5rem' : 0 }}>
+            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.45 }}>
               {displayDesc}
             </div>
-            {o.tempNote && (
-              <div style={{
-                fontSize: '.68rem', color: 'var(--terra)',
-                fontFamily: 'var(--font-dm-mono)',
-                background: '#FEF4EF', borderRadius: '6px',
-                padding: '.25rem .5rem',
-              }}>
-                {o.tempNote}
-              </div>
-            )}
             {isSelected && (
               <div style={{ marginTop: '.5rem', color: 'var(--terra)', fontSize: '.8rem', fontWeight: 600 }}>✓</div>
             )}
