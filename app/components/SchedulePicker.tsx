@@ -45,6 +45,14 @@ function formatDayShort(d: Date): string {
   return `${weekday} ${d.getDate()} ${month} at ${timeStr}`;
 }
 
+// ── Slider display formatter ──────────────────
+// "Thu 26 Mar · 6pm"
+function formatSliderDisplay(d: Date): string {
+  const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
+  const mo = d.toLocaleDateString('en-US', { month: 'short' });
+  return `${wd} ${d.getDate()} ${mo} · ${formatTimeShort(d)}`;
+}
+
 // ── Hour-rounded formatters ───────────────────
 function roundToNearestHour(d: Date): Date {
   const r = new Date(d);
@@ -376,6 +384,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     onChange(d, pendingEatTime, blocks);
   }
 
+  function handleSlider(val: number, sliderMin: number, totalMs: number) {
+    const ms = sliderMin + (val / 100) * totalMs;
+    const d = pushToReasonableHour(new Date(ms));
+    const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(d, blocks);
+    setPendingStart(resolvedStart);
+    setStartPickerDate(toPickerDate(resolvedStart));
+    setStartPickerHour(resolvedStart.getHours());
+    setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
+    onChange(resolvedStart, pendingEatTime, blocks);
+  }
+
   function setStartFromPicker(dateStr: string, hour: number) {
     if (!dateStr) return;
     const parts = dateStr.split('-').map(Number);
@@ -498,6 +517,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // ── PHASE 2: Start suggestion + blockers + confirm (merged) ──
   const { scenario, suggestedStart, rangeEarly, rangeLatest, isPreferredMode } = suggestion;
 
+  // Slider bounds — from now to bakeTime − preheat − 1h
+  const sliderNow = new Date();
+  const sliderMin = sliderNow.getTime();
+  const sliderMax = pendingEatTime.getTime() - preheatMin * 60000 - 3600000;
+  const totalMs   = Math.max(sliderMax - sliderMin, 1);
+  const earlyPct   = Math.max(0, Math.min(100, ((rangeEarly.getTime()  - sliderMin) / totalMs) * 100));
+  const latestPct  = Math.max(0, Math.min(100, ((rangeLatest.getTime() - sliderMin) / totalMs) * 100));
+  const currentPct = Math.max(0, Math.min(100, ((pendingStart.getTime() - sliderMin) / totalMs) * 100));
+
   const scenarioBg    = scenario === 'too_short' ? '#FEF4EF' : scenario === 'tight' ? '#FFF8E8' : '#F2FAF0';
   const scenarioBdr   = scenario === 'too_short' ? '#F5C4B0' : scenario === 'tight' ? '#E8D080' : '#C8D4BA';
   const scenarioColor = scenario === 'too_short' ? 'var(--terra)' : scenario === 'tight' ? '#7A5A10' : '#3A6A30';
@@ -572,52 +600,88 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       </div>
 
-      {/* Start time adjuster — ±1h stepper */}
-      <div style={{ marginBottom: startInvalid ? '.5rem' : '0' }}>
+      {/* Start time slider */}
+      <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
         <label style={LABEL_STYLE}>{t('startMixing')}</label>
+
+        {/* Large time display */}
         <div style={{
-          display: 'flex', alignItems: 'center',
-          border: `2px solid ${startInvalid ? 'var(--terra)' : 'var(--border)'}`,
-          borderRadius: '10px', background: 'var(--warm)', overflow: 'hidden',
+          textAlign: 'center',
+          fontFamily: 'var(--font-dm-mono)',
+          fontSize: '1.35rem',
+          fontWeight: 700,
+          color: startInvalid ? 'var(--terra)' : 'var(--char)',
+          marginBottom: '.9rem',
+          letterSpacing: '-.01em',
         }}>
-          <button
-            onClick={() => adjustStart(-1)}
+          {startComputed ? formatSliderDisplay(pendingStart) : t('setByPlan')}
+        </div>
+
+        {/* Slider track + zones */}
+        <div style={{ position: 'relative', height: '32px', display: 'flex', alignItems: 'center' }}>
+          {/* Zone background strip */}
+          <div style={{
+            position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+            left: 0, right: 0, height: '8px', borderRadius: '4px',
+            overflow: 'hidden', display: 'flex', pointerEvents: 'none',
+          }}>
+            <div style={{ width: `${earlyPct}%`, background: '#C0D4E8', flexShrink: 0 }} />
+            <div style={{ width: `${Math.max(0, latestPct - earlyPct)}%`, background: '#B8D4A8', flexShrink: 0 }} />
+            <div style={{ flex: 1, background: '#E8D890' }} />
+          </div>
+
+          {/* Terra fill left of thumb */}
+          <div style={{
+            position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+            left: 0, width: `${currentPct}%`, height: '8px',
+            background: startComputed ? 'var(--terra)' : 'var(--border)',
+            borderRadius: '4px 0 0 4px',
+            pointerEvents: 'none', zIndex: 0,
+          }} />
+
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={Math.round(currentPct)}
+            onChange={e => handleSlider(Number(e.target.value), sliderMin, totalMs)}
             disabled={!startComputed}
-            style={{
-              padding: '.65rem .9rem', background: 'none',
-              border: 'none', borderRight: '1.5px solid var(--border)',
-              cursor: startComputed ? 'pointer' : 'default',
-              color: startComputed ? 'var(--char)' : 'var(--smoke)',
-              fontSize: '1.1rem', flexShrink: 0,
-              fontFamily: 'var(--font-dm-mono)', lineHeight: 1,
-            }}
-          >
-            −
-          </button>
+            className="start-slider"
+            style={{ position: 'relative', zIndex: 1 }}
+          />
+        </div>
+
+        {/* Zone labels */}
+        <div style={{
+          display: 'flex', marginTop: '.3rem',
+          fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
+        }}>
+          {earlyPct > 8 && (
+            <div style={{
+              width: `${earlyPct}%`, textAlign: 'center',
+              color: '#6A88A8', flexShrink: 0,
+              overflow: 'hidden', whiteSpace: 'nowrap',
+            }}>
+              Too Early
+            </div>
+          )}
+          {(latestPct - earlyPct) > 8 && (
+            <div style={{
+              width: `${Math.max(0, latestPct - earlyPct)}%`, textAlign: 'center',
+              color: 'var(--sage)', flexShrink: 0,
+              overflow: 'hidden', whiteSpace: 'nowrap',
+            }}>
+              Sweet Zone
+            </div>
+          )}
           <div style={{
             flex: 1, textAlign: 'center',
-            padding: '.65rem .5rem',
-            fontSize: '.85rem',
-            fontFamily: 'var(--font-dm-mono)',
-            color: startComputed ? 'var(--char)' : 'var(--smoke)',
-            fontWeight: startComputed ? 700 : undefined,
+            color: '#8A7A30',
+            overflow: 'hidden', whiteSpace: 'nowrap',
           }}>
-            {startComputed ? formatDayShort(pendingStart) : t('setByPlan')}
+            Getting Tight
           </div>
-          <button
-            onClick={() => adjustStart(1)}
-            disabled={!startComputed}
-            style={{
-              padding: '.65rem .9rem', background: 'none',
-              border: 'none', borderLeft: '1.5px solid var(--border)',
-              cursor: startComputed ? 'pointer' : 'default',
-              color: startComputed ? 'var(--char)' : 'var(--smoke)',
-              fontSize: '1.1rem', flexShrink: 0,
-              fontFamily: 'var(--font-dm-mono)', lineHeight: 1,
-            }}
-          >
-            +
-          </button>
         </div>
       </div>
 
