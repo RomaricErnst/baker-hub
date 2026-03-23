@@ -11,12 +11,13 @@ import ClimatePicker from '../components/ClimatePicker';
 import RecipeOutput from '../components/RecipeOutput';
 import Timeline from '../components/Timeline';
 import YeastHelper from '../components/YeastHelper';
-import FlourPicker, { type FlourCategory } from '../components/FlourPicker';
+import FlourPicker from '../components/FlourPicker';
 import { createClient } from '../lib/supabase/client';
 import { saveRecipe } from '../lib/supabase/saveRecipe';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES,
-  type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType,
+  computeBlendProfile,
+  type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType, type FlourBlend,
 } from '../data';
 import {
   buildSchedule, calculateRecipe, formatTime,
@@ -156,7 +157,7 @@ export default function Home() {
   const [tab, setTab] = useState<'guided' | 'advanced'>('guided');
   const [activeStep, setActiveStep] = useState(1);
   const [advancedStep, setAdvancedStep] = useState(1);
-  const [flourCategory, setFlourCategory] = useState<FlourCategory>('pizza00');
+  const [flourBlend, setFlourBlend] = useState<FlourBlend>({ flour1: 'pizza00', flour2: null, ratio1: 100 });
 
   // Step 1 — bake type
   const [bakeType, setBakeType] = useState<BakeType | null>(null);
@@ -276,12 +277,12 @@ export default function Home() {
       return calculateRecipe(
         styleKey, ovenType as OvenType, numItems, itemWeight,
         kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, 'advanced',
-        manualHydration, manualOil, manualSugar,
+        manualHydration, manualOil, manualSugar, flourBlend,
       );
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, manualHydration, manualOil, manualSugar]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, manualHydration, manualOil, manualSugar, flourBlend]);
 
   // Advanced recipe with yeast multiplier applied
   const advancedDisplayRecipe = useMemo(() => {
@@ -355,7 +356,7 @@ export default function Home() {
     setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(4);
     setShowResults(false); setActiveStep(1);
     setYeastMultiplier(1.0); setAppliedMultiplier(1.0);
-    setAdvancedStep(1); setFlourCategory('pizza00'); setPriority(null);
+    setAdvancedStep(1); setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 }); setPriority(null);
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -1038,21 +1039,32 @@ export default function Home() {
               idPrefix="adv-step"
               num={3} title={t('steps.flour.title')}
               activeStep={advancedStep}
-              summary={(() => {
-                const map: Record<FlourCategory, string> = {
-                  allpurpose: '🌾 All-purpose / T55',
-                  bread:      '🌾 Bread flour / T65',
-                  pizza00:    '⭐ Pizza flour 00 / T45',
-                  strong00:   '💪 Strong 00 W270+',
-                };
-                return map[flourCategory];
-              })()}
+              summary={computeBlendProfile(flourBlend).displayName}
               onEdit={() => setAdvancedStep(3)}
             >
               <FlourPicker
-                selected={flourCategory}
-                onSelect={cat => { setFlourCategory(cat); advanceAdv(3); }}
+                blend={flourBlend}
+                onBlendChange={b => { setFlourBlend(b); if (b.flour2 === null) advanceAdv(3); }}
+                bakeType={bakeType ?? 'pizza'}
+                mode="custom"
               />
+              {flourBlend.flour2 === null && (
+                <div style={{ marginTop: '.85rem' }}>
+                  <button
+                    onClick={() => advanceAdv(3)}
+                    className="btn"
+                    style={{
+                      width: '100%', padding: '.9rem 1.25rem',
+                      border: 'none', borderRadius: '12px',
+                      background: 'var(--terra)', color: '#fff',
+                      fontFamily: 'var(--font-playfair)', fontSize: '1.05rem', fontWeight: 700,
+                      cursor: 'pointer', boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
+                    }}
+                  >
+                    Continue →
+                  </button>
+                </div>
+              )}
             </StepCard>
 
             {/* ─── ADV STEP 4: Quantity ────────────── */}
@@ -1374,10 +1386,7 @@ export default function Home() {
                     </div>
                     {styleKey && (
                       <div style={{ fontSize: '.78rem', color: 'rgba(245,240,232,.55)', marginTop: '.2rem', fontFamily: 'var(--font-dm-mono)' }}>
-                        {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {ovenData?.name ?? ''} · {(() => {
-                          const map: Record<FlourCategory, string> = { allpurpose: 'T55', bread: 'T65', pizza00: '00', strong00: '00 W270+' };
-                          return map[flourCategory];
-                        })()}
+                        {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {ovenData?.name ?? ''} · {computeBlendProfile(flourBlend).displayName}
                       </div>
                     )}
                   </div>
