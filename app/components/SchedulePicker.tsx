@@ -897,24 +897,29 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
         {/* Slider track + zones */}
         <div style={{ position: 'relative', height: '32px', display: 'flex', alignItems: 'center' }}>
-          {/* Zone background strip */}
+          {/* Three-zone track */}
           <div style={{
             position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-            left: 0, right: 0, height: '8px', borderRadius: '4px',
-            overflow: 'hidden', display: 'flex', pointerEvents: 'none',
+            left: 0, right: 0, height: '10px', borderRadius: '5px',
+            overflow: 'hidden', display: 'flex', pointerEvents: 'none', zIndex: 0,
           }}>
-            <div style={{ width: `${earlyPct}%`, background: '#C0D4E8', flexShrink: 0 }} />
+            <div style={{ width: `${earlyPct}%`, background: '#C8D8E8', flexShrink: 0 }} />
             <div style={{ width: `${Math.max(0, latestPct - earlyPct)}%`, background: '#B8D4A8', flexShrink: 0 }} />
             <div style={{ flex: 1, background: '#E8D890' }} />
           </div>
 
-          {/* Terra fill left of thumb */}
+          {/* Diamond position marker */}
           <div style={{
-            position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-            left: 0, width: `${currentPct}%`, height: '8px',
-            background: startComputed ? 'var(--terra)' : 'var(--border)',
-            borderRadius: '4px 0 0 4px',
-            pointerEvents: 'none', zIndex: 0,
+            position: 'absolute',
+            left: `calc(${currentPct}% - 10px)`,
+            top: '50%',
+            width: '20px', height: '20px',
+            background: '#fff',
+            border: '2.5px solid var(--terra)',
+            boxShadow: '0 2px 8px rgba(196,82,42,0.25)',
+            transform: 'translateY(-50%) rotate(45deg)',
+            pointerEvents: 'none', zIndex: 2,
+            opacity: startComputed ? 1 : 0.4,
           }} />
 
           <input
@@ -926,7 +931,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             onChange={e => handleSlider(Number(e.target.value), sliderMin, totalMs)}
             disabled={!startComputed}
             className="start-slider"
-            style={{ position: 'relative', zIndex: 1 }}
+            style={{ position: 'absolute', left: 0, right: 0, zIndex: 3, opacity: 0 }}
           />
         </div>
 
