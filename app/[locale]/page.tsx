@@ -15,8 +15,8 @@ import FlourPicker, { type FlourCategory } from '../components/FlourPicker';
 import { createClient } from '../lib/supabase/client';
 import { saveRecipe } from '../lib/supabase/saveRecipe';
 import {
-  ALL_STYLES, OVEN_TYPES, MIXER_TYPES, YEAST_TYPES,
-  type BakeType, type StyleKey, type OvenType, type MixerType, type YeastType,
+  ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES,
+  type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType,
 } from '../data';
 import {
   buildSchedule, calculateRecipe, formatTime,
@@ -167,7 +167,7 @@ export default function Home() {
   const [itemWeight, setItemWeight] = useState(270);
 
   // Step 3 — oven
-  const [ovenType, setOvenType] = useState<OvenType>('home_oven_steel');
+  const [ovenType, setOvenType] = useState<AnyOvenType>('home_oven_steel');
 
   // Step 4 — mixer
   const [mixerType, setMixerType] = useState<MixerType>('hand');
@@ -231,7 +231,10 @@ export default function Home() {
   }, [showResults]);
 
   // ── Computed ──────────────────────────────
-  const preheatMin = OVEN_TYPES[ovenType].preheatMin;
+  const ovenData = bakeType === 'bread'
+    ? BREAD_OVEN_TYPES[ovenType as BreadOvenType]
+    : OVEN_TYPES[ovenType as OvenType];
+  const preheatMin = ovenData?.preheatMin ?? 30;
 
   const schedule = useMemo(() => {
     if (!eatTime || startTime >= eatTime) return null;
@@ -242,7 +245,7 @@ export default function Home() {
     if (!styleKey || !schedule) return null;
     try {
       return calculateRecipe(
-        styleKey, ovenType, numItems, itemWeight,
+        styleKey, ovenType as OvenType, numItems, itemWeight,
         kitchenTemp, humidity, schedule, fridgeTemp, yeastType, null, 'guided',
       );
     } catch {
@@ -271,7 +274,7 @@ export default function Home() {
     if (!styleKey || !schedule) return null;
     try {
       return calculateRecipe(
-        styleKey, ovenType, numItems, itemWeight,
+        styleKey, ovenType as OvenType, numItems, itemWeight,
         kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, 'advanced',
         manualHydration, manualOil, manualSugar,
       );
@@ -301,6 +304,7 @@ export default function Home() {
     setBakeType(bt);
     setStyleKey(null);
     setShowResults(false);
+    setOvenType(bt === 'bread' ? 'dutch_oven' : 'home_oven_steel');
     setActiveStep(2);
   }
 
@@ -366,7 +370,7 @@ export default function Home() {
       bakeType: bakeType ?? 'pizza',
       numItems,
       itemWeight,
-      ovenType,
+      ovenType: ovenType as OvenType,
       mixerType,
       yeastType,
       kitchenTemp,
@@ -610,10 +614,11 @@ export default function Home() {
             <StepCard
               num={4} title={t('steps.4.title')}
               activeStep={activeStep}
-              summary={`${OVEN_TYPES[ovenType].emoji} ${OVEN_TYPES[ovenType].name}`}
+              summary={ovenData ? `${ovenData.emoji} ${ovenData.name}` : ''}
               onEdit={() => setActiveStep(4)}
             >
               <OvenPicker
+                bakeType={bakeType ?? 'pizza'}
                 selected={ovenType}
                 onSelect={ot => { setOvenType(ot); advance(4); }}
               />
@@ -749,7 +754,7 @@ export default function Home() {
                     </div>
                     {styleKey && (
                       <div style={{ fontSize: '.78rem', color: 'rgba(245,240,232,.55)', marginTop: '.2rem', fontFamily: 'var(--font-dm-mono)' }}>
-                        {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {OVEN_TYPES[ovenType].name}
+                        {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {ovenData?.name ?? ''}
                       </div>
                     )}
                   </div>
@@ -1108,10 +1113,11 @@ export default function Home() {
               idPrefix="adv-step"
               num={5} title={t('steps.4.title')}
               activeStep={advancedStep}
-              summary={`${OVEN_TYPES[ovenType].emoji} ${OVEN_TYPES[ovenType].name}`}
+              summary={ovenData ? `${ovenData.emoji} ${ovenData.name}` : ''}
               onEdit={() => setAdvancedStep(5)}
             >
               <OvenPicker
+                bakeType={bakeType ?? 'pizza'}
                 selected={ovenType}
                 onSelect={ot => { setOvenType(ot); advanceAdv(5); }}
               />
@@ -1364,7 +1370,7 @@ export default function Home() {
                     </div>
                     {styleKey && (
                       <div style={{ fontSize: '.78rem', color: 'rgba(245,240,232,.55)', marginTop: '.2rem', fontFamily: 'var(--font-dm-mono)' }}>
-                        {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {OVEN_TYPES[ovenType].name} · {(() => {
+                        {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {ovenData?.name ?? ''} · {(() => {
                           const map: Record<FlourCategory, string> = { allpurpose: 'T55', bread: 'T65', pizza00: '00', strong00: '00 W270+' };
                           return map[flourCategory];
                         })()}

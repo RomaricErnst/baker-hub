@@ -228,9 +228,11 @@ export const BREAD_STYLES = {
 export const OVEN_TYPES = {
   pizza_oven: {
     name: 'Pizza oven',
+    nameFr: 'Four à pizza',
     emoji: '🔥',
     image: '/oven_fire.png',
-    desc: 'Ooni, Gozney, wood-fired. 450°C+',
+    desc: '450°C+ transforms your dough in 60-90 seconds. Leopard spotting, charred cornicione. Rotate halfway through.',
+    descFr: 'À 450°C+, votre pizza cuit en 60-90 secondes. Cornicione gonflé et légèrement carbonisé. Tournez à mi-cuisson.',
     hydrationDelta: -3,
     forceOil: 0,
     forceSugar: 0,
@@ -239,9 +241,11 @@ export const OVEN_TYPES = {
   },
   home_oven_steel: {
     name: 'Home oven + stone',
+    nameFr: 'Four + pierre ou acier',
     emoji: '🪨',
     image: '/oven_stone.png',
-    desc: 'Baking stone or steel. Better crust, crispier base.',
+    desc: 'Preheat at max temperature for 45-60 min. Thermal mass gives a crispy base. Cook 5-7 min. Longer preheat = better result.',
+    descFr: 'Préchauffez à température maximale 45-60 min. La masse thermique garantit une base croustillante. Cuisson 5-7 min.',
     hydrationDelta: 3,
     forceOil: null,
     forceSugar: null,
@@ -250,9 +254,11 @@ export const OVEN_TYPES = {
   },
   home_oven_standard: {
     name: 'Home oven (standard)',
+    nameFr: 'Four domestique standard',
     emoji: '🏠',
     image: '/oven_standard.png',
-    desc: 'Standard oven, no steel or stone.',
+    desc: 'Max temperature, highest rack. Expect 8-12 min. No charring but great flavour. Best for New York, Pan and thicker styles.',
+    descFr: 'Température maximale, grille haute. Comptez 8-12 min. Pas de carbonisation mais saveur excellente. Idéal pour New York, Pan et styles épais.',
     hydrationDelta: 5,
     forceOil: null,
     forceSugar: null,
@@ -261,14 +267,80 @@ export const OVEN_TYPES = {
   },
   electric_pizza: {
     name: 'Electric pizza oven',
+    nameFr: 'Four électrique à pizza',
     emoji: '⚡',
     image: '/oven_electric.png',
-    desc: 'Breville, Effeuno, G3 Ferrari. 400°C.',
+    desc: 'Reaches around 400°C. Cook time 2-4 min. More forgiving than wood-fired, easier to control. Great for Neapolitan at home.',
+    descFr: 'Atteint environ 400°C. Cuisson en 2-4 min. Plus facile à contrôler qu\'un four à bois. Parfait pour la napolitaine à la maison.',
     hydrationDelta: -1,
     forceOil: 0,
     forceSugar: 0,
     preheatMin: 30,
     tempNote: 'Preheat 30 min at max. Cook 2–4 min.',
+  },
+} as const;
+
+// ── BREAD OVEN TYPES ──────────────────────
+export const BREAD_OVEN_TYPES = {
+  wood_fired: {
+    name: 'Wood-fired oven',
+    nameFr: 'Four à bois',
+    emoji: '🔥',
+    desc: 'Load your loaf and close the door. Residual heat and natural steam create an exceptional crust. Best for sourdough and rustic breads.',
+    descFr: 'Enfournez et fermez la porte. La chaleur résiduelle et la vapeur naturelle créent une croûte exceptionnelle. Idéal pour le levain et les pains rustiques.',
+    hydrationDelta: 0,
+    forceOil: null,
+    forceSugar: null,
+    preheatMin: 45,
+    image: '/oven_wood_bread.png',
+  },
+  dutch_oven: {
+    name: 'Dutch oven / Combo cooker',
+    nameFr: 'Cocotte en fonte',
+    emoji: '🫕',
+    desc: 'Lid on for first 20 min traps steam for open crumb and blistered crust. Lid off to finish. Works in any oven.',
+    descFr: 'Couvercle fermé 20 min pour emprisonner la vapeur. Mie ouverte et croûte cloquée garanties. Fonctionne dans n\'importe quel four.',
+    hydrationDelta: 2,
+    forceOil: null,
+    forceSugar: null,
+    preheatMin: 45,
+    image: '/oven_dutch.png',
+  },
+  home_oven_stone_bread: {
+    name: 'Home oven + stone/steel',
+    nameFr: 'Four + pierre ou acier',
+    emoji: '🪨',
+    desc: 'Needs external steam — ice cubes in a hot tray or a spray. Great for baguettes and batards. Preheat stone 45 min for best bottom crust.',
+    descFr: 'Nécessite une source de vapeur externe — glaçons sur plaque chaude ou vaporisateur. Idéal pour baguettes et bâtards. Préchauffez 45 min.',
+    hydrationDelta: 2,
+    forceOil: null,
+    forceSugar: null,
+    preheatMin: 45,
+    image: '/oven_stone_bread.png',
+  },
+  steam_oven: {
+    name: 'Steam oven',
+    nameFr: 'Four vapeur',
+    emoji: '💨',
+    desc: 'Built-in steam injection gives professional results. Perfect for baguettes, batards, any crust bread. The closest to a real bakery at home.',
+    descFr: 'Injection de vapeur intégrée pour un résultat professionnel. Parfait pour baguettes et pains de croûte. Le plus proche d\'une vraie boulangerie.',
+    hydrationDelta: 3,
+    forceOil: null,
+    forceSugar: null,
+    preheatMin: 30,
+    image: '/oven_steam.png',
+  },
+  standard_bread: {
+    name: 'Standard home oven',
+    nameFr: 'Four domestique standard',
+    emoji: '🏠',
+    desc: 'No steam, no stone. Best for enriched breads — brioche, pain de mie, viennois — that don\'t need steam or high heat.',
+    descFr: 'Sans vapeur ni pierre. Idéal pour les pains enrichis — brioche, pain de mie, viennois — qui ne nécessitent pas de vapeur ni de chaleur intense.',
+    hydrationDelta: 3,
+    forceOil: null,
+    forceSugar: null,
+    preheatMin: 20,
+    image: '/oven_standard_bread.png',
   },
 } as const;
 
@@ -378,6 +450,8 @@ export type BreadStyleKey = keyof typeof BREAD_STYLES;
 export type StyleKey = PizzaStyleKey | BreadStyleKey;
 export type BakeType = 'pizza' | 'bread';
 export type OvenType = keyof typeof OVEN_TYPES;
+export type BreadOvenType = keyof typeof BREAD_OVEN_TYPES;
+export type AnyOvenType = OvenType | BreadOvenType;
 export type MixerType = keyof typeof MIXER_TYPES;
 export type YeastType = keyof typeof YEAST_TYPES;
 

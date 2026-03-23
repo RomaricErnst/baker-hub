@@ -1,14 +1,21 @@
 'use client';
 import { useState } from 'react';
-import { OVEN_TYPES, type OvenType } from '../data';
+import { useLocale } from 'next-intl';
+import { OVEN_TYPES, BREAD_OVEN_TYPES, type AnyOvenType } from '../data';
 
 interface OvenPickerProps {
-  selected: OvenType | null;
-  onSelect: (oven: OvenType) => void;
+  bakeType: 'pizza' | 'bread';
+  selected: AnyOvenType | null;
+  onSelect: (oven: AnyOvenType) => void;
 }
 
-export default function OvenPicker({ selected, onSelect }: OvenPickerProps) {
+export default function OvenPicker({ bakeType, selected, onSelect }: OvenPickerProps) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const locale = useLocale();
+
+  const entries = bakeType === 'bread'
+    ? Object.entries(BREAD_OVEN_TYPES)
+    : Object.entries(OVEN_TYPES);
 
   return (
     <div style={{
@@ -16,13 +23,19 @@ export default function OvenPicker({ selected, onSelect }: OvenPickerProps) {
       gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
       gap: '.75rem',
     }}>
-      {(Object.entries(OVEN_TYPES) as [OvenType, typeof OVEN_TYPES[OvenType]][]).map(([key, oven]) => {
+      {entries.map(([key, oven]) => {
         const isSelected = selected === key;
-        const imgSrc = (oven as { image?: string }).image;
+        const o = oven as {
+          name: string; nameFr?: string; emoji: string; image?: string;
+          desc: string; descFr?: string; tempNote?: string;
+        };
+        const imgSrc = o.image;
+        const displayName = locale === 'fr' && o.nameFr ? o.nameFr : o.name;
+        const displayDesc = locale === 'fr' && o.descFr ? o.descFr : o.desc;
         return (
           <div
             key={key}
-            onClick={() => onSelect(key)}
+            onClick={() => onSelect(key as AnyOvenType)}
             onMouseEnter={() => setHoveredKey(key)}
             onMouseLeave={() => setHoveredKey(null)}
             style={{
@@ -40,26 +53,28 @@ export default function OvenPicker({ selected, onSelect }: OvenPickerProps) {
             {imgSrc ? (
               <img
                 src={imgSrc}
-                alt={oven.name}
+                alt={o.name}
                 style={{ width: '100%', height: '90px', objectFit: 'cover', borderRadius: '10px', marginBottom: '.6rem' }}
               />
             ) : (
-              <span style={{ fontSize: '2rem', marginBottom: '.6rem' }}>{oven.emoji}</span>
+              <span style={{ fontSize: '2rem', marginBottom: '.6rem' }}>{o.emoji}</span>
             )}
             <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.25rem', color: 'var(--char)' }}>
-              {oven.name}
+              {displayName}
             </div>
-            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.5rem' }}>
-              {oven.desc}
+            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: o.tempNote ? '.5rem' : 0 }}>
+              {displayDesc}
             </div>
-            <div style={{
-              fontSize: '.68rem', color: 'var(--terra)',
-              fontFamily: 'var(--font-dm-mono)',
-              background: '#FEF4EF', borderRadius: '6px',
-              padding: '.25rem .5rem',
-            }}>
-              {oven.tempNote}
-            </div>
+            {o.tempNote && (
+              <div style={{
+                fontSize: '.68rem', color: 'var(--terra)',
+                fontFamily: 'var(--font-dm-mono)',
+                background: '#FEF4EF', borderRadius: '6px',
+                padding: '.25rem .5rem',
+              }}>
+                {o.tempNote}
+              </div>
+            )}
             {isSelected && (
               <div style={{ marginTop: '.5rem', color: 'var(--terra)', fontSize: '.8rem', fontWeight: 600 }}>✓</div>
             )}
