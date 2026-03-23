@@ -12,7 +12,7 @@ interface RecipeOutputProps {
   kitchenTemp: number;
   fermEquivHours: number;
   totalColdHours?: number;
-  mode?: 'guided' | 'advanced';
+  mode?: 'simple' | 'custom';
   bakeType?: 'pizza' | 'bread';
 }
 
@@ -188,7 +188,7 @@ function computeWaterInfo(
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'guided', bakeType = 'pizza',
+  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza',
 }: RecipeOutputProps) {
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
 
@@ -334,9 +334,9 @@ export default function RecipeOutput({
         </div>
 
         {/* Rows */}
-        <IngRow label="Flour" grams={gStr(flour)} pct="100%" highlight advancedPct={mode === 'advanced' ? '100%' : undefined} />
-        <IngRow label="Water" grams={gStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} advancedPct={mode === 'advanced' ? pctStr(waterPct) : undefined} />
-        <IngRow label="Salt"  grams={gStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'advanced' ? pctStr(saltPct) : undefined} />
+        <IngRow label="Flour" grams={gStr(flour)} pct="100%" highlight advancedPct={mode === 'custom' ? '100%' : undefined} />
+        <IngRow label="Water" grams={gStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
+        <IngRow label="Salt"  grams={gStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
 
         {/* Yeast — commercial */}
         {yeastInfo && (
@@ -345,7 +345,7 @@ export default function RecipeOutput({
             sub={yeastSub}
             grams={gStr(yeastInfo.convertedGrams)}
             pct={pctStr(yeastInfo.convertedPct)}
-            advancedPct={mode === 'advanced' ? pctStr(yeastInfo.convertedPct) : undefined}
+            advancedPct={mode === 'custom' ? pctStr(yeastInfo.convertedPct) : undefined}
           />
         )}
 
@@ -391,12 +391,12 @@ export default function RecipeOutput({
 
         {/* Optional: oil */}
         {oil > 0 && (
-          <IngRow label="Olive Oil" grams={gStr(oil)} pct={pctStr(oilPct)} advancedPct={mode === 'advanced' ? pctStr(oilPct) : undefined} />
+          <IngRow label="Olive Oil" grams={gStr(oil)} pct={pctStr(oilPct)} advancedPct={mode === 'custom' ? pctStr(oilPct) : undefined} />
         )}
 
         {/* Optional: sugar */}
         {sugar > 0 && (
-          <IngRow label="Sugar" grams={gStr(sugar)} pct={pctStr(sugarPct)} advancedPct={mode === 'advanced' ? pctStr(sugarPct) : undefined} />
+          <IngRow label="Sugar" grams={gStr(sugar)} pct={pctStr(sugarPct)} advancedPct={mode === 'custom' ? pctStr(sugarPct) : undefined} />
         )}
 
         {/* Total row */}

@@ -11,7 +11,7 @@ interface ClimatePickerProps {
   kitchenTemp: number;
   humidity: string;
   fridgeTemp: number;
-  mode: 'guided' | 'advanced';
+  mode: 'simple' | 'custom';
   onChange: (kitchenTemp: number, humidity: string, fridgeTemp: number) => void;
   priority?: string | null;
   onPriorityChange?: (p: string | null) => void;
@@ -366,7 +366,7 @@ export default function ClimatePicker({
       </div>
 
       {/* ── Fridge temperature (advanced only) ────── */}
-      {mode === 'advanced' && (
+      {mode === 'custom' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
             <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>Fridge temperature</label>

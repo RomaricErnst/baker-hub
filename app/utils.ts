@@ -708,11 +708,11 @@ export function calculateRecipe(
   fridgeTemp: number,
   yeastType: YeastType,
   priority: string | null,
-  mode: 'guided' | 'advanced',
-  manualHydration?: number,         // advanced mode only
-  manualOil?: number,               // advanced mode only
-  manualSugar?: number,             // advanced mode only
-  flourBlend?: FlourBlend,          // advanced mode only
+  mode: 'simple' | 'custom',
+  manualHydration?: number,         // custom mode only
+  manualOil?: number,               // custom mode only
+  manualSugar?: number,             // custom mode only
+  flourBlend?: FlourBlend,          // custom mode only
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = OVEN_TYPES[ovenType];
@@ -724,9 +724,9 @@ export function calculateRecipe(
 
   // Hydration
   let hydration: number;
-  if (mode === 'advanced' && manualHydration !== undefined) {
+  if (mode === 'custom' && manualHydration !== undefined) {
     hydration = manualHydration; // never auto-adjust in advanced
-  } else if (mode === 'advanced' && blendProfile) {
+  } else if (mode === 'custom' && blendProfile) {
     // Apply blend's hydration delta on top of style baseline + oven delta
     hydration = s.hydration + oven.hydrationDelta + blendProfile.hydrationDelta;
   } else {
@@ -743,11 +743,11 @@ export function calculateRecipe(
   }
 
   // Oil and sugar
-  const oil = mode === 'advanced' && manualOil !== undefined
+  const oil = mode === 'custom' && manualOil !== undefined
     ? manualOil
     : oven.forceOil !== null ? oven.forceOil : s.oil;
 
-  const sugar = mode === 'advanced' && manualSugar !== undefined
+  const sugar = mode === 'custom' && manualSugar !== undefined
     ? manualSugar
     : oven.forceSugar !== null ? oven.forceSugar : s.sugar;
 

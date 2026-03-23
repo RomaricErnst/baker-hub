@@ -154,7 +154,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 // ══════════════════════════════════════════════
 export default function Home() {
   const t = useTranslations();
-  const [tab, setTab] = useState<'guided' | 'advanced'>('guided');
+  const [tab, setTab] = useState<'simple' | 'custom'>('simple');
   const [activeStep, setActiveStep] = useState(1);
   const [advancedStep, setAdvancedStep] = useState(1);
   const [flourBlend, setFlourBlend] = useState<FlourBlend>({ flour1: 'pizza00', flour2: null, ratio1: 100 });
@@ -247,7 +247,7 @@ export default function Home() {
     try {
       return calculateRecipe(
         styleKey, ovenType as OvenType, numItems, itemWeight,
-        kitchenTemp, humidity, schedule, fridgeTemp, yeastType, null, 'guided',
+        kitchenTemp, humidity, schedule, fridgeTemp, yeastType, null, 'simple',
       );
     } catch {
       return null;
@@ -276,7 +276,7 @@ export default function Home() {
     try {
       return calculateRecipe(
         styleKey, ovenType as OvenType, numItems, itemWeight,
-        kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, 'advanced',
+        kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, 'custom',
         manualHydration, manualOil, manualSugar, flourBlend,
       );
     } catch {
@@ -361,9 +361,9 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  async function handleSaveRecipe(mode: 'guided' | 'advanced') {
+  async function handleSaveRecipe(mode: 'simple' | 'custom') {
     if (!styleKey || !schedule) return;
-    const activeRecipe = mode === 'advanced' ? (advancedDisplayRecipe ?? advancedRecipe) : (displayRecipe ?? recipe);
+    const activeRecipe = mode === 'custom' ? (advancedDisplayRecipe ?? advancedRecipe) : (displayRecipe ?? recipe);
     if (!activeRecipe) return;
     setSaveStatus('saving');
     const result = await saveRecipe({
@@ -403,17 +403,17 @@ export default function Home() {
       {/* ── Tab navigation ─────────────────── */}
       <div style={{ background: 'var(--warm)', borderBottom: '1px solid var(--border)', position: 'sticky', top: '60px', zIndex: 90 }}>
         <div style={{ maxWidth: '680px', margin: '0 auto', padding: '0 1.25rem', display: 'flex' }}>
-          {(['guided', 'advanced'] as const).map(tabKey => (
+          {(['simple', 'custom'] as const).map(tabKey => (
             <button
               key={tabKey}
               onClick={() => {
                 setTab(tabKey);
-                if (tabKey === 'advanced' && styleKey) {
+                if (tabKey === 'custom' && styleKey) {
                   const s = ALL_STYLES[styleKey];
                   setManualHydration(s.hydration);
                   setManualOil(s.oil);
                   setManualSugar(s.sugar);
-                } else if (tabKey === 'guided') {
+                } else if (tabKey === 'simple') {
                   setManualHydration(undefined);
                   setManualOil(undefined);
                   setManualSugar(undefined);
@@ -429,7 +429,7 @@ export default function Home() {
                 transition: 'color .15s',
               }}
             >
-              {tabKey === 'guided' ? t('tabs.guided') : t('tabs.advanced')}
+              {tabKey === 'simple' ? t('tabs.guided') : t('tabs.advanced')}
             </button>
           ))}
         </div>
@@ -439,7 +439,7 @@ export default function Home() {
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
 
         {/* ════════════ GUIDED ════════════ */}
-        {tab === 'guided' && (
+        {tab === 'simple' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
             {/* ── Hero intro (only before step 1 done) ── */}
@@ -713,7 +713,7 @@ export default function Home() {
             >
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
-                fridgeTemp={fridgeTemp} mode="guided"
+                fridgeTemp={fridgeTemp} mode="simple"
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
 
@@ -764,7 +764,7 @@ export default function Home() {
                   <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
                     {user && (
                       <button
-                        onClick={() => handleSaveRecipe('guided')}
+                        onClick={() => handleSaveRecipe('simple')}
                         disabled={saveStatus === 'saving' || saveStatus === 'saved'}
                         className="btn"
                         style={{
@@ -975,7 +975,7 @@ export default function Home() {
         )}
 
         {/* ════════════ ADVANCED ════════════ */}
-        {tab === 'advanced' && (
+        {tab === 'custom' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
             {/* ─── ADV STEP 1: Bake type ───────────── */}
@@ -1224,7 +1224,7 @@ export default function Home() {
             >
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
-                fridgeTemp={fridgeTemp} mode="advanced"
+                fridgeTemp={fridgeTemp} mode="custom"
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
                 priority={priority}
                 onPriorityChange={setPriority}
@@ -1393,7 +1393,7 @@ export default function Home() {
                   <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
                     {user && (
                       <button
-                        onClick={() => handleSaveRecipe('advanced')}
+                        onClick={() => handleSaveRecipe('custom')}
                         disabled={saveStatus === 'saving' || saveStatus === 'saved'}
                         className="btn"
                         style={{
