@@ -49,13 +49,14 @@ type FlourMode = 'selector' | 'brand' | 'manual' | 'scan';
 
 // ── Flour card grid ───────────────────────────
 function FlourCardGrid({
-  flours, selected, onSelect, exclude, descOverride,
+  flours, selected, onSelect, exclude, descOverride, trailingCard,
 }: {
   flours: FlourKey[];
   selected: FlourKey | null;
   onSelect: (k: FlourKey) => void;
   exclude?: FlourKey | null;
   descOverride?: Partial<Record<FlourKey, string>>;
+  trailingCard?: React.ReactNode;
 }) {
   const [hovered, setHovered] = useState<FlourKey | null>(null);
   const visible = exclude ? flours.filter(k => k !== exclude) : flours;
@@ -94,6 +95,7 @@ function FlourCardGrid({
           </div>
         );
       })}
+      {trailingCard}
     </div>
   );
 }
@@ -327,6 +329,7 @@ function TabPill({ label, active, onClick }: { label: string; active: boolean; o
 // ── Main component ────────────────────────────
 export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', mode = 'custom' }: FlourPickerProps) {
   const [flourMode, setFlourMode] = useState<FlourMode>('selector');
+  const [wCardOpen, setWCardOpen] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<BrandKey | null>(
     blend.brandKey ?? null
   );
@@ -373,9 +376,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       {mode === 'custom' && (
         <>
           <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginBottom: 0 }}>
-            <TabPill label="🗂 By Type"          active={flourMode === 'selector'} onClick={() => switchMode('selector')} />
-            <TabPill label="🏷 I know my brand"  active={flourMode === 'brand'}    onClick={() => switchMode('brand')} />
-            <TabPill label="✏️ By W value"       active={flourMode === 'manual'}   onClick={() => switchMode('manual')} />
+            <TabPill label="🗂 By Type"          active={flourMode === 'selector' || flourMode === 'manual'} onClick={() => { switchMode('selector'); setWCardOpen(false); }} />
+            <TabPill label="🏷 I know my brand"  active={flourMode === 'brand'}    onClick={() => { switchMode('brand'); setWCardOpen(false); }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '.4rem', marginBottom: '.75rem' }}>
             <button
@@ -400,8 +402,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
         </>
       )}
 
-      {/* ── MODE 1: Selector ─────────────────── */}
-      {(flourMode === 'selector' || mode === 'simple') && (
+      {/* ── MODE 1: Selector (+ W card inline) ── */}
+      {(flourMode === 'selector' || flourMode === 'manual' || mode === 'simple') && (
         <div>
           <FlourCardGrid
             flours={primaryFlours}
@@ -410,8 +412,71 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               const newFlour2 = blend.flour2 === key ? null : blend.flour2;
               onBlendChange({ flour1: key, flour2: newFlour2, ratio1: blend.ratio1 });
             }}
+            trailingCard={mode === 'custom' ? (
+              <div
+                onClick={() => {
+                  const next = !wCardOpen;
+                  setWCardOpen(next);
+                  setFlourMode(next ? 'manual' : 'selector');
+                }}
+                style={{
+                  border: `1.5px solid ${wCardOpen ? 'var(--terra)' : 'var(--border)'}`,
+                  borderRadius: '12px',
+                  padding: '.8rem .9rem',
+                  cursor: 'pointer',
+                  background: wCardOpen ? '#FFF8F3' : 'var(--warm)',
+                  transition: 'all .2s',
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: '.85rem', color: 'var(--char)', marginBottom: '.4rem' }}>
+                  ✏️ Enter W value
+                </div>
+                <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.4 }}>
+                  Know your flour's exact W? Enter it directly.
+                </div>
+              </div>
+            ) : undefined}
           />
-          {mode === 'custom' && (
+
+          {/* W value expanded section */}
+          {wCardOpen && mode === 'custom' && (
+            <div style={{ marginTop: '.85rem' }}>
+              <div style={{ marginBottom: '.85rem' }}>
+                <div style={{ fontSize: '.65rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.4rem' }}>
+                  W value
+                </div>
+                <input
+                  type="number"
+                  min={80} max={500} step={10}
+                  value={manualW}
+                  onChange={e => handleManualW(Number(e.target.value))}
+                  style={{
+                    width: '100px', border: '1.5px solid var(--border)', borderRadius: '8px',
+                    padding: '.5rem .75rem', fontFamily: 'var(--font-dm-mono)',
+                    fontSize: '.88rem', color: 'var(--char)', background: 'var(--warm)',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center',
+                border: `1.5px solid ${strength.color}`,
+                borderRadius: '20px', padding: '.3rem .75rem',
+                fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
+                color: strength.color, marginBottom: '1rem',
+              }}>
+                W {manualW} — {strength.label}
+              </div>
+              <BlendSection
+                blend={blend}
+                onBlendChange={onBlendChange}
+                primaryFlours={primaryFlours}
+                secondaryFlours={secondaryFlours}
+              />
+            </div>
+          )}
+
+          {mode === 'custom' && !wCardOpen && (
             <BlendSection
               blend={blend}
               onBlendChange={onBlendChange}
@@ -492,48 +557,6 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {/* ── MODE 3: Manual W ─────────────────── */}
-      {flourMode === 'manual' && mode === 'custom' && (
-        <div>
-          <div style={{ marginBottom: '.85rem' }}>
-            <div style={{ fontSize: '.65rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.4rem' }}>
-              W value
-            </div>
-            <input
-              type="number"
-              min={80} max={500} step={10}
-              value={manualW}
-              onChange={e => handleManualW(Number(e.target.value))}
-              style={{
-                width: '100px', border: '1.5px solid var(--border)', borderRadius: '8px',
-                padding: '.5rem .75rem', fontFamily: 'var(--font-dm-mono)',
-                fontSize: '.88rem', color: 'var(--char)', background: 'var(--warm)',
-                outline: 'none',
-              }}
-            />
-          </div>
-
-          {/* Strength pill */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center',
-            border: `1.5px solid ${strength.color}`,
-            borderRadius: '20px', padding: '.3rem .75rem',
-            fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
-            color: strength.color, marginBottom: '1rem',
-          }}>
-            W {manualW} — {strength.label}
-          </div>
-
-          {/* Blend toggle in manual mode */}
-          <BlendSection
-            blend={blend}
-            onBlendChange={onBlendChange}
-            primaryFlours={primaryFlours}
-            secondaryFlours={secondaryFlours}
-          />
         </div>
       )}
 

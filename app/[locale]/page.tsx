@@ -1134,27 +1134,25 @@ export default function Home() {
             >
               <FlourPicker
                 blend={flourBlend}
-                onBlendChange={b => { setFlourBlend(b); if (b.flour2 === null) advanceAdv(6); }}
+                onBlendChange={b => setFlourBlend(b)}
                 bakeType={bakeType ?? 'pizza'}
                 mode={tab === 'custom' ? 'custom' : 'simple'}
               />
-              {flourBlend.flour2 === null && (
-                <div style={{ marginTop: '.85rem' }}>
-                  <button
-                    onClick={() => advanceAdv(6)}
-                    className="btn"
-                    style={{
-                      width: '100%', padding: '.9rem 1.25rem',
-                      border: 'none', borderRadius: '12px',
-                      background: 'var(--terra)', color: '#fff',
-                      fontFamily: 'var(--font-playfair)', fontSize: '1.05rem', fontWeight: 700,
-                      cursor: 'pointer', boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
-                    }}
-                  >
-                    Continue →
-                  </button>
-                </div>
-              )}
+              <div style={{ marginTop: '.85rem' }}>
+                <button
+                  onClick={() => advanceAdv(6)}
+                  className="btn"
+                  style={{
+                    width: '100%', padding: '.9rem 1.25rem',
+                    border: 'none', borderRadius: '12px',
+                    background: 'var(--terra)', color: '#fff',
+                    fontFamily: 'var(--font-playfair)', fontSize: '1.05rem', fontWeight: 700,
+                    cursor: 'pointer', boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
+                  }}
+                >
+                  Continue →
+                </button>
+              </div>
             </StepCard>
 
             {/* ─── ADV STEP 7: Yeast ───────────────── */}
