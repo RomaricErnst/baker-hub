@@ -15,10 +15,13 @@ import {
   OVEN_TYPES,
   MIXER_TYPES,
   YEAST_TYPES,
+  computeBlendProfile,
   type OvenType,
   type MixerType,
   type YeastType,
   type StyleKey,
+  type FlourBlend,
+  type BlendProfile,
 } from './data';
 
 // ══════════════════════════════════════════
@@ -691,6 +694,7 @@ export interface RecipeResult {
   waterTemp: number;
   hydration: number;
   totalDough: number;
+  blendProfile?: BlendProfile;
 }
 
 export function calculateRecipe(
@@ -708,20 +712,34 @@ export function calculateRecipe(
   manualHydration?: number,         // advanced mode only
   manualOil?: number,               // advanced mode only
   manualSugar?: number,             // advanced mode only
+  flourBlend?: FlourBlend,          // advanced mode only
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = OVEN_TYPES[ovenType];
   if (!s || !oven) throw new Error('Unknown style or oven');
 
+  const blendProfile: BlendProfile | null = flourBlend
+    ? computeBlendProfile(flourBlend)
+    : null;
+
   // Hydration
   let hydration: number;
   if (mode === 'advanced' && manualHydration !== undefined) {
     hydration = manualHydration; // never auto-adjust in advanced
+  } else if (mode === 'advanced' && blendProfile) {
+    // Apply blend's hydration delta on top of style baseline + oven delta
+    hydration = s.hydration + oven.hydrationDelta + blendProfile.hydrationDelta;
   } else {
     hydration = s.hydration + oven.hydrationDelta;
     // Climate adjustment (guided only)
     if (kitchenTemp >= 28 || humidity === 'very-humid') hydration -= 2;
     else if (kitchenTemp <= 18) hydration += 2;
+  }
+
+  // STEP 3 — Apply hydration delta from blend
+  if (blendProfile) {
+    const delta = Math.max(-5, Math.min(8, blendProfile.hydrationDelta));
+    hydration = Math.round((hydration + delta) * 10) / 10;
   }
 
   // Oil and sugar
@@ -764,12 +782,28 @@ export function calculateRecipe(
       flour,
       priority
     );
+
+    // STEP 4 — Apply fermentation tolerance from blend
+    if (yeast && blendProfile && blendProfile.fermToleranceMultiplier !== 1.0) {
+      let idyPct = yeast.pct / blendProfile.fermToleranceMultiplier;
+      idyPct = Math.round(idyPct * 10000) / 10000;
+      const rawGrams = Math.max(0.5, flour * idyPct / 100);
+      const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
+      yeast = {
+        ...yeast,
+        pct: idyPct,
+        grams: Math.round(rawGrams * 1000) / 1000,
+        convertedPct: Math.round(idyPct * conversion * 10000) / 10000,
+        convertedGrams: Math.round(flour * idyPct * conversion / 100 * 1000) / 1000,
+      };
+    }
   }
 
   return {
     flour, water, salt, yeast, sourdough,
     oil: oilG, sugar: sugarG,
     waterTemp, hydration, totalDough,
+    blendProfile: blendProfile ?? undefined,
   };
 }
 
