@@ -54,7 +54,7 @@ export default function OvenPicker({ bakeType, selected, onSelect }: OvenPickerP
               <img
                 src={imgSrc}
                 alt={o.name}
-                style={{ width: '100%', height: '90px', objectFit: 'cover', borderRadius: '10px', marginBottom: '.6rem' }}
+                style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: '10px', marginBottom: '.6rem' }}
               />
             ) : (
               <span style={{ fontSize: '2rem', marginBottom: '.6rem' }}>{o.emoji}</span>
