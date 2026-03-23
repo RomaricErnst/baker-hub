@@ -12,12 +12,13 @@ import RecipeOutput from '../components/RecipeOutput';
 import Timeline from '../components/Timeline';
 import YeastHelper from '../components/YeastHelper';
 import FlourPicker from '../components/FlourPicker';
+import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import { saveRecipe } from '../lib/supabase/saveRecipe';
 import {
-  ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES,
+  ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
   computeBlendProfile,
-  type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType, type FlourBlend,
+  type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType, type FlourBlend, type PrefermentType,
 } from '../data';
 import {
   buildSchedule, calculateRecipe, formatTime,
@@ -196,6 +197,8 @@ export default function Home() {
   const [appliedMultiplier, setAppliedMultiplier] = useState(1.0); // applied to RecipeOutput
 
   // Advanced mode manual overrides
+  const [prefermentType, setPrefermentType] = useState<PrefermentType>('none');
+
   const [manualHydration, setManualHydration] = useState<number | undefined>(undefined);
   const [manualOil, setManualOil]             = useState<number | undefined>(undefined);
   const [manualSugar, setManualSugar]         = useState<number | undefined>(undefined);
@@ -277,12 +280,12 @@ export default function Home() {
       return calculateRecipe(
         styleKey, ovenType as OvenType, numItems, itemWeight,
         kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, 'custom',
-        manualHydration, manualOil, manualSugar, flourBlend,
+        manualHydration, manualOil, manualSugar, flourBlend, prefermentType,
       );
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, manualHydration, manualOil, manualSugar, flourBlend]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, manualHydration, manualOil, manualSugar, flourBlend, prefermentType]);
 
   // Advanced recipe with yeast multiplier applied
   const advancedDisplayRecipe = useMemo(() => {
@@ -334,7 +337,7 @@ export default function Home() {
 
   function advanceAdv(from: number) {
     setAdvancedStep(from + 1);
-    if (from === 9) setShowResults(true);
+    if (from === 10) setShowResults(true);
     else setShowResults(false);
     setTimeout(() => {
       const el = document.getElementById(`adv-step-${from + 1}`);
@@ -356,7 +359,7 @@ export default function Home() {
     setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(4);
     setShowResults(false); setActiveStep(1);
     setYeastMultiplier(1.0); setAppliedMultiplier(1.0);
-    setAdvancedStep(1); setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 }); setPriority(null);
+    setAdvancedStep(1); setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 }); setPriority(null); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -1067,13 +1070,28 @@ export default function Home() {
               )}
             </StepCard>
 
-            {/* ─── ADV STEP 4: Quantity ────────────── */}
+            {/* ─── ADV STEP 4: Preferment ──────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={4} title={t('steps.3.title')}
+              num={4} title="Preferment method"
+              activeStep={advancedStep}
+              summary={prefermentType !== 'none' ? `${PREFERMENT_TYPES[prefermentType].emoji} ${PREFERMENT_TYPES[prefermentType].name}` : '⚡ Direct'}
+              onEdit={() => setAdvancedStep(4)}
+            >
+              <PrefermentPicker
+                selected={prefermentType}
+                onSelect={pt => { setPrefermentType(pt); advanceAdv(4); }}
+                styleKey={styleKey ?? undefined}
+              />
+            </StepCard>
+
+            {/* ─── ADV STEP 5: Quantity ────────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={5} title={t('steps.3.title')}
               activeStep={advancedStep}
               summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
-              onEdit={() => setAdvancedStep(4)}
+              onEdit={() => setAdvancedStep(5)}
             >
               <div style={{
                 display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap',
@@ -1119,47 +1137,47 @@ export default function Home() {
                   </span>
                 </div>
               </div>
-              <ContinueBtn onClick={() => advanceAdv(4)} />
+              <ContinueBtn onClick={() => advanceAdv(5)} />
             </StepCard>
 
-            {/* ─── ADV STEP 5: Oven ────────────────── */}
+            {/* ─── ADV STEP 6: Oven ────────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={5} title={t('steps.4.title')}
+              num={6} title={t('steps.4.title')}
               activeStep={advancedStep}
               summary={ovenData ? `${ovenData.emoji} ${ovenData.name}` : ''}
-              onEdit={() => setAdvancedStep(5)}
+              onEdit={() => setAdvancedStep(6)}
             >
               <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
                 selected={ovenType}
-                onSelect={ot => { setOvenType(ot); advanceAdv(5); }}
+                onSelect={ot => { setOvenType(ot); advanceAdv(6); }}
               />
             </StepCard>
 
-            {/* ─── ADV STEP 6: Mixer ───────────────── */}
+            {/* ─── ADV STEP 7: Mixer ───────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={6} title={t('steps.5.title')}
+              num={7} title={t('steps.5.title')}
               activeStep={advancedStep}
               summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
-              onEdit={() => setAdvancedStep(6)}
+              onEdit={() => setAdvancedStep(7)}
             >
               <MixerPicker
                 selected={mixerType}
-                onSelect={mt => { setMixerType(mt); advanceAdv(6); }}
+                onSelect={mt => { setMixerType(mt); advanceAdv(7); }}
                 styleKey={styleKey ?? undefined}
                 bakeType={bakeType ?? undefined}
               />
             </StepCard>
 
-            {/* ─── ADV STEP 7: Yeast ───────────────── */}
+            {/* ─── ADV STEP 8: Yeast ───────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={7} title={t('steps.6.title')}
+              num={8} title={t('steps.6.title')}
               activeStep={advancedStep}
               summary={<>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{YEAST_TYPES[yeastType].shortName}</span></>}
-              onEdit={() => setAdvancedStep(7)}
+              onEdit={() => setAdvancedStep(8)}
             >
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.65rem', marginBottom: '.65rem' }}>
@@ -1175,7 +1193,7 @@ export default function Home() {
                     return (
                       <div
                         key={yt}
-                        onClick={() => { setYeastType(yt); advanceAdv(7); }}
+                        onClick={() => { setYeastType(yt); advanceAdv(8); }}
                         style={{
                           border: `2px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
                           borderRadius: '14px', padding: '.75rem .6rem',
@@ -1214,13 +1232,13 @@ export default function Home() {
               </div>
             </StepCard>
 
-            {/* ─── ADV STEP 8: Climate ─────────────── */}
+            {/* ─── ADV STEP 9: Climate ─────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={8} title={t('steps.7.title')}
+              num={9} title={t('steps.7.title')}
               activeStep={advancedStep}
               summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
-              onEdit={() => setAdvancedStep(8)}
+              onEdit={() => setAdvancedStep(9)}
             >
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
@@ -1229,16 +1247,16 @@ export default function Home() {
                 priority={priority}
                 onPriorityChange={setPriority}
               />
-              <ContinueBtn onClick={() => advanceAdv(8)} />
+              <ContinueBtn onClick={() => advanceAdv(9)} />
             </StepCard>
 
-            {/* ─── ADV STEP 9: Scheduler ───────────── */}
+            {/* ─── ADV STEP 10: Scheduler ──────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={9} title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
+              num={10} title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
               activeStep={advancedStep}
               summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
-              onEdit={() => setAdvancedStep(9)}
+              onEdit={() => setAdvancedStep(10)}
             >
               <SchedulePicker
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
@@ -1248,7 +1266,7 @@ export default function Home() {
                 schedule={schedule}
                 bakeType={bakeType ?? 'pizza'}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
-                onConfirm={() => advanceAdv(9)}
+                onConfirm={() => advanceAdv(10)}
               />
             </StepCard>
 
@@ -1436,6 +1454,7 @@ export default function Home() {
                       totalColdHours={schedule ? schedule.totalColdHours : 0}
                       mode={tab}
                       bakeType={bakeType ?? 'pizza'}
+                      prefermentType={prefermentType}
                     />
                     {schedule && (
                       <Timeline

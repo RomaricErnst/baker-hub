@@ -1,6 +1,6 @@
 'use client';
 import { type RecipeResult, type YeastResult } from '../utils';
-import { YEAST_TYPES } from '../data';
+import { YEAST_TYPES, PREFERMENT_TYPES, type PrefermentType } from '../data';
 
 interface RecipeOutputProps {
   result: RecipeResult;
@@ -14,6 +14,7 @@ interface RecipeOutputProps {
   totalColdHours?: number;
   mode?: 'simple' | 'custom';
   bakeType?: 'pizza' | 'bread';
+  prefermentType?: PrefermentType;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -188,7 +189,7 @@ function computeWaterInfo(
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza',
+  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
 }: RecipeOutputProps) {
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
 
@@ -424,6 +425,86 @@ export default function RecipeOutput({
           <div style={{ minWidth: '4rem' }} />
         </div>
       </div>
+
+      {/* ── Preferment card ──────────────────────── */}
+      {prefermentType && prefermentType !== 'none' && result.preferment && (() => {
+        const pf = result.preferment;
+        const pd = PREFERMENT_TYPES[prefermentType];
+        return (
+          <div style={{
+            background: '#1E1A14',
+            borderRadius: '18px',
+            padding: '1.5rem 1.6rem',
+            border: '1px solid rgba(212,168,83,0.20)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', marginBottom: '1rem' }}>
+              <span style={{ fontSize: '1.3rem' }}>{pd.emoji}</span>
+              <div>
+                <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)' }}>
+                  {pd.name}
+                </div>
+                <div style={{ fontSize: '.72rem', color: 'rgba(212,168,83,0.65)', fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem' }}>
+                  Pre-ferment · mix {pf.fermentHoursMin}–{pf.fermentHoursMax}h before your main dough
+                  {pf.cold && <span style={{ color: '#7BAFD4', marginLeft: '.4rem' }}>· ❄️ cold</span>}
+                </div>
+              </div>
+            </div>
+
+            {/* Two columns */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem', marginBottom: '1rem' }}>
+              {/* Preferment ingredients */}
+              <div>
+                <div style={{ fontSize: '.62rem', color: 'rgba(245,240,232,0.38)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '.5rem' }}>
+                  Preferment
+                </div>
+                {[
+                  { label: 'Flour', value: `${pf.prefFlour} g` },
+                  { label: 'Water', value: `${pf.prefWater} g` },
+                  ...(pf.prefYeastGrams > 0 ? [{ label: 'IDY', value: `${pf.prefYeastGrams} g` }] : []),
+                ].map(row => (
+                  <div key={row.label} style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    padding: '.3rem 0', borderBottom: `1px solid ${D.line}`,
+                  }}>
+                    <span style={{ fontSize: '.78rem', color: D.muted }}>{row.label}</span>
+                    <span style={{ fontSize: '.82rem', fontFamily: 'var(--font-dm-mono)', fontWeight: 700, color: 'var(--cream)' }}>{row.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Final dough */}
+              <div>
+                <div style={{ fontSize: '.62rem', color: 'rgba(245,240,232,0.38)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '.5rem' }}>
+                  Final dough
+                </div>
+                {[
+                  { label: 'Flour', value: `${pf.finalFlour} g` },
+                  { label: 'Water', value: `${pf.finalWater} g` },
+                ].map(row => (
+                  <div key={row.label} style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    padding: '.3rem 0', borderBottom: `1px solid ${D.line}`,
+                  }}>
+                    <span style={{ fontSize: '.78rem', color: D.muted }}>{row.label}</span>
+                    <span style={{ fontSize: '.82rem', fontFamily: 'var(--font-dm-mono)', fontWeight: 700, color: 'var(--cream)' }}>{row.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Timing note */}
+            <div style={{
+              fontSize: '.75rem', fontStyle: 'italic',
+              color: 'rgba(212,168,83,0.70)',
+              lineHeight: 1.55,
+            }}>
+              {pf.schedule}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Flour note ────────────────────────────── */}
       {(() => {
