@@ -585,13 +585,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Quick presets — work toggle */}
       {workdays.length > 0 && (
         <div style={{ marginBottom: '.75rem' }}>
-          <div style={{
-            fontSize: '.65rem', color: 'var(--smoke)', opacity: .7,
-            fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase',
-            letterSpacing: '.06em', marginBottom: '.4rem',
-          }}>
-            {t('blockers.quickPresets')}
-          </div>
           <button
             onClick={toggleWork}
             style={{
@@ -739,10 +732,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
-      {/* Active block chips */}
-      {blocks.length > 0 && (
+      {/* Active block chips — custom blocks only */}
+      {blocks.some(b => !nights.some(n => n.label === b.label) && !b.label.startsWith('Work · ')) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem', marginBottom: '.5rem' }}>
-          {blocks.map((block, i) => {
+          {blocks.filter((block) => {
+            const isNightBlock = nights.some(n => n.label === block.label);
+            const isWorkBlock = block.label.startsWith('Work · ');
+            return !isNightBlock && !isWorkBlock;
+          }).map((block, i) => {
             const durationH = (block.to.getTime() - block.from.getTime()) / 3600000;
             const isNightBlock = nights.some(n => n.label === block.label);
             const isWorkBlock  = block.label.startsWith('Work · ');

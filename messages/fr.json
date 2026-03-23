@@ -90,8 +90,8 @@
       "continueAnyway": "Continuer quand même"
     },
     "blockers": {
-      "heading": "Quand êtes-vous occupé ?",
-      "sub": "On adapte le planning à vos contraintes pour trouver le meilleur moment de démarrage.",
+      "heading": "Des contraintes horaires ?",
+      "sub": "Optionnel — indiquez vos indisponibilités et on adapte le planning.",
       "quickPresets": "Raccourcis",
       "weekdays": "💼 Jours ouvrés",
       "weekdayHours": "· 9h → 18h",
