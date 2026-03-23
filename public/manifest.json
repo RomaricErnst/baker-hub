@@ -1,0 +1,21 @@
+{
+  "name": "Baker Hub",
+  "short_name": "Baker Hub",
+  "description": "Artisan dough planner for serious home bakers",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F0E8",
+  "theme_color": "#C4522A",
+  "icons": [
+    {
+      "src": "/Neapolitan.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/Neapolitan.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

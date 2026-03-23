@@ -13,6 +13,15 @@ const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfa
 export const metadata: Metadata = {
   title: "Baker Hub",
   description: "Smart dough planner for pizza and bread",
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Baker Hub',
+  },
+  icons: {
+    apple: [{ url: '/Neapolitan.png' }],
+  },
 };
 
 export function generateStaticParams() {
