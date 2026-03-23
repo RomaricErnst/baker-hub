@@ -512,6 +512,16 @@ export const FLOUR_DATA = {
     fermTolerance: 0.7,
     absorbency: 1.15,
   },
+  manitoba: {
+    name: 'Manitoba',
+    nameFr: 'Manitoba',
+    w: 360,
+    protein: 14.0,
+    hydrationBase: 68,
+    hydrationDelta: +3,
+    fermTolerance: 1.35,
+    absorbency: 1.12,
+  },
 } as const;
 
 export type FlourKey = keyof typeof FLOUR_DATA;
@@ -671,10 +681,11 @@ export function computePrefermentRecipe(
 export interface FlourBlend {
   flour1: FlourKey;
   flour2: FlourKey | null;
-  ratio1: number;        // 0-100, percentage of flour1
-  wOverride?: number;    // manual W value override
-  brandKey?: BrandKey;   // selected brand
-  brandProduct?: string; // selected product name
+  ratio1: number;           // 0-100, percentage of flour1
+  wOverride?: number;       // manual W value override
+  brandKey?: BrandKey;      // selected brand
+  brandProduct?: string;    // selected product name
+  customFlour2Name?: string; // name of manually entered second flour
 }
 
 export interface BlendProfile {

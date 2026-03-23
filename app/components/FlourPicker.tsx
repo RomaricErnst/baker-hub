@@ -5,9 +5,9 @@ import FlourScan from './FlourScan';
 
 // ── Flour lists ───────────────────────────────
 const PIZZA_FLOURS: FlourKey[]        = ['pizza00', 'strong00', 'bread', 'allpurpose'];
-const PIZZA_SECOND_FLOURS: FlourKey[] = ['semolina', 'strong00', 'wholemeal', 'allpurpose'];
+const PIZZA_SECOND_FLOURS: FlourKey[] = ['semolina', 'manitoba', 'wholemeal', 'allpurpose'];
 const BREAD_FLOURS: FlourKey[]        = ['bread', 'strong00', 'allpurpose', 'wholemeal', 'rye'];
-const BREAD_SECOND_FLOURS: FlourKey[] = ['rye', 'wholemeal', 'semolina', 'allpurpose'];
+const BREAD_SECOND_FLOURS: FlourKey[] = ['rye', 'wholemeal', 'manitoba', 'allpurpose'];
 
 const FLOUR_DESCS: Record<FlourKey, string> = {
   pizza00:    'Classic Italian 00 — ideal for most pizza styles',
@@ -17,6 +17,16 @@ const FLOUR_DESCS: Record<FlourKey, string> = {
   semolina:   'Nutty durum wheat flavour',
   wholemeal:  'Nutty, nutritious, absorbs more water',
   rye:        'Deep flavour, enzyme-active',
+  manitoba:   'Ultra-strong — 72h+ ferments, very high gluten',
+};
+
+const SECOND_FLOUR_VALUE: Partial<Record<FlourKey, string>> = {
+  semolina:  'Crunch + golden colour. 10–20% typical.',
+  manitoba:  'Extra strength for 72h+ ferments.',
+  wholemeal: 'Nutty complexity — use sparingly.',
+  allpurpose: 'Softens structure for home oven.',
+  rye:       'Deep flavour, enzyme boost. 10–30% typical.',
+  strong00:  'Boost strength for long cold ferments.',
 };
 
 // ── W strength helper ─────────────────────────
@@ -39,12 +49,13 @@ type FlourMode = 'selector' | 'brand' | 'manual' | 'scan';
 
 // ── Flour card grid ───────────────────────────
 function FlourCardGrid({
-  flours, selected, onSelect, exclude,
+  flours, selected, onSelect, exclude, descOverride,
 }: {
   flours: FlourKey[];
   selected: FlourKey | null;
   onSelect: (k: FlourKey) => void;
   exclude?: FlourKey | null;
+  descOverride?: Partial<Record<FlourKey, string>>;
 }) {
   const [hovered, setHovered] = useState<FlourKey | null>(null);
   const visible = exclude ? flours.filter(k => k !== exclude) : flours;
@@ -79,7 +90,7 @@ function FlourCardGrid({
                 {f.protein}% protein
               </span>
             </div>
-            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.4 }}>{FLOUR_DESCS[key]}</div>
+            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.4 }}>{descOverride?.[key] ?? FLOUR_DESCS[key]}</div>
           </div>
         );
       })}
@@ -97,10 +108,23 @@ function BlendSection({
   secondaryFlours: FlourKey[];
 }) {
   const [blendOpen, setBlendOpen] = useState(blend.flour2 !== null);
+  const [customFlourOpen, setCustomFlourOpen] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customW, setCustomW] = useState<number | ''>('');
+  const [customProtein, setCustomProtein] = useState<number | ''>('');
+  const [customRatio1, setCustomRatio1] = useState(70);
   const blendProfile = computeBlendProfile(blend);
+
+  const inputStyle: React.CSSProperties = {
+    padding: '.42rem .6rem', borderRadius: '8px',
+    border: '1.5px solid var(--border)', background: 'var(--warm)',
+    fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
+    color: 'var(--char)', outline: 'none',
+  };
 
   function openBlend() {
     setBlendOpen(true);
+    setCustomFlourOpen(false);
     if (!blend.flour2) {
       const next = secondaryFlours.find(k => k !== blend.flour1);
       if (next) onBlendChange({ ...blend, flour2: next, ratio1: 70 });
@@ -110,6 +134,14 @@ function BlendSection({
   function closeBlend() {
     setBlendOpen(false);
     onBlendChange({ ...blend, flour2: null, ratio1: 100 });
+  }
+
+  function handleCustomChange(name: string, w: number | '', protein: number | '', ratio: number) {
+    if (w !== '' && name.trim()) {
+      const f1w = FLOUR_DATA[blend.flour1].w;
+      const blendedW = Math.round((f1w * ratio / 100) + (w * (100 - ratio) / 100));
+      onBlendChange({ flour1: blend.flour1, flour2: null, ratio1: ratio, wOverride: blendedW, customFlour2Name: name.trim() });
+    }
   }
 
   return (
@@ -143,6 +175,7 @@ function BlendSection({
             selected={blend.flour2}
             onSelect={k => onBlendChange({ ...blend, flour2: k })}
             exclude={blend.flour1}
+            descOverride={SECOND_FLOUR_VALUE}
           />
 
           {blend.flour2 && (
@@ -168,6 +201,102 @@ function BlendSection({
                 <span style={{ opacity: .5 }}>·</span>
                 <span>{blendProfile.hydrationDelta > 0 ? '+' : ''}{blendProfile.hydrationDelta}% hydration</span>
               </div>
+            </div>
+          )}
+
+          {/* Custom flour entry */}
+          <button
+            onClick={() => {
+              setCustomFlourOpen(v => !v);
+              if (customFlourOpen) {
+                // reset custom when closing
+                setCustomName(''); setCustomW(''); setCustomProtein('');
+                onBlendChange({ flour1: blend.flour1, flour2: blend.flour2, ratio1: blend.ratio1 });
+              }
+            }}
+            style={{
+              marginTop: '.75rem', background: 'none', border: 'none',
+              cursor: 'pointer', color: 'var(--smoke)', fontSize: '.75rem',
+              fontFamily: 'var(--font-dm-sans)',
+              textDecoration: 'underline', textUnderlineOffset: '2px', padding: '.2rem 0',
+            }}
+          >
+            {customFlourOpen ? 'Cancel ✕' : 'Not listed? Add your own →'}
+          </button>
+
+          {customFlourOpen && (
+            <div style={{ marginTop: '.65rem', padding: '.9rem', background: 'var(--cream)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              {/* Three inputs */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', alignItems: 'flex-end' }}>
+                <div style={{ flex: 2, minWidth: '120px' }}>
+                  <div style={{ fontSize: '.62rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.3rem' }}>Name</div>
+                  <input
+                    type="text"
+                    placeholder="e.g. Farro, Spelt"
+                    value={customName}
+                    onChange={e => { setCustomName(e.target.value); handleCustomChange(e.target.value, customW, customProtein, customRatio1); }}
+                    style={{ ...inputStyle, width: '100%' }}
+                  />
+                </div>
+                <div style={{ width: '80px' }}>
+                  <div style={{ fontSize: '.62rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.3rem' }}>W value</div>
+                  <input
+                    type="number"
+                    placeholder="W value"
+                    value={customW}
+                    min={50} max={500} step={10}
+                    onChange={e => { const v = e.target.value === '' ? '' : Number(e.target.value); setCustomW(v); handleCustomChange(customName, v, customProtein, customRatio1); }}
+                    style={{ ...inputStyle, width: '80px' }}
+                  />
+                </div>
+                <div style={{ width: '80px' }}>
+                  <div style={{ fontSize: '.62rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.3rem' }}>Protein %</div>
+                  <input
+                    type="number"
+                    placeholder="protein %"
+                    value={customProtein}
+                    min={5} max={20} step={0.5}
+                    onChange={e => { const v = e.target.value === '' ? '' : Number(e.target.value); setCustomProtein(v); handleCustomChange(customName, customW, v, customRatio1); }}
+                    style={{ ...inputStyle, width: '80px' }}
+                  />
+                </div>
+              </div>
+
+              {/* Ratio slider */}
+              <div style={{ marginTop: '.85rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.35rem' }}>
+                  <span style={{ fontSize: '.72rem', color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>
+                    {customRatio1}% {FLOUR_DATA[blend.flour1].name}
+                  </span>
+                  <span style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+                    {100 - customRatio1}% {customName || 'custom flour'}
+                  </span>
+                </div>
+                <input
+                  type="range" min={10} max={90} step={10} value={customRatio1}
+                  onChange={e => { const r = Number(e.target.value); setCustomRatio1(r); handleCustomChange(customName, customW, customProtein, r); }}
+                  style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem' }}>
+                  <span>10%</span><span>90%</span>
+                </div>
+              </div>
+
+              {/* Blend W pill */}
+              {customW !== '' && (
+                (() => {
+                  const f1w = FLOUR_DATA[blend.flour1].w;
+                  const estimated = Math.round((f1w * customRatio1 / 100) + ((customW as number) * (100 - customRatio1) / 100));
+                  const hydNote = estimated < 200 ? 'short ferments only' : estimated < 280 ? '24–48h ferments' : '48h+ ferments';
+                  return (
+                    <div style={{ marginTop: '.65rem', display: 'inline-flex', alignItems: 'center', gap: '.5rem', background: 'rgba(107,122,90,0.12)', border: '1px solid rgba(107,122,90,0.3)', borderRadius: '20px', padding: '.3rem .75rem', fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)', color: 'var(--sage)' }}>
+                      <span>Blended W ~{estimated}</span>
+                      <span style={{ opacity: .5 }}>·</span>
+                      <span>{hydNote}</span>
+                    </div>
+                  );
+                })()
+              )}
             </div>
           )}
         </div>
