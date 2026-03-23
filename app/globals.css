@@ -57,3 +57,11 @@ body {
   box-shadow: 0 4px 16px rgba(26,22,18,0.10) !important;
 }
 
+@keyframes flourScanPulse {
+  0%, 100% { opacity: .3; }
+  50% { opacity: 1; }
+}
+.flour-scan-dot { animation: flourScanPulse 1.2s ease-in-out infinite; }
+.flour-scan-dot-2 { animation-delay: .2s; }
+.flour-scan-dot-3 { animation-delay: .4s; }
+
