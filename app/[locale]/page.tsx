@@ -1136,7 +1136,7 @@ export default function Home() {
                 blend={flourBlend}
                 onBlendChange={b => { setFlourBlend(b); if (b.flour2 === null) advanceAdv(6); }}
                 bakeType={bakeType ?? 'pizza'}
-                mode="custom"
+                mode={tab === 'custom' ? 'custom' : 'simple'}
               />
               {flourBlend.flour2 === null && (
                 <div style={{ marginTop: '.85rem' }}>

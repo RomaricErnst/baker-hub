@@ -242,12 +242,33 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
     <div>
       {/* Mode tabs — custom mode only */}
       {mode === 'custom' && (
-        <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-          <TabPill label="🗂 Choose a category"  active={flourMode === 'selector'} onClick={() => switchMode('selector')} />
-          <TabPill label="🏷 I know my brand"    active={flourMode === 'brand'}    onClick={() => switchMode('brand')} />
-          <TabPill label="✏️ Enter W value"      active={flourMode === 'manual'}   onClick={() => switchMode('manual')} />
-          <TabPill label="📷 Scan my bag"        active={flourMode === 'scan'}     onClick={() => switchMode('scan')} />
-        </div>
+        <>
+          <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginBottom: 0 }}>
+            <TabPill label="🗂 By Type"          active={flourMode === 'selector'} onClick={() => switchMode('selector')} />
+            <TabPill label="🏷 I know my brand"  active={flourMode === 'brand'}    onClick={() => switchMode('brand')} />
+            <TabPill label="✏️ By W value"       active={flourMode === 'manual'}   onClick={() => switchMode('manual')} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '.4rem', marginBottom: '.75rem' }}>
+            <button
+              onClick={() => switchMode('scan')}
+              style={{
+                background: 'none',
+                border: '1.5px solid var(--border)',
+                borderRadius: '20px',
+                padding: '.28rem .7rem',
+                fontSize: '.7rem',
+                fontFamily: 'var(--font-dm-sans)',
+                color: 'var(--smoke)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '.3rem',
+              }}
+            >
+              📷 Scan my bag
+            </button>
+          </div>
+        </>
       )}
 
       {/* ── MODE 1: Selector ─────────────────── */}
