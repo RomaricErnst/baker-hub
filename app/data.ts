@@ -516,10 +516,38 @@ export const FLOUR_DATA = {
 
 export type FlourKey = keyof typeof FLOUR_DATA;
 
+// ── FLOUR BRANDS ──────────────────────────
+export const FLOUR_BRANDS = {
+  caputo: {
+    name: 'Caputo',
+    logo: '🔵',
+    products: [
+      { name: 'Pizzeria', w: 260, protein: 12.5, desc: 'Blue bag — most common, 24-48h' },
+      { name: 'Cuoco', w: 300, protein: 13.0, desc: 'Red bag — strong, 48-72h' },
+      { name: 'Nuvola', w: 270, protein: 12.5, desc: 'Light airy cornicione' },
+      { name: 'Saccorosso', w: 330, protein: 13.5, desc: 'Professional, 72h+' },
+    ],
+  },
+  stagioni: {
+    name: '5 Stagioni',
+    logo: '⭐',
+    products: [
+      { name: 'Pizza', w: 270, protein: 12.5, desc: 'Classic — 24-48h' },
+      { name: 'Napoletana', w: 290, protein: 13.0, desc: 'Long ferment — 48-72h' },
+      { name: 'Gold', w: 380, protein: 14.0, desc: 'Professional — 72h+' },
+    ],
+  },
+} as const;
+
+export type BrandKey = keyof typeof FLOUR_BRANDS;
+
 export interface FlourBlend {
   flour1: FlourKey;
   flour2: FlourKey | null;
-  ratio1: number; // 0-100, percentage of flour1
+  ratio1: number;        // 0-100, percentage of flour1
+  wOverride?: number;    // manual W value override
+  brandKey?: BrandKey;   // selected brand
+  brandProduct?: string; // selected product name
 }
 
 export interface BlendProfile {
@@ -532,9 +560,10 @@ export interface BlendProfile {
 
 export function computeBlendProfile(blend: FlourBlend): BlendProfile {
   const f1 = FLOUR_DATA[blend.flour1];
+  const effectiveW1 = blend.wOverride ?? f1.w;
   if (!blend.flour2 || blend.ratio1 === 100) {
     return {
-      blendedW: f1.w,
+      blendedW: effectiveW1,
       hydrationDelta: f1.hydrationDelta,
       fermToleranceMultiplier: f1.fermTolerance,
       displayName: f1.name,
@@ -545,7 +574,7 @@ export function computeBlendProfile(blend: FlourBlend): BlendProfile {
   const r1 = blend.ratio1 / 100;
   const r2 = 1 - r1;
   return {
-    blendedW: Math.round(f1.w * r1 + f2.w * r2),
+    blendedW: Math.round(effectiveW1 * r1 + f2.w * r2),
     hydrationDelta: Math.round((f1.hydrationDelta * r1 + f2.hydrationDelta * r2) * 10) / 10,
     fermToleranceMultiplier: Math.round((f1.fermTolerance * r1 + f2.fermTolerance * r2) * 100) / 100,
     displayName: blend.ratio1 === 50
