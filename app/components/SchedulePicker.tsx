@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
 
@@ -321,6 +321,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [pickerHour, setPickerHour] = useState<number>(() => alreadySet ? eatTime!.getHours() : 20);
   const [dismissedConflict, setDismissedConflict] = useState(false);
   const [editingStart, setEditingStart] = useState(false);
+  const sliderRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPct, setDragPct] = useState<number | null>(null);
 
@@ -410,6 +411,54 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const distForward = Math.abs(forward.getTime() - date.getTime());
     const distBackward = Math.abs(backward.getTime() - date.getTime());
     return distForward <= distBackward ? forward : backward;
+  }
+
+  function clientXToPct(clientX: number): number {
+    if (!sliderRef.current) return 0;
+    const rect = sliderRef.current.getBoundingClientRect();
+    const pct = (clientX - rect.left) / rect.width * 100;
+    return Math.max(0, Math.min(100, pct));
+  }
+
+  function onSliderPointerDown(e: React.PointerEvent) {
+    if (!startComputed) return;
+    e.preventDefault();
+    setIsDragging(true);
+    setDragPct(clientXToPct(e.clientX));
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function onSliderPointerMove(e: React.PointerEvent) {
+    if (!isDragging) return;
+    e.preventDefault();
+    setDragPct(clientXToPct(e.clientX));
+  }
+
+  function onSliderPointerUp(e: React.PointerEvent) {
+    if (!isDragging) return;
+    e.preventDefault();
+    setIsDragging(false);
+    const pct = clientXToPct(e.clientX);
+    const rawMs = sliderMin + (pct / 100) * totalMs;
+    const rawDate = new Date(rawMs);
+    const snapped = Math.round(rawDate.getMinutes() / 15) * 15;
+    rawDate.setMinutes(snapped, 0, 0);
+    const d = pushToReasonableHour(rawDate);
+    const inBlock = blocks.find(b => d >= b.from && d < b.to);
+    let resolved = d;
+    if (inBlock) {
+      const forward = new Date(inBlock.to);
+      const backward = new Date(inBlock.from.getTime() - 15 * 60000);
+      resolved = Math.abs(forward.getTime() - d.getTime()) <= Math.abs(backward.getTime() - d.getTime())
+        ? forward : backward;
+    }
+    resolved = pushToReasonableHour(resolved);
+    setPendingStart(resolved);
+    setStartPickerDate(toPickerDate(resolved));
+    setStartPickerHour(resolved.getHours());
+    setBlockerNote(inBlock ? t('startMovedNote', { time: formatDayShort(resolved) }) : null);
+    onChange(resolved, pendingEatTime, blocks);
+    setDragPct(null);
   }
 
   function setStartFromPicker(dateStr: string, hour: number) {
@@ -875,81 +924,68 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         )}
 
         {/* Slider track + zones */}
-        <div style={{ position: 'relative', height: '32px', display: 'flex', alignItems: 'center' }}>
+        <div
+          ref={sliderRef}
+          onPointerDown={onSliderPointerDown}
+          onPointerMove={onSliderPointerMove}
+          onPointerUp={onSliderPointerUp}
+          onPointerCancel={() => { setIsDragging(false); setDragPct(null); }}
+          style={{
+            position: 'relative',
+            height: '44px',
+            display: 'flex',
+            alignItems: 'center',
+            cursor: startComputed ? 'pointer' : 'default',
+            touchAction: 'none',
+            userSelect: 'none',
+            WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'],
+          }}
+        >
           {/* Gradient zone track */}
           <div style={{
-            position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+            position: 'absolute',
             left: 0, right: 0, height: '10px', borderRadius: '5px',
-            pointerEvents: 'none', zIndex: 0,
+            pointerEvents: 'none',
             background: `linear-gradient(to right, #C8D8E8 0%, #C8D8E8 ${earlyPct}%, #B8D4A8 ${earlyPct}%, #B8D4A8 ${latestPct}%, #E8D890 ${latestPct}%, #D4A853 ${Math.min(100, latestPct + 15)}%, #D4A853 100%)`,
           }} />
 
-          {/* Blocker zone overlays — only while dragging */}
-          {isDragging && blocks.map(block => {
-            const blockStartPct = Math.max(0, Math.min(100, (block.from.getTime() - sliderMin) / totalMs * 100));
-            const blockEndPct   = Math.max(0, Math.min(100, (block.to.getTime()   - sliderMin) / totalMs * 100));
-            if (blockEndPct <= blockStartPct) return null;
+          {/* Blocker zone overlays — visible while dragging */}
+          {isDragging && blocks.map((block, i) => {
+            const bStartPct = Math.max(0, Math.min(100, (block.from.getTime() - sliderMin) / totalMs * 100));
+            const bEndPct   = Math.max(0, Math.min(100, (block.to.getTime()   - sliderMin) / totalMs * 100));
+            if (bEndPct <= bStartPct) return null;
             return (
-              <div key={block.label} style={{
+              <div key={i} style={{
                 position: 'absolute',
-                left: `${blockStartPct}%`,
-                width: `${blockEndPct - blockStartPct}%`,
-                top: '50%',
-                transform: 'translateY(-50%)',
+                left: `${bStartPct}%`,
+                width: `${bEndPct - bStartPct}%`,
                 height: '10px',
-                background: 'rgba(180,180,180,0.5)',
+                background: 'rgba(100,100,100,0.35)',
                 pointerEvents: 'none',
-                zIndex: 1,
                 borderRadius: '2px',
+                zIndex: 1,
               }} />
             );
           })}
 
-          {/* Diamond position marker — follows dragPct while dragging */}
-          <div style={{
-            position: 'absolute',
-            left: `calc(${isDragging && dragPct !== null ? dragPct : currentPct}% - 10px)`,
-            top: '50%',
-            width: '20px', height: '20px',
-            background: '#fff',
-            border: '2.5px solid var(--terra)',
-            boxShadow: '0 2px 8px rgba(196,82,42,0.25)',
-            transform: 'translateY(-50%) rotate(45deg)',
-            pointerEvents: 'none', zIndex: 2,
-            opacity: startComputed ? 1 : 0.4,
-          }} />
-
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            value={isDragging && dragPct !== null ? Math.round(dragPct) : Math.round(currentPct)}
-            onPointerDown={() => setIsDragging(true)}
-            onPointerUp={(e) => {
-              setIsDragging(false);
-              setDragPct(null);
-              const val = Number((e.target as HTMLInputElement).value);
-              const rawMs = sliderMin + (val / 100) * totalMs;
-              const rawDate = new Date(rawMs);
-              const snapped = Math.round(rawDate.getMinutes() / 15) * 15;
-              rawDate.setMinutes(snapped, 0, 0);
-              const reasonable = pushToReasonableHour(rawDate);
-              const nonBlocked = snapToNonBlocked(reasonable, blocks);
-              const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(nonBlocked, blocks);
-              setPendingStart(resolvedStart);
-              setStartPickerDate(toPickerDate(resolvedStart));
-              setStartPickerHour(resolvedStart.getHours());
-              setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
-              onChange(resolvedStart, pendingEatTime, blocks);
-            }}
-            onChange={e => {
-              if (isDragging) setDragPct(Number(e.target.value));
-            }}
-            disabled={!startComputed}
-            className="start-slider"
-            style={{ position: 'absolute', left: 0, right: 0, zIndex: 3, opacity: 0 }}
-          />
+          {/* Diamond marker */}
+          {startComputed && (
+            <div style={{
+              position: 'absolute',
+              left: `calc(${isDragging && dragPct !== null ? dragPct : currentPct}% - 14px)`,
+              top: '50%',
+              width: '28px', height: '28px',
+              background: '#fff',
+              border: '2.5px solid var(--terra)',
+              boxShadow: isDragging
+                ? '0 4px 16px rgba(196,82,42,0.4)'
+                : '0 2px 8px rgba(196,82,42,0.25)',
+              transform: 'translateY(-50%) rotate(45deg)',
+              pointerEvents: 'none',
+              zIndex: 2,
+              transition: isDragging ? 'none' : 'left .15s ease',
+            }} />
+          )}
         </div>
 
         {/* Zone labels */}
