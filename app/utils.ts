@@ -16,12 +16,15 @@ import {
   MIXER_TYPES,
   YEAST_TYPES,
   computeBlendProfile,
+  computePrefermentRecipe,
+  PREFERMENT_TYPES,
   type OvenType,
   type MixerType,
   type YeastType,
   type StyleKey,
   type FlourBlend,
   type BlendProfile,
+  type PrefermentType,
 } from './data';
 
 // ══════════════════════════════════════════
@@ -695,6 +698,18 @@ export interface RecipeResult {
   hydration: number;
   totalDough: number;
   blendProfile?: BlendProfile;
+  preferment?: {
+    prefFlour: number;
+    prefWater: number;
+    prefYeastGrams: number;
+    finalFlour: number;
+    finalWater: number;
+    fermentHoursMin: number;
+    fermentHoursMax: number;
+    cold: boolean;
+    schedule: string;
+    scheduleFr: string;
+  } | null;
 }
 
 export function calculateRecipe(
@@ -713,6 +728,7 @@ export function calculateRecipe(
   manualOil?: number,               // custom mode only
   manualSugar?: number,             // custom mode only
   flourBlend?: FlourBlend,          // custom mode only
+  prefermentType?: PrefermentType,  // custom mode only
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = OVEN_TYPES[ovenType];
@@ -797,14 +813,38 @@ export function calculateRecipe(
         convertedGrams: Math.round(flour * idyPct * conversion / 100 * 1000) / 1000,
       };
     }
+
+    // Apply yeast reduction from preferment
+    if (yeast && prefermentType && prefermentType !== 'none') {
+      const prefData = PREFERMENT_TYPES[prefermentType];
+      if (prefData.yeastReduction > 0) {
+        yeast = {
+          ...yeast,
+          grams: Math.max(0.5, yeast.grams * (1 - prefData.yeastReduction)),
+          convertedGrams: Math.max(0.5, yeast.convertedGrams * (1 - prefData.yeastReduction)),
+        };
+      }
+    }
   }
+
+  // Compute preferment recipe
+  const preferment = (prefermentType && prefermentType !== 'none')
+    ? computePrefermentRecipe(prefermentType, flour, water)
+    : null;
 
   return {
     flour, water, salt, yeast, sourdough,
     oil: oilG, sugar: sugarG,
     waterTemp, hydration, totalDough,
     blendProfile: blendProfile ?? undefined,
+    preferment,
   };
+}
+
+export function prefermentLeadHours(prefermentType: PrefermentType): number {
+  if (prefermentType === 'none') return 0;
+  const p = PREFERMENT_TYPES[prefermentType];
+  return 'fermentHoursMax' in p ? p.fermentHoursMax : 0;
 }
 
 // ══════════════════════════════════════════
