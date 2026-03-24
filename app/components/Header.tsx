@@ -37,7 +37,8 @@ export default function Header() {
           gap: '0.4rem',
           lineHeight: 1.2,
         }}>
-          🍞 Baker Hub
+          <img src="/logo-mark.png" alt="Baker Hub" style={{ width: '28px', height: '28px', objectFit: 'contain', marginRight: '.5rem', borderRadius: '6px' }} />
+          Baker Hub
         </div>
         <div style={{
           fontFamily: 'var(--font-dm-sans)',
