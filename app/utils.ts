@@ -686,6 +686,13 @@ export function buildSchedule(
 // 4. RECIPE CALCULATOR
 // ══════════════════════════════════════════
 
+function derivePriority(schedule: ScheduleResult): string | null {
+  const windowH = (schedule.bakeStart.getTime() - schedule.bulkFermStart.getTime()) / 3600000;
+  if (windowH < 6) return 'speed';
+  if (schedule.totalRTHours + schedule.totalColdHours >= 24) return 'flavor';
+  return null;
+}
+
 export interface RecipeResult {
   flour: number;
   water: number;
@@ -697,6 +704,7 @@ export interface RecipeResult {
   waterTemp: number;
   hydration: number;
   totalDough: number;
+  autoPriority: string | null;     // what the engine chose automatically
   blendProfile?: BlendProfile;
   preferment?: {
     prefFlour: number;
@@ -722,13 +730,13 @@ export function calculateRecipe(
   schedule: ScheduleResult,
   fridgeTemp: number,
   yeastType: YeastType,
-  priority: string | null,
   mode: 'simple' | 'custom',
-  manualHydration?: number,         // custom mode only
-  manualOil?: number,               // custom mode only
-  manualSugar?: number,             // custom mode only
-  flourBlend?: FlourBlend,          // custom mode only
-  prefermentType?: PrefermentType,  // custom mode only
+  manualHydration?: number,                // custom mode only
+  manualOil?: number,                      // custom mode only
+  manualSugar?: number,                    // custom mode only
+  flourBlend?: FlourBlend,                 // custom mode only
+  prefermentType?: PrefermentType,         // custom mode only
+  manualPriorityOverride?: string | null,  // custom mode only
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = OVEN_TYPES[ovenType];
@@ -786,6 +794,9 @@ export function calculateRecipe(
   let yeast: YeastResult | null = null;
   let sourdough: SourdoughResult | null = null;
 
+  const autoPriority = derivePriority(schedule);
+  const effectivePriority = manualPriorityOverride !== undefined ? manualPriorityOverride : autoPriority;
+
   if (yeastType === 'sourdough') {
     sourdough = sourdoughGuidance(kitchenTemp, flour);
   } else {
@@ -796,7 +807,7 @@ export function calculateRecipe(
       fridgeTemp,
       yeastType,
       flour,
-      priority
+      effectivePriority
     );
 
     // STEP 4 — Apply fermentation tolerance from blend
@@ -836,6 +847,7 @@ export function calculateRecipe(
     flour, water, salt, yeast, sourdough,
     oil: oilG, sugar: sugarG,
     waterTemp, hydration, totalDough,
+    autoPriority,
     blendProfile: blendProfile ?? undefined,
     preferment,
   };

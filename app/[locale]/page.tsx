@@ -187,7 +187,7 @@ export default function Home() {
   const [kitchenTemp, setKitchenTemp] = useState(22);
   const [humidity, setHumidity] = useState('normal');
   const [fridgeTemp, setFridgeTemp] = useState(4);
-  const [priority, setPriority] = useState<string | null>(null);
+  const [priorityOverride, setPriorityOverride] = useState<string | null | undefined>(undefined);
 
   // Modals & results
   const [showYeastHelper, setShowYeastHelper] = useState(false);
@@ -251,7 +251,7 @@ export default function Home() {
     try {
       return calculateRecipe(
         styleKey, ovenType as OvenType, numItems, itemWeight,
-        kitchenTemp, humidity, schedule, fridgeTemp, yeastType, null, 'simple',
+        kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'simple',
       );
     } catch {
       return null;
@@ -280,13 +280,13 @@ export default function Home() {
     try {
       return calculateRecipe(
         styleKey, ovenType as OvenType, numItems, itemWeight,
-        kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, 'custom',
-        manualHydration, manualOil, manualSugar, flourBlend, prefermentType,
+        kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom',
+        manualHydration, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride,
       );
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priority, manualHydration, manualOil, manualSugar, flourBlend, prefermentType]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType]);
 
   // Advanced recipe with yeast multiplier applied
   const advancedDisplayRecipe = useMemo(() => {
@@ -360,7 +360,7 @@ export default function Home() {
     setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(4);
     setShowResults(false); setActiveStep(1);
     setYeastMultiplier(1.0); setAppliedMultiplier(1.0);
-    setAdvancedStep(1); setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 }); setPriority(null); setPrefermentType('none');
+    setAdvancedStep(1); setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -1261,8 +1261,6 @@ export default function Home() {
                 kitchenTemp={kitchenTemp} humidity={humidity}
                 fridgeTemp={fridgeTemp} mode="custom"
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
-                priority={priority}
-                onPriorityChange={setPriority}
               />
               <ContinueBtn onClick={() => advanceAdv(9)} />
             </StepCard>
@@ -1473,6 +1471,8 @@ export default function Home() {
                       mode={tab}
                       bakeType={bakeType ?? 'pizza'}
                       prefermentType={prefermentType}
+                      priorityOverride={priorityOverride}
+                      onPriorityOverride={v => setPriorityOverride(v)}
                     />
                     {schedule && (
                       <Timeline

@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { type RecipeResult, type YeastResult } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, type PrefermentType } from '../data';
 
@@ -15,6 +16,8 @@ interface RecipeOutputProps {
   mode?: 'simple' | 'custom';
   bakeType?: 'pizza' | 'bread';
   prefermentType?: PrefermentType;
+  priorityOverride?: string | null;
+  onPriorityOverride?: (p: string | null) => void;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -193,7 +196,9 @@ function computeWaterInfo(
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
   result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
+  priorityOverride, onPriorityOverride,
 }: RecipeOutputProps) {
+  const [showPriorityOverride, setShowPriorityOverride] = useState(false);
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
 
   const yeastInfo = yeast as YeastResult | null;
@@ -391,6 +396,68 @@ export default function RecipeOutput({
               advancedPct={mode === 'custom' ? pctStr(yeastInfo.convertedPct) : undefined}
             />
           )}
+
+          {yeastInfo && (() => {
+            const priorityLabel = ({
+              'flavor': { emoji: '🐢', text: 'Flavour-first yeast — you have plenty of time', color: 'var(--sage)' },
+              'speed':  { emoji: '⚡', text: 'Speed-adjusted yeast — your window is tight',   color: 'var(--gold)' },
+            } as Record<string, { emoji: string; text: string; color: string }>)[result.autoPriority ?? ''] ?? { emoji: '⚖️', text: 'Balanced yeast for your schedule', color: 'var(--smoke)' };
+            return (
+              <>
+                <div style={{
+                  fontSize: '.72rem', color: priorityLabel.color,
+                  fontStyle: 'italic', fontFamily: 'var(--font-dm-sans)',
+                  padding: '.2rem .1rem .4rem',
+                  display: 'flex', alignItems: 'center', gap: '.35rem',
+                  justifyContent: 'space-between',
+                }}>
+                  <span>{priorityLabel.emoji} {priorityLabel.text}</span>
+                  {mode === 'custom' && (
+                    <button
+                      onClick={() => setShowPriorityOverride(v => !v)}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        color: 'rgba(245,240,232,0.45)', fontSize: '.68rem',
+                        fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline',
+                        textUnderlineOffset: '2px', padding: 0, flexShrink: 0,
+                      }}
+                    >
+                      {showPriorityOverride ? 'Reset ✕' : 'Adjust →'}
+                    </button>
+                  )}
+                </div>
+                {showPriorityOverride && mode === 'custom' && (
+                  <div style={{ display: 'flex', gap: '.4rem', padding: '.35rem .1rem .5rem', borderBottom: `1px solid rgba(212,168,83,0.16)` }}>
+                    {([
+                      { value: 'flavor', label: '🐢 Flavour', desc: 'Less yeast, more time' },
+                      { value: null,     label: '⚖️ Balanced', desc: 'Standard' },
+                      { value: 'speed',  label: '⚡ Speed',    desc: 'More yeast, faster' },
+                    ] as { value: string | null; label: string; desc: string }[]).map(opt => {
+                      const effective = priorityOverride !== undefined ? priorityOverride : result.autoPriority;
+                      const isActive = effective === opt.value;
+                      return (
+                        <button
+                          key={String(opt.value)}
+                          onClick={() => onPriorityOverride?.(opt.value)}
+                          style={{
+                            padding: '.3rem .65rem', borderRadius: '20px', cursor: 'pointer',
+                            border: `1.5px solid ${isActive ? 'var(--gold)' : 'rgba(212,168,83,0.2)'}`,
+                            background: isActive ? 'rgba(212,168,83,0.15)' : 'transparent',
+                            color: isActive ? 'var(--gold)' : 'rgba(245,240,232,0.5)',
+                            fontSize: '.7rem', fontFamily: 'var(--font-dm-sans)',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '.1rem',
+                          }}
+                        >
+                          <span style={{ fontWeight: isActive ? 600 : 400 }}>{opt.label}</span>
+                          <span style={{ fontSize: '.6rem', opacity: .7 }}>{opt.desc}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           {yeastInfo && yeastInfo.convertedGrams < 2 && totalColdHours >= 24 && (
             <span style={{ fontSize: '.72rem', color: 'rgba(245,240,232,0.50)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', marginTop: '.25rem', display: 'block', padding: '0 .1rem' }}>
