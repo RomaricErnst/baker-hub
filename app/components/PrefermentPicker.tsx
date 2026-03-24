@@ -11,6 +11,7 @@ interface PrefermentPickerProps {
   kitchenTemp?: number;
   hasNightBlocker?: boolean;
   styleKey?: string;
+  hideTypes?: PrefermentType[];
 }
 
 function prefermentTimingNote(
@@ -67,7 +68,7 @@ function prefermentTimingNote(
 
 export default function PrefermentPicker({
   selected, onSelect, flourPct, onFlourPctChange,
-  kitchenTemp = 22, hasNightBlocker = false, styleKey,
+  kitchenTemp = 22, hasNightBlocker = false, styleKey, hideTypes = [],
 }: PrefermentPickerProps) {
   const locale = useLocale();
   const isFr = locale === 'fr';
@@ -81,7 +82,8 @@ export default function PrefermentPicker({
     setLocalFlourPct((PREFERMENT_TYPES[selected] as { flourPct?: number }).flourPct ?? 50);
   }, [selected]);
 
-  const types = Object.entries(PREFERMENT_TYPES) as [PrefermentType, typeof PREFERMENT_TYPES[PrefermentType]][];
+  const types = (Object.entries(PREFERMENT_TYPES) as [PrefermentType, typeof PREFERMENT_TYPES[PrefermentType]][])
+    .filter(([key]) => !hideTypes.includes(key));
 
   return (
     <div style={{

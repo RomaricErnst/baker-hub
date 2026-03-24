@@ -1248,6 +1248,8 @@ export default function Home() {
                               }
                             }, 150);
                           } else {
+                            // switching away from sourdough: reset levain preferment
+                            if (prefermentType === 'levain') setPrefermentType('none');
                             advanceAdv(7);
                           }
                         }}
@@ -1303,12 +1305,14 @@ export default function Home() {
                   onSelect={pt => {
                     setPrefermentType(pt);
                     if (pt === 'none') advanceAdv(8);
+                    // poolish, biga: stay on step so baker sees the flour % slider
                   }}
                   flourPct={prefermentFlourPct}
                   onFlourPctChange={setPrefermentFlourPct}
                   kitchenTemp={kitchenTemp}
                   hasNightBlocker={hasNightBlocker}
                   styleKey={styleKey ?? undefined}
+                  hideTypes={['levain']}
                 />
                 {prefermentType !== 'none' && <ContinueBtn onClick={() => advanceAdv(8)} />}
               </StepCard>
