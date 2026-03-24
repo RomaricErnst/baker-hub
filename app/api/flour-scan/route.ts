@@ -66,8 +66,22 @@ Respond ONLY with a JSON object, no other text:
   });
 
   const data = await response.json();
+
   if (!response.ok) {
-    return NextResponse.json({ error: data.error?.message ?? 'Anthropic API error' }, { status: response.status });
+    console.error('Anthropic API error:', data);
+    return NextResponse.json(
+      { error: data.error?.message ?? 'Anthropic API error' },
+      { status: response.status }
+    );
+  }
+
+  // Verify we got content back
+  if (!data.content?.[0]?.text) {
+    console.error('No content in response:', JSON.stringify(data));
+    return NextResponse.json(
+      { error: 'Empty response from AI' },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json(data);

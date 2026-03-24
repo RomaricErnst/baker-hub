@@ -25,21 +25,29 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? 'API error');
 
+      // Extract text from Anthropic response
       const text = (data.content?.[0]?.text ?? '').trim();
-      const clean = text.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(clean);
 
-      if (parsed.w && parsed.protein && parsed.name) {
+      // Aggressive cleaning — strip any markdown, backticks, extra text
+      // Find JSON object using regex in case there's surrounding text
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found in response');
+
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      // Validate — w and name required, protein optional (default to 12)
+      if (parsed.w && parsed.name) {
         setExtractedResult({
           w: Number(parsed.w),
-          protein: Number(parsed.protein),
-          name: parsed.name,
+          protein: Number(parsed.protein ?? 12),
+          name: String(parsed.name),
         });
         setScanState('result');
       } else {
-        setScanState('error');
+        throw new Error('Missing required fields');
       }
-    } catch {
+    } catch (err) {
+      console.error('FlourScan error:', err);
       setScanState('error');
     }
   }
