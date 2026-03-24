@@ -568,6 +568,7 @@ export const PREFERMENT_TYPES = {
     yeastReduction: 0,
     flavourNote: '',
     bestFor: [] as string[],
+    flourPctMin: 0, flourPctMax: 0, flourPctStep: 0,
   },
   poolish: {
     name: 'Poolish',
@@ -586,6 +587,7 @@ export const PREFERMENT_TYPES = {
     flavourNote: 'Extensible, open crumb, mild tang.',
     flavourNoteFr: 'Pâte extensible, mie ouverte, légèrement acidulé.',
     bestFor: ['baguette', 'newyork', 'roman'] as string[],
+    flourPctMin: 30, flourPctMax: 70, flourPctStep: 10,
   },
   biga: {
     name: 'Biga',
@@ -604,6 +606,7 @@ export const PREFERMENT_TYPES = {
     flavourNote: 'Strong structure, complex flavour, ideal for high hydration.',
     flavourNoteFr: 'Structure forte, saveur complexe, idéal pour haute hydratation.',
     bestFor: ['roman', 'newyork', 'pain_campagne'] as string[],
+    flourPctMin: 25, flourPctMax: 60, flourPctStep: 5,
   },
   levain: {
     name: 'Levain / Sourdough',
@@ -622,8 +625,15 @@ export const PREFERMENT_TYPES = {
     flavourNote: 'Tangy, digestible, unique wild yeast character.',
     flavourNoteFr: 'Acidulé, digestible, caractère unique du levain naturel.',
     bestFor: ['neapolitan', 'pain_levain', 'baguette'] as string[],
+    flourPctMin: 15, flourPctMax: 30, flourPctStep: 5,
   },
 } as const;
+
+export const PREFERMENT_LABELS: Record<string, (pct: number) => string> = {
+  poolish: (pct) => pct <= 35 ? 'Mild, light tang' : pct >= 60 ? 'Complex, intense' : 'Classic poolish',
+  biga:    (pct) => pct <= 30 ? 'Light structure' : pct >= 55 ? 'Very strong, chewy' : 'Classic biga',
+  levain:  (pct) => pct <= 15 ? 'Mild tang' : pct >= 28 ? 'Tangy, faster rise' : 'Classic levain',
+};
 
 export type PrefermentType = keyof typeof PREFERMENT_TYPES;
 
@@ -631,6 +641,7 @@ export function computePrefermentRecipe(
   prefermentType: PrefermentType,
   totalFlourGrams: number,
   totalWaterGrams: number,
+  flourPctOverride?: number,
 ): {
   prefFlour: number;
   prefWater: number;
@@ -646,7 +657,8 @@ export function computePrefermentRecipe(
   if (prefermentType === 'none') return null;
   const p = PREFERMENT_TYPES[prefermentType];
 
-  const prefFlour = Math.round(totalFlourGrams * p.flourPct / 100);
+  const flourPct = flourPctOverride ?? p.flourPct;
+  const prefFlour = Math.round(totalFlourGrams * flourPct / 100);
   const prefWater = Math.round(prefFlour * p.hydration / 100);
   const prefYeastGrams = Math.round(prefFlour * p.yeastPct / 100 * 10) / 10;
   const finalFlour = totalFlourGrams - prefFlour;

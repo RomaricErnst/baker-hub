@@ -737,6 +737,7 @@ export function calculateRecipe(
   flourBlend?: FlourBlend,                 // custom mode only
   prefermentType?: PrefermentType,         // custom mode only
   manualPriorityOverride?: string | null,  // custom mode only
+  flourPctOverride?: number,               // custom mode only
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = OVEN_TYPES[ovenType];
@@ -840,7 +841,7 @@ export function calculateRecipe(
 
   // Compute preferment recipe
   const preferment = (prefermentType && prefermentType !== 'none')
-    ? computePrefermentRecipe(prefermentType, flour, water)
+    ? computePrefermentRecipe(prefermentType, flour, water, flourPctOverride)
     : null;
 
   return {
