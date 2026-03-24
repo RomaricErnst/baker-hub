@@ -726,13 +726,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     return Math.min(144, Math.max(36, Math.ceil(neededH / 12) * 12));
   }, [pendingEatTime, pendingStart, prefOffsetH, hasPrefActive]);
 
-  // FIX 5: window start includes pref time for blocker chips
+  // Fixed window start — always covers 5 days before bake regardless of diamond position
   const windowStart = useMemo(() => {
-    if (hasPrefActive && startComputed) {
-      return new Date(pendingStart.getTime() - prefOffsetH * 3600000);
-    }
-    return pendingStart;
-  }, [pendingStart, prefOffsetH, hasPrefActive, startComputed]);
+    const fiveDaysBefore = new Date(pendingEatTime.getTime() - 5 * 24 * 3600000);
+    const now = new Date();
+    return fiveDaysBefore > now ? fiveDaysBefore : now;
+  }, [pendingEatTime]);
 
   const nights   = useMemo(() => getNightsInWindow(windowStart, pendingEatTime), [windowStart, pendingEatTime]);
   const workdays = useMemo(() => getWorkdaysInWindow(windowStart, pendingEatTime), [windowStart, pendingEatTime]);
