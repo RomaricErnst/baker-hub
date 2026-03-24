@@ -792,6 +792,7 @@ export default function Home() {
                 schedule={schedule}
                 bakeType={bakeType ?? 'pizza'}
                 isSourdough={yeastType === 'sourdough'}
+                prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onConfirm={() => advance(8)}
@@ -1347,6 +1348,7 @@ export default function Home() {
                 schedule={schedule}
                 bakeType={bakeType ?? 'pizza'}
                 isSourdough={yeastType === 'sourdough'}
+                prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onConfirm={() => advanceAdv(10)}

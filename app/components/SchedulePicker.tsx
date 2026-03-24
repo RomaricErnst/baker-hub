@@ -1,7 +1,8 @@
 'use client';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
+import FermentChart, { getPrefOptH } from './FermentChart';
 
 interface SchedulePickerProps {
   startTime: Date;
@@ -16,6 +17,7 @@ interface SchedulePickerProps {
   bakeType?: 'pizza' | 'bread';
   isSourdough?: boolean;
   onFeedTimeChange?: (t: Date) => void;
+  prefermentType?: string;
 }
 
 type PickerPhase = 'bake_time' | 'start_confirm';
@@ -305,7 +307,7 @@ const LABEL_STYLE: React.CSSProperties = {
 };
 
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, onConfirm, bakeType = 'pizza', isSourdough = false, onFeedTimeChange }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, onConfirm, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none' }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tCommon = useTranslations('common');
   const alreadySet = eatTime !== null && eatTime > new Date();
@@ -334,27 +336,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   });
   const [pickerHour, setPickerHour] = useState<number>(() => alreadySet ? eatTime!.getHours() : 20);
   const [dismissedConflict, setDismissedConflict] = useState(false);
-  const [editingStart, setEditingStart] = useState(false);
-  const sliderRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragPct, setDragPct] = useState<number | null>(null);
 
-  // Sourdough two-diamond state
+  // Sourdough state
   const [feedTime, setFeedTime] = useState<Date | null>(null);
   const [mixOverride, setMixOverride] = useState(false);
-  const [activeDiamond, setActiveDiamond] = useState<'feed' | 'mix' | null>(null);
   const [starterMature, setStarterMature] = useState(true);
 
-  // Start picker state — synced with pendingStart after confirmBakeTime runs
-  function toPickerDate(d: Date): string {
-    const p = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-  }
-  const [startPickerDate, setStartPickerDate] = useState<string>(() =>
-    alreadySet ? toPickerDate(startTime) : ''
-  );
-  const [startPickerHour, setStartPickerHour] = useState<number>(() =>
-    alreadySet ? startTime.getHours() : 8
+  // Preferment offset state (non-sourdough)
+  const [prefOffsetH, setPrefOffsetH] = useState<number>(() =>
+    getPrefOptH(prefermentType, kitchenTemp)
   );
 
   function updateEatTime(dateStr: string, hour: number) {
@@ -385,8 +375,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   function confirmBakeTime() {
     const s = suggestion.suggestedStart;
     setPendingStart(s);
-    setStartPickerDate(toPickerDate(s));
-    setStartPickerHour(s.getHours());
     onChange(s, pendingEatTime, blocks);
     setStartComputed(true);
     setDismissedConflict(false);
@@ -408,113 +396,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   function adjustStart(deltaH: number) {
     const d = new Date(pendingStart.getTime() + deltaH * 3600000);
-    setPendingStart(d);
-    setStartPickerDate(toPickerDate(d));
-    setStartPickerHour(d.getHours());
-    onChange(d, pendingEatTime, blocks);
-  }
-
-  function handleSlider(val: number, sliderMin: number, totalMs: number) {
-    const rawMs = sliderMin + (val / 100) * totalMs;
-    const rawDate = new Date(rawMs);
-    const minutes = rawDate.getMinutes();
-    const snapped = Math.round(minutes / 15) * 15;
-    rawDate.setMinutes(snapped, 0, 0);
-    const d = pushToReasonableHour(rawDate);
-    const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(d, blocks);
-    setPendingStart(resolvedStart);
-    setStartPickerDate(toPickerDate(resolvedStart));
-    setStartPickerHour(resolvedStart.getHours());
-    setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
-    onChange(resolvedStart, pendingEatTime, blocks);
-  }
-
-  function snapToNonBlocked(date: Date, activeBlocks: AvailabilityBlock[]): Date {
-    const inBlock = activeBlocks.find(b => date >= b.from && date < b.to);
-    if (!inBlock) return date;
-    const forward = new Date(inBlock.to);
-    const backward = new Date(inBlock.from.getTime() - 15 * 60000);
-    const distForward = Math.abs(forward.getTime() - date.getTime());
-    const distBackward = Math.abs(backward.getTime() - date.getTime());
-    return distForward <= distBackward ? forward : backward;
-  }
-
-  function clientXToPct(clientX: number): number {
-    if (!sliderRef.current) return 0;
-    const rect = sliderRef.current.getBoundingClientRect();
-    const pct = (clientX - rect.left) / rect.width * 100;
-    return Math.max(0, Math.min(100, pct));
-  }
-
-  function onSliderPointerDown(e: React.PointerEvent) {
-    if (!startComputed) return;
-    e.preventDefault();
-    const pct = clientXToPct(e.clientX);
-    if (isSourdough && feedTime) {
-      const fPct = (feedTime.getTime() - sliderMin) / totalMs * 100;
-      const mPct = (pendingStart.getTime() - sliderMin) / totalMs * 100;
-      setActiveDiamond(Math.abs(pct - fPct) <= Math.abs(pct - mPct) ? 'feed' : 'mix');
-    } else {
-      setActiveDiamond('mix');
-    }
-    setIsDragging(true);
-    setDragPct(pct);
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }
-
-  function onSliderPointerMove(e: React.PointerEvent) {
-    if (!isDragging) return;
-    e.preventDefault();
-    setDragPct(clientXToPct(e.clientX));
-  }
-
-  function onSliderPointerUp(e: React.PointerEvent) {
-    if (!isDragging) return;
-    e.preventDefault();
-    setIsDragging(false);
-    const pct = clientXToPct(e.clientX);
-    const rawMs = sliderMin + (pct / 100) * totalMs;
-    const rawDate = new Date(rawMs);
-    const snapped = Math.round(rawDate.getMinutes() / 15) * 15;
-    rawDate.setMinutes(snapped, 0, 0);
-    const d = pushToReasonableHour(rawDate);
-    const inBlock = blocks.find(b => d >= b.from && d < b.to);
-    let resolved = d;
-    if (inBlock) {
-      const forward = new Date(inBlock.to);
-      const backward = new Date(inBlock.from.getTime() - 15 * 60000);
-      resolved = Math.abs(forward.getTime() - d.getTime()) <= Math.abs(backward.getTime() - d.getTime())
-        ? forward : backward;
-    }
-    resolved = pushToReasonableHour(resolved);
-
-    if (isSourdough && activeDiamond === 'feed') {
-      setFeedTime(resolved);
-      onFeedTimeChange?.(resolved);
-      if (!mixOverride) {
-        const peak = starterPeakHours(kitchenTemp, starterMature);
-        const newMix = pushToReasonableHour(new Date(resolved.getTime() + peak.mid * 3600000));
-        setPendingStart(newMix);
-        setStartPickerDate(toPickerDate(newMix));
-        setStartPickerHour(newMix.getHours());
-        onChange(newMix, pendingEatTime, blocks);
-      }
-    } else {
-      if (isSourdough) setMixOverride(true);
-      setPendingStart(resolved);
-      setStartPickerDate(toPickerDate(resolved));
-      setStartPickerHour(resolved.getHours());
-      setBlockerNote(inBlock ? t('startMovedNote', { time: formatDayShort(resolved) }) : null);
-      onChange(resolved, pendingEatTime, blocks);
-    }
-    setDragPct(null);
-    setActiveDiamond(null);
-  }
-
-  function setStartFromPicker(dateStr: string, hour: number) {
-    if (!dateStr) return;
-    const parts = dateStr.split('-').map(Number);
-    const d = new Date(parts[0], parts[1] - 1, parts[2], hour, 0, 0, 0);
     setPendingStart(d);
     onChange(d, pendingEatTime, blocks);
   }
@@ -631,28 +512,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   // ── PHASE 2: Start suggestion + blockers + confirm (merged) ──
-  const { scenario, rangeEarly, rangeLatest } = suggestion;
-
-  // Slider bounds — capped at 72h window so slider stays useful for long ferments
-  const sliderNow = new Date();
-  const MAX_SLIDER_H = 72;
-  const naturalMax = pendingEatTime.getTime() - preheatMin * 60000 - 3600000;
-  const cappedMin = Math.max(sliderNow.getTime(), naturalMax - MAX_SLIDER_H * 3600000);
-  const sliderMin = cappedMin;
-  const sliderMax = naturalMax;
-  const totalMs = Math.max(sliderMax - sliderMin, 1);
-  const earlyPct   = Math.max(0, Math.min(100, ((rangeEarly.getTime()  - sliderMin) / totalMs) * 100));
-  const latestPct  = Math.max(0, Math.min(100, ((rangeLatest.getTime() - sliderMin) / totalMs) * 100));
-  const currentPct = Math.max(0, Math.min(100, ((pendingStart.getTime() - sliderMin) / totalMs) * 100));
-
-  // Sourdough diamond positions
-  const feedPctComputed = (isSourdough && feedTime)
-    ? Math.max(0, Math.min(100, (feedTime.getTime() - sliderMin) / totalMs * 100))
-    : null;
-  const feedPctLive = (isDragging && activeDiamond === 'feed' && dragPct !== null)
-    ? dragPct : feedPctComputed;
-  const mixPctLive = (isDragging && activeDiamond === 'mix' && dragPct !== null)
-    ? dragPct : currentPct;
+  const { scenario } = suggestion;
 
   const startInvalid = startComputed && pendingStart >= pendingEatTime;
   const bulkConflict = schedule?.bulkConflict ?? null;
@@ -701,7 +561,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             🫙 When can you feed your starter?
           </div>
           <div style={{ fontSize: '.76rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
-            Drag the feed diamond ◇ — your mix time updates automatically.
+            Drag the gold diamond on the chart to set your feed time — mix updates automatically.
           </div>
 
           {/* Maturity toggle */}
@@ -964,241 +824,75 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Divider */}
       <div style={{ borderTop: '1px solid var(--border)', margin: '1.1rem 0 1rem' }} />
 
-      {/* Start time slider — moved below blockers */}
+      {/* Fermentation chart */}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
         <label style={LABEL_STYLE}>{t('startMixing')}</label>
+        {startComputed ? (
+          <FermentChart
+            eatTime={pendingEatTime}
+            prefermentType={isSourdough ? 'sourdough' : prefermentType}
+            kitchenTemp={kitchenTemp}
+            mixOffsetH={Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)}
+            prefOffsetH={
+              isSourdough && feedTime
+                ? Math.max(1, (pendingStart.getTime() - feedTime.getTime()) / 3600000)
+                : prefOffsetH
+            }
+            blocks={blocks}
+            onMixChange={(h) => {
+              const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - h * 3600000));
+              const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(newStart, blocks);
+              if (isSourdough) setMixOverride(true);
+              setPendingStart(resolvedStart);
+              setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
+              onChange(resolvedStart, pendingEatTime, blocks);
+            }}
+            onPrefChange={(offsetH) => {
+              if (isSourdough) {
+                const newFeed = pushToReasonableHour(new Date(pendingStart.getTime() - offsetH * 3600000));
+                setFeedTime(newFeed);
+                onFeedTimeChange?.(newFeed);
+                if (!mixOverride) {
+                  const peak = starterPeakHours(kitchenTemp, starterMature);
+                  const newMix = pushToReasonableHour(new Date(newFeed.getTime() + peak.mid * 3600000));
+                  setPendingStart(newMix);
+                  onChange(newMix, pendingEatTime, blocks);
+                }
+              } else {
+                setPrefOffsetH(offsetH);
+              }
+            }}
+          />
+        ) : (
+          <div style={{
+            textAlign: 'center', fontFamily: 'var(--font-dm-mono)',
+            fontSize: '.9rem', color: 'var(--smoke)',
+            padding: '1.5rem 0', letterSpacing: '.01em',
+          }}>
+            {t('setByPlan')}
+          </div>
+        )}
 
-        {/* Large time display — click to edit inline (hidden in sourdough when feed is set) */}
-        {startComputed && editingStart ? (
-          <div style={{ display: 'flex', gap: '.5rem', marginBottom: '.9rem' }}>
-            <input
-              type="date"
-              value={toPickerDate(pendingStart)}
-              onChange={e => {
-                if (!e.target.value) return;
-                const parts = e.target.value.split('-').map(Number);
-                const h = pendingStart.getHours();
-                const m = Math.round(pendingStart.getMinutes() / 15) * 15 % 60;
-                const d = new Date(parts[0], parts[1] - 1, parts[2], h, m, 0, 0);
-                setPendingStart(d);
-                setStartPickerDate(toPickerDate(d));
-                setStartPickerHour(d.getHours());
-                onChange(d, pendingEatTime, blocks);
-                setEditingStart(false);
-              }}
-              style={{ ...INPUT_STYLE, flex: 2, width: undefined }}
-              autoFocus
-            />
-            <select
-              value={pendingStart.getHours() * 60 + Math.round(pendingStart.getMinutes() / 15) * 15}
-              onChange={e => {
-                const totalMin = Number(e.target.value);
-                const h = Math.floor(totalMin / 60);
-                const m = totalMin % 60;
-                const d = new Date(pendingStart.getFullYear(), pendingStart.getMonth(), pendingStart.getDate(), h, m, 0, 0);
-                setPendingStart(d);
-                setStartPickerDate(toPickerDate(d));
-                setStartPickerHour(h);
-                onChange(d, pendingEatTime, blocks);
-                setEditingStart(false);
+        {/* Sourdough reset-mix link */}
+        {isSourdough && feedTime && startComputed && mixOverride && (
+          <div style={{ marginTop: '.4rem', textAlign: 'right' }}>
+            <button
+              onClick={() => {
+                setMixOverride(false);
+                const peak = starterPeakHours(kitchenTemp, starterMature);
+                const newMix = pushToReasonableHour(new Date(feedTime.getTime() + peak.mid * 3600000));
+                setPendingStart(newMix);
+                onChange(newMix, pendingEatTime, blocks);
               }}
               style={{
-                ...INPUT_STYLE, width: 'auto', flex: 1,
-                appearance: 'none' as React.CSSProperties['appearance'],
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--smoke)', fontSize: '.72rem',
+                fontFamily: 'var(--font-dm-mono)',
+                textDecoration: 'underline', textUnderlineOffset: '2px', padding: 0,
               }}
             >
-              {Array.from({ length: 96 }, (_, i) => {
-                const h = Math.floor(i / 4);
-                const m = (i % 4) * 15;
-                const label = `${hourLabel(h)}${m > 0 ? `:${String(m).padStart(2, '0')}` : ''}`;
-                return <option key={i} value={h * 60 + m}>{label}</option>;
-              })}
-            </select>
-          </div>
-        ) : isSourdough && feedTime && startComputed ? null : (
-          <div
-            onClick={() => { if (startComputed) setEditingStart(true); }}
-            style={{
-              textAlign: 'center',
-              fontFamily: 'var(--font-dm-mono)',
-              fontSize: '1.35rem',
-              fontWeight: 700,
-              color: startInvalid ? 'var(--terra)' : 'var(--char)',
-              marginBottom: '.9rem',
-              letterSpacing: '-.01em',
-              cursor: startComputed ? 'pointer' : 'default',
-            }}
-          >
-            {startComputed ? formatSliderDisplay(pendingStart) : t('setByPlan')}
-          </div>
-        )}
-
-        {/* Slider track + zones */}
-        <div
-          ref={sliderRef}
-          onPointerDown={onSliderPointerDown}
-          onPointerMove={onSliderPointerMove}
-          onPointerUp={onSliderPointerUp}
-          onPointerCancel={() => { setIsDragging(false); setDragPct(null); }}
-          style={{
-            position: 'relative',
-            height: '44px',
-            display: 'flex',
-            alignItems: 'center',
-            cursor: startComputed ? 'pointer' : 'default',
-            touchAction: 'none',
-            userSelect: 'none',
-            WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'],
-          }}
-        >
-          {/* Gradient zone track */}
-          <div style={{
-            position: 'absolute',
-            left: 0, right: 0, height: '10px', borderRadius: '5px',
-            pointerEvents: 'none',
-            background: `linear-gradient(to right, #C8D8E8 0%, #C8D8E8 ${earlyPct}%, #B8D4A8 ${earlyPct}%, #B8D4A8 ${latestPct}%, #E8D890 ${latestPct}%, #D4A853 ${Math.min(100, latestPct + 15)}%, #D4A853 100%)`,
-          }} />
-
-          {/* Blocker zone overlays — visible while dragging */}
-          {isDragging && blocks.map((block, i) => {
-            const bStartPct = Math.max(0, Math.min(100, (block.from.getTime() - sliderMin) / totalMs * 100));
-            const bEndPct   = Math.max(0, Math.min(100, (block.to.getTime()   - sliderMin) / totalMs * 100));
-            if (bEndPct <= bStartPct) return null;
-            return (
-              <div key={i} style={{
-                position: 'absolute',
-                left: `${bStartPct}%`,
-                width: `${bEndPct - bStartPct}%`,
-                height: '10px',
-                background: 'rgba(100,100,100,0.35)',
-                pointerEvents: 'none',
-                borderRadius: '2px',
-                zIndex: 1,
-              }} />
-            );
-          })}
-
-          {/* Single diamond — non-sourdough */}
-          {startComputed && !isSourdough && (
-            <div style={{
-              position: 'absolute',
-              left: `calc(${isDragging && dragPct !== null ? dragPct : currentPct}% - 14px)`,
-              top: '50%',
-              width: '28px', height: '28px',
-              background: '#fff',
-              border: '2.5px solid var(--terra)',
-              boxShadow: isDragging
-                ? '0 4px 16px rgba(196,82,42,0.4)'
-                : '0 2px 8px rgba(196,82,42,0.25)',
-              transform: 'translateY(-50%) rotate(45deg)',
-              pointerEvents: 'none',
-              zIndex: 2,
-              transition: isDragging ? 'none' : 'left .15s ease',
-            }} />
-          )}
-
-          {/* Two diamonds — sourdough mode */}
-          {startComputed && isSourdough && feedPctLive !== null && (
-            <>
-              {/* Feed diamond (blue) */}
-              <div style={{
-                position: 'absolute',
-                left: `calc(${feedPctLive}% - 14px)`,
-                top: '50%',
-                width: '28px', height: '28px',
-                background: '#EEF2FA',
-                border: '2.5px solid #6A7FA8',
-                borderRadius: '3px',
-                boxShadow: activeDiamond === 'feed' ? '0 4px 16px rgba(106,127,168,0.5)' : '0 2px 8px rgba(106,127,168,0.25)',
-                transform: 'translateY(-50%) rotate(45deg)',
-                pointerEvents: 'none', zIndex: 3,
-                transition: activeDiamond === 'feed' ? 'none' : 'left .15s ease',
-              }} />
-              {/* Mix diamond (terra) */}
-              <div style={{
-                position: 'absolute',
-                left: `calc(${mixPctLive}% - 14px)`,
-                top: '50%',
-                width: '28px', height: '28px',
-                background: '#fff',
-                border: `2.5px solid ${mixOverride ? 'var(--gold)' : 'var(--terra)'}`,
-                borderRadius: '3px',
-                boxShadow: activeDiamond === 'mix' ? '0 4px 16px rgba(196,82,42,0.4)' : '0 2px 8px rgba(196,82,42,0.25)',
-                transform: 'translateY(-50%) rotate(45deg)',
-                pointerEvents: 'none', zIndex: 2,
-                transition: activeDiamond === 'mix' ? 'none' : 'left .15s ease',
-              }} />
-            </>
-          )}
-        </div>
-
-        {/* Diamond labels — sourdough */}
-        {isSourdough && feedPctLive !== null && startComputed && (
-          <div style={{ position: 'relative', height: '18px', marginTop: '.1rem', pointerEvents: 'none' }}>
-            <span style={{ position: 'absolute', left: `calc(${feedPctLive}% - 18px)`, fontSize: '.62rem', color: '#6A7FA8', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap' }}>🫙 Feed</span>
-            <span style={{ position: 'absolute', left: `calc(${mixPctLive}% - 14px)`, fontSize: '.62rem', color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap' }}>🤌 Mix</span>
-          </div>
-        )}
-
-        {/* Zone labels */}
-        <div style={{
-          display: 'flex', marginTop: '.3rem',
-          fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
-        }}>
-          {earlyPct > 8 && (
-            <div style={{
-              width: `${earlyPct}%`, textAlign: 'center',
-              color: '#6A88A8', flexShrink: 0,
-              overflow: 'hidden', whiteSpace: 'nowrap',
-            }}>
-              Too Early
-            </div>
-          )}
-          {(latestPct - earlyPct) > 8 && (
-            <div style={{
-              width: `${Math.max(0, latestPct - earlyPct)}%`, textAlign: 'center',
-              color: 'var(--sage)', flexShrink: 0,
-              overflow: 'hidden', whiteSpace: 'nowrap',
-            }}>
-              Sweet Spot
-            </div>
-          )}
-          <div style={{
-            flex: 1, textAlign: 'center',
-            color: '#8A7A30',
-            overflow: 'hidden', whiteSpace: 'nowrap',
-          }}>
-            {currentPct > 85 ? (
-              <span style={{ color: 'var(--terra)' }}>Getting Short</span>
-            ) : 'Still Good'}
-          </div>
-        </div>
-
-        {/* Two time displays — sourdough */}
-        {isSourdough && feedTime && startComputed && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '.6rem', padding: '.4rem .6rem', background: 'var(--cream)', borderRadius: '8px' }}>
-            <div style={{ fontSize: '.78rem', color: '#6A7FA8', fontFamily: 'var(--font-dm-mono)' }}>
-              🫙 Feed: <strong>{formatSliderDisplay(feedTime)}</strong>
-            </div>
-            <div style={{ fontSize: '.78rem', color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)', display: 'flex', alignItems: 'center', gap: '.4rem' }}>
-              🤌 Mix: <strong>{formatSliderDisplay(pendingStart)}</strong>
-              {mixOverride && (
-                <button
-                  onClick={() => {
-                    setMixOverride(false);
-                    const peak = starterPeakHours(kitchenTemp, starterMature);
-                    const newMix = pushToReasonableHour(new Date(feedTime.getTime() + peak.mid * 3600000));
-                    setPendingStart(newMix);
-                    setStartPickerDate(toPickerDate(newMix));
-                    setStartPickerHour(newMix.getHours());
-                    onChange(newMix, pendingEatTime, blocks);
-                  }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', textUnderlineOffset: '2px', padding: 0 }}
-                >
-                  Reset →
-                </button>
-              )}
-            </div>
+              Reset mix to starter peak →
+            </button>
           </div>
         )}
       </div>
