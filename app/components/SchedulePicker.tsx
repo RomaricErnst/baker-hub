@@ -308,14 +308,33 @@ const LABEL_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-dm-mono)',
 };
 
+// ── Snap helper for simple bar ────────────────
+function snapToSweetEdgeIfBlocked(
+  hbf: number,
+  activeBlocks: AvailabilityBlock[],
+  et: Date,
+): number {
+  const ms = et.getTime();
+  for (const b of activeBlocks) {
+    const bFrom = (ms - b.to.getTime())   / 3600000; // HBF closer to bake (smaller)
+    const bTo   = (ms - b.from.getTime()) / 3600000; // HBF further from bake (larger)
+    if (hbf >= bFrom && hbf <= bTo) {
+      const distTo14 = Math.abs(hbf - 14);
+      const distTo26 = Math.abs(hbf - 26);
+      return distTo14 <= distTo26 ? 14 : 26;
+    }
+  }
+  return hbf;
+}
+
 // ── Simple colour bar (Simple mode only) ──────
 const BAR_WIN = 48;
 const BAR_PAD = 14;
 const BAR_SVG_H = 72;
-const BAR_Y = 22;
-const BAR_H = 12;
-const BAR_AXIS_Y = 52;
-const BAR_DS = 8; // diamond half-size
+const BAR_Y = 36;
+const BAR_H = 18;
+const BAR_AXIS_Y = 60;
+const BAR_DS = 13; // diamond half-size
 
 function barHToX(hbf: number, W: number): number {
   return BAR_PAD + (1 - Math.max(0, Math.min(BAR_WIN, hbf)) / BAR_WIN) * (W - BAR_PAD * 2);
@@ -334,6 +353,7 @@ function SimpleColourBar({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef       = useRef<SVGSVGElement>(null);
+  const lastHBFRef   = useRef<number>(0);
   const [W, setW]    = useState(320);
   const [dragging, setDragging] = useState(false);
 
@@ -391,10 +411,17 @@ function SimpleColourBar({
   function onPointerMove(e: React.PointerEvent) {
     if (!dragging) return;
     e.preventDefault();
-    const snapped = Math.round(barXToHBF(getSvgX(e), W) * 4) / 4;
-    onStartChange(new Date(bakeMs - snapped * 3600000));
+    const hbf = Math.round(barXToHBF(getSvgX(e), W) * 4) / 4;
+    lastHBFRef.current = hbf;
+    onStartChange(new Date(bakeMs - hbf * 3600000));
   }
-  function onPointerUp() { setDragging(false); }
+  function onPointerUp() {
+    if (dragging) {
+      const snapped = snapToSweetEdgeIfBlocked(lastHBFRef.current, blocks, eatTime);
+      onStartChange(new Date(bakeMs - snapped * 3600000));
+    }
+    setDragging(false);
+  }
 
   // Formatters
   function fmtHM(d: Date): string {
@@ -429,7 +456,7 @@ function SimpleColourBar({
         <defs>
           {/* Clip to bar track shape */}
           <clipPath id="simple-bar-clip">
-            <rect x={BAR_PAD} y={BAR_Y} width={W - BAR_PAD * 2} height={BAR_H} rx={5} />
+            <rect x={BAR_PAD} y={BAR_Y} width={W - BAR_PAD * 2} height={BAR_H} rx={9} />
           </clipPath>
           {/* Clip paths for blocker hatches */}
           {blocks.map((b, i) => {
@@ -446,7 +473,7 @@ function SimpleColourBar({
         </defs>
 
         {/* Background track */}
-        <rect x={BAR_PAD} y={BAR_Y} width={W - BAR_PAD * 2} height={BAR_H} fill="#E8E0D5" rx={5} />
+        <rect x={BAR_PAD} y={BAR_Y} width={W - BAR_PAD * 2} height={BAR_H} fill="#E8E0D5" rx={9} />
 
         {/* Colour zones (clipped to track) */}
         <g clipPath="url(#simple-bar-clip)">
@@ -463,8 +490,8 @@ function SimpleColourBar({
           const zx2 = barHToX(z.to, W);
           if (zx2 - zx1 < 28) return null;
           return (
-            <text key={i} x={(zx1 + zx2) / 2} y={BAR_Y - 4}
-              fontSize={7} fill="#1A1612" fillOpacity={0.45}
+            <text key={i} x={(zx1 + zx2) / 2} y={BAR_Y - 6}
+              fontSize={9.5} fill="#1A1612" fillOpacity={0.45}
               textAnchor="middle" fontFamily="DM Mono, monospace">
               {z.label}
             </text>
@@ -515,7 +542,7 @@ function SimpleColourBar({
           <g key={i}>
             <line x1={tk.x} y1={BAR_AXIS_Y} x2={tk.x} y2={BAR_AXIS_Y + 3}
               stroke="#E8E0D5" strokeWidth={1} />
-            <text x={tk.x} y={BAR_AXIS_Y + 13} fontSize={7.5} fill="var(--smoke)"
+            <text x={tk.x} y={BAR_AXIS_Y + 12} fontSize={9.5} fill="var(--smoke)"
               fontFamily="DM Mono, monospace" textAnchor="middle">
               {tk.label}
             </text>
@@ -529,8 +556,10 @@ function SimpleColourBar({
             <>
               <polygon points={`${bx - 6},${BAR_AXIS_Y} ${bx},${BAR_AXIS_Y - 10} ${bx + 6},${BAR_AXIS_Y}`}
                 fill="#C4522A" />
-              <text x={bx} y={BAR_AXIS_Y + 13} fontSize={7.5} fill="#C4522A"
-                fontFamily="DM Mono, monospace" textAnchor="middle">Bake</text>
+              <text x={bx - 2} y={BAR_AXIS_Y + 12} fontSize={9} fill="#C4522A"
+                fontFamily="DM Mono, monospace" textAnchor="end">
+                {fmtDT(eatTime)}
+              </text>
             </>
           );
         })()}
