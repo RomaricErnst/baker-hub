@@ -667,14 +667,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26)
   );
 
-  // FIX 3: dynamic chart window (from pref start to bake)
+  // Dynamic chart window — fits mix+pref duration with breathing room
   const windowH = useMemo(() => {
-    if (!startComputed) return 96;
     const mixOffH = Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000);
-    const totalH = hasPrefActive ? mixOffH + prefOffsetH : mixOffH;
-    const rounded = Math.ceil(totalH / 24) * 24 + 24;
-    return Math.max(48, Math.min(120, rounded));
-  }, [startComputed, pendingEatTime, pendingStart, prefOffsetH, hasPrefActive]);
+    const neededH = hasPrefActive
+      ? mixOffH + prefOffsetH + 10
+      : mixOffH + 10;
+    return Math.min(144, Math.max(36, Math.ceil(neededH / 12) * 12));
+  }, [pendingEatTime, pendingStart, prefOffsetH, hasPrefActive]);
 
   // FIX 5: window start includes pref time for blocker chips
   const windowStart = useMemo(() => {
