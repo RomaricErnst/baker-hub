@@ -313,15 +313,17 @@ function snapToSweetEdgeIfBlocked(
   hbf: number,
   activeBlocks: AvailabilityBlock[],
   et: Date,
+  sweetMin: number,
+  sweetMax: number,
 ): number {
   const ms = et.getTime();
   for (const b of activeBlocks) {
     const bFrom = (ms - b.to.getTime())   / 3600000; // HBF closer to bake (smaller)
     const bTo   = (ms - b.from.getTime()) / 3600000; // HBF further from bake (larger)
     if (hbf >= bFrom && hbf <= bTo) {
-      const distTo14 = Math.abs(hbf - 14);
-      const distTo26 = Math.abs(hbf - 26);
-      return distTo14 <= distTo26 ? 14 : 26;
+      const distToMin = Math.abs(hbf - sweetMin);
+      const distToMax = Math.abs(hbf - sweetMax);
+      return distToMin <= distToMax ? sweetMin : sweetMax;
     }
   }
   return hbf;
@@ -344,12 +346,13 @@ function barXToHBF(x: number, W: number): number {
 }
 
 function SimpleColourBar({
-  eatTime, pendingStart, blocks, onStartChange,
+  eatTime, pendingStart, blocks, onStartChange, hasColdRetard,
 }: {
   eatTime: Date;
   pendingStart: Date;
   blocks: AvailabilityBlock[];
   onStartChange: (d: Date) => void;
+  hasColdRetard?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef       = useRef<SVGSVGElement>(null);
@@ -370,13 +373,19 @@ function SimpleColourBar({
   const diamondX   = barHToX(Math.max(0.5, Math.min(BAR_WIN - 0.5, mixOffsetH)), W);
   const barCY      = BAR_Y + BAR_H / 2; // 28 — diamond center y
 
+  // Zone boundaries — wider for cold retard schedules
+  const sweetL_HBF = hasColdRetard ? 52 : 26;
+  const sweetR_HBF = hasColdRetard ? 20 : 14;
+  const goldL_HBF  = hasColdRetard ? 62 : 36;
+  const goldR2_HBF = hasColdRetard ? 10 : 8;
+
   // Colour zones: [fromHBF (left), toHBF (right), fill, label]
   const zones = [
-    { from: BAR_WIN, to: 36, fill: 'rgba(196,82,42,0.2)',   label: 'Too early' },
-    { from: 36,      to: 26, fill: 'rgba(212,168,83,0.35)', label: 'Still ok'  },
-    { from: 26,      to: 14, fill: 'rgba(107,122,90,0.5)',  label: 'Mix here'  },
-    { from: 14,      to: 8,  fill: 'rgba(212,168,83,0.35)', label: 'Still ok'  },
-    { from: 8,       to: 0,  fill: 'rgba(196,82,42,0.2)',   label: 'Too late'  },
+    { from: BAR_WIN,    to: goldL_HBF,  fill: 'rgba(196,82,42,0.2)',   label: 'Too early' },
+    { from: goldL_HBF,  to: sweetL_HBF, fill: 'rgba(212,168,83,0.35)', label: 'Still ok'  },
+    { from: sweetL_HBF, to: sweetR_HBF, fill: 'rgba(107,122,90,0.5)',  label: 'Mix here'  },
+    { from: sweetR_HBF, to: goldR2_HBF, fill: 'rgba(212,168,83,0.35)', label: 'Still ok'  },
+    { from: goldR2_HBF, to: 0,          fill: 'rgba(196,82,42,0.2)',   label: 'Too late'  },
   ];
 
   // Axis ticks every 12h
@@ -390,9 +399,9 @@ function SimpleColourBar({
     ticks.push({ x: barHToX(h, W), label: `${wd} ${h12}${ap}` });
   }
 
-  // Status
-  const inZone   = mixOffsetH >= 14 && mixOffsetH <= 26;
-  const nearZone = mixOffsetH >= 8  && mixOffsetH <= 36;
+  // Status — uses dynamic zone boundaries
+  const inZone   = mixOffsetH >= sweetR_HBF && mixOffsetH <= sweetL_HBF;
+  const nearZone = mixOffsetH >= goldR2_HBF  && mixOffsetH <= goldL_HBF;
   const status   = inZone   ? '🟢 Dough ready at bake'
     : nearZone ? '🟡 Close — slight risk'
     : '🔴 Adjust timing';
@@ -417,7 +426,7 @@ function SimpleColourBar({
   }
   function onPointerUp() {
     if (dragging) {
-      const snapped = snapToSweetEdgeIfBlocked(lastHBFRef.current, blocks, eatTime);
+      const snapped = snapToSweetEdgeIfBlocked(lastHBFRef.current, blocks, eatTime, sweetR_HBF, sweetL_HBF);
       onStartChange(new Date(bakeMs - snapped * 3600000));
     }
     setDragging(false);
@@ -692,6 +701,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // FIX 2: climate-aware pref fridge flag
   const hasPrefActive = prefermentType !== 'none' && prefermentType !== '' && !isSourdough;
+
+  // Cold-aware fermentation curve
+  const mixOffsetH = Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000);
+  const hasColdRetard = (schedule?.coldRetardHours ?? 0) > 0 || mixOffsetH > 22;
   const prefGoesInFridge = hasPrefActive && (
     prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26)
   );
@@ -1184,6 +1197,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               eatTime={pendingEatTime}
               pendingStart={pendingStart}
               blocks={blocks}
+              hasColdRetard={hasColdRetard}
               onStartChange={(newStart) => {
                 const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(newStart, blocks);
                 setPendingStart(resolvedStart);
@@ -1204,6 +1218,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               }
               windowH={windowH}
               prefInFridge={prefGoesInFridge}
+              hasColdRetard={hasColdRetard}
               blocks={blocks}
               onMixChange={(h) => {
                 const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - h * 3600000));

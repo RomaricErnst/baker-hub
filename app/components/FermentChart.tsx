@@ -13,6 +13,7 @@ export interface FermentChartProps {
   onPrefChange: (h: number) => void;
   windowH?: number;         // total window to display (default 96h)
   prefInFridge?: boolean;   // show fridge climate note in pref card
+  hasColdRetard?: boolean;  // widens bell and sweet zone for cold schedules
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -23,8 +24,8 @@ const BL        = 96;   // single baseline for ALL bells
 const MAXH      = 78;   // max bell height
 const AXIS_Y    = 108;  // axis line Y
 
-const DOUGH_SIG          = 10;
-const DOUGH_SWEET_CENTER = 20;
+// DOUGH_SIG and DOUGH_SWEET_CENTER are computed inside the component
+// based on hasColdRetard — see derived physics section
 
 // Diamond half-size
 const S = 10;
@@ -101,7 +102,7 @@ export default function FermentChart({
   eatTime, prefermentType, kitchenTemp,
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange,
-  windowH, prefInFridge,
+  windowH, prefInFridge, hasColdRetard,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -129,15 +130,19 @@ export default function FermentChart({
   const CHAR       = '#1A1612';
 
   // ── Physics ──────────────────────────────────────────────
+  // Cold-aware dough bell: wider sigma, later peak for cold retard schedules
+  const DOUGH_SIG          = hasColdRetard ? 18 : 10;
+  const DOUGH_SWEET_CENTER = hasColdRetard ? 34 : 20;
+
   const optH            = hasPref ? getPrefOptH(prefermentType, kitchenTemp) : 0;
   const prefSig         = hasPref ? getPrefSig(prefermentType, kitchenTemp)  : 1;
   const prefStartAbsHBF = mixOffsetH + prefOffsetH;
   const doughPeakHBF    = mixOffsetH - DOUGH_SWEET_CENTER;
   const prefPeakHBF     = prefStartAbsHBF - optH;
 
-  // Sweet-spot zones
-  const doughZoneFrom = DOUGH_SWEET_CENTER + 6; // 26
-  const doughZoneTo   = DOUGH_SWEET_CENTER - 6; // 14
+  // Sweet-spot zones (cold retard: 20–52h; RT: 14–26h)
+  const doughZoneFrom = hasColdRetard ? 52 : 26;
+  const doughZoneTo   = hasColdRetard ? 20 : 14;
   const prefZoneFrom  = hasPref ? mixOffsetH + optH + 3 : 0;
   const prefZoneTo    = hasPref ? mixOffsetH + optH - 3 : 0;
 
