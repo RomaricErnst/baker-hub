@@ -1,0 +1,1891 @@
+[
+  {
+    "brand": "Caputo",
+    "product": "Pizzeria",
+    "aliases": [
+      "blue bag",
+      "caputo blue",
+      "caputo pizzeria"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 260,
+    "wRange": "260-280",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-24h",
+    "source": "official",
+    "note": "Blue bag. AVPN approved. Most popular Caputo retail product."
+  },
+  {
+    "brand": "Caputo",
+    "product": "Cuoco",
+    "aliases": [
+      "chef flour",
+      "caputo red",
+      "saccorosso",
+      "caputo cuoco"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 310,
+    "wRange": "300-320",
+    "protein": 13.0,
+    "hydration": 65,
+    "fermentWindow": "24-72h",
+    "source": "official",
+    "note": "Red bag. Same flour as Saccorosso professional bag."
+  },
+  {
+    "brand": "Caputo",
+    "product": "Saccorosso",
+    "aliases": [
+      "sacco rosso",
+      "caputo saccorosso"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 310,
+    "wRange": "300-320",
+    "protein": 13.5,
+    "hydration": 65,
+    "fermentWindow": "24-72h",
+    "source": "official",
+    "note": "Professional large bag version of Cuoco."
+  },
+  {
+    "brand": "Caputo",
+    "product": "Nuvola",
+    "aliases": [
+      "caputo nuvola",
+      "nuvola tipo 0"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 270,
+    "wRange": "270-280",
+    "protein": 12.5,
+    "hydration": 65,
+    "fermentWindow": "12-48h",
+    "source": "official",
+    "note": "Tipo 0. Designed for light airy cornicione. High extensibility."
+  },
+  {
+    "brand": "Caputo",
+    "product": "Nuvola Super",
+    "aliases": [
+      "nuvola super",
+      "caputo nuvola super"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 320,
+    "wRange": "310-330",
+    "protein": 13.0,
+    "hydration": 67,
+    "fermentWindow": "24-72h",
+    "source": "official",
+    "note": "Stronger version of Nuvola. Pre-fermented wheat. For biga/poolish."
+  },
+  {
+    "brand": "Caputo",
+    "product": "Classica",
+    "aliases": [
+      "caputo classica",
+      "doppio zero classica"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 220,
+    "wRange": "220-240",
+    "protein": 11.0,
+    "hydration": 60,
+    "fermentWindow": "4-12h",
+    "source": "official",
+    "note": "Weak 00. For quick doughs and pasta. Not for long ferments."
+  },
+  {
+    "brand": "Caputo",
+    "product": "Americana",
+    "aliases": [
+      "caputo americana",
+      "americana 00"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 340,
+    "wRange": "330-360",
+    "protein": 13.5,
+    "hydration": 65,
+    "fermentWindow": "24-72h",
+    "source": "official",
+    "note": "With natural malt. Designed for US-style pizza at 500-700°F."
+  },
+  {
+    "brand": "Caputo",
+    "product": "Americana Super",
+    "aliases": [
+      "caputo americana super"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 370,
+    "wRange": "360-380",
+    "protein": 15.25,
+    "hydration": 67,
+    "fermentWindow": "48-96h",
+    "source": "official",
+    "note": "Highest gluten Caputo flour. NY/Detroit/Sicilian styles."
+  },
+  {
+    "brand": "Caputo",
+    "product": "Manitoba",
+    "aliases": [
+      "caputo manitoba"
+    ],
+    "country": "IT",
+    "type": "manitoba",
+    "w": 400,
+    "wRange": "390-410",
+    "protein": 14.5,
+    "hydration": 68,
+    "fermentWindow": "48-120h",
+    "source": "est",
+    "note": "Blending flour. Adds strength to weaker flour blends."
+  },
+  {
+    "brand": "Caputo",
+    "product": "Semola Rimacinata",
+    "aliases": [
+      "caputo semola",
+      "semolina rimacinata"
+    ],
+    "country": "IT",
+    "type": "semolina",
+    "w": 200,
+    "wRange": "190-210",
+    "protein": 12.5,
+    "hydration": 62,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "Remilled durum wheat. Roman pizza, focaccia, dusting."
+  },
+  {
+    "brand": "5 Stagioni",
+    "product": "Pizza",
+    "aliases": [
+      "cinque stagioni pizza",
+      "5 stagioni pizza",
+      "le 5 stagioni pizza"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 270,
+    "wRange": "260-280",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-24h",
+    "source": "official",
+    "note": "Classic 5 Stagioni entry-level 00 pizza flour."
+  },
+  {
+    "brand": "5 Stagioni",
+    "product": "Napoletana",
+    "aliases": [
+      "5 stagioni napoletana",
+      "napoletana rossa",
+      "pizza napoletana rossa"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 310,
+    "wRange": "300-320",
+    "protein": 13.5,
+    "hydration": 60,
+    "fermentWindow": "24-48h",
+    "source": "official",
+    "note": "AVPN approved. W310. Absorption min 55%, stability 10min."
+  },
+  {
+    "brand": "5 Stagioni",
+    "product": "Gold",
+    "aliases": [
+      "5 stagioni gold",
+      "le 5 stagioni gold"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 380,
+    "wRange": "370-390",
+    "protein": 14.0,
+    "hydration": 67,
+    "fermentWindow": "48-96h",
+    "source": "official",
+    "note": "Professional. For long cold ferments 48-96h."
+  },
+  {
+    "brand": "5 Stagioni",
+    "product": "Rossa",
+    "aliases": [
+      "5 stagioni rossa"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 300,
+    "wRange": "290-310",
+    "protein": 13.0,
+    "hydration": 63,
+    "fermentWindow": "24-48h",
+    "source": "official",
+    "note": "Strong red bag. 48-72h ferments. Slightly nuttier than Caputo."
+  },
+  {
+    "brand": "5 Stagioni",
+    "product": "Manitoba",
+    "aliases": [
+      "5 stagioni manitoba"
+    ],
+    "country": "IT",
+    "type": "manitoba",
+    "w": 400,
+    "wRange": "390-420",
+    "protein": 14.5,
+    "hydration": 68,
+    "fermentWindow": "48-120h",
+    "source": "est",
+    "note": "For blending to boost weaker flours."
+  },
+  {
+    "brand": "Petra",
+    "product": "5063",
+    "aliases": [
+      "petra 5063",
+      "petra napoletana",
+      "molino quaglia 5063"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 280,
+    "wRange": "270-290",
+    "protein": 13.0,
+    "hydration": 63,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "AVPN approved. Favorite of Neapolitan pizza makers."
+  },
+  {
+    "brand": "Petra",
+    "product": "5037",
+    "aliases": [
+      "petra 5037"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 320,
+    "wRange": "310-330",
+    "protein": 13.5,
+    "hydration": 65,
+    "fermentWindow": "24-72h",
+    "source": "est",
+    "note": "Stronger than 5063. Higher hydration and longer fermentation."
+  },
+  {
+    "brand": "Petra",
+    "product": "0102 HP",
+    "aliases": [
+      "petra 0102",
+      "petra tipo 1"
+    ],
+    "country": "IT",
+    "type": "bread",
+    "w": 300,
+    "wRange": "290-310",
+    "protein": 13.0,
+    "hydration": 65,
+    "fermentWindow": "24-48h",
+    "source": "est",
+    "note": "Tipo 1. Stone ground. Partially sprouted wheat. Modern Neapolitan."
+  },
+  {
+    "brand": "Petra",
+    "product": "3",
+    "aliases": [
+      "petra 3",
+      "petra tre"
+    ],
+    "country": "IT",
+    "type": "bread",
+    "w": 280,
+    "wRange": "270-300",
+    "protein": 12.5,
+    "hydration": 65,
+    "fermentWindow": "24-48h",
+    "source": "est",
+    "note": "Stone ground Tipo 1. Versatile for bread and pizza."
+  },
+  {
+    "brand": "Petra",
+    "product": "9",
+    "aliases": [
+      "petra 9",
+      "petra nove"
+    ],
+    "country": "IT",
+    "type": "wholemeal",
+    "w": 250,
+    "wRange": "240-270",
+    "protein": 13.0,
+    "hydration": 68,
+    "fermentWindow": "24-48h",
+    "source": "est",
+    "note": "Whole wheat stone ground. Rich in fiber. Complex flavor."
+  },
+  {
+    "brand": "Petra",
+    "product": "5078",
+    "aliases": [
+      "petra 5078"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 300,
+    "wRange": "290-320",
+    "protein": 13.0,
+    "hydration": 65,
+    "fermentWindow": "24-48h",
+    "source": "est",
+    "note": "For Teglia Romana, pinsa, crunchy doughs."
+  },
+  {
+    "brand": "Molino Grassi",
+    "product": "USDA Organic 00",
+    "aliases": [
+      "molino grassi organic",
+      "molino grassi 00"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 260,
+    "wRange": "250-270",
+    "protein": 12.0,
+    "hydration": 62,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "Organic certified. Common in US organic stores."
+  },
+  {
+    "brand": "Polselli",
+    "product": "Classica 00",
+    "aliases": [
+      "polselli classica",
+      "polselli tipo 00"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 250,
+    "wRange": "240-260",
+    "protein": 12.0,
+    "hydration": 62,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "Classic Italian 00. Good for most pizza styles."
+  },
+  {
+    "brand": "Polselli",
+    "product": "Super 00",
+    "aliases": [
+      "polselli super"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 310,
+    "wRange": "300-320",
+    "protein": 13.5,
+    "hydration": 65,
+    "fermentWindow": "24-72h",
+    "source": "est",
+    "note": "Strong 00 for long fermentation."
+  },
+  {
+    "brand": "Polselli",
+    "product": "Vivace 00",
+    "aliases": [
+      "polselli vivace"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 300,
+    "wRange": "290-310",
+    "protein": 13.0,
+    "hydration": 64,
+    "fermentWindow": "24-48h",
+    "source": "est",
+    "note": "Popular in US. Good for Napoletana and Romana styles."
+  },
+  {
+    "brand": "Pivetti",
+    "product": "All Purpose 00",
+    "aliases": [
+      "pivetti 00",
+      "pivetti farina"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 240,
+    "wRange": "230-250",
+    "protein": 11.5,
+    "hydration": 61,
+    "fermentWindow": "4-16h",
+    "source": "est",
+    "note": "Versatile Italian 00. Good for pasta and short ferment pizza."
+  },
+  {
+    "brand": "Dalla Giovanna",
+    "product": "Magica 00",
+    "aliases": [
+      "dalla giovanna magica"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 280,
+    "wRange": "270-290",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "12-24h",
+    "source": "est",
+    "note": "Italian professional brand."
+  },
+  {
+    "brand": "Molino Marino",
+    "product": "Uniqua Rossa",
+    "aliases": [
+      "molino marino rossa",
+      "uniqua rossa"
+    ],
+    "country": "IT",
+    "type": "strong00",
+    "w": 320,
+    "wRange": "310-330",
+    "protein": 14.0,
+    "hydration": 66,
+    "fermentWindow": "24-72h",
+    "source": "est",
+    "note": "Strong Italian stone-milled flour."
+  },
+  {
+    "brand": "Molino Marino",
+    "product": "Uniqua Blu",
+    "aliases": [
+      "molino marino blu",
+      "uniqua blu"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 260,
+    "wRange": "250-270",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "Standard 00. Popular in Italian home baking community."
+  },
+  {
+    "brand": "Agugiaro & Figna",
+    "product": "Le 5 Stagioni (parent)",
+    "aliases": [
+      "agugiaro figna"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 270,
+    "wRange": "260-280",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "Parent company of 5 Stagioni."
+  },
+  {
+    "brand": "Grands Moulins de Paris",
+    "product": "T45 Gruau Rouge",
+    "aliases": [
+      "gruau rouge",
+      "gmp t45 gruau",
+      "moul-bie t45",
+      "francine t45"
+    ],
+    "country": "FR",
+    "type": "pizza00",
+    "w": 300,
+    "wRange": "280-320",
+    "protein": 12.9,
+    "hydration": 63,
+    "fermentWindow": "12-48h",
+    "source": "est",
+    "note": "Strong French T45. For croissants, brioches, long-ferment pizza."
+  },
+  {
+    "brand": "Grands Moulins de Paris",
+    "product": "T45 Violette",
+    "aliases": [
+      "moul-bie violette",
+      "t45 patissiere",
+      "violette t45"
+    ],
+    "country": "FR",
+    "type": "pizza00",
+    "w": 180,
+    "wRange": "160-200",
+    "protein": 9.5,
+    "hydration": 58,
+    "fermentWindow": "2-8h",
+    "source": "est",
+    "note": "Weak T45. For pastries, cakes, short-rise doughs."
+  },
+  {
+    "brand": "Grands Moulins de Paris",
+    "product": "T55 La Finoise",
+    "aliases": [
+      "gmp t55",
+      "la finoise",
+      "moul-bie t55",
+      "francine t55"
+    ],
+    "country": "FR",
+    "type": "allpurpose",
+    "w": 200,
+    "wRange": "180-220",
+    "protein": 10.5,
+    "hydration": 60,
+    "fermentWindow": "4-16h",
+    "source": "est",
+    "note": "Standard French T55. All-purpose. Baguettes, boules, brioche."
+  },
+  {
+    "brand": "Grands Moulins de Paris",
+    "product": "T65 Tradition",
+    "aliases": [
+      "gmp t65",
+      "moul-bie t65",
+      "tradition t65"
+    ],
+    "country": "FR",
+    "type": "bread",
+    "w": 220,
+    "wRange": "200-240",
+    "protein": 11.0,
+    "hydration": 65,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "French bread flour. For baguettes de tradition."
+  },
+  {
+    "brand": "Francine",
+    "product": "Farine T45",
+    "aliases": [
+      "francine t45",
+      "francine farine t45"
+    ],
+    "country": "FR",
+    "type": "pizza00",
+    "w": 170,
+    "wRange": "160-190",
+    "protein": 9.5,
+    "hydration": 58,
+    "fermentWindow": "2-8h",
+    "source": "est",
+    "note": "Consumer supermarket T45. Widely available in France."
+  },
+  {
+    "brand": "Francine",
+    "product": "Farine T55",
+    "aliases": [
+      "francine t55"
+    ],
+    "country": "FR",
+    "type": "allpurpose",
+    "w": 180,
+    "wRange": "170-200",
+    "protein": 10.0,
+    "hydration": 60,
+    "fermentWindow": "4-12h",
+    "source": "est",
+    "note": "Most common French supermarket flour. Standard all-purpose."
+  },
+  {
+    "brand": "Francine",
+    "product": "Farine T65",
+    "aliases": [
+      "francine t65"
+    ],
+    "country": "FR",
+    "type": "bread",
+    "w": 200,
+    "wRange": "180-220",
+    "protein": 10.5,
+    "hydration": 63,
+    "fermentWindow": "4-16h",
+    "source": "est",
+    "note": "French bread flour. Common in French supermarkets."
+  },
+  {
+    "brand": "Foricher",
+    "product": "Gruau T45 Bagatelle",
+    "aliases": [
+      "foricher gruau",
+      "bagatelle t45",
+      "foricher t45"
+    ],
+    "country": "FR",
+    "type": "pizza00",
+    "w": 300,
+    "wRange": "280-320",
+    "protein": 13.0,
+    "hydration": 63,
+    "fermentWindow": "12-48h",
+    "source": "est",
+    "note": "Label Rouge. CRC certified. For viennoiserie and pizza."
+  },
+  {
+    "brand": "Foricher",
+    "product": "T65 Tradition Bagatelle",
+    "aliases": [
+      "foricher tradition",
+      "bagatelle t65"
+    ],
+    "country": "FR",
+    "type": "bread",
+    "w": 220,
+    "wRange": "210-240",
+    "protein": 11.0,
+    "hydration": 65,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "Artisan T65. Label Rouge. For baguettes de tradition."
+  },
+  {
+    "brand": "Minoteries Viron",
+    "product": "Rétrodor T65",
+    "aliases": [
+      "retrodor",
+      "viron retrodor"
+    ],
+    "country": "FR",
+    "type": "bread",
+    "w": 230,
+    "wRange": "220-250",
+    "protein": 11.5,
+    "hydration": 66,
+    "fermentWindow": "12-24h",
+    "source": "est",
+    "note": "Premium French baker's flour. Used by top Parisian boulangeries."
+  },
+  {
+    "brand": "Moulin de Colagne",
+    "product": "T65 Tradition",
+    "aliases": [
+      "colagne t65"
+    ],
+    "country": "FR",
+    "type": "bread",
+    "w": 220,
+    "wRange": "210-240",
+    "protein": 11.0,
+    "hydration": 65,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "Regional French mill. Good artisan bread flour."
+  },
+  {
+    "brand": "Moulins Bourgeois",
+    "product": "Farine de Tradition",
+    "aliases": [
+      "moulins bourgeois tradition"
+    ],
+    "country": "FR",
+    "type": "bread",
+    "w": 240,
+    "wRange": "230-260",
+    "protein": 11.5,
+    "hydration": 66,
+    "fermentWindow": "12-24h",
+    "source": "est",
+    "note": "Premium French traditional flour. Artisan bakers."
+  },
+  {
+    "brand": "King Arthur",
+    "product": "All-Purpose Flour",
+    "aliases": [
+      "king arthur ap",
+      "king arthur all purpose",
+      "kaap"
+    ],
+    "country": "US",
+    "type": "allpurpose",
+    "w": 200,
+    "wRange": "190-220",
+    "protein": 11.7,
+    "hydration": 62,
+    "fermentWindow": "4-16h",
+    "source": "est",
+    "note": "Highest protein US all-purpose. Good for pizza and bread."
+  },
+  {
+    "brand": "King Arthur",
+    "product": "Bread Flour",
+    "aliases": [
+      "king arthur bread",
+      "ka bread flour"
+    ],
+    "country": "US",
+    "type": "bread",
+    "w": 260,
+    "wRange": "250-270",
+    "protein": 12.7,
+    "hydration": 64,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "Best US supermarket bread flour. Consistent protein."
+  },
+  {
+    "brand": "King Arthur",
+    "product": "00 Pizza Flour",
+    "aliases": [
+      "king arthur 00",
+      "ka 00 pizza"
+    ],
+    "country": "US",
+    "type": "pizza00",
+    "w": 200,
+    "wRange": "190-210",
+    "protein": 11.5,
+    "hydration": 61,
+    "fermentWindow": "4-24h",
+    "source": "est",
+    "note": "US-milled 00. Blend of soft and hard wheat. Weaker than Italian 00."
+  },
+  {
+    "brand": "King Arthur",
+    "product": "Sir Galahad",
+    "aliases": [
+      "sir galahad",
+      "ka sir galahad"
+    ],
+    "country": "US",
+    "type": "allpurpose",
+    "w": 200,
+    "wRange": "190-215",
+    "protein": 11.7,
+    "hydration": 62,
+    "fermentWindow": "4-24h",
+    "source": "est",
+    "note": "Professional/foodservice version of KA AP. 100% hard red winter wheat."
+  },
+  {
+    "brand": "King Arthur",
+    "product": "Sir Lancelot",
+    "aliases": [
+      "sir lancelot",
+      "ka high gluten"
+    ],
+    "country": "US",
+    "type": "strong00",
+    "w": 310,
+    "wRange": "300-320",
+    "protein": 14.2,
+    "hydration": 67,
+    "fermentWindow": "24-72h",
+    "source": "est",
+    "note": "High gluten professional flour. For bagels, NY pizza."
+  },
+  {
+    "brand": "King Arthur",
+    "product": "Organic All Purpose",
+    "aliases": [
+      "ka organic ap",
+      "king arthur organic"
+    ],
+    "country": "US",
+    "type": "allpurpose",
+    "w": 195,
+    "wRange": "185-210",
+    "protein": 11.0,
+    "hydration": 61,
+    "fermentWindow": "4-16h",
+    "source": "est",
+    "note": "Organic version of KA AP."
+  },
+  {
+    "brand": "Gold Medal",
+    "product": "All-Purpose Flour",
+    "aliases": [
+      "gold medal ap",
+      "gold medal all purpose"
+    ],
+    "country": "US",
+    "type": "allpurpose",
+    "w": 170,
+    "wRange": "160-185",
+    "protein": 10.5,
+    "hydration": 60,
+    "fermentWindow": "4-12h",
+    "source": "est",
+    "note": "Most common US supermarket flour. Lower protein than KA."
+  },
+  {
+    "brand": "Gold Medal",
+    "product": "Bread Flour",
+    "aliases": [
+      "gold medal bread"
+    ],
+    "country": "US",
+    "type": "bread",
+    "w": 240,
+    "wRange": "230-255",
+    "protein": 12.3,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "Standard US bread flour."
+  },
+  {
+    "brand": "Gold Medal",
+    "product": "Harvest King / Better for Bread",
+    "aliases": [
+      "harvest king",
+      "better for bread",
+      "gold medal harvest"
+    ],
+    "country": "US",
+    "type": "bread",
+    "w": 240,
+    "wRange": "230-250",
+    "protein": 12.0,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "Hard winter wheat. Popular with home bread bakers."
+  },
+  {
+    "brand": "Gold Medal",
+    "product": "Full Strength",
+    "aliases": [
+      "gold medal full strength"
+    ],
+    "country": "US",
+    "type": "strong00",
+    "w": 270,
+    "wRange": "260-280",
+    "protein": 12.6,
+    "hydration": 64,
+    "fermentWindow": "12-48h",
+    "source": "est",
+    "note": "Spring wheat. Professional grade. For bagels and pizza."
+  },
+  {
+    "brand": "Bob's Red Mill",
+    "product": "Artisan Bread Flour",
+    "aliases": [
+      "bobs red mill bread",
+      "bobs artisan bread"
+    ],
+    "country": "US",
+    "type": "bread",
+    "w": 250,
+    "wRange": "240-260",
+    "protein": 12.5,
+    "hydration": 64,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "With malted barley. Popular US artisan bread flour."
+  },
+  {
+    "brand": "Bob's Red Mill",
+    "product": "All-Purpose Flour",
+    "aliases": [
+      "bobs red mill ap",
+      "bobs all purpose"
+    ],
+    "country": "US",
+    "type": "allpurpose",
+    "w": 185,
+    "wRange": "175-200",
+    "protein": 11.0,
+    "hydration": 61,
+    "fermentWindow": "4-16h",
+    "source": "est",
+    "note": "Unbleached. Common in US natural food stores."
+  },
+  {
+    "brand": "Pillsbury",
+    "product": "All-Purpose Flour",
+    "aliases": [
+      "pillsbury ap",
+      "pillsbury all purpose"
+    ],
+    "country": "US",
+    "type": "allpurpose",
+    "w": 165,
+    "wRange": "155-180",
+    "protein": 10.5,
+    "hydration": 60,
+    "fermentWindow": "4-12h",
+    "source": "est",
+    "note": "Standard US supermarket flour."
+  },
+  {
+    "brand": "Pillsbury",
+    "product": "Bread Flour",
+    "aliases": [
+      "pillsbury bread"
+    ],
+    "country": "US",
+    "type": "bread",
+    "w": 230,
+    "wRange": "220-245",
+    "protein": 12.0,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "Standard US bread flour."
+  },
+  {
+    "brand": "Central Milling",
+    "product": "High Mountain",
+    "aliases": [
+      "central milling high mountain"
+    ],
+    "country": "US",
+    "type": "bread",
+    "w": 270,
+    "wRange": "260-280",
+    "protein": 13.5,
+    "hydration": 66,
+    "fermentWindow": "12-72h",
+    "source": "est",
+    "note": "Premium US artisan flour. Favored by sourdough bakers."
+  },
+  {
+    "brand": "Central Milling",
+    "product": "Type 00 Normal",
+    "aliases": [
+      "central milling 00"
+    ],
+    "country": "US",
+    "type": "pizza00",
+    "w": 240,
+    "wRange": "230-250",
+    "protein": 11.5,
+    "hydration": 62,
+    "fermentWindow": "4-24h",
+    "source": "est",
+    "note": "US-milled 00. More accessible than imported."
+  },
+  {
+    "brand": "Central Milling",
+    "product": "Organic Type 85",
+    "aliases": [
+      "central milling type 85"
+    ],
+    "country": "US",
+    "type": "bread",
+    "w": 240,
+    "wRange": "230-260",
+    "protein": 12.5,
+    "hydration": 70,
+    "fermentWindow": "12-48h",
+    "source": "est",
+    "note": "High extraction. Excellent for sourdough and rustic loaves."
+  },
+  {
+    "brand": "Giusto's",
+    "product": "Bread Flour",
+    "aliases": [
+      "giustos bread flour"
+    ],
+    "country": "US",
+    "type": "bread",
+    "w": 250,
+    "wRange": "240-265",
+    "protein": 12.5,
+    "hydration": 64,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "Premium California mill. Good for artisan bread."
+  },
+  {
+    "brand": "Giusto's",
+    "product": "High Performance Bread Flour",
+    "aliases": [
+      "giustos high performance"
+    ],
+    "country": "US",
+    "type": "strong00",
+    "w": 290,
+    "wRange": "280-300",
+    "protein": 14.5,
+    "hydration": 67,
+    "fermentWindow": "24-72h",
+    "source": "est",
+    "note": "Very high protein. For NY-style and long ferment applications."
+  },
+  {
+    "brand": "Prima",
+    "product": "Bread Flour",
+    "aliases": [
+      "prima bread flour",
+      "prima high protein"
+    ],
+    "country": "SG",
+    "type": "bread",
+    "w": 240,
+    "wRange": "230-255",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "Leading Singapore flour brand. Available at FairPrice and most supermarkets."
+  },
+  {
+    "brand": "Prima",
+    "product": "Plain Flour",
+    "aliases": [
+      "prima plain flour",
+      "prima all purpose"
+    ],
+    "country": "SG",
+    "type": "allpurpose",
+    "w": 170,
+    "wRange": "160-185",
+    "protein": 9.5,
+    "hydration": 60,
+    "fermentWindow": "4-12h",
+    "source": "est",
+    "note": "Standard Singapore all-purpose flour."
+  },
+  {
+    "brand": "Prima",
+    "product": "Superior Bread Flour",
+    "aliases": [
+      "prima superior bread"
+    ],
+    "country": "SG",
+    "type": "bread",
+    "w": 260,
+    "wRange": "250-270",
+    "protein": 13.5,
+    "hydration": 65,
+    "fermentWindow": "12-48h",
+    "source": "est",
+    "note": "High protein. For Japanese-style milk bread and buns."
+  },
+  {
+    "brand": "Prima",
+    "product": "Clover Bread Flour",
+    "aliases": [
+      "prima clover",
+      "prima clover bread"
+    ],
+    "country": "SG",
+    "type": "bread",
+    "w": 250,
+    "wRange": "240-260",
+    "protein": 12.8,
+    "hydration": 64,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "12.8% protein. Common in Singapore commercial bakeries."
+  },
+  {
+    "brand": "Prima",
+    "product": "Artisan Bread Flour",
+    "aliases": [
+      "prima artisan"
+    ],
+    "country": "SG",
+    "type": "bread",
+    "w": 260,
+    "wRange": "250-270",
+    "protein": 13.0,
+    "hydration": 65,
+    "fermentWindow": "12-48h",
+    "source": "est",
+    "note": "For ciabatta and artisan loaves. Available in Singapore."
+  },
+  {
+    "brand": "Wholegrain Milling",
+    "product": "Premium Bakers White High Protein",
+    "aliases": [
+      "wholegrain milling bread",
+      "sustainable bakers white"
+    ],
+    "country": "AU",
+    "type": "bread",
+    "w": 260,
+    "wRange": "250-270",
+    "protein": 13.5,
+    "hydration": 65,
+    "fermentWindow": "12-48h",
+    "source": "est",
+    "note": "Australian organic. Available in Singapore via specialty stores."
+  },
+  {
+    "brand": "Shipton Mill",
+    "product": "T55 French Flour",
+    "aliases": [
+      "shipton t55",
+      "shipton french t55"
+    ],
+    "country": "UK",
+    "type": "allpurpose",
+    "w": 200,
+    "wRange": "190-215",
+    "protein": 10.5,
+    "hydration": 62,
+    "fermentWindow": "4-16h",
+    "source": "est",
+    "note": "French-style T55 milled or imported by UK's Shipton Mill."
+  },
+  {
+    "brand": "Shipton Mill",
+    "product": "Strong White Bread Flour",
+    "aliases": [
+      "shipton strong white"
+    ],
+    "country": "UK",
+    "type": "bread",
+    "w": 250,
+    "wRange": "240-265",
+    "protein": 13.0,
+    "hydration": 64,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "Premium UK bread flour."
+  },
+  {
+    "brand": "Shipton Mill",
+    "product": "T45 Gruau",
+    "aliases": [
+      "shipton t45",
+      "shipton gruau"
+    ],
+    "country": "UK",
+    "type": "pizza00",
+    "w": 290,
+    "wRange": "280-310",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "12-48h",
+    "source": "est",
+    "note": "Strong T45 for croissants and long-ferment pizza."
+  },
+  {
+    "brand": "Marriages",
+    "product": "Strong White Bread Flour",
+    "aliases": [
+      "marriages strong white",
+      "marriages bread flour"
+    ],
+    "country": "UK",
+    "type": "bread",
+    "w": 250,
+    "wRange": "240-265",
+    "protein": 12.5,
+    "hydration": 64,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "UK artisan mill. Good reputation with sourdough bakers."
+  },
+  {
+    "brand": "Doves Farm",
+    "product": "Organic Strong White Bread Flour",
+    "aliases": [
+      "doves farm strong",
+      "doves farm bread"
+    ],
+    "country": "UK",
+    "type": "bread",
+    "w": 240,
+    "wRange": "230-255",
+    "protein": 12.3,
+    "hydration": 63,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "Organic UK flour. Common in UK supermarkets."
+  },
+  {
+    "brand": "Allinson",
+    "product": "Bread Flour Strong White",
+    "aliases": [
+      "allinson bread flour",
+      "allinson strong white"
+    ],
+    "country": "UK",
+    "type": "bread",
+    "w": 230,
+    "wRange": "220-245",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "UK supermarket bread flour. Widely available."
+  },
+  {
+    "brand": "McDougalls",
+    "product": "Strong White Bread Flour",
+    "aliases": [
+      "mcdougalls bread",
+      "mcdougalls strong"
+    ],
+    "country": "UK",
+    "type": "bread",
+    "w": 230,
+    "wRange": "220-245",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "UK supermarket bread flour."
+  },
+  {
+    "brand": "Waitrose",
+    "product": "Strong White Bread Flour",
+    "aliases": [
+      "waitrose bread flour"
+    ],
+    "country": "UK",
+    "type": "bread",
+    "w": 230,
+    "wRange": "220-245",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "UK supermarket own brand bread flour."
+  },
+  {
+    "brand": "Robin Hood",
+    "product": "All Purpose Flour",
+    "aliases": [
+      "robin hood ap",
+      "robin hood all purpose"
+    ],
+    "country": "CA",
+    "type": "allpurpose",
+    "w": 230,
+    "wRange": "220-250",
+    "protein": 13.3,
+    "hydration": 63,
+    "fermentWindow": "4-24h",
+    "source": "est",
+    "note": "Canadian wheat. Higher protein than US AP flour."
+  },
+  {
+    "brand": "Robin Hood",
+    "product": "Best for Bread",
+    "aliases": [
+      "robin hood bread"
+    ],
+    "country": "CA",
+    "type": "bread",
+    "w": 260,
+    "wRange": "250-270",
+    "protein": 13.3,
+    "hydration": 65,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "Canadian bread flour. High protein Canadian wheat."
+  },
+  {
+    "brand": "Five Roses",
+    "product": "All Purpose Flour",
+    "aliases": [
+      "five roses ap"
+    ],
+    "country": "CA",
+    "type": "allpurpose",
+    "w": 230,
+    "wRange": "220-250",
+    "protein": 13.3,
+    "hydration": 63,
+    "fermentWindow": "4-24h",
+    "source": "est",
+    "note": "Canadian flour. High protein like Robin Hood."
+  },
+  {
+    "brand": "Anita's",
+    "product": "Organic All Purpose Flour",
+    "aliases": [
+      "anitas organic ap"
+    ],
+    "country": "CA",
+    "type": "allpurpose",
+    "w": 220,
+    "wRange": "210-235",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "4-24h",
+    "source": "est",
+    "note": "Premium Canadian organic flour."
+  },
+  {
+    "brand": "White Lily",
+    "product": "All Purpose Flour",
+    "aliases": [
+      "white lily ap"
+    ],
+    "country": "US",
+    "type": "allpurpose",
+    "w": 120,
+    "wRange": "110-140",
+    "protein": 8.0,
+    "hydration": 56,
+    "fermentWindow": "2-8h",
+    "source": "est",
+    "note": "Very soft Southern wheat. Not suitable for pizza/bread."
+  },
+  {
+    "brand": "White Lily",
+    "product": "Bread Flour",
+    "aliases": [
+      "white lily bread"
+    ],
+    "country": "US",
+    "type": "bread",
+    "w": 230,
+    "wRange": "220-245",
+    "protein": 11.5,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "Finely ground. Similar protein to KA AP. Lighter texture."
+  },
+  {
+    "brand": "Hodgson Mill",
+    "product": "Best for Bread",
+    "aliases": [
+      "hodgson mill bread"
+    ],
+    "country": "US",
+    "type": "bread",
+    "w": 230,
+    "wRange": "220-245",
+    "protein": 12.0,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "US bread flour."
+  },
+  {
+    "brand": "Coles",
+    "product": "Plain Flour",
+    "aliases": [
+      "coles plain flour",
+      "coles all purpose"
+    ],
+    "country": "AU",
+    "type": "allpurpose",
+    "w": 175,
+    "wRange": "165-190",
+    "protein": 10.0,
+    "hydration": 60,
+    "fermentWindow": "4-12h",
+    "source": "est",
+    "note": "Australian supermarket own brand."
+  },
+  {
+    "brand": "Woolworths",
+    "product": "Bread and Pizza Flour",
+    "aliases": [
+      "woolworths bread flour",
+      "woolworths pizza flour"
+    ],
+    "country": "AU",
+    "type": "bread",
+    "w": 240,
+    "wRange": "230-255",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "Australian supermarket bread flour."
+  },
+  {
+    "brand": "Defiance",
+    "product": "Bakers Flour",
+    "aliases": [
+      "defiance bakers flour"
+    ],
+    "country": "AU",
+    "type": "bread",
+    "w": 250,
+    "wRange": "240-265",
+    "protein": 13.0,
+    "hydration": 64,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "Australian commercial bakers flour."
+  },
+  {
+    "brand": "Carrefour",
+    "product": "Farine de blé T45",
+    "aliases": [
+      "carrefour t45",
+      "carrefour farine"
+    ],
+    "country": "FR",
+    "type": "pizza00",
+    "w": 160,
+    "wRange": "150-175",
+    "protein": 9.0,
+    "hydration": 58,
+    "fermentWindow": "2-8h",
+    "source": "est",
+    "note": "French supermarket own brand T45. Weak flour."
+  },
+  {
+    "brand": "Carrefour",
+    "product": "Farine de blé T55",
+    "aliases": [
+      "carrefour t55"
+    ],
+    "country": "FR",
+    "type": "allpurpose",
+    "w": 175,
+    "wRange": "165-190",
+    "protein": 10.0,
+    "hydration": 60,
+    "fermentWindow": "4-12h",
+    "source": "est",
+    "note": "Standard French supermarket T55."
+  },
+  {
+    "brand": "Carrefour",
+    "product": "Farine spéciale pizza",
+    "aliases": [
+      "carrefour pizza flour"
+    ],
+    "country": "FR",
+    "type": "pizza00",
+    "w": 220,
+    "wRange": "210-235",
+    "protein": 11.0,
+    "hydration": 61,
+    "fermentWindow": "4-16h",
+    "source": "est",
+    "note": "French supermarket pizza-specific flour."
+  },
+  {
+    "brand": "Marque Repère",
+    "product": "Farine T55",
+    "aliases": [
+      "leclerc t55",
+      "marque repere farine"
+    ],
+    "country": "FR",
+    "type": "allpurpose",
+    "w": 170,
+    "wRange": "160-185",
+    "protein": 9.5,
+    "hydration": 59,
+    "fermentWindow": "4-12h",
+    "source": "est",
+    "note": "E.Leclerc own brand flour."
+  },
+  {
+    "brand": "Lo Conte",
+    "product": "Farina 00",
+    "aliases": [
+      "lo conte 00"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 240,
+    "wRange": "230-255",
+    "protein": 11.5,
+    "hydration": 61,
+    "fermentWindow": "4-24h",
+    "source": "est",
+    "note": "Italian supermarket own brand 00."
+  },
+  {
+    "brand": "Barilla",
+    "product": "Farina 00",
+    "aliases": [
+      "barilla farina 00",
+      "barilla flour"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 220,
+    "wRange": "210-235",
+    "protein": 11.0,
+    "hydration": 60,
+    "fermentWindow": "4-16h",
+    "source": "est",
+    "note": "Mass market Italian brand. Available in many Asian supermarkets."
+  },
+  {
+    "brand": "De Cecco",
+    "product": "Semolato di grano duro",
+    "aliases": [
+      "de cecco semolina",
+      "de cecco semola"
+    ],
+    "country": "IT",
+    "type": "semolina",
+    "w": 200,
+    "wRange": "190-215",
+    "protein": 13.0,
+    "hydration": 62,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "Common Italian semolina. Available in SEA specialty stores."
+  },
+  {
+    "brand": "Bake King",
+    "product": "Bread Flour",
+    "aliases": [
+      "bake king bread",
+      "bake king high protein"
+    ],
+    "country": "SG",
+    "type": "bread",
+    "w": 240,
+    "wRange": "230-255",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "Singapore brand. Available at Phoon Huat and baking stores."
+  },
+  {
+    "brand": "Bake King",
+    "product": "Plain Flour",
+    "aliases": [
+      "bake king plain"
+    ],
+    "country": "SG",
+    "type": "allpurpose",
+    "w": 165,
+    "wRange": "155-180",
+    "protein": 9.5,
+    "hydration": 60,
+    "fermentWindow": "4-12h",
+    "source": "est",
+    "note": "Common Singapore household flour."
+  },
+  {
+    "brand": "Phoon Huat",
+    "product": "Super Baker Bread Flour",
+    "aliases": [
+      "phoon huat bread",
+      "super baker flour"
+    ],
+    "country": "SG",
+    "type": "bread",
+    "w": 250,
+    "wRange": "240-265",
+    "protein": 13.0,
+    "hydration": 64,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "Available at Phoon Huat baking supply stores in Singapore."
+  },
+  {
+    "brand": "Sun Hong",
+    "product": "High Protein Bread Flour",
+    "aliases": [
+      "sun hong bread flour"
+    ],
+    "country": "SG",
+    "type": "bread",
+    "w": 240,
+    "wRange": "230-255",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "Singapore commercial bakery brand."
+  },
+  {
+    "brand": "Bagus",
+    "product": "Bread Flour",
+    "aliases": [
+      "bagus bread flour"
+    ],
+    "country": "MY",
+    "type": "bread",
+    "w": 240,
+    "wRange": "230-255",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "Malaysian brand. Available in Singapore and Malaysia."
+  },
+  {
+    "brand": "Payless",
+    "product": "Bread Flour",
+    "aliases": [
+      "payless bread flour"
+    ],
+    "country": "MY",
+    "type": "bread",
+    "w": 235,
+    "wRange": "225-250",
+    "protein": 12.0,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "Malaysian supermarket bread flour."
+  },
+  {
+    "brand": "Renown",
+    "product": "Bread Flour",
+    "aliases": [
+      "renown bread flour"
+    ],
+    "country": "MY",
+    "type": "bread",
+    "w": 240,
+    "wRange": "230-255",
+    "protein": 12.5,
+    "hydration": 63,
+    "fermentWindow": "8-36h",
+    "source": "est",
+    "note": "Malaysian bread flour. Common in SEA."
+  },
+  {
+    "brand": "Nisshin",
+    "product": "Bread Flour",
+    "aliases": [
+      "nisshin bread",
+      "nisshin panasonic"
+    ],
+    "country": "JP",
+    "type": "bread",
+    "w": 260,
+    "wRange": "250-270",
+    "protein": 13.5,
+    "hydration": 65,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "Japanese premium bread flour. Popular in SEA Asian bakeries."
+  },
+  {
+    "brand": "Nisshin",
+    "product": "Violet All Purpose",
+    "aliases": [
+      "nisshin violet",
+      "nisshin all purpose"
+    ],
+    "country": "JP",
+    "type": "allpurpose",
+    "w": 180,
+    "wRange": "170-195",
+    "protein": 10.0,
+    "hydration": 60,
+    "fermentWindow": "4-12h",
+    "source": "est",
+    "note": "Japanese AP flour. Widely available in Asian supermarkets."
+  },
+  {
+    "brand": "Showa",
+    "product": "Camellia Bread Flour",
+    "aliases": [
+      "showa camellia",
+      "showa bread flour"
+    ],
+    "country": "JP",
+    "type": "bread",
+    "w": 260,
+    "wRange": "250-270",
+    "protein": 13.5,
+    "hydration": 65,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "Top Japanese bread flour. Used in many SEA bakeries."
+  },
+  {
+    "brand": "Showa",
+    "product": "Lys d'Or",
+    "aliases": [
+      "lys d'or",
+      "showa lys dor"
+    ],
+    "country": "JP",
+    "type": "strong00",
+    "w": 300,
+    "wRange": "290-315",
+    "protein": 14.5,
+    "hydration": 67,
+    "fermentWindow": "24-72h",
+    "source": "est",
+    "note": "Very high gluten Japanese flour. For chewy NY-style pizza."
+  },
+  {
+    "brand": "Mulino Casillo",
+    "product": "Farina 00",
+    "aliases": [
+      "casillo 00",
+      "mulino casillo"
+    ],
+    "country": "IT",
+    "type": "pizza00",
+    "w": 250,
+    "wRange": "240-265",
+    "protein": 12.0,
+    "hydration": 62,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "Professional Italian mill. Common in SEA restaurant supply."
+  },
+  {
+    "brand": "Generic",
+    "product": "Pizza 00 Flour",
+    "aliases": [
+      "tipo 00",
+      "tipo double zero",
+      "00 flour",
+      "double zero"
+    ],
+    "country": "XX",
+    "type": "pizza00",
+    "w": 250,
+    "wRange": "220-280",
+    "protein": 12.0,
+    "hydration": 62,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "Generic Italian 00 pizza flour estimate."
+  },
+  {
+    "brand": "Generic",
+    "product": "Strong 00 / High Protein 00",
+    "aliases": [
+      "strong 00",
+      "forte 00",
+      "t45 forte",
+      "farina forte"
+    ],
+    "country": "XX",
+    "type": "strong00",
+    "w": 300,
+    "wRange": "270-360",
+    "protein": 13.5,
+    "hydration": 65,
+    "fermentWindow": "24-72h",
+    "source": "est",
+    "note": "Generic strong 00 estimate."
+  },
+  {
+    "brand": "Generic",
+    "product": "Bread Flour / T65",
+    "aliases": [
+      "bread flour",
+      "farine a pain",
+      "t65"
+    ],
+    "country": "XX",
+    "type": "bread",
+    "w": 230,
+    "wRange": "200-270",
+    "protein": 12.5,
+    "hydration": 64,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "Generic bread flour estimate."
+  },
+  {
+    "brand": "Generic",
+    "product": "All Purpose / T55",
+    "aliases": [
+      "all purpose",
+      "plain flour",
+      "t55",
+      "all-purpose"
+    ],
+    "country": "XX",
+    "type": "allpurpose",
+    "w": 160,
+    "wRange": "130-200",
+    "protein": 10.5,
+    "hydration": 60,
+    "fermentWindow": "4-12h",
+    "source": "est",
+    "note": "Generic all-purpose estimate."
+  },
+  {
+    "brand": "Generic",
+    "product": "Manitoba Flour",
+    "aliases": [
+      "manitoba",
+      "farina manitoba"
+    ],
+    "country": "XX",
+    "type": "manitoba",
+    "w": 380,
+    "wRange": "350-420",
+    "protein": 14.5,
+    "hydration": 68,
+    "fermentWindow": "48-120h",
+    "source": "est",
+    "note": "Generic Manitoba estimate. Very strong blending flour."
+  },
+  {
+    "brand": "Generic",
+    "product": "Semolina / Semola",
+    "aliases": [
+      "semolina",
+      "semola rimacinata",
+      "durum wheat"
+    ],
+    "country": "XX",
+    "type": "semolina",
+    "w": 200,
+    "wRange": "180-230",
+    "protein": 13.0,
+    "hydration": 62,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "Generic semolina estimate."
+  },
+  {
+    "brand": "Generic",
+    "product": "Whole Wheat / Wholemeal",
+    "aliases": [
+      "whole wheat",
+      "wholemeal",
+      "integrale",
+      "farine complete"
+    ],
+    "country": "XX",
+    "type": "wholemeal",
+    "w": 220,
+    "wRange": "180-280",
+    "protein": 13.0,
+    "hydration": 68,
+    "fermentWindow": "8-48h",
+    "source": "est",
+    "note": "Generic whole wheat estimate."
+  },
+  {
+    "brand": "Generic",
+    "product": "Rye Flour / Seigle",
+    "aliases": [
+      "rye flour",
+      "farine de seigle",
+      "segale"
+    ],
+    "country": "XX",
+    "type": "rye",
+    "w": 150,
+    "wRange": "120-200",
+    "protein": 8.0,
+    "hydration": 75,
+    "fermentWindow": "8-24h",
+    "source": "est",
+    "note": "Generic rye flour estimate. High enzyme activity."
+  }
+]
