@@ -31,8 +31,8 @@
     "5": { "title": "Your mixing method" },
     "6": { "title": "What yeast are you using?" },
     "7": { "title": "Your kitchen climate" },
-    "8pizza": { "title": "When does the pizza go in the oven?" },
-    "8bread": { "title": "When does the bread go in the oven?" },
+    "8pizza": { "title": "Your baking schedule" },
+    "8bread": { "title": "Your baking schedule" },
     "flour": { "title": "Your flour" }
   },
   "bakeType": {
@@ -64,9 +64,9 @@
     "saveFailed": "Save failed"
   },
   "scheduler": {
-    "bakeTimeLabelPizza": "When does the pizza go in the oven?",
-    "bakeTimeLabelBread": "When does the bread go in the oven?",
-    "bakeTimeSub": "We'll recommend the best window to start your dough.",
+    "bakeTimeLabelPizza": "When are you baking?",
+    "bakeTimeLabelBread": "When are you baking?",
+    "bakeTimeSub": "Baker Hub builds your schedule backwards from here.",
     "planMyBake": "Plan my bake →",
     "bakeTime": "Bake time",
     "startMixing": "Start mixing",

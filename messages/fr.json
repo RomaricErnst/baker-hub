@@ -31,8 +31,8 @@
     "5": { "title": "Votre méthode de pétrissage" },
     "6": { "title": "Quelle levure utilisez-vous ?" },
     "7": { "title": "Le climat de votre cuisine" },
-    "8pizza": { "title": "Quand la pizza va au four ?" },
-    "8bread": { "title": "Quand le pain va au four ?" },
+    "8pizza": { "title": "Votre planning de cuisson" },
+    "8bread": { "title": "Votre planning de cuisson" },
     "flour": { "title": "Votre farine" }
   },
   "bakeType": {
@@ -64,9 +64,9 @@
     "saveFailed": "Échec de l'enregistrement"
   },
   "scheduler": {
-    "bakeTimeLabelPizza": "Quand la pizza va au four ?",
-    "bakeTimeLabelBread": "Quand le pain va au four ?",
-    "bakeTimeSub": "On vous recommandera le meilleur moment pour commencer votre pâte.",
+    "bakeTimeLabelPizza": "À quelle heure vous enfournez ?",
+    "bakeTimeLabelBread": "À quelle heure vous enfournez ?",
+    "bakeTimeSub": "Baker Hub construit votre planning en remontant depuis là.",
     "planMyBake": "Planifier ma fournée →",
     "bakeTime": "Heure de cuisson",
     "startMixing": "Début du pétrissage",
