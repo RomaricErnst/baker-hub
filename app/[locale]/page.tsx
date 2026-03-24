@@ -197,8 +197,12 @@ export default function Home() {
   const [yeastMultiplier, setYeastMultiplier]   = useState(1.0); // live stepper value
   const [appliedMultiplier, setAppliedMultiplier] = useState(1.0); // applied to RecipeOutput
 
+  // Sourdough feed time
+  const [feedTime, setFeedTime] = useState<Date | null>(null);
+
   // Advanced mode manual overrides
   const [prefermentType, setPrefermentType] = useState<PrefermentType>('none');
+  const [prefermentFlourPct, setPrefermentFlourPct] = useState<number | undefined>(undefined);
 
   const [manualHydration, setManualHydration] = useState<number | undefined>(undefined);
   const [manualOil, setManualOil]             = useState<number | undefined>(undefined);
@@ -241,6 +245,10 @@ export default function Home() {
     : OVEN_TYPES[ovenType as OvenType];
   const preheatMin = ovenData?.preheatMin ?? 30;
 
+  const hasNightBlocker = blocks.some(b =>
+    b.label.toLowerCase().includes('night') || b.from.getHours() >= 22 || b.to.getHours() <= 7
+  );
+
   const schedule = useMemo(() => {
     if (!eatTime || startTime >= eatTime) return null;
     return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType);
@@ -282,11 +290,12 @@ export default function Home() {
         styleKey, ovenType as OvenType, numItems, itemWeight,
         kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom',
         manualHydration, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride,
+        prefermentFlourPct,
       );
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct]);
 
   // Advanced recipe with yeast multiplier applied
   const advancedDisplayRecipe = useMemo(() => {
@@ -738,6 +747,8 @@ export default function Home() {
                 kitchenTemp={kitchenTemp}
                 schedule={schedule}
                 bakeType={bakeType ?? 'pizza'}
+                isSourdough={yeastType === 'sourdough'}
+                onFeedTimeChange={setFeedTime}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onConfirm={() => advance(8)}
               />
@@ -968,6 +979,8 @@ export default function Home() {
                         oil={recipe?.oil ?? 0}
                         hydration={recipe?.hydration ?? 0}
                         numItems={numItems}
+                        feedTime={feedTime}
+                        kitchenTemp={kitchenTemp}
                         onStartBaking={() => { /* Baking mode — future feature */ }}
                       />
                     )}
@@ -1243,6 +1256,10 @@ export default function Home() {
                 <PrefermentPicker
                   selected={prefermentType}
                   onSelect={pt => { setPrefermentType(pt); advanceAdv(8); }}
+                  flourPct={prefermentFlourPct}
+                  onFlourPctChange={setPrefermentFlourPct}
+                  kitchenTemp={kitchenTemp}
+                  hasNightBlocker={hasNightBlocker}
                   styleKey={styleKey ?? undefined}
                 />
               </StepCard>
@@ -1281,6 +1298,8 @@ export default function Home() {
                 kitchenTemp={kitchenTemp}
                 schedule={schedule}
                 bakeType={bakeType ?? 'pizza'}
+                isSourdough={yeastType === 'sourdough'}
+                onFeedTimeChange={setFeedTime}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onConfirm={() => advanceAdv(10)}
               />
@@ -1486,6 +1505,8 @@ export default function Home() {
                         oil={advancedRecipe?.oil ?? 0}
                         hydration={advancedRecipe?.hydration ?? 0}
                         numItems={numItems}
+                        feedTime={feedTime}
+                        kitchenTemp={kitchenTemp}
                         onStartBaking={() => { /* Baking mode — future feature */ }}
                       />
                     )}
