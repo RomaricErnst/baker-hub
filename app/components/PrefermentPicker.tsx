@@ -8,67 +8,14 @@ interface PrefermentPickerProps {
   onSelect: (type: PrefermentType) => void;
   flourPct?: number;
   onFlourPctChange?: (pct: number) => void;
-  kitchenTemp?: number;
-  hasNightBlocker?: boolean;
   styleKey?: string;
   hideTypes?: PrefermentType[];
 }
 
-function prefermentTimingNote(
-  key: string,
-  flourPct: number,
-  kitchenTemp: number,
-  hasNightBlocker: boolean,
-): { text: string; level: 'normal' | 'warning' | 'fridge' } {
-  if (key === 'poolish') {
-    if (kitchenTemp >= 26) return {
-      text: '🧊 Ferment in the fridge (4°C) for 12-16h — too warm for room temperature in this climate. Go straight from fridge to final dough.',
-      level: 'fridge',
-    };
-    if (kitchenTemp >= 23 && hasNightBlocker) return {
-      text: '🧊 You have an overnight window — ferment in the fridge (4°C) for 12-16h. Warm kitchen + overnight RT = over-fermented poolish.',
-      level: 'fridge',
-    };
-    if (kitchenTemp >= 23) return {
-      text: `⚠️ Ferment ${flourPct >= 60 ? '5-7h' : '4-6h'} at room temperature max. Start poolish close to mixing time, not overnight.`,
-      level: 'warning',
-    };
-    return {
-      text: `Ferment ${flourPct <= 35 ? '6-10h' : flourPct >= 60 ? '10-20h' : '8-16h'} at room temperature.`,
-      level: 'normal',
-    };
-  }
-
-  if (key === 'biga') {
-    const hours = flourPct <= 30 ? '12-24h' : flourPct >= 55 ? '24-60h' : '16-48h';
-    if (kitchenTemp >= 28) return {
-      text: `🧊 Ferment ${hours} in the fridge (4°C). In your hot kitchen, move directly from fridge to final dough — no counter rest.`,
-      level: 'fridge',
-    };
-    return { text: `Ferment ${hours} in the fridge (4°C).`, level: 'normal' };
-  }
-
-  if (key === 'levain') {
-    if (kitchenTemp >= 28) return {
-      text: `Feed your starter ${flourPct >= 25 ? '3-4h' : '3-5h'} before mixing — peaks fast above 28°C. Watch for dome + bubbles, not the clock.`,
-      level: 'warning',
-    };
-    if (kitchenTemp >= 23) return {
-      text: `Feed your starter ${flourPct >= 25 ? '4-6h' : '5-7h'} before mixing.`,
-      level: 'normal',
-    };
-    return {
-      text: `Feed your starter ${flourPct >= 25 ? '4-8h' : '6-12h'} before mixing.`,
-      level: 'normal',
-    };
-  }
-
-  return { text: '', level: 'normal' };
-}
 
 export default function PrefermentPicker({
   selected, onSelect, flourPct, onFlourPctChange,
-  kitchenTemp = 22, hasNightBlocker = false, styleKey, hideTypes = [],
+  styleKey, hideTypes = [],
 }: PrefermentPickerProps) {
   const locale = useLocale();
   const isFr = locale === 'fr';
@@ -163,28 +110,6 @@ export default function PrefermentPicker({
                   {isFr ? pData.descFr : pData.desc}
                 </div>
 
-                {/* Passive climate warning pill when NOT selected */}
-                {!isSelected && key === 'poolish' && kitchenTemp >= 26 && (
-                  <div style={{
-                    fontSize: '.62rem', color: '#3A5A8A', background: '#EEF2FA',
-                    border: '1px solid #C4CDE0', borderRadius: '6px', padding: '.15rem .45rem',
-                    display: 'inline-block', marginBottom: '.4rem',
-                    fontFamily: 'var(--font-dm-mono)',
-                  }}>
-                    🧊 Fridge ferment in tropical kitchen
-                  </div>
-                )}
-                {!isSelected && key === 'poolish' && kitchenTemp >= 23 && kitchenTemp < 26 && hasNightBlocker && (
-                  <div style={{
-                    fontSize: '.62rem', color: '#3A5A8A', background: '#EEF2FA',
-                    border: '1px solid #C4CDE0', borderRadius: '6px', padding: '.15rem .45rem',
-                    display: 'inline-block', marginBottom: '.4rem',
-                    fontFamily: 'var(--font-dm-mono)',
-                  }}>
-                    🧊 Fridge if overnight
-                  </div>
-                )}
-
                 {/* Pills */}
                 <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
                   <span style={{
@@ -271,24 +196,6 @@ export default function PrefermentPicker({
                       <span>Less complex</span><span>More complex</span>
                     </div>
 
-                    {/* Climate-aware timing note */}
-                    {(() => {
-                      const timing = prefermentTimingNote(key, localFlourPct, kitchenTemp, hasNightBlocker);
-                      if (!timing.text) return null;
-                      const styles: Record<string, React.CSSProperties> = {
-                        normal:  { color: 'var(--smoke)', background: 'transparent', border: 'none', borderRadius: '0', padding: '0' },
-                        warning: { color: '#7A5A10', background: '#FFF8E8', border: '1px solid #E8D080', borderRadius: '8px', padding: '.4rem .6rem' },
-                        fridge:  { color: '#3A5A8A', background: '#EEF2FA', border: '1px solid #C4CDE0', borderRadius: '8px', padding: '.4rem .6rem' },
-                      };
-                      return (
-                        <div style={{
-                          marginTop: '.55rem', fontSize: '.72rem', fontStyle: 'italic',
-                          lineHeight: 1.5, ...styles[timing.level],
-                        }}>
-                          {timing.text}
-                        </div>
-                      );
-                    })()}
                   </div>
                 )}
               </>

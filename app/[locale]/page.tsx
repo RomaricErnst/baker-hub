@@ -1302,8 +1302,6 @@ export default function Home() {
                   }}
                   flourPct={prefermentFlourPct}
                   onFlourPctChange={setPrefermentFlourPct}
-                  kitchenTemp={kitchenTemp}
-                  hasNightBlocker={hasNightBlocker}
                   styleKey={styleKey ?? undefined}
                   hideTypes={['levain']}
                 />
