@@ -425,7 +425,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               padding: '.85rem 1rem', background: 'var(--warm)', marginBottom: '.65rem',
               display: 'flex', gap: '1rem', alignItems: 'flex-start',
             }}>
-              <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--char)', width: '90px', flexShrink: 0, paddingTop: '.15rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--char)', width: '80px', flexShrink: 0, paddingTop: '.3rem' }}>
                 {brand.name} {brand.logo}
               </div>
               <div style={{ flex: 1 }}>
@@ -436,20 +436,22 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       key={product.name}
                       onClick={() => selectBrandProduct(brandKey, product)}
                       onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'rgba(196,82,42,0.06)'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? '#FEF4EF' : 'transparent'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(196,82,42,0.06)' : 'transparent'; }}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: '.5rem',
+                        display: 'grid', gridTemplateColumns: '100px 70px 1fr',
+                        alignItems: 'center', gap: '.5rem',
                         padding: '.3rem .5rem', borderRadius: '8px', cursor: 'pointer',
-                        background: isSelected ? '#FEF4EF' : 'transparent',
+                        background: isSelected ? 'rgba(196,82,42,0.06)' : 'transparent',
                         transition: 'background .15s',
                       }}
                     >
-                      <span style={{ fontSize: '.82rem', fontWeight: isSelected ? 600 : 400, color: isSelected ? 'var(--terra)' : 'var(--char)', flex: 1 }}>
+                      <span style={{ fontSize: '.82rem', fontWeight: isSelected ? 600 : 400, color: isSelected ? 'var(--terra)' : 'var(--char)' }}>
                         {product.name}
                       </span>
-                      <span style={PILL}>W {product.w}</span>
-                      <span style={{ fontSize: '.7rem', color: 'var(--smoke)' }}>{product.desc}</span>
-                      {isSelected && <span style={{ color: 'var(--terra)', fontSize: '.8rem', flexShrink: 0 }}>✓</span>}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '20px', padding: '.1rem .5rem', color: 'var(--ash)', whiteSpace: 'nowrap' }}>
+                        W {product.w}
+                      </span>
+                      <span style={{ fontSize: '.7rem', color: 'var(--smoke)', lineHeight: 1.3 }}>{product.desc}</span>
                     </div>
                   );
                 })}
