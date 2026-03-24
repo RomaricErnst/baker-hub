@@ -64,8 +64,8 @@
     "saveFailed": "Save failed"
   },
   "scheduler": {
-    "bakeTimeLabelPizza": "When are you baking?",
-    "bakeTimeLabelBread": "When are you baking?",
+    "bakeTimeLabelPizza": "When does it go in the oven?",
+    "bakeTimeLabelBread": "When does it go in the oven?",
     "bakeTimeSub": "Baker Hub builds your schedule backwards from here.",
     "planMyBake": "Plan my bake →",
     "bakeTime": "Bake time",

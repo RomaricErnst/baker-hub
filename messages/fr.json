@@ -64,9 +64,9 @@
     "saveFailed": "Échec de l'enregistrement"
   },
   "scheduler": {
-    "bakeTimeLabelPizza": "À quelle heure vous enfournez ?",
-    "bakeTimeLabelBread": "À quelle heure vous enfournez ?",
-    "bakeTimeSub": "Baker Hub construit votre planning en remontant depuis là.",
+    "bakeTimeLabelPizza": "À quelle heure enfournez-vous ?",
+    "bakeTimeLabelBread": "À quelle heure enfournez-vous ?",
+    "bakeTimeSub": "Baker Hub calcule vos étapes à rebours.",
     "planMyBake": "Planifier ma fournée →",
     "bakeTime": "Heure de cuisson",
     "startMixing": "Début du pétrissage",
