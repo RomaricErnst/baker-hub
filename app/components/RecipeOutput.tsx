@@ -193,6 +193,99 @@ function computeWaterInfo(
   return { targetTemp, needsIce, iceGrams, tapGrams, iceGuidance, tempGuidance };
 }
 
+// ── Starter prep card ─────────────────────────
+function StarterPrepCard({ sourdough }: { sourdough: { starterGramsMin: number; starterGramsMax: number } | null }) {
+  const [discardOpen, setDiscardOpen] = useState(false);
+  if (!sourdough) return null;
+
+  const targetGrams = sourdough.starterGramsMax;
+  const feedFlour   = Math.round(targetGrams / 2);
+  const feedWater   = Math.round(targetGrams / 2);
+  const discardKeep = Math.round(targetGrams / 2);
+
+  const M = { fontSize: '.82rem', fontFamily: 'var(--font-dm-mono)', color: 'var(--terra)', fontWeight: 600 };
+
+  const readyChecks = [
+    'Doubled in size ✓',
+    'Domed top, slightly bubbly ✓',
+    'Float test: drop a piece in water → floats ✓',
+    'Smells tangy, not alcoholic ✓',
+  ];
+
+  return (
+    <div style={{
+      background: 'var(--warm)',
+      border: '1.5px solid var(--border)',
+      borderRadius: '13px',
+      padding: '1rem 1.2rem',
+      marginTop: '.75rem',
+    }}>
+      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '.82rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.75rem' }}>
+        🫙 Preparing your starter
+      </div>
+
+      {/* Section A — How much to prepare */}
+      <div style={{ marginBottom: '.75rem' }}>
+        {[
+          <>Keep <span style={M}>{discardKeep}g</span> of your current starter</>,
+          <>Add <span style={M}>{feedFlour}g</span> flour + <span style={M}>{feedWater}g</span> water</>,
+          <>You&apos;ll have ~<span style={M}>{targetGrams}g</span> ready to use</>,
+        ].map((line, i) => (
+          <div key={i} style={{ fontSize: '.78rem', color: 'var(--ash)', lineHeight: 1.7 }}>{line}</div>
+        ))}
+      </div>
+
+      {/* Section B — Discard note (collapsible) */}
+      <div style={{ marginBottom: '.75rem' }}>
+        <button
+          onClick={() => setDiscardOpen(o => !o)}
+          style={{
+            background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+            fontSize: '.76rem', color: 'var(--smoke)', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', gap: '.25rem',
+          }}
+        >
+          What to do with the discard? {discardOpen ? '▴' : '▾'}
+        </button>
+        {discardOpen && (
+          <div style={{ marginTop: '.45rem', display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
+            <div style={{ fontSize: '.76rem', color: 'var(--ash)', lineHeight: 1.55 }}>
+              Discard the rest before feeding — or use it for pancakes, crackers or flatbread 🥞
+            </div>
+            <div style={{ fontSize: '.76rem', color: 'var(--ash)', lineHeight: 1.55 }}>
+              Never throw all your starter away — always keep at least 20–30g.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Section C — Ready check */}
+      <div style={{
+        borderTop: '1px solid var(--border)',
+        paddingTop: '.6rem',
+      }}>
+        <div style={{ fontSize: '.72rem', fontWeight: 600, color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.45rem' }}>
+          Your starter is ready when:
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
+          {readyChecks.map((cue, i) => (
+            <div key={i} style={{ display: 'flex', gap: '.55rem', alignItems: 'flex-start' }}>
+              <span style={{
+                width: '18px', height: '18px', borderRadius: '50%',
+                border: '1.5px solid var(--border)',
+                flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                marginTop: '.05rem',
+              }}>{i + 1}</span>
+              <span style={{ fontSize: '.78rem', color: 'var(--ash)', lineHeight: 1.55 }}>{cue}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
   result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
@@ -723,6 +816,10 @@ export default function RecipeOutput({
               ))}
             </div>
           </div>
+
+          {/* ── Starter preparation card ──────────── */}
+          <StarterPrepCard sourdough={sourdough} />
+
         </div>
       )}
 

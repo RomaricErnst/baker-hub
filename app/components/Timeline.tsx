@@ -20,11 +20,13 @@ interface TimelineProps {
   oil: number;
   hydration: number;
   numItems: number;
+  feedTime?: Date | null;
+  kitchenTemp?: number;
   onStartBaking?: () => void;
 }
 
 // ── Step kinds ────────────────────────────────
-type StepKind = 'mixing' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'rt_warmup' | 'preheat' | 'eat';
+type StepKind = 'feed_starter' | 'mixing' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'rt_warmup' | 'preheat' | 'eat';
 
 interface TimelineStep {
   kind: 'step';
@@ -44,6 +46,7 @@ const THEME: Record<StepKind, {
   pill: string; pillText: string;
   cardBg?: string; cardBorder?: string;
 }> = {
+  feed_starter: { dot: '#6A7FA8', ring: 'rgba(106,127,168,0.1)', line: '#C4CDE0', pill: '#EEF2FA', pillText: '#3A5A8A', cardBg: '#EEF2FA', cardBorder: '#C4CDE0' },
   mixing:      { dot: 'var(--ash)',    ring: 'rgba(61,53,48,.1)',    line: 'var(--border)', pill: 'var(--cream)',  pillText: 'var(--ash)' },
   bulk_ferm:   { dot: 'var(--terra)',  ring: 'rgba(196,82,42,.1)',   line: '#F5C4B0',       pill: '#FEF4EF',      pillText: 'var(--terra)', cardBg: '#FEF8F5', cardBorder: '#F5C4B0' },
   divide_ball: { dot: '#8A6A4A',       ring: 'rgba(138,106,74,.1)',  line: '#D4B898',       pill: '#FDF4EA',      pillText: '#6A3A10' },
@@ -64,8 +67,29 @@ function buildItems(
   preheatMin: number,
   mixerType: MixerType,
   numItems: number,
+  feedTime?: Date | null,
+  kitchenTemp?: number,
+  isSourdough?: boolean,
 ): TimelineStep[] {
   const items: TimelineStep[] = [];
+
+  // 0 — Feed Starter (sourdough only, when feedTime provided)
+  if (feedTime && isSourdough) {
+    const temp = kitchenTemp ?? 20;
+    const tip = temp >= 28
+      ? `Feed equal weights starter + flour + water. At ${temp}°C your starter peaks in 3-5h — watch for dome + bubbles.`
+      : temp >= 24
+      ? `Feed equal weights starter + flour + water. Peaks in 4-6h at ${temp}°C.`
+      : 'Feed equal weights starter + flour + water. Peaks in 6-10h at room temperature.';
+    items.push({
+      kind: 'step', id: 'feed_starter', stepKind: 'feed_starter',
+      time: feedTime,
+      label: 'Feed your starter',
+      icon: '🫙',
+      tip,
+      durationH: null,
+    });
+  }
   const kneadMin = MIXER_TYPES[mixerType].kneadMin;
   const isTwoPhase = schedule.coldRetard2Start !== null;
 
@@ -324,16 +348,16 @@ function InfoBadge({ term, onOpen }: { term: string; onOpen: (t: string) => void
 
 // ── Component ─────────────────────────────────
 export default function Timeline({
-  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, oil, hydration, numItems, onStartBaking,
+  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, oil, hydration, numItems, feedTime, kitchenTemp, onStartBaking,
 }: TimelineProps) {
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
 
-  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems);
+  const isSourdough = styleKey === 'sourdough' || styleKey === 'pain_levain';
+
+  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough);
   const phases = buildPhases(schedule, preheatMin);
 
   const lastStepId = items[items.length - 1]?.id;
-
-  const isSourdough = styleKey === 'sourdough' || styleKey === 'sourdough_bread';
 
   return (
     <div>
