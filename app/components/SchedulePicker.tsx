@@ -709,6 +709,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26)
   );
 
+  // Phase timeline strip data for FermentChart
+  const phases = schedule ? {
+    bulkFermH: schedule.bulkFermHours ?? 0,
+    coldRetardH: schedule.coldRetardHours ?? 0,
+    finalProofH: schedule.finalProofHours ?? 0,
+    preheatH: (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000,
+  } : undefined;
+
   // Dynamic chart window — fits mix+pref duration with breathing room
   const windowH = useMemo(() => {
     const mixOffH = Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000);
@@ -1219,6 +1227,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               windowH={windowH}
               prefInFridge={prefGoesInFridge}
               hasColdRetard={hasColdRetard}
+              phases={phases}
               blocks={blocks}
               onMixChange={(h) => {
                 const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - h * 3600000));

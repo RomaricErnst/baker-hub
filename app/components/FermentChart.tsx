@@ -14,6 +14,12 @@ export interface FermentChartProps {
   windowH?: number;         // total window to display (default 96h)
   prefInFridge?: boolean;   // show fridge climate note in pref card
   hasColdRetard?: boolean;  // widens bell and sweet zone for cold schedules
+  phases?: {
+    bulkFermH: number;
+    coldRetardH: number;
+    finalProofH: number;
+    preheatH: number;
+  };
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -102,7 +108,7 @@ export default function FermentChart({
   eatTime, prefermentType, kitchenTemp,
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange,
-  windowH, prefInFridge, hasColdRetard,
+  windowH, prefInFridge, hasColdRetard, phases,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -526,6 +532,68 @@ export default function FermentChart({
           </div>
         )}
       </div>
+
+      {/* ── Phase timeline strip ────────────────────────── */}
+      {phases && (() => {
+        const segs = [
+          { key: 'bulk',   h: phases.bulkFermH,   color: '#C4A030', label: 'Bulk' },
+          { key: 'fridge', h: phases.coldRetardH,  color: '#4A7FA5', label: 'Fridge' },
+          { key: 'proof',  h: phases.finalProofH,  color: '#6B7A5A', label: 'Proof' },
+          { key: 'heat',   h: phases.preheatH,     color: '#C4522A', label: 'Preheat' },
+        ].filter(s => s.h > 0);
+        const total = segs.reduce((sum, s) => sum + s.h, 0);
+        if (total === 0) return null;
+        return (
+          <div style={{ marginTop: '.7rem' }}>
+            <div style={{
+              fontSize: '.6rem', fontFamily: 'var(--font-dm-mono)',
+              color: 'var(--smoke)', textTransform: 'uppercase',
+              letterSpacing: '.06em', marginBottom: '.3rem',
+            }}>
+              Your bake timeline
+            </div>
+            <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden', height: '20px' }}>
+              {segs.map(s => {
+                const pct = s.h / total;
+                const showFull = pct >= 0.15;
+                const showShort = !showFull && pct >= 0.07;
+                const hLabel = s.h < 1
+                  ? `${Math.round(s.h * 60)}m`
+                  : Number.isInteger(s.h) ? `${s.h}h` : `${s.h.toFixed(1)}h`;
+                return (
+                  <div
+                    key={s.key}
+                    title={`${s.label}: ${hLabel}`}
+                    style={{
+                      flex: s.h,
+                      background: s.color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {showFull && (
+                      <span style={{
+                        fontSize: '.58rem', fontFamily: 'var(--font-dm-mono)',
+                        color: 'white', whiteSpace: 'nowrap', lineHeight: 1,
+                      }}>
+                        {s.label} · {hLabel}
+                      </span>
+                    )}
+                    {showShort && (
+                      <span style={{
+                        fontSize: '.55rem', fontFamily: 'var(--font-dm-mono)',
+                        color: 'white', whiteSpace: 'nowrap', lineHeight: 1,
+                      }}>
+                        {hLabel}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
