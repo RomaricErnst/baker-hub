@@ -18,6 +18,7 @@ interface SchedulePickerProps {
   isSourdough?: boolean;
   onFeedTimeChange?: (t: Date) => void;
   prefermentType?: string;
+  onPrefOffsetChange?: (h: number) => void;
 }
 
 type PickerPhase = 'bake_time' | 'start_confirm';
@@ -307,7 +308,7 @@ const LABEL_STYLE: React.CSSProperties = {
 };
 
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, onConfirm, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none' }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, onConfirm, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tCommon = useTranslations('common');
   const alreadySet = eatTime !== null && eatTime > new Date();
@@ -367,15 +368,43 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     [pendingEatTime, preheatMin, styleKey, kitchenTemp],
   );
 
-  const nights   = useMemo(() => getNightsInWindow(pendingStart, pendingEatTime), [pendingStart, pendingEatTime]);
-  const workdays = useMemo(() => getWorkdaysInWindow(pendingStart, pendingEatTime), [pendingStart, pendingEatTime]);
+  // FIX 2: climate-aware pref fridge flag
+  const hasPrefActive = prefermentType !== 'none' && prefermentType !== '' && !isSourdough;
+  const prefGoesInFridge = hasPrefActive && (
+    prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26)
+  );
+
+  // FIX 3: dynamic chart window (from pref start to bake)
+  const windowH = useMemo(() => {
+    if (!startComputed) return 96;
+    const mixOffH = Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000);
+    const totalH = hasPrefActive ? mixOffH + prefOffsetH : mixOffH;
+    const rounded = Math.ceil(totalH / 24) * 24 + 24;
+    return Math.max(48, Math.min(120, rounded));
+  }, [startComputed, pendingEatTime, pendingStart, prefOffsetH, hasPrefActive]);
+
+  // FIX 5: window start includes pref time for blocker chips
+  const windowStart = useMemo(() => {
+    if (hasPrefActive && startComputed) {
+      return new Date(pendingStart.getTime() - prefOffsetH * 3600000);
+    }
+    return pendingStart;
+  }, [pendingStart, prefOffsetH, hasPrefActive, startComputed]);
+
+  const nights   = useMemo(() => getNightsInWindow(windowStart, pendingEatTime), [windowStart, pendingEatTime]);
+  const workdays = useMemo(() => getWorkdaysInWindow(windowStart, pendingEatTime), [windowStart, pendingEatTime]);
   const isWorkActive = blocks.some(b => b.label.startsWith('Work · '));
 
   // ── Phase transitions ────────────────────────
   function confirmBakeTime() {
     const s = suggestion.suggestedStart;
-    setPendingStart(s);
-    onChange(s, pendingEatTime, blocks);
+    // FIX 4: clamp initial mix offset to sweet zone [14-26h], default to 20h center
+    const rawOffsetH = (pendingEatTime.getTime() - s.getTime()) / 3600000;
+    const clampedStart = (rawOffsetH >= 14 && rawOffsetH <= 26)
+      ? s
+      : new Date(pendingEatTime.getTime() - 20 * 3600000);
+    setPendingStart(clampedStart);
+    onChange(clampedStart, pendingEatTime, blocks);
     setStartComputed(true);
     setDismissedConflict(false);
     setPhase('start_confirm');
@@ -838,6 +867,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 ? Math.max(1, (pendingStart.getTime() - feedTime.getTime()) / 3600000)
                 : prefOffsetH
             }
+            windowH={windowH}
+            prefInFridge={prefGoesInFridge}
             blocks={blocks}
             onMixChange={(h) => {
               const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - h * 3600000));
@@ -860,6 +891,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 }
               } else {
                 setPrefOffsetH(offsetH);
+                onPrefOffsetChange?.(offsetH);
               }
             }}
           />

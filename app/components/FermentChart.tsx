@@ -11,10 +11,12 @@ export interface FermentChartProps {
   blocks: AvailabilityBlock[];
   onMixChange: (h: number) => void;
   onPrefChange: (h: number) => void;
+  windowH?: number;         // total window to display (default 96h)
+  prefInFridge?: boolean;   // show fridge climate note in pref card
 }
 
 // ── Constants ────────────────────────────────────────────────
-const WINDOW_H = 96;
+const WINDOW_H_DEFAULT = 96;
 const PAD = 14;
 const DOUGH_SIG = 10;
 const DOUGH_SWEET_CENTER = 20;
@@ -62,12 +64,12 @@ function bell(h: number, peakH: number, sigma: number): number {
   return Math.exp(-0.5 * ((h - peakH) / sigma) ** 2);
 }
 
-function hToX(hbf: number, W: number): number {
-  return PAD + (1 - hbf / WINDOW_H) * (W - PAD * 2);
+function hToX(hbf: number, W: number, wh = WINDOW_H_DEFAULT): number {
+  return PAD + (1 - hbf / wh) * (W - PAD * 2);
 }
 
-function xToHBF(x: number, W: number): number {
-  return Math.max(1, Math.min(WINDOW_H - 1, (1 - (x - PAD) / (W - PAD * 2)) * WINDOW_H));
+function xToHBF(x: number, W: number, wh = WINDOW_H_DEFAULT): number {
+  return Math.max(1, Math.min(wh - 1, (1 - (x - PAD) / (W - PAD * 2)) * wh));
 }
 
 function snap15(h: number): number {
@@ -75,18 +77,17 @@ function snap15(h: number): number {
 }
 
 // Sample bell curve into an SVG path, baseline at BL, peak height maxH
-function makeBellPath(peakHBF: number, sigma: number, BL: number, maxH: number, W: number): string {
+function makeBellPath(peakHBF: number, sigma: number, BL: number, maxH: number, W: number, wh = WINDOW_H_DEFAULT): string {
   const N = 260;
   const pts: string[] = [];
   for (let i = 0; i <= N; i++) {
-    const hbf = (i / N) * WINDOW_H; // HBF 0..WINDOW_H
-    const x = hToX(hbf, W);
+    const hbf = (i / N) * wh;
+    const x = hToX(hbf, W, wh);
     const y = BL - bell(hbf, peakHBF, sigma) * maxH;
     pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
   }
-  // Close shape along baseline (right to left: hbf goes 0→WINDOW_H, so last point is PAD)
-  pts.push(`L ${hToX(WINDOW_H, W).toFixed(1)} ${BL}`);
-  pts.push(`L ${hToX(0, W).toFixed(1)} ${BL}`);
+  pts.push(`L ${hToX(wh, W, wh).toFixed(1)} ${BL}`);
+  pts.push(`L ${hToX(0, W, wh).toFixed(1)} ${BL}`);
   pts.push('Z');
   return pts.join(' ');
 }
@@ -111,7 +112,9 @@ export default function FermentChart({
   eatTime, prefermentType, kitchenTemp,
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange,
+  windowH, prefInFridge,
 }: FermentChartProps) {
+  const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef       = useRef<SVGSVGElement>(null);
   const [W, setW]    = useState(320);
@@ -154,9 +157,9 @@ export default function FermentChart({
   const prefZoneTo    = hasPref ? mixOffsetH + optH - 3 : 0;
 
   // ── Pixel positions ──────────────────────────────────────
-  const mixX  = hToX(mixOffsetH, W);
-  const prefX = hasPref ? hToX(prefStartAbsHBF, W) : 0;
-  const bakeX = hToX(0, W);
+  const mixX  = hToX(mixOffsetH, W, WH);
+  const prefX = hasPref ? hToX(prefStartAbsHBF, W, WH) : 0;
+  const bakeX = hToX(0, W, WH);
 
   // ── Blocker helpers ──────────────────────────────────────
   const bakeMs = eatTime.getTime();
@@ -177,13 +180,13 @@ export default function FermentChart({
 
   // ── Axis ticks ───────────────────────────────────────────
   const ticks: { x: number; label: string }[] = [];
-  for (let h = 24; h < WINDOW_H; h += 24) {
+  for (let h = 24; h < WH; h += 24) {
     const t   = new Date(bakeMs - h * 3600000);
     const wd  = t.toLocaleDateString('en-US', { weekday: 'short' });
     const hr  = t.getHours();
     const ap  = hr < 12 ? 'a' : 'p';
     const h12 = hr === 0 ? 12 : hr > 12 ? hr - 12 : hr;
-    ticks.push({ x: hToX(h, W), label: `${wd} ${h12}${ap}` });
+    ticks.push({ x: hToX(h, W, WH), label: `${wd} ${h12}${ap}` });
   }
 
   // ── Pointer events ───────────────────────────────────────
@@ -205,10 +208,10 @@ export default function FermentChart({
     e.preventDefault();
     const x = getSvgX(e);
     if (dragging === 'mix') {
-      const h = Math.max(3, Math.min(WINDOW_H - 2, snap15(xToHBF(x, W))));
+      const h = Math.max(3, Math.min(WH - 2, snap15(xToHBF(x, W, WH))));
       onMixChange(h);
     } else {
-      const abs = Math.max(mixOffsetH + 1, Math.min(WINDOW_H - 2, snap15(xToHBF(x, W))));
+      const abs = Math.max(mixOffsetH + 1, Math.min(WH - 2, snap15(xToHBF(x, W, WH))));
       onPrefChange(abs - mixOffsetH);
     }
   }
@@ -250,8 +253,8 @@ export default function FermentChart({
     color: string, label: string,
     topY: number, botY: number,
   ) {
-    const x1 = hToX(fromHBF, W);
-    const x2 = hToX(toHBF, W);
+    const x1 = hToX(fromHBF, W, WH);
+    const x2 = hToX(toHBF, W, WH);
     if (x2 <= x1 + 1) return null;
     return (
       <g>
@@ -300,7 +303,7 @@ export default function FermentChart({
     BLrow: number, maxHrow: number,
     color: string,
   ) {
-    const x  = hToX(hbf, W);
+    const x  = hToX(hbf, W, WH);
     const v  = bell(hbf, peakHBF, sigma) * maxHrow;
     const cy = BLrow - v;
     return (
@@ -331,8 +334,8 @@ export default function FermentChart({
         <defs>
           {blocks.map((b, i) => {
             const { hbfStart, hbfEnd } = blockerHBF(b);
-            const x1 = hToX(hbfStart, W);
-            const x2 = hToX(hbfEnd, W);
+            const x1 = hToX(hbfStart, W, WH);
+            const x2 = hToX(hbfEnd, W, WH);
             return (
               <clipPath key={i} id={`bc-${i}`}>
                 <rect x={x1} y={0} width={Math.max(0, x2 - x1)} height={axisY} />
@@ -369,9 +372,9 @@ export default function FermentChart({
         {/* ── Blocker columns ── */}
         {blocks.map((b, i) => {
           const { hbfStart, hbfEnd } = blockerHBF(b);
-          if (hbfEnd > WINDOW_H || hbfStart < 0) return null;
-          const x1 = hToX(hbfStart, W);
-          const x2 = hToX(hbfEnd, W);
+          if (hbfEnd > WH || hbfStart < 0) return null;
+          const x1 = hToX(hbfStart, W, WH);
+          const x2 = hToX(hbfEnd, W, WH);
           if (x2 <= x1) return null;
           const n = Math.ceil((x2 - x1 + axisY) / 7) + 2;
           return (
@@ -398,7 +401,7 @@ export default function FermentChart({
         {hasPref && (
           <>
             <path
-              d={makeBellPath(prefPeakHBF, prefSig, BL1, MAXH_ROW, W)}
+              d={makeBellPath(prefPeakHBF, prefSig, BL1, MAXH_ROW, W, WH)}
               fill={`${prefColor}26`} stroke={`${prefColor}99`} strokeWidth={1.5}
             />
             {/* Row label */}
@@ -407,7 +410,7 @@ export default function FermentChart({
             {/* Alignment annotation */}
             {showPrefAnnotation && (
               <text
-                x={hToX(prefPeakHBF, W)} y={BL1 - MAXH_ROW - 3}
+                x={hToX(prefPeakHBF, W, WH)} y={BL1 - MAXH_ROW - 3}
                 fontSize={8} fill={prefColor} fillOpacity={0.8}
                 textAnchor="middle" fontFamily="DM Mono, monospace"
               >
@@ -424,7 +427,7 @@ export default function FermentChart({
 
         {/* ── Dough bell curve ── */}
         <path
-          d={makeBellPath(doughPeakHBF, DOUGH_SIG, BL, maxH, W)}
+          d={makeBellPath(doughPeakHBF, DOUGH_SIG, BL, maxH, W, WH)}
           fill={`${SAGE}26`} stroke={`${SAGE}99`} strokeWidth={1.5}
         />
         {/* Row label */}
@@ -436,7 +439,7 @@ export default function FermentChart({
         {/* Alignment annotation */}
         {showDoughAnnotation && (
           <text
-            x={hToX(0, W) - 4} y={BL - maxH - 3}
+            x={hToX(0, W, WH) - 4} y={BL - maxH - 3}
             fontSize={8} fill={SAGE} fillOpacity={0.8}
             textAnchor="end" fontFamily="DM Mono, monospace"
           >
@@ -522,6 +525,11 @@ export default function FermentChart({
             <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: prefInZone ? '#4A7A3A' : '#C49A28' }}>
               {prefStatus}
             </div>
+            {prefInFridge && (
+              <div style={{ fontSize: '.62rem', marginTop: '.2rem', color: '#3A5A8A', fontFamily: 'var(--font-dm-mono)' }}>
+                🧊 Cold ferment — use fridge
+              </div>
+            )}
           </div>
         )}
 

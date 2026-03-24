@@ -247,6 +247,7 @@ export default function Home() {
   // Advanced mode manual overrides
   const [prefermentType, setPrefermentType] = useState<PrefermentType>('none');
   const [prefermentFlourPct, setPrefermentFlourPct] = useState<number | undefined>(undefined);
+  const [prefOffsetH, setPrefOffsetH] = useState<number>(0);
 
   const [manualHydration, setManualHydration] = useState<number | undefined>(undefined);
   const [manualOil, setManualOil]             = useState<number | undefined>(undefined);
@@ -297,6 +298,13 @@ export default function Home() {
     if (!eatTime || startTime >= eatTime) return null;
     return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType);
   }, [startTime, eatTime, blocks, kitchenTemp, preheatMin]);
+
+  // Preferment start time for Timeline step 0 (poolish/biga only)
+  const prefStartTime = useMemo(() => {
+    if (!prefermentType || prefermentType === 'none' || prefermentType === 'levain') return null;
+    if (prefOffsetH <= 0) return null;
+    return new Date(startTime.getTime() - prefOffsetH * 3600000);
+  }, [startTime, prefOffsetH, prefermentType]);
 
   const recipe = useMemo(() => {
     if (!styleKey || !schedule) return null;
@@ -794,6 +802,7 @@ export default function Home() {
                 isSourdough={yeastType === 'sourdough'}
                 prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
+                onPrefOffsetChange={setPrefOffsetH}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onConfirm={() => advance(8)}
               />
@@ -1026,6 +1035,8 @@ export default function Home() {
                         numItems={numItems}
                         feedTime={feedTime}
                         kitchenTemp={kitchenTemp}
+                        prefStartTime={prefStartTime}
+                        prefermentType={prefermentType}
                         onStartBaking={() => { /* Baking mode — future feature */ }}
                       />
                     )}
@@ -1354,6 +1365,7 @@ export default function Home() {
                 isSourdough={yeastType === 'sourdough'}
                 prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
+                onPrefOffsetChange={setPrefOffsetH}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onConfirm={() => advanceAdv(10)}
               />
@@ -1596,6 +1608,8 @@ export default function Home() {
                         numItems={numItems}
                         feedTime={feedTime}
                         kitchenTemp={kitchenTemp}
+                        prefStartTime={prefStartTime}
+                        prefermentType={prefermentType}
                         onStartBaking={() => { /* Baking mode — future feature */ }}
                       />
                     )}

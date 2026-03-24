@@ -23,10 +23,12 @@ interface TimelineProps {
   feedTime?: Date | null;
   kitchenTemp?: number;
   onStartBaking?: () => void;
+  prefStartTime?: Date | null;
+  prefermentType?: string;
 }
 
 // ── Step kinds ────────────────────────────────
-type StepKind = 'feed_starter' | 'mixing' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'rt_warmup' | 'preheat' | 'eat';
+type StepKind = 'feed_starter' | 'make_preferment' | 'mixing' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'rt_warmup' | 'preheat' | 'eat';
 
 interface TimelineStep {
   kind: 'step';
@@ -46,7 +48,8 @@ const THEME: Record<StepKind, {
   pill: string; pillText: string;
   cardBg?: string; cardBorder?: string;
 }> = {
-  feed_starter: { dot: '#6A7FA8', ring: 'rgba(106,127,168,0.1)', line: '#C4CDE0', pill: '#EEF2FA', pillText: '#3A5A8A', cardBg: '#EEF2FA', cardBorder: '#C4CDE0' },
+  feed_starter:    { dot: '#6A7FA8', ring: 'rgba(106,127,168,0.1)', line: '#C4CDE0', pill: '#EEF2FA', pillText: '#3A5A8A', cardBg: '#EEF2FA', cardBorder: '#C4CDE0' },
+  make_preferment: { dot: '#C4A030', ring: 'rgba(196,160,48,0.12)', line: '#E8D890', pill: '#FDFBF2', pillText: '#7A5A10', cardBg: '#FDFBF2', cardBorder: '#E8D890' },
   mixing:      { dot: 'var(--ash)',    ring: 'rgba(61,53,48,.1)',    line: 'var(--border)', pill: 'var(--cream)',  pillText: 'var(--ash)' },
   bulk_ferm:   { dot: 'var(--terra)',  ring: 'rgba(196,82,42,.1)',   line: '#F5C4B0',       pill: '#FEF4EF',      pillText: 'var(--terra)', cardBg: '#FEF8F5', cardBorder: '#F5C4B0' },
   divide_ball: { dot: '#8A6A4A',       ring: 'rgba(138,106,74,.1)',  line: '#D4B898',       pill: '#FDF4EA',      pillText: '#6A3A10' },
@@ -70,10 +73,27 @@ function buildItems(
   feedTime?: Date | null,
   kitchenTemp?: number,
   isSourdough?: boolean,
+  prefStartTime?: Date | null,
+  prefermentType?: string,
 ): TimelineStep[] {
   const items: TimelineStep[] = [];
 
-  // 0 — Feed Starter (sourdough only, when feedTime provided)
+  // 0a — Make Poolish / Biga (when prefStartTime provided)
+  if (prefStartTime && (prefermentType === 'poolish' || prefermentType === 'biga')) {
+    const isPoolish = prefermentType === 'poolish';
+    items.push({
+      kind: 'step', id: 'make_preferment', stepKind: 'make_preferment',
+      time: prefStartTime,
+      label: isPoolish ? 'Make your Poolish' : 'Make your Biga',
+      icon: isPoolish ? '🏺' : '🧱',
+      tip: isPoolish
+        ? 'Mix equal weight flour and water (100% hydration) with a pinch of yeast. Stir until no dry flour remains. Cover and ferment at room temperature until bubbly and slightly domed, then use immediately for best results.'
+        : 'Combine flour, water and a tiny amount of yeast (0.1–0.2%). Mix roughly — biga is intentionally shaggy, not smooth. Cover and ferment in the fridge until ready.',
+      durationH: null,
+    });
+  }
+
+  // 0b — Feed Starter (sourdough only, when feedTime provided)
   if (feedTime && isSourdough) {
     const temp = kitchenTemp ?? 20;
     const tip = temp >= 28
@@ -348,13 +368,13 @@ function InfoBadge({ term, onOpen }: { term: string; onOpen: (t: string) => void
 
 // ── Component ─────────────────────────────────
 export default function Timeline({
-  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, oil, hydration, numItems, feedTime, kitchenTemp, onStartBaking,
+  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, oil, hydration, numItems, feedTime, kitchenTemp, onStartBaking, prefStartTime, prefermentType,
 }: TimelineProps) {
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
 
   const isSourdough = styleKey === 'sourdough' || styleKey === 'pain_levain';
 
-  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough);
+  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType);
   const phases = buildPhases(schedule, preheatMin);
 
   const lastStepId = items[items.length - 1]?.id;
