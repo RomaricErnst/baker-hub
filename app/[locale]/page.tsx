@@ -52,10 +52,9 @@ const FALLBACK_ZONE = { min: 50, classicMin: 60, classicMax: 70, advancedMax: 78
 
 // ── Step card ────────────────────────────────
 function StepCard({
-  num, badge, title, activeStep, summary, onEdit, children, idPrefix = 'step',
+  num, title, activeStep, summary, onEdit, children, idPrefix = 'step',
 }: {
   num: number;
-  badge?: number;
   title: string;
   activeStep: number;
   summary?: React.ReactNode;
@@ -88,24 +87,6 @@ function StepCard({
           cursor: isCompleted ? 'pointer' : 'default',
         }}
       >
-        {/* Step number / checkmark */}
-        <div
-          className={isActive ? 'step-pulse' : undefined}
-          style={{
-            width: '30px', height: '30px', borderRadius: '50%', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 700, fontSize: '.82rem',
-            fontFamily: 'var(--font-dm-mono)',
-            ...(isActive
-              ? { background: 'var(--terra)', color: '#fff' }
-              : isCompleted
-                ? { background: 'rgba(212,168,83,0.15)', color: 'var(--gold)' }
-                : { background: 'var(--border)', color: 'var(--smoke)' }),
-          }}
-        >
-          {isCompleted ? '✓' : (badge ?? num)}
-        </div>
-
         {/* Title + summary */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
@@ -793,6 +774,7 @@ export default function Home() {
               onEdit={() => setActiveStep(8)}
             >
               <SchedulePicker
+                mode="simple"
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
                 preheatMin={preheatMin}
                 styleKey={styleKey ?? ''}
@@ -1332,7 +1314,7 @@ export default function Home() {
             {/* ─── ADV STEP 9: Climate ─────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={9} badge={yeastType === 'sourdough' ? 8 : 9}
+              num={9}
               title={t('steps.7.title')}
               activeStep={advancedStep}
               summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
@@ -1349,13 +1331,14 @@ export default function Home() {
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={10} badge={yeastType === 'sourdough' ? 9 : 10}
+              num={10}
               title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
               activeStep={advancedStep}
               summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
               onEdit={() => setAdvancedStep(10)}
             >
               <SchedulePicker
+                mode="custom"
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
                 preheatMin={preheatMin}
                 styleKey={styleKey ?? ''}
