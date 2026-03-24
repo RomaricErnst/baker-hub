@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
 import FermentChart, { getPrefOptH } from './FermentChart';
@@ -19,6 +19,7 @@ interface SchedulePickerProps {
   onFeedTimeChange?: (t: Date) => void;
   prefermentType?: string;
   onPrefOffsetChange?: (h: number) => void;
+  mode?: 'simple' | 'custom';   // default 'custom'
 }
 
 type PickerPhase = 'bake_time' | 'start_confirm';
@@ -307,8 +308,300 @@ const LABEL_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-dm-mono)',
 };
 
+// ── Simple colour bar (Simple mode only) ──────
+const BAR_WIN = 48;
+const BAR_PAD = 14;
+const BAR_SVG_H = 72;
+const BAR_Y = 22;
+const BAR_H = 12;
+const BAR_AXIS_Y = 52;
+const BAR_DS = 8; // diamond half-size
+
+function barHToX(hbf: number, W: number): number {
+  return BAR_PAD + (1 - Math.max(0, Math.min(BAR_WIN, hbf)) / BAR_WIN) * (W - BAR_PAD * 2);
+}
+function barXToHBF(x: number, W: number): number {
+  return Math.max(0.5, Math.min(BAR_WIN - 0.5, (1 - (x - BAR_PAD) / (W - BAR_PAD * 2)) * BAR_WIN));
+}
+
+function SimpleColourBar({
+  eatTime, pendingStart, blocks, onStartChange,
+}: {
+  eatTime: Date;
+  pendingStart: Date;
+  blocks: AvailabilityBlock[];
+  onStartChange: (d: Date) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const svgRef       = useRef<SVGSVGElement>(null);
+  const [W, setW]    = useState(320);
+  const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => setW(entries[0].contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const bakeMs     = eatTime.getTime();
+  const mixOffsetH = (bakeMs - pendingStart.getTime()) / 3600000;
+  const diamondX   = barHToX(Math.max(0.5, Math.min(BAR_WIN - 0.5, mixOffsetH)), W);
+  const barCY      = BAR_Y + BAR_H / 2; // 28 — diamond center y
+
+  // Colour zones: [fromHBF (left), toHBF (right), fill, label]
+  const zones = [
+    { from: BAR_WIN, to: 36, fill: 'rgba(196,82,42,0.2)',   label: 'Too early' },
+    { from: 36,      to: 26, fill: 'rgba(212,168,83,0.35)', label: 'Still ok'  },
+    { from: 26,      to: 14, fill: 'rgba(107,122,90,0.5)',  label: 'Mix here'  },
+    { from: 14,      to: 8,  fill: 'rgba(212,168,83,0.35)', label: 'Still ok'  },
+    { from: 8,       to: 0,  fill: 'rgba(196,82,42,0.2)',   label: 'Too late'  },
+  ];
+
+  // Axis ticks every 12h
+  const ticks: { x: number; label: string }[] = [];
+  for (let h = 12; h < BAR_WIN; h += 12) {
+    const t   = new Date(bakeMs - h * 3600000);
+    const wd  = t.toLocaleDateString('en-US', { weekday: 'short' });
+    const hr  = t.getHours();
+    const ap  = hr < 12 ? 'a' : 'p';
+    const h12 = hr === 0 ? 12 : hr > 12 ? hr - 12 : hr;
+    ticks.push({ x: barHToX(h, W), label: `${wd} ${h12}${ap}` });
+  }
+
+  // Status
+  const inZone   = mixOffsetH >= 14 && mixOffsetH <= 26;
+  const nearZone = mixOffsetH >= 8  && mixOffsetH <= 36;
+  const status   = inZone   ? '🟢 Dough ready at bake'
+    : nearZone ? '🟡 Close — slight risk'
+    : '🔴 Adjust timing';
+
+  // Pointer handling
+  function getSvgX(e: React.PointerEvent): number {
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect) return 0;
+    return e.clientX - rect.left;
+  }
+  function onPointerDown(e: React.PointerEvent) {
+    e.preventDefault(); e.stopPropagation();
+    setDragging(true);
+    (e.target as Element).setPointerCapture(e.pointerId);
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    if (!dragging) return;
+    e.preventDefault();
+    const snapped = Math.round(barXToHBF(getSvgX(e), W) * 4) / 4;
+    onStartChange(new Date(bakeMs - snapped * 3600000));
+  }
+  function onPointerUp() { setDragging(false); }
+
+  // Formatters
+  function fmtHM(d: Date): string {
+    const h = d.getHours(), m = d.getMinutes();
+    const ap = h < 12 ? 'am' : 'pm';
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return m === 0 ? `${h12}${ap}` : `${h12}:${String(m).padStart(2, '0')}${ap}`;
+  }
+  function fmtDT(d: Date): string {
+    const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const mo = d.toLocaleDateString('en-US', { month: 'short' });
+    return `${wd} ${d.getDate()} ${mo} · ${fmtHM(d)}`;
+  }
+
+  const inBlocker = blocks.some(b => pendingStart >= b.from && pendingStart < b.to);
+  const dFill   = inBlocker ? '#aaaaaa' : '#1A1612';
+  const dStroke = inBlocker ? '#999999' : 'white';
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ width: '100%', userSelect: 'none', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
+    >
+      <svg
+        ref={svgRef}
+        width={W} height={BAR_SVG_H}
+        style={{ display: 'block', touchAction: 'none' }}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
+      >
+        <defs>
+          {/* Clip to bar track shape */}
+          <clipPath id="simple-bar-clip">
+            <rect x={BAR_PAD} y={BAR_Y} width={W - BAR_PAD * 2} height={BAR_H} rx={5} />
+          </clipPath>
+          {/* Clip paths for blocker hatches */}
+          {blocks.map((b, i) => {
+            const hbfFrom = (bakeMs - b.from.getTime()) / 3600000;
+            const hbfTo   = (bakeMs - b.to.getTime())   / 3600000;
+            const bx1 = barHToX(hbfFrom, W);
+            const bx2 = barHToX(hbfTo, W);
+            return (
+              <clipPath key={i} id={`sbc-${i}`}>
+                <rect x={bx1} y={0} width={Math.max(0, bx2 - bx1)} height={BAR_SVG_H} />
+              </clipPath>
+            );
+          })}
+        </defs>
+
+        {/* Background track */}
+        <rect x={BAR_PAD} y={BAR_Y} width={W - BAR_PAD * 2} height={BAR_H} fill="#E8E0D5" rx={5} />
+
+        {/* Colour zones (clipped to track) */}
+        <g clipPath="url(#simple-bar-clip)">
+          {zones.map((z, i) => {
+            const zx1 = barHToX(z.from, W);
+            const zx2 = barHToX(z.to, W);
+            return <rect key={i} x={zx1} y={BAR_Y} width={zx2 - zx1} height={BAR_H} fill={z.fill} />;
+          })}
+        </g>
+
+        {/* Zone labels above bar */}
+        {zones.map((z, i) => {
+          const zx1 = barHToX(z.from, W);
+          const zx2 = barHToX(z.to, W);
+          if (zx2 - zx1 < 28) return null;
+          return (
+            <text key={i} x={(zx1 + zx2) / 2} y={BAR_Y - 4}
+              fontSize={7} fill="#1A1612" fillOpacity={0.45}
+              textAnchor="middle" fontFamily="DM Mono, monospace">
+              {z.label}
+            </text>
+          );
+        })}
+
+        {/* Bake reference line */}
+        <line x1={barHToX(0, W)} y1={0} x2={barHToX(0, W)} y2={BAR_AXIS_Y}
+          stroke="#C4522A" strokeWidth={1} strokeDasharray="3 3" strokeOpacity={0.25} />
+
+        {/* Blocker columns */}
+        {blocks.map((b, i) => {
+          const hbfFrom = (bakeMs - b.from.getTime()) / 3600000;
+          const hbfTo   = (bakeMs - b.to.getTime())   / 3600000;
+          if (hbfFrom <= 0 && hbfTo >= BAR_WIN) return null;
+          const bx1 = barHToX(hbfFrom, W);
+          const bx2 = barHToX(hbfTo, W);
+          if (bx2 <= bx1) return null;
+          const n = Math.ceil((bx2 - bx1 + BAR_SVG_H) / 7) + 2;
+          return (
+            <g key={i}>
+              <rect x={bx1} y={0} width={bx2 - bx1} height={BAR_AXIS_Y} fill="rgba(196,82,42,0.09)" />
+              <g clipPath={`url(#sbc-${i})`}>
+                {Array.from({ length: n }, (_, j) => {
+                  const ox = bx1 + j * 7 - BAR_AXIS_Y;
+                  return (
+                    <line key={j} x1={ox} y1={0} x2={ox + BAR_AXIS_Y} y2={BAR_AXIS_Y}
+                      stroke="rgba(196,82,42,0.16)" strokeWidth={1} />
+                  );
+                })}
+              </g>
+              <line x1={bx1} y1={0} x2={bx2} y2={0}
+                stroke="rgba(196,82,42,0.5)" strokeWidth={2.5} />
+            </g>
+          );
+        })}
+
+        {/* Baseline */}
+        <line x1={BAR_PAD} y1={BAR_Y + BAR_H + 1} x2={W - BAR_PAD} y2={BAR_Y + BAR_H + 1}
+          stroke="rgba(0,0,0,0.08)" strokeWidth={0.8} />
+
+        {/* Axis line */}
+        <line x1={BAR_PAD} y1={BAR_AXIS_Y} x2={W - BAR_PAD} y2={BAR_AXIS_Y}
+          stroke="#E8E0D5" strokeWidth={1} />
+
+        {/* Ticks */}
+        {ticks.map((tk, i) => (
+          <g key={i}>
+            <line x1={tk.x} y1={BAR_AXIS_Y} x2={tk.x} y2={BAR_AXIS_Y + 3}
+              stroke="#E8E0D5" strokeWidth={1} />
+            <text x={tk.x} y={BAR_AXIS_Y + 13} fontSize={7.5} fill="var(--smoke)"
+              fontFamily="DM Mono, monospace" textAnchor="middle">
+              {tk.label}
+            </text>
+          </g>
+        ))}
+
+        {/* Bake marker */}
+        {(() => {
+          const bx = barHToX(0, W);
+          return (
+            <>
+              <polygon points={`${bx - 6},${BAR_AXIS_Y} ${bx},${BAR_AXIS_Y - 10} ${bx + 6},${BAR_AXIS_Y}`}
+                fill="#C4522A" />
+              <text x={bx} y={BAR_AXIS_Y + 13} fontSize={7.5} fill="#C4522A"
+                fontFamily="DM Mono, monospace" textAnchor="middle">Bake</text>
+            </>
+          );
+        })()}
+
+        {/* Diamond (draggable) */}
+        <g style={{ cursor: dragging ? 'grabbing' : 'grab' }} onPointerDown={onPointerDown}>
+          <polygon
+            points={`${diamondX},${barCY - BAR_DS} ${diamondX + BAR_DS},${barCY} ${diamondX},${barCY + BAR_DS} ${diamondX - BAR_DS},${barCY}`}
+            fill={dFill} stroke={dStroke} strokeWidth={1.5}
+          />
+          {inBlocker && (
+            <>
+              <circle cx={diamondX + BAR_DS + 3} cy={barCY - BAR_DS} r={5} fill="rgba(196,82,42,0.9)" />
+              <text x={diamondX + BAR_DS + 3} y={barCY - BAR_DS + 4}
+                fontSize={7} fill="white" textAnchor="middle" fontFamily="DM Mono, monospace">!</text>
+            </>
+          )}
+        </g>
+      </svg>
+
+      {/* Info cards */}
+      <div style={{ display: 'flex', gap: '6px', marginTop: '.6rem', flexWrap: 'wrap' }}>
+        <div style={{
+          flex: 1, minWidth: '120px', background: 'var(--cream)',
+          border: '1.5px solid var(--border)', borderRadius: '10px', padding: '.45rem .7rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
+            <div style={{ width: 8, height: 8, background: '#1A1612', transform: 'rotate(45deg)', flexShrink: 0 }} />
+            <div style={{ fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+              Start mixing
+            </div>
+          </div>
+          <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+            {fmtDT(pendingStart)}
+          </div>
+          <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: inZone ? '#4A7A3A' : nearZone ? '#C49A28' : '#C4522A' }}>
+            {status}
+          </div>
+        </div>
+        <div style={{
+          flex: 1, minWidth: '100px', background: 'var(--cream)',
+          border: '1.5px solid var(--border)', borderRadius: '10px', padding: '.45rem .7rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
+            <div style={{ width: 8, height: 8, background: '#C4522A', transform: 'rotate(45deg)', flexShrink: 0 }} />
+            <div style={{ fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+              Bake
+            </div>
+          </div>
+          <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+            {fmtDT(eatTime)}
+          </div>
+          <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: 'var(--smoke)' }}>Fixed</div>
+        </div>
+      </div>
+
+      {/* Hint */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: '.45rem' }}>
+        <svg width={10} height={10} style={{ flexShrink: 0 }}>
+          <polygon points="5,0 10,5 5,10 0,5" fill="#1A1612" />
+        </svg>
+        <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+          Drag the diamond into the green zone
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, onConfirm, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, onConfirm, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, mode = 'custom' }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tCommon = useTranslations('common');
   const alreadySet = eatTime !== null && eatTime > new Date();
@@ -857,44 +1150,58 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
         <label style={LABEL_STYLE}>{t('startMixing')}</label>
         {startComputed ? (
-          <FermentChart
-            eatTime={pendingEatTime}
-            prefermentType={isSourdough ? 'sourdough' : prefermentType}
-            kitchenTemp={kitchenTemp}
-            mixOffsetH={Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)}
-            prefOffsetH={
-              isSourdough && feedTime
-                ? Math.max(1, (pendingStart.getTime() - feedTime.getTime()) / 3600000)
-                : prefOffsetH
-            }
-            windowH={windowH}
-            prefInFridge={prefGoesInFridge}
-            blocks={blocks}
-            onMixChange={(h) => {
-              const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - h * 3600000));
-              const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(newStart, blocks);
-              if (isSourdough) setMixOverride(true);
-              setPendingStart(resolvedStart);
-              setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
-              onChange(resolvedStart, pendingEatTime, blocks);
-            }}
-            onPrefChange={(offsetH) => {
-              if (isSourdough) {
-                const newFeed = pushToReasonableHour(new Date(pendingStart.getTime() - offsetH * 3600000));
-                setFeedTime(newFeed);
-                onFeedTimeChange?.(newFeed);
-                if (!mixOverride) {
-                  const peak = starterPeakHours(kitchenTemp, starterMature);
-                  const newMix = pushToReasonableHour(new Date(newFeed.getTime() + peak.mid * 3600000));
-                  setPendingStart(newMix);
-                  onChange(newMix, pendingEatTime, blocks);
-                }
-              } else {
-                setPrefOffsetH(offsetH);
-                onPrefOffsetChange?.(offsetH);
+          mode === 'simple' ? (
+            <SimpleColourBar
+              eatTime={pendingEatTime}
+              pendingStart={pendingStart}
+              blocks={blocks}
+              onStartChange={(newStart) => {
+                const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(newStart, blocks);
+                setPendingStart(resolvedStart);
+                setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
+                onChange(resolvedStart, pendingEatTime, blocks);
+              }}
+            />
+          ) : (
+            <FermentChart
+              eatTime={pendingEatTime}
+              prefermentType={isSourdough ? 'sourdough' : prefermentType}
+              kitchenTemp={kitchenTemp}
+              mixOffsetH={Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)}
+              prefOffsetH={
+                isSourdough && feedTime
+                  ? Math.max(1, (pendingStart.getTime() - feedTime.getTime()) / 3600000)
+                  : prefOffsetH
               }
-            }}
-          />
+              windowH={windowH}
+              prefInFridge={prefGoesInFridge}
+              blocks={blocks}
+              onMixChange={(h) => {
+                const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - h * 3600000));
+                const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(newStart, blocks);
+                if (isSourdough) setMixOverride(true);
+                setPendingStart(resolvedStart);
+                setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
+                onChange(resolvedStart, pendingEatTime, blocks);
+              }}
+              onPrefChange={(offsetH) => {
+                if (isSourdough) {
+                  const newFeed = pushToReasonableHour(new Date(pendingStart.getTime() - offsetH * 3600000));
+                  setFeedTime(newFeed);
+                  onFeedTimeChange?.(newFeed);
+                  if (!mixOverride) {
+                    const peak = starterPeakHours(kitchenTemp, starterMature);
+                    const newMix = pushToReasonableHour(new Date(newFeed.getTime() + peak.mid * 3600000));
+                    setPendingStart(newMix);
+                    onChange(newMix, pendingEatTime, blocks);
+                  }
+                } else {
+                  setPrefOffsetH(offsetH);
+                  onPrefOffsetChange?.(offsetH);
+                }
+              }}
+            />
+          )
         ) : (
           <div style={{
             textAlign: 'center', fontFamily: 'var(--font-dm-mono)',
