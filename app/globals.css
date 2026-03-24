@@ -65,3 +65,14 @@ body {
 .flour-scan-dot-2 { animation-delay: .2s; }
 .flour-scan-dot-3 { animation-delay: .4s; }
 
+.header-logo {
+  width: 30px;
+  height: 30px;
+}
+@media (max-width: 600px) {
+  .header-logo {
+    width: 38px;
+    height: 38px;
+  }
+}
+

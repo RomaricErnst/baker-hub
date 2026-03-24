@@ -39,9 +39,8 @@ export default function Header() {
           <img
             src="/logo-mark.png"
             alt="Baker Hub"
+            className="header-logo"
             style={{
-              width: '32px',
-              height: '32px',
               objectFit: 'contain',
               borderRadius: '6px',
               flexShrink: 0,
