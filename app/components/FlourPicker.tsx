@@ -2,6 +2,18 @@
 import { useState } from 'react';
 import { FLOUR_DATA, FLOUR_BRANDS, type FlourKey, type BrandKey, type FlourBlend, computeBlendProfile } from '../data';
 import FlourScan from './FlourScan';
+import flourDb from '../../public/flour-database.json';
+
+const TYPE_LABELS: Record<string, string> = {
+  pizza00: '00', strong00: '00★', bread: 'bread',
+  allpurpose: 'AP', manitoba: 'MB', semolina: 'SEM',
+  wholemeal: 'WW', rye: 'RYE',
+};
+
+const FLAGS: Record<string, string> = {
+  IT: '🇮🇹', FR: '🇫🇷', US: '🇺🇸', SG: '🇸🇬',
+  UK: '🇬🇧', JP: '🇯🇵', CA: '🇨🇦', AU: '🇦🇺', MY: '🇲🇾', XX: '',
+};
 
 // ── Flour lists ───────────────────────────────
 const PIZZA_FLOURS: FlourKey[]        = ['pizza00', 'strong00', 'bread', 'allpurpose'];
@@ -300,6 +312,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
     blend.wOverride ? 'manual' : blend.flour1
   );
   const [scanOpen, setScanOpen] = useState(false);
+  const [showOtherBrands, setShowOtherBrands] = useState(false);
+  const [brandSearch, setBrandSearch] = useState('');
+  const [brandCountryFilter, setBrandCountryFilter] = useState<string>('all');
+  const [brandTypeFilter, setBrandTypeFilter] = useState<string>('all');
 
   const primaryFlours   = bakeType === 'bread' ? BREAD_FLOURS        : PIZZA_FLOURS;
   const secondaryFlours = bakeType === 'bread' ? BREAD_SECOND_FLOURS  : PIZZA_SECOND_FLOURS;
@@ -414,52 +430,228 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       </div>
 
       {/* ── PART 2: Iconic brands (custom only) ── */}
-      {mode === 'custom' && (
-        <>
-          <div style={{ fontSize: '.65rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginTop: '1.25rem', marginBottom: '.55rem' }}>
-            Or pick an iconic Italian flour brand
-          </div>
-          {(Object.entries(FLOUR_BRANDS) as [BrandKey, typeof FLOUR_BRANDS[BrandKey]][]).map(([brandKey, brand]) => (
-            <div key={brandKey} style={{
-              border: '1.5px solid var(--border)', borderRadius: '14px',
-              padding: '.85rem 1rem', background: 'var(--warm)', marginBottom: '.65rem',
-              display: 'flex', gap: '1rem', alignItems: 'flex-start',
-            }}>
-              <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--char)', width: '80px', flexShrink: 0, paddingTop: '.3rem' }}>
-                {brand.name} {brand.logo}
+      {mode === 'custom' && (() => {
+        const otherBrandsCount = new Set(
+          (flourDb as any[])
+            .filter(f => f.brand !== 'Caputo' && f.brand !== '5 Stagioni' && f.brand !== 'Generic')
+            .map(f => f.brand)
+        ).size;
+
+        const otherFlours = (flourDb as any[]).filter(f => {
+          if (f.brand === 'Caputo' || f.brand === '5 Stagioni' || f.brand === 'Generic') return false;
+          if (brandCountryFilter !== 'all' && f.country !== brandCountryFilter) return false;
+          if (brandTypeFilter !== 'all' && f.type !== brandTypeFilter) return false;
+          if (brandSearch.trim()) {
+            const q = brandSearch.toLowerCase();
+            return f.brand.toLowerCase().includes(q) || f.product.toLowerCase().includes(q) ||
+              (f.aliases ?? []).some((a: string) => a.toLowerCase().includes(q));
+          }
+          return true;
+        });
+
+        const otherByBrand: Record<string, any[]> = otherFlours.reduce((acc: Record<string, any[]>, f: any) => {
+          if (!acc[f.brand]) acc[f.brand] = [];
+          acc[f.brand].push(f);
+          return acc;
+        }, {});
+
+        const brandNames = Object.keys(otherByBrand).slice(0, 8);
+
+        return (
+          <>
+            <div style={{ fontSize: '.65rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginTop: '1.25rem', marginBottom: '.55rem' }}>
+              Or pick by brand
+            </div>
+            {(Object.entries(FLOUR_BRANDS) as [BrandKey, typeof FLOUR_BRANDS[BrandKey]][]).map(([brandKey, brand]) => (
+              <div key={brandKey} style={{
+                border: '1.5px solid var(--border)', borderRadius: '14px',
+                padding: '.85rem 1rem', background: 'var(--warm)', marginBottom: '.65rem',
+                display: 'flex', gap: '1rem', alignItems: 'flex-start',
+              }}>
+                <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--char)', width: '80px', flexShrink: 0, paddingTop: '.3rem' }}>
+                  {brand.name} {brand.logo}
+                </div>
+                <div style={{ flex: 1 }}>
+                  {(brand.products as readonly { name: string; w: number; protein: number; desc: string }[]).map(product => {
+                    const isSelected = blend.brandKey === brandKey && blend.brandProduct === product.name;
+                    return (
+                      <div
+                        key={product.name}
+                        onClick={() => selectBrandProduct(brandKey, product)}
+                        onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'rgba(196,82,42,0.06)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(196,82,42,0.06)' : 'transparent'; }}
+                        style={{
+                          display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '.4rem',
+                          padding: '.35rem .5rem', borderRadius: '8px', cursor: 'pointer',
+                          background: isSelected ? 'rgba(196,82,42,0.06)' : 'transparent',
+                          transition: 'background .15s',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                          <span style={{ fontSize: '.82rem', fontWeight: isSelected ? 600 : 400, color: isSelected ? 'var(--terra)' : 'var(--char)' }}>
+                            {product.name}
+                          </span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '20px', padding: '.1rem .5rem', color: 'var(--ash)', whiteSpace: 'nowrap' }}>
+                            W {product.w}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '.68rem', color: 'var(--smoke)', width: '100%', marginTop: '.1rem', lineHeight: 1.3 }}>{product.desc}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div style={{ flex: 1 }}>
-                {(brand.products as readonly { name: string; w: number; protein: number; desc: string }[]).map(product => {
-                  const isSelected = blend.brandKey === brandKey && blend.brandProduct === product.name;
+            ))}
+
+            {/* Other brands toggle */}
+            <button
+              onClick={() => setShowOtherBrands(v => !v)}
+              style={{
+                marginTop: '.75rem', width: '100%', padding: '.55rem 1rem',
+                border: '1.5px solid var(--border)', borderRadius: '12px',
+                background: 'transparent', color: 'var(--smoke)', fontSize: '.8rem',
+                fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}
+            >
+              <span>🔍 Other brands</span>
+              <span style={{ fontSize: '.7rem', fontFamily: 'var(--font-dm-mono)' }}>
+                {showOtherBrands ? '▲ Hide' : `${otherBrandsCount} brands ▼`}
+              </span>
+            </button>
+
+            {showOtherBrands && (
+              <div style={{ marginTop: '.75rem' }}>
+                {/* Filters */}
+                <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBottom: '.75rem' }}>
+                  <input
+                    type="text"
+                    placeholder="Search brand or product..."
+                    value={brandSearch}
+                    onChange={e => setBrandSearch(e.target.value)}
+                    style={{
+                      flex: 1, minWidth: '140px', padding: '.4rem .7rem',
+                      border: '1.5px solid var(--border)', borderRadius: '8px',
+                      fontSize: '.8rem', fontFamily: 'var(--font-dm-sans)',
+                      background: 'var(--warm)', color: 'var(--char)', outline: 'none',
+                    }}
+                  />
+                  <select
+                    value={brandCountryFilter}
+                    onChange={e => setBrandCountryFilter(e.target.value)}
+                    style={{
+                      padding: '.4rem .7rem', border: '1.5px solid var(--border)',
+                      borderRadius: '8px', fontSize: '.78rem',
+                      background: 'var(--warm)', cursor: 'pointer', color: 'var(--char)',
+                    }}
+                  >
+                    <option value="all">All countries</option>
+                    <option value="IT">🇮🇹 Italy</option>
+                    <option value="FR">🇫🇷 France</option>
+                    <option value="US">🇺🇸 USA</option>
+                    <option value="SG">🇸🇬 Singapore</option>
+                    <option value="UK">🇬🇧 UK</option>
+                    <option value="JP">🇯🇵 Japan</option>
+                    <option value="CA">🇨🇦 Canada</option>
+                    <option value="AU">🇦🇺 Australia</option>
+                  </select>
+                  <select
+                    value={brandTypeFilter}
+                    onChange={e => setBrandTypeFilter(e.target.value)}
+                    style={{
+                      padding: '.4rem .7rem', border: '1.5px solid var(--border)',
+                      borderRadius: '8px', fontSize: '.78rem',
+                      background: 'var(--warm)', cursor: 'pointer', color: 'var(--char)',
+                    }}
+                  >
+                    <option value="all">All types</option>
+                    <option value="pizza00">Pizza 00</option>
+                    <option value="strong00">Strong 00</option>
+                    <option value="bread">Bread</option>
+                    <option value="allpurpose">All-purpose</option>
+                    <option value="manitoba">Manitoba</option>
+                    <option value="semolina">Semolina</option>
+                    <option value="wholemeal">Wholemeal</option>
+                    <option value="rye">Rye</option>
+                  </select>
+                </div>
+
+                {/* Brand blocks */}
+                {brandNames.length === 0 ? (
+                  <div style={{ fontSize: '.8rem', color: 'var(--smoke)', textAlign: 'center', padding: '1rem' }}>
+                    No flours match your filters.
+                  </div>
+                ) : brandNames.map(brandName => {
+                  const products = otherByBrand[brandName];
+                  const sampleCountry = products[0]?.country ?? 'XX';
+                  const sampleSource = products[0]?.source;
                   return (
-                    <div
-                      key={product.name}
-                      onClick={() => selectBrandProduct(brandKey, product)}
-                      onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'rgba(196,82,42,0.06)'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(196,82,42,0.06)' : 'transparent'; }}
-                      style={{
-                        display: 'grid', gridTemplateColumns: '100px 70px 1fr',
-                        alignItems: 'center', gap: '.5rem',
-                        padding: '.3rem .5rem', borderRadius: '8px', cursor: 'pointer',
-                        background: isSelected ? 'rgba(196,82,42,0.06)' : 'transparent',
-                        transition: 'background .15s',
-                      }}
-                    >
-                      <span style={{ fontSize: '.82rem', fontWeight: isSelected ? 600 : 400, color: isSelected ? 'var(--terra)' : 'var(--char)' }}>
-                        {product.name}
-                      </span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '20px', padding: '.1rem .5rem', color: 'var(--ash)', whiteSpace: 'nowrap' }}>
-                        W {product.w}
-                      </span>
-                      <span style={{ fontSize: '.7rem', color: 'var(--smoke)', lineHeight: 1.3 }}>{product.desc}</span>
+                    <div key={brandName} style={{
+                      border: '1.5px solid var(--border)', borderRadius: '14px',
+                      padding: '.85rem 1rem', background: 'var(--warm)', marginBottom: '.65rem',
+                    }}>
+                      <div style={{ fontWeight: 600, fontSize: '.85rem', color: 'var(--char)', marginBottom: '.3rem' }}>
+                        {FLAGS[sampleCountry] ?? ''} {brandName}
+                        {sampleSource === 'est' && (
+                          <span style={{ fontSize: '.6rem', color: 'var(--smoke)', fontStyle: 'italic', marginLeft: '.3rem' }}>~est</span>
+                        )}
+                      </div>
+                      {products.map((f: any) => {
+                        const isSelected = blend.brandProduct === `${f.brand} ${f.product}`;
+                        return (
+                          <div
+                            key={f.product}
+                            onClick={() => {
+                              const autoTile: FlourKey = f.w >= 270 ? 'strong00' : 'pizza00';
+                              setSelectedTile(autoTile);
+                              setManualW('');
+                              onBlendChange({
+                                flour1: autoTile,
+                                flour2: blend.flour2,
+                                ratio1: blend.ratio1,
+                                wOverride: f.w,
+                                brandKey: undefined,
+                                brandProduct: `${f.brand} ${f.product}`,
+                              });
+                            }}
+                            onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'rgba(196,82,42,0.06)'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(196,82,42,0.06)' : 'transparent'; }}
+                            style={{
+                              display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '.4rem',
+                              padding: '.35rem .5rem', borderRadius: '8px', cursor: 'pointer',
+                              background: isSelected ? 'rgba(196,82,42,0.06)' : 'transparent',
+                              transition: 'background .15s',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                              <span style={{ fontSize: '.82rem', fontWeight: isSelected ? 600 : 400, color: isSelected ? 'var(--terra)' : 'var(--char)' }}>
+                                {f.product}
+                              </span>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '20px', padding: '.1rem .5rem', color: 'var(--ash)', whiteSpace: 'nowrap' }}>
+                                W {f.w}
+                              </span>
+                              {f.type && TYPE_LABELS[f.type] && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '20px', padding: '.1rem .5rem', color: 'var(--smoke)', whiteSpace: 'nowrap' }}>
+                                  {TYPE_LABELS[f.type]}
+                                </span>
+                              )}
+                              {f.fermentWindow && (
+                                <span style={{ fontSize: '.62rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap' }}>
+                                  {f.fermentWindow}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })}
               </div>
-            </div>
-          ))}
-        </>
-      )}
+            )}
+          </>
+        );
+      })()}
 
       {/* ── PART 3: Scan button (custom only) ─── */}
       {mode === 'custom' && (
