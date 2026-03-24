@@ -30,6 +30,26 @@ const HUMIDITY_LABEL: Record<string, string> = {
   dry: 'Dry', normal: 'Normal', humid: 'Humid', 'very-humid': 'Very Humid',
 };
 
+const STYLE_HYDRATION_ZONES: Record<string, {
+  min: number; classicMin: number; classicMax: number; advancedMax: number; max: number; name: string;
+}> = {
+  neapolitan:    { min: 55, classicMin: 60, classicMax: 65, advancedMax: 70, max: 80, name: 'Neapolitan' },
+  newyork:       { min: 57, classicMin: 62, classicMax: 67, advancedMax: 72, max: 82, name: 'New York' },
+  roman:         { min: 65, classicMin: 72, classicMax: 80, advancedMax: 85, max: 90, name: 'Roman Teglia' },
+  pan:           { min: 60, classicMin: 65, classicMax: 72, advancedMax: 78, max: 85, name: 'Pan/Detroit' },
+  sourdough:     { min: 60, classicMin: 68, classicMax: 76, advancedMax: 82, max: 88, name: 'Sourdough Pizza' },
+  pain_campagne: { min: 60, classicMin: 68, classicMax: 75, advancedMax: 80, max: 85, name: 'Pain de Campagne' },
+  pain_levain:   { min: 62, classicMin: 70, classicMax: 78, advancedMax: 84, max: 90, name: 'Pain au Levain' },
+  baguette:      { min: 58, classicMin: 65, classicMax: 70, advancedMax: 75, max: 80, name: 'Baguette' },
+  pain_complet:  { min: 62, classicMin: 68, classicMax: 75, advancedMax: 80, max: 85, name: 'Pain Complet' },
+  pain_seigle:   { min: 65, classicMin: 72, classicMax: 80, advancedMax: 85, max: 90, name: 'Pain de Seigle' },
+  fougasse:      { min: 65, classicMin: 70, classicMax: 78, advancedMax: 83, max: 88, name: 'Fougasse' },
+  brioche:       { min: 45, classicMin: 50, classicMax: 58, advancedMax: 65, max: 72, name: 'Brioche' },
+  pain_mie:      { min: 55, classicMin: 60, classicMax: 65, advancedMax: 70, max: 75, name: 'Pain de Mie' },
+  pain_viennois: { min: 52, classicMin: 58, classicMax: 65, advancedMax: 70, max: 75, name: 'Pain Viennois' },
+};
+const FALLBACK_ZONE = { min: 50, classicMin: 60, classicMax: 70, advancedMax: 78, max: 85, name: 'Custom' };
+
 // ── Step card ────────────────────────────────
 function StepCard({
   num, badge, title, activeStep, summary, onEdit, children, idPrefix = 'step',
@@ -149,6 +169,30 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
       {children}
     </div>
   );
+}
+
+// ── Oil guidance ──────────────────────────────
+function oilGuidance(oil: number, ovenType: string, styleKey: string): string {
+  const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
+  if (oil === 0 && isHighTemp) return 'Traditional — no oil. Correct for high-temp ovens (450°C+).';
+  if (oil === 0 && !isHighTemp) return `Classic ${styleKey === 'neapolitan' ? 'Neapolitan' : 'style'} uses no oil, but 1–2% can help browning in a home oven below 300°C.`;
+  if (oil > 0 && isHighTemp) return '⚠️ Oil burns at 450°C+ — it may char before the crust cooks. Remove for wood/gas pizza ovens.';
+  if (oil > 0 && oil <= 2) return 'Helps browning and tenderness at home oven temps. Classic choice for home bakers.';
+  if (oil > 2 && oil <= 5) return 'Pan pizza range — creates crispy, almost-fried base. Correct for Detroit and focaccia.';
+  if (oil > 5) return '⚠️ Enriched dough territory. High oil can interfere with gluten development. Consider osmotolerant yeast.';
+  return '';
+}
+
+// ── Sugar guidance ────────────────────────────
+function sugarGuidance(sugar: number, ovenType: string): { note: string; warn: boolean } {
+  const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
+  if (sugar === 0 && isHighTemp) return { note: 'Traditional — no sugar. Correct for high-temp ovens.', warn: false };
+  if (sugar === 0 && !isHighTemp) return { note: 'Classic. Add 0.5% to help caramelisation in a home oven below 280°C.', warn: false };
+  if (sugar > 0 && sugar <= 1) return { note: 'Subtle colour boost. Good for home oven baking below 280°C.', warn: false };
+  if (sugar > 1 && sugar <= 2) return { note: 'Noticeable sweetness and good browning. Works well for enriched styles.', warn: false };
+  if (sugar > 2 && sugar <= 4) return { note: '⚠️ Above 2%, sugar creates osmotic stress on yeast — fermentation slows. Use SAF Gold (osmotolerant) yeast.', warn: true };
+  if (sugar > 4) return { note: '⚠️ High sugar — enriched dough territory (brioche level). Standard yeast will struggle. SAF Gold or fresh yeast recommended.', warn: true };
+  return { note: '', warn: false };
 }
 
 // ══════════════════════════════════════════════
@@ -1315,65 +1359,98 @@ export default function Home() {
                     background: 'var(--warm)', border: '1.5px solid var(--border)',
                     borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.5rem',
                   }}>
-                    {/* Hydration slider */}
-                    <div style={{ marginBottom: '.85rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.4rem' }}>
-                        <FieldLabel>Hydration</FieldLabel>
-                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', fontWeight: 700, color: 'var(--terra)' }}>
-                          {manualHydration ?? advancedRecipe.hydration}%
-                        </span>
-                      </div>
-                      <input
-                        type="range" min={50} max={85} step={1}
-                        value={manualHydration ?? advancedRecipe.hydration}
-                        onChange={e => setManualHydration(Number(e.target.value))}
-                        style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer' }}
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.62rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem' }}>
-                        <span>50%</span><span>85%</span>
-                      </div>
-                      {/* Difficulty pill + fold guidance */}
-                      {(() => {
-                        const hyd = manualHydration ?? advancedRecipe.hydration;
-                        let diffLabel: string, diffBg: string, diffColor: string;
-                        if (mixerType === 'hand') {
-                          if (hyd <= 65)      { diffLabel = 'Easy';        diffBg = 'var(--sage)';  diffColor = '#fff'; }
-                          else if (hyd <= 70) { diffLabel = 'Standard';    diffBg = 'var(--gold)';  diffColor = '#fff'; }
-                          else if (hyd <= 75) { diffLabel = 'Challenging'; diffBg = 'var(--terra)'; diffColor = '#fff'; }
-                          else                { diffLabel = 'Expert';      diffBg = 'var(--char)';  diffColor = 'var(--cream)'; }
-                        } else if (mixerType === 'stand') {
-                          if (hyd <= 68)      { diffLabel = 'Easy';        diffBg = 'var(--sage)';  diffColor = '#fff'; }
-                          else if (hyd <= 73) { diffLabel = 'Standard';    diffBg = 'var(--gold)';  diffColor = '#fff'; }
-                          else if (hyd <= 78) { diffLabel = 'Challenging'; diffBg = 'var(--terra)'; diffColor = '#fff'; }
-                          else                { diffLabel = 'Expert';      diffBg = 'var(--char)';  diffColor = 'var(--cream)'; }
-                        } else {
-                          if (hyd <= 72)      { diffLabel = 'Easy';        diffBg = 'var(--sage)';  diffColor = '#fff'; }
-                          else if (hyd <= 78) { diffLabel = 'Standard';    diffBg = 'var(--gold)';  diffColor = '#fff'; }
-                          else if (hyd <= 85) { diffLabel = 'Challenging'; diffBg = 'var(--terra)'; diffColor = '#fff'; }
-                          else                { diffLabel = 'Expert';      diffBg = 'var(--char)';  diffColor = 'var(--cream)'; }
-                        }
-                        const foldGuide = hyd <= 65
-                          ? 'No folds needed — dough is stiff enough to hold structure.'
-                          : hyd <= 72 ? '3–4 stretch & fold sets every 30 min.'
-                          : hyd <= 78 ? '4–6 sets + coil folds recommended.'
-                          : 'Lamination + coil folds — advanced technique.';
-                        return (
-                          <div style={{ marginTop: '.5rem', display: 'flex', flexDirection: 'column', gap: '.3rem' }}>
-                            <span style={{
-                              display: 'inline-block', alignSelf: 'flex-start',
-                              fontSize: '.7rem', fontFamily: 'var(--font-dm-mono)',
-                              padding: '.15rem .55rem', borderRadius: '20px',
-                              background: diffBg, color: diffColor,
-                            }}>
-                              {diffLabel}
-                            </span>
-                            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic' }}>
-                              {foldGuide}
-                            </div>
-                          </div>
-                        );
-                      })()}
+                    <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.05rem', fontWeight: 700, color: 'var(--char)', marginBottom: '.3rem' }}>
+                      Dial in your dough
                     </div>
+                    <div style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '1rem', lineHeight: 1.5 }}>
+                      Defaults are set for your style — adjust if you know what you&apos;re doing.
+                    </div>
+                    {/* Hydration slider */}
+                    {(() => {
+                      const zone = STYLE_HYDRATION_ZONES[styleKey!] ?? FALLBACK_ZONE;
+                      const sliderMin = zone.min;
+                      const sliderMax = zone.max;
+                      const totalRange = sliderMax - sliderMin;
+                      const lowPct         = ((zone.classicMin - sliderMin) / totalRange) * 100;
+                      const classicMaxPct  = ((zone.classicMax - sliderMin) / totalRange) * 100;
+                      const advancedMaxPct = ((zone.advancedMax - sliderMin) / totalRange) * 100;
+                      const defaultHyd = Math.round((zone.classicMin + zone.classicMax) / 2);
+                      const currentHyd = manualHydration ?? defaultHyd;
+
+                      function hydrationZoneLabel(h: number): { label: string; color: string; note: string } {
+                        if (h < zone.classicMin) return {
+                          label: '⚠️ Below classic range',
+                          color: '#7A5A10',
+                          note: h < zone.min + 3
+                            ? 'Dough will be very stiff — hard to stretch and may tear.'
+                            : `Below ${zone.name} classic range. Dough will be stiffer and denser.`,
+                        };
+                        if (h <= zone.classicMax) return {
+                          label: '✓ Classic range',
+                          color: 'var(--sage)',
+                          note: `Authentic ${zone.name} range. Great handling and traditional texture.`,
+                        };
+                        if (h <= zone.advancedMax) return {
+                          label: '✦ Extended range',
+                          color: 'var(--gold)',
+                          note: 'More open crumb and airiness. Requires confident shaping technique.',
+                        };
+                        return {
+                          label: '⚡ Advanced technique',
+                          color: 'var(--terra)',
+                          note: h >= zone.max - 2
+                            ? 'Extreme hydration. Expect very sticky dough — wet hands, bench scraper essential.'
+                            : 'High hydration territory. Excellent open crumb but challenging to handle.',
+                        };
+                      }
+
+                      const hZone = hydrationZoneLabel(currentHyd);
+                      return (
+                        <div style={{ marginBottom: '.85rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
+                            <label style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
+                              Hydration
+                            </label>
+                            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.1rem', fontWeight: 700, color: hZone.color }}>
+                              {currentHyd}%
+                            </span>
+                          </div>
+                          <div style={{ position: 'relative', height: '36px', display: 'flex', alignItems: 'center' }}>
+                            <div style={{
+                              position: 'absolute', left: 0, right: 0, height: '8px', borderRadius: '4px',
+                              background: `linear-gradient(to right, #E8D080 0%, #E8D080 ${lowPct}%, #B8D4A8 ${lowPct}%, #B8D4A8 ${classicMaxPct}%, #E8D890 ${classicMaxPct}%, #E8D890 ${advancedMaxPct}%, #F5C4B0 ${advancedMaxPct}%, #F5C4B0 100%)`,
+                            }} />
+                            <input
+                              type="range"
+                              min={sliderMin} max={sliderMax} step={1}
+                              value={currentHyd}
+                              onChange={e => setManualHydration(Number(e.target.value))}
+                              style={{ position: 'absolute', left: 0, right: 0, width: '100%', appearance: 'none', background: 'transparent', cursor: 'pointer', height: '36px', margin: 0 }}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem' }}>
+                            <span>{sliderMin}%</span>
+                            <span style={{ color: 'var(--sage)', fontWeight: 600 }}>{zone.classicMin}–{zone.classicMax}% classic</span>
+                            <span>{sliderMax}%</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.5rem', marginBottom: '.25rem' }}>
+                            <span style={{
+                              fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)', fontWeight: 600,
+                              color: hZone.color, flexShrink: 0,
+                              background: hZone.color === 'var(--sage)' ? 'rgba(107,122,90,0.1)' :
+                                          hZone.color === 'var(--gold)' ? 'rgba(212,168,83,0.12)' :
+                                          hZone.color === 'var(--terra)' ? 'rgba(196,82,42,0.1)' : 'rgba(122,90,16,0.1)',
+                              borderRadius: '20px', padding: '.2rem .6rem',
+                            }}>
+                              {hZone.label}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '.75rem' }}>
+                            {hZone.note}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Oil + Sugar side by side */}
                     <div style={{ display: 'flex', gap: '1rem' }}>
@@ -1392,11 +1469,12 @@ export default function Home() {
                         />
                         {(() => {
                           const v = manualOil ?? advancedRecipe.oil / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1);
-                          const g = v === 0 ? 'Traditional — no oil. Best for high-temp ovens.'
-                            : v <= 3  ? 'Adds tenderness and slight browning.'
-                            : v <= 6  ? 'Pan pizza range — creates crispy base.'
-                            : 'Enriched dough territory. Consider osmotolerant yeast.';
-                          return <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', marginTop: '.3rem' }}>{g}</div>;
+                          const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
+                          return (
+                            <div style={{ fontSize: '.72rem', color: v > 0 && isHighTemp ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginTop: '.35rem' }}>
+                              {oilGuidance(v, ovenType, styleKey ?? '')}
+                            </div>
+                          );
                         })()}
                       </div>
                       <div style={{ flex: 1 }}>
@@ -1414,11 +1492,12 @@ export default function Home() {
                         />
                         {(() => {
                           const v = manualSugar ?? advancedRecipe.sugar / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1);
-                          const g = v === 0 ? 'No sugar — traditional.'
-                            : v <= 1  ? 'Slight colour boost at lower oven temps.'
-                            : v <= 4  ? 'Noticeable sweetness, good browning.'
-                            : 'Enriched range — use osmotolerant yeast (SAF Gold).';
-                          return <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', marginTop: '.3rem' }}>{g}</div>;
+                          const sg = sugarGuidance(v, ovenType);
+                          return (
+                            <div style={{ fontSize: '.72rem', color: sg.warn ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginTop: '.35rem' }}>
+                              {sg.note}
+                            </div>
+                          );
                         })()}
                       </div>
                     </div>

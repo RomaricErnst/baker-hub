@@ -83,6 +83,7 @@ export interface YeastResult {
   notRecommended: boolean;
   explanation: string;
   warnings: string[];
+  osmoticStress: boolean; // true when sugar > 2% — yeast amount increased 20%
 }
 
 export function recommendYeast(
@@ -218,6 +219,7 @@ export function recommendYeast(
     notRecommended,
     explanation,
     warnings,
+    osmoticStress: false,
   };
 }
 
@@ -836,6 +838,17 @@ export function calculateRecipe(
           convertedGrams: Math.max(0.5, yeast.convertedGrams * (1 - prefData.yeastReduction)),
         };
       }
+    }
+
+    // Osmotic stress correction — sugar > 2% slows yeast
+    if (yeast && sugarG > 2) {
+      yeast = {
+        ...yeast,
+        grams: Math.round(yeast.grams * 1.2 * 1000) / 1000,
+        convertedGrams: Math.round(yeast.convertedGrams * 1.2 * 1000) / 1000,
+        osmoticStress: true,
+        warnings: [...yeast.warnings, 'Sugar above 2% creates osmotic stress — yeast amount increased 20%. Consider SAF Gold osmotolerant yeast for best results.'],
+      };
     }
   }
 
