@@ -1299,13 +1299,17 @@ export default function Home() {
               >
                 <PrefermentPicker
                   selected={prefermentType}
-                  onSelect={pt => { setPrefermentType(pt); advanceAdv(8); }}
+                  onSelect={pt => {
+                    setPrefermentType(pt);
+                    if (pt === 'none') advanceAdv(8);
+                  }}
                   flourPct={prefermentFlourPct}
                   onFlourPctChange={setPrefermentFlourPct}
                   kitchenTemp={kitchenTemp}
                   hasNightBlocker={hasNightBlocker}
                   styleKey={styleKey ?? undefined}
                 />
+                {prefermentType !== 'none' && <ContinueBtn onClick={() => advanceAdv(8)} />}
               </StepCard>
             )}
 
