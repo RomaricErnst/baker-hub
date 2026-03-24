@@ -21,22 +21,30 @@ const FLOUR_DESCS: Record<FlourKey, string> = {
 };
 
 const SECOND_FLOUR_VALUE: Partial<Record<FlourKey, string>> = {
-  semolina:  'Crunch + golden colour. 10–20% typical.',
-  manitoba:  'Extra strength for 72h+ ferments.',
-  wholemeal: 'Nutty complexity — use sparingly.',
+  semolina:   'Crunch + golden colour. 10–20% typical.',
+  manitoba:   'Extra strength for 72h+ ferments.',
+  wholemeal:  'Nutty complexity — use sparingly.',
   allpurpose: 'Softens structure for home oven.',
-  rye:       'Deep flavour, enzyme boost. 10–30% typical.',
-  strong00:  'Boost strength for long cold ferments.',
+  rye:        'Deep flavour, enzyme boost. 10–30% typical.',
+  strong00:   'Boost strength for long cold ferments.',
 };
 
 // ── W strength helper ─────────────────────────
 function wStrength(w: number): { label: string; color: string } {
-  if (w < 200) return { label: 'Weak — short ferments only',   color: 'var(--smoke)' };
-  if (w < 250) return { label: 'Medium — 8-24h',               color: 'var(--smoke)' };
-  if (w < 300) return { label: 'Strong — 24-48h',              color: 'var(--sage)' };
-  if (w < 350) return { label: 'Very strong — 48-72h',         color: 'var(--gold)' };
-  return           { label: 'Professional — 72h+',             color: 'var(--terra)' };
+  if (w < 200) return { label: 'Weak — short ferments only', color: 'var(--smoke)' };
+  if (w < 250) return { label: 'Medium — 8-24h',             color: 'var(--smoke)' };
+  if (w < 300) return { label: 'Strong — 24-48h',            color: 'var(--sage)'  };
+  if (w < 350) return { label: 'Very strong — 48-72h',       color: 'var(--gold)'  };
+  return           { label: 'Professional — 72h+',           color: 'var(--terra)' };
 }
+
+// ── Shared pill style ─────────────────────────
+const PILL: React.CSSProperties = {
+  fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+  background: 'var(--cream)', color: 'var(--ash)',
+  borderRadius: '20px', padding: '.1rem .5rem',
+  border: '1px solid var(--border)',
+};
 
 interface FlourPickerProps {
   blend: FlourBlend;
@@ -45,18 +53,15 @@ interface FlourPickerProps {
   mode?: 'simple' | 'custom';
 }
 
-type FlourMode = 'selector' | 'brand' | 'manual' | 'scan';
-
-// ── Flour card grid ───────────────────────────
+// ── Flour card grid (second flour selection) ──
 function FlourCardGrid({
-  flours, selected, onSelect, exclude, descOverride, trailingCard,
+  flours, selected, onSelect, exclude, descOverride,
 }: {
   flours: FlourKey[];
   selected: FlourKey | null;
   onSelect: (k: FlourKey) => void;
   exclude?: FlourKey | null;
   descOverride?: Partial<Record<FlourKey, string>>;
-  trailingCard?: React.ReactNode;
 }) {
   const [hovered, setHovered] = useState<FlourKey | null>(null);
   const visible = exclude ? flours.filter(k => k !== exclude) : flours;
@@ -84,18 +89,13 @@ function FlourCardGrid({
               {isSelected && <span style={{ color: 'var(--terra)', fontSize: '.8rem', flexShrink: 0 }}>✓</span>}
             </div>
             <div style={{ display: 'flex', gap: '.35rem', flexWrap: 'wrap', marginBottom: '.4rem' }}>
-              <span style={{ fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', color: 'var(--ash)', borderRadius: '20px', padding: '.1rem .5rem', border: '1px solid var(--border)' }}>
-                W {f.w}
-              </span>
-              <span style={{ fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', color: 'var(--ash)', borderRadius: '20px', padding: '.1rem .5rem', border: '1px solid var(--border)' }}>
-                {f.protein}% protein
-              </span>
+              <span style={PILL}>W {f.w}</span>
+              <span style={PILL}>{f.protein}% protein</span>
             </div>
             <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.4 }}>{descOverride?.[key] ?? FLOUR_DESCS[key]}</div>
           </div>
         );
       })}
-      {trailingCard}
     </div>
   );
 }
@@ -211,7 +211,6 @@ function BlendSection({
             onClick={() => {
               setCustomFlourOpen(v => !v);
               if (customFlourOpen) {
-                // reset custom when closing
                 setCustomName(''); setCustomW(''); setCustomProtein('');
                 onBlendChange({ flour1: blend.flour1, flour2: blend.flour2, ratio1: blend.ratio1 });
               }
@@ -228,14 +227,11 @@ function BlendSection({
 
           {customFlourOpen && (
             <div style={{ marginTop: '.65rem', padding: '.9rem', background: 'var(--cream)', borderRadius: '12px', border: '1px solid var(--border)' }}>
-              {/* Three inputs */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', alignItems: 'flex-end' }}>
                 <div style={{ flex: 2, minWidth: '120px' }}>
                   <div style={{ fontSize: '.62rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.3rem' }}>Name</div>
                   <input
-                    type="text"
-                    placeholder="e.g. Farro, Spelt"
-                    value={customName}
+                    type="text" placeholder="e.g. Farro, Spelt" value={customName}
                     onChange={e => { setCustomName(e.target.value); handleCustomChange(e.target.value, customW, customProtein, customRatio1); }}
                     style={{ ...inputStyle, width: '100%' }}
                   />
@@ -243,10 +239,7 @@ function BlendSection({
                 <div style={{ width: '80px' }}>
                   <div style={{ fontSize: '.62rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.3rem' }}>W value</div>
                   <input
-                    type="number"
-                    placeholder="W value"
-                    value={customW}
-                    min={50} max={500} step={10}
+                    type="number" placeholder="W value" value={customW} min={50} max={500} step={10}
                     onChange={e => { const v = e.target.value === '' ? '' : Number(e.target.value); setCustomW(v); handleCustomChange(customName, v, customProtein, customRatio1); }}
                     style={{ ...inputStyle, width: '80px' }}
                   />
@@ -254,17 +247,13 @@ function BlendSection({
                 <div style={{ width: '80px' }}>
                   <div style={{ fontSize: '.62rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.3rem' }}>Protein %</div>
                   <input
-                    type="number"
-                    placeholder="protein %"
-                    value={customProtein}
-                    min={5} max={20} step={0.5}
+                    type="number" placeholder="protein %" value={customProtein} min={5} max={20} step={0.5}
                     onChange={e => { const v = e.target.value === '' ? '' : Number(e.target.value); setCustomProtein(v); handleCustomChange(customName, customW, v, customRatio1); }}
                     style={{ ...inputStyle, width: '80px' }}
                   />
                 </div>
               </div>
 
-              {/* Ratio slider */}
               <div style={{ marginTop: '.85rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.35rem' }}>
                   <span style={{ fontSize: '.72rem', color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>
@@ -284,21 +273,18 @@ function BlendSection({
                 </div>
               </div>
 
-              {/* Blend W pill */}
-              {customW !== '' && (
-                (() => {
-                  const f1w = FLOUR_DATA[blend.flour1].w;
-                  const estimated = Math.round((f1w * customRatio1 / 100) + ((customW as number) * (100 - customRatio1) / 100));
-                  const hydNote = estimated < 200 ? 'short ferments only' : estimated < 280 ? '24–48h ferments' : '48h+ ferments';
-                  return (
-                    <div style={{ marginTop: '.65rem', display: 'inline-flex', alignItems: 'center', gap: '.5rem', background: 'rgba(107,122,90,0.12)', border: '1px solid rgba(107,122,90,0.3)', borderRadius: '20px', padding: '.3rem .75rem', fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)', color: 'var(--sage)' }}>
-                      <span>Blended W ~{estimated}</span>
-                      <span style={{ opacity: .5 }}>·</span>
-                      <span>{hydNote}</span>
-                    </div>
-                  );
-                })()
-              )}
+              {customW !== '' && (() => {
+                const f1w = FLOUR_DATA[blend.flour1].w;
+                const estimated = Math.round((f1w * customRatio1 / 100) + ((customW as number) * (100 - customRatio1) / 100));
+                const hydNote = estimated < 200 ? 'short ferments only' : estimated < 280 ? '24–48h ferments' : '48h+ ferments';
+                return (
+                  <div style={{ marginTop: '.65rem', display: 'inline-flex', alignItems: 'center', gap: '.5rem', background: 'rgba(107,122,90,0.12)', border: '1px solid rgba(107,122,90,0.3)', borderRadius: '20px', padding: '.3rem .75rem', fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)', color: 'var(--sage)' }}>
+                    <span>Blended W ~{estimated}</span>
+                    <span style={{ opacity: .5 }}>·</span>
+                    <span>{hydNote}</span>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -307,275 +293,213 @@ function BlendSection({
   );
 }
 
-// ── Tab pill button ───────────────────────────
-function TabPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: '.4rem .9rem', borderRadius: '20px', cursor: 'pointer',
-        fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)', fontWeight: active ? 600 : 400,
-        border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-        background: active ? '#FEF4EF' : 'transparent',
-        color: active ? 'var(--terra)' : 'var(--smoke)',
-        transition: 'all .15s',
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
 // ── Main component ────────────────────────────
 export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', mode = 'custom' }: FlourPickerProps) {
-  const [flourMode, setFlourMode] = useState<FlourMode>('selector');
-  const [wCardOpen, setWCardOpen] = useState(false);
-  const [selectedBrand, setSelectedBrand] = useState<BrandKey | null>(
-    blend.brandKey ?? null
+  const [manualW, setManualW] = useState<number | ''>(blend.wOverride ?? '');
+  const [selectedTile, setSelectedTile] = useState<FlourKey | 'manual'>(
+    blend.wOverride ? 'manual' : blend.flour1
   );
-  const [manualW, setManualW] = useState<number>(blend.wOverride ?? 250);
+  const [scanOpen, setScanOpen] = useState(false);
 
   const primaryFlours   = bakeType === 'bread' ? BREAD_FLOURS        : PIZZA_FLOURS;
   const secondaryFlours = bakeType === 'bread' ? BREAD_SECOND_FLOURS  : PIZZA_SECOND_FLOURS;
 
-  function switchMode(m: FlourMode) {
-    setFlourMode(m);
-    // Reset overrides when switching modes
-    onBlendChange({ flour1: blend.flour1, flour2: null, ratio1: 100 });
-    setSelectedBrand(null);
+  function handleManualW(val: number | '') {
+    setManualW(val);
+    if (val !== '') {
+      setSelectedTile('manual');
+      onBlendChange({ flour1: blend.flour1, flour2: blend.flour2, ratio1: blend.ratio1, wOverride: val });
+    }
   }
 
-  // ── Mode 2: brand product select ──────────
+  function selectTile(key: FlourKey) {
+    setSelectedTile(key);
+    setManualW('');
+    onBlendChange({ flour1: key, flour2: blend.flour2, ratio1: blend.ratio1 });
+  }
+
   function selectBrandProduct(brandKey: BrandKey, product: { name: string; w: number }) {
+    const autoTile: FlourKey = product.w >= 270 ? 'strong00' : 'pizza00';
+    setSelectedTile(autoTile);
+    setManualW('');
     onBlendChange({
-      flour1: 'pizza00',
-      flour2: null,
-      ratio1: 100,
+      flour1: autoTile,
+      flour2: blend.flour2,
+      ratio1: blend.ratio1,
       wOverride: product.w,
       brandKey,
       brandProduct: product.name,
     });
   }
 
-  // ── Mode 3: manual W ──────────────────────
-  function handleManualW(val: number) {
-    setManualW(val);
-    onBlendChange({
-      flour1: blend.flour1,
-      flour2: null,
-      ratio1: 100,
-      wOverride: val,
-    });
-  }
-
-  const strength = wStrength(manualW);
-
   return (
     <div>
-      {/* Mode tabs — custom mode only */}
-      {mode === 'custom' && (
-        <>
-          <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginBottom: 0 }}>
-            <TabPill label="🗂 By Type"          active={flourMode === 'selector' || flourMode === 'manual'} onClick={() => { switchMode('selector'); setWCardOpen(false); }} />
-            <TabPill label="🏷 I know my brand"  active={flourMode === 'brand'}    onClick={() => { switchMode('brand'); setWCardOpen(false); }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '.4rem', marginBottom: '.75rem' }}>
-            <button
-              onClick={() => switchMode('scan')}
+
+      {/* ── PART 1: Flour tiles ──────────────── */}
+      <div style={{ fontSize: '.65rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.55rem' }}>
+        Select your flour
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '.65rem' }}>
+
+        {/* Flour tiles 1-4 */}
+        {primaryFlours.map(key => {
+          const f = FLOUR_DATA[key];
+          const isSelected = selectedTile === key;
+          return (
+            <div
+              key={key}
+              onClick={() => selectTile(key)}
               style={{
-                background: 'none',
-                border: '1.5px solid var(--border)',
-                borderRadius: '20px',
-                padding: '.28rem .7rem',
-                fontSize: '.7rem',
-                fontFamily: 'var(--font-dm-sans)',
-                color: 'var(--smoke)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '.3rem',
+                border: `1.5px solid ${isSelected ? 'var(--terra)' : 'var(--border)'}`,
+                borderRadius: '12px', padding: '.8rem .9rem', cursor: 'pointer',
+                background: isSelected ? '#FFF8F3' : 'var(--warm)', transition: 'all .2s',
+                boxShadow: 'var(--card-shadow)',
               }}
             >
-              📷 Scan my bag
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* ── MODE 1: Selector (+ W card inline) ── */}
-      {(flourMode === 'selector' || flourMode === 'manual' || mode === 'simple') && (
-        <div>
-          <FlourCardGrid
-            flours={primaryFlours}
-            selected={blend.flour1}
-            onSelect={key => {
-              const newFlour2 = blend.flour2 === key ? null : blend.flour2;
-              onBlendChange({ flour1: key, flour2: newFlour2, ratio1: blend.ratio1 });
-            }}
-            trailingCard={mode === 'custom' ? (
-              <div
-                onClick={() => {
-                  const next = !wCardOpen;
-                  setWCardOpen(next);
-                  setFlourMode(next ? 'manual' : 'selector');
-                }}
-                style={{
-                  border: `1.5px solid ${wCardOpen ? 'var(--terra)' : 'var(--border)'}`,
-                  borderRadius: '12px',
-                  padding: '.8rem .9rem',
-                  cursor: 'pointer',
-                  background: wCardOpen ? '#FFF8F3' : 'var(--warm)',
-                  transition: 'all .2s',
-                }}
-              >
-                <div style={{ fontWeight: 600, fontSize: '.85rem', color: 'var(--char)', marginBottom: '.4rem' }}>
-                  ✏️ Enter W value
-                </div>
-                <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.4 }}>
-                  Know your flour's exact W? Enter it directly.
-                </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '.4rem', marginBottom: '.4rem' }}>
+                <div style={{ fontWeight: 600, fontSize: '.85rem', color: 'var(--char)', lineHeight: 1.3 }}>{f.name}</div>
+                {isSelected && <span style={{ color: 'var(--terra)', fontSize: '.8rem', flexShrink: 0 }}>✓</span>}
               </div>
-            ) : undefined}
-          />
-
-          {/* W value expanded section */}
-          {wCardOpen && mode === 'custom' && (
-            <div style={{ marginTop: '.85rem' }}>
-              <div style={{ marginBottom: '.85rem' }}>
-                <div style={{ fontSize: '.65rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.4rem' }}>
-                  W value
-                </div>
-                <input
-                  type="number"
-                  min={80} max={500} step={10}
-                  value={manualW}
-                  onChange={e => handleManualW(Number(e.target.value))}
-                  style={{
-                    width: '100px', border: '1.5px solid var(--border)', borderRadius: '8px',
-                    padding: '.5rem .75rem', fontFamily: 'var(--font-dm-mono)',
-                    fontSize: '.88rem', color: 'var(--char)', background: 'var(--warm)',
-                    outline: 'none',
-                  }}
-                />
+              <div style={{ display: 'flex', gap: '.35rem', flexWrap: 'wrap', marginBottom: '.4rem' }}>
+                <span style={PILL}>W {f.w}</span>
+                <span style={PILL}>{f.protein}% protein</span>
               </div>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center',
-                border: `1.5px solid ${strength.color}`,
-                borderRadius: '20px', padding: '.3rem .75rem',
-                fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
-                color: strength.color, marginBottom: '1rem',
-              }}>
-                W {manualW} — {strength.label}
-              </div>
-              <BlendSection
-                blend={blend}
-                onBlendChange={onBlendChange}
-                primaryFlours={primaryFlours}
-                secondaryFlours={secondaryFlours}
-              />
+              <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.4 }}>{FLOUR_DESCS[key]}</div>
             </div>
-          )}
+          );
+        })}
 
-          {mode === 'custom' && !wCardOpen && (
-            <BlendSection
-              blend={blend}
-              onBlendChange={onBlendChange}
-              primaryFlours={primaryFlours}
-              secondaryFlours={secondaryFlours}
+        {/* Tile 5: W value (custom mode only) */}
+        {mode === 'custom' && (
+          <div
+            style={{
+              border: `1.5px solid ${selectedTile === 'manual' ? 'var(--terra)' : 'var(--border)'}`,
+              borderRadius: '12px', padding: '.8rem .9rem',
+              background: selectedTile === 'manual' ? '#FFF8F3' : 'var(--cream)', transition: 'all .2s',
+              boxShadow: 'var(--card-shadow)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '.4rem', marginBottom: '.25rem' }}>
+              <div style={{ fontWeight: 600, fontSize: '.85rem', color: 'var(--char)', lineHeight: 1.3 }}>I know my W value</div>
+              {selectedTile === 'manual' && <span style={{ color: 'var(--terra)', fontSize: '.8rem', flexShrink: 0 }}>✓</span>}
+            </div>
+            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.4 }}>Enter it directly</div>
+            <input
+              type="number" min={80} max={500} step={10}
+              placeholder="e.g. 260"
+              value={manualW}
+              onChange={e => handleManualW(e.target.value === '' ? '' : Number(e.target.value))}
+              style={{
+                width: '80px', border: '1.5px solid var(--border)',
+                borderRadius: '8px', padding: '.35rem .5rem',
+                fontFamily: 'var(--font-dm-mono)', fontSize: '.85rem',
+                color: 'var(--char)', background: 'var(--warm)', outline: 'none',
+                marginTop: '.4rem', display: 'block',
+              }}
             />
-          )}
-        </div>
-      )}
-
-      {/* ── MODE 2: Brand ────────────────────── */}
-      {flourMode === 'brand' && mode === 'custom' && (
-        <div>
-          {/* Brand cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.65rem', marginBottom: '1rem' }}>
-            {(Object.entries(FLOUR_BRANDS) as [BrandKey, typeof FLOUR_BRANDS[BrandKey]][]).map(([key, brand]) => {
-              const isActive = selectedBrand === key;
+            {selectedTile === 'manual' && manualW !== '' && (() => {
+              const s = wStrength(manualW as number);
               return (
-                <div
-                  key={key}
-                  onClick={() => setSelectedBrand(key)}
-                  style={{
-                    border: `1.5px solid ${isActive ? 'var(--terra)' : 'var(--border)'}`,
-                    borderRadius: '14px', padding: '1rem', cursor: 'pointer',
-                    background: isActive ? '#FFF8F3' : 'var(--warm)', transition: 'all .2s',
-                  }}
-                >
-                  <div style={{ fontSize: '1.4rem', marginBottom: '.4rem' }}>{brand.logo}</div>
-                  <div style={{ fontWeight: 600, fontSize: '.88rem', color: 'var(--char)', marginBottom: '.2rem' }}>{brand.name}</div>
-                  <div style={{ fontSize: '.72rem', color: 'var(--smoke)' }}>{brand.products.length} products</div>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', marginTop: '.4rem',
+                  border: `1.5px solid ${s.color}`, borderRadius: '20px', padding: '.2rem .55rem',
+                  fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)', color: s.color,
+                }}>
+                  W {manualW} — {s.label}
                 </div>
               );
-            })}
+            })()}
           </div>
+        )}
+      </div>
 
-          {/* Product grid */}
-          {selectedBrand && (
-            <div>
-              <div style={{ fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.65rem' }}>
-                {FLOUR_BRANDS[selectedBrand].name} products
+      {/* ── PART 2: Iconic brands (custom only) ── */}
+      {mode === 'custom' && (
+        <>
+          <div style={{ fontSize: '.65rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginTop: '1.25rem', marginBottom: '.55rem' }}>
+            Or pick an iconic Italian flour brand
+          </div>
+          {(Object.entries(FLOUR_BRANDS) as [BrandKey, typeof FLOUR_BRANDS[BrandKey]][]).map(([brandKey, brand]) => (
+            <div key={brandKey} style={{
+              border: '1.5px solid var(--border)', borderRadius: '14px',
+              padding: '.85rem 1rem', background: 'var(--warm)', marginBottom: '.65rem',
+              display: 'flex', gap: '1rem', alignItems: 'flex-start',
+            }}>
+              <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--char)', width: '90px', flexShrink: 0, paddingTop: '.15rem' }}>
+                {brand.name} {brand.logo}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '.65rem' }}>
-                {FLOUR_BRANDS[selectedBrand].products.map(product => {
-                  const isSelected = blend.brandKey === selectedBrand && blend.brandProduct === product.name;
+              <div style={{ flex: 1 }}>
+                {(brand.products as readonly { name: string; w: number; protein: number; desc: string }[]).map(product => {
+                  const isSelected = blend.brandKey === brandKey && blend.brandProduct === product.name;
                   return (
                     <div
                       key={product.name}
-                      onClick={() => selectBrandProduct(selectedBrand, product)}
+                      onClick={() => selectBrandProduct(brandKey, product)}
+                      onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'rgba(196,82,42,0.06)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? '#FEF4EF' : 'transparent'; }}
                       style={{
-                        border: `1.5px solid ${isSelected ? 'var(--terra)' : 'var(--border)'}`,
-                        borderRadius: '12px', padding: '.8rem .9rem', cursor: 'pointer',
-                        background: isSelected ? '#FFF8F3' : 'var(--warm)', transition: 'all .2s',
+                        display: 'flex', alignItems: 'center', gap: '.5rem',
+                        padding: '.3rem .5rem', borderRadius: '8px', cursor: 'pointer',
+                        background: isSelected ? '#FEF4EF' : 'transparent',
+                        transition: 'background .15s',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '.4rem' }}>
-                        <div style={{ fontWeight: 600, fontSize: '.85rem', color: 'var(--char)' }}>{product.name}</div>
-                        {isSelected && <span style={{ color: 'var(--terra)', fontSize: '.8rem' }}>✓</span>}
-                      </div>
-                      <div style={{ marginBottom: '.4rem' }}>
-                        <span style={{ fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', color: 'var(--ash)', borderRadius: '20px', padding: '.1rem .5rem', border: '1px solid var(--border)' }}>
-                          W {product.w}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.4 }}>{product.desc}</div>
+                      <span style={{ fontSize: '.82rem', fontWeight: isSelected ? 600 : 400, color: isSelected ? 'var(--terra)' : 'var(--char)', flex: 1 }}>
+                        {product.name}
+                      </span>
+                      <span style={PILL}>W {product.w}</span>
+                      <span style={{ fontSize: '.7rem', color: 'var(--smoke)' }}>{product.desc}</span>
+                      {isSelected && <span style={{ color: 'var(--terra)', fontSize: '.8rem', flexShrink: 0 }}>✓</span>}
                     </div>
                   );
                 })}
               </div>
-
-              {/* Blend toggle in brand mode */}
-              {blend.brandProduct && (
-                <BlendSection
-                  blend={blend}
-                  onBlendChange={onBlendChange}
-                  primaryFlours={primaryFlours}
-                  secondaryFlours={secondaryFlours}
-                />
-              )}
             </div>
-          )}
-        </div>
+          ))}
+        </>
       )}
 
-      {/* ── MODE 4: Scan ─────────────────────── */}
-      {flourMode === 'scan' && mode === 'custom' && (
-        <FlourScan
-          onResult={result => {
-            setManualW(result.w);
-            onBlendChange({
-              flour1: blend.flour1,
-              flour2: null,
-              ratio1: 100,
-              wOverride: result.w,
-            });
-            setFlourMode('manual');
-          }}
-          onCancel={() => setFlourMode('selector')}
+      {/* ── PART 3: Scan button (custom only) ─── */}
+      {mode === 'custom' && (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => setScanOpen(s => !s)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '.4rem',
+                border: '1.5px solid var(--border)', borderRadius: '20px',
+                padding: '.35rem .85rem', background: 'none',
+                fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
+                color: 'var(--smoke)', cursor: 'pointer', marginTop: '.75rem',
+              }}
+            >
+              📷 Scan my bag — camera or photo library
+            </button>
+          </div>
+          {scanOpen && (
+            <FlourScan
+              onResult={result => {
+                setManualW(result.w);
+                setSelectedTile('manual');
+                onBlendChange({ ...blend, wOverride: result.w });
+                setScanOpen(false);
+              }}
+              onCancel={() => setScanOpen(false)}
+            />
+          )}
+        </>
+      )}
+
+      {/* ── PART 4: Blend section (custom only) ── */}
+      {mode === 'custom' && (
+        <BlendSection
+          blend={blend}
+          onBlendChange={onBlendChange}
+          primaryFlours={primaryFlours}
+          secondaryFlours={secondaryFlours}
         />
       )}
+
     </div>
   );
 }
