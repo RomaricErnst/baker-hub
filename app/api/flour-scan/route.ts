@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import flourDatabase from '../../../public/flour-database.json';
 
 export async function POST(request: Request) {
   const { base64, mediaType } = await request.json();
@@ -11,6 +12,11 @@ export async function POST(request: Request) {
   if (!apiKey) {
     return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
   }
+
+  const dbSummary = (flourDatabase as any[])
+    .filter(f => f.source === 'official')
+    .map(f => `${f.brand} ${f.product}: W${f.w}, ${f.protein}% protein`)
+    .join('\n');
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -37,12 +43,12 @@ Extract the following information from the flour bag:
 2. W value (strength rating) — look for "W" followed by a number, or "forza" value
 3. Protein percentage — look for "proteine" or "protein" in the nutritional table (per 100g)
 
-If W value is not visible, estimate based on:
-- "00 pizzeria" type flours: estimate W 260
-- "00 cuoco/chef" type flours: estimate W 300
-- "manitoba" type flours: estimate W 350+
-- "bread flour" type: estimate W 200
-- "all purpose/T55" type: estimate W 130
+KNOWN FLOUR DATABASE (authoritative — always use these values if brand matches):
+${dbSummary}
+
+If the bag matches any entry above, return those exact values with confidence "high" and source "database".
+If not found in database, estimate from flour type with confidence "medium" and source "estimated".
+Never return an error — always return your best estimate.
 
 Respond ONLY with a JSON object, no other text:
 {
@@ -50,6 +56,7 @@ Respond ONLY with a JSON object, no other text:
   "w": number,
   "protein": number,
   "confidence": "high" | "medium" | "low",
+  "source": "database" | "estimated",
   "note": "brief note if W was estimated"
 }`,
           },
