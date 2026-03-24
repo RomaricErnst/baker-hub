@@ -454,6 +454,15 @@ function SimpleColourBar({
       ref={containerRef}
       style={{ width: '100%', userSelect: 'none', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
     >
+      {/* Hint */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: '.45rem' }}>
+        <svg width={10} height={10} style={{ flexShrink: 0 }}>
+          <polygon points="5,0 10,5 5,10 0,5" fill="#1A1612" />
+        </svg>
+        <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+          Drag the diamond to set your mixing time
+        </span>
+      </div>
       <svg
         ref={svgRef}
         width={W} height={BAR_SVG_H}
@@ -625,15 +634,6 @@ function SimpleColourBar({
         </div>
       </div>
 
-      {/* Hint */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: '.45rem' }}>
-        <svg width={10} height={10} style={{ flexShrink: 0 }}>
-          <polygon points="5,0 10,5 5,10 0,5" fill="#1A1612" />
-        </svg>
-        <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-          Drag the diamond into the green zone
-        </span>
-      </div>
     </div>
   );
 }
