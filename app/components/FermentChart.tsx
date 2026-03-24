@@ -35,7 +35,7 @@ const TWO_H = ROW_H + GAP + ROW_H + AXIS_ZONE; // 144
 const BL1 = ROW_H;                              // 58  — pref baseline
 const BL2 = ROW_H + GAP + ROW_H;               // 120 — dough baseline
 const AXIS_Y = TWO_H - 12;                      // 132
-const MAXH_ROW = 46;
+const MAXH_ROW = 50;
 
 // Diamond half-size
 const S = 10;
@@ -321,6 +321,39 @@ export default function FermentChart({
       ref={containerRef}
       style={{ width: '100%', userSelect: 'none', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
     >
+      {/* ── Hint text ──────────────────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '.4rem' }}>
+        {hasPref ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <svg width={10} height={10} style={{ flexShrink: 0 }}>
+                <polygon points="5,0 10,5 5,10 0,5" fill={prefColor} />
+              </svg>
+              <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+                drag to set {prefTypeName.toLowerCase()} start — curve moves, zone stays
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <svg width={10} height={10} style={{ flexShrink: 0 }}>
+                <polygon points="5,0 10,5 5,10 0,5" fill={CHAR} />
+              </svg>
+              <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+                drag to move the whole plan
+              </span>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <svg width={10} height={10} style={{ flexShrink: 0 }}>
+              <polygon points="5,0 10,5 5,10 0,5" fill={CHAR} />
+            </svg>
+            <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+              drag to set mix time
+            </span>
+          </div>
+        )}
+      </div>
+
       <svg
         ref={svgRef}
         width={W}
@@ -568,7 +601,7 @@ export default function FermentChart({
             }}>Bake</div>
           </div>
           <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-            {fmtDT(eatTime)}
+            {fmtHM(eatTime)}
           </div>
           <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: 'var(--smoke)' }}>
             Fixed
@@ -576,38 +609,6 @@ export default function FermentChart({
         </div>
       </div>
 
-      {/* ── Hint text ──────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '.45rem' }}>
-        {hasPref ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <svg width={10} height={10} style={{ flexShrink: 0 }}>
-                <polygon points="5,0 10,5 5,10 0,5" fill={prefColor} />
-              </svg>
-              <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-                drag to set {prefTypeName.toLowerCase()} start — curve moves, zone stays
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <svg width={10} height={10} style={{ flexShrink: 0 }}>
-                <polygon points="5,0 10,5 5,10 0,5" fill={CHAR} />
-              </svg>
-              <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-                drag to move the whole plan
-              </span>
-            </div>
-          </>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <svg width={10} height={10} style={{ flexShrink: 0 }}>
-              <polygon points="5,0 10,5 5,10 0,5" fill={CHAR} />
-            </svg>
-            <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-              drag to set mix time
-            </span>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
