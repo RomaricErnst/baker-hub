@@ -26,26 +26,50 @@ export default function Header() {
       <div style={{
         display: 'flex',
         flexDirection: 'column',
+        alignItems: 'center',
         justifyContent: 'center',
       }}>
+        {/* Top row: image + name side by side, tightly spaced */}
         <div style={{
-          fontFamily: 'var(--font-playfair)',
-          fontSize: '1.4rem',
-          fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
-          gap: '0.4rem',
-          lineHeight: 1.2,
+          gap: '.35rem',
+          lineHeight: 1,
         }}>
-          <img src="/logo-mark.png" alt="Baker Hub" style={{ width: '28px', height: '28px', objectFit: 'contain', marginRight: '.5rem', borderRadius: '6px' }} />
-          Baker Hub
+          <img
+            src="/logo-mark.png"
+            alt="Baker Hub"
+            style={{
+              width: '32px',
+              height: '32px',
+              objectFit: 'contain',
+              borderRadius: '6px',
+              flexShrink: 0,
+            }}
+          />
+          <span style={{
+            fontFamily: 'var(--font-playfair)',
+            fontSize: '1.35rem',
+            fontWeight: 700,
+            color: 'var(--cream)',
+            letterSpacing: '-.01em',
+            lineHeight: 1,
+          }}>
+            Baker Hub
+          </span>
         </div>
+
+        {/* Tagline: centered under the full logo+name block */}
         <div style={{
           fontFamily: 'var(--font-dm-sans)',
           fontStyle: 'italic',
-          fontSize: '.68rem',
+          fontSize: '.62rem',
           color: 'var(--gold)',
-          lineHeight: 1.2,
+          letterSpacing: '.04em',
+          marginTop: '.2rem',
+          lineHeight: 1,
+          textAlign: 'center',
+          width: '100%',
         }}>
           {t('tagline')}
         </div>
