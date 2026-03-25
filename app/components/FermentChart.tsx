@@ -162,9 +162,11 @@ export default function FermentChart({
   const isLevain   = prefermentType === 'levain' || prefermentType === 'sourdough';
   const prefColor  = isLevain ? '#4A7FA5' : '#C4A030';
   const prefStroke = isLevain ? '#2A5F85' : '#7A6010';
-  const SAGE       = '#6B7A5A';
-  const TERRA      = '#C4522A';
-  const CHAR       = '#1A1612';
+  const SAGE            = '#6B7A5A';
+  const TERRA           = '#C4522A';
+  const CHAR            = '#1A1612';
+  const DARK_SAGE       = '#3D5A30';
+  const DARK_SAGE_STR   = '#4A6B3A';
 
   // ── Physics ──────────────────────────────────────────────
   // Cold-aware dough bell: wider sigma, later peak for cold retard schedules
@@ -296,6 +298,7 @@ export default function FermentChart({
   function renderZone(
     fromHBF: number, toHBF: number,
     color: string, label: string, labelY: number,
+    markerId: string,
   ) {
     const x1 = hToX(fromHBF, W, WH);
     const x2 = hToX(toHBF,   W, WH);
@@ -320,6 +323,13 @@ export default function FermentChart({
           textAnchor="middle" fontFamily="DM Mono, monospace" fillOpacity={0.85} fontWeight="600">
           {label}
         </text>
+        <line
+          x1={x1 + 4} x2={x2 - 4}
+          y1={labelY + 8} y2={labelY + 8}
+          stroke={color} strokeWidth={1.2} strokeOpacity={0.7}
+          markerStart={`url(#arrow-${markerId}-start)`}
+          markerEnd={`url(#arrow-${markerId}-end)`}
+        />
       </g>
     );
   }
@@ -381,10 +391,10 @@ export default function FermentChart({
             background: glowState === 'mix' ? '#FFF8F3' : 'var(--cream)',
             border: `1px solid ${glowState === 'mix' ? 'var(--terra)' : 'var(--border)'}`,
             borderRadius: '20px', padding: '3px 10px',
+            opacity: glowState === 'mix' ? 1 : 0.65,
           }}>
-            <svg width={9} height={9}><polygon points="4.5,0 9,4.5 4.5,9 0,4.5" fill="#1A1612" /></svg>
-            <span>Drag black diamond to adjust dough start
-              <span style={{ color: 'var(--smoke)', marginLeft: '4px' }}>· Aim for the peak — dough ready at bake</span>
+            <span>◆ Drag to set dough start
+              <span style={{ color: 'var(--smoke)', marginLeft: '4px' }}>· Green curve should peak at ▲ Bake</span>
             </span>
           </div>
           {hasPref && (
@@ -394,10 +404,10 @@ export default function FermentChart({
               background: glowState === 'pref' ? '#FFF8F3' : 'var(--cream)',
               border: `1px solid ${glowState === 'pref' ? 'var(--terra)' : 'var(--border)'}`,
               borderRadius: '20px', padding: '3px 10px',
+              opacity: glowState === 'pref' ? 1 : 0.65,
             }}>
-              <svg width={9} height={9}><polygon points="4.5,0 9,4.5 4.5,9 0,4.5" fill={prefColor} /></svg>
-              <span>Drag {prefTypeName.toLowerCase()} diamond to adjust {prefTypeName.toLowerCase()} start
-                <span style={{ color: 'var(--smoke)', marginLeft: '4px' }}>· Aim for the peak — {prefTypeName} ready at mix</span>
+              <span>◇ Drag to set {prefTypeName.toLowerCase()} start
+                <span style={{ color: 'var(--smoke)', marginLeft: '4px' }}>· Gold curve should peak at ◆ Mix</span>
               </span>
             </div>
           )}
@@ -411,10 +421,7 @@ export default function FermentChart({
           alignItems: 'center',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{
-              width: '10px', height: '10px', borderRadius: '50%',
-              background: prefColor, flexShrink: 0,
-            }} />
+            <span style={{ fontSize: '14px', color: prefColor, lineHeight: 1 }}>◇</span>
             <span style={{ color: '#3D3530' }}>
               {prefermentType === 'biga'       ? 'Biga'   :
                prefermentType === 'levain'     ? 'Levain' :
@@ -423,10 +430,7 @@ export default function FermentChart({
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{
-              width: '10px', height: '10px', borderRadius: '50%',
-              background: SAGE, flexShrink: 0,
-            }} />
+            <span style={{ fontSize: '14px', color: '#3D5A30', lineHeight: 1 }}>◆</span>
             <span style={{ color: '#3D3530' }}>Dough</span>
           </div>
         </div>
@@ -452,6 +456,19 @@ export default function FermentChart({
               </clipPath>
             );
           })}
+          {/* Bidirectional arrow markers for zone width indicators */}
+          <marker id="arrow-sage-start" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+            <path d="M6,0 L0,3 L6,6" fill="none" stroke="#6B7A5A" strokeWidth="1.2"/>
+          </marker>
+          <marker id="arrow-sage-end" markerWidth="6" markerHeight="6" refX="0" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6" fill="none" stroke="#6B7A5A" strokeWidth="1.2"/>
+          </marker>
+          <marker id="arrow-pref-start" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+            <path d="M6,0 L0,3 L6,6" fill="none" stroke={prefColor} strokeWidth="1.2"/>
+          </marker>
+          <marker id="arrow-pref-end" markerWidth="6" markerHeight="6" refX="0" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6" fill="none" stroke={prefColor} strokeWidth="1.2"/>
+          </marker>
         </defs>
 
         {/* ── Bake reference line ── */}
@@ -473,8 +490,8 @@ export default function FermentChart({
             'Start poolish';
           return (
             <>
-              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start dough', 14)}
-              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, prefZoneLabel, 30)}
+              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start dough here', 12, 'sage')}
+              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, `${prefZoneLabel} here`, 32, 'pref')}
             </>
           );
         })()}
@@ -571,11 +588,18 @@ export default function FermentChart({
         {/* ── Mix diamond ── */}
         {renderDiamond(
           mixX,
-          inBlocker(effectiveMixHBF) ? '#aaaaaa' : CHAR,
-          inBlocker(effectiveMixHBF) ? '#999999' : 'white',
+          inBlocker(effectiveMixHBF) ? '#aaaaaa' : DARK_SAGE,
+          inBlocker(effectiveMixHBF) ? '#999999' : DARK_SAGE_STR,
           inBlocker(effectiveMixHBF),
           'mix',
         )}
+        {/* ── Mix label ── */}
+        <text
+          x={mixX} y={AXIS_Y + 30}
+          fontSize={11} fill="#3D5A30"
+          fontFamily="DM Mono, monospace"
+          textAnchor="middle" fontWeight="600"
+        >Mix</text>
       </svg>
 
       {/* ── Info cards ─────────────────────────────────── */}
@@ -615,7 +639,7 @@ export default function FermentChart({
           borderRadius: '10px', padding: '12px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
-            <div style={{ width: 8, height: 8, background: CHAR, transform: 'rotate(45deg)', flexShrink: 0 }} />
+            <div style={{ width: 8, height: 8, background: DARK_SAGE, transform: 'rotate(45deg)', flexShrink: 0 }} />
             <div style={{
               fontSize: '13px', color: 'var(--smoke)',
               fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',

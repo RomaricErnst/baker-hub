@@ -747,12 +747,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   function confirmBakeTime() {
     const s = suggestion.suggestedStart;
     const sweetCenter = hasColdRetard ? 34 : 20;
-    const sweetFrom   = hasColdRetard ? 52 : 26;
-    const sweetTo     = hasColdRetard ? 20 : 14;
-    const rawOffsetH  = (pendingEatTime.getTime() - s.getTime()) / 3600000;
-    const defaultHBF  = (rawOffsetH >= sweetTo && rawOffsetH <= sweetFrom)
-      ? rawOffsetH
-      : sweetCenter;
+    const defaultHBF  = sweetCenter;
     const snappedHBF  = snapToBlockerEdgeIfBlocked(defaultHBF, blocks, pendingEatTime, sweetCenter);
     const clampedStart = new Date(pendingEatTime.getTime() - snappedHBF * 3600000);
     setPendingStart(clampedStart);

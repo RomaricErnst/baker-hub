@@ -439,7 +439,7 @@ export function buildSchedule(
   if (coldHRequired && isTropical) {
     scheduleNote = `🧈 Butter needs the cold — fridge retard is mandatory at ${kitchenTemp}°C`;
   } else if (hasColdRetard && coldH < preferredColdH) {
-    scheduleNote = `⏱ Short window — cold retard reduced to ${coldH}h to fit your schedule`;
+    scheduleNote = `⏱ Short window — cold retard reduced to ${formatHoursSchedule(coldH)} to fit your schedule`;
   } else if (!hasColdRetard && preferredColdH > 0) {
     scheduleNote = `🌡️ Tight schedule — pure room temperature fermentation`;
   } else if (isTropical && !hasColdRetard) {
@@ -938,6 +938,17 @@ export function formatTime(d: Date): string {
 export function toDateTimeLocal(d: Date): string {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:00`;
+}
+
+function formatHoursSchedule(h: number): string {
+  const r = Math.round(h * 4) / 4;
+  const w = Math.floor(r);
+  const f = r - w;
+  if (f === 0)    return `${w}h`;
+  if (f === 0.25) return `${w}h15`;
+  if (f === 0.5)  return `${w}h30`;
+  if (f === 0.75) return `${w}h45`;
+  return `${r}h`;
 }
 
 export function hoursLabel(h: number): string {
