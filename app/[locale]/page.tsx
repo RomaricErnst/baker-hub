@@ -380,7 +380,7 @@ export default function Home() {
 
   function advanceAdv(from: number) {
     setAdvancedStep(from + 1);
-    if (from === 10) setShowResults(true);
+    if (from === 11) setShowResults(true);
     else setShowResults(false);
     setTimeout(() => {
       const el = document.getElementById(`adv-step-${from + 1}`);
@@ -671,27 +671,44 @@ export default function Home() {
               />
             </StepCard>
 
-            {/* ─── STEP 5: Mixer ───────────────────── */}
+            {/* ─── STEP 5: Climate ─────────────────── */}
             <StepCard
               num={5} title={t('steps.5.title')}
               activeStep={activeStep}
-              summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
+              summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
               onEdit={() => setActiveStep(5)}
             >
-              <MixerPicker
-                selected={mixerType}
-                onSelect={mt => { setMixerType(mt); advance(5); }}
-                styleKey={styleKey ?? undefined}
-                bakeType={bakeType ?? undefined}
+              <ClimatePicker
+                kitchenTemp={kitchenTemp} humidity={humidity}
+                fridgeTemp={fridgeTemp} mode="simple"
+                onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
+
+              <ContinueBtn onClick={() => advance(5)} />
             </StepCard>
 
-            {/* ─── STEP 6: Yeast type ──────────────── */}
+            {/* ─── STEP 6: Mixer ───────────────────── */}
             <StepCard
               num={6} title={t('steps.6.title')}
               activeStep={activeStep}
-              summary={<>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name}</>}
+              summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
               onEdit={() => setActiveStep(6)}
+            >
+              <MixerPicker
+                selected={mixerType}
+                onSelect={mt => { setMixerType(mt); advance(6); }}
+                styleKey={styleKey ?? undefined}
+                bakeType={bakeType ?? undefined}
+                kitchenTemp={kitchenTemp}
+              />
+            </StepCard>
+
+            {/* ─── STEP 7: Yeast type ──────────────── */}
+            <StepCard
+              num={7} title={t('steps.7.title')}
+              activeStep={activeStep}
+              summary={<>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name}</>}
+              onEdit={() => setActiveStep(7)}
             >
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.65rem', marginBottom: '.65rem' }}>
@@ -707,7 +724,7 @@ export default function Home() {
                     return (
                       <div
                         key={yt}
-                        onClick={() => { setYeastType(yt); advance(6); }}
+                        onClick={() => { setYeastType(yt); advance(7); }}
                         style={{
                           border: `2px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
                           borderRadius: '14px', padding: '.75rem .6rem',
@@ -748,22 +765,6 @@ export default function Home() {
                   🤔 Not sure?
                 </button>
               </div>
-            </StepCard>
-
-            {/* ─── STEP 7: Climate ─────────────────── */}
-            <StepCard
-              num={7} title={t('steps.7.title')}
-              activeStep={activeStep}
-              summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
-              onEdit={() => setActiveStep(7)}
-            >
-              <ClimatePicker
-                kitchenTemp={kitchenTemp} humidity={humidity}
-                fridgeTemp={fridgeTemp} mode="simple"
-                onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
-              />
-
-              <ContinueBtn onClick={() => advance(7)} />
             </StepCard>
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
@@ -1159,29 +1160,47 @@ export default function Home() {
               />
             </StepCard>
 
-            {/* ─── ADV STEP 5: Mixer ───────────────── */}
+            {/* ─── ADV STEP 5: Climate ─────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={5} title={t('steps.5.title')}
+              num={5}
+              title={t('steps.5.title')}
+              activeStep={advancedStep}
+              summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
+              onEdit={() => setAdvancedStep(5)}
+            >
+              <ClimatePicker
+                kitchenTemp={kitchenTemp} humidity={humidity}
+                fridgeTemp={fridgeTemp} mode="custom"
+                onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
+              />
+              <ContinueBtn onClick={() => advanceAdv(5)} />
+            </StepCard>
+
+            {/* ─── ADV STEP 6: Mixer ───────────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={6} title={t('steps.6.title')}
               activeStep={advancedStep}
               summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
-              onEdit={() => setAdvancedStep(5)}
+              onEdit={() => setAdvancedStep(6)}
             >
               <MixerPicker
                 selected={mixerType}
-                onSelect={mt => { setMixerType(mt); advanceAdv(5); }}
+                onSelect={mt => { setMixerType(mt); advanceAdv(6); }}
                 styleKey={styleKey ?? undefined}
                 bakeType={bakeType ?? undefined}
+                kitchenTemp={kitchenTemp}
               />
             </StepCard>
 
-            {/* ─── ADV STEP 6: Flour ───────────────── */}
+            {/* ─── ADV STEP 7: Flour ───────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={6} title={t('steps.flour.title')}
+              num={7} title={t('steps.flour.title')}
               activeStep={advancedStep}
               summary={computeBlendProfile(flourBlend).displayName}
-              onEdit={() => setAdvancedStep(6)}
+              onEdit={() => setAdvancedStep(7)}
             >
               <FlourPicker
                 blend={flourBlend}
@@ -1191,7 +1210,7 @@ export default function Home() {
               />
               <div style={{ marginTop: '.85rem' }}>
                 <button
-                  onClick={() => advanceAdv(6)}
+                  onClick={() => advanceAdv(7)}
                   className="btn"
                   style={{
                     width: '100%', padding: '.9rem 1.25rem',
@@ -1206,13 +1225,13 @@ export default function Home() {
               </div>
             </StepCard>
 
-            {/* ─── ADV STEP 7: Yeast ───────────────── */}
+            {/* ─── ADV STEP 8: Yeast ───────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={7} title={t('steps.6.title')}
+              num={8} title={t('steps.7.title')}
               activeStep={advancedStep}
               summary={<>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{YEAST_TYPES[yeastType].shortName}</span></>}
-              onEdit={() => setAdvancedStep(7)}
+              onEdit={() => setAdvancedStep(8)}
             >
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.65rem', marginBottom: '.65rem' }}>
@@ -1232,9 +1251,9 @@ export default function Home() {
                           setYeastType(yt);
                           if (yt === 'sourdough') {
                             setPrefermentType('levain');
-                            setAdvancedStep(9);
+                            setAdvancedStep(10);
                             setTimeout(() => {
-                              const el = document.getElementById('adv-step-9');
+                              const el = document.getElementById('adv-step-10');
                               if (el) {
                                 const top = el.getBoundingClientRect().top + window.scrollY - 70;
                                 window.scrollTo({ top, behavior: 'smooth' });
@@ -1243,7 +1262,7 @@ export default function Home() {
                           } else {
                             // switching away from sourdough: reset levain preferment
                             if (prefermentType === 'levain') setPrefermentType('none');
-                            advanceAdv(7);
+                            advanceAdv(8);
                           }
                         }}
                         style={{
@@ -1284,56 +1303,193 @@ export default function Home() {
               </div>
             </StepCard>
 
-            {/* ─── ADV STEP 8: Preferment (hidden for sourdough) ── */}
+            {/* ─── ADV STEP 9: Preferment (hidden for sourdough) ── */}
             {yeastType !== 'sourdough' && (
               <StepCard
                 idPrefix="adv-step"
-                num={8} title="Preferment method"
+                num={9} title="Preferment method"
                 activeStep={advancedStep}
                 summary={prefermentType !== 'none' ? `${PREFERMENT_TYPES[prefermentType].emoji} ${PREFERMENT_TYPES[prefermentType].name}` : '⚡ Direct'}
-                onEdit={() => setAdvancedStep(8)}
+                onEdit={() => setAdvancedStep(9)}
               >
                 <PrefermentPicker
                   selected={prefermentType}
                   onSelect={pt => {
                     setPrefermentType(pt);
-                    if (pt === 'none') advanceAdv(8);
+                    if (pt === 'none') advanceAdv(9);
                     // poolish, biga: stay on step so baker sees the flour % slider
                   }}
                   flourPct={prefermentFlourPct}
                   onFlourPctChange={setPrefermentFlourPct}
                   styleKey={styleKey ?? undefined}
                   hideTypes={['levain']}
+                  kitchenTemp={kitchenTemp}
                 />
-                {prefermentType !== 'none' && <ContinueBtn onClick={() => advanceAdv(8)} />}
+                {prefermentType !== 'none' && <ContinueBtn onClick={() => advanceAdv(9)} />}
               </StepCard>
             )}
 
-            {/* ─── ADV STEP 9: Climate ─────────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={9}
-              title={t('steps.7.title')}
-              activeStep={advancedStep}
-              summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
-              onEdit={() => setAdvancedStep(9)}
-            >
-              <ClimatePicker
-                kitchenTemp={kitchenTemp} humidity={humidity}
-                fridgeTemp={fridgeTemp} mode="custom"
-                onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
-              />
-              <ContinueBtn onClick={() => advanceAdv(9)} />
-            </StepCard>
-
-            {/* ─── ADV STEP 10: Scheduler ──────────── */}
+            {/* ─── ADV STEP 10: Dial your dough ────── */}
             <StepCard
               idPrefix="adv-step"
               num={10}
+              title="Dial in your dough"
+              activeStep={advancedStep}
+              summary={manualHydration !== undefined ? `${manualHydration}% hydration` : styleKey ? `${ALL_STYLES[styleKey].hydration}% hydration` : undefined}
+              onEdit={() => setAdvancedStep(10)}
+            >
+              <div>
+                <div style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '1rem', lineHeight: 1.5 }}>
+                  Defaults are set for your style — adjust if you know what you&apos;re doing.
+                </div>
+                {/* Hydration slider */}
+                {(() => {
+                  const zone = STYLE_HYDRATION_ZONES[styleKey!] ?? FALLBACK_ZONE;
+                  const sliderMin = zone.min;
+                  const sliderMax = zone.max;
+                  const totalRange = sliderMax - sliderMin;
+                  const lowPct         = ((zone.classicMin - sliderMin) / totalRange) * 100;
+                  const classicMaxPct  = ((zone.classicMax - sliderMin) / totalRange) * 100;
+                  const advancedMaxPct = ((zone.advancedMax - sliderMin) / totalRange) * 100;
+                  const defaultHyd = Math.round((zone.classicMin + zone.classicMax) / 2);
+                  const currentHyd = manualHydration ?? defaultHyd;
+
+                  function hydrationZoneLabel(h: number): { label: string; color: string; note: string } {
+                    if (h < zone.classicMin) return {
+                      label: '⚠️ Below classic range',
+                      color: '#7A5A10',
+                      note: h < zone.min + 3
+                        ? 'Dough will be very stiff — hard to stretch and may tear.'
+                        : `Below ${zone.name} classic range. Dough will be stiffer and denser.`,
+                    };
+                    if (h <= zone.classicMax) return {
+                      label: '✓ Classic range',
+                      color: 'var(--sage)',
+                      note: `Authentic ${zone.name} range. Great handling and traditional texture.`,
+                    };
+                    if (h <= zone.advancedMax) return {
+                      label: '✦ Extended range',
+                      color: 'var(--gold)',
+                      note: 'More open crumb and airiness. Requires confident shaping technique.',
+                    };
+                    return {
+                      label: '⚡ Advanced technique',
+                      color: 'var(--terra)',
+                      note: h >= zone.max - 2
+                        ? 'Extreme hydration. Expect very sticky dough — wet hands, bench scraper essential.'
+                        : 'High hydration territory. Excellent open crumb but challenging to handle.',
+                    };
+                  }
+
+                  const hZone = hydrationZoneLabel(currentHyd);
+                  return (
+                    <div style={{ marginBottom: '.85rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
+                        <label style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
+                          Hydration
+                        </label>
+                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.1rem', fontWeight: 700, color: hZone.color }}>
+                          {currentHyd}%
+                        </span>
+                      </div>
+                      <div style={{ position: 'relative', height: '36px', display: 'flex', alignItems: 'center' }}>
+                        <div style={{
+                          position: 'absolute', left: 0, right: 0, height: '8px', borderRadius: '4px',
+                          background: `linear-gradient(to right, #E8D080 0%, #E8D080 ${lowPct}%, #B8D4A8 ${lowPct}%, #B8D4A8 ${classicMaxPct}%, #E8D890 ${classicMaxPct}%, #E8D890 ${advancedMaxPct}%, #F5C4B0 ${advancedMaxPct}%, #F5C4B0 100%)`,
+                        }} />
+                        <input
+                          type="range"
+                          min={sliderMin} max={sliderMax} step={1}
+                          value={currentHyd}
+                          onChange={e => setManualHydration(Number(e.target.value))}
+                          style={{ position: 'absolute', left: 0, right: 0, width: '100%', appearance: 'none', background: 'transparent', cursor: 'pointer', height: '36px', margin: 0 }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem' }}>
+                        <span>{sliderMin}%</span>
+                        <span style={{ color: 'var(--sage)', fontWeight: 600 }}>{zone.classicMin}–{zone.classicMax}% classic</span>
+                        <span>{sliderMax}%</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.5rem', marginBottom: '.25rem' }}>
+                        <span style={{
+                          fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)', fontWeight: 600,
+                          color: hZone.color, flexShrink: 0,
+                          background: hZone.color === 'var(--sage)' ? 'rgba(107,122,90,0.1)' :
+                                      hZone.color === 'var(--gold)' ? 'rgba(212,168,83,0.12)' :
+                                      hZone.color === 'var(--terra)' ? 'rgba(196,82,42,0.1)' : 'rgba(122,90,16,0.1)',
+                          borderRadius: '20px', padding: '.2rem .6rem',
+                        }}>
+                          {hZone.label}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '.75rem' }}>
+                        {hZone.note}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Oil + Sugar side by side */}
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <FieldLabel>Oil %</FieldLabel>
+                    <input
+                      type="number" min={0} max={10} step={0.5}
+                      value={manualOil ?? ALL_STYLES[styleKey!]?.oil ?? 0}
+                      onChange={e => setManualOil(Number(e.target.value))}
+                      style={{
+                        width: '100%', padding: '.45rem .6rem', borderRadius: '8px',
+                        border: '1.5px solid var(--border)', background: 'var(--cream)',
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
+                        color: 'var(--char)', outline: 'none',
+                      }}
+                    />
+                    {(() => {
+                      const v = manualOil ?? ALL_STYLES[styleKey!]?.oil ?? 0;
+                      const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
+                      return (
+                        <div style={{ fontSize: '.72rem', color: v > 0 && isHighTemp ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginTop: '.35rem' }}>
+                          {oilGuidance(v, ovenType, styleKey ?? '')}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <FieldLabel>Sugar %</FieldLabel>
+                    <input
+                      type="number" min={0} max={10} step={0.5}
+                      value={manualSugar ?? ALL_STYLES[styleKey!]?.sugar ?? 0}
+                      onChange={e => setManualSugar(Number(e.target.value))}
+                      style={{
+                        width: '100%', padding: '.45rem .6rem', borderRadius: '8px',
+                        border: '1.5px solid var(--border)', background: 'var(--cream)',
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
+                        color: 'var(--char)', outline: 'none',
+                      }}
+                    />
+                    {(() => {
+                      const v = manualSugar ?? ALL_STYLES[styleKey!]?.sugar ?? 0;
+                      const sg = sugarGuidance(v, ovenType);
+                      return (
+                        <div style={{ fontSize: '.72rem', color: sg.warn ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginTop: '.35rem' }}>
+                          {sg.note}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+                <ContinueBtn onClick={() => advanceAdv(10)} />
+              </div>
+            </StepCard>
+
+            {/* ─── ADV STEP 11: Scheduler ──────────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={11}
               title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
               activeStep={advancedStep}
               summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
-              onEdit={() => setAdvancedStep(10)}
+              onEdit={() => setAdvancedStep(11)}
             >
               <SchedulePicker
                 mode="custom"
@@ -1348,164 +1504,13 @@ export default function Home() {
                 onFeedTimeChange={setFeedTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
-                onConfirm={() => advanceAdv(10)}
+                onConfirm={() => advanceAdv(11)}
               />
             </StepCard>
 
             {/* ─── RESULTS (Advanced) ───────────────── */}
             {showResults && (
               <div ref={resultsRef} style={{ marginTop: '2rem' }}>
-
-                {/* ── Manual adjustments — BEFORE results header ── */}
-                {advancedRecipe && (
-                  <div style={{
-                    background: 'var(--warm)', border: '1.5px solid var(--border)',
-                    borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.5rem',
-                  }}>
-                    <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.05rem', fontWeight: 700, color: 'var(--char)', marginBottom: '.3rem' }}>
-                      Dial in your dough
-                    </div>
-                    <div style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '1rem', lineHeight: 1.5 }}>
-                      Defaults are set for your style — adjust if you know what you&apos;re doing.
-                    </div>
-                    {/* Hydration slider */}
-                    {(() => {
-                      const zone = STYLE_HYDRATION_ZONES[styleKey!] ?? FALLBACK_ZONE;
-                      const sliderMin = zone.min;
-                      const sliderMax = zone.max;
-                      const totalRange = sliderMax - sliderMin;
-                      const lowPct         = ((zone.classicMin - sliderMin) / totalRange) * 100;
-                      const classicMaxPct  = ((zone.classicMax - sliderMin) / totalRange) * 100;
-                      const advancedMaxPct = ((zone.advancedMax - sliderMin) / totalRange) * 100;
-                      const defaultHyd = Math.round((zone.classicMin + zone.classicMax) / 2);
-                      const currentHyd = manualHydration ?? defaultHyd;
-
-                      function hydrationZoneLabel(h: number): { label: string; color: string; note: string } {
-                        if (h < zone.classicMin) return {
-                          label: '⚠️ Below classic range',
-                          color: '#7A5A10',
-                          note: h < zone.min + 3
-                            ? 'Dough will be very stiff — hard to stretch and may tear.'
-                            : `Below ${zone.name} classic range. Dough will be stiffer and denser.`,
-                        };
-                        if (h <= zone.classicMax) return {
-                          label: '✓ Classic range',
-                          color: 'var(--sage)',
-                          note: `Authentic ${zone.name} range. Great handling and traditional texture.`,
-                        };
-                        if (h <= zone.advancedMax) return {
-                          label: '✦ Extended range',
-                          color: 'var(--gold)',
-                          note: 'More open crumb and airiness. Requires confident shaping technique.',
-                        };
-                        return {
-                          label: '⚡ Advanced technique',
-                          color: 'var(--terra)',
-                          note: h >= zone.max - 2
-                            ? 'Extreme hydration. Expect very sticky dough — wet hands, bench scraper essential.'
-                            : 'High hydration territory. Excellent open crumb but challenging to handle.',
-                        };
-                      }
-
-                      const hZone = hydrationZoneLabel(currentHyd);
-                      return (
-                        <div style={{ marginBottom: '.85rem' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
-                            <label style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
-                              Hydration
-                            </label>
-                            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.1rem', fontWeight: 700, color: hZone.color }}>
-                              {currentHyd}%
-                            </span>
-                          </div>
-                          <div style={{ position: 'relative', height: '36px', display: 'flex', alignItems: 'center' }}>
-                            <div style={{
-                              position: 'absolute', left: 0, right: 0, height: '8px', borderRadius: '4px',
-                              background: `linear-gradient(to right, #E8D080 0%, #E8D080 ${lowPct}%, #B8D4A8 ${lowPct}%, #B8D4A8 ${classicMaxPct}%, #E8D890 ${classicMaxPct}%, #E8D890 ${advancedMaxPct}%, #F5C4B0 ${advancedMaxPct}%, #F5C4B0 100%)`,
-                            }} />
-                            <input
-                              type="range"
-                              min={sliderMin} max={sliderMax} step={1}
-                              value={currentHyd}
-                              onChange={e => setManualHydration(Number(e.target.value))}
-                              style={{ position: 'absolute', left: 0, right: 0, width: '100%', appearance: 'none', background: 'transparent', cursor: 'pointer', height: '36px', margin: 0 }}
-                            />
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem' }}>
-                            <span>{sliderMin}%</span>
-                            <span style={{ color: 'var(--sage)', fontWeight: 600 }}>{zone.classicMin}–{zone.classicMax}% classic</span>
-                            <span>{sliderMax}%</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.5rem', marginBottom: '.25rem' }}>
-                            <span style={{
-                              fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)', fontWeight: 600,
-                              color: hZone.color, flexShrink: 0,
-                              background: hZone.color === 'var(--sage)' ? 'rgba(107,122,90,0.1)' :
-                                          hZone.color === 'var(--gold)' ? 'rgba(212,168,83,0.12)' :
-                                          hZone.color === 'var(--terra)' ? 'rgba(196,82,42,0.1)' : 'rgba(122,90,16,0.1)',
-                              borderRadius: '20px', padding: '.2rem .6rem',
-                            }}>
-                              {hZone.label}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '.75rem' }}>
-                            {hZone.note}
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Oil + Sugar side by side */}
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                      <div style={{ flex: 1 }}>
-                        <FieldLabel>Oil %</FieldLabel>
-                        <input
-                          type="number" min={0} max={10} step={0.5}
-                          value={manualOil ?? advancedRecipe.oil / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1)}
-                          onChange={e => setManualOil(Number(e.target.value))}
-                          style={{
-                            width: '100%', padding: '.45rem .6rem', borderRadius: '8px',
-                            border: '1.5px solid var(--border)', background: 'var(--cream)',
-                            fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
-                            color: 'var(--char)', outline: 'none',
-                          }}
-                        />
-                        {(() => {
-                          const v = manualOil ?? advancedRecipe.oil / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1);
-                          const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
-                          return (
-                            <div style={{ fontSize: '.72rem', color: v > 0 && isHighTemp ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginTop: '.35rem' }}>
-                              {oilGuidance(v, ovenType, styleKey ?? '')}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <FieldLabel>Sugar %</FieldLabel>
-                        <input
-                          type="number" min={0} max={10} step={0.5}
-                          value={manualSugar ?? advancedRecipe.sugar / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1)}
-                          onChange={e => setManualSugar(Number(e.target.value))}
-                          style={{
-                            width: '100%', padding: '.45rem .6rem', borderRadius: '8px',
-                            border: '1.5px solid var(--border)', background: 'var(--cream)',
-                            fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
-                            color: 'var(--char)', outline: 'none',
-                          }}
-                        />
-                        {(() => {
-                          const v = manualSugar ?? advancedRecipe.sugar / (advancedRecipe.flour > 0 ? advancedRecipe.flour / 100 : 1);
-                          const sg = sugarGuidance(v, ovenType);
-                          return (
-                            <div style={{ fontSize: '.72rem', color: sg.warn ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginTop: '.35rem' }}>
-                              {sg.note}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* ── Results header ── */}
                 <div style={{
@@ -1605,7 +1610,7 @@ export default function Home() {
       {/* ── Yeast Helper modal ──────────────── */}
       {showYeastHelper && (
         <YeastHelper
-          onSelect={yt => { setYeastType(yt); setShowYeastHelper(false); advance(6); }}
+          onSelect={yt => { setYeastType(yt); setShowYeastHelper(false); advance(7); }}
           onClose={() => setShowYeastHelper(false)}
         />
       )}

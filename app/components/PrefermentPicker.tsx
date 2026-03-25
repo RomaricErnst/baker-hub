@@ -10,12 +10,13 @@ interface PrefermentPickerProps {
   onFlourPctChange?: (pct: number) => void;
   styleKey?: string;
   hideTypes?: PrefermentType[];
+  kitchenTemp?: number;
 }
 
 
 export default function PrefermentPicker({
   selected, onSelect, flourPct, onFlourPctChange,
-  styleKey, hideTypes = [],
+  styleKey, hideTypes = [], kitchenTemp,
 }: PrefermentPickerProps) {
   const locale = useLocale();
   const isFr = locale === 'fr';
@@ -195,6 +196,32 @@ export default function PrefermentPicker({
                     }}>
                       <span>Less complex</span><span>More complex</span>
                     </div>
+
+                    {/* Climate note for poolish/biga */}
+                    {key === 'poolish' && kitchenTemp !== undefined && kitchenTemp >= 26 && (
+                      <div style={{
+                        marginTop: '.65rem',
+                        background: '#EEF6FF', border: '1px solid #B0CDE8',
+                        borderRadius: '8px', padding: '.5rem .65rem',
+                        fontSize: '.72rem', color: '#3A5F80', lineHeight: 1.5,
+                        display: 'flex', gap: '.4rem', alignItems: 'flex-start',
+                      }}>
+                        <span>🌡️</span>
+                        <span>Warm kitchen — keep poolish in the fridge after 1–2h at room temperature to avoid over-fermentation.</span>
+                      </div>
+                    )}
+                    {key === 'biga' && (
+                      <div style={{
+                        marginTop: '.65rem',
+                        background: '#EEF6FF', border: '1px solid #B0CDE8',
+                        borderRadius: '8px', padding: '.5rem .65rem',
+                        fontSize: '.72rem', color: '#3A5F80', lineHeight: 1.5,
+                        display: 'flex', gap: '.4rem', alignItems: 'flex-start',
+                      }}>
+                        <span>❄️</span>
+                        <span>Biga ferments best cold — refrigerate for 16–24h at 4°C for optimal flavour and gluten structure.</span>
+                      </div>
+                    )}
 
                   </div>
                 )}

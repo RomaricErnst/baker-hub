@@ -28,11 +28,11 @@
     "2": { "title": "Choose your dough style" },
     "3": { "title": "How many and how big?" },
     "4": { "title": "Your baking setup" },
-    "5": { "title": "Your mixing method" },
-    "6": { "title": "What yeast are you using?" },
-    "7": { "title": "Your kitchen climate" },
-    "8pizza": { "title": "Your baking schedule" },
-    "8bread": { "title": "Your baking schedule" },
+    "5": { "title": "Your kitchen climate" },
+    "6": { "title": "Your mixing method" },
+    "7": { "title": "What yeast are you using?" },
+    "8pizza": { "title": "Your baking plan" },
+    "8bread": { "title": "Your baking plan" },
     "flour": { "title": "Your flour" }
   },
   "bakeType": {
@@ -121,7 +121,7 @@
     "prioritySpeed": "⚡ Faster proof"
   },
   "timeline": {
-    "bakingSchedule": "Baking Schedule",
+    "bakingProtocol": "Your baking protocol",
     "startBaking": "Start Baking Mode",
     "autoAdjusted": "Schedule auto-adjusted — a room temperature window was too long for your kitchen temperature. A cold retard phase was added automatically to prevent over-fermentation.",
     "steps": {

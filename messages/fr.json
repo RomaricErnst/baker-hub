@@ -28,11 +28,11 @@
     "2": { "title": "Choisissez votre style de pâte" },
     "3": { "title": "Combien et quelle taille ?" },
     "4": { "title": "Votre four" },
-    "5": { "title": "Votre méthode de pétrissage" },
-    "6": { "title": "Quelle levure utilisez-vous ?" },
-    "7": { "title": "Le climat de votre cuisine" },
-    "8pizza": { "title": "Votre planning de cuisson" },
-    "8bread": { "title": "Votre planning de cuisson" },
+    "5": { "title": "Le climat de votre cuisine" },
+    "6": { "title": "Votre méthode de pétrissage" },
+    "7": { "title": "Quelle levure utilisez-vous ?" },
+    "8pizza": { "title": "Votre planning" },
+    "8bread": { "title": "Votre planning" },
     "flour": { "title": "Votre farine" }
   },
   "bakeType": {
@@ -121,7 +121,7 @@
     "prioritySpeed": "⚡ Pousse rapide"
   },
   "timeline": {
-    "bakingSchedule": "Planning de panification",
+    "bakingProtocol": "Votre protocole de cuisson",
     "startBaking": "Démarrer le mode cuisson",
     "autoAdjusted": "Planning ajusté automatiquement — une fenêtre à température ambiante était trop longue. Une phase de pousse au froid a été ajoutée pour éviter la surfermentation.",
     "steps": {

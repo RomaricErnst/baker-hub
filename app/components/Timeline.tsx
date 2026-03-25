@@ -392,7 +392,7 @@ export default function Timeline({
             fontFamily: 'var(--font-playfair)', fontSize: '1.15rem',
             fontWeight: 700, color: 'var(--char)',
           }}>
-            Baking Schedule
+            Your baking protocol
           </div>
           <div style={{ fontSize: '.75rem', color: 'var(--smoke)', marginTop: '.1rem', fontFamily: 'var(--font-dm-mono)' }}>
             {formatTime(startTime)} → {formatTime(eatTime)}

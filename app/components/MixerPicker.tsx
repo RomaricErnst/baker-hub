@@ -7,6 +7,7 @@ interface MixerPickerProps {
   onSelect: (mixer: MixerType) => void;
   styleKey?: string;
   bakeType?: 'pizza' | 'bread';
+  kitchenTemp?: number;
 }
 
 const NO_KNEAD_WARNING: Partial<Record<string, string>> = {
@@ -14,7 +15,7 @@ const NO_KNEAD_WARNING: Partial<Record<string, string>> = {
   newyork: 'No-knead gives marginal structure for New York slices. Stand mixing recommended for a foldable crust.',
 };
 
-export default function MixerPicker({ selected, onSelect, styleKey, bakeType }: MixerPickerProps) {
+export default function MixerPicker({ selected, onSelect, styleKey, bakeType, kitchenTemp }: MixerPickerProps) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   return (
@@ -85,6 +86,24 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType }: 
         );
       })}
     </div>
+    {selected === 'spiral' && kitchenTemp !== undefined && kitchenTemp >= 26 && (
+      <div style={{
+        marginTop: '.75rem',
+        background: '#EEF6FF',
+        border: '1.5px solid #B0CDE8',
+        borderRadius: '10px',
+        padding: '.7rem .9rem',
+        fontSize: '.78rem',
+        color: '#3A5F80',
+        lineHeight: 1.55,
+        display: 'flex',
+        gap: '.5rem',
+        alignItems: 'flex-start',
+      }}>
+        <span>🧊</span>
+        <span>Use ice-cold water or add ice cubes to your mixing bowl at this temperature.</span>
+      </div>
+    )}
     {selected === 'no_knead' && bakeType === 'pizza' && styleKey && NO_KNEAD_WARNING[styleKey] && (
       <div style={{
         marginTop: '.75rem',
