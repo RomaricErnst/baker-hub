@@ -16,7 +16,17 @@
   },
   "tabs": {
     "guided": "🧭 Simple",
-    "advanced": "🎛️ Custom"
+    "advanced": "🎛️ Custom",
+    "doughSetupTab": "Dough setup",
+    "bakePlanTab": "Bake plan"
+  },
+  "generate": {
+    "generateBtn": "Generate my bake plan →",
+    "editSetup": "← Edit dough setup",
+    "staleBanner": "⚠️ Settings changed — regenerate to update your bake plan",
+    "regenerate": "Regenerate",
+    "emptyBakePlan": "Complete your dough setup to generate your bake plan",
+    "confirmOverwrite": "This will overwrite your saved bake plan. Continue?"
   },
   "hero": {
     "headline": "Craft your dough",

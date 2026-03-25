@@ -243,6 +243,25 @@ export default function Home() {
 
   const resultsRef = useRef<HTMLDivElement>(null);
 
+  // P5 — Custom-only state persistence
+  const customOnlyStateRef = useRef<{
+    flourBlend: FlourBlend;
+    hydration: number | undefined;
+    oil: number | undefined;
+    sugar: number | undefined;
+    prefermentType: PrefermentType;
+    prefermentFlourPct: number | undefined;
+  } | null>(null);
+
+  // P5 — Stale protocol indicator
+  const [protocolStale, setProtocolStale] = useState(false);
+
+  // P5/P6 — Recipe generated flag
+  const [recipeGenerated, setRecipeGenerated] = useState(false);
+
+  // P6 — Active tab in two-tab layout
+  const [activeTab, setActiveTab] = useState<'setup' | 'bakeplan'>('setup');
+
   // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -264,6 +283,14 @@ export default function Home() {
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
     }
   }, [showResults]);
+
+  // Set protocolStale when config changes after recipe generated
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (recipeGenerated) {
+      setProtocolStale(true);
+    }
+  }, [bakeType, styleKey, numItems, itemWeight, ovenType, mixerType, yeastType, kitchenTemp, humidity, fridgeTemp, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct]);
 
   // ── Computed ──────────────────────────────
   const ovenData = bakeType === 'bread'
@@ -350,7 +377,6 @@ export default function Home() {
   function selectBakeType(bt: BakeType) {
     setBakeType(bt);
     setStyleKey(null);
-    setShowResults(false);
     setOvenType(bt === 'bread' ? 'dutch_oven' : 'home_oven_steel');
     setActiveStep(2);
   }
@@ -367,8 +393,6 @@ export default function Home() {
 
   function advance(from: number) {
     setActiveStep(from + 1);
-    if (from === 8) setShowResults(true);
-    else setShowResults(false);
     setTimeout(() => {
       const el = document.getElementById(`step-${from + 1}`);
       if (el) {
@@ -380,8 +404,6 @@ export default function Home() {
 
   function advanceAdv(from: number) {
     setAdvancedStep(from + 1);
-    if (from === 11) setShowResults(true);
-    else setShowResults(false);
     setTimeout(() => {
       const el = document.getElementById(`adv-step-${from + 1}`);
       if (el) {
@@ -404,7 +426,21 @@ export default function Home() {
     setYeastMultiplier(1.0); setAppliedMultiplier(1.0);
     setAdvancedStep(1); setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
+    setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
+    customOnlyStateRef.current = null;
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleGenerate() {
+    if (recipeGenerated && user) {
+      const msg = t('generate.confirmOverwrite');
+      if (!window.confirm(msg)) return;
+    }
+    setRecipeGenerated(true);
+    setProtocolStale(false);
+    setShowResults(true);
+    setActiveTab('bakeplan');
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 80);
   }
 
   async function handleSaveRecipe(mode: 'simple' | 'custom') {
@@ -437,6 +473,19 @@ export default function Home() {
     if (result.success) setTimeout(() => setSaveStatus('idle'), 3000);
   }
 
+  // ── Computed: Generate button / progress ──
+  const simpleRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime);
+  const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend);
+  const canGenerate = tab === 'simple' ? simpleRequiredDone : customRequiredDone;
+
+  const simpleStepsCompleted = [!!bakeType, !!styleKey, true, true, true, true, true, !!eatTime].filter(Boolean).length;
+  const simpleStepsTotal = 8;
+  const customStepsCompleted = [!!bakeType, !!styleKey, true, true, true, true, true, true, true, true, !!eatTime].filter(Boolean).length;
+  const customStepsTotal = 11;
+  const progressFraction = tab === 'simple'
+    ? simpleStepsCompleted / simpleStepsTotal
+    : customStepsCompleted / customStepsTotal;
+
   // ── Styles ────────────────────────────────
   const isBread = bakeType === 'bread';
   const accentColor = isBread ? 'var(--bread)' : 'var(--terra)';
@@ -453,17 +502,44 @@ export default function Home() {
             <button
               key={tabKey}
               onClick={() => {
-                setTab(tabKey);
-                if (tabKey === 'custom' && styleKey) {
-                  const s = ALL_STYLES[styleKey];
-                  setManualHydration(s.hydration);
-                  setManualOil(s.oil);
-                  setManualSugar(s.sugar);
-                } else if (tabKey === 'simple') {
+                if (tabKey === tab) return; // no-op if same tab
+
+                // Save Custom-only state when leaving Custom
+                if (tab === 'custom') {
+                  customOnlyStateRef.current = {
+                    flourBlend,
+                    hydration: manualHydration,
+                    oil: manualOil,
+                    sugar: manualSugar,
+                    prefermentType,
+                    prefermentFlourPct,
+                  };
+                  // Clear manual overrides for Simple mode
                   setManualHydration(undefined);
                   setManualOil(undefined);
                   setManualSugar(undefined);
                 }
+
+                // Restore Custom-only state when entering Custom
+                if (tabKey === 'custom') {
+                  if (customOnlyStateRef.current) {
+                    setFlourBlend(customOnlyStateRef.current.flourBlend);
+                    setManualHydration(customOnlyStateRef.current.hydration);
+                    setManualOil(customOnlyStateRef.current.oil);
+                    setManualSugar(customOnlyStateRef.current.sugar);
+                    setPrefermentType(customOnlyStateRef.current.prefermentType);
+                    setPrefermentFlourPct(customOnlyStateRef.current.prefermentFlourPct);
+                  } else if (styleKey) {
+                    const s = ALL_STYLES[styleKey];
+                    setManualHydration(s.hydration);
+                    setManualOil(s.oil);
+                    setManualSugar(s.sugar);
+                  }
+                }
+
+                setTab(tabKey);
+                setProtocolStale(true);
+                setActiveTab('setup');
               }}
               style={{
                 padding: '.55rem 1.25rem',
@@ -484,9 +560,65 @@ export default function Home() {
       {/* ── Main content ───────────────────── */}
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
 
+        {/* ── Segmented control ── */}
+        <div style={{
+          background: '#F5F0E8',
+          borderRadius: '10px',
+          padding: '3px',
+          display: 'flex',
+          marginBottom: '0',
+        }}>
+          {(['setup', 'bakeplan'] as const).map(segKey => {
+            const isActive = activeTab === segKey;
+            const isLocked = segKey === 'bakeplan' && !recipeGenerated;
+            return (
+              <button
+                key={segKey}
+                onClick={() => !isLocked && setActiveTab(segKey)}
+                style={{
+                  flex: 1,
+                  padding: '8px 0',
+                  fontFamily: 'var(--font-dm-sans)',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: isLocked ? 'default' : 'pointer',
+                  transition: 'background 0.15s',
+                  background: isActive ? '#FDFBF7' : 'transparent',
+                  color: isLocked ? '#C8C0B8' : isActive ? '#1A1612' : '#8A7F78',
+                  boxShadow: isActive ? '0 1px 4px rgba(26,22,18,0.10)' : 'none',
+                  pointerEvents: isLocked ? 'none' : 'auto',
+                }}
+              >
+                {segKey === 'setup' ? t('tabs.doughSetupTab') : t('tabs.bakePlanTab')}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Progress bar ── */}
+        <div style={{
+          height: '2px',
+          background: '#E8E0D5',
+          borderRadius: '1px',
+          margin: '8px 0 12px',
+        }}>
+          <div style={{
+            height: '2px',
+            background: '#C4522A',
+            borderRadius: '1px',
+            width: `${progressFraction * 100}%`,
+            transition: 'width 0.3s',
+          }} />
+        </div>
+
         {/* ════════════ GUIDED ════════════ */}
         {tab === 'simple' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+            {/* ── Setup tab content ── */}
+            <div style={{ display: activeTab === 'setup' ? 'flex' : 'none', flexDirection: 'column', gap: '1rem' }}>
 
             {/* ── Hero intro (only before step 1 done) ── */}
             {!bakeType && (
@@ -791,248 +923,335 @@ export default function Home() {
               />
             </StepCard>
 
-            {/* ─── RESULTS ───────────────────────────── */}
-            {showResults && (
-              <div ref={resultsRef} style={{ marginTop: '2rem' }}>
+            {/* ── Generate button (setup tab) ── */}
+            {canGenerate && (
+              <div style={{ position: 'sticky', bottom: '16px', margin: '8px 0 0' }}>
+                <button
+                  onClick={handleGenerate}
+                  style={{
+                    width: '100%',
+                    padding: '14px 0',
+                    background: '#C4522A',
+                    color: 'white',
+                    borderRadius: '12px',
+                    border: 'none',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    fontFamily: 'var(--font-dm-sans)',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(196,82,42,0.3)',
+                  }}
+                >
+                  {t('generate.generateBtn')}
+                </button>
+              </div>
+            )}
 
-                {/* Results header */}
+            </div>{/* end setup tab */}
+
+            {/* ── Bake plan tab content ── */}
+            <div style={{ display: activeTab === 'bakeplan' ? 'block' : 'none' }}>
+
+              {/* Stale banner */}
+              {protocolStale && recipeGenerated && (
                 <div style={{
-                  background: 'var(--char)', borderRadius: '18px',
-                  border: '1px solid rgba(212,168,83,0.15)',
-                  padding: '1.3rem 1.6rem', marginBottom: '2rem',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  flexWrap: 'wrap', gap: '.75rem',
+                  background: '#F5F0E8',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  marginBottom: '12px',
+                  fontSize: '12px',
+                  color: '#3D3530',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  flexWrap: 'wrap',
                 }}>
-                  <div>
-                    <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
-                      {t('results.ready')}
-                    </div>
-                    {styleKey && (
-                      <div style={{ fontSize: '.78rem', color: 'rgba(245,240,232,.55)', marginTop: '.2rem', fontFamily: 'var(--font-dm-mono)' }}>
-                        {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {ovenData?.name ?? ''}
-                      </div>
-                    )}
+                  <span>{t('generate.staleBanner')}</span>
+                  <button
+                    onClick={handleGenerate}
+                    style={{
+                      background: '#C4522A',
+                      color: 'white',
+                      fontSize: '11px',
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      marginLeft: '4px',
+                    }}
+                  >
+                    {t('generate.regenerate')}
+                  </button>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {!recipeGenerated && (
+                <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                  <div style={{ fontSize: '32px', color: '#8A7F78' }}>◆</div>
+                  <div style={{ fontSize: '14px', color: '#8A7F78', textAlign: 'center', marginTop: '12px' }}>
+                    {t('generate.emptyBakePlan')}
                   </div>
-                  <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-                    {user && (
+                </div>
+              )}
+
+              {/* Recipe + Timeline */}
+              {recipeGenerated && (
+                <div ref={resultsRef} style={{ marginTop: '1rem' }}>
+
+                  {/* Results header */}
+                  <div style={{
+                    background: 'var(--char)', borderRadius: '18px',
+                    border: '1px solid rgba(212,168,83,0.15)',
+                    padding: '1.3rem 1.6rem', marginBottom: '2rem',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    flexWrap: 'wrap', gap: '.75rem',
+                  }}>
+                    <div>
+                      <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
+                        {t('results.ready')}
+                      </div>
+                      {styleKey && (
+                        <div style={{ fontSize: '.78rem', color: 'rgba(245,240,232,.55)', marginTop: '.2rem', fontFamily: 'var(--font-dm-mono)' }}>
+                          {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {ovenData?.name ?? ''}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+                      {user && (
+                        <button
+                          onClick={() => handleSaveRecipe('simple')}
+                          disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+                          className="btn"
+                          style={{
+                            padding: '.5rem 1rem', borderRadius: '8px',
+                            border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'rgba(212,168,83,0.4)'}`,
+                            background: saveStatus === 'saved' ? 'rgba(107,122,90,0.15)' : 'transparent',
+                            color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--gold)',
+                            fontSize: '.8rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
+                            transition: 'all .15s',
+                          }}
+                        >
+                          {saveStatus === 'saving' ? t('results.saving') : saveStatus === 'saved' ? t('results.saved') : saveStatus === 'error' ? t('results.saveFailed') : t('results.saveRecipe')}
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleSaveRecipe('simple')}
-                        disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+                        onClick={startOver}
                         className="btn"
                         style={{
                           padding: '.5rem 1rem', borderRadius: '8px',
-                          border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'rgba(212,168,83,0.4)'}`,
-                          background: saveStatus === 'saved' ? 'rgba(107,122,90,0.15)' : 'transparent',
-                          color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--gold)',
-                          fontSize: '.8rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
-                          transition: 'all .15s',
+                          border: '1.5px solid rgba(245,240,232,.2)',
+                          background: 'transparent', color: 'rgba(245,240,232,.7)',
+                          fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s',
                         }}
                       >
-                        {saveStatus === 'saving' ? t('results.saving') : saveStatus === 'saved' ? t('results.saved') : saveStatus === 'error' ? t('results.saveFailed') : t('results.saveRecipe')}
+                        {t('results.startNew')}
                       </button>
-                    )}
-                    <button
-                      onClick={startOver}
-                      className="btn"
-                      style={{
-                        padding: '.5rem 1rem', borderRadius: '8px',
-                        border: '1.5px solid rgba(245,240,232,.2)',
-                        background: 'transparent', color: 'rgba(245,240,232,.7)',
-                        fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s',
-                      }}
-                    >
-                      {t('results.startNew')}
-                    </button>
+                    </div>
                   </div>
-                </div>
 
-                {/* Recipe null-guard */}
-                {!recipe ? (
-                  <div style={{
-                    background: '#FEF4EF', border: '1.5px solid #F5C4B0',
-                    borderRadius: '12px', padding: '1.25rem', textAlign: 'center',
-                    color: 'var(--terra)', fontSize: '.88rem',
-                  }}>
-                    {t('results.computeError')}
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                  {/* Recipe null-guard */}
+                  {!recipe ? (
+                    <div style={{
+                      background: '#FEF4EF', border: '1.5px solid #F5C4B0',
+                      borderRadius: '12px', padding: '1.25rem', textAlign: 'center',
+                      color: 'var(--terra)', fontSize: '.88rem',
+                    }}>
+                      {t('results.computeError')}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
 
-                    <RecipeOutput
-                      result={displayRecipe ?? recipe}
-                      numItems={numItems}
-                      itemWeight={itemWeight}
-                      styleName={ALL_STYLES[styleKey!].name}
-                      styleEmoji={ALL_STYLES[styleKey!].emoji}
-                      mixerType={mixerType}
-                      kitchenTemp={kitchenTemp}
-                      fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
-                      totalColdHours={schedule ? schedule.totalColdHours : 0}
-                      mode={tab}
-                      bakeType={bakeType ?? 'pizza'}
-                    />
-
-                    {/* ── Large-batch yeast adjustment ── */}
-                    {numItems > 12 && recipe?.yeast && (() => {
-                      const base = recipe.yeast!;
-                      const adjPct   = Math.round(base.convertedPct   * yeastMultiplier * 1000) / 1000;
-                      const adjGrams = Math.round(base.convertedGrams * yeastMultiplier * 100)  / 100;
-
-                      return (
-                        <div style={{
-                          border: '1.5px solid #E8D890',
-                          borderRadius: '16px',
-                          padding: '1.25rem 1.4rem',
-                          background: '#FDFBF2',
-                        }}>
-                          {/* Header */}
-                          <div style={{ marginBottom: '1rem' }}>
-                            <div style={{ fontWeight: 700, fontSize: '.95rem', color: '#6A5000', marginBottom: '.3rem' }}>
-                              {t('results.largeBatchTitle')}
-                            </div>
-                            <div style={{ fontSize: '.78rem', color: '#7A6010', lineHeight: 1.55 }}>
-                              {t('results.largeBatchDesc')}
-                            </div>
-                          </div>
-
-                          {/* Recommended row */}
-                          <div style={{
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                            padding: '.5rem .75rem',
-                            background: 'rgba(255,255,255,.6)', borderRadius: '8px',
-                            marginBottom: '.65rem',
-                            fontSize: '.78rem',
-                          }}>
-                            <span style={{ color: 'var(--smoke)' }}>Recommended</span>
-                            <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--ash)', fontWeight: 500 }}>
-                              {base.convertedPct}% · {base.convertedGrams} g
-                            </span>
-                          </div>
-
-                          {/* Multiplier stepper */}
-                          <div style={{ marginBottom: '.65rem' }}>
-                            <div style={{
-                              fontSize: '.7rem', color: '#7A6010', textTransform: 'uppercase',
-                              letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.45rem',
-                            }}>
-                              Adjustment multiplier
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}>
-                              <button
-                                onClick={() => setYeastMultiplier(m => Math.max(0.5, Math.round((m - 0.05) * 100) / 100))}
-                                disabled={yeastMultiplier <= 0.5}
-                                className="btn"
-                                style={{
-                                  width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-                                  border: 'none',
-                                  background: yeastMultiplier <= 0.5 ? 'var(--border)' : 'var(--char)',
-                                  color: yeastMultiplier <= 0.5 ? 'var(--smoke)' : '#fff',
-                                  cursor: yeastMultiplier <= 0.5 ? 'default' : 'pointer',
-                                  fontSize: '1.1rem', fontWeight: 700,
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}
-                              >−</button>
-                              <div style={{
-                                fontFamily: 'var(--font-dm-mono)', fontSize: '1.2rem', fontWeight: 700,
-                                color: 'var(--gold)', minWidth: '52px', textAlign: 'center',
-                              }}>
-                                {yeastMultiplier.toFixed(2)}×
-                              </div>
-                              <button
-                                onClick={() => setYeastMultiplier(m => Math.min(1.5, Math.round((m + 0.05) * 100) / 100))}
-                                disabled={yeastMultiplier >= 1.5}
-                                className="btn"
-                                style={{
-                                  width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-                                  border: 'none',
-                                  background: yeastMultiplier >= 1.5 ? 'var(--border)' : 'var(--terra)',
-                                  color: yeastMultiplier >= 1.5 ? 'var(--smoke)' : '#fff',
-                                  cursor: yeastMultiplier >= 1.5 ? 'default' : 'pointer',
-                                  fontSize: '1.1rem', fontWeight: 700,
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}
-                              >+</button>
-                              <div style={{
-                                marginLeft: '.25rem',
-                                fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)',
-                                color: 'var(--gold)', fontWeight: 600,
-                              }}>
-                                → {adjPct}% · {adjGrams} g
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Applied indicator */}
-                          {appliedMultiplier !== 1.0 && (
-                            <div style={{
-                              fontSize: '.72rem', color: '#7A6010',
-                              fontFamily: 'var(--font-dm-mono)',
-                              marginBottom: '.65rem',
-                            }}>
-                              ✓ Applied: {appliedMultiplier.toFixed(2)}× — recipe above reflects this adjustment.
-                            </div>
-                          )}
-
-                          {/* Action buttons */}
-                          <div style={{ display: 'flex', gap: '.6rem' }}>
-                            <button
-                              onClick={() => setAppliedMultiplier(yeastMultiplier)}
-                              className="btn"
-                              style={{
-                                flex: 2, padding: '.65rem',
-                                border: 'none', borderRadius: '12px',
-                                background: 'var(--gold)', color: '#fff',
-                                fontSize: '.84rem', fontWeight: 600, cursor: 'pointer',
-                              }}
-                            >
-                              Apply adjustment
-                            </button>
-                            <button
-                              onClick={() => { setYeastMultiplier(1.0); setAppliedMultiplier(1.0); }}
-                              className="btn"
-                              style={{
-                                flex: 1, padding: '.65rem',
-                                border: '1.5px solid #E8D890', borderRadius: '12px',
-                                background: 'transparent', color: '#7A6010',
-                                fontSize: '.84rem', cursor: 'pointer',
-                              }}
-                            >
-                              Reset
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {schedule && (
-                      <Timeline
-                        schedule={schedule}
-                        blocks={blocks}
-                        preheatMin={preheatMin}
-                        startTime={startTime}
-                        eatTime={eatTime!}
-                        mixerType={mixerType}
-                        styleKey={styleKey ?? ''}
-                        oil={recipe?.oil ?? 0}
-                        hydration={recipe?.hydration ?? 0}
+                      <RecipeOutput
+                        result={displayRecipe ?? recipe}
                         numItems={numItems}
-                        feedTime={feedTime}
+                        itemWeight={itemWeight}
+                        styleName={ALL_STYLES[styleKey!].name}
+                        styleEmoji={ALL_STYLES[styleKey!].emoji}
+                        mixerType={mixerType}
                         kitchenTemp={kitchenTemp}
-                        prefStartTime={prefStartTime}
-                        prefermentType={prefermentType}
-                        onStartBaking={() => { /* Baking mode — future feature */ }}
+                        fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
+                        totalColdHours={schedule ? schedule.totalColdHours : 0}
+                        mode={tab}
+                        bakeType={bakeType ?? 'pizza'}
                       />
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+
+                      {/* ── Large-batch yeast adjustment ── */}
+                      {numItems > 12 && recipe?.yeast && (() => {
+                        const base = recipe.yeast!;
+                        const adjPct   = Math.round(base.convertedPct   * yeastMultiplier * 1000) / 1000;
+                        const adjGrams = Math.round(base.convertedGrams * yeastMultiplier * 100)  / 100;
+
+                        return (
+                          <div style={{
+                            border: '1.5px solid #E8D890',
+                            borderRadius: '16px',
+                            padding: '1.25rem 1.4rem',
+                            background: '#FDFBF2',
+                          }}>
+                            <div style={{ marginBottom: '1rem' }}>
+                              <div style={{ fontWeight: 700, fontSize: '.95rem', color: '#6A5000', marginBottom: '.3rem' }}>
+                                {t('results.largeBatchTitle')}
+                              </div>
+                              <div style={{ fontSize: '.78rem', color: '#7A6010', lineHeight: 1.55 }}>
+                                {t('results.largeBatchDesc')}
+                              </div>
+                            </div>
+                            <div style={{
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                              padding: '.5rem .75rem',
+                              background: 'rgba(255,255,255,.6)', borderRadius: '8px',
+                              marginBottom: '.65rem',
+                              fontSize: '.78rem',
+                            }}>
+                              <span style={{ color: 'var(--smoke)' }}>Recommended</span>
+                              <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--ash)', fontWeight: 500 }}>
+                                {base.convertedPct}% · {base.convertedGrams} g
+                              </span>
+                            </div>
+                            <div style={{ marginBottom: '.65rem' }}>
+                              <div style={{
+                                fontSize: '.7rem', color: '#7A6010', textTransform: 'uppercase',
+                                letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.45rem',
+                              }}>
+                                Adjustment multiplier
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}>
+                                <button
+                                  onClick={() => setYeastMultiplier(m => Math.max(0.5, Math.round((m - 0.05) * 100) / 100))}
+                                  disabled={yeastMultiplier <= 0.5}
+                                  className="btn"
+                                  style={{
+                                    width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                                    border: 'none',
+                                    background: yeastMultiplier <= 0.5 ? 'var(--border)' : 'var(--char)',
+                                    color: yeastMultiplier <= 0.5 ? 'var(--smoke)' : '#fff',
+                                    cursor: yeastMultiplier <= 0.5 ? 'default' : 'pointer',
+                                    fontSize: '1.1rem', fontWeight: 700,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  }}
+                                >−</button>
+                                <div style={{
+                                  fontFamily: 'var(--font-dm-mono)', fontSize: '1.2rem', fontWeight: 700,
+                                  color: 'var(--gold)', minWidth: '52px', textAlign: 'center',
+                                }}>
+                                  {yeastMultiplier.toFixed(2)}×
+                                </div>
+                                <button
+                                  onClick={() => setYeastMultiplier(m => Math.min(1.5, Math.round((m + 0.05) * 100) / 100))}
+                                  disabled={yeastMultiplier >= 1.5}
+                                  className="btn"
+                                  style={{
+                                    width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                                    border: 'none',
+                                    background: yeastMultiplier >= 1.5 ? 'var(--border)' : 'var(--terra)',
+                                    color: yeastMultiplier >= 1.5 ? 'var(--smoke)' : '#fff',
+                                    cursor: yeastMultiplier >= 1.5 ? 'default' : 'pointer',
+                                    fontSize: '1.1rem', fontWeight: 700,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  }}
+                                >+</button>
+                                <div style={{
+                                  marginLeft: '.25rem',
+                                  fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)',
+                                  color: 'var(--gold)', fontWeight: 600,
+                                }}>
+                                  → {adjPct}% · {adjGrams} g
+                                </div>
+                              </div>
+                            </div>
+                            {appliedMultiplier !== 1.0 && (
+                              <div style={{
+                                fontSize: '.72rem', color: '#7A6010',
+                                fontFamily: 'var(--font-dm-mono)',
+                                marginBottom: '.65rem',
+                              }}>
+                                ✓ Applied: {appliedMultiplier.toFixed(2)}× — recipe above reflects this adjustment.
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', gap: '.6rem' }}>
+                              <button
+                                onClick={() => setAppliedMultiplier(yeastMultiplier)}
+                                className="btn"
+                                style={{
+                                  flex: 2, padding: '.65rem',
+                                  border: 'none', borderRadius: '12px',
+                                  background: 'var(--gold)', color: '#fff',
+                                  fontSize: '.84rem', fontWeight: 600, cursor: 'pointer',
+                                }}
+                              >
+                                Apply adjustment
+                              </button>
+                              <button
+                                onClick={() => { setYeastMultiplier(1.0); setAppliedMultiplier(1.0); }}
+                                className="btn"
+                                style={{
+                                  flex: 1, padding: '.65rem',
+                                  border: '1.5px solid #E8D890', borderRadius: '12px',
+                                  background: 'transparent', color: '#7A6010',
+                                  fontSize: '.84rem', cursor: 'pointer',
+                                }}
+                              >
+                                Reset
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {schedule && (
+                        <Timeline
+                          schedule={schedule}
+                          blocks={blocks}
+                          preheatMin={preheatMin}
+                          startTime={startTime}
+                          eatTime={eatTime!}
+                          mixerType={mixerType}
+                          styleKey={styleKey ?? ''}
+                          oil={recipe?.oil ?? 0}
+                          hydration={recipe?.hydration ?? 0}
+                          numItems={numItems}
+                          feedTime={feedTime}
+                          kitchenTemp={kitchenTemp}
+                          prefStartTime={prefStartTime}
+                          prefermentType={prefermentType}
+                          onStartBaking={() => { /* Baking mode — future feature */ }}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Edit setup button */}
+              <button
+                onClick={() => setActiveTab('setup')}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #C4522A',
+                  color: '#C4522A',
+                  borderRadius: '12px',
+                  padding: '12px 0',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  width: '100%',
+                  marginTop: '16px',
+                  cursor: 'pointer',
+                }}
+              >
+                {t('generate.editSetup')}
+              </button>
+
+            </div>{/* end bakeplan tab */}
           </div>
         )}
 
         {/* ════════════ ADVANCED ════════════ */}
         {tab === 'custom' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+            {/* ── Setup tab content ── */}
+            <div style={{ display: activeTab === 'setup' ? 'flex' : 'none', flexDirection: 'column', gap: '1rem' }}>
 
             {/* ─── ADV STEP 1: Bake type ───────────── */}
             <StepCard
@@ -1053,7 +1272,7 @@ export default function Home() {
                 ]).map(opt => (
                   <div
                     key={opt.type}
-                    onClick={() => { setBakeType(opt.type); setStyleKey(null); setShowResults(false); setAdvancedStep(2); }}
+                    onClick={() => { setBakeType(opt.type); setStyleKey(null); setAdvancedStep(2); }}
                     style={{
                       padding: '2rem 1rem 1.75rem',
                       textAlign: 'center', borderRadius: '18px', cursor: 'pointer',
@@ -1508,101 +1727,194 @@ export default function Home() {
               />
             </StepCard>
 
-            {/* ─── RESULTS (Advanced) ───────────────── */}
-            {showResults && (
-              <div ref={resultsRef} style={{ marginTop: '2rem' }}>
-
-                {/* ── Results header ── */}
-                <div style={{
-                  background: 'var(--char)', borderRadius: '18px',
-                  border: '1px solid rgba(212,168,83,0.15)',
-                  padding: '1.3rem 1.6rem', marginBottom: '2rem',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  flexWrap: 'wrap', gap: '.75rem',
-                }}>
-                  <div>
-                    <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
-                      {t('results.ready')}
-                    </div>
-                    {styleKey && (
-                      <div style={{ fontSize: '.78rem', color: 'rgba(245,240,232,.55)', marginTop: '.2rem', fontFamily: 'var(--font-dm-mono)' }}>
-                        {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {ovenData?.name ?? ''} · {computeBlendProfile(flourBlend).displayName}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-                    {user && (
-                      <button
-                        onClick={() => handleSaveRecipe('custom')}
-                        disabled={saveStatus === 'saving' || saveStatus === 'saved'}
-                        className="btn"
-                        style={{
-                          padding: '.5rem 1rem', borderRadius: '8px',
-                          border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'rgba(212,168,83,0.4)'}`,
-                          background: saveStatus === 'saved' ? 'rgba(107,122,90,0.15)' : 'transparent',
-                          color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--gold)',
-                          fontSize: '.8rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
-                          transition: 'all .15s',
-                        }}
-                      >
-                        {saveStatus === 'saving' ? t('results.saving') : saveStatus === 'saved' ? t('results.saved') : saveStatus === 'error' ? t('results.saveFailed') : t('results.saveRecipe')}
-                      </button>
-                    )}
-                    <button
-                      onClick={startOver}
-                      className="btn"
-                      style={{ padding: '.5rem 1rem', borderRadius: '8px', border: '1.5px solid rgba(245,240,232,.2)', background: 'transparent', color: 'rgba(245,240,232,.7)', fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s' }}
-                    >
-                      {t('results.startNew')}
-                    </button>
-                  </div>
-                </div>
-
-                {!advancedRecipe ? (
-                  <div style={{ background: '#FEF4EF', border: '1.5px solid #F5C4B0', borderRadius: '12px', padding: '1.25rem', textAlign: 'center', color: 'var(--terra)', fontSize: '.88rem' }}>
-                    {t('results.computeError')}
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-                    <RecipeOutput
-                      result={advancedDisplayRecipe ?? advancedRecipe}
-                      numItems={numItems}
-                      itemWeight={itemWeight}
-                      styleName={ALL_STYLES[styleKey!].name}
-                      styleEmoji={ALL_STYLES[styleKey!].emoji}
-                      mixerType={mixerType}
-                      kitchenTemp={kitchenTemp}
-                      fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
-                      totalColdHours={schedule ? schedule.totalColdHours : 0}
-                      mode={tab}
-                      bakeType={bakeType ?? 'pizza'}
-                      prefermentType={prefermentType}
-                      priorityOverride={priorityOverride}
-                      onPriorityOverride={v => setPriorityOverride(v)}
-                    />
-                    {schedule && (
-                      <Timeline
-                        schedule={schedule}
-                        blocks={blocks}
-                        preheatMin={preheatMin}
-                        startTime={startTime}
-                        eatTime={eatTime!}
-                        mixerType={mixerType}
-                        styleKey={styleKey ?? ''}
-                        oil={advancedRecipe?.oil ?? 0}
-                        hydration={advancedRecipe?.hydration ?? 0}
-                        numItems={numItems}
-                        feedTime={feedTime}
-                        kitchenTemp={kitchenTemp}
-                        prefStartTime={prefStartTime}
-                        prefermentType={prefermentType}
-                        onStartBaking={() => { /* Baking mode — future feature */ }}
-                      />
-                    )}
-                  </div>
-                )}
+            {/* ── Generate button (setup tab) ── */}
+            {canGenerate && (
+              <div style={{ position: 'sticky', bottom: '16px', margin: '8px 0 0' }}>
+                <button
+                  onClick={handleGenerate}
+                  style={{
+                    width: '100%',
+                    padding: '14px 0',
+                    background: '#C4522A',
+                    color: 'white',
+                    borderRadius: '12px',
+                    border: 'none',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    fontFamily: 'var(--font-dm-sans)',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(196,82,42,0.3)',
+                  }}
+                >
+                  {t('generate.generateBtn')}
+                </button>
               </div>
             )}
+
+            </div>{/* end setup tab */}
+
+            {/* ── Bake plan tab content ── */}
+            <div style={{ display: activeTab === 'bakeplan' ? 'block' : 'none' }}>
+
+              {/* Stale banner */}
+              {protocolStale && recipeGenerated && (
+                <div style={{
+                  background: '#F5F0E8',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  marginBottom: '12px',
+                  fontSize: '12px',
+                  color: '#3D3530',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                }}>
+                  <span>{t('generate.staleBanner')}</span>
+                  <button
+                    onClick={handleGenerate}
+                    style={{
+                      background: '#C4522A',
+                      color: 'white',
+                      fontSize: '11px',
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      marginLeft: '4px',
+                    }}
+                  >
+                    {t('generate.regenerate')}
+                  </button>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {!recipeGenerated && (
+                <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                  <div style={{ fontSize: '32px', color: '#8A7F78' }}>◆</div>
+                  <div style={{ fontSize: '14px', color: '#8A7F78', textAlign: 'center', marginTop: '12px' }}>
+                    {t('generate.emptyBakePlan')}
+                  </div>
+                </div>
+              )}
+
+              {/* Recipe + Timeline */}
+              {recipeGenerated && (
+                <div style={{ marginTop: '1rem' }}>
+
+                  {/* ── Results header ── */}
+                  <div style={{
+                    background: 'var(--char)', borderRadius: '18px',
+                    border: '1px solid rgba(212,168,83,0.15)',
+                    padding: '1.3rem 1.6rem', marginBottom: '2rem',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    flexWrap: 'wrap', gap: '.75rem',
+                  }}>
+                    <div>
+                      <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
+                        {t('results.ready')}
+                      </div>
+                      {styleKey && (
+                        <div style={{ fontSize: '.78rem', color: 'rgba(245,240,232,.55)', marginTop: '.2rem', fontFamily: 'var(--font-dm-mono)' }}>
+                          {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {ovenData?.name ?? ''} · {computeBlendProfile(flourBlend).displayName}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+                      {user && (
+                        <button
+                          onClick={() => handleSaveRecipe('custom')}
+                          disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+                          className="btn"
+                          style={{
+                            padding: '.5rem 1rem', borderRadius: '8px',
+                            border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'rgba(212,168,83,0.4)'}`,
+                            background: saveStatus === 'saved' ? 'rgba(107,122,90,0.15)' : 'transparent',
+                            color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--gold)',
+                            fontSize: '.8rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
+                            transition: 'all .15s',
+                          }}
+                        >
+                          {saveStatus === 'saving' ? t('results.saving') : saveStatus === 'saved' ? t('results.saved') : saveStatus === 'error' ? t('results.saveFailed') : t('results.saveRecipe')}
+                        </button>
+                      )}
+                      <button
+                        onClick={startOver}
+                        className="btn"
+                        style={{ padding: '.5rem 1rem', borderRadius: '8px', border: '1.5px solid rgba(245,240,232,.2)', background: 'transparent', color: 'rgba(245,240,232,.7)', fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s' }}
+                      >
+                        {t('results.startNew')}
+                      </button>
+                    </div>
+                  </div>
+
+                  {!advancedRecipe ? (
+                    <div style={{ background: '#FEF4EF', border: '1.5px solid #F5C4B0', borderRadius: '12px', padding: '1.25rem', textAlign: 'center', color: 'var(--terra)', fontSize: '.88rem' }}>
+                      {t('results.computeError')}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                      <RecipeOutput
+                        result={advancedDisplayRecipe ?? advancedRecipe}
+                        numItems={numItems}
+                        itemWeight={itemWeight}
+                        styleName={ALL_STYLES[styleKey!].name}
+                        styleEmoji={ALL_STYLES[styleKey!].emoji}
+                        mixerType={mixerType}
+                        kitchenTemp={kitchenTemp}
+                        fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
+                        totalColdHours={schedule ? schedule.totalColdHours : 0}
+                        mode={tab}
+                        bakeType={bakeType ?? 'pizza'}
+                        prefermentType={prefermentType}
+                        priorityOverride={priorityOverride}
+                        onPriorityOverride={v => setPriorityOverride(v)}
+                      />
+                      {schedule && (
+                        <Timeline
+                          schedule={schedule}
+                          blocks={blocks}
+                          preheatMin={preheatMin}
+                          startTime={startTime}
+                          eatTime={eatTime!}
+                          mixerType={mixerType}
+                          styleKey={styleKey ?? ''}
+                          oil={advancedRecipe?.oil ?? 0}
+                          hydration={advancedRecipe?.hydration ?? 0}
+                          numItems={numItems}
+                          feedTime={feedTime}
+                          kitchenTemp={kitchenTemp}
+                          prefStartTime={prefStartTime}
+                          prefermentType={prefermentType}
+                          onStartBaking={() => { /* Baking mode — future feature */ }}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Edit setup button */}
+              <button
+                onClick={() => setActiveTab('setup')}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #C4522A',
+                  color: '#C4522A',
+                  borderRadius: '12px',
+                  padding: '12px 0',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  width: '100%',
+                  marginTop: '16px',
+                  cursor: 'pointer',
+                }}
+              >
+                {t('generate.editSetup')}
+              </button>
+
+            </div>{/* end bakeplan tab */}
           </div>
         )}
       </div>

@@ -16,7 +16,17 @@
   },
   "tabs": {
     "guided": "🧭 Simple",
-    "advanced": "🎛️ Personnalisé"
+    "advanced": "🎛️ Personnalisé",
+    "doughSetupTab": "Paramètres",
+    "bakePlanTab": "Recette"
+  },
+  "generate": {
+    "generateBtn": "Générer mon planning →",
+    "editSetup": "← Modifier les paramètres",
+    "staleBanner": "⚠️ Réglages modifiés — régénérez pour mettre à jour",
+    "regenerate": "Régénérer",
+    "emptyBakePlan": "Complétez vos paramètres pour générer votre recette",
+    "confirmOverwrite": "Ceci écrasera votre recette sauvegardée. Continuer ?"
   },
   "hero": {
     "headline": "Préparez votre pâte",
