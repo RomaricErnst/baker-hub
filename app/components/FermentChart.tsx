@@ -116,6 +116,8 @@ export default function FermentChart({
   const svgRef       = useRef<SVGSVGElement>(null);
   const [W, setW]    = useState(320);
   const [dragging, setDragging] = useState<'mix' | 'pref' | null>(null);
+  // Local drag HBF for free visual movement during mix drag — no onMixChange until pointer up
+  const [localMixHBF, setLocalMixHBF] = useState<number | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -143,18 +145,21 @@ export default function FermentChart({
 
   const optH            = hasPref ? getPrefOptH(prefermentType, kitchenTemp) : 0;
   const prefSig         = hasPref ? getPrefSig(prefermentType, kitchenTemp)  : 1;
-  const prefStartAbsHBF = mixOffsetH + prefOffsetH;
-  const doughPeakHBF    = mixOffsetH - DOUGH_SWEET_CENTER;
+  // During drag, use local position for all mix-derived values
+  const effectiveMixHBF = localMixHBF !== null ? localMixHBF : mixOffsetH;
+
+  const prefStartAbsHBF = effectiveMixHBF + prefOffsetH;
+  const doughPeakHBF    = effectiveMixHBF - DOUGH_SWEET_CENTER;
   const prefPeakHBF     = prefStartAbsHBF - optH;
 
   // Sweet-spot zones (cold retard: 20–52h; RT: 14–26h)
   const doughZoneFrom = hasColdRetard ? 52 : 26;
   const doughZoneTo   = hasColdRetard ? 20 : 14;
-  const prefZoneFrom  = hasPref ? mixOffsetH + optH + 3 : 0;
-  const prefZoneTo    = hasPref ? mixOffsetH + optH - 3 : 0;
+  const prefZoneFrom  = hasPref ? effectiveMixHBF + optH + 3 : 0;
+  const prefZoneTo    = hasPref ? effectiveMixHBF + optH - 3 : 0;
 
   // ── Pixel positions ──────────────────────────────────────
-  const mixX  = hToX(mixOffsetH, W, WH);
+  const mixX  = hToX(effectiveMixHBF, W, WH);
   const prefX = hasPref ? hToX(prefStartAbsHBF, W, WH) : 0;
   const bakeX = hToX(0, W, WH);
 
@@ -205,19 +210,26 @@ export default function FermentChart({
     e.preventDefault();
     const x = getSvgX(e);
     if (dragging === 'mix') {
+      // Free visual movement only — no blocker check, no onMixChange during drag
       const h = Math.max(3, Math.min(WH - 2, snap15(xToHBF(x, W, WH))));
-      onMixChange(h);
+      setLocalMixHBF(h);
     } else {
       const abs = Math.max(mixOffsetH + 1, Math.min(WH - 2, snap15(xToHBF(x, W, WH))));
       onPrefChange(abs - mixOffsetH);
     }
   }
 
-  function onPointerUp() { setDragging(null); }
+  function onPointerUp() {
+    if (dragging === 'mix' && localMixHBF !== null) {
+      onMixChange(localMixHBF);
+      setLocalMixHBF(null);
+    }
+    setDragging(null);
+  }
 
   // ── Status logic ─────────────────────────────────────────
-  const mixInZone   = mixOffsetH >= doughZoneTo   && mixOffsetH <= doughZoneFrom;
-  const mixTooEarly = mixOffsetH > doughZoneFrom;
+  const mixInZone   = effectiveMixHBF >= doughZoneTo   && effectiveMixHBF <= doughZoneFrom;
+  const mixTooEarly = effectiveMixHBF > doughZoneFrom;
   const mixStatus   = mixInZone   ? '🟢 Dough ready at bake'
     : mixTooEarly ? '🔴 Too early — over-fermented'
     : '🔴 Too late — under-fermented';
@@ -226,7 +238,7 @@ export default function FermentChart({
   const prefStatus = prefInZone ? '🟢 Ready at mix' : '🟡 Adjust start time';
 
   // ── Info card data ───────────────────────────────────────
-  const mixTime  = new Date(bakeMs - mixOffsetH * 3600000);
+  const mixTime  = new Date(bakeMs - effectiveMixHBF * 3600000);
   const prefTime = hasPref ? new Date(bakeMs - prefStartAbsHBF * 3600000) : null;
 
   const prefLabel = prefermentType === 'sourdough' || prefermentType === 'levain'
@@ -398,8 +410,8 @@ export default function FermentChart({
         <text x={PAD + 2} y={12} fontSize={8.5} fill={SAGE} fillOpacity={0.7}
           fontFamily="DM Mono, monospace">Dough</text>
         {renderDropLine(
-          mixOffsetH, doughPeakHBF, DOUGH_SIG,
-          inBlocker(mixOffsetH) ? '#aaaaaa' : SAGE,
+          effectiveMixHBF, doughPeakHBF, DOUGH_SIG,
+          inBlocker(effectiveMixHBF) ? '#aaaaaa' : SAGE,
         )}
 
         {/* ── Baseline ── */}
@@ -442,9 +454,9 @@ export default function FermentChart({
         {/* ── Mix diamond ── */}
         {renderDiamond(
           mixX,
-          inBlocker(mixOffsetH) ? '#aaaaaa' : CHAR,
-          inBlocker(mixOffsetH) ? '#999999' : 'white',
-          inBlocker(mixOffsetH),
+          inBlocker(effectiveMixHBF) ? '#aaaaaa' : CHAR,
+          inBlocker(effectiveMixHBF) ? '#999999' : 'white',
+          inBlocker(effectiveMixHBF),
           'mix',
         )}
       </svg>
