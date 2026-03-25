@@ -359,6 +359,8 @@ function SimpleColourBar({
   const lastHBFRef   = useRef<number>(0);
   const [W, setW]    = useState(320);
   const [dragging, setDragging] = useState(false);
+  // Local drag HBF for free visual movement — no applyBlockerOverlap during drag
+  const [localHBF, setLocalHBF] = useState<number | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -370,8 +372,10 @@ function SimpleColourBar({
 
   const bakeMs     = eatTime.getTime();
   const mixOffsetH = (bakeMs - pendingStart.getTime()) / 3600000;
-  const diamondX   = barHToX(Math.max(0.5, Math.min(BAR_WIN - 0.5, mixOffsetH)), W);
-  const barCY      = BAR_Y + BAR_H / 2; // 28 — diamond center y
+  // During drag: show diamond at raw drag position (no blocker snap/push)
+  const effectiveMixHBF = localHBF !== null ? localHBF : mixOffsetH;
+  const diamondX   = barHToX(Math.max(0.5, Math.min(BAR_WIN - 0.5, effectiveMixHBF)), W);
+  const barCY      = BAR_Y + BAR_H / 2; // diamond center y
 
   // Zone boundaries — wider for cold retard schedules
   const sweetL_HBF = hasColdRetard ? 52 : 26;
@@ -422,13 +426,16 @@ function SimpleColourBar({
     e.preventDefault();
     const hbf = Math.round(barXToHBF(getSvgX(e), W) * 4) / 4;
     lastHBFRef.current = hbf;
-    onStartChange(new Date(bakeMs - hbf * 3600000));
+    // Update local visual only — no applyBlockerOverlap during drag (free movement)
+    setLocalHBF(hbf);
   }
   function onPointerUp() {
     if (dragging) {
+      // Snap to nearest sweet spot edge if released inside a blocker
       const snapped = snapToSweetEdgeIfBlocked(lastHBFRef.current, blocks, eatTime, sweetR_HBF, sweetL_HBF);
       onStartChange(new Date(bakeMs - snapped * 3600000));
     }
+    setLocalHBF(null);
     setDragging(false);
   }
 
@@ -445,7 +452,12 @@ function SimpleColourBar({
     return `${wd} ${d.getDate()} ${mo} · ${fmtHM(d)}`;
   }
 
-  const inBlocker = blocks.some(b => pendingStart >= b.from && pendingStart < b.to);
+  // Use visual (drag) position for blocker colouring during drag
+  const inBlocker = blocks.some(b => {
+    const bFromHBF = (bakeMs - b.to.getTime())   / 3600000;
+    const bToHBF   = (bakeMs - b.from.getTime()) / 3600000;
+    return effectiveMixHBF >= bFromHBF && effectiveMixHBF <= bToHBF;
+  });
   const dFill   = inBlocker ? '#aaaaaa' : '#1A1612';
   const dStroke = inBlocker ? '#999999' : 'white';
 
@@ -999,6 +1011,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
               transition: 'all .15s',
               display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+              whiteSpace: 'nowrap', flexShrink: 0,
             }}
           >
             {t('blockers.weekdays')}
@@ -1011,7 +1024,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       )}
 
       {/* Night toggles */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem', width: '100%', overflow: 'visible', paddingLeft: 0 }}>
         {nights.length === 0 ? (
           <div style={{ fontSize: '.76rem', color: 'var(--smoke)', fontStyle: 'italic', padding: '.2rem 0' }}>
             {t('blockers.noOvernights')}
@@ -1032,6 +1045,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
                   transition: 'all .15s',
                   display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+                  whiteSpace: 'nowrap', flexShrink: 0,
                 }}
               >
                 🌙 {night.label}
