@@ -241,7 +241,8 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  const resultsRef = useRef<HTMLDivElement>(null);
+  const resultsRef      = useRef<HTMLDivElement>(null);
+  const modeSelectorRef = useRef<HTMLDivElement>(null);
 
   // P5 — Custom-only state persistence
   const customOnlyStateRef = useRef<{
@@ -432,7 +433,7 @@ export default function Home() {
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
     setModeChosen(false);
     customOnlyStateRef.current = null;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => modeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   }
 
   function handleGenerate() {
@@ -444,7 +445,7 @@ export default function Home() {
     setProtocolStale(false);
     setShowResults(true);
     setActiveTab('bakeplan');
-    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 80);
+    setTimeout(() => modeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   }
 
   async function handleSaveRecipe(mode: 'simple' | 'custom') {
@@ -503,6 +504,7 @@ export default function Home() {
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
 
         {/* ── Mode selector ──────────────────────── */}
+        <div ref={modeSelectorRef}>
         {!modeChosen ? (
 
           <div style={{ marginBottom: '16px' }}>
@@ -524,7 +526,7 @@ export default function Home() {
             </div>
 
             {/* Mode cards */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', maxWidth: '480px', margin: '0 auto 12px' }}>
 
               {/* Simple card */}
               <div
@@ -534,9 +536,12 @@ export default function Home() {
                     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
                   }
                   setTab('simple'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
+                  setTimeout(() => modeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
                 }}
                 style={{
                   flex: 1,
+                  minWidth: '160px',
+                  maxWidth: '220px',
                   border: tab === 'simple' ? '2px solid var(--terra)' : '0.5px solid var(--border)',
                   borderRadius: '14px',
                   padding: '14px 12px',
@@ -577,9 +582,12 @@ export default function Home() {
                     }
                   }
                   setTab('custom'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
+                  setTimeout(() => modeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
                 }}
                 style={{
                   flex: 1,
+                  minWidth: '160px',
+                  maxWidth: '220px',
                   border: tab === 'custom' ? '2px solid var(--terra)' : '0.5px solid var(--border)',
                   borderRadius: '14px',
                   padding: '14px 12px',
@@ -650,6 +658,7 @@ export default function Home() {
           </div>
 
         )}
+        </div>
 
         {/* ── Segmented control (Dough setup / Bake plan) ── */}
         <div style={{
@@ -690,18 +699,27 @@ export default function Home() {
 
         {/* ── Progress bar ── */}
         <div style={{
-          height: '2px',
-          background: '#E8E0D5',
-          borderRadius: '1px',
-          margin: '8px 0 12px',
+          position: 'sticky',
+          top: '62px',
+          zIndex: 10,
+          background: 'var(--warm)',
+          paddingBottom: '8px',
+          marginBottom: '4px',
         }}>
           <div style={{
             height: '2px',
-            background: '#C4522A',
+            background: '#E8E0D5',
             borderRadius: '1px',
-            width: `${progressFraction * 100}%`,
-            transition: 'width 0.3s',
-          }} />
+            margin: '8px 0 0',
+          }}>
+            <div style={{
+              height: '2px',
+              background: '#C4522A',
+              borderRadius: '1px',
+              width: `${progressFraction * 100}%`,
+              transition: 'width 0.3s',
+            }} />
+          </div>
         </div>
 
         {/* ════════════ GUIDED ════════════ */}
