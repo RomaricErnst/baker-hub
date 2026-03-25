@@ -20,6 +20,7 @@ export interface FermentChartProps {
     finalProofH: number;
     preheatH: number;
   };
+  scheduleNote?: string | null;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -108,7 +109,7 @@ export default function FermentChart({
   eatTime, prefermentType, kitchenTemp,
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange,
-  windowH, prefInFridge, hasColdRetard, phases,
+  windowH, prefInFridge, hasColdRetard, phases, scheduleNote,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -594,6 +595,19 @@ export default function FermentChart({
           </div>
         );
       })()}
+
+      {/* ── Schedule note ───────────────────────────── */}
+      {scheduleNote && (
+        <div style={{
+          fontFamily: 'DM Sans, sans-serif',
+          fontSize: '12px',
+          color: 'var(--smoke)',
+          textAlign: 'center',
+          marginTop: '8px',
+        }}>
+          {scheduleNote}
+        </div>
+      )}
     </div>
   );
 }

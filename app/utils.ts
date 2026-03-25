@@ -309,6 +309,7 @@ export interface ScheduleResult {
   rtWarmupStart: Date | null;      // tropical warmup start (null if single-phase)
   rtWarmupEnd: Date | null;        // tropical warmup end (null if single-phase)
   bulkConflict: null | { missingMin: number; suggestEarlierByMin: number; suggestedEarlierStart?: Date };
+  scheduleNote: string | null;
 }
 
 function maxRTHours(kitchenTemp: number): number {
@@ -342,6 +343,25 @@ function roundTo15(d: Date | null): Date | null {
   return r;
 }
 
+const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; coldHRequired?: boolean }> = {
+  // Pizza
+  neapolitan:    { coldH: 24 },
+  newyork:       { coldH: 24 },
+  roman:         { coldH: 0  },
+  pan:           { coldH: 0  },
+  sourdough:     { coldH: 0  },
+  // Bread
+  pain_campagne: { coldH: 18 },
+  pain_levain:   { coldH: 0  },
+  baguette:      { coldH: 16 },
+  pain_complet:  { coldH: 12 },
+  pain_seigle:   { coldH: 0  },
+  fougasse:      { coldH: 0  },
+  brioche:       { coldH: 8,  coldHRequired: true },
+  pain_mie:      { coldH: 6,  coldHRequired: true },
+  pain_viennois: { coldH: 6,  coldHRequired: true },
+};
+
 export function buildSchedule(
   startTime: Date,
   eatTime: Date,
@@ -349,6 +369,7 @@ export function buildSchedule(
   kitchenTemp: number,
   preheatMin: number,
   mixerType: MixerType = 'hand',
+  styleKey: string = 'neapolitan',
 ): ScheduleResult {
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
   const kneadMin = MIXER_TYPES[mixerType].kneadMin;
@@ -377,13 +398,53 @@ export function buildSchedule(
   }
 
   const totalWindowH = (eatTime.getTime() - startTime.getTime()) / 3600000;
-  const maxBulkH  = maxRTHours(kitchenTemp);
   const restH     = restRtMinutes(kitchenTemp) / 60;
   const maxFinalH = maxFinalProofHours(kitchenTemp);
 
-  const isTropical  = kitchenTemp >= 28;
-  const isVeryHot   = kitchenTemp >= 30;
-  const isLongWindow = totalWindowH >= 16;
+  // ── Style-aware cold retard model ────────────────────────────
+  const styleFerm = STYLE_FERM_DEFAULTS[styleKey] ?? { coldH: 0 };
+  const preferredColdH = styleFerm.coldH;
+  const coldHRequired = styleFerm.coldHRequired === true;
+
+  const isTropical = kitchenTemp >= 28;
+  const isVeryHot  = kitchenTemp >= 30;
+
+  // RT minimums (climate-aware)
+  const minBulkRT  = isTropical ? 0.5 : 1.5;
+  const minFinalRT = 1.0;
+  const minTotalRT = minBulkRT + minFinalRT + preheatH;
+
+  // CT maximization model
+  let coldH: number;
+  if (preferredColdH === 0) {
+    coldH = 0;
+  } else if (coldHRequired && isTropical) {
+    // Never reduce below preferred for enriched doughs in tropical kitchens
+    coldH = preferredColdH;
+  } else if (totalWindowH >= preferredColdH + minTotalRT) {
+    coldH = preferredColdH;
+  } else if (totalWindowH > minTotalRT) {
+    coldH = totalWindowH - minTotalRT;
+  } else {
+    coldH = 0;
+  }
+
+  const hasColdRetard = coldH > 0;
+
+  // Two-phase tropical: only when tropical AND cold retard AND window >= 16h
+  const isTwoPhase = isTropical && hasColdRetard && totalWindowH >= 16;
+
+  // Schedule note (first match wins)
+  let scheduleNote: string | null = null;
+  if (coldHRequired && isTropical) {
+    scheduleNote = `🧈 Butter needs the cold — fridge retard is mandatory at ${kitchenTemp}°C`;
+  } else if (hasColdRetard && coldH < preferredColdH) {
+    scheduleNote = `⏱ Short window — cold retard reduced to ${coldH}h to fit your schedule`;
+  } else if (!hasColdRetard && preferredColdH > 0) {
+    scheduleNote = `🌡️ Tight schedule — pure room temperature fermentation`;
+  } else if (isTropical && !hasColdRetard) {
+    scheduleNote = `🌴 Tropical kitchen — reduced fermentation times applied`;
+  }
 
   // Warm-up and final proof durations (temp-aware)
   const rtWarmupH = isVeryHot ? 0.5 : 0.75; // 30min at ≥30°C, 45min at 28-29°C
@@ -396,8 +457,8 @@ export function buildSchedule(
     .filter(b => b.from < bakeTime && b.to > fermStart)
     .sort((a, b) => a.from.getTime() - b.from.getTime());
 
-  // ── TWO-PHASE: Long window AND tropical ──────────────────────
-  if (isLongWindow && isTropical) {
+  // ── TWO-PHASE: Tropical AND cold retard AND window >= 16h ────
+  if (isTwoPhase) {
     const naturalBulkEnd = new Date(fermStart.getTime() + initialBulkH * 3600000);
     const firstBlock = relevantBlocks[0] ?? null;
     let bulkConflict: ScheduleResult['bulkConflict'] = null;
@@ -413,8 +474,8 @@ export function buildSchedule(
     }
     const coldRetard1Start = new Date(fermStart.getTime() + actualBulkH * 3600000);
 
-    // Total available cold time
-    const totalColdAvailableH = totalWindowH - mixingDurationH - initialBulkH - rtWarmupH - maxFinalH - preheatH;
+    // Total cold time driven by style default
+    const totalColdAvailableH = coldH;
 
     // Phase 1 end: either first block's end or half of available cold
     let coldRetard1End: Date;
@@ -502,111 +563,50 @@ export function buildSchedule(
       rtWarmupStart: r15n(rtWarmupStart),
       rtWarmupEnd: r15n(rtWarmupEnd),
       bulkConflict,
+      scheduleNote,
     };
   }
 
-  // ── SINGLE PHASE: short window OR temperate kitchen ──────────
+  // ── SINGLE PHASE ─────────────────────────────────────────────
 
-  // ── SHORT WINDOW (≤8h): existing logic ───────────────────────
-  if (totalWindowH <= 8) {
-    if (relevantBlocks.length === 0) {
-      // All RT fermentation
-      const totalH      = Math.max(0, (bakeTime.getTime() - fermStart.getTime()) / 3600000);
-      const finalProofH = Math.min(maxFinalH, totalH);
-      const bulkFermH   = Math.max(0, totalH - finalProofH);
-      const finalProofStart = new Date(fermStart.getTime() + bulkFermH * 3600000);
-      const divideBallTime  = pushOutOfBlockers(finalProofStart, relevantBlocks);
-      return {
-        mixingDurationH,
-        bulkFermStart: r15(fermStart),
-        bulkFermHours: bulkFermH,
-        coldRetardStart: null,
-        coldRetardEnd: null,
-        coldRetardHours: 0,
-        finalProofStart: r15(finalProofStart),
-        finalProofHours: finalProofH,
-        restRtHours: 0,
-        preheatStart: r15(bakeTime),
-        bakeStart: r15(eatTime),
-        totalRTHours: totalH,
-        totalColdHours: 0,
-        wasAutoAdjusted: false,
-        kitchenTemp,
-        coldRetard1Start: null,
-        coldRetard1End: null,
-        coldRetard2Start: null,
-        coldRetard2End: null,
-        divideBallTime: r15(divideBallTime),
-        rtWarmupStart: null,
-        rtWarmupEnd: null,
-        bulkConflict: null,
-      };
-    }
-
-    // Short window + blocks: block-based cold retard
-    let wasAutoAdjusted = false;
-    let coldRetardStart = new Date(
-      Math.max(relevantBlocks[0].from.getTime(), fermStart.getTime())
-    );
-    let bulkFermH = Math.max(0,
-      (coldRetardStart.getTime() - fermStart.getTime()) / 3600000
-    );
-    if (bulkFermH > maxBulkH) {
-      wasAutoAdjusted = true;
-      coldRetardStart = new Date(fermStart.getTime() + maxBulkH * 3600000);
-      bulkFermH = maxBulkH;
-    }
-    const lastBlockEndShort = new Date(Math.max(...relevantBlocks.map(b => b.to.getTime())));
-    const maxColdEndShort = new Date(bakeTime.getTime() - restH * 3600000);
-    let coldRetardEnd = new Date(Math.min(lastBlockEndShort.getTime(), maxColdEndShort.getTime()));
-    if (coldRetardEnd.getTime() < coldRetardStart.getTime()) {
-      coldRetardEnd = new Date(coldRetardStart.getTime());
-    }
-    let coldRetardH = Math.max(0,
-      (coldRetardEnd.getTime() - coldRetardStart.getTime()) / 3600000
-    );
-    let finalProofStart = new Date(coldRetardEnd.getTime() + restH * 3600000);
-    let finalProofH = Math.max(0, (bakeTime.getTime() - finalProofStart.getTime()) / 3600000);
-    if (finalProofH > maxFinalH) {
-      wasAutoAdjusted = true;
-      finalProofH = maxFinalH;
-      finalProofStart = new Date(bakeTime.getTime() - maxFinalH * 3600000);
-      coldRetardEnd = new Date(finalProofStart.getTime() - restH * 3600000);
-      coldRetardH = Math.max(0,
-        (coldRetardEnd.getTime() - coldRetardStart.getTime()) / 3600000
-      );
-    }
-    const divideBallTime = pushOutOfBlockers(coldRetardEnd, relevantBlocks);
+  // ── PURE RT: no cold retard for this style ───────────────────
+  if (!hasColdRetard) {
+    const totalH      = Math.max(0, (bakeTime.getTime() - fermStart.getTime()) / 3600000);
+    const finalProofH = Math.min(maxFinalH, totalH);
+    const bulkFermH   = Math.max(0, totalH - finalProofH);
+    const finalProofStart = new Date(fermStart.getTime() + bulkFermH * 3600000);
+    const divideBallTime  = pushOutOfBlockers(finalProofStart, relevantBlocks);
     return {
       mixingDurationH,
       bulkFermStart: r15(fermStart),
       bulkFermHours: bulkFermH,
-      coldRetardStart: r15(coldRetardStart),
-      coldRetardEnd: r15(coldRetardEnd),
-      coldRetardHours: coldRetardH,
+      coldRetardStart: null,
+      coldRetardEnd: null,
+      coldRetardHours: 0,
       finalProofStart: r15(finalProofStart),
       finalProofHours: finalProofH,
-      restRtHours: restH,
+      restRtHours: 0,
       preheatStart: r15(bakeTime),
       bakeStart: r15(eatTime),
-      totalRTHours: bulkFermH + finalProofH,
-      totalColdHours: coldRetardH,
-      wasAutoAdjusted,
+      totalRTHours: totalH,
+      totalColdHours: 0,
+      wasAutoAdjusted: false,
       kitchenTemp,
-      coldRetard1Start: r15(coldRetardStart),
-      coldRetard1End: r15(coldRetardEnd),
+      coldRetard1Start: null,
+      coldRetard1End: null,
       coldRetard2Start: null,
       coldRetard2End: null,
       divideBallTime: r15(divideBallTime),
       rtWarmupStart: null,
       rtWarmupEnd: null,
       bulkConflict: null,
+      scheduleNote,
     };
   }
 
-  // ── LONG WINDOW (>8h), temperate kitchen: single-phase cold retard ──
-  // Structure: Mix → initial bulk RT (1.5h) → Cold Retard → Rest RT → Final Proof → Preheat → Bake
-  const INITIAL_BULK_H = initialBulkH; // 1.5h for temperate; already non-tropical here
+  // ── SINGLE-PHASE COLD RETARD: style-driven coldH ─────────────
+  // Structure: Mix → initial bulk RT → Cold Retard (coldH) → Rest RT → Final Proof → Preheat → Bake
+  const INITIAL_BULK_H = initialBulkH;
 
   const naturalBulkEnd = new Date(fermStart.getTime() + INITIAL_BULK_H * 3600000);
   const firstBlock = relevantBlocks[0] ?? null;
@@ -622,11 +622,14 @@ export function buildSchedule(
     actualBulkH = availableBulkH;
   }
 
-  // Cold retard starts when bulk ferm ends (at scheduled end or at blocker start)
   const coldRetardStart = new Date(fermStart.getTime() + actualBulkH * 3600000);
 
-  // Auto cold retard end: leave restH + maxFinalH before bake
-  let coldRetardEnd = new Date(bakeTime.getTime() - (restH + maxFinalH) * 3600000);
+  // Target cold retard end based on style coldH; clamp to not crowd preheat
+  let coldRetardEnd = new Date(coldRetardStart.getTime() + coldH * 3600000);
+  const hardMaxColdEnd = new Date(bakeTime.getTime() - (restH + maxFinalH) * 3600000);
+  if (coldRetardEnd.getTime() > hardMaxColdEnd.getTime()) {
+    coldRetardEnd = new Date(hardMaxColdEnd.getTime());
+  }
 
   // Blocks can extend cold retard end, but not past bakeTime - restH
   let wasAutoAdjusted = false;
@@ -644,7 +647,7 @@ export function buildSchedule(
     coldRetardEnd = new Date(coldRetardStart.getTime());
   }
 
-  const coldRetardH = Math.max(0,
+  const actualColdH = Math.max(0,
     (coldRetardEnd.getTime() - coldRetardStart.getTime()) / 3600000
   );
 
@@ -663,14 +666,14 @@ export function buildSchedule(
     bulkFermHours: actualBulkH,
     coldRetardStart: r15(coldRetardStart),
     coldRetardEnd: r15(coldRetardEnd),
-    coldRetardHours: coldRetardH,
+    coldRetardHours: actualColdH,
     finalProofStart: r15(finalProofStart),
     finalProofHours: finalProofH,
     restRtHours: restH,
     preheatStart: r15(bakeTime),
     bakeStart: r15(eatTime),
     totalRTHours: actualBulkH + finalProofH,
-    totalColdHours: coldRetardH,
+    totalColdHours: actualColdH,
     wasAutoAdjusted,
     kitchenTemp,
     coldRetard1Start: r15(coldRetardStart),
@@ -681,6 +684,7 @@ export function buildSchedule(
     rtWarmupStart: null,
     rtWarmupEnd: null,
     bulkConflict,
+    scheduleNote,
   };
 }
 

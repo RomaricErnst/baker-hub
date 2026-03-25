@@ -277,7 +277,7 @@ export default function Home() {
 
   const schedule = useMemo(() => {
     if (!eatTime || startTime >= eatTime) return null;
-    return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType);
+    return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey ?? 'neapolitan');
   }, [startTime, eatTime, blocks, kitchenTemp, preheatMin]);
 
   // Preferment start time for Timeline step 0 (poolish/biga only)

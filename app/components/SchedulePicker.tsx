@@ -1227,6 +1227,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               prefInFridge={prefGoesInFridge}
               hasColdRetard={hasColdRetard}
               phases={phases}
+              scheduleNote={schedule?.scheduleNote ?? null}
               blocks={blocks}
               onMixChange={(h) => {
                 const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - h * 3600000));
