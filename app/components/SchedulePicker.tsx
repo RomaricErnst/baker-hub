@@ -329,7 +329,6 @@ function snapToBlockerEdgeIfBlocked(
 }
 
 // ── Simple colour bar (Simple mode only) ──────
-const BAR_WIN = 48;
 const BAR_PAD = 14;
 const BAR_SVG_H = 72;
 const BAR_Y = 36;
@@ -337,11 +336,11 @@ const BAR_H = 18;
 const BAR_AXIS_Y = 60;
 const BAR_DS = 13; // diamond half-size
 
-function barHToX(hbf: number, W: number): number {
-  return BAR_PAD + (1 - Math.max(0, Math.min(BAR_WIN, hbf)) / BAR_WIN) * (W - BAR_PAD * 2);
+function barHToX(hbf: number, W: number, barWin: number): number {
+  return BAR_PAD + (1 - Math.max(0, Math.min(barWin, hbf)) / barWin) * (W - BAR_PAD * 2);
 }
-function barXToHBF(x: number, W: number): number {
-  return Math.max(0.5, Math.min(BAR_WIN - 0.5, (1 - (x - BAR_PAD) / (W - BAR_PAD * 2)) * BAR_WIN));
+function barXToHBF(x: number, W: number, barWin: number): number {
+  return Math.max(0.5, Math.min(barWin - 0.5, (1 - (x - BAR_PAD) / (W - BAR_PAD * 2)) * barWin));
 }
 
 function SimpleColourBar({
@@ -353,6 +352,7 @@ function SimpleColourBar({
   onStartChange: (d: Date) => void;
   hasColdRetard?: boolean;
 }) {
+  const barWin       = hasColdRetard ? 72 : 48;
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef       = useRef<SVGSVGElement>(null);
   const lastHBFRef   = useRef<number>(0);
@@ -373,7 +373,7 @@ function SimpleColourBar({
   const mixOffsetH = (bakeMs - pendingStart.getTime()) / 3600000;
   // During drag: show diamond at raw drag position (no blocker snap/push)
   const effectiveMixHBF = localHBF !== null ? localHBF : mixOffsetH;
-  const diamondX   = barHToX(Math.max(0.5, Math.min(BAR_WIN - 0.5, effectiveMixHBF)), W);
+  const diamondX   = barHToX(Math.max(0.5, Math.min(barWin - 0.5, effectiveMixHBF)), W, barWin);
   const barCY      = BAR_Y + BAR_H / 2; // diamond center y
 
   // Zone boundaries — wider for cold retard schedules
@@ -384,7 +384,7 @@ function SimpleColourBar({
 
   // Colour zones: [fromHBF (left), toHBF (right), fill, label]
   const zones = [
-    { from: BAR_WIN,    to: goldL_HBF,  fill: 'rgba(196,82,42,0.2)',   label: 'Too early' },
+    { from: barWin,     to: goldL_HBF,  fill: 'rgba(196,82,42,0.2)',   label: 'Too early' },
     { from: goldL_HBF,  to: sweetL_HBF, fill: 'rgba(212,168,83,0.35)', label: 'Still ok'  },
     { from: sweetL_HBF, to: sweetR_HBF, fill: 'rgba(107,122,90,0.5)',  label: 'Mix here'  },
     { from: sweetR_HBF, to: goldR2_HBF, fill: 'rgba(212,168,83,0.35)', label: 'Still ok'  },
@@ -393,13 +393,13 @@ function SimpleColourBar({
 
   // Axis ticks every 12h
   const ticks: { x: number; label: string }[] = [];
-  for (let h = 12; h < BAR_WIN; h += 12) {
+  for (let h = 12; h < barWin; h += 12) {
     const t   = new Date(bakeMs - h * 3600000);
     const wd  = t.toLocaleDateString('en-US', { weekday: 'short' });
     const hr  = t.getHours();
     const ap  = hr < 12 ? 'a' : 'p';
     const h12 = hr === 0 ? 12 : hr > 12 ? hr - 12 : hr;
-    ticks.push({ x: barHToX(h, W), label: `${wd} ${h12}${ap}` });
+    ticks.push({ x: barHToX(h, W, barWin), label: `${wd} ${h12}${ap}` });
   }
 
   // Status — uses dynamic zone boundaries
@@ -423,7 +423,7 @@ function SimpleColourBar({
   function onPointerMove(e: React.PointerEvent) {
     if (!dragging) return;
     e.preventDefault();
-    const hbf = Math.round(barXToHBF(getSvgX(e), W) * 4) / 4;
+    const hbf = Math.round(barXToHBF(getSvgX(e), W, barWin) * 4) / 4;
     lastHBFRef.current = hbf;
     // Update local visual only — no applyBlockerOverlap during drag (free movement)
     setLocalHBF(hbf);
@@ -467,13 +467,8 @@ function SimpleColourBar({
       style={{ width: '100%', userSelect: 'none', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
     >
       {/* Hint */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: '.45rem' }}>
-        <svg width={10} height={10} style={{ flexShrink: 0 }}>
-          <polygon points="5,0 10,5 5,10 0,5" fill="#1A1612" />
-        </svg>
-        <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-          Drag the diamond to set your mixing time
-        </span>
+      <div style={{ fontSize: '13px', color: 'var(--smoke)', textAlign: 'center', marginBottom: '8px' }}>
+        Drag the diamond to set your mixing time
       </div>
       <svg
         ref={svgRef}
@@ -492,8 +487,8 @@ function SimpleColourBar({
           {blocks.map((b, i) => {
             const hbfFrom = (bakeMs - b.from.getTime()) / 3600000;
             const hbfTo   = (bakeMs - b.to.getTime())   / 3600000;
-            const bx1 = barHToX(hbfFrom, W);
-            const bx2 = barHToX(hbfTo, W);
+            const bx1 = barHToX(hbfFrom, W, barWin);
+            const bx2 = barHToX(hbfTo, W, barWin);
             return (
               <clipPath key={i} id={`sbc-${i}`}>
                 <rect x={bx1} y={0} width={Math.max(0, bx2 - bx1)} height={BAR_SVG_H} />
@@ -508,16 +503,16 @@ function SimpleColourBar({
         {/* Colour zones (clipped to track) */}
         <g clipPath="url(#simple-bar-clip)">
           {zones.map((z, i) => {
-            const zx1 = barHToX(z.from, W);
-            const zx2 = barHToX(z.to, W);
+            const zx1 = barHToX(z.from, W, barWin);
+            const zx2 = barHToX(z.to, W, barWin);
             return <rect key={i} x={zx1} y={BAR_Y} width={zx2 - zx1} height={BAR_H} fill={z.fill} />;
           })}
         </g>
 
         {/* Zone labels above bar */}
         {zones.map((z, i) => {
-          const zx1 = barHToX(z.from, W);
-          const zx2 = barHToX(z.to, W);
+          const zx1 = barHToX(z.from, W, barWin);
+          const zx2 = barHToX(z.to, W, barWin);
           if (zx2 - zx1 < 28) return null;
           return (
             <text key={i} x={(zx1 + zx2) / 2} y={BAR_Y - 6}
@@ -529,16 +524,16 @@ function SimpleColourBar({
         })}
 
         {/* Bake reference line */}
-        <line x1={barHToX(0, W)} y1={0} x2={barHToX(0, W)} y2={BAR_AXIS_Y}
+        <line x1={barHToX(0, W, barWin)} y1={0} x2={barHToX(0, W, barWin)} y2={BAR_AXIS_Y}
           stroke="#C4522A" strokeWidth={1} strokeDasharray="3 3" strokeOpacity={0.25} />
 
         {/* Blocker columns */}
         {blocks.map((b, i) => {
           const hbfFrom = (bakeMs - b.from.getTime()) / 3600000;
           const hbfTo   = (bakeMs - b.to.getTime())   / 3600000;
-          if (hbfFrom <= 0 && hbfTo >= BAR_WIN) return null;
-          const bx1 = barHToX(hbfFrom, W);
-          const bx2 = barHToX(hbfTo, W);
+          if (hbfFrom <= 0 && hbfTo >= barWin) return null;
+          const bx1 = barHToX(hbfFrom, W, barWin);
+          const bx2 = barHToX(hbfTo, W, barWin);
           if (bx2 <= bx1) return null;
           const n = Math.ceil((bx2 - bx1 + BAR_SVG_H) / 7) + 2;
           return (
@@ -581,7 +576,7 @@ function SimpleColourBar({
 
         {/* Bake marker */}
         {(() => {
-          const bx = barHToX(0, W);
+          const bx = barHToX(0, W, barWin);
           return (
             <>
               <polygon points={`${bx - 6},${BAR_AXIS_Y} ${bx},${BAR_AXIS_Y - 10} ${bx + 6},${BAR_AXIS_Y}`}
@@ -944,7 +939,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             🫙 When can you feed your starter?
           </div>
           <div style={{ fontSize: '.76rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
-            Drag the gold diamond on the chart to set your feed time — mix updates automatically.
+            Set your feed time on the chart — mix updates automatically.
           </div>
 
           {/* Maturity toggle */}

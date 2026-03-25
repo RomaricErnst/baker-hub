@@ -25,11 +25,11 @@ export interface FermentChartProps {
 
 // ── Constants ────────────────────────────────────────────────
 const WINDOW_H_DEFAULT = 96;
-const PAD       = 14;
-const CHART_H   = 120;
-const BL        = 96;   // single baseline for ALL bells
-const MAXH      = 78;   // max bell height
-const AXIS_Y    = 108;  // axis line Y
+const PAD       = 16;
+const CHART_H   = 180;
+const BL        = 144;  // single baseline for ALL bells
+const MAXH      = 117;  // max bell height
+const AXIS_Y    = 162;  // axis line Y
 
 // DOUGH_SIG and DOUGH_SWEET_CENTER are computed inside the component
 // based on hasColdRetard — see derived physics section
@@ -112,12 +112,16 @@ export default function FermentChart({
   windowH, prefInFridge, hasColdRetard, phases, scheduleNote,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
-  const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef       = useRef<SVGSVGElement>(null);
-  const [W, setW]    = useState(320);
+  const containerRef  = useRef<HTMLDivElement>(null);
+  const svgRef        = useRef<SVGSVGElement>(null);
+  const [W, setW]     = useState(320);
   const [dragging, setDragging] = useState<'mix' | 'pref' | null>(null);
   // Local drag HBF for free visual movement during mix drag — no onMixChange until pointer up
   const [localMixHBF, setLocalMixHBF] = useState<number | null>(null);
+  // Glow guidance state
+  const hasMovedMixRef  = useRef(false);
+  const hasMovedPrefRef = useRef(false);
+  const [glowState, setGlowState] = useState<'mix' | 'pref' | 'both' | 'done'>('mix');
 
   useEffect(() => {
     const el = containerRef.current;
@@ -125,6 +129,24 @@ export default function FermentChart({
     const ro = new ResizeObserver(entries => setW(entries[0].contentRect.width));
     ro.observe(el);
     return () => ro.disconnect();
+  }, []);
+
+  // Inject diamond glow keyframes once
+  useEffect(() => {
+    const id = 'fc-diamond-glow-style';
+    if (document.getElementById(id)) return;
+    const s = document.createElement('style');
+    s.id = id;
+    s.textContent = `
+      @keyframes fc-glow-pulse {
+        0%   { filter: drop-shadow(0 0 0px rgba(196,82,42,0)); }
+        50%  { filter: drop-shadow(0 0 6px rgba(196,82,42,0.8)); }
+        100% { filter: drop-shadow(0 0 0px rgba(196,82,42,0)); }
+      }
+      .fc-diamond-glow { animation: fc-glow-pulse 1.6s ease-in-out infinite; }
+    `;
+    document.head.appendChild(s);
+    return () => { document.getElementById(id)?.remove(); };
   }, []);
 
   // ── Derived ──────────────────────────────────────────────
@@ -221,8 +243,20 @@ export default function FermentChart({
 
   function onPointerUp() {
     if (dragging === 'mix' && localMixHBF !== null) {
+      hasMovedMixRef.current = true;
       onMixChange(localMixHBF);
       setLocalMixHBF(null);
+      setGlowState(prev => {
+        if (prev === 'mix') return hasPref ? 'pref' : 'done';
+        if (prev === 'pref') return 'done';
+        return prev;
+      });
+    } else if (dragging === 'pref') {
+      hasMovedPrefRef.current = true;
+      setGlowState(prev => {
+        if (prev === 'pref' || prev === 'mix') return 'done';
+        return prev;
+      });
     }
     setDragging(null);
   }
@@ -268,7 +302,7 @@ export default function FermentChart({
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
         <line x1={x2} y1={0} x2={x2} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
-        <text x={(x1 + x2) / 2} y={labelY} fontSize={8} fill={color}
+        <text x={(x1 + x2) / 2} y={labelY} fontSize={11} fill={color}
           textAnchor="middle" fontFamily="DM Mono, monospace" fillOpacity={0.65}>
           {label}
         </text>
@@ -281,19 +315,22 @@ export default function FermentChart({
     cx: number, fill: string, stroke: string, warn: boolean,
     which: 'mix' | 'pref',
   ) {
+    const shouldGlow = (which === 'mix' && glowState === 'mix')
+      || (which === 'pref' && (glowState === 'pref'));
     return (
       <g
         style={{ cursor: dragging === which ? 'grabbing' : 'grab' }}
         onPointerDown={e => onPointerDown(e, which)}
       >
         <polygon
+          className={shouldGlow ? 'fc-diamond-glow' : undefined}
           points={`${cx},${AXIS_Y - S} ${cx + S},${AXIS_Y} ${cx},${AXIS_Y + S} ${cx - S},${AXIS_Y}`}
           fill={fill} stroke={stroke} strokeWidth={1.5}
         />
         {warn && (
           <>
             <circle cx={cx + S + 3} cy={AXIS_Y - S} r={5} fill="rgba(196,82,42,0.9)" />
-            <text x={cx + S + 3} y={AXIS_Y - S + 4} fontSize={7} fill="white"
+            <text x={cx + S + 3} y={AXIS_Y - S + 4} fontSize={10} fill="white"
               textAnchor="middle" fontFamily="DM Mono, monospace">!</text>
           </>
         )}
@@ -319,8 +356,35 @@ export default function FermentChart({
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', userSelect: 'none', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
+      style={{ width: '100%', userSelect: 'none', overflow: 'hidden', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
     >
+      {/* ── Instruction pills ── */}
+      {glowState !== 'done' && (
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '5px',
+            fontSize: '12px', color: glowState === 'mix' ? 'var(--char)' : 'var(--smoke)',
+            background: glowState === 'mix' ? '#FFF8F3' : 'var(--cream)',
+            border: `1px solid ${glowState === 'mix' ? 'var(--terra)' : 'var(--border)'}`,
+            borderRadius: '20px', padding: '3px 10px',
+          }}>
+            <svg width={9} height={9}><polygon points="4.5,0 9,4.5 4.5,9 0,4.5" fill="#1A1612" /></svg>
+            Drag black diamond to set mix time
+          </div>
+          {hasPref && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '5px',
+              fontSize: '12px', color: glowState === 'pref' ? 'var(--char)' : 'var(--smoke)',
+              background: glowState === 'pref' ? '#FFF8F3' : 'var(--cream)',
+              border: `1px solid ${glowState === 'pref' ? 'var(--terra)' : 'var(--border)'}`,
+              borderRadius: '20px', padding: '3px 10px',
+            }}>
+              <svg width={9} height={9}><polygon points="4.5,0 9,4.5 4.5,9 0,4.5" fill={prefColor} /></svg>
+              Drag {prefTypeName.toLowerCase()} diamond to set start
+            </div>
+          )}
+        </div>
+      )}
       <svg
         ref={svgRef}
         width={W}
@@ -393,7 +457,7 @@ export default function FermentChart({
               d={makeBellPath(prefPeakHBF, prefSig, W, WH)}
               fill={`${prefColor}2E`} stroke={`${prefColor}A5`} strokeWidth={1.5}
             />
-            <text x={PAD + 2} y={24} fontSize={8.5} fill={prefColor} fillOpacity={0.7}
+            <text x={PAD + 2} y={24} fontSize={12} fill={prefColor} fillOpacity={0.7}
               fontFamily="DM Mono, monospace">{prefTypeName}</text>
             {renderDropLine(
               prefStartAbsHBF, prefPeakHBF, prefSig,
@@ -407,7 +471,7 @@ export default function FermentChart({
           d={makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH)}
           fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
         />
-        <text x={PAD + 2} y={12} fontSize={8.5} fill={SAGE} fillOpacity={0.7}
+        <text x={PAD + 2} y={16} fontSize={12} fill={SAGE} fillOpacity={0.7}
           fontFamily="DM Mono, monospace">Dough</text>
         {renderDropLine(
           effectiveMixHBF, doughPeakHBF, DOUGH_SIG,
@@ -427,7 +491,7 @@ export default function FermentChart({
           <g key={i}>
             <line x1={tk.x} y1={AXIS_Y} x2={tk.x} y2={AXIS_Y + 3}
               stroke="var(--border)" strokeWidth={1} />
-            <text x={tk.x} y={AXIS_Y + 13} fontSize={7.5} fill="var(--smoke)"
+            <text x={tk.x} y={AXIS_Y + 16} fontSize={11} fill="var(--smoke)"
               fontFamily="DM Mono, monospace" textAnchor="middle">
               {tk.label}
             </text>
@@ -439,7 +503,7 @@ export default function FermentChart({
           points={`${bakeX - 8},${AXIS_Y} ${bakeX},${AXIS_Y - 12} ${bakeX + 8},${AXIS_Y}`}
           fill={TERRA}
         />
-        <text x={bakeX} y={AXIS_Y + 14} fontSize={8} fill={TERRA}
+        <text x={bakeX} y={AXIS_Y + 18} fontSize={11} fill={TERRA}
           fontFamily="DM Mono, monospace" textAnchor="middle">Bake</text>
 
         {/* ── Pref diamond ── */}
@@ -468,23 +532,23 @@ export default function FermentChart({
           <div style={{
             flex: 1, minWidth: '120px',
             background: 'var(--cream)', border: '1.5px solid var(--border)',
-            borderRadius: '10px', padding: '.45rem .7rem',
+            borderRadius: '10px', padding: '12px',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
               <div style={{ width: 8, height: 8, background: prefColor, transform: 'rotate(45deg)', flexShrink: 0 }} />
               <div style={{
-                fontSize: '.6rem', color: 'var(--smoke)',
+                fontSize: '13px', color: 'var(--smoke)',
                 fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
               }}>{prefLabel}</div>
             </div>
-            <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+            <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
               {fmtDT(prefTime)}
             </div>
-            <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: prefInZone ? '#4A7A3A' : '#C49A28' }}>
+            <div style={{ fontSize: '12px', marginTop: '.1rem', color: prefInZone ? '#4A7A3A' : '#C49A28' }}>
               {prefStatus}
             </div>
             {prefInFridge && (
-              <div style={{ fontSize: '.62rem', marginTop: '.2rem', color: '#3A5A8A', fontFamily: 'var(--font-dm-mono)' }}>
+              <div style={{ fontSize: '12px', marginTop: '.2rem', color: '#3A5A8A', fontFamily: 'var(--font-dm-mono)' }}>
                 🧊 Cold ferment — use fridge
               </div>
             )}
@@ -495,55 +559,22 @@ export default function FermentChart({
         <div style={{
           flex: 1, minWidth: '120px',
           background: 'var(--cream)', border: '1.5px solid var(--border)',
-          borderRadius: '10px', padding: '.45rem .7rem',
+          borderRadius: '10px', padding: '12px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
             <div style={{ width: 8, height: 8, background: CHAR, transform: 'rotate(45deg)', flexShrink: 0 }} />
             <div style={{
-              fontSize: '.6rem', color: 'var(--smoke)',
+              fontSize: '13px', color: 'var(--smoke)',
               fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
             }}>Start mixing</div>
           </div>
-          <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+          <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
             {fmtDT(mixTime)}
           </div>
-          <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: mixInZone ? '#4A7A3A' : TERRA }}>
+          <div style={{ fontSize: '12px', marginTop: '.1rem', color: mixInZone ? '#4A7A3A' : TERRA }}>
             {mixStatus}
           </div>
         </div>
-      </div>
-
-      {/* ── Hint text ──────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '.45rem' }}>
-        {hasPref ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <svg width={10} height={10} style={{ flexShrink: 0 }}>
-                <polygon points="5,0 10,5 5,10 0,5" fill={prefColor} />
-              </svg>
-              <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-                drag to set {prefTypeName.toLowerCase()} start — curve moves, zone stays
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <svg width={10} height={10} style={{ flexShrink: 0 }}>
-                <polygon points="5,0 10,5 5,10 0,5" fill={CHAR} />
-              </svg>
-              <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-                drag to move the whole plan
-              </span>
-            </div>
-          </>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <svg width={10} height={10} style={{ flexShrink: 0 }}>
-              <polygon points="5,0 10,5 5,10 0,5" fill={CHAR} />
-            </svg>
-            <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-              drag to set mix time
-            </span>
-          </div>
-        )}
       </div>
 
       {/* ── Phase timeline strip ────────────────────────── */}
