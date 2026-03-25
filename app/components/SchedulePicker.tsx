@@ -612,7 +612,7 @@ function SimpleColourBar({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
             <div style={{ width: 8, height: 8, background: '#1A1612', transform: 'rotate(45deg)', flexShrink: 0 }} />
-            <div style={{ fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+            <div style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
               Start mixing
             </div>
           </div>
@@ -1200,7 +1200,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       {/* Fermentation chart */}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
-        <label style={LABEL_STYLE}>{t('startMixing')}</label>
+        <label style={LABEL_STYLE}>
+          {hasPrefActive ? t('schedulerTitle.withPref') : t('schedulerTitle.noPref')}
+        </label>
         {startComputed ? (
           mode === 'simple' ? (
             <SimpleColourBar

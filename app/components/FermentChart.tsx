@@ -302,8 +302,8 @@ export default function FermentChart({
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
         <line x1={x2} y1={0} x2={x2} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
-        <text x={(x1 + x2) / 2} y={labelY} fontSize={11} fill={color}
-          textAnchor="middle" fontFamily="DM Mono, monospace" fillOpacity={0.65}>
+        <text x={(x1 + x2) / 2} y={labelY} fontSize={13} fill={color}
+          textAnchor="middle" fontFamily="DM Mono, monospace" fillOpacity={0.85} fontWeight="600">
           {label}
         </text>
       </g>
@@ -385,6 +385,34 @@ export default function FermentChart({
           )}
         </div>
       )}
+      {/* ── Curve legend (hasPref only) ── */}
+      {hasPref && (
+        <div style={{
+          display: 'flex', gap: '16px', marginBottom: '8px',
+          fontFamily: 'DM Sans, sans-serif', fontSize: '12px',
+          alignItems: 'center',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{
+              width: '10px', height: '10px', borderRadius: '50%',
+              background: SAGE, flexShrink: 0,
+            }} />
+            <span style={{ color: '#3D3530' }}>Dough</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{
+              width: '10px', height: '10px', borderRadius: '50%',
+              background: prefColor, flexShrink: 0,
+            }} />
+            <span style={{ color: '#3D3530' }}>
+              {prefermentType === 'biga'       ? 'Biga'   :
+               prefermentType === 'levain'     ? 'Levain' :
+               prefermentType === 'sourdough'  ? 'Levain' :
+               'Poolish'}
+            </span>
+          </div>
+        </div>
+      )}
       <svg
         ref={svgRef}
         width={W}
@@ -419,8 +447,19 @@ export default function FermentChart({
         )}
 
         {/* ── Sweet-spot zones ── */}
-        {renderZone(doughZoneFrom, doughZoneTo, SAGE,      'Mix here',   10)}
-        {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, 'Start here', 20)}
+        {(() => {
+          const prefZoneLabel =
+            prefermentType === 'biga'      ? 'Start biga'   :
+            prefermentType === 'levain'    ? 'Start levain' :
+            prefermentType === 'sourdough' ? 'Start levain' :
+            'Start poolish';
+          return (
+            <>
+              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start dough', 10)}
+              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, prefZoneLabel, 20)}
+            </>
+          );
+        })()}
 
         {/* ── Blocker columns ── */}
         {blocks.map((b, i) => {
@@ -457,8 +496,6 @@ export default function FermentChart({
               d={makeBellPath(prefPeakHBF, prefSig, W, WH)}
               fill={`${prefColor}2E`} stroke={`${prefColor}A5`} strokeWidth={1.5}
             />
-            <text x={PAD + 2} y={24} fontSize={12} fill={prefColor} fillOpacity={0.7}
-              fontFamily="DM Mono, monospace">{prefTypeName}</text>
             {renderDropLine(
               prefStartAbsHBF, prefPeakHBF, prefSig,
               inBlocker(prefStartAbsHBF) ? '#aaaaaa' : prefColor,
@@ -471,8 +508,6 @@ export default function FermentChart({
           d={makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH)}
           fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
         />
-        <text x={PAD + 2} y={16} fontSize={12} fill={SAGE} fillOpacity={0.7}
-          fontFamily="DM Mono, monospace">Dough</text>
         {renderDropLine(
           effectiveMixHBF, doughPeakHBF, DOUGH_SIG,
           inBlocker(effectiveMixHBF) ? '#aaaaaa' : SAGE,
@@ -491,7 +526,7 @@ export default function FermentChart({
           <g key={i}>
             <line x1={tk.x} y1={AXIS_Y} x2={tk.x} y2={AXIS_Y + 3}
               stroke="var(--border)" strokeWidth={1} />
-            <text x={tk.x} y={AXIS_Y + 16} fontSize={11} fill="var(--smoke)"
+            <text x={tk.x} y={AXIS_Y + 16} fontSize={12} fill="var(--smoke)"
               fontFamily="DM Mono, monospace" textAnchor="middle">
               {tk.label}
             </text>
@@ -503,7 +538,7 @@ export default function FermentChart({
           points={`${bakeX - 8},${AXIS_Y} ${bakeX},${AXIS_Y - 12} ${bakeX + 8},${AXIS_Y}`}
           fill={TERRA}
         />
-        <text x={bakeX} y={AXIS_Y + 18} fontSize={11} fill={TERRA}
+        <text x={bakeX} y={AXIS_Y + 20} fontSize={14} fontWeight="600" fill={TERRA}
           fontFamily="DM Mono, monospace" textAnchor="middle">Bake</text>
 
         {/* ── Pref diamond ── */}
@@ -590,7 +625,7 @@ export default function FermentChart({
         return (
           <div style={{ marginTop: '.7rem' }}>
             <div style={{
-              fontSize: '.6rem', fontFamily: 'var(--font-dm-mono)',
+              fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
               color: 'var(--smoke)', textTransform: 'uppercase',
               letterSpacing: '.06em', marginBottom: '.3rem',
             }}>
@@ -617,7 +652,7 @@ export default function FermentChart({
                   >
                     {showFull && (
                       <span style={{
-                        fontSize: '.58rem', fontFamily: 'var(--font-dm-mono)',
+                        fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
                         color: 'white', whiteSpace: 'nowrap', lineHeight: 1,
                       }}>
                         {s.label} · {hLabel}
@@ -625,7 +660,7 @@ export default function FermentChart({
                     )}
                     {showShort && (
                       <span style={{
-                        fontSize: '.55rem', fontFamily: 'var(--font-dm-mono)',
+                        fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
                         color: 'white', whiteSpace: 'nowrap', lineHeight: 1,
                       }}>
                         {hLabel}

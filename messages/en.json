@@ -73,13 +73,16 @@
     "saved": "✓ Saved!",
     "saveFailed": "Save failed"
   },
+  "schedulerTitle": {
+    "withPref": "Your fermentation plan",
+    "noPref": "Your mixing window"
+  },
   "scheduler": {
     "bakeTimeLabelPizza": "When does it go in the oven?",
     "bakeTimeLabelBread": "When does it go in the oven?",
     "bakeTimeSub": "Baker Hub builds your schedule backwards from here.",
     "planMyBake": "Plan my bake →",
     "bakeTime": "Bake time",
-    "startMixing": "Start mixing",
     "orPickDay": "Or pick a different day →",
     "setByPlan": "Set by plan above",
     "startBeforeBake": "Start time must be before bake time.",

@@ -73,13 +73,16 @@
     "saved": "✓ Enregistré !",
     "saveFailed": "Échec de l'enregistrement"
   },
+  "schedulerTitle": {
+    "withPref": "Votre plan de fermentation",
+    "noPref": "Votre fenêtre de pétrissage"
+  },
   "scheduler": {
     "bakeTimeLabelPizza": "À quelle heure enfournez-vous ?",
     "bakeTimeLabelBread": "À quelle heure enfournez-vous ?",
     "bakeTimeSub": "Baker Hub calcule vos étapes à rebours.",
     "planMyBake": "Planifier ma fournée →",
     "bakeTime": "Heure de cuisson",
-    "startMixing": "Début du pétrissage",
     "orPickDay": "Ou choisir un autre jour →",
     "setByPlan": "Défini par le plan ci-dessus",
     "startBeforeBake": "L'heure de départ doit être avant la cuisson.",
