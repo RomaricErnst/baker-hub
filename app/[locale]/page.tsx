@@ -262,6 +262,9 @@ export default function Home() {
   // P6 — Active tab in two-tab layout
   const [activeTab, setActiveTab] = useState<'setup' | 'bakeplan'>('setup');
 
+  // M2 — Mode chosen: false on page load, true after baker selects a mode
+  const [modeChosen, setModeChosen] = useState(false);
+
   // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -427,6 +430,7 @@ export default function Home() {
     setAdvancedStep(1); setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
+    setModeChosen(false);
     customOnlyStateRef.current = null;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -498,53 +502,68 @@ export default function Home() {
       {/* ── Main content ───────────────────── */}
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
 
-        {/* ── Hero — Simple mode only ── */}
-        {tab === 'simple' && !bakeType && (
-          <div style={{ textAlign: 'center', padding: '1.5rem 0 2rem' }}>
-            <h1 style={{
-              fontFamily: 'var(--font-playfair)', fontSize: 'clamp(2rem, 5vw, 3rem)',
-              fontWeight: 900, lineHeight: 1.2, marginBottom: '.75rem',
-            }}>
-              {t('hero.headline')}{' '}
-              <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>{t('hero.headlineEm')}</em>
-            </h1>
-            <p style={{ color: 'var(--smoke)', fontSize: '.95rem', fontWeight: 300 }}>
-              {t('hero.sub')}
-            </p>
-          </div>
-        )}
+        {/* ── Mode selector ──────────────────────── */}
+        {!modeChosen ? (
 
-        {/* ── Simple/Custom toggle ── */}
-        <div style={{
-          display: 'flex',
-          background: '#F5F0E8',
-          borderRadius: '10px',
-          padding: '3px',
-          margin: '0 0 6px 0',
-        }}>
-          {(['simple', 'custom'] as const).map(tabKey => {
-            const isActive = tab === tabKey;
-            return (
-              <button
-                key={tabKey}
+          <div style={{ marginBottom: '16px' }}>
+            {/* Hero headline — only shown when expanded */}
+            <div style={{ textAlign: 'center', marginBottom: '20px', padding: '0 8px' }}>
+              <h1 style={{
+                fontFamily: 'var(--font-playfair)',
+                fontSize: 'clamp(1.4rem, 5vw, 2rem)',
+                fontWeight: 700,
+                color: 'var(--char)',
+                lineHeight: 1.2,
+                margin: 0,
+              }}>
+                {t('hero.headline')}{' '}
+                <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>
+                  {t('hero.headlineEm')}
+                </em>
+              </h1>
+            </div>
+
+            {/* Mode cards */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+
+              {/* Simple card */}
+              <div
                 onClick={() => {
-                  if (tabKey === tab) return;
-
                   if (tab === 'custom') {
-                    customOnlyStateRef.current = {
-                      flourBlend,
-                      hydration: manualHydration,
-                      oil: manualOil,
-                      sugar: manualSugar,
-                      prefermentType,
-                      prefermentFlourPct,
-                    };
-                    setManualHydration(undefined);
-                    setManualOil(undefined);
-                    setManualSugar(undefined);
+                    customOnlyStateRef.current = { flourBlend, hydration: manualHydration, oil: manualOil, sugar: manualSugar, prefermentType, prefermentFlourPct };
+                    setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
                   }
+                  setTab('simple'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
+                }}
+                style={{
+                  flex: 1,
+                  border: tab === 'simple' ? '2px solid var(--terra)' : '0.5px solid var(--border)',
+                  borderRadius: '14px',
+                  padding: '14px 12px',
+                  background: tab === 'simple' ? 'white' : 'var(--warm)',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontSize: '20px', marginBottom: '6px' }}>🧭</div>
+                <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--char)', marginBottom: '10px' }}>Simple</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  {[
+                    t('modeCards.simple.bullet1'),
+                    t('modeCards.simple.bullet2'),
+                    t('modeCards.simple.bullet3'),
+                  ].map((b, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--sage)', flexShrink: 0, marginTop: '1px' }}>✓</span>
+                      <span style={{ fontSize: '11px', color: 'var(--ash)', lineHeight: 1.3 }}>{b}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-                  if (tabKey === 'custom') {
+              {/* Custom card */}
+              <div
+                onClick={() => {
+                  if (tab !== 'custom') {
                     if (customOnlyStateRef.current) {
                       setFlourBlend(customOnlyStateRef.current.flourBlend);
                       setManualHydration(customOnlyStateRef.current.hydration);
@@ -554,37 +573,83 @@ export default function Home() {
                       setPrefermentFlourPct(customOnlyStateRef.current.prefermentFlourPct);
                     } else if (styleKey) {
                       const s = ALL_STYLES[styleKey];
-                      setManualHydration(s.hydration);
-                      setManualOil(s.oil);
-                      setManualSugar(s.sugar);
+                      setManualHydration(s.hydration); setManualOil(s.oil); setManualSugar(s.sugar);
                     }
                   }
-
-                  setTab(tabKey);
-                  setProtocolStale(true);
-                  setActiveTab('setup');
+                  setTab('custom'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
                 }}
                 style={{
                   flex: 1,
-                  padding: '8px 0',
-                  fontFamily: 'DM Sans, sans-serif',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  borderRadius: '8px',
-                  border: 'none',
+                  border: tab === 'custom' ? '2px solid var(--terra)' : '0.5px solid var(--border)',
+                  borderRadius: '14px',
+                  padding: '14px 12px',
+                  background: tab === 'custom' ? 'white' : 'var(--warm)',
                   cursor: 'pointer',
-                  transition: 'background 0.15s',
-                  textAlign: 'center' as const,
-                  background: isActive ? '#FDFBF7' : 'transparent',
-                  color: isActive ? '#1A1612' : '#8A7F78',
-                  boxShadow: isActive ? '0 1px 4px rgba(26,22,18,0.10)' : 'none',
                 }}
               >
-                {tabKey === 'simple' ? t('tabs.guided') : t('tabs.advanced')}
-              </button>
-            );
-          })}
-        </div>
+                <div style={{ fontSize: '20px', marginBottom: '6px' }}>🎛️</div>
+                <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--char)', marginBottom: '10px' }}>Custom</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  {[
+                    t('modeCards.custom.bullet1'),
+                    t('modeCards.custom.bullet2'),
+                    t('modeCards.custom.bullet3'),
+                  ].map((b, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--sage)', flexShrink: 0, marginTop: '1px' }}>✓</span>
+                      <span style={{ fontSize: '11px', color: 'var(--ash)', lineHeight: 1.3 }}>{b}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        ) : (
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 12px',
+            background: 'white',
+            borderRadius: '12px',
+            border: '0.5px solid var(--border)',
+            marginBottom: '10px',
+            cursor: 'default',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '18px' }}>
+                {tab === 'simple' ? '🧭' : '🎛️'}
+              </span>
+              <div>
+                <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 700, color: 'var(--char)' }}>
+                  {tab === 'simple' ? 'Simple' : 'Custom'}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--smoke)' }}>
+                  {tab === 'simple' ? t('modeCards.simple.collapsed') : t('modeCards.custom.collapsed')}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setModeChosen(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '12px',
+                color: 'var(--terra)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-dm-sans)',
+                fontWeight: 500,
+                padding: '4px 0',
+              }}
+            >
+              Switch
+            </button>
+          </div>
+
+        )}
 
         {/* ── Segmented control (Dough setup / Bake plan) ── */}
         <div style={{

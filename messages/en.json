@@ -1,5 +1,5 @@
 {
-  "header": { "tagline": "artisan dough planner" },
+  "header": { "tagline": "dough planned around your life" },
   "auth": { "signIn": "🔑 Sign in", "signOut": "Sign out" },
   "common": {
     "continue": "Continue →",
@@ -30,8 +30,21 @@
   },
   "hero": {
     "headline": "Craft your dough",
-    "headlineEm": "with confidence.",
-    "sub": "Choose your dough style. We'll shape the plan."
+    "headlineEm": "with confidence."
+  },
+  "modeCards": {
+    "simple": {
+      "bullet1": "Great to start with",
+      "bullet2": "Smart defaults",
+      "bullet3": "Colour bar schedule",
+      "collapsed": "Smart defaults · colour bar schedule"
+    },
+    "custom": {
+      "bullet1": "Your flour blend",
+      "bullet2": "Preferment control",
+      "bullet3": "Fermentation graph",
+      "collapsed": "Flour blend · preferment · graph"
+    }
   },
   "steps": {
     "1": { "title": "What are you crafting today?" },

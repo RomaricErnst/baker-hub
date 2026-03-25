@@ -1,5 +1,5 @@
 {
-  "header": { "tagline": "planificateur de pâte artisanal" },
+  "header": { "tagline": "votre pâte, planifiée autour de votre vie" },
   "auth": { "signIn": "🔑 Se connecter", "signOut": "Se déconnecter" },
   "common": {
     "continue": "Continuer →",
@@ -30,8 +30,21 @@
   },
   "hero": {
     "headline": "Préparez votre pâte",
-    "headlineEm": "avec confiance.",
-    "sub": "Choisissez votre style. On s'occupe du plan."
+    "headlineEm": "avec confiance."
+  },
+  "modeCards": {
+    "simple": {
+      "bullet1": "Idéal pour commencer",
+      "bullet2": "Réglages intelligents",
+      "bullet3": "Planning visuel couleur",
+      "collapsed": "Réglages intelligents · planning couleur"
+    },
+    "custom": {
+      "bullet1": "Votre mélange de farines",
+      "bullet2": "Contrôle du pré-ferment",
+      "bullet3": "Graphe de fermentation",
+      "collapsed": "Farines · pré-ferment · graphe"
+    }
   },
   "steps": {
     "1": { "title": "Qu'est-ce que vous préparez ?" },
