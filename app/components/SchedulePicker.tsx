@@ -13,7 +13,6 @@ interface SchedulePickerProps {
   kitchenTemp: number;
   schedule?: ScheduleResult | null;
   onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[]) => void;
-  onConfirm?: () => void;
   bakeType?: 'pizza' | 'bread';
   isSourdough?: boolean;
   onFeedTimeChange?: (t: Date) => void;
@@ -646,7 +645,7 @@ function SimpleColourBar({
 }
 
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, onConfirm, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, mode = 'custom' }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, mode = 'custom' }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tCommon = useTranslations('common');
   const alreadySet = eatTime !== null && eatTime > new Date();
@@ -763,11 +762,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setFeedTime(ft);
       onFeedTimeChange?.(ft);
     }
-  }
-
-  function confirmStart() {
-    onChange(pendingStart, pendingEatTime, blocks);
-    onConfirm?.();
   }
 
   // ── Handlers ─────────────────────────────────
@@ -1393,19 +1387,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
-      {/* Confirm */}
-      <button
-        onClick={confirmStart}
-        disabled={startInvalid || !startComputed}
-        style={{
-          ...continueBtnStyle,
-          background: (startInvalid || !startComputed) ? 'var(--border)' : 'var(--terra)',
-          color: (startInvalid || !startComputed) ? 'var(--smoke)' : '#fff',
-          cursor: (startInvalid || !startComputed) ? 'default' : 'pointer',
-        }}
-      >
-        {t('confirmStart')}
-      </button>
     </div>
   );
 }

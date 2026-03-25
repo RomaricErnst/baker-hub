@@ -82,7 +82,6 @@
     "startMixing": "Start mixing",
     "orPickDay": "Or pick a different day →",
     "setByPlan": "Set by plan above",
-    "confirmStart": "Confirm start →",
     "startBeforeBake": "Start time must be before bake time.",
     "totalWindow": "{hours} total window",
     "startMovedNote": "Start moved to {time} to avoid your unavailability block.",

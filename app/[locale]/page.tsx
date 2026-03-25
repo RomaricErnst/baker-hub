@@ -495,78 +495,104 @@ export default function Home() {
     <div style={{ minHeight: '100vh', background: 'var(--cream)' }}>
       <Header />
 
-      {/* ── Tab navigation ─────────────────── */}
-      <div style={{ background: 'var(--warm)', borderBottom: '1px solid var(--border)', position: 'sticky', top: '60px', zIndex: 90 }}>
-        <div style={{ maxWidth: '680px', margin: '0 auto', padding: '0 1.25rem', display: 'flex' }}>
-          {(['simple', 'custom'] as const).map(tabKey => (
-            <button
-              key={tabKey}
-              onClick={() => {
-                if (tabKey === tab) return; // no-op if same tab
-
-                // Save Custom-only state when leaving Custom
-                if (tab === 'custom') {
-                  customOnlyStateRef.current = {
-                    flourBlend,
-                    hydration: manualHydration,
-                    oil: manualOil,
-                    sugar: manualSugar,
-                    prefermentType,
-                    prefermentFlourPct,
-                  };
-                  // Clear manual overrides for Simple mode
-                  setManualHydration(undefined);
-                  setManualOil(undefined);
-                  setManualSugar(undefined);
-                }
-
-                // Restore Custom-only state when entering Custom
-                if (tabKey === 'custom') {
-                  if (customOnlyStateRef.current) {
-                    setFlourBlend(customOnlyStateRef.current.flourBlend);
-                    setManualHydration(customOnlyStateRef.current.hydration);
-                    setManualOil(customOnlyStateRef.current.oil);
-                    setManualSugar(customOnlyStateRef.current.sugar);
-                    setPrefermentType(customOnlyStateRef.current.prefermentType);
-                    setPrefermentFlourPct(customOnlyStateRef.current.prefermentFlourPct);
-                  } else if (styleKey) {
-                    const s = ALL_STYLES[styleKey];
-                    setManualHydration(s.hydration);
-                    setManualOil(s.oil);
-                    setManualSugar(s.sugar);
-                  }
-                }
-
-                setTab(tabKey);
-                setProtocolStale(true);
-                setActiveTab('setup');
-              }}
-              style={{
-                padding: '.55rem 1.25rem',
-                background: 'none', border: 'none',
-                borderBottom: `2px solid ${tab === tabKey ? 'var(--terra)' : 'transparent'}`,
-                color: tab === tabKey ? 'var(--terra)' : 'var(--smoke)',
-                fontSize: '.88rem', fontWeight: tab === tabKey ? 600 : 400,
-                cursor: 'pointer', marginBottom: '-1px',
-                transition: 'color .15s',
-              }}
-            >
-              {tabKey === 'simple' ? t('tabs.guided') : t('tabs.advanced')}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* ── Main content ───────────────────── */}
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
 
-        {/* ── Segmented control ── */}
+        {/* ── Hero — Simple mode only ── */}
+        {tab === 'simple' && !bakeType && (
+          <div style={{ textAlign: 'center', padding: '1.5rem 0 2rem' }}>
+            <h1 style={{
+              fontFamily: 'var(--font-playfair)', fontSize: 'clamp(2rem, 5vw, 3rem)',
+              fontWeight: 900, lineHeight: 1.2, marginBottom: '.75rem',
+            }}>
+              {t('hero.headline')}{' '}
+              <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>{t('hero.headlineEm')}</em>
+            </h1>
+            <p style={{ color: 'var(--smoke)', fontSize: '.95rem', fontWeight: 300 }}>
+              {t('hero.sub')}
+            </p>
+          </div>
+        )}
+
+        {/* ── Simple/Custom toggle ── */}
+        <div style={{
+          display: 'flex',
+          background: '#F5F0E8',
+          borderRadius: '10px',
+          padding: '3px',
+          margin: '0 0 6px 0',
+        }}>
+          {(['simple', 'custom'] as const).map(tabKey => {
+            const isActive = tab === tabKey;
+            return (
+              <button
+                key={tabKey}
+                onClick={() => {
+                  if (tabKey === tab) return;
+
+                  if (tab === 'custom') {
+                    customOnlyStateRef.current = {
+                      flourBlend,
+                      hydration: manualHydration,
+                      oil: manualOil,
+                      sugar: manualSugar,
+                      prefermentType,
+                      prefermentFlourPct,
+                    };
+                    setManualHydration(undefined);
+                    setManualOil(undefined);
+                    setManualSugar(undefined);
+                  }
+
+                  if (tabKey === 'custom') {
+                    if (customOnlyStateRef.current) {
+                      setFlourBlend(customOnlyStateRef.current.flourBlend);
+                      setManualHydration(customOnlyStateRef.current.hydration);
+                      setManualOil(customOnlyStateRef.current.oil);
+                      setManualSugar(customOnlyStateRef.current.sugar);
+                      setPrefermentType(customOnlyStateRef.current.prefermentType);
+                      setPrefermentFlourPct(customOnlyStateRef.current.prefermentFlourPct);
+                    } else if (styleKey) {
+                      const s = ALL_STYLES[styleKey];
+                      setManualHydration(s.hydration);
+                      setManualOil(s.oil);
+                      setManualSugar(s.sugar);
+                    }
+                  }
+
+                  setTab(tabKey);
+                  setProtocolStale(true);
+                  setActiveTab('setup');
+                }}
+                style={{
+                  flex: 1,
+                  padding: '8px 0',
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s',
+                  textAlign: 'center' as const,
+                  background: isActive ? '#FDFBF7' : 'transparent',
+                  color: isActive ? '#1A1612' : '#8A7F78',
+                  boxShadow: isActive ? '0 1px 4px rgba(26,22,18,0.10)' : 'none',
+                }}
+              >
+                {tabKey === 'simple' ? t('tabs.guided') : t('tabs.advanced')}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Segmented control (Dough setup / Bake plan) ── */}
         <div style={{
           background: '#F5F0E8',
           borderRadius: '10px',
           padding: '3px',
           display: 'flex',
-          marginBottom: '0',
+          margin: '0 0 12px 0',
         }}>
           {(['setup', 'bakeplan'] as const).map(segKey => {
             const isActive = activeTab === segKey;
@@ -619,22 +645,6 @@ export default function Home() {
 
             {/* ── Setup tab content ── */}
             <div style={{ display: activeTab === 'setup' ? 'flex' : 'none', flexDirection: 'column', gap: '1rem' }}>
-
-            {/* ── Hero intro (only before step 1 done) ── */}
-            {!bakeType && (
-              <div style={{ textAlign: 'center', padding: '1.5rem 0 2rem' }}>
-                <h1 style={{
-                  fontFamily: 'var(--font-playfair)', fontSize: 'clamp(2rem, 5vw, 3rem)',
-                  fontWeight: 900, lineHeight: 1.2, marginBottom: '.75rem',
-                }}>
-                  {t('hero.headline')}{' '}
-                  <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>{t('hero.headlineEm')}</em>
-                </h1>
-                <p style={{ color: 'var(--smoke)', fontSize: '.95rem', fontWeight: 300 }}>
-                  {t('hero.sub')}
-                </p>
-              </div>
-            )}
 
             {/* ─── STEP 1: Bake type ───────────────── */}
             <StepCard
@@ -919,7 +929,6 @@ export default function Home() {
                 onFeedTimeChange={setFeedTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
-                onConfirm={() => advance(8)}
               />
             </StepCard>
 
@@ -1723,7 +1732,6 @@ export default function Home() {
                 onFeedTimeChange={setFeedTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
-                onConfirm={() => advanceAdv(11)}
               />
             </StepCard>
 
