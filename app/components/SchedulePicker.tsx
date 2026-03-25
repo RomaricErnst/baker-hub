@@ -308,22 +308,21 @@ const LABEL_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-dm-mono)',
 };
 
-// ── Snap helper for simple bar ────────────────
-function snapToSweetEdgeIfBlocked(
+// ── Snap to the edge of the blocker nearest to sweet spot center ──
+function snapToBlockerEdgeIfBlocked(
   hbf: number,
   activeBlocks: AvailabilityBlock[],
   et: Date,
-  sweetMin: number,
-  sweetMax: number,
+  sweetCenter: number,
 ): number {
   const ms = et.getTime();
   for (const b of activeBlocks) {
-    const bFrom = (ms - b.to.getTime())   / 3600000; // HBF closer to bake (smaller)
-    const bTo   = (ms - b.from.getTime()) / 3600000; // HBF further from bake (larger)
+    const bFrom = (ms - b.to.getTime())   / 3600000; // HBF closer to bake
+    const bTo   = (ms - b.from.getTime()) / 3600000; // HBF further from bake
     if (hbf >= bFrom && hbf <= bTo) {
-      const distToMin = Math.abs(hbf - sweetMin);
-      const distToMax = Math.abs(hbf - sweetMax);
-      return distToMin <= distToMax ? sweetMin : sweetMax;
+      const distFrom = Math.abs(bFrom - sweetCenter);
+      const distTo   = Math.abs(bTo   - sweetCenter);
+      return distFrom <= distTo ? bFrom : bTo;
     }
   }
   return hbf;
@@ -431,8 +430,9 @@ function SimpleColourBar({
   }
   function onPointerUp() {
     if (dragging) {
-      // Snap to nearest sweet spot edge if released inside a blocker
-      const snapped = snapToSweetEdgeIfBlocked(lastHBFRef.current, blocks, eatTime, sweetR_HBF, sweetL_HBF);
+      // Snap to the blocker edge nearest to sweet spot center on release
+      const sweetCenter = hasColdRetard ? 34 : 20;
+      const snapped = snapToBlockerEdgeIfBlocked(lastHBFRef.current, blocks, eatTime, sweetCenter);
       onStartChange(new Date(bakeMs - snapped * 3600000));
     }
     setLocalHBF(null);
@@ -1244,12 +1244,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               scheduleNote={schedule?.scheduleNote ?? null}
               blocks={blocks}
               onMixChange={(h) => {
-                const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - h * 3600000));
-                const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(newStart, blocks);
+                const sweetCenter = hasColdRetard ? 34 : 20;
+                const snapped = snapToBlockerEdgeIfBlocked(h, blocks, pendingEatTime, sweetCenter);
+                const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - snapped * 3600000));
                 if (isSourdough) setMixOverride(true);
-                setPendingStart(resolvedStart);
-                setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
-                onChange(resolvedStart, pendingEatTime, blocks);
+                setPendingStart(newStart);
+                setBlockerNote(null);
+                onChange(newStart, pendingEatTime, blocks);
               }}
               onPrefChange={(offsetH) => {
                 if (isSourdough) {
