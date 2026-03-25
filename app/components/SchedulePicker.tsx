@@ -746,11 +746,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // ── Phase transitions ────────────────────────
   function confirmBakeTime() {
     const s = suggestion.suggestedStart;
-    // FIX 4: clamp initial mix offset to sweet zone [14-26h], default to 20h center
-    const rawOffsetH = (pendingEatTime.getTime() - s.getTime()) / 3600000;
-    const clampedStart = (rawOffsetH >= 14 && rawOffsetH <= 26)
-      ? s
-      : new Date(pendingEatTime.getTime() - 20 * 3600000);
+    const sweetCenter = hasColdRetard ? 34 : 20;
+    const sweetFrom   = hasColdRetard ? 52 : 26;
+    const sweetTo     = hasColdRetard ? 20 : 14;
+    const rawOffsetH  = (pendingEatTime.getTime() - s.getTime()) / 3600000;
+    const defaultHBF  = (rawOffsetH >= sweetTo && rawOffsetH <= sweetFrom)
+      ? rawOffsetH
+      : sweetCenter;
+    const snappedHBF  = snapToBlockerEdgeIfBlocked(defaultHBF, blocks, pendingEatTime, sweetCenter);
+    const clampedStart = new Date(pendingEatTime.getTime() - snappedHBF * 3600000);
     setPendingStart(clampedStart);
     onChange(clampedStart, pendingEatTime, blocks);
     setStartComputed(true);

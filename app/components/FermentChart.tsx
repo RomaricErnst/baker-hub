@@ -90,6 +90,12 @@ function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_D
 }
 
 // ── Formatting ───────────────────────────────────────────────
+function formatHours(h: number): string {
+  if (h < 1) return `${Math.round(h * 60)}m`;
+  if (Number.isInteger(h)) return `${h}h`;
+  return `${h.toFixed(1)}h`;
+}
+
 function fmtHM(d: Date): string {
   const h = d.getHours();
   const m = d.getMinutes();
@@ -302,6 +308,14 @@ export default function FermentChart({
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
         <line x1={x2} y1={0} x2={x2} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
+        <rect
+          x={(x1 + x2) / 2 - label.length * 4}
+          y={labelY - 11}
+          width={label.length * 8}
+          height={14}
+          fill="rgba(245,240,232,0.82)"
+          rx={3}
+        />
         <text x={(x1 + x2) / 2} y={labelY} fontSize={13} fill={color}
           textAnchor="middle" fontFamily="DM Mono, monospace" fillOpacity={0.85} fontWeight="600">
           {label}
@@ -369,7 +383,9 @@ export default function FermentChart({
             borderRadius: '20px', padding: '3px 10px',
           }}>
             <svg width={9} height={9}><polygon points="4.5,0 9,4.5 4.5,9 0,4.5" fill="#1A1612" /></svg>
-            Drag black diamond to set mix time
+            <span>Drag black diamond to adjust dough start
+              <span style={{ color: 'var(--smoke)', marginLeft: '4px' }}>· Aim for the peak — dough ready at bake</span>
+            </span>
           </div>
           {hasPref && (
             <div style={{
@@ -380,7 +396,9 @@ export default function FermentChart({
               borderRadius: '20px', padding: '3px 10px',
             }}>
               <svg width={9} height={9}><polygon points="4.5,0 9,4.5 4.5,9 0,4.5" fill={prefColor} /></svg>
-              Drag {prefTypeName.toLowerCase()} diamond to set start
+              <span>Drag {prefTypeName.toLowerCase()} diamond to adjust {prefTypeName.toLowerCase()} start
+                <span style={{ color: 'var(--smoke)', marginLeft: '4px' }}>· Aim for the peak — {prefTypeName} ready at mix</span>
+              </span>
             </div>
           )}
         </div>
@@ -395,13 +413,6 @@ export default function FermentChart({
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <div style={{
               width: '10px', height: '10px', borderRadius: '50%',
-              background: SAGE, flexShrink: 0,
-            }} />
-            <span style={{ color: '#3D3530' }}>Dough</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{
-              width: '10px', height: '10px', borderRadius: '50%',
               background: prefColor, flexShrink: 0,
             }} />
             <span style={{ color: '#3D3530' }}>
@@ -410,6 +421,13 @@ export default function FermentChart({
                prefermentType === 'sourdough'  ? 'Levain' :
                'Poolish'}
             </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{
+              width: '10px', height: '10px', borderRadius: '50%',
+              background: SAGE, flexShrink: 0,
+            }} />
+            <span style={{ color: '#3D3530' }}>Dough</span>
           </div>
         </div>
       )}
@@ -455,8 +473,8 @@ export default function FermentChart({
             'Start poolish';
           return (
             <>
-              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start dough', 10)}
-              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, prefZoneLabel, 20)}
+              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start dough', 14)}
+              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, prefZoneLabel, 30)}
             </>
           );
         })()}
@@ -636,9 +654,7 @@ export default function FermentChart({
                 const pct = s.h / total;
                 const showFull = pct >= 0.15;
                 const showShort = !showFull && pct >= 0.07;
-                const hLabel = s.h < 1
-                  ? `${Math.round(s.h * 60)}m`
-                  : Number.isInteger(s.h) ? `${s.h}h` : `${s.h.toFixed(1)}h`;
+                const hLabel = formatHours(s.h);
                 return (
                   <div
                     key={s.key}

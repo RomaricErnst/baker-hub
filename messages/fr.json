@@ -86,11 +86,11 @@
     "saved": "✓ Enregistré !",
     "saveFailed": "Échec de l'enregistrement"
   },
-  "schedulerTitle": {
-    "withPref": "Votre plan de fermentation",
-    "noPref": "Votre fenêtre de pétrissage"
-  },
   "scheduler": {
+    "schedulerTitle": {
+      "withPref": "Votre plan de fermentation",
+      "noPref": "Votre fenêtre de pétrissage"
+    },
     "bakeTimeLabelPizza": "À quelle heure enfournez-vous ?",
     "bakeTimeLabelBread": "À quelle heure enfournez-vous ?",
     "bakeTimeSub": "Baker Hub calcule vos étapes à rebours.",

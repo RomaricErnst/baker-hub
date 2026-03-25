@@ -86,11 +86,11 @@
     "saved": "✓ Saved!",
     "saveFailed": "Save failed"
   },
-  "schedulerTitle": {
-    "withPref": "Your fermentation plan",
-    "noPref": "Your mixing window"
-  },
   "scheduler": {
+    "schedulerTitle": {
+      "withPref": "Your fermentation plan",
+      "noPref": "Your mixing window"
+    },
     "bakeTimeLabelPizza": "When does it go in the oven?",
     "bakeTimeLabelBread": "When does it go in the oven?",
     "bakeTimeSub": "Baker Hub builds your schedule backwards from here.",
