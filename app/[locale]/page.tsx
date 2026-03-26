@@ -484,9 +484,30 @@ export default function Home() {
   const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend);
   const canGenerate = tab === 'simple' ? simpleRequiredDone : customRequiredDone;
 
-  const simpleStepsCompleted = [!!bakeType, !!styleKey, true, true, true, true, true, !!eatTime].filter(Boolean).length;
+  const simpleStepsCompleted = [
+    !!bakeType,
+    !!styleKey,
+    !!(numItems && itemWeight),
+    !!ovenType,
+    kitchenTemp > 0,
+    !!mixerType,
+    !!yeastType,
+    !!eatTime,
+  ].filter(Boolean).length;
   const simpleStepsTotal = 8;
-  const customStepsCompleted = [!!bakeType, !!styleKey, true, true, true, true, true, true, true, true, !!eatTime].filter(Boolean).length;
+  const customStepsCompleted = [
+    !!bakeType,
+    !!styleKey,
+    !!(numItems && itemWeight),
+    !!ovenType,
+    kitchenTemp > 0,
+    !!mixerType,
+    !!(flourBlend?.flour1),
+    !!yeastType,
+    true,
+    (manualHydration ?? 0) > 0,
+    !!eatTime,
+  ].filter(Boolean).length;
   const customStepsTotal = 11;
   const progressFraction = tab === 'simple'
     ? simpleStepsCompleted / simpleStepsTotal
