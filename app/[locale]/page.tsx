@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import Header from '../components/Header';
 import StylePicker from '../components/StylePicker';
@@ -29,6 +29,52 @@ import {
 const HUMIDITY_LABEL: Record<string, string> = {
   dry: 'Dry', normal: 'Normal', humid: 'Humid', 'very-humid': 'Very Humid',
 };
+
+const PIZZA_WEIGHT_TABLE: Record<string, [number, number, number, number][]> = {
+  neapolitan: [
+    [22, 195, 205, 215], [24, 205, 215, 225], [26, 220, 230, 240],
+    [28, 235, 245, 255], [30, 250, 260, 270], [32, 260, 268, 276],
+    [33, 264, 272, 280], [35, 270, 278, 280],
+  ],
+  newyork: [
+    [30, 240, 260, 280], [33, 275, 295, 315], [35, 300, 320, 340],
+    [38, 335, 355, 375], [40, 360, 385, 405],
+  ],
+  sourdough: [
+    [22, 200, 210, 220], [24, 210, 220, 230], [26, 225, 235, 248],
+    [28, 240, 252, 264], [30, 255, 265, 278], [33, 268, 278, 288],
+    [35, 278, 288, 295],
+  ],
+};
+const STYLE_HAS_DIAMETER = ['neapolitan', 'newyork', 'sourdough'];
+const STYLE_DEFAULT_DIAMETER: Record<string, number> = { neapolitan: 30, newyork: 35, sourdough: 30 };
+const CORN_LABELS = ['Thin', 'Classic', 'Generous'];
+const CORN_LABELS_FR = ['Fine', 'Classique', 'Généreuse'];
+
+function pizzaWeightFromTable(sk: string, d: number, corn: number): number {
+  const table = PIZZA_WEIGHT_TABLE[sk];
+  if (!table) return 270;
+  d = Math.max(table[0][0], Math.min(table[table.length - 1][0], d));
+  for (let i = 0; i < table.length - 1; i++) {
+    if (d >= table[i][0] && d <= table[i + 1][0]) {
+      const r = (d - table[i][0]) / (table[i + 1][0] - table[i][0]);
+      const w = table[i][corn + 1] + r * (table[i + 1][corn + 1] - table[i][corn + 1]);
+      return Math.min(280, Math.max(200, Math.round(w / 5) * 5));
+    }
+  }
+  return Math.round(table[table.length - 1][corn + 1] / 5) * 5;
+}
+
+function diameterFromWeight(w: number, sk: string, corn: number): number {
+  const table = PIZZA_WEIGHT_TABLE[sk];
+  if (!table) return STYLE_DEFAULT_DIAMETER[sk] ?? 30;
+  let best = table[0][0], bestDiff = 999;
+  for (let d = table[0][0]; d <= table[table.length - 1][0]; d++) {
+    const diff = Math.abs(pizzaWeightFromTable(sk, d, corn) - w);
+    if (diff < bestDiff) { bestDiff = diff; best = d; }
+  }
+  return best;
+}
 
 const STYLE_HYDRATION_ZONES: Record<string, {
   min: number; classicMin: number; classicMax: number; advancedMax: number; max: number; name: string;
@@ -181,6 +227,7 @@ function sugarGuidance(sugar: number, ovenType: string): { note: string; warn: b
 // ══════════════════════════════════════════════
 export default function Home() {
   const t = useTranslations();
+  const locale = useLocale();
   const [tab, setTab] = useState<'simple' | 'custom'>('simple');
   const [activeStep, setActiveStep] = useState(1);
   const [advancedStep, setAdvancedStep] = useState(1);
@@ -193,6 +240,9 @@ export default function Home() {
   const [styleKey, setStyleKey] = useState<StyleKey | null>(null);
   const [numItems, setNumItems] = useState(2);
   const [itemWeight, setItemWeight] = useState(270);
+  const [pizzaDiameter, setPizzaDiameter] = useState(30);
+  const [pizzaCorn, setPizzaCorn] = useState(1);
+  const [avpnOpen, setAvpnOpen] = useState(false);
 
   // Step 3 — oven
   const [ovenType, setOvenType] = useState<AnyOvenType>('home_oven_steel');
@@ -388,11 +438,18 @@ export default function Home() {
 
   function selectStyle(sk: StyleKey) {
     setStyleKey(sk);
-    setItemWeight(ALL_STYLES[sk].ballW);
-    setNumItems(bakeType === 'bread' ? 1 : 2);
     setManualHydration(undefined);
     setManualOil(undefined);
     setManualSugar(undefined);
+    setNumItems(bakeType === 'bread' ? 1 : tab === 'custom' ? 8 : 4);
+    if (STYLE_HAS_DIAMETER.includes(sk)) {
+      const defaultD = STYLE_DEFAULT_DIAMETER[sk] ?? 30;
+      setPizzaDiameter(defaultD);
+      setPizzaCorn(1);
+      setItemWeight(pizzaWeightFromTable(sk, defaultD, 1));
+    } else {
+      setItemWeight(ALL_STYLES[sk].ballW);
+    }
     advance(2);
   }
 
@@ -813,94 +870,76 @@ export default function Home() {
               summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
               onEdit={() => setActiveStep(3)}
             >
-              <div style={{
-                display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap',
-                background: 'var(--cream)', borderRadius: '12px',
-                padding: '1rem 1.15rem',
-              }}>
-                {/* Num items */}
-                <div>
-                  <FieldLabel>{t('common.quantity')}</FieldLabel>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-                    <button
-                      onClick={() => setNumItems(n => Math.max(1, n - 1))}
-                      className="btn"
-                      style={{
-                        width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-                        border: 'none', background: 'var(--char)', color: '#fff',
-                        cursor: 'pointer', fontSize: '1.2rem', fontWeight: 700,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
-                    >−</button>
-                    <input
-                      type="number"
-                      min={1}
-                      value={numItems}
-                      onChange={e => {
-                        const v = parseInt(e.target.value, 10);
-                        if (!isNaN(v) && v >= 1) setNumItems(v);
-                      }}
-                      style={{
-                        width: '64px', textAlign: 'center',
-                        padding: '.4rem .25rem',
-                        border: '1.5px solid var(--border)', borderRadius: '8px',
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '1.1rem', fontWeight: 700,
-                        color: 'var(--char)', background: 'var(--warm)', outline: 'none',
-                      }}
-                    />
-                    <button
-                      onClick={() => setNumItems(n => n + 1)}
-                      className="btn"
-                      style={{
-                        width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-                        border: 'none', background: 'var(--terra)', color: '#fff',
-                        cursor: 'pointer', fontSize: '1.2rem', fontWeight: 700,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
-                    >+</button>
-                  </div>
-                  {numItems > 12 && (
-                    <div style={{
-                      marginTop: '.55rem',
-                      fontSize: '.72rem', color: 'var(--smoke)',
-                      lineHeight: 1.5, maxWidth: '180px',
-                    }}>
-                      🍕 {t('quantity.largeBatchNote')}
+              {(() => {
+                const showDiam = bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '');
+                const isAtMax = itemWeight >= 278;
+                const sliders = showDiam && (
+                  <>
+                    {/* Diameter slider */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '64px 52px 16px 1fr', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--ash)', whiteSpace: 'nowrap' }}>Diameter</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap', textAlign: 'right' }}>{pizzaDiameter} cm</span>
+                      <span />
+                      <div style={{ position: 'relative', height: '24px', display: 'flex', alignItems: 'center' }}>
+                        <div style={{ position: 'absolute', left: 0, right: 0, height: '6px', background: 'var(--border)', borderRadius: '3px' }} />
+                        <div style={{ position: 'absolute', left: 0, height: '6px', background: 'var(--terra)', borderRadius: '3px', width: `${((pizzaDiameter - 22) / (35 - 22)) * 100}%` }} />
+                        <div style={{ position: 'absolute', left: `${((pizzaDiameter - 22) / (35 - 22)) * 100}%`, width: '20px', height: '20px', borderRadius: '50%', background: 'white', border: '2.5px solid var(--terra)', transform: 'translateX(-50%)', top: '50%', marginTop: '-10px', pointerEvents: 'none' }} />
+                        <input type="range" min={22} max={35} step={1} value={pizzaDiameter}
+                          onChange={e => { const d = +e.target.value; setPizzaDiameter(d); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }}
+                          style={{ position: 'absolute', left: 0, right: 0, width: '100%', opacity: 0, height: '24px', cursor: 'pointer', margin: 0 }} />
+                      </div>
                     </div>
-                  )}
-                </div>
-
-                {/* Item weight */}
-                <div>
-                  <FieldLabel>{isBread ? t('quantity.weightPerLoaf') : t('quantity.weightPerBall')}</FieldLabel>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
-                    <input
-                      type="number" min={100} max={1500} step={10}
-                      value={itemWeight}
-                      onChange={e => setItemWeight(Math.max(100, Number(e.target.value)))}
-                      style={{
-                        width: '80px', padding: '.42rem .65rem',
-                        border: '1.5px solid var(--border)', borderRadius: '8px',
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '.95rem',
-                        background: 'var(--warm)', color: 'var(--char)', outline: 'none',
-                      }}
-                    />
-                    <span style={{ fontSize: '.82rem', color: 'var(--smoke)' }}>g</span>
+                    {/* Cornicione slider */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '64px 52px 16px 1fr', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--ash)', whiteSpace: 'nowrap' }}>Cornicione</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap', textAlign: 'right' }}>{locale === 'fr' ? CORN_LABELS_FR[pizzaCorn] : CORN_LABELS[pizzaCorn]}</span>
+                      <span />
+                      <div style={{ position: 'relative', height: '24px', display: 'flex', alignItems: 'center' }}>
+                        <div style={{ position: 'absolute', left: 0, right: 0, height: '6px', background: 'var(--border)', borderRadius: '3px' }} />
+                        <div style={{ position: 'absolute', left: 0, height: '6px', background: 'var(--terra)', borderRadius: '3px', width: `${(pizzaCorn / 2) * 100}%` }} />
+                        <div style={{ position: 'absolute', left: `${(pizzaCorn / 2) * 100}%`, width: '20px', height: '20px', borderRadius: '50%', background: 'white', border: '2.5px solid var(--terra)', transform: 'translateX(-50%)', top: '50%', marginTop: '-10px', pointerEvents: 'none' }} />
+                        <input type="range" min={0} max={2} step={1} value={pizzaCorn}
+                          onChange={e => { const c = +e.target.value; setPizzaCorn(c); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, c)); }}
+                          style={{ position: 'absolute', left: 0, right: 0, width: '100%', opacity: 0, height: '24px', cursor: 'pointer', margin: 0 }} />
+                      </div>
+                    </div>
+                  </>
+                );
+                return (
+                  <div style={{ padding: '0 .1rem' }}>
+                    {/* Qty stepper */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px' }}>
+                      <button onClick={() => setNumItems(n => Math.max(1, n - 1))} style={{ width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                      <span style={{ width: '36px', textAlign: 'center', fontSize: '16px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>{numItems}</span>
+                      <button onClick={() => setNumItems(n => n + 1)} style={{ width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                      <span style={{ fontSize: '12px', color: 'var(--smoke)' }}>{isBread ? t('quantity.loaves') : t('quantity.pizzas')}</span>
+                    </div>
+                    {/* Sliders (Simple: before divider) */}
+                    {sliders}
+                    {/* Divider */}
+                    <div style={{ borderTop: '0.5px solid var(--border)', margin: '12px 0' }} />
+                    {/* Weight */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <input type="number" min={100} max={400} value={itemWeight}
+                        onChange={e => { const w = Math.max(100, Math.min(400, +e.target.value)); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }}
+                        style={{ width: '52px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '24px', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
+                      <span style={{ fontSize: '11px', color: 'var(--smoke)', whiteSpace: 'nowrap' }}>g / ball</span>
+                    </div>
+                    {/* AVPN note */}
+                    {isAtMax && (
+                      <div style={{ marginTop: '10px', padding: '7px 10px', background: '#FEF9F0', borderRadius: '8px', border: '0.5px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                        <span style={{ fontSize: '11px', color: '#7A5A10', lineHeight: 1.4, flex: 1 }}><strong>At the AVPN limit</strong> — 280g max for Neapolitan.</span>
+                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem .5rem', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '.72rem', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>🤔 What is AVPN?</button>
+                      </div>
+                    )}
+                    {isAtMax && avpnOpen && (
+                      <div style={{ marginTop: '6px', padding: '8px 10px', background: 'var(--cream)', borderRadius: '8px', fontSize: '11px', color: 'var(--ash)', lineHeight: 1.5 }}>
+                        <strong>Associazione Verace Pizza Napoletana</strong> — the official body that defines authentic Neapolitan pizza standards since 1984. They specify dough balls between 200g and 280g for a pizza 22–35 cm in diameter.
+                      </div>
+                    )}
                   </div>
-                </div>
-
-                {/* Total */}
-                <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                  <FieldLabel>Total dough</FieldLabel>
-                  <span style={{
-                    fontFamily: 'var(--font-dm-mono)', fontSize: '1.3rem',
-                    fontWeight: 700, color: accentColor,
-                  }}>
-                    {numItems * itemWeight} g
-                  </span>
-                </div>
-              </div>
-
+                );
+              })()}
               <ContinueBtn onClick={() => advance(3)} />
             </StepCard>
 
@@ -1418,7 +1457,19 @@ export default function Home() {
                 <StylePicker
                   bakeType={bakeType}
                   selected={styleKey}
-                  onSelect={sk => { setStyleKey(sk); setItemWeight(ALL_STYLES[sk].ballW); setNumItems(bakeType === 'bread' ? 1 : 2); setAdvancedStep(3); }}
+                  onSelect={sk => {
+                    setStyleKey(sk);
+                    setNumItems(bakeType === 'bread' ? 1 : 8);
+                    if (STYLE_HAS_DIAMETER.includes(sk)) {
+                      const defaultD = STYLE_DEFAULT_DIAMETER[sk] ?? 30;
+                      setPizzaDiameter(defaultD);
+                      setPizzaCorn(1);
+                      setItemWeight(pizzaWeightFromTable(sk, defaultD, 1));
+                    } else {
+                      setItemWeight(ALL_STYLES[sk].ballW);
+                    }
+                    setAdvancedStep(3);
+                  }}
                 />
               )}
             </StepCard>
@@ -1431,50 +1482,71 @@ export default function Home() {
               summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
               onEdit={() => setAdvancedStep(3)}
             >
-              <div style={{
-                display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap',
-                background: 'var(--cream)', borderRadius: '12px',
-                padding: '1rem 1.15rem',
-              }}>
-                <div>
-                  <FieldLabel>{t('common.quantity')}</FieldLabel>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-                    <button
-                      onClick={() => setNumItems(n => Math.max(1, n - 1))}
-                      className="btn"
-                      style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >−</button>
-                    <input
-                      type="number" min={1} value={numItems}
-                      onChange={e => { const v = parseInt(e.target.value, 10); if (!isNaN(v) && v >= 1) setNumItems(v); }}
-                      style={{ width: '64px', textAlign: 'center', padding: '.4rem .25rem', border: '1.5px solid var(--border)', borderRadius: '8px', fontFamily: 'var(--font-dm-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--char)', background: 'var(--warm)', outline: 'none' }}
-                    />
-                    <button
-                      onClick={() => setNumItems(n => n + 1)}
-                      className="btn"
-                      style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >+</button>
+              {(() => {
+                const showDiam = bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '');
+                const isAtMax = itemWeight >= 278;
+                const sliders = showDiam && (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '64px 52px 16px 1fr', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--ash)', whiteSpace: 'nowrap' }}>Diameter</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap', textAlign: 'right' }}>{pizzaDiameter} cm</span>
+                      <span />
+                      <div style={{ position: 'relative', height: '24px', display: 'flex', alignItems: 'center' }}>
+                        <div style={{ position: 'absolute', left: 0, right: 0, height: '6px', background: 'var(--border)', borderRadius: '3px' }} />
+                        <div style={{ position: 'absolute', left: 0, height: '6px', background: 'var(--terra)', borderRadius: '3px', width: `${((pizzaDiameter - 22) / (35 - 22)) * 100}%` }} />
+                        <div style={{ position: 'absolute', left: `${((pizzaDiameter - 22) / (35 - 22)) * 100}%`, width: '20px', height: '20px', borderRadius: '50%', background: 'white', border: '2.5px solid var(--terra)', transform: 'translateX(-50%)', top: '50%', marginTop: '-10px', pointerEvents: 'none' }} />
+                        <input type="range" min={22} max={35} step={1} value={pizzaDiameter}
+                          onChange={e => { const d = +e.target.value; setPizzaDiameter(d); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }}
+                          style={{ position: 'absolute', left: 0, right: 0, width: '100%', opacity: 0, height: '24px', cursor: 'pointer', margin: 0 }} />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '64px 52px 16px 1fr', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--ash)', whiteSpace: 'nowrap' }}>Cornicione</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap', textAlign: 'right' }}>{locale === 'fr' ? CORN_LABELS_FR[pizzaCorn] : CORN_LABELS[pizzaCorn]}</span>
+                      <span />
+                      <div style={{ position: 'relative', height: '24px', display: 'flex', alignItems: 'center' }}>
+                        <div style={{ position: 'absolute', left: 0, right: 0, height: '6px', background: 'var(--border)', borderRadius: '3px' }} />
+                        <div style={{ position: 'absolute', left: 0, height: '6px', background: 'var(--terra)', borderRadius: '3px', width: `${(pizzaCorn / 2) * 100}%` }} />
+                        <div style={{ position: 'absolute', left: `${(pizzaCorn / 2) * 100}%`, width: '20px', height: '20px', borderRadius: '50%', background: 'white', border: '2.5px solid var(--terra)', transform: 'translateX(-50%)', top: '50%', marginTop: '-10px', pointerEvents: 'none' }} />
+                        <input type="range" min={0} max={2} step={1} value={pizzaCorn}
+                          onChange={e => { const c = +e.target.value; setPizzaCorn(c); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, c)); }}
+                          style={{ position: 'absolute', left: 0, right: 0, width: '100%', opacity: 0, height: '24px', cursor: 'pointer', margin: 0 }} />
+                      </div>
+                    </div>
+                  </>
+                );
+                return (
+                  <div style={{ padding: '0 .1rem' }}>
+                    {/* Qty stepper */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px' }}>
+                      <button onClick={() => setNumItems(n => Math.max(1, n - 1))} style={{ width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                      <span style={{ width: '36px', textAlign: 'center', fontSize: '16px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>{numItems}</span>
+                      <button onClick={() => setNumItems(n => n + 1)} style={{ width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                      <span style={{ fontSize: '12px', color: 'var(--smoke)' }}>{isBread ? t('quantity.loaves') : t('quantity.pizzas')}</span>
+                    </div>
+                    {/* Custom: weight FIRST, then sliders */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
+                      <input type="number" min={100} max={400} value={itemWeight}
+                        onChange={e => { const w = Math.max(100, Math.min(400, +e.target.value)); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }}
+                        style={{ width: '52px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '24px', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
+                      <span style={{ fontSize: '11px', color: 'var(--smoke)', whiteSpace: 'nowrap' }}>g / ball</span>
+                    </div>
+                    <div style={{ borderTop: '0.5px solid var(--border)', margin: '12px 0' }} />
+                    {sliders}
+                    {isAtMax && (
+                      <div style={{ marginTop: '10px', padding: '7px 10px', background: '#FEF9F0', borderRadius: '8px', border: '0.5px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                        <span style={{ fontSize: '11px', color: '#7A5A10', lineHeight: 1.4, flex: 1 }}><strong>At the AVPN limit</strong> — 280g max for Neapolitan.</span>
+                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem .5rem', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '.72rem', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>🤔 What is AVPN?</button>
+                      </div>
+                    )}
+                    {isAtMax && avpnOpen && (
+                      <div style={{ marginTop: '6px', padding: '8px 10px', background: 'var(--cream)', borderRadius: '8px', fontSize: '11px', color: 'var(--ash)', lineHeight: 1.5 }}>
+                        <strong>Associazione Verace Pizza Napoletana</strong> — the official body that defines authentic Neapolitan pizza standards since 1984. They specify dough balls between 200g and 280g for a pizza 22–35 cm in diameter.
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div>
-                  <FieldLabel>{isBread ? t('quantity.weightPerLoaf') : t('quantity.weightPerBall')}</FieldLabel>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
-                    <input
-                      type="number" min={100} max={1500} step={10}
-                      value={itemWeight}
-                      onChange={e => setItemWeight(Math.max(100, Number(e.target.value)))}
-                      style={{ width: '80px', padding: '.42rem .65rem', border: '1.5px solid var(--border)', borderRadius: '8px', fontFamily: 'var(--font-dm-mono)', fontSize: '.95rem', background: 'var(--warm)', color: 'var(--char)', outline: 'none' }}
-                    />
-                    <span style={{ fontSize: '.82rem', color: 'var(--smoke)' }}>g</span>
-                  </div>
-                </div>
-                <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                  <FieldLabel>Total dough</FieldLabel>
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.3rem', fontWeight: 700, color: accentColor }}>
-                    {numItems * itemWeight} g
-                  </span>
-                </div>
-              </div>
+                );
+              })()}
               <ContinueBtn onClick={() => advanceAdv(3)} />
             </StepCard>
 

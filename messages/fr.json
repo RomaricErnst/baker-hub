@@ -69,9 +69,11 @@
     }
   },
   "quantity": {
-    "weightPerBall": "Poids par boule",
+    "pizzas": "pizzas",
+    "loaves": "pains",
+    "weightPerBall": "Poids par pâton",
     "weightPerLoaf": "Poids par pain",
-    "largeBatchNote": "Grande quantité détectée. Voir l'ajustement de levure dans la recette."
+    "largeBatchNote": "Grande fournée — pensez à diviser en deux sessions"
   },
   "results": {
     "ready": "Votre recette est prête 🎯",

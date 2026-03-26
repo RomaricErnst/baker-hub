@@ -69,9 +69,11 @@
     }
   },
   "quantity": {
+    "pizzas": "pizzas",
+    "loaves": "loaves",
     "weightPerBall": "Weight per ball",
     "weightPerLoaf": "Weight per loaf",
-    "largeBatchNote": "Large batch detected. See recipe output for yeast adjustment."
+    "largeBatchNote": "Large batch — consider splitting into two sessions"
   },
   "results": {
     "ready": "Your recipe is ready 🎯",
