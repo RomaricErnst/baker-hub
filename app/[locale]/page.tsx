@@ -241,8 +241,9 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  const resultsRef      = useRef<HTMLDivElement>(null);
-  const modeSelectorRef = useRef<HTMLDivElement>(null);
+  const resultsRef           = useRef<HTMLDivElement>(null);
+  const modeSelectorRef      = useRef<HTMLDivElement>(null);
+  const suppressNextScrollRef = useRef(false);
 
   // P5 — Custom-only state persistence
   const customOnlyStateRef = useRef<{
@@ -398,6 +399,7 @@ export default function Home() {
   function advance(from: number) {
     setActiveStep(from + 1);
     setTimeout(() => {
+      if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
       const el = document.getElementById(`step-${from + 1}`);
       if (el) {
         const top = el.getBoundingClientRect().top + window.scrollY - 70;
@@ -409,6 +411,7 @@ export default function Home() {
   function advanceAdv(from: number) {
     setAdvancedStep(from + 1);
     setTimeout(() => {
+      if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
       const el = document.getElementById(`adv-step-${from + 1}`);
       if (el) {
         const top = el.getBoundingClientRect().top + window.scrollY - 70;
@@ -433,7 +436,6 @@ export default function Home() {
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
     setModeChosen(false);
     customOnlyStateRef.current = null;
-    setTimeout(() => modeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   }
 
   function handleGenerate() {
@@ -445,7 +447,6 @@ export default function Home() {
     setProtocolStale(false);
     setShowResults(true);
     setActiveTab('bakeplan');
-    setTimeout(() => modeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   }
 
   async function handleSaveRecipe(mode: 'simple' | 'custom') {
@@ -536,7 +537,7 @@ export default function Home() {
                     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
                   }
                   setTab('simple'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
-                  setTimeout(() => modeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                  suppressNextScrollRef.current = true;
                 }}
                 style={{
                   flex: 1,
@@ -582,7 +583,7 @@ export default function Home() {
                     }
                   }
                   setTab('custom'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
-                  setTimeout(() => modeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                  suppressNextScrollRef.current = true;
                 }}
                 style={{
                   flex: 1,
