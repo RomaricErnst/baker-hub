@@ -21,12 +21,13 @@ export interface FermentChartProps {
     preheatH: number;
   };
   scheduleNote?: string | null;
+  recommendedMixHBF?: number | null;
 }
 
 // ── Constants ────────────────────────────────────────────────
 const WINDOW_H_DEFAULT = 96;
 const PAD       = 16;
-const CHART_H   = 180;
+const CHART_H   = 220;
 const BL        = 144;  // single baseline for ALL bells
 const MAXH      = 117;  // max bell height
 const AXIS_Y    = 162;  // axis line Y
@@ -116,6 +117,7 @@ export default function FermentChart({
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange,
   windowH, prefInFridge, hasColdRetard, phases, scheduleNote,
+  recommendedMixHBF,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -319,13 +321,13 @@ export default function FermentChart({
           fill="rgba(245,240,232,0.82)"
           rx={3}
         />
-        <text x={(x1 + x2) / 2} y={labelY} fontSize={13} fill={color}
+        <text x={(x1 + x2) / 2} y={labelY} fontSize={11} fill={color}
           textAnchor="middle" fontFamily="DM Mono, monospace" fillOpacity={0.85} fontWeight="600">
           {label}
         </text>
         <line
           x1={x1 + 4} x2={x2 - 4}
-          y1={labelY + 8} y2={labelY + 8}
+          y1={labelY + 9} y2={labelY + 9}
           stroke={color} strokeWidth={1.2} strokeOpacity={0.7}
           markerStart={`url(#arrow-${markerId}-start)`}
           markerEnd={`url(#arrow-${markerId}-end)`}
@@ -490,8 +492,8 @@ export default function FermentChart({
             'Start poolish';
           return (
             <>
-              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start dough here', 12, 'sage')}
-              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, `${prefZoneLabel} here`, 32, 'pref')}
+              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start dough window', 10, 'sage')}
+              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, `${prefZoneLabel} window`, 22, 'pref')}
             </>
           );
         })()}
@@ -561,7 +563,7 @@ export default function FermentChart({
           <g key={i}>
             <line x1={tk.x} y1={AXIS_Y} x2={tk.x} y2={AXIS_Y + 3}
               stroke="var(--border)" strokeWidth={1} />
-            <text x={tk.x} y={AXIS_Y + 16} fontSize={12} fill="var(--smoke)"
+            <text x={tk.x} y={AXIS_Y + 18} fontSize={12} fill="var(--smoke)"
               fontFamily="DM Mono, monospace" textAnchor="middle">
               {tk.label}
             </text>
@@ -573,7 +575,7 @@ export default function FermentChart({
           points={`${bakeX - 8},${AXIS_Y} ${bakeX},${AXIS_Y - 12} ${bakeX + 8},${AXIS_Y}`}
           fill={TERRA}
         />
-        <text x={bakeX} y={AXIS_Y + 20} fontSize={14} fontWeight="600" fill={TERRA}
+        <text x={bakeX} y={AXIS_Y + 18} fontSize={14} fontWeight="600" fill={TERRA}
           fontFamily="DM Mono, monospace" textAnchor="middle">Bake</text>
 
         {/* ── Pref diamond ── */}
@@ -583,6 +585,22 @@ export default function FermentChart({
           inBlocker(prefStartAbsHBF) ? '#999999' : prefStroke,
           inBlocker(prefStartAbsHBF),
           'pref',
+        )}
+        {hasPref && (
+          <text
+            x={prefX}
+            y={AXIS_Y + 30}
+            fontSize={12}
+            fill={prefColor}
+            fontFamily="DM Mono, monospace"
+            textAnchor="middle"
+            fontWeight="600"
+          >
+            {prefermentType === 'biga'      ? 'Start Biga'   :
+             prefermentType === 'levain'    ? 'Start Levain' :
+             prefermentType === 'sourdough' ? 'Start Levain' :
+             'Start Poolish'}
+          </text>
         )}
 
         {/* ── Mix diamond ── */}
@@ -596,20 +614,36 @@ export default function FermentChart({
         {/* ── Mix label ── */}
         <text
           x={mixX} y={AXIS_Y + 30}
-          fontSize={11} fill="#3D5A30"
+          fontSize={12} fill="#3D5A30"
           fontFamily="DM Mono, monospace"
           textAnchor="middle" fontWeight="600"
-        >Mix</text>
+        >Start Mixing</text>
+
+        {/* ── Ghost diamond (recommended position) ── */}
+        {recommendedMixHBF != null &&
+         Math.abs(recommendedMixHBF - effectiveMixHBF) > 0.5 && (
+          <g opacity={0.35} pointerEvents="none">
+            <polygon
+              points={`${hToX(recommendedMixHBF, W, WH)},${AXIS_Y - S}
+                ${hToX(recommendedMixHBF, W, WH) + S},${AXIS_Y}
+                ${hToX(recommendedMixHBF, W, WH)},${AXIS_Y + S}
+                ${hToX(recommendedMixHBF, W, WH) - S},${AXIS_Y}`}
+              fill="#3D5A30"
+              stroke="white"
+              strokeWidth={1.5}
+            />
+          </g>
+        )}
       </svg>
 
       {/* ── Info cards ─────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '6px', marginTop: '.6rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '6px', marginTop: '1.4rem', flexWrap: 'wrap' }}>
         {/* Pref card */}
         {hasPref && prefTime && (
           <div style={{
             flex: 1, minWidth: '120px',
             background: 'var(--cream)', border: '1.5px solid var(--border)',
-            borderRadius: '10px', padding: '12px',
+            borderRadius: '10px', padding: '14px 16px',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
               <div style={{ width: 8, height: 8, background: prefColor, transform: 'rotate(45deg)', flexShrink: 0 }} />
@@ -636,7 +670,7 @@ export default function FermentChart({
         <div style={{
           flex: 1, minWidth: '120px',
           background: 'var(--cream)', border: '1.5px solid var(--border)',
-          borderRadius: '10px', padding: '12px',
+          borderRadius: '10px', padding: '14px 16px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
             <div style={{ width: 8, height: 8, background: DARK_SAGE, transform: 'rotate(45deg)', flexShrink: 0 }} />
@@ -651,6 +685,18 @@ export default function FermentChart({
           <div style={{ fontSize: '12px', marginTop: '.1rem', color: mixInZone ? '#4A7A3A' : TERRA }}>
             {mixStatus}
           </div>
+          {!mixInZone && effectiveMixHBF > 0 &&
+           blocks.some(b => {
+             const s2 = (bakeMs - b.from.getTime()) / 3600000;
+             const e2 = (bakeMs - b.to.getTime())   / 3600000;
+             return effectiveMixHBF >= Math.min(s2, e2) &&
+                    effectiveMixHBF <= Math.max(s2, e2);
+           }) && (
+            <div style={{ fontSize: '11px', color: '#7A5A10',
+              marginTop: '4px', lineHeight: 1.4 }}>
+              ⚠️ Within a blocked window — intentional?
+            </div>
+          )}
         </div>
       </div>
 

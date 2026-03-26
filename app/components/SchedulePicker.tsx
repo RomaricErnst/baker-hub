@@ -327,6 +327,67 @@ function snapToBlockerEdgeIfBlocked(
   return hbf;
 }
 
+// ── Joint mix+pref optimiser ──────────────────
+function findOptimalPosition(
+  sweetCenter: number,
+  sweetFrom: number,
+  sweetTo: number,
+  activeBlocks: AvailabilityBlock[],
+  et: Date,
+  hasPref: boolean,
+  prefOffsetH: number,
+): {
+  mixHBF: number;
+  prefHBF: number;
+  mixInZone: boolean;
+  prefInZone: boolean;
+  fallback: boolean;
+  mixInBlocker: boolean;
+  prefInBlocker: boolean;
+} {
+  const ms = et.getTime();
+  function isInBlocker(hbf: number): boolean {
+    return activeBlocks.some(b => {
+      const s = (ms - b.from.getTime()) / 3600000;
+      const e = (ms - b.to.getTime())   / 3600000;
+      return hbf >= Math.min(s, e) && hbf <= Math.max(s, e);
+    });
+  }
+  function inSweet(hbf: number): boolean {
+    return hbf >= sweetTo && hbf <= sweetFrom;
+  }
+  const STEP = 0.25;
+  const SEARCH_RANGE = (sweetFrom - sweetTo) / 2 + 2;
+  for (let delta = 0; delta <= SEARCH_RANGE; delta += STEP) {
+    for (const sign of [0, 1, -1]) {
+      const candidate = sweetCenter + (sign * delta);
+      if (candidate < sweetTo - 2 || candidate > sweetFrom + 2) continue;
+      const mixClear  = !isInBlocker(candidate);
+      const prefClear = !hasPref || !isInBlocker(candidate + prefOffsetH);
+      if (mixClear && prefClear) {
+        return {
+          mixHBF:        candidate,
+          prefHBF:       candidate + prefOffsetH,
+          mixInZone:     inSweet(candidate),
+          prefInZone:    true,
+          fallback:      !inSweet(candidate),
+          mixInBlocker:  false,
+          prefInBlocker: false,
+        };
+      }
+    }
+  }
+  return {
+    mixHBF:        sweetCenter,
+    prefHBF:       sweetCenter + prefOffsetH,
+    mixInZone:     false,
+    prefInZone:    false,
+    fallback:      true,
+    mixInBlocker:  isInBlocker(sweetCenter),
+    prefInBlocker: hasPref && isInBlocker(sweetCenter + prefOffsetH),
+  };
+}
+
 // ── Simple colour bar (Simple mode only) ──────
 const BAR_PAD = 14;
 const BAR_SVG_H = 72;
@@ -640,6 +701,17 @@ function SimpleColourBar({
         </div>
       </div>
 
+      {inBlocker && (
+        <div style={{ fontSize: '.72rem', color: '#7A5A10',
+          background: '#FEF9F0', borderRadius: '8px',
+          padding: '6px 10px', marginTop: '6px',
+          border: '0.5px solid #F0D9A0', lineHeight: 1.4 }}>
+          ⚠️ Your mix time overlaps a blocked window —
+          we hope this is intentional! Feel free to adjust
+          if needed.
+        </div>
+      )}
+
     </div>
   );
 }
@@ -685,12 +757,72 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     getPrefOptH(prefermentType, kitchenTemp)
   );
 
+  // Recommendation ghost diamond + fallback popup
+  const [recommendedHBF, setRecommendedHBF] = useState<number | null>(null);
+  const [showFallbackPopup, setShowFallbackPopup] = useState(false);
+  const [fallbackOptions, setFallbackOptions] = useState<{
+    outsideZone: { mixHBF: number; qualityPct: number } | null;
+    inBlocker:   { mixHBF: number; overlapMin: number } | null;
+  } | null>(null);
+  const hasManuallyDragged = useRef(false);
+
   function updateEatTime(dateStr: string, hour: number) {
     if (!dateStr) return;
     const parts = dateStr.split('-').map(Number);
     const d = new Date(parts[0], parts[1] - 1, parts[2], hour, 0, 0, 0);
     setPendingEatTime(d);
     setEatTimeSet(true);
+  }
+
+  function computeAndApplyRecommendation(
+    currentBlocks: AvailabilityBlock[],
+    et: Date,
+  ) {
+    const sweetCenter = hasColdRetard ? 34 : 20;
+    const sweetFrom   = hasColdRetard ? 52 : 26;
+    const sweetTo     = hasColdRetard ? 20 : 14;
+
+    const result = findOptimalPosition(
+      sweetCenter, sweetFrom, sweetTo,
+      currentBlocks, et,
+      hasPrefActive, prefOffsetH,
+    );
+
+    if (result.fallback) {
+      const outsideHBF = result.mixHBF;
+      const maxDist = sweetFrom - sweetCenter;
+      const dist = Math.abs(outsideHBF - sweetCenter);
+      const qualityPct = Math.max(50, Math.round(100 - (dist / maxDist) * 40));
+
+      const overlapMin = (() => {
+        const bakeMs2 = et.getTime();
+        for (const b of currentBlocks) {
+          const s = (bakeMs2 - b.from.getTime()) / 3600000;
+          const e = (bakeMs2 - b.to.getTime())   / 3600000;
+          const lo = Math.max(Math.min(s, e), sweetCenter - 1);
+          const hi = Math.min(Math.max(s, e), sweetCenter + 1);
+          if (hi > lo) return Math.round((hi - lo) * 60);
+        }
+        return 30;
+      })();
+
+      setFallbackOptions({
+        outsideZone: { mixHBF: outsideHBF, qualityPct },
+        inBlocker:   { mixHBF: sweetCenter, overlapMin },
+      });
+      setRecommendedHBF(null);
+      setShowFallbackPopup(true);
+    } else {
+      const newStart = new Date(et.getTime() - result.mixHBF * 3600000);
+      setRecommendedHBF(result.mixHBF);
+      setShowFallbackPopup(false);
+      setPendingStart(newStart);
+      onChange(newStart, et, currentBlocks);
+      if (hasPrefActive) {
+        setPrefOffsetH(result.prefHBF - result.mixHBF);
+        onPrefOffsetChange?.(result.prefHBF - result.mixHBF);
+      }
+    }
   }
 
   useEffect(() => {
@@ -745,19 +877,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Phase transitions ────────────────────────
   function confirmBakeTime() {
-    const s = suggestion.suggestedStart;
-    const sweetCenter = hasColdRetard ? 34 : 20;
-    const defaultHBF  = sweetCenter;
-    const snappedHBF  = snapToBlockerEdgeIfBlocked(defaultHBF, blocks, pendingEatTime, sweetCenter);
-    const clampedStart = new Date(pendingEatTime.getTime() - snappedHBF * 3600000);
-    setPendingStart(clampedStart);
-    onChange(clampedStart, pendingEatTime, blocks);
+    hasManuallyDragged.current = false;
+    computeAndApplyRecommendation(blocks, pendingEatTime);
     setStartComputed(true);
     setDismissedConflict(false);
     setPhase('start_confirm');
     if (isSourdough) {
       const peak = starterPeakHours(kitchenTemp, starterMature);
-      const ft = pushToReasonableHour(new Date(s.getTime() - peak.mid * 3600000));
+      const ft = pushToReasonableHour(
+        new Date(pendingEatTime.getTime() -
+          (pendingEatTime.getTime() - pendingStart.getTime()) /
+          3600000 * 3600000 - peak.mid * 3600000)
+      );
       setFeedTime(ft);
       onFeedTimeChange?.(ft);
     }
@@ -777,6 +908,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
     setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
     onChange(resolvedStart, pendingEatTime, newBlocks);
+    // Recompute recommendation if baker hasn't manually dragged
+    if (!hasManuallyDragged.current && phase === 'start_confirm') {
+      computeAndApplyRecommendation(newBlocks, pendingEatTime);
+    }
   }
 
   function toggleWork() {
@@ -1233,7 +1368,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               phases={phases}
               scheduleNote={schedule?.scheduleNote ?? null}
               blocks={blocks}
+              recommendedMixHBF={recommendedHBF}
               onMixChange={(h) => {
+                // Baker is manually adjusting — clear ghost
+                hasManuallyDragged.current = true;
+                setRecommendedHBF(null);
                 const sweetCenter = hasColdRetard ? 34 : 20;
                 const snapped = snapToBlockerEdgeIfBlocked(h, blocks, pendingEatTime, sweetCenter);
                 const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - snapped * 3600000));
@@ -1293,6 +1432,90 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           </div>
         )}
       </div>
+
+      {/* Fallback popup — shown when no clean mix window found */}
+      {showFallbackPopup && fallbackOptions && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(26,22,18,0.45)',
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'center', padding: '1rem',
+        }}>
+          <div style={{
+            background: 'var(--warm)', borderRadius: '18px',
+            padding: '1.5rem', maxWidth: '340px', width: '100%',
+            boxShadow: '0 8px 32px rgba(26,22,18,0.18)',
+          }}>
+            <div style={{ fontSize: '15px', fontWeight: 700,
+              color: 'var(--char)', marginBottom: '.5rem' }}>
+              No perfect window found
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--smoke)',
+              marginBottom: '1.2rem', lineHeight: 1.5 }}>
+              Your blocked times overlap the ideal mixing window.
+              Choose the best option for you:
+            </div>
+
+            {fallbackOptions.outsideZone && (
+              <button
+                onClick={() => {
+                  const { mixHBF } = fallbackOptions!.outsideZone!;
+                  const newStart = new Date(pendingEatTime.getTime() - mixHBF * 3600000);
+                  setPendingStart(newStart);
+                  setRecommendedHBF(mixHBF);
+                  onChange(newStart, pendingEatTime, blocks);
+                  setShowFallbackPopup(false);
+                }}
+                style={{ width: '100%', padding: '12px 14px',
+                borderRadius: '12px', border: '1.5px solid var(--border)',
+                background: 'white', textAlign: 'left',
+                cursor: 'pointer', marginBottom: '8px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--char)' }}>
+                  Start slightly outside sweet spot
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--smoke)', marginTop: '2px' }}>
+                  ~{fallbackOptions.outsideZone.qualityPct}% optimal — dough still very good
+                </div>
+              </button>
+            )}
+
+            {fallbackOptions.inBlocker && (
+              <button
+                onClick={() => {
+                  const { mixHBF } = fallbackOptions!.inBlocker!;
+                  const newStart = new Date(pendingEatTime.getTime() - mixHBF * 3600000);
+                  setPendingStart(newStart);
+                  setRecommendedHBF(null);
+                  onChange(newStart, pendingEatTime, blocks);
+                  setShowFallbackPopup(false);
+                }}
+                style={{ width: '100%', padding: '12px 14px',
+                borderRadius: '12px', border: '1.5px solid var(--border)',
+                background: 'white', textAlign: 'left',
+                cursor: 'pointer', marginBottom: '12px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--char)' }}>
+                  Start during a blocked window
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--smoke)', marginTop: '2px' }}>
+                  Overlaps by ~{fallbackOptions.inBlocker.overlapMin} min — make sure this works for you
+                </div>
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                setShowFallbackPopup(false);
+                hasManuallyDragged.current = true;
+              }}
+              style={{ width: '100%', padding: '10px',
+              borderRadius: '12px', border: 'none',
+              background: 'transparent', color: 'var(--smoke)',
+              fontSize: '13px', cursor: 'pointer' }}>
+              Adjust manually
+            </button>
+          </div>
+        </div>
+      )}
 
       {bulkConflict && !dismissedConflict && (() => {
         const MIN_REASONABLE_HOUR = 7;
