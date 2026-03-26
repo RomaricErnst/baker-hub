@@ -320,8 +320,18 @@ export default function ClimatePicker({
 
       {/* ── Humidity ────────────────────────────── */}
       <div>
-        <label style={SECTION_LABEL}>Kitchen humidity</label>
-        <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '.5rem', marginBottom: '.5rem' }}>
+          <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>Kitchen humidity</label>
+          {(() => {
+            const active = HUMIDITY_OPTIONS.find(o => o.value === humidity);
+            return active ? (
+              <span style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+                {active.desc}
+              </span>
+            ) : null;
+          })()}
+        </div>
+        <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'nowrap' }}>
           {HUMIDITY_OPTIONS.map(opt => {
             const active = humidity === opt.value;
             return (
@@ -329,7 +339,7 @@ export default function ClimatePicker({
                 key={opt.value}
                 onClick={() => onChange(kitchenTemp, opt.value, fridgeTemp)}
                 style={{
-                  padding: '.45rem .95rem',
+                  padding: '.35rem .65rem',
                   borderRadius: '20px',
                   border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
                   background: active ? '#FEF4EF' : 'var(--warm)',
@@ -339,17 +349,10 @@ export default function ClimatePicker({
                   cursor: 'pointer',
                   fontFamily: 'var(--font-dm-sans)',
                   transition: 'all .15s',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '.05rem',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                <span>{opt.label}</span>
-                <span style={{
-                  fontSize: '.62rem',
-                  fontFamily: 'var(--font-dm-mono)',
-                  opacity: .65,
-                }}>
-                  {opt.desc}
-                </span>
+                {opt.label}
               </button>
             );
           })}

@@ -198,6 +198,14 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ── Oil / Sugar style defaults ────────────────
+function oilDefault(sk: string): number {
+  return (ALL_STYLES as Record<string, { oil?: number }>)[sk]?.oil ?? 0;
+}
+function sugarDefault(sk: string): number {
+  return (ALL_STYLES as Record<string, { sugar?: number }>)[sk]?.sugar ?? 0;
+}
+
 // ── Oil guidance ──────────────────────────────
 function oilGuidance(oil: number, ovenType: string, styleKey: string): string {
   const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
@@ -439,8 +447,8 @@ export default function Home() {
   function selectStyle(sk: StyleKey) {
     setStyleKey(sk);
     setManualHydration(undefined);
-    setManualOil(undefined);
-    setManualSugar(undefined);
+    setManualOil(oilDefault(sk));
+    setManualSugar(sugarDefault(sk));
     setNumItems(bakeType === 'bread' ? 1 : tab === 'custom' ? 8 : 4);
     if (STYLE_HAS_DIAMETER.includes(sk)) {
       const defaultD = STYLE_DEFAULT_DIAMETER[sk] ?? 30;
@@ -1459,6 +1467,9 @@ export default function Home() {
                   selected={styleKey}
                   onSelect={sk => {
                     setStyleKey(sk);
+                    setManualOil(oilDefault(sk));
+                    setManualSugar(sugarDefault(sk));
+                    setManualHydration(undefined);
                     setNumItems(bakeType === 'bread' ? 1 : 8);
                     if (STYLE_HAS_DIAMETER.includes(sk)) {
                       const defaultD = STYLE_DEFAULT_DIAMETER[sk] ?? 30;
@@ -1836,52 +1847,60 @@ export default function Home() {
 
                 {/* Oil + Sugar side by side */}
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                  <div style={{ flex: 1 }}>
-                    <FieldLabel>Oil %</FieldLabel>
-                    <input
-                      type="number" min={0} max={10} step={0.5}
-                      value={manualOil ?? ALL_STYLES[styleKey!]?.oil ?? 0}
-                      onChange={e => setManualOil(Number(e.target.value))}
-                      style={{
-                        width: '100%', padding: '.45rem .6rem', borderRadius: '8px',
-                        border: '1.5px solid var(--border)', background: 'var(--cream)',
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
-                        color: 'var(--char)', outline: 'none',
-                      }}
-                    />
-                    {(() => {
-                      const v = manualOil ?? ALL_STYLES[styleKey!]?.oil ?? 0;
-                      const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
-                      return (
+                  {/* Oil stepper */}
+                  {(() => {
+                    const v = manualOil ?? 0;
+                    const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
+                    const STEP = 0.5;
+                    return (
+                      <div style={{ flex: 1 }}>
+                        <FieldLabel>Oil %</FieldLabel>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                          <button
+                            onClick={() => setManualOil(Math.max(0, Math.round((v - STEP) * 10) / 10))}
+                            style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '1.1rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                          >−</button>
+                          <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem', color: 'var(--char)' }}>
+                            {v === 0 ? 'None' : `${v}%`}
+                          </span>
+                          <button
+                            onClick={() => setManualOil(Math.min(10, Math.round((v + STEP) * 10) / 10))}
+                            style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '1.1rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                          >+</button>
+                        </div>
                         <div style={{ fontSize: '.72rem', color: v > 0 && isHighTemp ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginTop: '.35rem' }}>
                           {oilGuidance(v, ovenType, styleKey ?? '')}
                         </div>
-                      );
-                    })()}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <FieldLabel>Sugar %</FieldLabel>
-                    <input
-                      type="number" min={0} max={10} step={0.5}
-                      value={manualSugar ?? ALL_STYLES[styleKey!]?.sugar ?? 0}
-                      onChange={e => setManualSugar(Number(e.target.value))}
-                      style={{
-                        width: '100%', padding: '.45rem .6rem', borderRadius: '8px',
-                        border: '1.5px solid var(--border)', background: 'var(--cream)',
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
-                        color: 'var(--char)', outline: 'none',
-                      }}
-                    />
-                    {(() => {
-                      const v = manualSugar ?? ALL_STYLES[styleKey!]?.sugar ?? 0;
-                      const sg = sugarGuidance(v, ovenType);
-                      return (
+                      </div>
+                    );
+                  })()}
+                  {/* Sugar stepper */}
+                  {(() => {
+                    const v = manualSugar ?? 0;
+                    const sg = sugarGuidance(v, ovenType);
+                    const STEP = 0.5;
+                    return (
+                      <div style={{ flex: 1 }}>
+                        <FieldLabel>Sugar %</FieldLabel>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                          <button
+                            onClick={() => setManualSugar(Math.max(0, Math.round((v - STEP) * 10) / 10))}
+                            style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '1.1rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                          >−</button>
+                          <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem', color: 'var(--char)' }}>
+                            {v === 0 ? 'None' : `${v}%`}
+                          </span>
+                          <button
+                            onClick={() => setManualSugar(Math.min(10, Math.round((v + STEP) * 10) / 10))}
+                            style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '1.1rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                          >+</button>
+                        </div>
                         <div style={{ fontSize: '.72rem', color: sg.warn ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginTop: '.35rem' }}>
                           {sg.note}
                         </div>
-                      );
-                    })()}
-                  </div>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <ContinueBtn onClick={() => advanceAdv(10)} />
               </div>
