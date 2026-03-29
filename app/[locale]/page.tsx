@@ -209,24 +209,24 @@ function sugarDefault(sk: string): number {
 // ── Oil guidance ──────────────────────────────
 function oilGuidance(oil: number, ovenType: string, styleKey: string): string {
   const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
-  if (oil === 0 && isHighTemp) return 'Traditional — no oil. Correct for high-temp ovens (450°C+).';
+  if (oil === 0 && isHighTemp) return 'Traditional — no oil. Works beautifully at high-temp (450°C+).';
   if (oil === 0 && !isHighTemp) return `Classic ${styleKey === 'neapolitan' ? 'Neapolitan' : 'style'} uses no oil, but 1–2% can help browning in a home oven below 300°C.`;
-  if (oil > 0 && isHighTemp) return '⚠️ Oil burns at 450°C+ — it may char before the crust cooks. Remove for wood/gas pizza ovens.';
+  if (oil > 0 && isHighTemp) return 'For best results in a high-temp oven, keeping oil at 0% works beautifully — oil can char at 450°C+.';
   if (oil > 0 && oil <= 2) return 'Helps browning and tenderness at home oven temps. Classic choice for home bakers.';
-  if (oil > 2 && oil <= 5) return 'Pan pizza range — creates crispy, almost-fried base. Correct for Detroit and focaccia.';
-  if (oil > 5) return '⚠️ Enriched dough territory. High oil can interfere with gluten development. Consider osmotolerant yeast.';
+  if (oil > 2 && oil <= 5) return 'Pan pizza range — creates a crispy, almost-fried base. Right at home in Detroit and focaccia.';
+  if (oil > 5) return 'Entering enriched dough territory — high oil softens gluten development. An osmotolerant yeast like SAF Gold works well here.';
   return '';
 }
 
 // ── Sugar guidance ────────────────────────────
 function sugarGuidance(sugar: number, ovenType: string): { note: string; warn: boolean } {
   const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
-  if (sugar === 0 && isHighTemp) return { note: 'Traditional — no sugar. Correct for high-temp ovens.', warn: false };
+  if (sugar === 0 && isHighTemp) return { note: 'Traditional — no sugar. Works beautifully at high-temp.', warn: false };
   if (sugar === 0 && !isHighTemp) return { note: 'Classic. Add 0.5% to help caramelisation in a home oven below 280°C.', warn: false };
   if (sugar > 0 && sugar <= 1) return { note: 'Subtle colour boost. Good for home oven baking below 280°C.', warn: false };
   if (sugar > 1 && sugar <= 2) return { note: 'Noticeable sweetness and good browning. Works well for enriched styles.', warn: false };
-  if (sugar > 2 && sugar <= 4) return { note: '⚠️ Above 2%, sugar creates osmotic stress on yeast — fermentation slows. Use SAF Gold (osmotolerant) yeast.', warn: true };
-  if (sugar > 4) return { note: '⚠️ High sugar — enriched dough territory (brioche level). Standard yeast will struggle. SAF Gold or fresh yeast recommended.', warn: true };
+  if (sugar > 2 && sugar <= 4) return { note: 'Above 2%, sugar adds osmotic stress on yeast — fermentation slows a little. An osmotolerant yeast like SAF Gold works well here.', warn: true };
+  if (sugar > 4) return { note: 'High sugar territory (brioche level) — standard yeast may struggle. SAF Gold or fresh yeast is a great choice here.', warn: true };
   return { note: '', warn: false };
 }
 
@@ -575,8 +575,8 @@ export default function Home() {
   ].filter(Boolean).length;
   const customStepsTotal = 11;
   const progressFraction = tab === 'simple'
-    ? simpleStepsCompleted / simpleStepsTotal
-    : customStepsCompleted / customStepsTotal;
+    ? (simpleRequiredDone ? 1 : (activeStep - 1) / simpleStepsTotal)
+    : (customRequiredDone ? 1 : (advancedStep - 1) / customStepsTotal);
 
   // ── Styles ────────────────────────────────
   const isBread = bakeType === 'bread';
@@ -592,159 +592,123 @@ export default function Home() {
 
         {/* ── Mode selector ──────────────────────── */}
         <div ref={modeSelectorRef}>
-        {!modeChosen ? (
 
-          <div style={{ marginBottom: '16px' }}>
-            {/* Hero headline — only shown when expanded */}
-            <div style={{ textAlign: 'center', marginBottom: '20px', padding: '0 8px' }}>
-              <h1 style={{
-                fontFamily: 'var(--font-playfair)',
-                fontSize: 'clamp(1.4rem, 5vw, 2rem)',
-                fontWeight: 700,
-                color: 'var(--char)',
-                lineHeight: 1.2,
-                margin: 0,
-              }}>
-                {t('hero.headline')}{' '}
-                <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>
-                  {t('hero.headlineEm')}
-                </em>
-              </h1>
-            </div>
-
-            {/* Mode cards */}
-            <div style={{ display: 'flex', gap: '10px', maxWidth: '480px', margin: '0 auto 12px' }}>
-
-              {/* Simple card */}
-              <div
-                onClick={() => {
-                  if (tab === 'custom') {
-                    customOnlyStateRef.current = { flourBlend, hydration: manualHydration, oil: manualOil, sugar: manualSugar, prefermentType, prefermentFlourPct };
-                    setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
-                  }
-                  setTab('simple'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
-                  suppressNextScrollRef.current = true;
-                }}
-                style={{
-                  flex: 1,
-                  minWidth: '160px',
-                  maxWidth: '220px',
-                  border: tab === 'simple' ? '2px solid var(--terra)' : '0.5px solid var(--border)',
-                  borderRadius: '14px',
-                  padding: '14px 12px',
-                  background: tab === 'simple' ? 'white' : 'var(--warm)',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ fontSize: '20px', marginBottom: '6px' }}>🧭</div>
-                <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--char)', marginBottom: '10px' }}>Simple</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  {[
-                    t('modeCards.simple.bullet1'),
-                    t('modeCards.simple.bullet2'),
-                    t('modeCards.simple.bullet3'),
-                  ].map((b, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--sage)', flexShrink: 0, marginTop: '1px' }}>✓</span>
-                      <span style={{ fontSize: '11px', color: 'var(--ash)', lineHeight: 1.3 }}>{b}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom card */}
-              <div
-                onClick={() => {
-                  if (tab !== 'custom') {
-                    if (customOnlyStateRef.current) {
-                      setFlourBlend(customOnlyStateRef.current.flourBlend);
-                      setManualHydration(customOnlyStateRef.current.hydration);
-                      setManualOil(customOnlyStateRef.current.oil);
-                      setManualSugar(customOnlyStateRef.current.sugar);
-                      setPrefermentType(customOnlyStateRef.current.prefermentType);
-                      setPrefermentFlourPct(customOnlyStateRef.current.prefermentFlourPct);
-                    } else if (styleKey) {
-                      const s = ALL_STYLES[styleKey];
-                      setManualHydration(s.hydration); setManualOil(s.oil); setManualSugar(s.sugar);
-                    }
-                  }
-                  setTab('custom'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
-                  suppressNextScrollRef.current = true;
-                }}
-                style={{
-                  flex: 1,
-                  minWidth: '160px',
-                  maxWidth: '220px',
-                  border: tab === 'custom' ? '2px solid var(--terra)' : '0.5px solid var(--border)',
-                  borderRadius: '14px',
-                  padding: '14px 12px',
-                  background: tab === 'custom' ? 'white' : 'var(--warm)',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ fontSize: '20px', marginBottom: '6px' }}>🎛️</div>
-                <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--char)', marginBottom: '10px' }}>Custom</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  {[
-                    t('modeCards.custom.bullet1'),
-                    t('modeCards.custom.bullet2'),
-                    t('modeCards.custom.bullet3'),
-                  ].map((b, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--sage)', flexShrink: 0, marginTop: '1px' }}>✓</span>
-                      <span style={{ fontSize: '11px', color: 'var(--ash)', lineHeight: 1.3 }}>{b}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
+          {/* Hero headline — always visible */}
+          <div style={{ textAlign: 'center', marginBottom: '16px', padding: '0 8px' }}>
+            <h1 style={{
+              fontFamily: 'var(--font-playfair)',
+              fontSize: 'clamp(1.4rem, 5vw, 2rem)',
+              fontWeight: 700,
+              color: 'var(--char)',
+              lineHeight: 1.2,
+              margin: 0,
+            }}>
+              {t('hero.headline')}{' '}
+              <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>
+                {t('hero.headlineEm')}
+              </em>
+            </h1>
           </div>
 
-        ) : (
+          {/* Mode cards — always rendered, shrink in place when mode chosen */}
+          <div style={{ display: 'flex', gap: '10px', maxWidth: '480px', margin: '0 auto 12px' }}>
 
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '8px 12px',
-            background: 'white',
-            borderRadius: '12px',
-            border: '0.5px solid var(--border)',
-            marginBottom: '10px',
-            cursor: 'default',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '18px' }}>
-                {tab === 'simple' ? '🧭' : '🎛️'}
-              </span>
-              <div>
-                <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 700, color: 'var(--char)' }}>
-                  {tab === 'simple' ? 'Simple' : 'Custom'}
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--smoke)' }}>
-                  {tab === 'simple' ? t('modeCards.simple.collapsed') : t('modeCards.custom.collapsed')}
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={() => setModeChosen(false)}
+            {/* Simple card */}
+            <div
+              onClick={() => {
+                if (tab === 'custom') {
+                  customOnlyStateRef.current = { flourBlend, hydration: manualHydration, oil: manualOil, sugar: manualSugar, prefermentType, prefermentFlourPct };
+                  setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
+                }
+                setTab('simple'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
+                suppressNextScrollRef.current = true;
+              }}
               style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '12px',
-                color: 'var(--terra)',
+                flex: 1,
+                minWidth: '160px',
+                maxWidth: '220px',
+                border: tab === 'simple' ? '2px solid var(--terra)' : '0.5px solid var(--border)',
+                borderRadius: '14px',
+                padding: modeChosen ? '10px 12px' : '14px 12px',
+                background: tab === 'simple' ? 'white' : 'var(--warm)',
                 cursor: 'pointer',
-                fontFamily: 'var(--font-dm-sans)',
-                fontWeight: 500,
-                padding: '4px 0',
+                transition: 'padding 0.25s',
               }}
             >
-              Switch
-            </button>
-          </div>
+              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--char)', marginBottom: modeChosen ? '3px' : '10px', transition: 'margin-bottom 0.25s' }}>
+                Simple
+              </div>
+              {/* Bullets collapse smoothly when mode is chosen */}
+              <div style={{ overflow: 'hidden', maxHeight: modeChosen ? '0' : '160px', transition: 'max-height 0.3s ease', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                {[
+                  t('modeCards.simple.bullet1'),
+                  t('modeCards.simple.bullet2'),
+                  t('modeCards.simple.bullet3'),
+                ].map((b, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--sage)', flexShrink: 0, marginTop: '1px' }}>✓</span>
+                    <span style={{ fontSize: '11px', color: 'var(--ash)', lineHeight: 1.3 }}>{b}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Subtitle appears when collapsed */}
+              <div style={{ overflow: 'hidden', maxHeight: modeChosen ? '40px' : '0', transition: 'max-height 0.3s ease', fontSize: '11px', color: 'var(--smoke)' }}>
+                {t('modeCards.simple.collapsed')}
+              </div>
+            </div>
 
-        )}
+            {/* Custom card */}
+            <div
+              onClick={() => {
+                if (tab !== 'custom') {
+                  if (customOnlyStateRef.current) {
+                    setFlourBlend(customOnlyStateRef.current.flourBlend);
+                    setManualHydration(customOnlyStateRef.current.hydration);
+                    setManualOil(customOnlyStateRef.current.oil);
+                    setManualSugar(customOnlyStateRef.current.sugar);
+                    setPrefermentType(customOnlyStateRef.current.prefermentType);
+                    setPrefermentFlourPct(customOnlyStateRef.current.prefermentFlourPct);
+                  } else if (styleKey) {
+                    const s = ALL_STYLES[styleKey];
+                    setManualHydration(s.hydration); setManualOil(s.oil); setManualSugar(s.sugar);
+                  }
+                }
+                setTab('custom'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
+                suppressNextScrollRef.current = true;
+              }}
+              style={{
+                flex: 1,
+                minWidth: '160px',
+                maxWidth: '220px',
+                border: tab === 'custom' ? '2px solid var(--terra)' : '0.5px solid var(--border)',
+                borderRadius: '14px',
+                padding: modeChosen ? '10px 12px' : '14px 12px',
+                background: tab === 'custom' ? 'white' : 'var(--warm)',
+                cursor: 'pointer',
+                transition: 'padding 0.25s',
+              }}
+            >
+              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--char)', marginBottom: modeChosen ? '3px' : '10px', transition: 'margin-bottom 0.25s' }}>
+                Custom
+              </div>
+              <div style={{ overflow: 'hidden', maxHeight: modeChosen ? '0' : '160px', transition: 'max-height 0.3s ease', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                {[
+                  t('modeCards.custom.bullet1'),
+                  t('modeCards.custom.bullet2'),
+                  t('modeCards.custom.bullet3'),
+                ].map((b, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--sage)', flexShrink: 0, marginTop: '1px' }}>✓</span>
+                    <span style={{ fontSize: '11px', color: 'var(--ash)', lineHeight: 1.3 }}>{b}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ overflow: 'hidden', maxHeight: modeChosen ? '40px' : '0', transition: 'max-height 0.3s ease', fontSize: '11px', color: 'var(--smoke)' }}>
+                {t('modeCards.custom.collapsed')}
+              </div>
+            </div>
+
+          </div>
         </div>
 
         {/* ── Segmented control (Dough setup / Bake plan) ── */}
@@ -1772,11 +1736,11 @@ export default function Home() {
 
                   function hydrationZoneLabel(h: number): { label: string; color: string; note: string } {
                     if (h < zone.classicMin) return {
-                      label: '⚠️ Below classic range',
+                      label: 'Below classic range',
                       color: '#7A5A10',
                       note: h < zone.min + 3
-                        ? 'Dough will be very stiff — hard to stretch and may tear.'
-                        : `Below ${zone.name} classic range. Dough will be stiffer and denser.`,
+                        ? 'Dough will be quite stiff — a little more water may help with stretching.'
+                        : `Below the ${zone.name} classic range. Dough will be firmer and a bit denser.`,
                     };
                     if (h <= zone.classicMax) return {
                       label: '✓ Classic range',
