@@ -17,8 +17,9 @@
   "tabs": {
     "guided": "🧭 Simple",
     "advanced": "🎛️ Personnalisé",
-    "doughSetupTab": "Paramètres",
-    "bakePlanTab": "Recette"
+    "setup": "Paramètres",
+    "plan": "Recette",
+    "guide": "Guide"
   },
   "generate": {
     "generateBtn": "Générer mon planning →",
@@ -37,13 +38,15 @@
       "bullet1": "Idéal pour commencer",
       "bullet2": "Réglages intelligents",
       "bullet3": "Planning visuel couleur",
-      "collapsed": "Réglages intelligents · planning couleur"
+      "bullet4": "Guide de cuisson étape par étape",
+      "collapsed": "Réglages intelligents · planning couleur · guide"
     },
     "custom": {
       "bullet1": "Votre mélange de farines",
       "bullet2": "Contrôle du pré-ferment",
       "bullet3": "Graphe de fermentation",
-      "collapsed": "Farines · pré-ferment · graphe"
+      "bullet4": "Guide de cuisson étape par étape",
+      "collapsed": "Farines · pré-ferment · graphe · guide"
     }
   },
   "steps": {

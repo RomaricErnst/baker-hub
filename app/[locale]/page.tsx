@@ -325,7 +325,7 @@ export default function Home() {
   const [recipeGenerated, setRecipeGenerated] = useState(false);
 
   // P6 — Active tab in two-tab layout
-  const [activeTab, setActiveTab] = useState<'setup' | 'bakeplan'>('setup');
+  const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide'>('setup');
 
   // M2 — Mode chosen: false on page load, true after baker selects a mode
   const [modeChosen, setModeChosen] = useState(false);
@@ -516,7 +516,7 @@ export default function Home() {
     setRecipeGenerated(true);
     setProtocolStale(false);
     setShowResults(true);
-    setActiveTab('bakeplan');
+    setActiveTab('plan');
   }
 
   async function handleSaveRecipe(mode: 'simple' | 'custom') {
@@ -649,6 +649,7 @@ export default function Home() {
                   t('modeCards.simple.bullet1'),
                   t('modeCards.simple.bullet2'),
                   t('modeCards.simple.bullet3'),
+                  t('modeCards.simple.bullet4'),
                 ].map((b, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
                     <span style={{ fontSize: '11px', color: 'var(--sage)', flexShrink: 0, marginTop: '1px' }}>✓</span>
@@ -701,6 +702,7 @@ export default function Home() {
                   t('modeCards.custom.bullet1'),
                   t('modeCards.custom.bullet2'),
                   t('modeCards.custom.bullet3'),
+                  t('modeCards.custom.bullet4'),
                 ].map((b, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
                     <span style={{ fontSize: '11px', color: 'var(--sage)', flexShrink: 0, marginTop: '1px' }}>✓</span>
@@ -724,9 +726,12 @@ export default function Home() {
           display: 'flex',
           margin: '0 0 12px 0',
         }}>
-          {(['setup', 'bakeplan'] as const).map(segKey => {
+          {([
+            { key: 'setup' as const, label: t('tabs.setup'), locked: false },
+            { key: 'plan'  as const, label: t('tabs.plan'),  locked: !recipeGenerated },
+            { key: 'guide' as const, label: t('tabs.guide'), locked: !recipeGenerated },
+          ]).map(({ key: segKey, label, locked: isLocked }) => {
             const isActive = activeTab === segKey;
-            const isLocked = segKey === 'bakeplan' && !recipeGenerated;
             return (
               <button
                 key={segKey}
@@ -747,7 +752,7 @@ export default function Home() {
                   pointerEvents: isLocked ? 'none' : 'auto',
                 }}
               >
-                {segKey === 'setup' ? t('tabs.doughSetupTab') : t('tabs.bakePlanTab')}
+                {label}
               </button>
             );
           })}
@@ -1084,7 +1089,7 @@ export default function Home() {
             </div>{/* end setup tab */}
 
             {/* ── Bake plan tab content ── */}
-            <div style={{ display: activeTab === 'bakeplan' ? 'block' : 'none' }}>
+            <div style={{ display: activeTab === 'plan' ? 'block' : 'none' }}>
 
               {/* Stale banner */}
               {protocolStale && recipeGenerated && (
@@ -1376,7 +1381,23 @@ export default function Home() {
                 {t('generate.editSetup')}
               </button>
 
-            </div>{/* end bakeplan tab */}
+            </div>{/* end plan tab */}
+
+            {/* ── Bake guide tab content ── */}
+            <div style={{ display: activeTab === 'guide' ? 'block' : 'none' }}>
+              {!recipeGenerated ? (
+                <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                  <div style={{ fontSize: '24px', marginBottom: '12px' }}>◆</div>
+                  <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>Generate your recipe first</div>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                  <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '18px', color: 'var(--char)', marginBottom: '12px' }}>Bake guide</div>
+                  <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>Your step-by-step guide will appear here.</div>
+                </div>
+              )}
+            </div>{/* end guide tab */}
+
           </div>
         )}
 
@@ -1936,7 +1957,7 @@ export default function Home() {
             </div>{/* end setup tab */}
 
             {/* ── Bake plan tab content ── */}
-            <div style={{ display: activeTab === 'bakeplan' ? 'block' : 'none' }}>
+            <div style={{ display: activeTab === 'plan' ? 'block' : 'none' }}>
 
               {/* Stale banner */}
               {protocolStale && recipeGenerated && (
@@ -2096,7 +2117,23 @@ export default function Home() {
                 {t('generate.editSetup')}
               </button>
 
-            </div>{/* end bakeplan tab */}
+            </div>{/* end plan tab */}
+
+            {/* ── Bake guide tab content ── */}
+            <div style={{ display: activeTab === 'guide' ? 'block' : 'none' }}>
+              {!recipeGenerated ? (
+                <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                  <div style={{ fontSize: '24px', marginBottom: '12px' }}>◆</div>
+                  <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>Generate your recipe first</div>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                  <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '18px', color: 'var(--char)', marginBottom: '12px' }}>Bake guide</div>
+                  <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>Your step-by-step guide will appear here.</div>
+                </div>
+              )}
+            </div>{/* end guide tab */}
+
           </div>
         )}
       </div>

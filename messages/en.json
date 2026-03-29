@@ -17,8 +17,9 @@
   "tabs": {
     "guided": "🧭 Simple",
     "advanced": "🎛️ Custom",
-    "doughSetupTab": "Dough setup",
-    "bakePlanTab": "Bake plan"
+    "setup": "Dough setup",
+    "plan": "Bake plan",
+    "guide": "Bake guide"
   },
   "generate": {
     "generateBtn": "Generate my bake plan →",
@@ -37,13 +38,15 @@
       "bullet1": "Great to start with",
       "bullet2": "Smart defaults",
       "bullet3": "Colour bar schedule",
-      "collapsed": "Smart defaults · colour bar schedule"
+      "bullet4": "Step-by-step bake guide",
+      "collapsed": "Smart defaults · colour bar · guide"
     },
     "custom": {
       "bullet1": "Your flour blend",
       "bullet2": "Preferment control",
       "bullet3": "Fermentation graph",
-      "collapsed": "Flour blend · preferment · graph"
+      "bullet4": "Step-by-step bake guide",
+      "collapsed": "Flour blend · preferment · graph · guide"
     }
   },
   "steps": {
