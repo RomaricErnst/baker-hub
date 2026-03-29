@@ -22,6 +22,7 @@ export interface FermentChartProps {
   };
   scheduleNote?: string | null;
   recommendedMixHBF?: number | null;
+  readOnly?: boolean;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -117,7 +118,7 @@ export default function FermentChart({
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange,
   windowH, prefInFridge, hasColdRetard, phases, scheduleNote,
-  recommendedMixHBF,
+  recommendedMixHBF, readOnly,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -313,6 +314,7 @@ export default function FermentChart({
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
         <line x1={x2} y1={0} x2={x2} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
+        {!readOnly && <>
         <rect
           x={(x1 + x2) / 2 - label.length * 4}
           y={labelY - 11}
@@ -332,6 +334,7 @@ export default function FermentChart({
           markerStart={`url(#arrow-${markerId}-start)`}
           markerEnd={`url(#arrow-${markerId}-end)`}
         />
+      </>}
       </g>
     );
   }
@@ -341,12 +344,12 @@ export default function FermentChart({
     cx: number, fill: string, stroke: string, warn: boolean,
     which: 'mix' | 'pref',
   ) {
-    const shouldGlow = (which === 'mix' && glowState === 'mix')
-      || (which === 'pref' && (glowState === 'pref'));
+    const shouldGlow = !readOnly && ((which === 'mix' && glowState === 'mix')
+      || (which === 'pref' && (glowState === 'pref')));
     return (
       <g
-        style={{ cursor: dragging === which ? 'grabbing' : 'grab' }}
-        onPointerDown={e => onPointerDown(e, which)}
+        style={{ cursor: readOnly ? 'default' : (dragging === which ? 'grabbing' : 'grab') }}
+        {...(readOnly ? {} : { onPointerDown: (e: React.PointerEvent) => onPointerDown(e, which) })}
       >
         <polygon
           className={shouldGlow ? 'fc-diamond-glow' : undefined}
@@ -385,7 +388,7 @@ export default function FermentChart({
       style={{ width: '100%', userSelect: 'none', overflow: 'hidden', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
     >
       {/* ── Instruction pills ── */}
-      {glowState !== 'done' && (
+      {!readOnly && glowState !== 'done' && (
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '5px',
@@ -442,9 +445,9 @@ export default function FermentChart({
         width={W}
         height={CHART_H}
         style={{ display: 'block', touchAction: 'none', overflow: 'visible' }}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={onPointerUp}
+        onPointerMove={readOnly ? undefined : onPointerMove}
+        onPointerUp={readOnly ? undefined : onPointerUp}
+        onPointerLeave={readOnly ? undefined : onPointerUp}
       >
         {/* ── Clip paths for blockers ── */}
         <defs>

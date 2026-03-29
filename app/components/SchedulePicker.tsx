@@ -21,7 +21,7 @@ interface SchedulePickerProps {
   mode?: 'simple' | 'custom';   // default 'custom'
 }
 
-type PickerPhase = 'bake_time' | 'start_confirm';
+type PickerPhase = 'bake_time' | 'blockers' | 'schedule';
 type Scenario = 'plenty' | 'tight' | 'too_short';
 
 // ── Time formatter ────────────────────────────
@@ -306,6 +306,14 @@ const LABEL_STYLE: React.CSSProperties = {
   marginBottom: '.35rem',
   fontFamily: 'var(--font-dm-mono)',
 };
+
+// ── Duration formatter ────────────────────────
+function formatHours(h: number): string {
+  if (h < 1) return `${Math.round(h * 60)}m`;
+  const hrs = Math.floor(h);
+  const mins = Math.round((h - hrs) * 60);
+  return mins === 0 ? `${hrs}h` : `${hrs}h ${mins}m`;
+}
 
 // ── Snap to the edge of the blocker nearest to sweet spot center ──
 function snapToBlockerEdgeIfBlocked(
@@ -722,7 +730,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const tCommon = useTranslations('common');
   const alreadySet = eatTime !== null && eatTime > new Date();
   // Skip phase 1 if a future bake time is already set (return-to-edit case)
-  const [phase, setPhase] = useState<PickerPhase>(() => alreadySet ? 'start_confirm' : 'bake_time');
+  const [phase, setPhase] = useState<PickerPhase>(() => alreadySet ? 'schedule' : 'bake_time');
   const [pendingEatTime, setPendingEatTime] = useState<Date>(eatTime ?? new Date());
   const [pendingStart, setPendingStart] = useState(startTime);
   // eatTimeSet: false on first visit until baker picks a date
@@ -765,6 +773,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     inBlocker:   { mixHBF: number; overlapMin: number } | null;
   } | null>(null);
   const hasManuallyDragged = useRef(false);
+
+  const [showAdjustPopup, setShowAdjustPopup] = useState(false);
+  const [popupMixHBF, setPopupMixHBF] = useState<number>(20);
+  const [popupPrefHBF, setPopupPrefHBF] = useState<number>(10);
 
   function updateEatTime(dateStr: string, hour: number) {
     if (!dateStr) return;
@@ -878,20 +890,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // ── Phase transitions ────────────────────────
   function confirmBakeTime() {
     hasManuallyDragged.current = false;
+    setDismissedConflict(false);
+    setPhase('blockers');
+  }
+
+  function confirmBlockers() {
     computeAndApplyRecommendation(blocks, pendingEatTime);
     setStartComputed(true);
     setDismissedConflict(false);
-    setPhase('start_confirm');
     if (isSourdough) {
       const peak = starterPeakHours(kitchenTemp, starterMature);
       const ft = pushToReasonableHour(
-        new Date(pendingEatTime.getTime() -
-          (pendingEatTime.getTime() - pendingStart.getTime()) /
-          3600000 * 3600000 - peak.mid * 3600000)
+        new Date(pendingStart.getTime() - peak.mid * 3600000)
       );
       setFeedTime(ft);
       onFeedTimeChange?.(ft);
     }
+    setPhase('schedule');
   }
 
   // ── Handlers ─────────────────────────────────
@@ -909,7 +924,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
     onChange(resolvedStart, pendingEatTime, newBlocks);
     // Recompute recommendation if baker hasn't manually dragged
-    if (!hasManuallyDragged.current && phase === 'start_confirm') {
+    if (!hasManuallyDragged.current && phase === 'schedule') {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
   }
@@ -1017,18 +1032,345 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     );
   }
 
-  // ── PHASE 2: Start suggestion + blockers + confirm (merged) ──
+  // ── Shared vars for blockers + schedule phases ──
   const { scenario } = suggestion;
-
   const startInvalid = startComputed && pendingStart >= pendingEatTime;
   const bulkConflict = schedule?.bulkConflict ?? null;
 
+  // ── Blocker section (shared between phases) ──
+  function renderBlockerSection() {
+    return (
+      <>
+        {/* Blocker heading */}
+        <div style={{ fontSize: '.82rem', color: 'var(--char)', fontWeight: 600, marginBottom: '.3rem' }}>
+          {t('blockers.heading')}
+        </div>
+        <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.9rem', lineHeight: 1.5 }}>
+          {t('blockers.sub')}
+        </div>
+
+        {/* Quick presets — work toggle */}
+        {workdays.length > 0 && (
+          <div style={{ marginBottom: '.75rem' }}>
+            <button
+              onClick={toggleWork}
+              style={{
+                padding: '.38rem .85rem', borderRadius: '20px',
+                border: `1.5px solid ${isWorkActive ? 'var(--terra)' : 'var(--border)'}`,
+                background: isWorkActive ? '#FEF4EF' : 'var(--warm)',
+                color: isWorkActive ? 'var(--terra)' : 'var(--smoke)',
+                fontSize: '.78rem', fontWeight: isWorkActive ? 500 : 400,
+                cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                transition: 'all .15s',
+                display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+                whiteSpace: 'nowrap', flexShrink: 0,
+              }}
+            >
+              {t('blockers.weekdays')}
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
+                {t('blockers.weekdayHours')}
+              </span>
+              {isWorkActive && <span style={{ opacity: .7 }}>✓</span>}
+            </button>
+          </div>
+        )}
+
+        {/* Night toggles */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem', width: '100%', overflow: 'visible', paddingLeft: 0 }}>
+          {nights.length === 0 ? (
+            <div style={{ fontSize: '.76rem', color: 'var(--smoke)', fontStyle: 'italic', padding: '.2rem 0' }}>
+              {t('blockers.noOvernights')}
+            </div>
+          ) : (
+            nights.map(night => {
+              const active = isNightActive(night.label);
+              return (
+                <button
+                  key={night.key}
+                  onClick={() => toggleNight(night)}
+                  style={{
+                    padding: '.38rem .85rem', borderRadius: '20px',
+                    border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
+                    background: active ? '#FEF4EF' : 'var(--warm)',
+                    color: active ? 'var(--terra)' : 'var(--smoke)',
+                    fontSize: '.78rem', fontWeight: active ? 500 : 400,
+                    cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                    transition: 'all .15s',
+                    display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+                    whiteSpace: 'nowrap', flexShrink: 0,
+                  }}
+                >
+                  🌙 {night.label}
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
+                    {t('blockers.nightHours')}
+                  </span>
+                  {active && <span style={{ opacity: .7 }}>✓</span>}
+                </button>
+              );
+            })
+          )}
+
+          <button
+            onClick={() => setShowCustom(v => !v)}
+            style={{
+              padding: '.38rem .85rem', borderRadius: '20px',
+              border: `1.5px solid ${showCustom ? 'var(--terra)' : 'var(--border)'}`,
+              background: showCustom ? '#FEF4EF' : 'var(--warm)',
+              color: showCustom ? 'var(--terra)' : 'var(--smoke)',
+              fontSize: '.78rem', cursor: 'pointer',
+              fontFamily: 'var(--font-dm-sans)', transition: 'all .15s',
+            }}
+          >
+            {showCustom ? t('blockers.cancel') : t('blockers.addCustom')}
+          </button>
+        </div>
+
+        {/* Custom block form */}
+        {showCustom && (
+          <div style={{
+            border: '1.5px solid var(--border)', borderRadius: '12px',
+            padding: '1rem 1.1rem', background: 'var(--warm)',
+            marginBottom: '.8rem',
+          }}>
+            <div style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.75rem' }}>
+              {t('blockers.customTitle')}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+              <input
+                type="text"
+                placeholder={t('blockers.customLabelPlaceholder')}
+                value={customLabel}
+                onChange={e => setCustomLabel(e.target.value)}
+                style={{
+                  padding: '.55rem .75rem',
+                  border: '1.5px solid var(--border)', borderRadius: '8px',
+                  background: 'var(--card)', color: 'var(--char)',
+                  fontSize: '.82rem', fontFamily: 'var(--font-dm-sans)', outline: 'none',
+                }}
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem' }}>
+                <div>
+                  <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
+                    {t('blockers.from')}
+                  </div>
+                  <input
+                    type="datetime-local"
+                    value={customFrom}
+                    onChange={e => setCustomFrom(e.target.value)}
+                    style={{
+                      width: '100%', padding: '.55rem .75rem',
+                      border: '1.5px solid var(--border)', borderRadius: '8px',
+                      background: 'var(--card)', color: 'var(--char)',
+                      fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
+                    }}
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
+                    {t('blockers.to')}
+                  </div>
+                  <input
+                    type="datetime-local"
+                    value={customTo}
+                    onChange={e => setCustomTo(e.target.value)}
+                    style={{
+                      width: '100%', padding: '.55rem .75rem',
+                      border: '1.5px solid var(--border)', borderRadius: '8px',
+                      background: 'var(--card)', color: 'var(--char)',
+                      fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
+                    }}
+                  />
+                </div>
+              </div>
+              <button
+                onClick={addCustomBlock}
+                disabled={!customReady}
+                style={{
+                  alignSelf: 'flex-start', padding: '.55rem 1.1rem',
+                  border: 'none', borderRadius: '12px',
+                  background: customReady ? 'var(--terra)' : 'var(--border)',
+                  color: customReady ? '#fff' : 'var(--smoke)',
+                  fontSize: '.82rem', fontWeight: 500,
+                  cursor: customReady ? 'pointer' : 'default',
+                  transition: 'all .15s',
+                }}
+              >
+                {t('blockers.addBlock')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Active block chips — custom blocks only */}
+        {blocks.some(b => !nights.some(n => n.label === b.label) && !b.label.startsWith('Work · ')) && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem', marginBottom: '.5rem' }}>
+            {blocks.filter((block) => {
+              const isNightBlock = nights.some(n => n.label === block.label);
+              const isWorkBlock = block.label.startsWith('Work · ');
+              return !isNightBlock && !isWorkBlock;
+            }).map((block, i) => {
+              const durationH = (block.to.getTime() - block.from.getTime()) / 3600000;
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '.6rem',
+                    padding: '.5rem .85rem',
+                    background: '#FEF4EF', border: '1.5px solid var(--terra)',
+                    borderRadius: '10px',
+                  }}
+                >
+                  <span style={{ fontSize: '.95rem', flexShrink: 0 }}>🚫</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--terra)' }}>
+                      {block.label}
+                    </span>
+                    <span style={{ opacity: .7, marginLeft: '.3rem', fontSize: '.8rem' }}>✓</span>
+                    <span style={{
+                      marginLeft: '.5rem', fontSize: '.72rem',
+                      color: 'var(--terra)', opacity: .75, fontFamily: 'var(--font-dm-mono)',
+                    }}>
+                      {formatTimeShort(block.from)} → {formatTimeShort(block.to)}
+                    </span>
+                    <span style={{
+                      marginLeft: '.35rem', fontSize: '.7rem',
+                      color: 'var(--terra)', opacity: .5, fontFamily: 'var(--font-dm-mono)',
+                    }}>
+                      ({hoursLabel(durationH)})
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => removeBlock(i)}
+                    title="Remove"
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--smoke)', fontSize: '.8rem',
+                      padding: '.15rem .3rem', borderRadius: '4px',
+                      lineHeight: 1, flexShrink: 0, transition: 'color .15s',
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // ── PHASE 2: Blockers ─────────────────────────────────────
+  if (phase === 'blockers') {
+    return (
+      <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
+
+        {/* Bake time summary */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '.65rem',
+          padding: '.5rem .85rem',
+          background: 'var(--cream)', border: '1.5px solid var(--border)',
+          borderRadius: '10px', marginBottom: '1rem',
+        }}>
+          <span style={{ fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}>
+            {t('bakeTime')}
+          </span>
+          <span style={{ flex: 1, fontSize: '.82rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+            {formatDayShort(pendingEatTime)}
+          </span>
+          <button
+            onClick={() => { setPhase('bake_time'); setStartComputed(false); }}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--smoke)', fontSize: '.72rem',
+              fontFamily: 'var(--font-dm-mono)', padding: '.1rem .35rem',
+              borderRadius: '5px', flexShrink: 0,
+              textDecoration: 'underline', textUnderlineOffset: '2px',
+            }}
+          >
+            {tCommon('edit')}
+          </button>
+        </div>
+
+        {/* too_short note */}
+        {scenario === 'too_short' && (
+          <div style={{ fontSize: '.78rem', color: 'var(--terra)', marginBottom: '.9rem', lineHeight: 1.5 }}>
+            ⚡ {t('scenario.tooShort')}
+          </div>
+        )}
+
+        {/* Sourdough starter section */}
+        {isSourdough && (
+          <div style={{ marginBottom: '1.25rem' }}>
+            <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--char)', marginBottom: '.4rem' }}>
+              🫙 When can you feed your starter?
+            </div>
+            <div style={{ fontSize: '.76rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
+              Set your feed time on the chart — mix updates automatically.
+            </div>
+            <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.9rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '.72rem', color: 'var(--smoke)', alignSelf: 'center', fontFamily: 'var(--font-dm-mono)', marginRight: '.2rem' }}>
+                My starter is:
+              </span>
+              {([
+                { value: true,  label: '🔥 Active / mature' },
+                { value: false, label: '🌱 Young (< 6 months)' },
+              ] as { value: boolean; label: string }[]).map(opt => (
+                <button key={String(opt.value)}
+                  onClick={() => {
+                    setStarterMature(opt.value);
+                    if (feedTime) {
+                      const peak = starterPeakHours(kitchenTemp, opt.value);
+                      const ft = pushToReasonableHour(new Date(pendingStart.getTime() - peak.mid * 3600000));
+                      setFeedTime(ft);
+                      onFeedTimeChange?.(ft);
+                    }
+                  }}
+                  style={{
+                    padding: '.3rem .75rem', borderRadius: '20px', cursor: 'pointer',
+                    fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
+                    border: `1.5px solid ${starterMature === opt.value ? 'var(--terra)' : 'var(--border)'}`,
+                    background: starterMature === opt.value ? '#FEF4EF' : 'transparent',
+                    color: starterMature === opt.value ? 'var(--terra)' : 'var(--smoke)',
+                  }}
+                >{opt.label}</button>
+              ))}
+            </div>
+            {(() => {
+              const peak = starterPeakHours(kitchenTemp, starterMature);
+              return (
+                <div style={{ fontSize: '.74rem', color: 'var(--smoke)', fontStyle: 'italic', background: 'var(--cream)', borderRadius: '8px', padding: '.4rem .75rem', display: 'inline-block' }}>
+                  At {kitchenTemp}°C your starter peaks in {peak.min}–{peak.max}h{!starterMature ? ' — young starters take longer' : ''}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {renderBlockerSection()}
+
+        {/* See my schedule CTA */}
+        <button
+          onClick={confirmBlockers}
+          style={{
+            ...continueBtnStyle,
+            marginTop: '1.4rem',
+          }}
+        >
+          See my schedule →
+        </button>
+
+      </div>
+    );
+  }
+
+  // ── PHASE 3: Schedule ─────────────────────────────────────
   return (
     <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
 
-      {/* Bake time summary — click Edit to go back to phase 1 */}
+      {/* Inline bake time header with edit links */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '.65rem',
+        display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap',
         padding: '.5rem .85rem',
         background: 'var(--cream)', border: '1.5px solid var(--border)',
         borderRadius: '10px', marginBottom: '1rem',
@@ -1036,7 +1378,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <span style={{ fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}>
           {t('bakeTime')}
         </span>
-        <span style={{ flex: 1, fontSize: '.82rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+        <span style={{ flex: 1, fontSize: '.82rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', minWidth: 0 }}>
           {formatDayShort(pendingEatTime)}
         </span>
         <button
@@ -1051,366 +1393,64 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         >
           {tCommon('edit')}
         </button>
-      </div>
-
-      {/* too_short compact note */}
-      {scenario === 'too_short' && (
-        <div style={{ fontSize: '.78rem', color: 'var(--terra)', marginBottom: '.9rem', lineHeight: 1.5 }}>
-          ⚡ {t('scenario.tooShort')}
-        </div>
-      )}
-
-      {/* Sourdough starter section */}
-      {isSourdough && (
-        <div style={{ marginBottom: '1.25rem' }}>
-          <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--char)', marginBottom: '.4rem' }}>
-            🫙 When can you feed your starter?
-          </div>
-          <div style={{ fontSize: '.76rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
-            Set your feed time on the chart — mix updates automatically.
-          </div>
-
-          {/* Maturity toggle */}
-          <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.9rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '.72rem', color: 'var(--smoke)', alignSelf: 'center', fontFamily: 'var(--font-dm-mono)', marginRight: '.2rem' }}>
-              My starter is:
-            </span>
-            {([
-              { value: true,  label: '🔥 Active / mature' },
-              { value: false, label: '🌱 Young (< 6 months)' },
-            ] as { value: boolean; label: string }[]).map(opt => (
-              <button key={String(opt.value)}
-                onClick={() => {
-                  setStarterMature(opt.value);
-                  if (feedTime) {
-                    const peak = starterPeakHours(kitchenTemp, opt.value);
-                    const ft = pushToReasonableHour(new Date(pendingStart.getTime() - peak.mid * 3600000));
-                    setFeedTime(ft);
-                    onFeedTimeChange?.(ft);
-                  }
-                }}
-                style={{
-                  padding: '.3rem .75rem', borderRadius: '20px', cursor: 'pointer',
-                  fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
-                  border: `1.5px solid ${starterMature === opt.value ? 'var(--terra)' : 'var(--border)'}`,
-                  background: starterMature === opt.value ? '#FEF4EF' : 'transparent',
-                  color: starterMature === opt.value ? 'var(--terra)' : 'var(--smoke)',
-                }}
-              >{opt.label}</button>
-            ))}
-          </div>
-
-          {/* Peak window note */}
-          {(() => {
-            const peak = starterPeakHours(kitchenTemp, starterMature);
-            return (
-              <div style={{ fontSize: '.74rem', color: 'var(--smoke)', fontStyle: 'italic', background: 'var(--cream)', borderRadius: '8px', padding: '.4rem .75rem', display: 'inline-block' }}>
-                At {kitchenTemp}°C your starter peaks in {peak.min}–{peak.max}h{!starterMature ? ' — young starters take longer' : ''}
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* Blocker section — moved above slider */}
-      <div style={{ fontSize: '.82rem', color: 'var(--char)', fontWeight: 600, marginBottom: '.3rem' }}>
-        {t('blockers.heading')}
-      </div>
-      <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.9rem', lineHeight: 1.5 }}>
-        {t('blockers.sub')}
-      </div>
-
-      {/* Quick presets — work toggle */}
-      {workdays.length > 0 && (
-        <div style={{ marginBottom: '.75rem' }}>
-          <button
-            onClick={toggleWork}
-            style={{
-              padding: '.38rem .85rem', borderRadius: '20px',
-              border: `1.5px solid ${isWorkActive ? 'var(--terra)' : 'var(--border)'}`,
-              background: isWorkActive ? '#FEF4EF' : 'var(--warm)',
-              color: isWorkActive ? 'var(--terra)' : 'var(--smoke)',
-              fontSize: '.78rem', fontWeight: isWorkActive ? 500 : 400,
-              cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
-              transition: 'all .15s',
-              display: 'inline-flex', alignItems: 'center', gap: '.3rem',
-              whiteSpace: 'nowrap', flexShrink: 0,
-            }}
-          >
-            {t('blockers.weekdays')}
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
-              {t('blockers.weekdayHours')}
-            </span>
-            {isWorkActive && <span style={{ opacity: .7 }}>✓</span>}
-          </button>
-        </div>
-      )}
-
-      {/* Night toggles */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem', width: '100%', overflow: 'visible', paddingLeft: 0 }}>
-        {nights.length === 0 ? (
-          <div style={{ fontSize: '.76rem', color: 'var(--smoke)', fontStyle: 'italic', padding: '.2rem 0' }}>
-            {t('blockers.noOvernights')}
-          </div>
-        ) : (
-          nights.map(night => {
-            const active = isNightActive(night.label);
-            return (
-              <button
-                key={night.key}
-                onClick={() => toggleNight(night)}
-                style={{
-                  padding: '.38rem .85rem', borderRadius: '20px',
-                  border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                  background: active ? '#FEF4EF' : 'var(--warm)',
-                  color: active ? 'var(--terra)' : 'var(--smoke)',
-                  fontSize: '.78rem', fontWeight: active ? 500 : 400,
-                  cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
-                  transition: 'all .15s',
-                  display: 'inline-flex', alignItems: 'center', gap: '.3rem',
-                  whiteSpace: 'nowrap', flexShrink: 0,
-                }}
-              >
-                🌙 {night.label}
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
-                  {t('blockers.nightHours')}
-                </span>
-                {active && <span style={{ opacity: .7 }}>✓</span>}
-              </button>
-            );
-          })
-        )}
-
         <button
-          onClick={() => setShowCustom(v => !v)}
+          onClick={() => setPhase('blockers')}
           style={{
-            padding: '.38rem .85rem', borderRadius: '20px',
-            border: `1.5px solid ${showCustom ? 'var(--terra)' : 'var(--border)'}`,
-            background: showCustom ? '#FEF4EF' : 'var(--warm)',
-            color: showCustom ? 'var(--terra)' : 'var(--smoke)',
-            fontSize: '.78rem', cursor: 'pointer',
-            fontFamily: 'var(--font-dm-sans)', transition: 'all .15s',
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--smoke)', fontSize: '.72rem',
+            fontFamily: 'var(--font-dm-mono)', padding: '.1rem .35rem',
+            borderRadius: '5px', flexShrink: 0,
+            textDecoration: 'underline', textUnderlineOffset: '2px',
           }}
         >
-          {showCustom ? t('blockers.cancel') : t('blockers.addCustom')}
+          Edit availability
         </button>
       </div>
 
-      {/* Custom block form */}
-      {showCustom && (
-        <div style={{
-          border: '1.5px solid var(--border)', borderRadius: '12px',
-          padding: '1rem 1.1rem', background: 'var(--warm)',
-          marginBottom: '.8rem',
-        }}>
-          <div style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.75rem' }}>
-            {t('blockers.customTitle')}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
-            <input
-              type="text"
-              placeholder={t('blockers.customLabelPlaceholder')}
-              value={customLabel}
-              onChange={e => setCustomLabel(e.target.value)}
-              style={{
-                padding: '.55rem .75rem',
-                border: '1.5px solid var(--border)', borderRadius: '8px',
-                background: 'var(--card)', color: 'var(--char)',
-                fontSize: '.82rem', fontFamily: 'var(--font-dm-sans)', outline: 'none',
-              }}
-            />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem' }}>
-              <div>
-                <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
-                  {t('blockers.from')}
-                </div>
-                <input
-                  type="datetime-local"
-                  value={customFrom}
-                  onChange={e => setCustomFrom(e.target.value)}
-                  style={{
-                    width: '100%', padding: '.55rem .75rem',
-                    border: '1.5px solid var(--border)', borderRadius: '8px',
-                    background: 'var(--card)', color: 'var(--char)',
-                    fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
-                  }}
-                />
-              </div>
-              <div>
-                <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
-                  {t('blockers.to')}
-                </div>
-                <input
-                  type="datetime-local"
-                  value={customTo}
-                  onChange={e => setCustomTo(e.target.value)}
-                  style={{
-                    width: '100%', padding: '.55rem .75rem',
-                    border: '1.5px solid var(--border)', borderRadius: '8px',
-                    background: 'var(--card)', color: 'var(--char)',
-                    fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
-                  }}
-                />
-              </div>
-            </div>
-            <button
-              onClick={addCustomBlock}
-              disabled={!customReady}
-              style={{
-                alignSelf: 'flex-start', padding: '.55rem 1.1rem',
-                border: 'none', borderRadius: '12px',
-                background: customReady ? 'var(--terra)' : 'var(--border)',
-                color: customReady ? '#fff' : 'var(--smoke)',
-                fontSize: '.82rem', fontWeight: 500,
-                cursor: customReady ? 'pointer' : 'default',
-                transition: 'all .15s',
-              }}
-            >
-              {t('blockers.addBlock')}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Active block chips — custom blocks only */}
-      {blocks.some(b => !nights.some(n => n.label === b.label) && !b.label.startsWith('Work · ')) && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem', marginBottom: '.5rem' }}>
-          {blocks.filter((block) => {
-            const isNightBlock = nights.some(n => n.label === block.label);
-            const isWorkBlock = block.label.startsWith('Work · ');
-            return !isNightBlock && !isWorkBlock;
-          }).map((block, i) => {
-            const durationH = (block.to.getTime() - block.from.getTime()) / 3600000;
-            const emoji = '🚫';
-            return (
-              <div
-                key={i}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '.6rem',
-                  padding: '.5rem .85rem',
-                  background: '#FEF4EF', border: '1.5px solid var(--terra)',
-                  borderRadius: '10px',
-                }}
-              >
-                <span style={{ fontSize: '.95rem', flexShrink: 0 }}>{emoji}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--terra)' }}>
-                    {block.label}
-                  </span>
-                  <span style={{ opacity: .7, marginLeft: '.3rem', fontSize: '.8rem' }}>✓</span>
-                  <span style={{
-                    marginLeft: '.5rem', fontSize: '.72rem',
-                    color: 'var(--terra)', opacity: .75, fontFamily: 'var(--font-dm-mono)',
-                  }}>
-                    {formatTimeShort(block.from)} → {formatTimeShort(block.to)}
-                  </span>
-                  <span style={{
-                    marginLeft: '.35rem', fontSize: '.7rem',
-                    color: 'var(--terra)', opacity: .5, fontFamily: 'var(--font-dm-mono)',
-                  }}>
-                    ({hoursLabel(durationH)})
-                  </span>
-                </div>
-                <button
-                  onClick={() => removeBlock(i)}
-                  title="Remove"
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--smoke)', fontSize: '.8rem',
-                    padding: '.15rem .3rem', borderRadius: '4px',
-                    lineHeight: 1, flexShrink: 0, transition: 'color .15s',
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Divider */}
-      <div style={{ borderTop: '1px solid var(--border)', margin: '1.1rem 0 1rem' }} />
-
       {/* Fermentation chart */}
-      <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
+      <div style={{ marginBottom: '1rem' }}>
         <label style={LABEL_STYLE}>
           {hasPrefActive ? t('schedulerTitle.withPref') : t('schedulerTitle.noPref')}
         </label>
-        {startComputed ? (
-          mode === 'simple' ? (
-            <SimpleColourBar
-              eatTime={pendingEatTime}
-              pendingStart={pendingStart}
-              blocks={blocks}
-              hasColdRetard={hasColdRetard}
-              onStartChange={(newStart) => {
-                const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(newStart, blocks);
-                setPendingStart(resolvedStart);
-                setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
-                onChange(resolvedStart, pendingEatTime, blocks);
-              }}
-            />
-          ) : (
-            <FermentChart
-              eatTime={pendingEatTime}
-              prefermentType={isSourdough ? 'sourdough' : prefermentType}
-              kitchenTemp={kitchenTemp}
-              mixOffsetH={Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)}
-              prefOffsetH={
-                isSourdough && feedTime
-                  ? Math.max(1, (pendingStart.getTime() - feedTime.getTime()) / 3600000)
-                  : prefOffsetH
-              }
-              windowH={windowH}
-              prefInFridge={prefGoesInFridge}
-              hasColdRetard={hasColdRetard}
-              phases={phases}
-              scheduleNote={schedule?.scheduleNote ?? null}
-              blocks={blocks}
-              recommendedMixHBF={recommendedHBF}
-              onMixChange={(h) => {
-                // Baker is manually adjusting — clear ghost
-                hasManuallyDragged.current = true;
-                setRecommendedHBF(null);
-                const sweetCenter = hasColdRetard ? 34 : 20;
-                const snapped = snapToBlockerEdgeIfBlocked(h, blocks, pendingEatTime, sweetCenter);
-                const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - snapped * 3600000));
-                if (isSourdough) setMixOverride(true);
-                setPendingStart(newStart);
-                setBlockerNote(null);
-                onChange(newStart, pendingEatTime, blocks);
-              }}
-              onPrefChange={(offsetH) => {
-                if (isSourdough) {
-                  const newFeed = pushToReasonableHour(new Date(pendingStart.getTime() - offsetH * 3600000));
-                  setFeedTime(newFeed);
-                  onFeedTimeChange?.(newFeed);
-                  if (!mixOverride) {
-                    const peak = starterPeakHours(kitchenTemp, starterMature);
-                    const newMix = pushToReasonableHour(new Date(newFeed.getTime() + peak.mid * 3600000));
-                    setPendingStart(newMix);
-                    onChange(newMix, pendingEatTime, blocks);
-                  }
-                } else {
-                  setPrefOffsetH(offsetH);
-                  onPrefOffsetChange?.(offsetH);
-                }
-              }}
-            />
-          )
+        {mode === 'simple' ? (
+          <SimpleColourBar
+            eatTime={pendingEatTime}
+            pendingStart={pendingStart}
+            blocks={blocks}
+            hasColdRetard={hasColdRetard}
+            onStartChange={(newStart) => {
+              const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(newStart, blocks);
+              setPendingStart(resolvedStart);
+              setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
+              onChange(resolvedStart, pendingEatTime, blocks);
+            }}
+          />
         ) : (
-          <div style={{
-            textAlign: 'center', fontFamily: 'var(--font-dm-mono)',
-            fontSize: '.9rem', color: 'var(--smoke)',
-            padding: '1.5rem 0', letterSpacing: '.01em',
-          }}>
-            {t('setByPlan')}
-          </div>
+          <FermentChart
+            readOnly={true}
+            eatTime={pendingEatTime}
+            prefermentType={isSourdough ? 'sourdough' : prefermentType}
+            kitchenTemp={kitchenTemp}
+            mixOffsetH={Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)}
+            prefOffsetH={
+              isSourdough && feedTime
+                ? Math.max(1, (pendingStart.getTime() - feedTime.getTime()) / 3600000)
+                : prefOffsetH
+            }
+            windowH={windowH}
+            prefInFridge={prefGoesInFridge}
+            hasColdRetard={hasColdRetard}
+            phases={phases}
+            scheduleNote={schedule?.scheduleNote ?? null}
+            blocks={blocks}
+            recommendedMixHBF={null}
+            onMixChange={() => {}}
+            onPrefChange={() => {}}
+          />
         )}
 
         {/* Sourdough reset-mix link */}
-        {isSourdough && feedTime && startComputed && mixOverride && (
+        {isSourdough && feedTime && mixOverride && (
           <div style={{ marginTop: '.4rem', textAlign: 'right' }}>
             <button
               onClick={() => {
@@ -1433,6 +1473,31 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         )}
       </div>
 
+      {/* Adjust timing link (custom mode only) */}
+      {mode === 'custom' && (
+        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <button
+            onClick={() => {
+              const currentMixH = Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000);
+              const currentPrefH = isSourdough && feedTime
+                ? Math.max(1, (pendingStart.getTime() - feedTime.getTime()) / 3600000)
+                : prefOffsetH;
+              setPopupMixHBF(currentMixH);
+              setPopupPrefHBF(currentPrefH);
+              setShowAdjustPopup(true);
+            }}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--smoke)', fontSize: '.78rem',
+              fontFamily: 'var(--font-dm-mono)',
+              textDecoration: 'underline', textUnderlineOffset: '2px', padding: '.2rem 0',
+            }}
+          >
+            Need more control? Adjust timing →
+          </button>
+        </div>
+      )}
+
       {/* Fallback popup — shown when no clean mix window found */}
       {showFallbackPopup && fallbackOptions && (
         <div style={{
@@ -1446,16 +1511,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             padding: '1.5rem', maxWidth: '340px', width: '100%',
             boxShadow: '0 8px 32px rgba(26,22,18,0.18)',
           }}>
-            <div style={{ fontSize: '15px', fontWeight: 700,
-              color: 'var(--char)', marginBottom: '.5rem' }}>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--char)', marginBottom: '.5rem' }}>
               No perfect window found
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--smoke)',
-              marginBottom: '1.2rem', lineHeight: 1.5 }}>
+            <div style={{ fontSize: '13px', color: 'var(--smoke)', marginBottom: '1.2rem', lineHeight: 1.5 }}>
               Your blocked times overlap the ideal mixing window.
               Choose the best option for you:
             </div>
-
             {fallbackOptions.outsideZone && (
               <button
                 onClick={() => {
@@ -1466,10 +1528,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   onChange(newStart, pendingEatTime, blocks);
                   setShowFallbackPopup(false);
                 }}
-                style={{ width: '100%', padding: '12px 14px',
-                borderRadius: '12px', border: '1.5px solid var(--border)',
-                background: 'white', textAlign: 'left',
-                cursor: 'pointer', marginBottom: '8px' }}>
+                style={{
+                  width: '100%', padding: '12px 14px',
+                  borderRadius: '12px', border: '1.5px solid var(--border)',
+                  background: 'white', textAlign: 'left',
+                  cursor: 'pointer', marginBottom: '8px',
+                }}>
                 <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--char)' }}>
                   Start slightly outside sweet spot
                 </div>
@@ -1478,7 +1542,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 </div>
               </button>
             )}
-
             {fallbackOptions.inBlocker && (
               <button
                 onClick={() => {
@@ -1489,10 +1552,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   onChange(newStart, pendingEatTime, blocks);
                   setShowFallbackPopup(false);
                 }}
-                style={{ width: '100%', padding: '12px 14px',
-                borderRadius: '12px', border: '1.5px solid var(--border)',
-                background: 'white', textAlign: 'left',
-                cursor: 'pointer', marginBottom: '12px' }}>
+                style={{
+                  width: '100%', padding: '12px 14px',
+                  borderRadius: '12px', border: '1.5px solid var(--border)',
+                  background: 'white', textAlign: 'left',
+                  cursor: 'pointer', marginBottom: '12px',
+                }}>
                 <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--char)' }}>
                   Start during a blocked window
                 </div>
@@ -1501,18 +1566,166 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 </div>
               </button>
             )}
-
             <button
               onClick={() => {
                 setShowFallbackPopup(false);
                 hasManuallyDragged.current = true;
               }}
-              style={{ width: '100%', padding: '10px',
-              borderRadius: '12px', border: 'none',
-              background: 'transparent', color: 'var(--smoke)',
-              fontSize: '13px', cursor: 'pointer' }}>
+              style={{
+                width: '100%', padding: '10px',
+                borderRadius: '12px', border: 'none',
+                background: 'transparent', color: 'var(--smoke)',
+                fontSize: '13px', cursor: 'pointer',
+              }}>
               Adjust manually
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Adjust timing bottom-sheet popup */}
+      {showAdjustPopup && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 250,
+          background: 'rgba(26,22,18,0.5)',
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'var(--warm)', borderRadius: '20px 20px 0 0',
+            maxHeight: '90vh', overflowY: 'auto', width: '100%', maxWidth: '600px',
+            padding: '1.5rem', boxShadow: '0 -4px 24px rgba(26,22,18,0.15)',
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+              <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-playfair)' }}>
+                Adjust timing
+              </span>
+              <button
+                onClick={() => setShowAdjustPopup(false)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--smoke)', fontSize: '1.3rem', padding: '.1rem .4rem',
+                  borderRadius: '6px', lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Interactive FermentChart */}
+            <FermentChart
+              eatTime={pendingEatTime}
+              prefermentType={isSourdough ? 'sourdough' : prefermentType}
+              kitchenTemp={kitchenTemp}
+              mixOffsetH={popupMixHBF}
+              prefOffsetH={popupPrefHBF}
+              windowH={windowH}
+              prefInFridge={prefGoesInFridge}
+              hasColdRetard={hasColdRetard}
+              phases={phases}
+              scheduleNote={null}
+              blocks={blocks}
+              recommendedMixHBF={null}
+              onMixChange={(h) => {
+                hasManuallyDragged.current = true;
+                setRecommendedHBF(null);
+                const sweetCenter = hasColdRetard ? 34 : 20;
+                const snapped = snapToBlockerEdgeIfBlocked(h, blocks, pendingEatTime, sweetCenter);
+                setPopupMixHBF(snapped);
+              }}
+              onPrefChange={(offsetH) => {
+                setPopupPrefHBF(offsetH);
+              }}
+            />
+
+            {/* Mix slider */}
+            <div style={{ marginTop: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '.3rem' }}>
+                <span style={{ ...LABEL_STYLE, marginBottom: 0 }}>Mix start</span>
+                <span style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                  {formatHours(popupMixHBF)} before bake
+                </span>
+              </div>
+              <input
+                type="range"
+                min={hasColdRetard ? 20 : 14}
+                max={hasColdRetard ? 52 : 26}
+                step={0.25}
+                value={Math.min(hasColdRetard ? 52 : 26, Math.max(hasColdRetard ? 20 : 14, popupMixHBF))}
+                onChange={(e) => setPopupMixHBF(Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer' }}
+              />
+            </div>
+
+            {/* Pref slider */}
+            {hasPrefActive && (
+              <div style={{ marginTop: '.85rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '.3rem' }}>
+                  <span style={{ ...LABEL_STYLE, marginBottom: 0 }}>
+                    {prefermentType === 'biga' ? 'Biga' : prefermentType === 'poolish' ? 'Poolish' : 'Levain'} start
+                  </span>
+                  <span style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                    {formatHours(popupPrefHBF)} before mix
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={Math.max(1, getPrefOptH(prefermentType, kitchenTemp) - 6)}
+                  max={getPrefOptH(prefermentType, kitchenTemp) + 8}
+                  step={0.25}
+                  value={popupPrefHBF}
+                  onChange={(e) => setPopupPrefHBF(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: '#C4A030', cursor: 'pointer' }}
+                />
+              </div>
+            )}
+
+            {/* Reset + Apply buttons */}
+            <div style={{ display: 'flex', gap: '.65rem', marginTop: '1.3rem' }}>
+              <button
+                onClick={() => {
+                  const sweetCenter = hasColdRetard ? 34 : 20;
+                  setPopupMixHBF(recommendedHBF ?? sweetCenter);
+                  setPopupPrefHBF(getPrefOptH(hasPrefActive ? prefermentType : 'poolish', kitchenTemp));
+                }}
+                style={{
+                  flex: 1, padding: '.75rem', borderRadius: '10px',
+                  border: '1.5px solid var(--border)', background: 'transparent',
+                  color: 'var(--smoke)', fontSize: '.85rem', cursor: 'pointer',
+                  fontFamily: 'var(--font-dm-sans)',
+                }}
+              >
+                Reset to suggested
+              </button>
+              <button
+                onClick={() => {
+                  const sweetCenter = hasColdRetard ? 34 : 20;
+                  const snapped = snapToBlockerEdgeIfBlocked(popupMixHBF, blocks, pendingEatTime, sweetCenter);
+                  const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - snapped * 3600000));
+                  if (isSourdough) {
+                    const newFeed = pushToReasonableHour(new Date(newStart.getTime() - popupPrefHBF * 3600000));
+                    setFeedTime(newFeed);
+                    onFeedTimeChange?.(newFeed);
+                    setMixOverride(true);
+                  } else if (hasPrefActive) {
+                    setPrefOffsetH(popupPrefHBF);
+                    onPrefOffsetChange?.(popupPrefHBF);
+                  }
+                  setPendingStart(newStart);
+                  onChange(newStart, pendingEatTime, blocks);
+                  setShowAdjustPopup(false);
+                }}
+                style={{
+                  flex: 1, padding: '.75rem', borderRadius: '10px',
+                  border: 'none', background: 'var(--terra)', color: '#fff',
+                  fontSize: '.85rem', fontWeight: 600, cursor: 'pointer',
+                  fontFamily: 'var(--font-dm-sans)',
+                  boxShadow: '0 2px 8px rgba(196,82,42,0.2)',
+                }}
+              >
+                Apply
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1523,14 +1736,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const earlierIsReasonable = earlierStart
           ? earlierStart.getHours() >= MIN_REASONABLE_HOUR
           : false;
-        function formatDuration(min: number): string {
-          const snapped = Math.round(min / 15) * 15;
-          const h = Math.floor(snapped / 60);
-          const m = snapped % 60;
-          if (h === 0) return `${m}min`;
-          if (m === 0) return `${h}h`;
-          return `${h}h${m}`;
-        }
         return (
           <div style={{
             background: '#FFF8E8', border: '1.5px solid #E8D080',
