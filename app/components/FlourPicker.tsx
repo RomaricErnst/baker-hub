@@ -153,13 +153,15 @@ function BlendSection({
   primaryFlours: FlourKey[];
   secondaryFlours: FlourKey[];
 }) {
-  const [blendOpen, setBlendOpen] = useState(blend.flour2 !== null);
+  const [blendOpen, setBlendOpen] = useState(blend.flour2 !== null || !!blend.customFlour2Name);
   const [customFlourOpen, setCustomFlourOpen] = useState(false);
   const [customName, setCustomName] = useState('');
   const [customW, setCustomW] = useState<number | ''>('');
   const [customProtein, setCustomProtein] = useState<number | ''>('');
   const [customRatio1, setCustomRatio1] = useState(70);
-  const blendProfile = computeBlendProfile(blend);
+  const [blendSearch, setBlendSearch] = useState('');
+  const [selectedF2, setSelectedF2] = useState<FlourEntry | null>(null);
+  const [dbRatio, setDbRatio] = useState(70);
 
   const inputStyle: React.CSSProperties = {
     padding: '.42rem .6rem', borderRadius: '8px',
@@ -168,18 +170,54 @@ function BlendSection({
     color: 'var(--char)', outline: 'none',
   };
 
+  const blendResults = FLOUR_DB.filter(f =>
+    blendSearch
+      ? (f.brand + ' ' + f.name).toLowerCase().includes(blendSearch.toLowerCase())
+      : true
+  ).slice(0, 50);
+
   function openBlend() {
     setBlendOpen(true);
     setCustomFlourOpen(false);
-    if (!blend.flour2) {
-      const next = secondaryFlours.find(k => k !== blend.flour1);
-      if (next) onBlendChange({ ...blend, flour2: next, ratio1: 70 });
-    }
   }
 
   function closeBlend() {
     setBlendOpen(false);
-    onBlendChange({ ...blend, flour2: null, ratio1: 100 });
+    setSelectedF2(null);
+    setBlendSearch('');
+    onBlendChange({ flour1: blend.flour1, flour2: null, ratio1: 100 });
+  }
+
+  function selectF2(f: FlourEntry) {
+    setSelectedF2(f);
+    if (customFlourOpen) {
+      setCustomFlourOpen(false);
+      setCustomName(''); setCustomW(''); setCustomProtein('');
+    }
+    const f1w = FLOUR_DATA[blend.flour1].w;
+    const blendedW = Math.round((f1w * dbRatio / 100) + (f.w * (100 - dbRatio) / 100));
+    onBlendChange({
+      flour1: blend.flour1,
+      flour2: null,
+      ratio1: dbRatio,
+      wOverride: blendedW,
+      customFlour2Name: `${f.brand} ${f.name}`,
+    });
+  }
+
+  function handleDbRatioChange(ratio: number) {
+    setDbRatio(ratio);
+    if (selectedF2) {
+      const f1w = FLOUR_DATA[blend.flour1].w;
+      const blendedW = Math.round((f1w * ratio / 100) + (selectedF2.w * (100 - ratio) / 100));
+      onBlendChange({
+        flour1: blend.flour1,
+        flour2: null,
+        ratio1: ratio,
+        wOverride: blendedW,
+        customFlour2Name: `${selectedF2.brand} ${selectedF2.name}`,
+      });
+    }
   }
 
   function handleCustomChange(name: string, w: number | '', protein: number | '', ratio: number) {
@@ -216,36 +254,81 @@ function BlendSection({
             </button>
           </div>
 
-          <FlourCardGrid
-            flours={secondaryFlours}
-            selected={blend.flour2}
-            onSelect={k => onBlendChange({ ...blend, flour2: k })}
-            exclude={blend.flour1}
-            descOverride={SECOND_FLOUR_VALUE}
+          {/* Confirmation label */}
+          {selectedF2 && (
+            <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
+              Second flour: {selectedF2.brand} {selectedF2.name}
+            </div>
+          )}
+
+          {/* Search input */}
+          <input
+            type="text"
+            placeholder="Search second flour..."
+            value={blendSearch}
+            onChange={e => setBlendSearch(e.target.value)}
+            style={{
+              width: '100%', padding: '8px 12px',
+              border: '1px solid #E8E0D5', borderRadius: '10px',
+              fontSize: '13px', fontFamily: 'DM Sans, sans-serif',
+              background: 'white', outline: 'none',
+              marginBottom: '8px', boxSizing: 'border-box',
+            }}
           />
 
-          {blend.flour2 && (
+          {/* Scrollable results list */}
+          <div style={{ maxHeight: '320px', overflowY: 'auto', border: '0.5px solid #E8E0D5', borderRadius: '10px' }}>
+            {blendResults.map(f => (
+              <div
+                key={f.id}
+                onClick={() => selectF2(f)}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '10px 12px',
+                  borderBottom: '0.5px solid #E8E0D5',
+                  cursor: 'pointer',
+                  background: selectedF2?.id === f.id ? '#F5F0E8' : 'white',
+                }}
+                onMouseEnter={e => { if (selectedF2?.id !== f.id) (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = selectedF2?.id === f.id ? '#F5F0E8' : 'white'; }}
+              >
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 500, color: '#1A1612', fontFamily: 'DM Sans, sans-serif' }}>{f.brand}</div>
+                  <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>{f.name}</div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', color: f.wPublished ? '#1A1612' : '#8A7F78' }}>
+                    {f.wPublished ? `W${f.w}` : `~W${f.w}`}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>
+                    {f.protein}%
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Ratio slider — shown when a DB entry is selected */}
+          {selectedF2 && (
             <div style={{ marginTop: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.4rem' }}>
                 <span style={{ fontSize: '.75rem', color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>
-                  {blend.ratio1}% {FLOUR_DATA[blend.flour1].name}
+                  {dbRatio}% {FLOUR_DATA[blend.flour1].name}
                 </span>
                 <span style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-                  {100 - blend.ratio1}% {FLOUR_DATA[blend.flour2].name}
+                  {100 - dbRatio}% {selectedF2.name}
                 </span>
               </div>
               <input
-                type="range" min={10} max={90} step={10} value={blend.ratio1}
-                onChange={e => onBlendChange({ ...blend, ratio1: Number(e.target.value) })}
+                type="range" min={10} max={90} step={10} value={dbRatio}
+                onChange={e => handleDbRatioChange(Number(e.target.value))}
                 style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer' }}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem' }}>
                 <span>10%</span><span>90%</span>
               </div>
               <div style={{ marginTop: '.75rem', display: 'inline-flex', alignItems: 'center', gap: '.5rem', background: 'rgba(107,122,90,0.12)', border: '1px solid rgba(107,122,90,0.3)', borderRadius: '20px', padding: '.3rem .75rem', fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)', color: 'var(--sage)' }}>
-                <span>Blended W {blendProfile.blendedW}</span>
-                <span style={{ opacity: .5 }}>·</span>
-                <span>{blendProfile.hydrationDelta > 0 ? '+' : ''}{blendProfile.hydrationDelta}% hydration</span>
+                <span>Blended W {Math.round((FLOUR_DATA[blend.flour1].w * dbRatio / 100) + (selectedF2.w * (100 - dbRatio) / 100))}</span>
               </div>
             </div>
           )}
@@ -255,7 +338,7 @@ function BlendSection({
               setCustomFlourOpen(v => !v);
               if (customFlourOpen) {
                 setCustomName(''); setCustomW(''); setCustomProtein('');
-                onBlendChange({ flour1: blend.flour1, flour2: blend.flour2, ratio1: blend.ratio1 });
+                onBlendChange({ flour1: blend.flour1, flour2: null, ratio1: blend.ratio1 });
               }
             }}
             style={{
@@ -796,7 +879,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       {/* ══ SECTION 3: Blend (custom mode only) ══ */}
       {mode === 'custom' && (
         <div>
-          {sectionHeader('Blend two flours', 'blend')}
+          {sectionHeader('Blend: Add a second flour', 'blend')}
           {openSection === 'blend' && (
             <div style={{ paddingTop: '10px', paddingBottom: '14px' }}>
               <BlendSection
