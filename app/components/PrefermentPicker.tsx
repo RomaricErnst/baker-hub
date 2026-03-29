@@ -90,8 +90,8 @@ export default function PrefermentPicker({
                 src={pData.image}
                 alt={pData.name}
                 style={{
-                  width: '52px',
-                  height: '52px',
+                  width: '70px',
+                  height: '70px',
                   objectFit: 'cover',
                   borderRadius: '10px',
                   marginBottom: '.5rem',
