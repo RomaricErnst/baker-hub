@@ -1338,18 +1338,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '.35rem' }}>
                   Start Dough
                 </div>
-                {/* Diamond indicator row */}
-                <div style={{ position: 'relative', height: '18px', marginBottom: '2px' }}>
-                  <div style={{
-                    position: 'absolute',
-                    left: `calc(${Math.max(0, Math.min(100, ((Math.min(mixSliderMax, Math.max(mixSliderMin, mixOffsetH)) - mixSliderMin) / (mixSliderMax - mixSliderMin)) * 100))}% - 6px)`,
-                    top: '3px',
-                    width: 12, height: 12,
-                    background: '#3D5A30',
-                    transform: 'rotate(45deg)',
-                    pointerEvents: 'none',
-                  }} />
-                </div>
                 <input
                   type="range"
                   min={mixSliderMin}
@@ -1375,17 +1363,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 <div>
                   <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '.35rem' }}>
                     {prefAxisLabel}
-                  </div>
-                  <div style={{ position: 'relative', height: '18px', marginBottom: '2px' }}>
-                    <div style={{
-                      position: 'absolute',
-                      left: `calc(${Math.max(0, Math.min(100, ((Math.min(prefSliderMax, Math.max(prefSliderMin, prefOffsetH)) - prefSliderMin) / (prefSliderMax - prefSliderMin)) * 100))}% - 6px)`,
-                      top: '3px',
-                      width: 12, height: 12,
-                      background: '#C4A030',
-                      transform: 'rotate(45deg)',
-                      pointerEvents: 'none',
-                    }} />
                   </div>
                   <input
                     type="range"
@@ -1428,7 +1405,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       )}
 
       {/* ── S5: Times summary ─────────────────────── */}
-      {eatTimeSet && startComputed && (
+      {eatTimeSet && (
         <div style={{
           background: '#F5F0E8', borderRadius: '12px',
           padding: '.85rem 1rem',
@@ -1468,27 +1445,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
-      {/* ── S6: Generate CTA ──────────────────────── */}
-      {eatTimeSet && (
-        <button
-          onClick={() => {
-            computeAndApplyRecommendation(blocks, pendingEatTime);
-            setStartComputed(true);
-            setDismissedConflict(false);
-          }}
-          style={{
-            width: '100%', padding: '1rem 1.5rem',
-            border: 'none', borderRadius: '12px',
-            background: 'var(--terra)', color: '#fff',
-            fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 3px 10px rgba(196,82,42,0.25)',
-            letterSpacing: '.01em',
-          }}
-        >
-          Generate my bake plan →
-        </button>
-      )}
 
       {/* ── Fallback popup ────────────────────────── */}
       {showFallbackPopup && fallbackOptions && (
