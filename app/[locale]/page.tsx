@@ -880,7 +880,7 @@ export default function Home() {
                   <>
                     {/* Diameter slider */}
                     <div style={{ display: 'grid', gridTemplateColumns: '64px 52px 16px 1fr', alignItems: 'center', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--ash)', whiteSpace: 'nowrap' }}>Diameter</span>
+                      <span style={{ fontSize: '13px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', fontWeight: 400, whiteSpace: 'nowrap' }}>Diameter</span>
                       <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap', textAlign: 'right' }}>{pizzaDiameter} cm</span>
                       <span />
                       <div style={{ position: 'relative', height: '24px', display: 'flex', alignItems: 'center' }}>
@@ -894,7 +894,7 @@ export default function Home() {
                     </div>
                     {/* Cornicione segmented control */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '13px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', flexShrink: 0, marginRight: '10px' }}>Cornicione</span>
+                      <span style={{ fontSize: '13px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', fontWeight: 400, flexShrink: 0, marginRight: '10px' }}>Cornicione</span>
                       <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
                         {([
                           { value: 0, label: locale === 'fr' ? 'Fine'      : 'Thin'      },
@@ -1526,7 +1526,7 @@ export default function Home() {
                 const sliders = showDiam && (
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: '64px 52px 16px 1fr', alignItems: 'center', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--ash)', whiteSpace: 'nowrap' }}>Diameter</span>
+                      <span style={{ fontSize: '13px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', fontWeight: 400, whiteSpace: 'nowrap' }}>Diameter</span>
                       <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap', textAlign: 'right' }}>{pizzaDiameter} cm</span>
                       <span />
                       <div style={{ position: 'relative', height: '24px', display: 'flex', alignItems: 'center' }}>
@@ -1540,7 +1540,7 @@ export default function Home() {
                     </div>
                     {/* Cornicione segmented control */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '13px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', flexShrink: 0, marginRight: '10px' }}>Cornicione</span>
+                      <span style={{ fontSize: '13px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', fontWeight: 400, flexShrink: 0, marginRight: '10px' }}>Cornicione</span>
                       <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
                         {([
                           { value: 0, label: locale === 'fr' ? 'Fine'      : 'Thin'      },
