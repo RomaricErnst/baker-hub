@@ -94,7 +94,7 @@
   "scheduler": {
     "schedulerTitle": {
       "withPref": "Votre plan de fermentation",
-      "noPref": "Votre fenêtre de pétrissage"
+      "noPref": "Votre fenêtre de démarrage"
     },
     "bakeTimeLabelPizza": "À quelle heure enfournez-vous ?",
     "bakeTimeLabelBread": "À quelle heure enfournez-vous ?",

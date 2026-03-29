@@ -94,7 +94,7 @@
   "scheduler": {
     "schedulerTitle": {
       "withPref": "Your fermentation plan",
-      "noPref": "Your mixing window"
+      "noPref": "Your dough start window"
     },
     "bakeTimeLabelPizza": "When does it go in the oven?",
     "bakeTimeLabelBread": "When does it go in the oven?",
