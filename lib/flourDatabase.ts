@@ -159,6 +159,15 @@ export const FLOUR_DB: FlourEntry[] = [
     note: 'For blending to boost weaker flours.',
     bagImage: '', logo: null,
   },
+  {
+    id: 'stagioni_superiore',
+    brand: '5 Stagioni', name: 'Superiore',
+    type: '00', country: 'it',
+    w: 320, wPublished: true, protein: 13.5, hydration: [62, 68],
+    bestFor: [], crowdFavourite: ['neapolitan', 'newyork'],
+    note: 'Professional-grade 00. Strong enough for long cold ferments and NY-style.',
+    bagImage: '', logo: null,
+  },
 
   // ── Petra ────────────────────────────────────
   {
@@ -552,6 +561,33 @@ export const FLOUR_DB: FlourEntry[] = [
     w: 230, wPublished: false, protein: 12.5, hydration: [60, 66],
     bestFor: [], crowdFavourite: [],
     note: 'UK supermarket own brand bread flour.',
+    bagImage: '', logo: null,
+  },
+  {
+    id: 'marriages_organic_strong',
+    brand: 'Marriages', name: 'Organic Strong White Bread Flour',
+    type: 'bread', country: 'uk',
+    w: 350, wPublished: true, protein: 13.5, hydration: [62, 68],
+    bestFor: [], crowdFavourite: [],
+    note: 'Organic certified UK artisan mill. Very strong — ideal for sourdough and long ferments.',
+    bagImage: '', logo: null,
+  },
+  {
+    id: 'wessex_strong',
+    brand: 'Wessex Mill', name: 'Strong White Flour',
+    type: 'bread', country: 'uk',
+    w: 250, wPublished: false, protein: 12.6, hydration: [61, 67],
+    bestFor: [], crowdFavourite: [],
+    note: 'UK artisan mill. Good all-round strong white for bread and pizza.',
+    bagImage: '', logo: null,
+  },
+  {
+    id: 'matthews_strong_white',
+    brand: 'Matthews Cotswold Flour', name: 'Strong White Bakers Flour',
+    type: 'bread', country: 'uk',
+    w: 240, wPublished: false, protein: 12.5, hydration: [61, 67],
+    bestFor: [], crowdFavourite: [],
+    note: 'Heritage UK mill. Stone-ground option available. Popular with home sourdough bakers.',
     bagImage: '', logo: null,
   },
 
