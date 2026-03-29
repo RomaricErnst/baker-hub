@@ -718,13 +718,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── Segmented control (Dough setup / Bake plan) ── */}
+        {/* ── Segmented control (Dough setup / Bake plan / Bake guide) ── */}
         <div style={{
           background: '#F5F0E8',
-          borderRadius: '10px',
+          borderRadius: '12px',
           padding: '3px',
           display: 'flex',
-          margin: '0 0 12px 0',
+          marginBottom: '12px',
         }}>
           {([
             { key: 'setup' as const, label: t('tabs.setup'), locked: false },
@@ -736,20 +736,41 @@ export default function Home() {
               <button
                 key={segKey}
                 onClick={() => !isLocked && setActiveTab(segKey)}
-                style={{
+                style={isLocked ? {
+                  background: 'transparent',
+                  color: '#C8C0B8',
+                  borderRadius: '10px',
+                  border: 'none',
                   flex: 1,
                   padding: '8px 0',
-                  fontFamily: 'var(--font-dm-sans)',
+                  fontSize: '13px',
+                  fontFamily: 'DM Sans, sans-serif',
+                  cursor: 'default',
+                  pointerEvents: 'none',
+                } : isActive ? {
+                  background: 'white',
+                  color: '#1A1612',
+                  boxShadow: '0 1px 4px rgba(26,22,18,0.10)',
+                  borderRadius: '10px',
+                  border: 'none',
+                  flex: 1,
+                  padding: '8px 0',
                   fontSize: '13px',
                   fontWeight: 500,
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: isLocked ? 'default' : 'pointer',
+                  fontFamily: 'DM Sans, sans-serif',
+                  cursor: 'pointer',
                   transition: 'background 0.15s',
-                  background: isActive ? '#FDFBF7' : 'transparent',
-                  color: isLocked ? '#C8C0B8' : isActive ? '#1A1612' : '#8A7F78',
-                  boxShadow: isActive ? '0 1px 4px rgba(26,22,18,0.10)' : 'none',
-                  pointerEvents: isLocked ? 'none' : 'auto',
+                } : {
+                  background: 'transparent',
+                  color: '#8A7F78',
+                  borderRadius: '10px',
+                  border: 'none',
+                  flex: 1,
+                  padding: '8px 0',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  fontFamily: 'DM Sans, sans-serif',
+                  cursor: 'pointer',
                 }}
               >
                 {label}
@@ -872,9 +893,9 @@ export default function Home() {
                       </div>
                     </div>
                     {/* Cornicione segmented control */}
-                    <div style={{ marginBottom: '12px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--ash)', whiteSpace: 'nowrap' }}>Cornicione</span>
-                      <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '13px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', flexShrink: 0, marginRight: '10px' }}>Cornicione</span>
+                      <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
                         {([
                           { value: 0, label: locale === 'fr' ? 'Fine'      : 'Thin'      },
                           { value: 1, label: locale === 'fr' ? 'Classique' : 'Classic'   },
@@ -884,12 +905,12 @@ export default function Home() {
                             key={opt.value}
                             onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
                             style={{
-                              flex: 1, padding: '9px 0', borderRadius: '10px',
-                              border: pizzaCorn === opt.value ? '2px solid #C4522A' : '1.5px solid #E8E0D5',
-                              background: pizzaCorn === opt.value ? 'white' : 'var(--cream)',
+                              flex: 1, padding: '5px 0', borderRadius: '8px',
+                              border: pizzaCorn === opt.value ? '2px solid #C4522A' : '1px solid #E8E0D5',
+                              background: pizzaCorn === opt.value ? 'white' : 'transparent',
                               color: pizzaCorn === opt.value ? '#1A1612' : '#8A7F78',
-                              fontSize: '13px', fontWeight: pizzaCorn === opt.value ? 600 : 400,
-                              fontFamily: 'DM Sans, sans-serif', cursor: 'pointer', transition: 'all 0.15s',
+                              fontSize: '12px', fontWeight: pizzaCorn === opt.value ? 600 : 400,
+                              fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
                             }}
                           >
                             {opt.label}
@@ -1518,9 +1539,9 @@ export default function Home() {
                       </div>
                     </div>
                     {/* Cornicione segmented control */}
-                    <div style={{ marginBottom: '12px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--ash)', whiteSpace: 'nowrap' }}>Cornicione</span>
-                      <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '13px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', flexShrink: 0, marginRight: '10px' }}>Cornicione</span>
+                      <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
                         {([
                           { value: 0, label: locale === 'fr' ? 'Fine'      : 'Thin'      },
                           { value: 1, label: locale === 'fr' ? 'Classique' : 'Classic'   },
@@ -1530,12 +1551,12 @@ export default function Home() {
                             key={opt.value}
                             onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
                             style={{
-                              flex: 1, padding: '9px 0', borderRadius: '10px',
-                              border: pizzaCorn === opt.value ? '2px solid #C4522A' : '1.5px solid #E8E0D5',
-                              background: pizzaCorn === opt.value ? 'white' : 'var(--cream)',
+                              flex: 1, padding: '5px 0', borderRadius: '8px',
+                              border: pizzaCorn === opt.value ? '2px solid #C4522A' : '1px solid #E8E0D5',
+                              background: pizzaCorn === opt.value ? 'white' : 'transparent',
                               color: pizzaCorn === opt.value ? '#1A1612' : '#8A7F78',
-                              fontSize: '13px', fontWeight: pizzaCorn === opt.value ? 600 : 400,
-                              fontFamily: 'DM Sans, sans-serif', cursor: 'pointer', transition: 'all 0.15s',
+                              fontSize: '12px', fontWeight: pizzaCorn === opt.value ? 600 : 400,
+                              fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
                             }}
                           >
                             {opt.label}
