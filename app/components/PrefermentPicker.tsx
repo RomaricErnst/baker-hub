@@ -44,7 +44,7 @@ export default function PrefermentPicker({
         const isNone = key === 'none';
         const isRecommended = !isNone && styleKey && (p as { bestFor?: string[] }).bestFor?.includes(styleKey);
         const pData = p as {
-          name: string; nameFr: string; emoji: string;
+          name: string; nameFr: string; emoji: string; image?: string;
           desc: string; descFr: string;
           flourPct?: number; hydration?: number;
           fermentHoursMin?: number; fermentHoursMax?: number;
@@ -84,10 +84,24 @@ export default function PrefermentPicker({
               </div>
             )}
 
-            {/* Emoji */}
-            <div style={{ fontSize: '2rem', marginBottom: '.5rem', lineHeight: 1 }}>
-              {pData.emoji}
-            </div>
+            {/* Emoji or image */}
+            {pData.image ? (
+              <img
+                src={pData.image}
+                alt={pData.name}
+                style={{
+                  width: '52px',
+                  height: '52px',
+                  objectFit: 'cover',
+                  borderRadius: '10px',
+                  marginBottom: '.5rem',
+                }}
+              />
+            ) : (
+              <div style={{ fontSize: '2rem', marginBottom: '.5rem', lineHeight: 1 }}>
+                {pData.emoji}
+              </div>
+            )}
 
             {/* Name + check */}
             <div style={{
