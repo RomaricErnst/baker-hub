@@ -1587,6 +1587,7 @@ export default function Home() {
                 onBlendChange={b => setFlourBlend(b)}
                 bakeType={bakeType ?? 'pizza'}
                 mode={tab === 'custom' ? 'custom' : 'simple'}
+                styleKey={styleKey}
               />
               <div style={{ marginTop: '.85rem' }}>
                 <button

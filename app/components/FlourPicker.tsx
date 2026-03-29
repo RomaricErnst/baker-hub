@@ -4,7 +4,8 @@ import { FLOUR_DATA, FLOUR_BRANDS, type FlourKey, type BrandKey, type FlourBlend
 import FlourScan from './FlourScan';
 import { FLOUR_DB } from '@/lib/flourDatabase';
 
-const TYPE_LABELS: Record<string, string> = {
+// ── Type badge labels for individual flour rows ──
+const TYPE_BADGE: Record<string, string> = {
   '00': '00', bread: 'bread',
   all_purpose: 'AP', high_gluten: 'MB', semolina: 'SEM',
   wholemeal: 'WW', rye: 'RYE',
@@ -13,6 +14,71 @@ const TYPE_LABELS: Record<string, string> = {
 const FLAGS: Record<string, string> = {
   it: '🇮🇹', fr: '🇫🇷', us: '🇺🇸', sg: '🇸🇬',
   uk: '🇬🇧', jp: '🇯🇵', ca: '🇨🇦', au: '🇦🇺', my: '🇲🇾', de: '🇩🇪',
+  cn: '🇨🇳', kr: '🇰🇷', in: '🇮🇳', th: '🇹🇭', id: '🇮🇩', vn: '🇻🇳', ph: '🇵🇭',
+};
+
+// ── Origin / type filter data ─────────────────
+const ORIGIN_GROUPS: Record<string, string[]> = {
+  france:   ['fr'],
+  italy:    ['it'],
+  uk:       ['uk'],
+  americas: ['us', 'ca', 'br', 'mx', 'ar'],
+  europe:   ['de', 'nl', 'be', 'se', 'no', 'fi', 'dk', 'pl', 'tr', 'at'],
+  apac:     ['jp', 'cn', 'kr', 'sg', 'th', 'id', 'my', 'vn', 'ph', 'in', 'au'],
+};
+
+const ORIGIN_PILLS = [
+  { key: 'france',   label: '🇫🇷 France' },
+  { key: 'italy',    label: '🇮🇹 Italy' },
+  { key: 'uk',       label: '🇬🇧 UK' },
+  { key: 'americas', label: '🌎 Americas' },
+  { key: 'europe',   label: '🌍 Europe' },
+  { key: 'apac',     label: '🌏 APAC' },
+];
+
+const APAC_CHIPS = [
+  { code: 'sg', label: '🇸🇬' },
+  { code: 'jp', label: '🇯🇵' },
+  { code: 'cn', label: '🇨🇳' },
+  { code: 'kr', label: '🇰🇷' },
+  { code: 'in', label: '🇮🇳' },
+  { code: 'au', label: '🇦🇺' },
+];
+const APAC_MORE_CODES = ['th', 'id', 'my', 'vn', 'ph'];
+
+interface TypeGroup { label: string; types: string[] }
+const TYPE_LABEL_GROUPS: Record<string, TypeGroup[]> = {
+  italy: [
+    { label: '00',       types: ['00'] },
+    { label: '0',        types: ['0'] },
+    { label: 'Tipo 1',   types: ['1'] },
+    { label: 'Semolina', types: ['semolina'] },
+  ],
+  france: [
+    { label: 'T45',   types: ['T45'] },
+    { label: 'T55',   types: ['T55'] },
+    { label: 'T65',   types: ['T65'] },
+    { label: 'T80',   types: ['T80'] },
+    { label: 'T110+', types: ['T110', 'T150'] },
+  ],
+  all: [
+    { label: 'Bread',       types: ['bread', 'high_gluten'] },
+    { label: 'All-purpose', types: ['all_purpose'] },
+    { label: 'Wholemeal',   types: ['wholemeal'] },
+    { label: 'Rye',         types: ['rye'] },
+    { label: 'Semolina',    types: ['semolina'] },
+  ],
+};
+
+function getTypeGroupKey(origin: string | null): string {
+  if (origin === 'italy')  return 'italy';
+  if (origin === 'france') return 'france';
+  return 'all';
+}
+
+const STYLE_DISPLAY: Record<string, string> = {
+  neapolitan: 'Neapolitan', newyork: 'New York', roman: 'Roman',
+  detroit: 'Detroit', sicilian: 'Sicilian', sourdough: 'Sourdough',
 };
 
 // ── Flour lists ───────────────────────────────
@@ -63,6 +129,7 @@ interface FlourPickerProps {
   onBlendChange: (blend: FlourBlend) => void;
   bakeType?: 'pizza' | 'bread';
   mode?: 'simple' | 'custom';
+  styleKey?: string | null;
 }
 
 // ── Flour card grid (second flour selection) ──
@@ -306,7 +373,7 @@ function BlendSection({
 }
 
 // ── Main component ────────────────────────────
-export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', mode = 'custom' }: FlourPickerProps) {
+export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', mode = 'custom', styleKey }: FlourPickerProps) {
   const [manualW, setManualW] = useState<number | ''>(blend.wOverride ?? '');
   const [selectedTile, setSelectedTile] = useState<FlourKey | 'manual'>(
     blend.wOverride ? 'manual' : blend.flour1
@@ -314,8 +381,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [scanOpen, setScanOpen] = useState(false);
   const [showOtherBrands, setShowOtherBrands] = useState(false);
   const [brandSearch, setBrandSearch] = useState('');
-  const [brandCountryFilter, setBrandCountryFilter] = useState<string>('all');
-  const [brandTypeFilter, setBrandTypeFilter] = useState<string>('all');
+  const [originFilter, setOriginFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [apacCountry, setApacCountry] = useState<string | null>(null);
+  const [apacExpanded, setApacExpanded] = useState(false);
 
   const primaryFlours   = bakeType === 'bread' ? BREAD_FLOURS        : PIZZA_FLOURS;
   const secondaryFlours = bakeType === 'bread' ? BREAD_SECOND_FLOURS  : PIZZA_SECOND_FLOURS;
@@ -431,30 +500,93 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
       {/* ── PART 2: Iconic brands (custom only) ── */}
       {mode === 'custom' && (() => {
-        const otherBrandsCount = new Set(
-          FLOUR_DB
-            .filter(f => f.brand !== 'Caputo' && f.brand !== '5 Stagioni' && f.brand !== 'Generic')
-            .map(f => f.brand)
-        ).size;
+        // ── filter computation ──
+        const base = FLOUR_DB.filter(f =>
+          f.brand !== 'Caputo' && f.brand !== '5 Stagioni' && f.brand !== 'Generic'
+        );
+        const otherBrandsCount = new Set(base.map(f => f.brand)).size;
 
-        const otherFlours = FLOUR_DB.filter(f => {
-          if (f.brand === 'Caputo' || f.brand === '5 Stagioni' || f.brand === 'Generic') return false;
-          if (brandCountryFilter !== 'all' && f.country !== brandCountryFilter) return false;
-          if (brandTypeFilter !== 'all' && f.type !== brandTypeFilter) return false;
-          if (brandSearch.trim()) {
-            const q = brandSearch.toLowerCase();
-            return f.brand.toLowerCase().includes(q) || f.name.toLowerCase().includes(q);
-          }
-          return true;
-        });
+        let filtered = base;
+        if (originFilter) filtered = filtered.filter(f => ORIGIN_GROUPS[originFilter].includes(f.country));
+        if (originFilter === 'apac' && apacCountry) filtered = filtered.filter(f => f.country === apacCountry);
+        if (typeFilter) {
+          const groupKey = getTypeGroupKey(originFilter);
+          const group = TYPE_LABEL_GROUPS[groupKey].find(g => g.label === typeFilter);
+          if (group) filtered = filtered.filter(f => group.types.includes(f.type));
+        }
+        if (brandSearch.trim()) {
+          const q = brandSearch.toLowerCase();
+          filtered = filtered.filter(f => f.brand.toLowerCase().includes(q) || f.name.toLowerCase().includes(q));
+        }
 
-        const otherByBrand: Record<string, any[]> = otherFlours.reduce((acc: Record<string, any[]>, f: any) => {
+        const isFiltered = !!(originFilter || typeFilter || brandSearch.trim());
+        const showCrowdFav = !isFiltered && !!styleKey && bakeType === 'pizza';
+        const crowdFavs = showCrowdFav
+          ? filtered.filter(f => f.crowdFavourite.includes(styleKey!))
+          : [];
+        const rest = showCrowdFav
+          ? filtered.filter(f => !f.crowdFavourite.includes(styleKey!))
+          : filtered;
+        const restSorted = [...rest].sort((a, b) => a.brand.localeCompare(b.brand) || a.name.localeCompare(b.name));
+        const restByBrand: Record<string, typeof rest> = restSorted.reduce((acc, f) => {
           if (!acc[f.brand]) acc[f.brand] = [];
           acc[f.brand].push(f);
           return acc;
-        }, {});
+        }, {} as Record<string, typeof rest>);
+        const brandNames = Object.keys(restByBrand).slice(0, 8);
 
-        const brandNames = Object.keys(otherByBrand).slice(0, 8);
+        // ── pill style helpers ──
+        const activePill: React.CSSProperties = {
+          background: '#1A1612', color: 'white', borderRadius: '20px',
+          padding: '.25rem .7rem', fontSize: '.72rem', cursor: 'pointer',
+          border: '1px solid #1A1612', fontFamily: 'var(--font-dm-sans)',
+          whiteSpace: 'nowrap' as const,
+        };
+        const inactivePill: React.CSSProperties = {
+          background: 'transparent', color: '#8A7F78', borderRadius: '20px',
+          padding: '.25rem .7rem', fontSize: '.72rem', cursor: 'pointer',
+          border: '1px solid #E8E0D5', fontFamily: 'var(--font-dm-sans)',
+          whiteSpace: 'nowrap' as const,
+        };
+
+        // ── flour row renderer (shared) ──
+        function FlourRow({ f }: { f: typeof FLOUR_DB[0] }) {
+          const isSelected = blend.brandProduct === `${f.brand} ${f.name}`;
+          return (
+            <div
+              key={f.id}
+              onClick={() => {
+                const autoTile: FlourKey = f.w >= 270 ? 'strong00' : 'pizza00';
+                setSelectedTile(autoTile);
+                setManualW('');
+                onBlendChange({
+                  flour1: autoTile, flour2: blend.flour2, ratio1: blend.ratio1,
+                  wOverride: f.w, brandKey: undefined, brandProduct: `${f.brand} ${f.name}`,
+                });
+              }}
+              onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'rgba(196,82,42,0.06)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(196,82,42,0.06)' : 'transparent'; }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '.4rem', flexWrap: 'wrap',
+                padding: '.35rem .5rem', borderRadius: '8px', cursor: 'pointer',
+                background: isSelected ? 'rgba(196,82,42,0.06)' : 'transparent',
+                transition: 'background .15s',
+              }}
+            >
+              <span style={{ fontSize: '.82rem', fontWeight: isSelected ? 600 : 400, color: isSelected ? 'var(--terra)' : 'var(--char)' }}>
+                {f.brand} {f.name}
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '20px', padding: '.1rem .5rem', color: 'var(--ash)', whiteSpace: 'nowrap' }}>
+                W {f.w}
+              </span>
+              {f.type && TYPE_BADGE[f.type] && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '20px', padding: '.1rem .5rem', color: 'var(--smoke)', whiteSpace: 'nowrap' }}>
+                  {TYPE_BADGE[f.type]}
+                </span>
+              )}
+            </div>
+          );
+        }
 
         return (
           <>
@@ -521,66 +653,124 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
             {showOtherBrands && (
               <div style={{ marginTop: '.75rem' }}>
-                {/* Filters */}
-                <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBottom: '.75rem' }}>
-                  <input
-                    type="text"
-                    placeholder="Search brand or product..."
-                    value={brandSearch}
-                    onChange={e => setBrandSearch(e.target.value)}
-                    style={{
-                      flex: 1, minWidth: '140px', padding: '.4rem .7rem',
-                      border: '1.5px solid var(--border)', borderRadius: '8px',
-                      fontSize: '.8rem', fontFamily: 'var(--font-dm-sans)',
-                      background: 'var(--warm)', color: 'var(--char)', outline: 'none',
-                    }}
-                  />
-                  <select
-                    value={brandCountryFilter}
-                    onChange={e => setBrandCountryFilter(e.target.value)}
-                    style={{
-                      padding: '.4rem .7rem', border: '1.5px solid var(--border)',
-                      borderRadius: '8px', fontSize: '.78rem',
-                      background: 'var(--warm)', cursor: 'pointer', color: 'var(--char)',
-                    }}
-                  >
-                    <option value="all">All countries</option>
-                    <option value="it">🇮🇹 Italy</option>
-                    <option value="fr">🇫🇷 France</option>
-                    <option value="us">🇺🇸 USA</option>
-                    <option value="sg">🇸🇬 Singapore</option>
-                    <option value="uk">🇬🇧 UK</option>
-                    <option value="jp">🇯🇵 Japan</option>
-                    <option value="ca">🇨🇦 Canada</option>
-                    <option value="au">🇦🇺 Australia</option>
-                  </select>
-                  <select
-                    value={brandTypeFilter}
-                    onChange={e => setBrandTypeFilter(e.target.value)}
-                    style={{
-                      padding: '.4rem .7rem', border: '1.5px solid var(--border)',
-                      borderRadius: '8px', fontSize: '.78rem',
-                      background: 'var(--warm)', cursor: 'pointer', color: 'var(--char)',
-                    }}
-                  >
-                    <option value="all">All types</option>
-                    <option value="00">Pizza / 00</option>
-                    <option value="bread">Bread</option>
-                    <option value="all_purpose">All-purpose</option>
-                    <option value="high_gluten">Manitoba / High Gluten</option>
-                    <option value="semolina">Semolina</option>
-                    <option value="wholemeal">Wholemeal</option>
-                    <option value="rye">Rye</option>
-                  </select>
+
+                {/* Search */}
+                <input
+                  type="text"
+                  placeholder="Search brand or product..."
+                  value={brandSearch}
+                  onChange={e => setBrandSearch(e.target.value)}
+                  style={{
+                    width: '100%', padding: '.4rem .7rem', marginBottom: '.75rem',
+                    border: '1.5px solid var(--border)', borderRadius: '8px',
+                    fontSize: '.8rem', fontFamily: 'var(--font-dm-sans)',
+                    background: 'var(--warm)', color: 'var(--char)', outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+
+                {/* Origin filter */}
+                <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px' }}>
+                  Where the flour is from
+                </div>
+                <div style={{ display: 'flex', gap: '.35rem', flexWrap: 'wrap', marginBottom: '.55rem' }}>
+                  {ORIGIN_PILLS.map(p => (
+                    <button
+                      key={p.key}
+                      onClick={() => {
+                        const next = originFilter === p.key ? null : p.key;
+                        setOriginFilter(next);
+                        setTypeFilter(null);
+                        setApacCountry(null);
+                        setApacExpanded(false);
+                      }}
+                      style={originFilter === p.key ? activePill : inactivePill}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Brand blocks */}
-                {brandNames.length === 0 ? (
+                {/* APAC sub-row */}
+                {originFilter === 'apac' && (
+                  <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', marginBottom: '.55rem', paddingLeft: '.5rem' }}>
+                    <button
+                      onClick={() => setApacCountry(null)}
+                      style={apacCountry === null ? activePill : inactivePill}
+                    >All</button>
+                    {APAC_CHIPS.map(c => (
+                      <button
+                        key={c.code}
+                        onClick={() => setApacCountry(apacCountry === c.code ? null : c.code)}
+                        style={apacCountry === c.code ? activePill : inactivePill}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                    {!apacExpanded ? (
+                      <button onClick={() => setApacExpanded(true)} style={inactivePill}>More…</button>
+                    ) : (
+                      APAC_MORE_CODES.map(code => (
+                        <button
+                          key={code}
+                          onClick={() => setApacCountry(apacCountry === code ? null : code)}
+                          style={apacCountry === code ? activePill : inactivePill}
+                        >
+                          {FLAGS[code] ?? code}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Type filter (adaptive) */}
+                {(() => {
+                  const groupKey = getTypeGroupKey(originFilter);
+                  const groups = TYPE_LABEL_GROUPS[groupKey];
+                  return (
+                    <div style={{ display: 'flex', gap: '.35rem', flexWrap: 'wrap', marginBottom: '.65rem' }}>
+                      {groups.map(g => (
+                        <button
+                          key={g.label}
+                          onClick={() => setTypeFilter(typeFilter === g.label ? null : g.label)}
+                          style={typeFilter === g.label ? activePill : inactivePill}
+                        >
+                          {g.label}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+
+                {/* Clear filters */}
+                {(originFilter || typeFilter) && (
+                  <button
+                    onClick={() => { setOriginFilter(null); setTypeFilter(null); setApacCountry(null); setApacExpanded(false); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#C4522A', padding: '0 0 .6rem 0', display: 'block' }}
+                  >
+                    Clear filters
+                  </button>
+                )}
+
+                {/* Crowd favourites section */}
+                {showCrowdFav && crowdFavs.length > 0 && (
+                  <div style={{ marginBottom: '.85rem' }}>
+                    <div style={{ fontSize: '.62rem', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.45rem' }}>
+                      ✨ Popular for {STYLE_DISPLAY[styleKey!] ?? styleKey}
+                    </div>
+                    <div style={{ border: '1.5px solid rgba(212,168,83,0.3)', borderRadius: '14px', padding: '.65rem .85rem', background: 'rgba(212,168,83,0.05)' }}>
+                      {crowdFavs.map(f => <FlourRow key={f.id} f={f} />)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Results list */}
+                {brandNames.length === 0 && crowdFavs.length === 0 ? (
                   <div style={{ fontSize: '.8rem', color: 'var(--smoke)', textAlign: 'center', padding: '1rem' }}>
                     No flours match your filters.
                   </div>
                 ) : brandNames.map(brandName => {
-                  const products = otherByBrand[brandName];
+                  const products = restByBrand[brandName];
                   const sampleCountry = products[0]?.country ?? 'us';
                   const samplePublished = products[0]?.wPublished;
                   return (
@@ -594,49 +784,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                           <span style={{ fontSize: '.6rem', color: 'var(--smoke)', fontStyle: 'italic', marginLeft: '.3rem' }}>~est</span>
                         )}
                       </div>
-                      {products.map((f: any) => {
-                        const isSelected = blend.brandProduct === `${f.brand} ${f.name}`;
-                        return (
-                          <div
-                            key={f.name}
-                            onClick={() => {
-                              const autoTile: FlourKey = f.w >= 270 ? 'strong00' : 'pizza00';
-                              setSelectedTile(autoTile);
-                              setManualW('');
-                              onBlendChange({
-                                flour1: autoTile,
-                                flour2: blend.flour2,
-                                ratio1: blend.ratio1,
-                                wOverride: f.w,
-                                brandKey: undefined,
-                                brandProduct: `${f.brand} ${f.name}`,
-                              });
-                            }}
-                            onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'rgba(196,82,42,0.06)'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(196,82,42,0.06)' : 'transparent'; }}
-                            style={{
-                              display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '.4rem',
-                              padding: '.35rem .5rem', borderRadius: '8px', cursor: 'pointer',
-                              background: isSelected ? 'rgba(196,82,42,0.06)' : 'transparent',
-                              transition: 'background .15s',
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
-                              <span style={{ fontSize: '.82rem', fontWeight: isSelected ? 600 : 400, color: isSelected ? 'var(--terra)' : 'var(--char)' }}>
-                                {f.name}
-                              </span>
-                              <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '20px', padding: '.1rem .5rem', color: 'var(--ash)', whiteSpace: 'nowrap' }}>
-                                W {f.w}
-                              </span>
-                              {f.type && TYPE_LABELS[f.type] && (
-                                <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '20px', padding: '.1rem .5rem', color: 'var(--smoke)', whiteSpace: 'nowrap' }}>
-                                  {TYPE_LABELS[f.type]}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                      {products.map(f => <FlourRow key={f.id} f={f} />)}
                     </div>
                   );
                 })}
