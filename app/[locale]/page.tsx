@@ -871,18 +871,30 @@ export default function Home() {
                           style={{ position: 'absolute', left: 0, right: 0, width: '100%', opacity: 0, height: '24px', cursor: 'pointer', margin: 0 }} />
                       </div>
                     </div>
-                    {/* Cornicione slider */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '64px 52px 16px 1fr', alignItems: 'center', marginBottom: '12px' }}>
+                    {/* Cornicione segmented control */}
+                    <div style={{ marginBottom: '12px' }}>
                       <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--ash)', whiteSpace: 'nowrap' }}>Cornicione</span>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap', textAlign: 'right' }}>{locale === 'fr' ? CORN_LABELS_FR[pizzaCorn] : CORN_LABELS[pizzaCorn]}</span>
-                      <span />
-                      <div style={{ position: 'relative', height: '24px', display: 'flex', alignItems: 'center' }}>
-                        <div style={{ position: 'absolute', left: 0, right: 0, height: '6px', background: 'var(--border)', borderRadius: '3px' }} />
-                        <div style={{ position: 'absolute', left: 0, height: '6px', background: 'var(--terra)', borderRadius: '3px', width: `${(pizzaCorn / 2) * 100}%` }} />
-                        <div style={{ position: 'absolute', left: `${(pizzaCorn / 2) * 100}%`, width: '20px', height: '20px', borderRadius: '50%', background: 'white', border: '2.5px solid var(--terra)', transform: 'translateX(-50%)', top: '50%', marginTop: '-10px', pointerEvents: 'none' }} />
-                        <input type="range" min={0} max={2} step={1} value={pizzaCorn}
-                          onChange={e => { const c = +e.target.value; setPizzaCorn(c); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, c)); }}
-                          style={{ position: 'absolute', left: 0, right: 0, width: '100%', opacity: 0, height: '24px', cursor: 'pointer', margin: 0 }} />
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                        {([
+                          { value: 0, label: locale === 'fr' ? 'Fine'      : 'Thin'      },
+                          { value: 1, label: locale === 'fr' ? 'Classique' : 'Classic'   },
+                          { value: 2, label: locale === 'fr' ? 'Généreuse' : 'Generous'  },
+                        ] as { value: number; label: string }[]).map(opt => (
+                          <button
+                            key={opt.value}
+                            onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
+                            style={{
+                              flex: 1, padding: '9px 0', borderRadius: '10px',
+                              border: pizzaCorn === opt.value ? '2px solid #C4522A' : '1.5px solid #E8E0D5',
+                              background: pizzaCorn === opt.value ? 'white' : 'var(--cream)',
+                              color: pizzaCorn === opt.value ? '#1A1612' : '#8A7F78',
+                              fontSize: '13px', fontWeight: pizzaCorn === opt.value ? 600 : 400,
+                              fontFamily: 'DM Sans, sans-serif', cursor: 'pointer', transition: 'all 0.15s',
+                            }}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </>
@@ -1505,17 +1517,30 @@ export default function Home() {
                           style={{ position: 'absolute', left: 0, right: 0, width: '100%', opacity: 0, height: '24px', cursor: 'pointer', margin: 0 }} />
                       </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '64px 52px 16px 1fr', alignItems: 'center', marginBottom: '12px' }}>
+                    {/* Cornicione segmented control */}
+                    <div style={{ marginBottom: '12px' }}>
                       <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--ash)', whiteSpace: 'nowrap' }}>Cornicione</span>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap', textAlign: 'right' }}>{locale === 'fr' ? CORN_LABELS_FR[pizzaCorn] : CORN_LABELS[pizzaCorn]}</span>
-                      <span />
-                      <div style={{ position: 'relative', height: '24px', display: 'flex', alignItems: 'center' }}>
-                        <div style={{ position: 'absolute', left: 0, right: 0, height: '6px', background: 'var(--border)', borderRadius: '3px' }} />
-                        <div style={{ position: 'absolute', left: 0, height: '6px', background: 'var(--terra)', borderRadius: '3px', width: `${(pizzaCorn / 2) * 100}%` }} />
-                        <div style={{ position: 'absolute', left: `${(pizzaCorn / 2) * 100}%`, width: '20px', height: '20px', borderRadius: '50%', background: 'white', border: '2.5px solid var(--terra)', transform: 'translateX(-50%)', top: '50%', marginTop: '-10px', pointerEvents: 'none' }} />
-                        <input type="range" min={0} max={2} step={1} value={pizzaCorn}
-                          onChange={e => { const c = +e.target.value; setPizzaCorn(c); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, c)); }}
-                          style={{ position: 'absolute', left: 0, right: 0, width: '100%', opacity: 0, height: '24px', cursor: 'pointer', margin: 0 }} />
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                        {([
+                          { value: 0, label: locale === 'fr' ? 'Fine'      : 'Thin'      },
+                          { value: 1, label: locale === 'fr' ? 'Classique' : 'Classic'   },
+                          { value: 2, label: locale === 'fr' ? 'Généreuse' : 'Generous'  },
+                        ] as { value: number; label: string }[]).map(opt => (
+                          <button
+                            key={opt.value}
+                            onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
+                            style={{
+                              flex: 1, padding: '9px 0', borderRadius: '10px',
+                              border: pizzaCorn === opt.value ? '2px solid #C4522A' : '1.5px solid #E8E0D5',
+                              background: pizzaCorn === opt.value ? 'white' : 'var(--cream)',
+                              color: pizzaCorn === opt.value ? '#1A1612' : '#8A7F78',
+                              fontSize: '13px', fontWeight: pizzaCorn === opt.value ? 600 : 400,
+                              fontFamily: 'DM Sans, sans-serif', cursor: 'pointer', transition: 'all 0.15s',
+                            }}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </>
