@@ -2,17 +2,17 @@
 import { useState } from 'react';
 import { FLOUR_DATA, FLOUR_BRANDS, type FlourKey, type BrandKey, type FlourBlend, computeBlendProfile } from '../data';
 import FlourScan from './FlourScan';
-import flourDb from '../../public/flour-database.json';
+import { FLOUR_DB } from '@/lib/flourDatabase';
 
 const TYPE_LABELS: Record<string, string> = {
-  pizza00: '00', strong00: '00★', bread: 'bread',
-  allpurpose: 'AP', manitoba: 'MB', semolina: 'SEM',
+  '00': '00', bread: 'bread',
+  all_purpose: 'AP', high_gluten: 'MB', semolina: 'SEM',
   wholemeal: 'WW', rye: 'RYE',
 };
 
 const FLAGS: Record<string, string> = {
-  IT: '🇮🇹', FR: '🇫🇷', US: '🇺🇸', SG: '🇸🇬',
-  UK: '🇬🇧', JP: '🇯🇵', CA: '🇨🇦', AU: '🇦🇺', MY: '🇲🇾', XX: '',
+  it: '🇮🇹', fr: '🇫🇷', us: '🇺🇸', sg: '🇸🇬',
+  uk: '🇬🇧', jp: '🇯🇵', ca: '🇨🇦', au: '🇦🇺', my: '🇲🇾', de: '🇩🇪',
 };
 
 // ── Flour lists ───────────────────────────────
@@ -432,19 +432,18 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       {/* ── PART 2: Iconic brands (custom only) ── */}
       {mode === 'custom' && (() => {
         const otherBrandsCount = new Set(
-          (flourDb as any[])
+          FLOUR_DB
             .filter(f => f.brand !== 'Caputo' && f.brand !== '5 Stagioni' && f.brand !== 'Generic')
             .map(f => f.brand)
         ).size;
 
-        const otherFlours = (flourDb as any[]).filter(f => {
+        const otherFlours = FLOUR_DB.filter(f => {
           if (f.brand === 'Caputo' || f.brand === '5 Stagioni' || f.brand === 'Generic') return false;
           if (brandCountryFilter !== 'all' && f.country !== brandCountryFilter) return false;
           if (brandTypeFilter !== 'all' && f.type !== brandTypeFilter) return false;
           if (brandSearch.trim()) {
             const q = brandSearch.toLowerCase();
-            return f.brand.toLowerCase().includes(q) || f.product.toLowerCase().includes(q) ||
-              (f.aliases ?? []).some((a: string) => a.toLowerCase().includes(q));
+            return f.brand.toLowerCase().includes(q) || f.name.toLowerCase().includes(q);
           }
           return true;
         });
@@ -546,14 +545,14 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     }}
                   >
                     <option value="all">All countries</option>
-                    <option value="IT">🇮🇹 Italy</option>
-                    <option value="FR">🇫🇷 France</option>
-                    <option value="US">🇺🇸 USA</option>
-                    <option value="SG">🇸🇬 Singapore</option>
-                    <option value="UK">🇬🇧 UK</option>
-                    <option value="JP">🇯🇵 Japan</option>
-                    <option value="CA">🇨🇦 Canada</option>
-                    <option value="AU">🇦🇺 Australia</option>
+                    <option value="it">🇮🇹 Italy</option>
+                    <option value="fr">🇫🇷 France</option>
+                    <option value="us">🇺🇸 USA</option>
+                    <option value="sg">🇸🇬 Singapore</option>
+                    <option value="uk">🇬🇧 UK</option>
+                    <option value="jp">🇯🇵 Japan</option>
+                    <option value="ca">🇨🇦 Canada</option>
+                    <option value="au">🇦🇺 Australia</option>
                   </select>
                   <select
                     value={brandTypeFilter}
@@ -565,11 +564,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     }}
                   >
                     <option value="all">All types</option>
-                    <option value="pizza00">Pizza 00</option>
-                    <option value="strong00">Strong 00</option>
+                    <option value="00">Pizza / 00</option>
                     <option value="bread">Bread</option>
-                    <option value="allpurpose">All-purpose</option>
-                    <option value="manitoba">Manitoba</option>
+                    <option value="all_purpose">All-purpose</option>
+                    <option value="high_gluten">Manitoba / High Gluten</option>
                     <option value="semolina">Semolina</option>
                     <option value="wholemeal">Wholemeal</option>
                     <option value="rye">Rye</option>
@@ -583,8 +581,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   </div>
                 ) : brandNames.map(brandName => {
                   const products = otherByBrand[brandName];
-                  const sampleCountry = products[0]?.country ?? 'XX';
-                  const sampleSource = products[0]?.source;
+                  const sampleCountry = products[0]?.country ?? 'us';
+                  const samplePublished = products[0]?.wPublished;
                   return (
                     <div key={brandName} style={{
                       border: '1.5px solid var(--border)', borderRadius: '14px',
@@ -592,15 +590,15 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     }}>
                       <div style={{ fontWeight: 600, fontSize: '.85rem', color: 'var(--char)', marginBottom: '.3rem' }}>
                         {FLAGS[sampleCountry] ?? ''} {brandName}
-                        {sampleSource === 'est' && (
+                        {samplePublished === false && (
                           <span style={{ fontSize: '.6rem', color: 'var(--smoke)', fontStyle: 'italic', marginLeft: '.3rem' }}>~est</span>
                         )}
                       </div>
                       {products.map((f: any) => {
-                        const isSelected = blend.brandProduct === `${f.brand} ${f.product}`;
+                        const isSelected = blend.brandProduct === `${f.brand} ${f.name}`;
                         return (
                           <div
-                            key={f.product}
+                            key={f.name}
                             onClick={() => {
                               const autoTile: FlourKey = f.w >= 270 ? 'strong00' : 'pizza00';
                               setSelectedTile(autoTile);
@@ -611,7 +609,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                 ratio1: blend.ratio1,
                                 wOverride: f.w,
                                 brandKey: undefined,
-                                brandProduct: `${f.brand} ${f.product}`,
+                                brandProduct: `${f.brand} ${f.name}`,
                               });
                             }}
                             onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'rgba(196,82,42,0.06)'; }}
@@ -625,7 +623,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
                               <span style={{ fontSize: '.82rem', fontWeight: isSelected ? 600 : 400, color: isSelected ? 'var(--terra)' : 'var(--char)' }}>
-                                {f.product}
+                                {f.name}
                               </span>
                               <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '20px', padding: '.1rem .5rem', color: 'var(--ash)', whiteSpace: 'nowrap' }}>
                                 W {f.w}
@@ -633,11 +631,6 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                               {f.type && TYPE_LABELS[f.type] && (
                                 <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '20px', padding: '.1rem .5rem', color: 'var(--smoke)', whiteSpace: 'nowrap' }}>
                                   {TYPE_LABELS[f.type]}
-                                </span>
-                              )}
-                              {f.fermentWindow && (
-                                <span style={{ fontSize: '.62rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap' }}>
-                                  {f.fermentWindow}
                                 </span>
                               )}
                             </div>

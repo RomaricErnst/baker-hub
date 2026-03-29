@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import flourDatabase from '../../../public/flour-database.json';
+import { FLOUR_DB } from '@/lib/flourDatabase';
 
 export async function POST(request: Request) {
   const { base64, mediaType } = await request.json();
@@ -13,9 +13,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
   }
 
-  const dbSummary = (flourDatabase as any[])
-    .filter(f => f.source === 'official')
-    .map(f => `${f.brand} ${f.product}: W${f.w}, ${f.protein}% protein`)
+  const dbSummary = FLOUR_DB
+    .filter(f => f.wPublished)
+    .map(f => `${f.brand} ${f.name}: W${f.w}, ${f.protein}% protein`)
     .join('\n');
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
