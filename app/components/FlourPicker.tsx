@@ -344,8 +344,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   // Quick pick sub-state
   const [quickSub, setQuickSub] = useState<'scan' | 'type' | 'manual' | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
-  const [manualQW, setManualQW] = useState<number | ''>('');
-  const [manualQProtein, setManualQProtein] = useState<number | ''>('');
+  const [manualQW, setManualQW] = useState<number | null>(null);
 
   // Search section filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -391,20 +390,6 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       wOverride: w,
       brandKey: undefined,
       brandProduct: label,
-    });
-  }
-
-  function applyManualEntry() {
-    if (manualQW === '') return;
-    const w = manualQW as number;
-    const autoTile: FlourKey = w >= 270 ? 'strong00' : 'pizza00';
-    onBlendChange({
-      flour1: autoTile,
-      flour2: blend.flour2,
-      ratio1: blend.ratio1,
-      wOverride: w,
-      brandKey: undefined,
-      brandProduct: `Custom W${w}`,
     });
   }
 
@@ -494,6 +479,9 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               </div>
             )}
 
+            {/* or separator A→B */}
+            <div style={{ textAlign: 'center', fontSize: '11px', color: '#8A7F78', padding: '2px 0', fontFamily: 'DM Sans, sans-serif' }}>or</div>
+
             {/* B) Select by type */}
             <div
               style={{ ...subRowStyle, marginBottom: '0' }}
@@ -529,65 +517,44 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               </div>
             )}
 
-            {/* C) Enter W + protein manually */}
-            <div
-              style={{ ...subRowStyle, marginBottom: '0', marginTop: '6px' }}
-              onClick={() => setQuickSub(quickSub === 'manual' ? null : 'manual')}
-            >
-              <span>Enter W + protein manually</span>
-              <span style={{ fontSize: '12px', color: '#8A7F78' }}>{quickSub === 'manual' ? '▾' : '▸'}</span>
+            {/* or separator B→C */}
+            <div style={{ textAlign: 'center', fontSize: '11px', color: '#8A7F78', padding: '2px 0', fontFamily: 'DM Sans, sans-serif' }}>or</div>
+
+            {/* C) I know my W value — always visible, live apply */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', background: '#F5F0E8' }}>
+              <span style={{ fontSize: '13px', color: '#3D3530', fontFamily: 'DM Sans, sans-serif', flexShrink: 0 }}>I know my W value</span>
+              <input
+                type="number"
+                placeholder="e.g. 280"
+                min={100} max={450}
+                value={manualQW ?? ''}
+                onChange={e => {
+                  const v = parseInt(e.target.value);
+                  if (!isNaN(v) && v >= 100 && v <= 450) {
+                    setManualQW(v);
+                    const autoTile: FlourKey = v >= 270 ? 'strong00' : 'pizza00';
+                    onBlendChange({
+                      flour1: autoTile, flour2: blend.flour2, ratio1: blend.ratio1,
+                      wOverride: v, brandKey: undefined, brandProduct: `Custom W${v}`,
+                    });
+                  } else if (e.target.value === '') {
+                    setManualQW(null);
+                  }
+                }}
+                style={{
+                  width: '80px', padding: '6px 10px',
+                  border: '1.5px solid #E8E0D5', borderRadius: '8px',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '14px',
+                  fontWeight: 700, color: '#1A1612',
+                  background: 'white', outline: 'none', textAlign: 'center',
+                }}
+              />
+              {manualQW !== null && (() => {
+                const s = wStrength(manualQW);
+                return <span style={{ fontSize: '11px', fontFamily: 'var(--font-dm-mono)', color: s.color }}>{s.label}</span>;
+              })()}
             </div>
-            {quickSub === 'manual' && (
-              <div style={{ background: '#F5F0E8', borderRadius: '0 0 10px 10px', padding: '10px 12px' }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                  <div>
-                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '4px' }}>W value</div>
-                    <input
-                      type="number" min={80} max={500} step={10} value={manualQW} placeholder="e.g. 280"
-                      onChange={e => setManualQW(e.target.value === '' ? '' : Number(e.target.value))}
-                      style={{
-                        width: '90px', padding: '6px 8px', borderRadius: '8px',
-                        border: '1.5px solid #E8E0D5', background: 'white',
-                        fontSize: '13px', fontFamily: 'var(--font-dm-mono)',
-                        color: '#1A1612', outline: 'none',
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '4px' }}>Protein %</div>
-                    <input
-                      type="number" min={5} max={20} step={0.5} value={manualQProtein} placeholder="e.g. 12.5"
-                      onChange={e => setManualQProtein(e.target.value === '' ? '' : Number(e.target.value))}
-                      style={{
-                        width: '90px', padding: '6px 8px', borderRadius: '8px',
-                        border: '1.5px solid #E8E0D5', background: 'white',
-                        fontSize: '13px', fontFamily: 'var(--font-dm-mono)',
-                        color: '#1A1612', outline: 'none',
-                      }}
-                    />
-                  </div>
-                  <button
-                    onClick={applyManualEntry}
-                    style={{
-                      padding: '6px 14px', borderRadius: '8px',
-                      background: '#1A1612', color: 'white',
-                      border: 'none', fontSize: '12px', cursor: 'pointer',
-                      fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
-                    }}
-                  >
-                    Apply
-                  </button>
-                </div>
-                {manualQW !== '' && (() => {
-                  const s = wStrength(manualQW as number);
-                  return (
-                    <div style={{ marginTop: '8px', fontSize: '11px', fontFamily: 'var(--font-dm-mono)', color: s.color }}>
-                      W {manualQW} — {s.label}
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
+
           </div>
         )}
       </div>
@@ -598,96 +565,60 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
         {openSection === 'search' && (
           <div style={{ paddingTop: '12px', paddingBottom: '14px' }}>
 
-            {/* Crowd favourites */}
-            <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '8px' }}>
-              Popular picks
-            </div>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '14px' }}>
-              {CROWD_FAV_IDS.map(id => {
-                const entry = FLOUR_DB.find(f => f.id === id);
-                const isSelected = blend.brandProduct === (entry ? `${entry.brand} ${entry.name}` : '');
-                return (
-                  <button
-                    key={id}
-                    onClick={() => { if (entry) selectDBEntry(entry); }}
-                    style={{
-                      padding: '6px 10px', borderRadius: '10px',
-                      border: `1px solid ${isSelected ? '#C4522A' : '#E8E0D5'}`,
-                      background: isSelected ? 'rgba(196,82,42,0.06)' : 'white',
-                      fontSize: '12px', fontWeight: isSelected ? 600 : 500,
-                      color: isSelected ? '#C4522A' : '#1A1612',
-                      cursor: entry ? 'pointer' : 'not-allowed',
-                      whiteSpace: 'nowrap',
-                      opacity: entry ? 1 : 0.4,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {entry ? `${entry.brand} ${entry.name}` : id}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Search bar */}
-            <input
-              type="text"
-              placeholder="Search flour..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{
-                fontSize: '14px', padding: '10px 12px',
-                border: '1px solid #E8E0D5', borderRadius: '10px',
-                background: 'white', width: '100%',
-                outline: 'none', color: '#1A1612',
-                boxSizing: 'border-box', marginBottom: '10px',
-                fontFamily: 'var(--font-dm-sans)',
-              }}
-            />
-
-            {/* Filter chips + dropdown */}
-            <div ref={dropdownRef} style={{ position: 'relative' }}>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                <button
-                  style={chipStyle(!!filterType)}
-                  onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')}
-                >
-                  Type {filterType ? `· ${TYPE_LABELS[filterType] ?? filterType}` : ''} <span style={{ fontSize: '10px' }}>▾</span>
-                </button>
-                <button
-                  style={chipStyle(!!filterOrigin)}
-                  onClick={() => setActiveDropdown(activeDropdown === 'origin' ? null : 'origin')}
-                >
-                  Origin {filterOrigin ? `· ${filterOrigin}` : ''} <span style={{ fontSize: '10px' }}>▾</span>
-                </button>
-                <button
-                  style={chipStyle(!!filterManufacturer)}
-                  onClick={() => setActiveDropdown(activeDropdown === 'manufacturer' ? null : 'manufacturer')}
-                >
-                  Brand {filterManufacturer ? `· ${filterManufacturer}` : ''} <span style={{ fontSize: '10px' }}>▾</span>
-                </button>
+            {/* Search bar + filter chips — single row */}
+            <div ref={dropdownRef} style={{ position: 'relative', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="Search flour..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{
+                    flex: 1, padding: '8px 12px',
+                    border: '1px solid #E8E0D5', borderRadius: '10px',
+                    fontSize: '13px', fontFamily: 'var(--font-dm-sans)',
+                    background: 'white', outline: 'none', minWidth: 0,
+                    color: '#1A1612',
+                  }}
+                />
+                {(['type', 'origin', 'brand'] as const).map(f => {
+                  const isActive = (f === 'type' && !!filterType) || (f === 'origin' && !!filterOrigin) || (f === 'brand' && !!filterManufacturer);
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => setActiveDropdown(
+                        activeDropdown === (f === 'brand' ? 'manufacturer' : f) ? null : (f === 'brand' ? 'manufacturer' : f)
+                      )}
+                      style={{
+                        padding: '7px 10px', borderRadius: '20px',
+                        border: 'none', cursor: 'pointer',
+                        fontSize: '12px', fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+                        background: isActive ? '#1A1612' : '#F5F0E8',
+                        color: isActive ? 'white' : '#3D3530',
+                        whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {f.charAt(0).toUpperCase() + f.slice(1)} ▾
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Dropdown panels */}
               {activeDropdown === 'type' && (
                 <div style={{
-                  position: 'absolute', zIndex: 50, top: '36px', left: 0,
+                  position: 'absolute', zIndex: 50, top: '40px', left: 0,
                   background: 'white', borderRadius: '12px',
                   border: '1px solid #E8E0D5',
                   boxShadow: '0 4px 16px rgba(26,22,18,0.10)',
-                  padding: '8px', minWidth: '160px', maxHeight: '240px',
-                  overflowY: 'auto',
+                  padding: '8px', minWidth: '160px', maxHeight: '240px', overflowY: 'auto',
                 }}>
                   {typeOptions.map(type => (
                     <div
                       key={type}
                       onClick={() => { setFilterType(filterType === type ? null : type); setActiveDropdown(null); }}
-                      style={{
-                        padding: '7px 10px', borderRadius: '8px',
-                        fontSize: '13px', cursor: 'pointer',
-                        color: filterType === type ? '#C4522A' : '#1A1612',
-                        fontWeight: filterType === type ? 500 : 400,
-                        background: 'transparent',
-                      }}
+                      style={{ padding: '7px 10px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', color: filterType === type ? '#C4522A' : '#1A1612', fontWeight: filterType === type ? 500 : 400, background: 'transparent' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#F5F0E8'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                     >
@@ -698,24 +629,17 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               )}
               {activeDropdown === 'origin' && (
                 <div style={{
-                  position: 'absolute', zIndex: 50, top: '36px', left: '80px',
+                  position: 'absolute', zIndex: 50, top: '40px', left: '50%', transform: 'translateX(-50%)',
                   background: 'white', borderRadius: '12px',
                   border: '1px solid #E8E0D5',
                   boxShadow: '0 4px 16px rgba(26,22,18,0.10)',
-                  padding: '8px', minWidth: '160px', maxHeight: '240px',
-                  overflowY: 'auto',
+                  padding: '8px', minWidth: '160px', maxHeight: '240px', overflowY: 'auto',
                 }}>
                   {originOptions.map(origin => (
                     <div
                       key={origin}
                       onClick={() => { setFilterOrigin(filterOrigin === origin ? null : origin); setActiveDropdown(null); }}
-                      style={{
-                        padding: '7px 10px', borderRadius: '8px',
-                        fontSize: '13px', cursor: 'pointer',
-                        color: filterOrigin === origin ? '#C4522A' : '#1A1612',
-                        fontWeight: filterOrigin === origin ? 500 : 400,
-                        background: 'transparent',
-                      }}
+                      style={{ padding: '7px 10px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', color: filterOrigin === origin ? '#C4522A' : '#1A1612', fontWeight: filterOrigin === origin ? 500 : 400, background: 'transparent' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#F5F0E8'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                     >
@@ -726,24 +650,17 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               )}
               {activeDropdown === 'manufacturer' && (
                 <div style={{
-                  position: 'absolute', zIndex: 50, top: '36px', left: '160px',
+                  position: 'absolute', zIndex: 50, top: '40px', right: 0,
                   background: 'white', borderRadius: '12px',
                   border: '1px solid #E8E0D5',
                   boxShadow: '0 4px 16px rgba(26,22,18,0.10)',
-                  padding: '8px', minWidth: '160px', maxHeight: '240px',
-                  overflowY: 'auto',
+                  padding: '8px', minWidth: '160px', maxHeight: '240px', overflowY: 'auto',
                 }}>
                   {mfgOptions.map(mfg => (
                     <div
                       key={mfg}
                       onClick={() => { setFilterManufacturer(filterManufacturer === mfg ? null : mfg); setActiveDropdown(null); }}
-                      style={{
-                        padding: '7px 10px', borderRadius: '8px',
-                        fontSize: '13px', cursor: 'pointer',
-                        color: filterManufacturer === mfg ? '#C4522A' : '#1A1612',
-                        fontWeight: filterManufacturer === mfg ? 500 : 400,
-                        background: 'transparent',
-                      }}
+                      style={{ padding: '7px 10px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', color: filterManufacturer === mfg ? '#C4522A' : '#1A1612', fontWeight: filterManufacturer === mfg ? 500 : 400, background: 'transparent' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#F5F0E8'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                     >
@@ -754,9 +671,9 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               )}
             </div>
 
-            {/* Active filter tags */}
+            {/* Active filter tags (FP4) */}
             {(filterType || filterOrigin || filterManufacturer) && (
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '10px' }}>
                 {filterType && (
                   <span style={{ fontSize: '11px', background: '#F5F0E8', borderRadius: '12px', padding: '3px 8px', display: 'inline-flex', gap: '4px', alignItems: 'center', color: '#3D3530' }}>
                     Type: {TYPE_LABELS[filterType] ?? filterType}
@@ -775,50 +692,68 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     <span style={{ cursor: 'pointer', color: '#8A7F78' }} onClick={() => setFilterManufacturer(null)}>×</span>
                   </span>
                 )}
+                {[filterType, filterOrigin, filterManufacturer].filter(Boolean).length > 1 && (
+                  <span
+                    style={{ fontSize: '11px', color: '#C4522A', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+                    onClick={() => { setFilterType(null); setFilterOrigin(null); setFilterManufacturer(null); }}
+                  >
+                    Clear all
+                  </span>
+                )}
               </div>
             )}
 
-            {/* Results list */}
-            {results.length === 0 ? (
-              <div style={{ fontSize: '13px', color: '#8A7F78', textAlign: 'center', padding: '16px 0' }}>
-                No flours match your filters.
-              </div>
-            ) : (
-              <div>
-                {results.map(f => {
-                  const isSelected = blend.brandProduct === `${f.brand} ${f.name}`;
-                  return (
-                    <div
-                      key={f.id}
-                      onClick={() => selectDBEntry(f)}
-                      style={{
-                        display: 'flex', justifyContent: 'space-between',
-                        padding: '10px 0', borderBottom: '0.5px solid #E8E0D5',
-                        cursor: 'pointer',
-                        background: isSelected ? 'rgba(196,82,42,0.04)' : 'transparent',
-                      }}
-                      onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(196,82,42,0.04)' : 'transparent'; }}
-                    >
-                      <div>
-                        <div style={{ fontSize: '13px', fontWeight: 500, color: isSelected ? '#C4522A' : '#1A1612' }}>
-                          {f.brand}
+            {/* Results list — crowd favs when no filter, filtered otherwise */}
+            {(() => {
+              const noFiltersActive = !searchQuery && !filterType && !filterOrigin && !filterManufacturer;
+              const displayList: FlourEntry[] = noFiltersActive
+                ? CROWD_FAV_IDS.map(id => FLOUR_DB.find(f => f.id === id)).filter(Boolean) as FlourEntry[]
+                : results;
+
+              if (displayList.length === 0) {
+                return (
+                  <div style={{ fontSize: '13px', color: '#8A7F78', textAlign: 'center', padding: '16px 0' }}>
+                    No flours match your filters.
+                  </div>
+                );
+              }
+              return (
+                <div>
+                  {displayList.map(f => {
+                    const isSelected = blend.brandProduct === `${f.brand} ${f.name}`;
+                    return (
+                      <div
+                        key={f.id}
+                        onClick={() => selectDBEntry(f)}
+                        style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          padding: '10px 0', borderBottom: '0.5px solid #E8E0D5',
+                          cursor: 'pointer',
+                          background: isSelected ? 'rgba(196,82,42,0.04)' : 'transparent',
+                        }}
+                        onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(196,82,42,0.04)' : 'transparent'; }}
+                      >
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 500, color: isSelected ? '#C4522A' : '#1A1612', fontFamily: 'DM Sans, sans-serif' }}>
+                            {f.brand}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>{f.name}</div>
                         </div>
-                        <div style={{ fontSize: '12px', color: '#8A7F78' }}>{f.name}</div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', color: f.wPublished ? '#1A1612' : '#8A7F78' }}>
+                            {f.wPublished ? `W${f.w}` : `~W${f.w}`}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>
+                            {f.protein}%
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', color: f.wPublished ? '#1A1612' : '#8A7F78' }}>
-                          {f.wPublished ? `W${f.w}` : `~W${f.w}`}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>
-                          {f.protein}%
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
