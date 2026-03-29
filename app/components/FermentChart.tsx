@@ -22,8 +22,6 @@ export interface FermentChartProps {
   };
   scheduleNote?: string | null;
   recommendedMixHBF?: number | null;
-  readOnly?: boolean;
-  showZoneLabels?: boolean; // show zone text labels + arrows (off by default)
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -33,6 +31,9 @@ const CHART_H   = 220;
 const BL        = 144;  // single baseline for ALL bells
 const MAXH      = 117;  // max bell height
 const AXIS_Y    = 162;  // axis line Y
+
+// DOUGH_SIG and DOUGH_SWEET_CENTER are computed inside the component
+// based on hasColdRetard — see derived physics section
 
 // Diamond half-size
 const S = 10;
@@ -116,7 +117,7 @@ export default function FermentChart({
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange,
   windowH, prefInFridge, hasColdRetard, phases, scheduleNote,
-  recommendedMixHBF, readOnly, showZoneLabels,
+  recommendedMixHBF,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -125,6 +126,10 @@ export default function FermentChart({
   const [dragging, setDragging] = useState<'mix' | 'pref' | null>(null);
   // Local drag HBF for free visual movement during mix drag — no onMixChange until pointer up
   const [localMixHBF, setLocalMixHBF] = useState<number | null>(null);
+  // Glow guidance state
+  const hasMovedMixRef  = useRef(false);
+  const hasMovedPrefRef = useRef(false);
+  const [glowState, setGlowState] = useState<'mix' | 'pref' | 'both' | 'done'>('mix');
 
   useEffect(() => {
     const el = containerRef.current;
@@ -132,6 +137,24 @@ export default function FermentChart({
     const ro = new ResizeObserver(entries => setW(entries[0].contentRect.width));
     ro.observe(el);
     return () => ro.disconnect();
+  }, []);
+
+  // Inject diamond glow keyframes once
+  useEffect(() => {
+    const id = 'fc-diamond-glow-style';
+    if (document.getElementById(id)) return;
+    const s = document.createElement('style');
+    s.id = id;
+    s.textContent = `
+      @keyframes fc-glow-pulse {
+        0%   { filter: drop-shadow(0 0 0px rgba(196,82,42,0)); }
+        50%  { filter: drop-shadow(0 0 6px rgba(196,82,42,0.8)); }
+        100% { filter: drop-shadow(0 0 0px rgba(196,82,42,0)); }
+      }
+      .fc-diamond-glow { animation: fc-glow-pulse 1.6s ease-in-out infinite; }
+    `;
+    document.head.appendChild(s);
+    return () => { document.getElementById(id)?.remove(); };
   }, []);
 
   // ── Derived ──────────────────────────────────────────────
@@ -148,11 +171,13 @@ export default function FermentChart({
   const DARK_SAGE_STR   = '#4A6B3A';
 
   // ── Physics ──────────────────────────────────────────────
+  // Cold-aware dough bell: wider sigma, later peak for cold retard schedules
   const DOUGH_SIG          = hasColdRetard ? 18 : 10;
   const DOUGH_SWEET_CENTER = hasColdRetard ? 34 : 20;
 
   const optH            = hasPref ? getPrefOptH(prefermentType, kitchenTemp) : 0;
   const prefSig         = hasPref ? getPrefSig(prefermentType, kitchenTemp)  : 1;
+  // During drag, use local position for all mix-derived values
   const effectiveMixHBF = localMixHBF !== null ? localMixHBF : mixOffsetH;
 
   const prefStartAbsHBF = effectiveMixHBF + prefOffsetH;
@@ -217,6 +242,7 @@ export default function FermentChart({
     e.preventDefault();
     const x = getSvgX(e);
     if (dragging === 'mix') {
+      // Free visual movement only — no blocker check, no onMixChange during drag
       const h = Math.max(3, Math.min(WH - 2, snap15(xToHBF(x, W, WH))));
       setLocalMixHBF(h);
     } else {
@@ -227,8 +253,20 @@ export default function FermentChart({
 
   function onPointerUp() {
     if (dragging === 'mix' && localMixHBF !== null) {
+      hasMovedMixRef.current = true;
       onMixChange(localMixHBF);
       setLocalMixHBF(null);
+      setGlowState(prev => {
+        if (prev === 'mix') return hasPref ? 'pref' : 'done';
+        if (prev === 'pref') return 'done';
+        return prev;
+      });
+    } else if (dragging === 'pref') {
+      hasMovedPrefRef.current = true;
+      setGlowState(prev => {
+        if (prev === 'pref' || prev === 'mix') return 'done';
+        return prev;
+      });
     }
     setDragging(null);
   }
@@ -236,13 +274,12 @@ export default function FermentChart({
   // ── Status logic ─────────────────────────────────────────
   const mixInZone   = effectiveMixHBF >= doughZoneTo   && effectiveMixHBF <= doughZoneFrom;
   const mixTooEarly = effectiveMixHBF > doughZoneFrom;
-  const mixStatus   = mixInZone   ? '🟢 Start Dough ready at bake'
+  const mixStatus   = mixInZone   ? '🟢 Dough ready at bake'
     : mixTooEarly ? '🔴 Too early — over-fermented'
     : '🔴 Too late — under-fermented';
 
   const prefInZone = hasPref && prefOffsetH >= optH - 3 && prefOffsetH <= optH + 3;
-  const prefStatusLabel = prefermentType === 'poolish' ? 'Make Poolish ready' : 'Ready at mix';
-  const prefStatus = prefInZone ? `🟢 ${prefStatusLabel}` : '🟡 Adjust start time';
+  const prefStatus = prefInZone ? '🟢 Ready at mix' : '🟡 Adjust start time';
 
   // ── Info card data ───────────────────────────────────────
   const mixTime  = new Date(bakeMs - effectiveMixHBF * 3600000);
@@ -268,8 +305,6 @@ export default function FermentChart({
     const x1 = hToX(fromHBF, W, WH);
     const x2 = hToX(toHBF,   W, WH);
     if (x2 <= x1 + 1) return null;
-    const midX = (x1 + x2) / 2;
-    const clampedX = Math.max(PAD + label.length * 4, Math.min(W - PAD - label.length * 4, midX));
     return (
       <g>
         <rect x={x1} y={0} width={x2 - x1} height={BL}
@@ -278,27 +313,25 @@ export default function FermentChart({
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
         <line x1={x2} y1={0} x2={x2} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
-        {showZoneLabels && <>
-          <rect
-            x={clampedX - label.length * 4}
-            y={labelY - 11}
-            width={label.length * 8}
-            height={14}
-            fill="rgba(245,240,232,0.82)"
-            rx={3}
-          />
-          <text x={clampedX} y={labelY} fontSize={11} fill={color}
-            textAnchor="middle" fontFamily="DM Mono, monospace" fillOpacity={0.85} fontWeight="600">
-            {label}
-          </text>
-          <line
-            x1={x1 + 4} x2={x2 - 4}
-            y1={labelY + 9} y2={labelY + 9}
-            stroke={color} strokeWidth={1.2} strokeOpacity={0.7}
-            markerStart={`url(#arrow-${markerId}-start)`}
-            markerEnd={`url(#arrow-${markerId}-end)`}
-          />
-        </>}
+        <rect
+          x={(x1 + x2) / 2 - label.length * 4}
+          y={labelY - 11}
+          width={label.length * 8}
+          height={14}
+          fill="rgba(245,240,232,0.82)"
+          rx={3}
+        />
+        <text x={(x1 + x2) / 2} y={labelY} fontSize={11} fill={color}
+          textAnchor="middle" fontFamily="DM Mono, monospace" fillOpacity={0.85} fontWeight="600">
+          {label}
+        </text>
+        <line
+          x1={x1 + 4} x2={x2 - 4}
+          y1={labelY + 9} y2={labelY + 9}
+          stroke={color} strokeWidth={1.2} strokeOpacity={0.7}
+          markerStart={`url(#arrow-${markerId}-start)`}
+          markerEnd={`url(#arrow-${markerId}-end)`}
+        />
       </g>
     );
   }
@@ -308,12 +341,15 @@ export default function FermentChart({
     cx: number, fill: string, stroke: string, warn: boolean,
     which: 'mix' | 'pref',
   ) {
+    const shouldGlow = (which === 'mix' && glowState === 'mix')
+      || (which === 'pref' && (glowState === 'pref'));
     return (
       <g
-        style={{ cursor: readOnly ? 'default' : (dragging === which ? 'grabbing' : 'grab') }}
-        {...(readOnly ? {} : { onPointerDown: (e: React.PointerEvent) => onPointerDown(e, which) })}
+        style={{ cursor: dragging === which ? 'grabbing' : 'grab' }}
+        onPointerDown={e => onPointerDown(e, which)}
       >
         <polygon
+          className={shouldGlow ? 'fc-diamond-glow' : undefined}
           points={`${cx},${AXIS_Y - S} ${cx + S},${AXIS_Y} ${cx},${AXIS_Y + S} ${cx - S},${AXIS_Y}`}
           fill={fill} stroke={stroke} strokeWidth={1.5}
         />
@@ -342,38 +378,43 @@ export default function FermentChart({
     );
   }
 
-  // ── Pref axis label text ──────────────────────────────────
-  const prefAxisLabel =
-    prefermentType === 'poolish'  ? 'Make Poolish' :
-    prefermentType === 'biga'     ? 'Start Biga'   :
-    prefermentType === 'levain'   ? 'Start Levain' :
-    prefermentType === 'sourdough'? 'Start Levain' :
-    'Make Poolish';
-
-  // ── Zone labels (overlap-safe) ───────────────────────────
-  const doughZoneLabelY = 10;
-  let prefZoneLabelY    = 24;
-  if (hasPref) {
-    const doughMidX = (hToX(doughZoneFrom, W, WH) + hToX(doughZoneTo, W, WH)) / 2;
-    const prefMidX  = (hToX(prefZoneFrom,  W, WH) + hToX(prefZoneTo,  W, WH)) / 2;
-    if (Math.abs(doughMidX - prefMidX) < 70) {
-      prefZoneLabelY = 26; // stagger vertically
-    }
-  }
-
-  const prefZoneLabel =
-    prefermentType === 'poolish'   ? 'Make Poolish' :
-    prefermentType === 'biga'      ? 'Start Biga'   :
-    prefermentType === 'levain'    ? 'Start Levain' :
-    prefermentType === 'sourdough' ? 'Start Levain' :
-    'Make Poolish';
-
   // ── Render ───────────────────────────────────────────────
   return (
     <div
       ref={containerRef}
       style={{ width: '100%', userSelect: 'none', overflow: 'hidden', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
     >
+      {/* ── Instruction pills ── */}
+      {glowState !== 'done' && (
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '5px',
+            fontSize: '12px', color: glowState === 'mix' ? 'var(--char)' : 'var(--smoke)',
+            background: glowState === 'mix' ? '#FFF8F3' : 'var(--cream)',
+            border: `1px solid ${glowState === 'mix' ? 'var(--terra)' : 'var(--border)'}`,
+            borderRadius: '20px', padding: '3px 10px',
+            opacity: glowState === 'mix' ? 1 : 0.65,
+          }}>
+            <span>◆ Drag to set dough start
+              <span style={{ color: 'var(--smoke)', marginLeft: '4px' }}>· Green curve should peak at ▲ Bake</span>
+            </span>
+          </div>
+          {hasPref && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '5px',
+              fontSize: '12px', color: glowState === 'pref' ? 'var(--char)' : 'var(--smoke)',
+              background: glowState === 'pref' ? '#FFF8F3' : 'var(--cream)',
+              border: `1px solid ${glowState === 'pref' ? 'var(--terra)' : 'var(--border)'}`,
+              borderRadius: '20px', padding: '3px 10px',
+              opacity: glowState === 'pref' ? 1 : 0.65,
+            }}>
+              <span>◇ Drag to set {prefTypeName.toLowerCase()} start
+                <span style={{ color: 'var(--smoke)', marginLeft: '4px' }}>· Gold curve should peak at ◆ Mix</span>
+              </span>
+            </div>
+          )}
+        </div>
+      )}
       {/* ── Curve legend (hasPref only) ── */}
       {hasPref && (
         <div style={{
@@ -401,9 +442,9 @@ export default function FermentChart({
         width={W}
         height={CHART_H}
         style={{ display: 'block', touchAction: 'none', overflow: 'visible' }}
-        onPointerMove={readOnly ? undefined : onPointerMove}
-        onPointerUp={readOnly ? undefined : onPointerUp}
-        onPointerLeave={readOnly ? undefined : onPointerUp}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
       >
         {/* ── Clip paths for blockers ── */}
         <defs>
@@ -443,8 +484,19 @@ export default function FermentChart({
         )}
 
         {/* ── Sweet-spot zones ── */}
-        {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start Dough', doughZoneLabelY, 'sage')}
-        {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, prefZoneLabel, prefZoneLabelY, 'pref')}
+        {(() => {
+          const prefZoneLabel =
+            prefermentType === 'biga'      ? 'Start biga'   :
+            prefermentType === 'levain'    ? 'Start levain' :
+            prefermentType === 'sourdough' ? 'Start levain' :
+            'Start poolish';
+          return (
+            <>
+              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start dough window', 10, 'sage')}
+              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, `${prefZoneLabel} window`, 22, 'pref')}
+            </>
+          );
+        })()}
 
         {/* ── Blocker columns ── */}
         {blocks.map((b, i) => {
@@ -544,11 +596,14 @@ export default function FermentChart({
             textAnchor="middle"
             fontWeight="600"
           >
-            {prefAxisLabel}
+            {prefermentType === 'biga'      ? 'Start Biga'   :
+             prefermentType === 'levain'    ? 'Start Levain' :
+             prefermentType === 'sourdough' ? 'Start Levain' :
+             'Start Poolish'}
           </text>
         )}
 
-        {/* ── Mix (Start Dough) diamond ── */}
+        {/* ── Mix diamond ── */}
         {renderDiamond(
           mixX,
           inBlocker(effectiveMixHBF) ? '#aaaaaa' : DARK_SAGE,
@@ -556,13 +611,13 @@ export default function FermentChart({
           inBlocker(effectiveMixHBF),
           'mix',
         )}
-        {/* ── Start Dough label ── */}
+        {/* ── Mix label ── */}
         <text
           x={mixX} y={AXIS_Y + 30}
           fontSize={12} fill="#3D5A30"
           fontFamily="DM Mono, monospace"
           textAnchor="middle" fontWeight="600"
-        >Start Dough</text>
+        >Start Mixing</text>
 
         {/* ── Ghost diamond (recommended position) ── */}
         {recommendedMixHBF != null &&
@@ -581,71 +636,69 @@ export default function FermentChart({
         )}
       </svg>
 
-      {/* ── Info cards (hidden when readOnly) ───────────────── */}
-      {!readOnly && (
-        <div style={{ display: 'flex', gap: '6px', marginTop: '1.4rem', flexWrap: 'wrap' }}>
-          {/* Pref card */}
-          {hasPref && prefTime && (
-            <div style={{
-              flex: 1, minWidth: '120px',
-              background: 'var(--cream)', border: '1.5px solid var(--border)',
-              borderRadius: '10px', padding: '14px 16px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
-                <div style={{ width: 8, height: 8, background: prefColor, transform: 'rotate(45deg)', flexShrink: 0 }} />
-                <div style={{
-                  fontSize: '13px', color: 'var(--smoke)',
-                  fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
-                }}>{prefLabel}</div>
-              </div>
-              <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-                {fmtDT(prefTime)}
-              </div>
-              <div style={{ fontSize: '12px', marginTop: '.1rem', color: prefInZone ? '#4A7A3A' : '#C49A28' }}>
-                {prefStatus}
-              </div>
-              {prefInFridge && (
-                <div style={{ fontSize: '12px', marginTop: '.2rem', color: '#3A5A8A', fontFamily: 'var(--font-dm-mono)' }}>
-                  🧊 Cold ferment — use fridge
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Start Dough card */}
+      {/* ── Info cards ─────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: '6px', marginTop: '1.4rem', flexWrap: 'wrap' }}>
+        {/* Pref card */}
+        {hasPref && prefTime && (
           <div style={{
             flex: 1, minWidth: '120px',
             background: 'var(--cream)', border: '1.5px solid var(--border)',
             borderRadius: '10px', padding: '14px 16px',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
-              <div style={{ width: 8, height: 8, background: DARK_SAGE, transform: 'rotate(45deg)', flexShrink: 0 }} />
+              <div style={{ width: 8, height: 8, background: prefColor, transform: 'rotate(45deg)', flexShrink: 0 }} />
               <div style={{
                 fontSize: '13px', color: 'var(--smoke)',
                 fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
-              }}>Start Dough</div>
+              }}>{prefLabel}</div>
             </div>
             <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-              {fmtDT(mixTime)}
+              {fmtDT(prefTime)}
             </div>
-            <div style={{ fontSize: '12px', marginTop: '.1rem', color: mixInZone ? '#4A7A3A' : TERRA }}>
-              {mixStatus}
+            <div style={{ fontSize: '12px', marginTop: '.1rem', color: prefInZone ? '#4A7A3A' : '#C49A28' }}>
+              {prefStatus}
             </div>
-            {!mixInZone && effectiveMixHBF > 0 &&
-             blocks.some(b => {
-               const s2 = (bakeMs - b.from.getTime()) / 3600000;
-               const e2 = (bakeMs - b.to.getTime())   / 3600000;
-               return effectiveMixHBF >= Math.min(s2, e2) &&
-                      effectiveMixHBF <= Math.max(s2, e2);
-             }) && (
-              <div style={{ fontSize: '11px', color: '#7A5A10',
-                marginTop: '4px', lineHeight: 1.4 }}>
-                ⚠️ Within a blocked window — intentional?
+            {prefInFridge && (
+              <div style={{ fontSize: '12px', marginTop: '.2rem', color: '#3A5A8A', fontFamily: 'var(--font-dm-mono)' }}>
+                🧊 Cold ferment — use fridge
               </div>
             )}
           </div>
+        )}
+
+        {/* Mix card */}
+        <div style={{
+          flex: 1, minWidth: '120px',
+          background: 'var(--cream)', border: '1.5px solid var(--border)',
+          borderRadius: '10px', padding: '14px 16px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
+            <div style={{ width: 8, height: 8, background: DARK_SAGE, transform: 'rotate(45deg)', flexShrink: 0 }} />
+            <div style={{
+              fontSize: '13px', color: 'var(--smoke)',
+              fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
+            }}>Start mixing</div>
+          </div>
+          <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+            {fmtDT(mixTime)}
+          </div>
+          <div style={{ fontSize: '12px', marginTop: '.1rem', color: mixInZone ? '#4A7A3A' : TERRA }}>
+            {mixStatus}
+          </div>
+          {!mixInZone && effectiveMixHBF > 0 &&
+           blocks.some(b => {
+             const s2 = (bakeMs - b.from.getTime()) / 3600000;
+             const e2 = (bakeMs - b.to.getTime())   / 3600000;
+             return effectiveMixHBF >= Math.min(s2, e2) &&
+                    effectiveMixHBF <= Math.max(s2, e2);
+           }) && (
+            <div style={{ fontSize: '11px', color: '#7A5A10',
+              marginTop: '4px', lineHeight: 1.4 }}>
+              ⚠️ Within a blocked window — intentional?
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ── Phase timeline strip ────────────────────────── */}
       {phases && (() => {
