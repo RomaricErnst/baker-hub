@@ -929,8 +929,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
+    console.log('AAU_DEBUG eatTimeSet=' + eatTimeSet + ' phase=' + phase + ' manuallyDragged=' + hasManuallyDragged.current);
     onChange(pendingStart, pendingEatTime, newBlocks);
-    if (!hasManuallyDragged.current && (phase === 'start_confirm' || eatTimeSet)) {
+    if (!hasManuallyDragged.current && eatTimeSet) {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
   }
