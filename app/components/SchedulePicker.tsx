@@ -858,6 +858,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  useEffect(() => {
+    if (!eatTimeSet) return;
+    hasManuallyDragged.current = false;
+    computeAndApplyRecommendation(blocks, pendingEatTime);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingEatTime, blocks]);
+
   const suggestion = useMemo(
     () => computeSuggestion(pendingEatTime, preheatMin, styleKey, kitchenTemp),
     [pendingEatTime, preheatMin, styleKey, kitchenTemp],
@@ -1383,7 +1390,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       {/* Fermentation chart */}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
-        <div style={{ fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.6rem' }}>
+        <div style={{ fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem' }}>
           {hasManuallyDragged.current ? 'Your fermentation plan' : 'Recommended fermentation plan'}
         </div>
         {startComputed ? (
@@ -1501,67 +1508,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
 
         {adjustOpen && (
-          <div style={{ paddingTop: '12px', paddingBottom: '8px' }}>
-
-            {/* Dough start slider */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginBottom: '4px' }}>
-                Dough start — green curve should peak close to Bake
+          <div style={{ paddingTop: '12px', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
+                <span style={{ color: '#3D5A30', fontWeight: 600 }}>◆ Dough:</span> drag the green diamond — green curve should peak at Bake
               </div>
-              <input
-                type="range"
-                min={1}
-                max={windowH}
-                step={0.25}
-                value={Math.max(1, Math.min(windowH, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000))}
-                onChange={e => {
-                  const h = Number(e.target.value);
-                  hasManuallyDragged.current = true;
-                  setRecommendedHBF(null);
-                  const sweetCenter = hasColdRetard ? 34 : 20;
-                  const snapped = snapToBlockerEdgeIfBlocked(h, blocks, pendingEatTime, sweetCenter);
-                  const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - snapped * 3600000));
-                  setPendingStart(newStart);
-                  onChange(newStart, pendingEatTime, blocks);
-                }}
-                style={{ width: '100%', accentColor: 'var(--sage)', cursor: 'pointer' }}
-              />
-              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '2px' }}>
-                {formatSliderDisplay(pendingStart)}
-              </div>
-            </div>
-
-            {/* Preferment start slider — only when hasPrefActive */}
-            {hasPrefActive && !isSourdough && (
-              <div>
-                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginBottom: '4px' }}>
-                  {prefLabel} — gold curve should peak at Start Dough
+              {hasPrefActive && (
+                <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
+                  <span style={{ color: '#C4A030', fontWeight: 600 }}>◇ {prefLabel}:</span> drag the gold diamond — gold curve should peak at Start Dough
                 </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={windowH}
-                  step={0.25}
-                  value={Math.min(windowH, Math.max(1, prefOffsetH))}
-                  onChange={e => {
-                    const h = Number(e.target.value);
-                    setPrefOffsetH(h);
-                    onPrefOffsetChange?.(h);
-                  }}
-                  style={{ width: '100%', accentColor: 'var(--gold)', cursor: 'pointer' }}
-                />
-                {(() => {
-                  const prefTime = new Date(pendingStart.getTime() - prefOffsetH * 3600000);
-                  return (
-                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '2px' }}>
-                      {formatSliderDisplay(prefTime)}
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
-
-            {/* Reset to recommended */}
+              )}
+            </div>
             <button
               onClick={() => {
                 hasManuallyDragged.current = false;
@@ -1569,13 +1526,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 setAdjustOpen(false);
               }}
               style={{
-                marginTop: '12px', background: 'none', border: 'none',
-                cursor: 'pointer', color: 'var(--smoke)', fontSize: '.72rem',
-                fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline',
-                textUnderlineOffset: '2px', padding: 0,
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--smoke)', fontSize: '.72rem',
+                fontFamily: 'var(--font-dm-mono)',
+                textDecoration: 'underline', textUnderlineOffset: '2px', padding: 0,
               }}
             >
-              Reset to recommended →
+              Reset to recommendation →
             </button>
           </div>
         )}
