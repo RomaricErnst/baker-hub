@@ -396,7 +396,9 @@ export default function FermentChart({
               <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke={prefColor} strokeWidth="2" fill="none" strokeLinecap="round"/>
             </svg>
             <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-              {prefLabel}
+              {prefermentType === 'biga' ? 'Biga' :
+               prefermentType === 'levain' || prefermentType === 'sourdough' ? 'Starter' :
+               'Poolish'}
             </span>
           </div>
         )}
@@ -412,7 +414,7 @@ export default function FermentChart({
       <svg
         ref={svgRef}
         width={W}
-        height={CHART_H}
+        height={CHART_H + 30}
         style={{ display: 'block', touchAction: 'none', overflow: 'visible' }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -457,15 +459,15 @@ export default function FermentChart({
 
         {/* ── Sweet-spot zones ── */}
         {showZoneLabels && (() => {
-          const prefZoneLabel =
-            prefermentType === 'biga'      ? 'Start biga'   :
-            prefermentType === 'levain'    ? 'Start levain' :
-            prefermentType === 'sourdough' ? 'Start levain' :
-            'Start poolish';
+          const prefWindowLabel =
+            prefermentType === 'biga'      ? 'Make Biga window'    :
+            prefermentType === 'levain'    ? 'Feed Starter window' :
+            prefermentType === 'sourdough' ? 'Feed Starter window' :
+            'Make Poolish window';
           return (
             <>
-              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start dough window', 18, 'sage')}
-              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, `${prefZoneLabel} window`, 32, 'pref')}
+              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start Dough window', 14, 'sage')}
+              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, prefWindowLabel, 36, 'pref')}
             </>
           );
         })()}
@@ -561,7 +563,7 @@ export default function FermentChart({
         {hasPref && (
           <text
             x={prefX}
-            y={labelsClose ? AXIS_Y + 28 : AXIS_Y + 16}
+            y={labelsClose ? AXIS_Y + 46 : AXIS_Y + 32}
             fontSize={12}
             fill={prefColor}
             fontFamily="DM Mono, monospace"
@@ -585,7 +587,7 @@ export default function FermentChart({
         )}
         {/* ── Mix label ── */}
         <text
-          x={mixX} y={AXIS_Y + 16}
+          x={mixX} y={AXIS_Y + 32}
           fontSize={12} fill="#3D5A30"
           fontFamily="DM Mono, monospace"
           textAnchor="middle" fontWeight="600"
