@@ -119,6 +119,52 @@ export default function PrefermentPicker({
               </div>
             </div>
 
+            {/* Pills inside selected card */}
+            {isSelected && !isNone && (
+              <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '.6rem' }}>
+                {pData.flourPct && (
+                  <span style={{
+                    fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+                    background: 'var(--cream)', color: 'var(--ash)',
+                    borderRadius: '20px', padding: '.1rem .45rem',
+                    border: '1px solid var(--border)',
+                  }}>
+                    {localFlourPct}% flour
+                  </span>
+                )}
+                {pData.hydration && (
+                  <span style={{
+                    fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+                    background: 'var(--cream)', color: 'var(--ash)',
+                    borderRadius: '20px', padding: '.1rem .45rem',
+                    border: '1px solid var(--border)',
+                  }}>
+                    {pData.hydration}% hydration
+                  </span>
+                )}
+                {pData.fermentHoursMin && pData.fermentHoursMax && (
+                  <span style={{
+                    fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+                    background: 'var(--cream)', color: 'var(--ash)',
+                    borderRadius: '20px', padding: '.1rem .45rem',
+                    border: '1px solid var(--border)',
+                  }}>
+                    {pData.fermentHoursMin}–{pData.fermentHoursMax}h
+                  </span>
+                )}
+                {pData.cold && (
+                  <span style={{
+                    fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+                    background: 'rgba(107,122,90,0.1)', color: 'var(--sage)',
+                    borderRadius: '20px', padding: '.1rem .45rem',
+                    border: '1px solid rgba(107,122,90,0.25)',
+                  }}>
+                    ❄ Cold ferment
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Expanded section when selected */}
             {isSelected && !isNone && (
               <div
@@ -198,58 +244,6 @@ export default function PrefermentPicker({
         );
       })}
     </div>
-
-    {/* Pills for selected preferment — shown below grid */}
-    {(() => {
-      if (selected === 'none') return null;
-      const pData = (PREFERMENT_TYPES[selected] as {
-        flourPct?: number; hydration?: number;
-        fermentHoursMin?: number; fermentHoursMax?: number;
-        cold?: boolean;
-        flourPctMin?: number; flourPctMax?: number; flourPctStep?: number;
-      });
-      if (!pData.flourPct) return null;
-      return (
-        <div style={{ marginTop: '12px', display: 'flex', gap: '.3rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{
-            fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-            background: 'var(--cream)', color: 'var(--ash)',
-            borderRadius: '20px', padding: '.1rem .45rem',
-            border: '1px solid var(--border)',
-          }}>
-            {localFlourPct}% flour
-          </span>
-          <span style={{
-            fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-            background: 'var(--cream)', color: 'var(--ash)',
-            borderRadius: '20px', padding: '.1rem .45rem',
-            border: '1px solid var(--border)',
-          }}>
-            {pData.hydration}% hydration
-          </span>
-          {pData.fermentHoursMin && pData.fermentHoursMax && (
-            <span style={{
-              fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-              background: 'var(--cream)', color: 'var(--ash)',
-              borderRadius: '20px', padding: '.1rem .45rem',
-              border: '1px solid var(--border)',
-            }}>
-              {pData.fermentHoursMin}–{pData.fermentHoursMax}h
-            </span>
-          )}
-          {pData.cold && (
-            <span style={{
-              fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-              background: 'rgba(107,122,90,0.1)', color: 'var(--sage)',
-              borderRadius: '20px', padding: '.1rem .45rem',
-              border: '1px solid rgba(107,122,90,0.25)',
-            }}>
-              ❄ Cold ferment
-            </span>
-          )}
-        </div>
-      );
-    })()}
     </>
   );
 }
