@@ -74,6 +74,15 @@ const EUROPE_COUNTRIES: { code: string; flag: string; name: string }[] = [
   { code: 'at', flag: '🇦🇹', name: 'Austria' },
 ];
 
+// ── Americas country sub-filter ──────────────────
+const AMERICAS_COUNTRIES: { code: string; flag: string; name: string }[] = [
+  { code: 'us', flag: '🇺🇸', name: 'United States' },
+  { code: 'ca', flag: '🇨🇦', name: 'Canada' },
+  { code: 'br', flag: '🇧🇷', name: 'Brazil' },
+  { code: 'mx', flag: '🇲🇽', name: 'Mexico' },
+  { code: 'ar', flag: '🇦🇷', name: 'Argentina' },
+];
+
 // ── Type display labels ───────────────────────────
 const TYPE_LABELS: Record<string, string> = {
   '00': '00 · Pizza flour', '0': '0', '1': 'Tipo 1', '2': 'Tipo 2',
@@ -141,8 +150,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   // APAC + Europe sub-filter + blend state
   const [apacCountry, setApacCountry] = useState<string | null>(null);
   const [europeCountry, setEuropeCountry] = useState<string | null>(null);
+  const [americasCountry, setAmericasCountry] = useState<string | null>(null);
   const [blendApacCountry, setBlendApacCountry] = useState<string | null>(null);
   const [blendEuropeCountry, setBlendEuropeCountry] = useState<string | null>(null);
+  const [blendAmericasCountry, setBlendAmericasCountry] = useState<string | null>(null);
   const [blendSearchQuery, setBlendSearchQuery] = useState('');
   const [blendFilterType, setBlendFilterType] = useState<string | null>(null);
   const [blendFilterOrigin, setBlendFilterOrigin] = useState<string | null>(null);
@@ -208,6 +219,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
         const groupCountries = ORIGIN_GROUPS[filterOrigin] ?? [];
         if (filterOrigin === 'Asia-Pacific' && apacCountry) return f.country === apacCountry;
         if (filterOrigin === 'Europe' && europeCountry) return f.country === europeCountry;
+        if (filterOrigin === 'Americas' && americasCountry) return f.country === americasCountry;
         return groupCountries.includes(f.country);
       })
       .filter(f => excl.includes('manufacturer') || !filterManufacturer ? true : f.brand === filterManufacturer);
@@ -363,7 +375,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       {originOptions.map(origin => (
                         <div
                           key={origin}
-                          onClick={() => { setFilterOrigin(filterOrigin === origin ? null : origin); setApacCountry(null); setEuropeCountry(null); setActiveDropdown(null); }}
+                          onClick={() => { setFilterOrigin(filterOrigin === origin ? null : origin); setApacCountry(null); setEuropeCountry(null); setAmericasCountry(null); setActiveDropdown(null); }}
                           style={{ padding: '7px 10px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', color: filterOrigin === origin ? '#C4522A' : '#1A1612', fontWeight: filterOrigin === origin ? 500 : 400, background: 'transparent' }}
                           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#F5F0E8'; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
@@ -464,6 +476,30 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               </div>
             )}
 
+            {/* Americas country sub-filter pills */}
+            {filterOrigin === 'Americas' && (
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px', marginBottom: '4px' }}>
+                {AMERICAS_COUNTRIES.map(({ code, flag, name }) => (
+                  <button
+                    key={code}
+                    onClick={() => setAmericasCountry(americasCountry === code ? null : code)}
+                    title={name}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '20px',
+                      border: americasCountry === code ? '1.5px solid #C4522A' : '1px solid #E8E0D5',
+                      background: americasCountry === code ? '#FDF0EB' : 'transparent',
+                      fontSize: '18px',
+                      cursor: 'pointer',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {flag}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Active filter tags */}
             {(filterType || filterOrigin || filterManufacturer) && (
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '10px' }}>
@@ -476,7 +512,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 {filterOrigin && (
                   <span style={{ fontSize: '11px', background: '#F5F0E8', borderRadius: '12px', padding: '3px 8px', display: 'inline-flex', gap: '4px', alignItems: 'center', color: '#3D3530' }}>
                     Origin: {filterOrigin}
-                    <span style={{ cursor: 'pointer', color: '#8A7F78' }} onClick={() => { setFilterOrigin(null); setApacCountry(null); setEuropeCountry(null); }}>×</span>
+                    <span style={{ cursor: 'pointer', color: '#8A7F78' }} onClick={() => { setFilterOrigin(null); setApacCountry(null); setEuropeCountry(null); setAmericasCountry(null); }}>×</span>
                   </span>
                 )}
                 {filterManufacturer && (
@@ -488,7 +524,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 {[filterType, filterOrigin, filterManufacturer].filter(Boolean).length > 1 && (
                   <span
                     style={{ fontSize: '11px', color: '#C4522A', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
-                    onClick={() => { setFilterType(null); setFilterOrigin(null); setFilterManufacturer(null); setApacCountry(null); setEuropeCountry(null); }}
+                    onClick={() => { setFilterType(null); setFilterOrigin(null); setFilterManufacturer(null); setApacCountry(null); setEuropeCountry(null); setAmericasCountry(null); }}
                   >
                     Clear all
                   </span>
@@ -812,7 +848,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       </select>
                       <select
                         value={blendFilterOrigin ?? ''}
-                        onChange={e => { setBlendFilterOrigin(e.target.value || null); setBlendApacCountry(null); setBlendEuropeCountry(null); }}
+                        onChange={e => { setBlendFilterOrigin(e.target.value || null); setBlendApacCountry(null); setBlendEuropeCountry(null); setBlendAmericasCountry(null); }}
                         style={{
                           padding: '6px 8px', borderRadius: '20px', border: 'none',
                           background: blendFilterOrigin ? '#1A1612' : '#F5F0E8',
@@ -844,21 +880,27 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       </select>
                     </div>
 
-                    {/* APAC / Europe country sub-filter pills for blend */}
-                    {(blendFilterOrigin === 'Asia-Pacific' || blendFilterOrigin === 'Europe') && (
+                    {/* APAC / Europe / Americas country sub-filter pills for blend */}
+                    {(blendFilterOrigin === 'Asia-Pacific' || blendFilterOrigin === 'Europe' || blendFilterOrigin === 'Americas') && (
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px', marginBottom: '4px' }}>
-                        {(blendFilterOrigin === 'Asia-Pacific' ? APAC_COUNTRIES : EUROPE_COUNTRIES).map(({ code, flag, name }) => {
+                        {(blendFilterOrigin === 'Asia-Pacific' ? APAC_COUNTRIES :
+                          blendFilterOrigin === 'Europe' ? EUROPE_COUNTRIES :
+                          AMERICAS_COUNTRIES).map(({ code, flag, name }) => {
                           const active = blendFilterOrigin === 'Asia-Pacific'
                             ? blendApacCountry === code
-                            : blendEuropeCountry === code;
+                            : blendFilterOrigin === 'Europe'
+                            ? blendEuropeCountry === code
+                            : blendAmericasCountry === code;
                           return (
                             <button
                               key={code}
                               onClick={() => {
                                 if (blendFilterOrigin === 'Asia-Pacific') {
                                   setBlendApacCountry(active ? null : code);
-                                } else {
+                                } else if (blendFilterOrigin === 'Europe') {
                                   setBlendEuropeCountry(active ? null : code);
+                                } else {
+                                  setBlendAmericasCountry(active ? null : code);
                                 }
                               }}
                               title={name}
@@ -889,6 +931,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                           const groupCountries = ORIGIN_GROUPS[blendFilterOrigin] ?? [];
                           if (blendFilterOrigin === 'Asia-Pacific' && blendApacCountry) return f.country === blendApacCountry;
                           if (blendFilterOrigin === 'Europe' && blendEuropeCountry) return f.country === blendEuropeCountry;
+                          if (blendFilterOrigin === 'Americas' && blendAmericasCountry) return f.country === blendAmericasCountry;
                           return groupCountries.includes(f.country);
                         })
                         .filter(f => !blendFilterBrand || f.brand === blendFilterBrand)
