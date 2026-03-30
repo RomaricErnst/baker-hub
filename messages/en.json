@@ -52,7 +52,7 @@
   "steps": {
     "1": { "title": "What are you crafting today?" },
     "2": { "title": "Choose your dough style" },
-    "3": { "title": "How many and how big?" },
+    "3": { "title": "Quantity" },
     "4": { "title": "Your baking setup" },
     "5": { "title": "Your kitchen climate" },
     "6": { "title": "Your mixing method" },
