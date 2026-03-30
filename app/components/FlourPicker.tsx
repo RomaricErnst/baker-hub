@@ -842,8 +842,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         }}
                       />
                     </div>
-                    {/* Row 2 — Three filter selects */}
-                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                    {/* Row 2 — Type + Origin + Brand on same row */}
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
                       <select
                         value={blendFilterType ?? ''}
                         onChange={e => setBlendFilterType(e.target.value || null)}
