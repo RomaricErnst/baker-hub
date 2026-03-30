@@ -371,7 +371,7 @@ function findOptimalPosition(
     return hbf >= sweetTo && hbf <= sweetFrom;
   }
   const STEP = 0.25;
-  const SEARCH_RANGE = (sweetFrom - sweetTo) + 8;
+  const SEARCH_RANGE = (sweetFrom - sweetTo) / 2 + 2;
   for (let delta = 0; delta <= SEARCH_RANGE; delta += STEP) {
     for (const sign of [0, 1, -1]) {
       const candidate = sweetCenter + (sign * delta);
@@ -930,7 +930,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
     onChange(pendingStart, pendingEatTime, newBlocks);
-    if (!hasManuallyDragged.current && eatTimeSet) {
+    if (!hasManuallyDragged.current && (phase === 'start_confirm' || eatTimeSet)) {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
   }
