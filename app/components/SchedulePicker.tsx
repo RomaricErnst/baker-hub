@@ -376,18 +376,12 @@ function findOptimalPosition(
     for (const sign of [0, 1, -1]) {
       const candidate = sweetCenter + (sign * delta);
       if (candidate < sweetTo - 2 || candidate > sweetFrom + 2) continue;
-      const mixClear = !isInBlocker(candidate);
-      if (mixClear) {
-        let bestPrefHBF = candidate + prefOffsetH;
-        if (hasPref && isInBlocker(bestPrefHBF)) {
-          for (let pd = 0.25; pd <= 4; pd += 0.25) {
-            if (!isInBlocker(candidate + prefOffsetH + pd)) { bestPrefHBF = candidate + prefOffsetH + pd; break; }
-            if (!isInBlocker(candidate + prefOffsetH - pd)) { bestPrefHBF = candidate + prefOffsetH - pd; break; }
-          }
-        }
+      const mixClear  = !isInBlocker(candidate);
+      const prefClear = !hasPref || !isInBlocker(candidate + prefOffsetH);
+      if (mixClear && prefClear) {
         return {
           mixHBF:        candidate,
-          prefHBF:       bestPrefHBF,
+          prefHBF:       candidate + prefOffsetH,
           mixInZone:     inSweet(candidate),
           prefInZone:    true,
           fallback:      !inSweet(candidate),
@@ -935,7 +929,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
-    console.log('AAU_DEBUG eatTimeSet=' + eatTimeSet + ' phase=' + phase + ' manuallyDragged=' + hasManuallyDragged.current);
     onChange(pendingStart, pendingEatTime, newBlocks);
     if (!hasManuallyDragged.current && eatTimeSet) {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
