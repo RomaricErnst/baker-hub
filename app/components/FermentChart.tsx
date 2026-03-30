@@ -414,7 +414,7 @@ export default function FermentChart({
       <svg
         ref={svgRef}
         width={W}
-        height={CHART_H + 26}
+        height={CHART_H + 30}
         style={{ display: 'block', touchAction: 'none', overflow: 'visible' }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -537,7 +537,7 @@ export default function FermentChart({
           <g key={i}>
             <line x1={tk.x} y1={AXIS_Y} x2={tk.x} y2={AXIS_Y + 3}
               stroke="var(--border)" strokeWidth={1} />
-            <text x={tk.x} y={AXIS_Y + 16} fontSize={12} fill="var(--smoke)"
+            <text x={tk.x} y={AXIS_Y + 20} fontSize={12} fill="var(--smoke)"
               fontFamily="DM Mono, monospace" textAnchor="middle">
               {tk.label}
             </text>
@@ -549,7 +549,7 @@ export default function FermentChart({
           points={`${bakeX - 8},${AXIS_Y} ${bakeX},${AXIS_Y - 12} ${bakeX + 8},${AXIS_Y}`}
           fill={TERRA}
         />
-        <text x={bakeX} y={AXIS_Y + 16} fontSize={14} fontWeight="600" fill={TERRA}
+        <text x={bakeX} y={AXIS_Y + 20} fontSize={14} fontWeight="600" fill={TERRA}
           fontFamily="DM Mono, monospace" textAnchor="middle">Bake</text>
 
         {/* ── Pref diamond ── */}
@@ -563,7 +563,7 @@ export default function FermentChart({
         {hasPref && (
           <text
             x={prefX}
-            y={labelsClose ? AXIS_Y + 46 : AXIS_Y + 32}
+            y={labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
             fontSize={12}
             fill={prefColor}
             fontFamily="DM Mono, monospace"
@@ -587,7 +587,7 @@ export default function FermentChart({
         )}
         {/* ── Mix label ── */}
         <text
-          x={mixX} y={AXIS_Y + 32}
+          x={mixX} y={AXIS_Y + 36}
           fontSize={12} fill="#3D5A30"
           fontFamily="DM Mono, monospace"
           textAnchor="middle" fontWeight="600"

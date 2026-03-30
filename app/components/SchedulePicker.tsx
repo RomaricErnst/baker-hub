@@ -877,7 +877,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     hasManuallyDragged.current = false;
     computeAndApplyRecommendation(blocks, pendingEatTime);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingEatTime, blocks]);
+  }, [pendingEatTime]);
 
   const suggestion = useMemo(
     () => computeSuggestion(pendingEatTime, preheatMin, styleKey, kitchenTemp),
@@ -961,7 +961,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
     onChange(resolvedStart, pendingEatTime, newBlocks);
     // Recompute recommendation if baker hasn't manually dragged
-    if (!hasManuallyDragged.current && phase === 'start_confirm') {
+    if (!hasManuallyDragged.current && eatTimeSet) {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
   }
@@ -1471,12 +1471,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       </div>
 
       {/* Adjust schedule */}
-      <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+      <div style={{ marginTop: '.5rem', marginBottom: '.75rem' }}>
         <div
           onClick={() => setAdjustOpen(o => !o)}
           style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            cursor: 'pointer', padding: '.6rem 0',
+            cursor: 'pointer', padding: '.4rem 0',
             borderTop: '1px solid var(--border)',
             borderBottom: adjustOpen ? 'none' : '1px solid var(--border)',
           }}
@@ -1488,13 +1488,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
 
         {adjustOpen && (
-          <div style={{ paddingTop: '8px', paddingBottom: '8px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
+          <div style={{ paddingTop: '4px', paddingBottom: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '14px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
                 <span style={{ color: '#3D5A30', fontWeight: 600 }}>◆ Dough:</span> drag the green diamond — green curve should peak at Bake
               </div>
               {hasPrefActive && (
-                <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
+                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
                   <span style={{ color: '#C4A030', fontWeight: 600 }}>◇ {prefLabel}:</span> drag the gold diamond — gold curve should peak at Start Dough
                 </div>
               )}
