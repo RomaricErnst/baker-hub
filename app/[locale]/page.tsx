@@ -882,7 +882,7 @@ export default function Home() {
                     {/* Diameter slider */}
                     <div style={{ display: 'grid', gridTemplateColumns: '64px 52px 16px 1fr', alignItems: 'center', marginTop: '20px', marginBottom: '12px' }}>
                       <span style={{ fontSize: '13px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', fontWeight: 400, whiteSpace: 'nowrap' }}>Diameter</span>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap', textAlign: 'right' }}>{pizzaDiameter} cm</span>
+                      <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--char)', fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap', textAlign: 'right' }}>{pizzaDiameter} cm</span>
                       <span />
                       <div style={{ position: 'relative', height: '24px', display: 'flex', alignItems: 'center' }}>
                         <div style={{ position: 'absolute', left: 0, right: 0, height: '6px', background: 'var(--border)', borderRadius: '3px' }} />
@@ -923,25 +923,34 @@ export default function Home() {
                 );
                 return (
                   <div style={{ padding: '0 .1rem' }}>
-                    {/* Ball count + weight on same row */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '20px' }}>
-                      {/* Ball count stepper — left */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button onClick={() => setNumItems(n => Math.max(1, n - 1))} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                        <input type="number" min={1} max={24} step={1} value={numItems}
-                          onChange={e => setNumItems(Math.max(1, Math.min(24, Math.round(+e.target.value))))}
-                          style={{ width: '48px', border: 'none', borderBottom: '2px solid var(--char)', background: 'transparent', fontSize: '16px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
-                        <button onClick={() => setNumItems(n => Math.min(24, n + 1))} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>{isBread ? t('quantity.loaves') : t('quantity.pizzas')}</span>
+                    {/* Ball count + weight — labels above, one row */}
+                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '8px', marginBottom: '20px' }}>
+                      {/* Ball count — left */}
+                      <div>
+                        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
+                          {isBread ? 'Loaves' : 'Pizzas'}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button onClick={() => setNumItems(n => Math.max(1, n - 1))} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                          <input type="number" min={1} max={24} step={1} value={numItems}
+                            onChange={e => setNumItems(Math.max(1, Math.min(24, Math.round(+e.target.value))))}
+                            style={{ width: '48px', border: 'none', borderBottom: '2px solid var(--char)', background: 'transparent', fontSize: '16px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
+                          <button onClick={() => setNumItems(n => Math.min(24, n + 1))} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                        </div>
                       </div>
-                      {/* Weight stepper — right */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button onClick={() => { const w = Math.max(150, itemWeight - 5); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                        <input type="number" min={150} max={500} step={5} value={itemWeight}
-                          onChange={e => { const w = Math.max(150, Math.min(500, Math.round(+e.target.value / 5) * 5)); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }}
-                          style={{ width: '56px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '16px', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
-                        <button onClick={() => { const w = Math.min(500, itemWeight + 5); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>g</span>
+                      {/* Weight per ball — right */}
+                      <div>
+                        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
+                          {isBread ? 'Weight per loaf' : 'Weight per ball'}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button onClick={() => { const w = Math.max(150, itemWeight - 5); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                          <input type="number" min={150} max={500} step={5} value={itemWeight}
+                            onChange={e => { const w = Math.max(150, Math.min(500, Math.round(+e.target.value / 5) * 5)); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }}
+                            style={{ width: '56px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '16px', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
+                          <button onClick={() => { const w = Math.min(500, itemWeight + 5); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                          <span style={{ fontSize: '13px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>g</span>
+                        </div>
                       </div>
                     </div>
                     {/* Sliders */}
@@ -1532,7 +1541,7 @@ export default function Home() {
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: '64px 52px 16px 1fr', alignItems: 'center', marginTop: '20px', marginBottom: '12px' }}>
                       <span style={{ fontSize: '13px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', fontWeight: 400, whiteSpace: 'nowrap' }}>Diameter</span>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap', textAlign: 'right' }}>{pizzaDiameter} cm</span>
+                      <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--char)', fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap', textAlign: 'right' }}>{pizzaDiameter} cm</span>
                       <span />
                       <div style={{ position: 'relative', height: '24px', display: 'flex', alignItems: 'center' }}>
                         <div style={{ position: 'absolute', left: 0, right: 0, height: '6px', background: 'var(--border)', borderRadius: '3px' }} />
@@ -1573,25 +1582,34 @@ export default function Home() {
                 );
                 return (
                   <div style={{ padding: '0 .1rem' }}>
-                    {/* Ball count + weight on same row */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '20px' }}>
-                      {/* Ball count stepper — left */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button onClick={() => setNumItems(n => Math.max(1, n - 1))} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                        <input type="number" min={1} max={24} step={1} value={numItems}
-                          onChange={e => setNumItems(Math.max(1, Math.min(24, Math.round(+e.target.value))))}
-                          style={{ width: '48px', border: 'none', borderBottom: '2px solid var(--char)', background: 'transparent', fontSize: '16px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
-                        <button onClick={() => setNumItems(n => Math.min(24, n + 1))} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>{isBread ? t('quantity.loaves') : t('quantity.pizzas')}</span>
+                    {/* Ball count + weight — labels above, one row */}
+                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '8px', marginBottom: '20px' }}>
+                      {/* Ball count — left */}
+                      <div>
+                        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
+                          {isBread ? 'Loaves' : 'Pizzas'}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button onClick={() => setNumItems(n => Math.max(1, n - 1))} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                          <input type="number" min={1} max={24} step={1} value={numItems}
+                            onChange={e => setNumItems(Math.max(1, Math.min(24, Math.round(+e.target.value))))}
+                            style={{ width: '48px', border: 'none', borderBottom: '2px solid var(--char)', background: 'transparent', fontSize: '16px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
+                          <button onClick={() => setNumItems(n => Math.min(24, n + 1))} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                        </div>
                       </div>
-                      {/* Weight stepper — right */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button onClick={() => { const w = Math.max(150, itemWeight - 5); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                        <input type="number" min={150} max={500} step={5} value={itemWeight}
-                          onChange={e => { const w = Math.max(150, Math.min(500, Math.round(+e.target.value / 5) * 5)); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }}
-                          style={{ width: '56px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '16px', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
-                        <button onClick={() => { const w = Math.min(500, itemWeight + 5); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>g</span>
+                      {/* Weight per ball — right */}
+                      <div>
+                        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
+                          {isBread ? 'Weight per loaf' : 'Weight per ball'}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button onClick={() => { const w = Math.max(150, itemWeight - 5); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                          <input type="number" min={150} max={500} step={5} value={itemWeight}
+                            onChange={e => { const w = Math.max(150, Math.min(500, Math.round(+e.target.value / 5) * 5)); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }}
+                            style={{ width: '56px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '16px', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
+                          <button onClick={() => { const w = Math.min(500, itemWeight + 5); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                          <span style={{ fontSize: '13px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>g</span>
+                        </div>
                       </div>
                     </div>
                     {sliders}
