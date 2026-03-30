@@ -309,18 +309,13 @@ export default function FermentChart({
     const x1 = hToX(fromHBF, W, WH);
     const x2 = hToX(toHBF,   W, WH);
     if (x2 <= x1 + 1) return null;
-    const isForDough = markerId === 'sage';
-    const peakH = isForDough ? doughPeakHBF : prefPeakHBF;
-    const sig   = isForDough ? DOUGH_SIG    : prefSig;
-    const yAtX1 = BL - bell(xToHBF(x1, W, WH), peakH, sig) * MAXH;
-    const yAtX2 = BL - bell(xToHBF(x2, W, WH), peakH, sig) * MAXH;
     return (
       <g>
         <rect x={x1} y={0} width={x2 - x1} height={BL}
           fill={`${color}12`} />
-        <line x1={x1} y1={yAtX1} x2={x1} y2={BL}
+        <line x1={x1} y1={0} x2={x1} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
-        <line x1={x2} y1={yAtX2} x2={x2} y2={BL}
+        <line x1={x2} y1={0} x2={x2} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
         <rect
           x={(x1 + x2) / 2 - label.length * 4}
@@ -679,78 +674,6 @@ export default function FermentChart({
         </div>
       </div>
 
-      {/* ── Phase timeline strip ────────────────────────── */}
-      {phases && (() => {
-        const segs = [
-          { key: 'bulk',   h: phases.bulkFermH,   color: '#C4A030', label: 'Bulk' },
-          { key: 'fridge', h: phases.coldRetardH,  color: '#4A7FA5', label: 'Fridge' },
-          { key: 'proof',  h: phases.finalProofH,  color: '#6B7A5A', label: 'Proof' },
-          { key: 'heat',   h: phases.preheatH,     color: '#C4522A', label: 'Preheat' },
-        ].filter(s => s.h > 0);
-        const total = segs.reduce((sum, s) => sum + s.h, 0);
-        if (total === 0) return null;
-        return (
-          <div style={{ marginTop: '.7rem' }}>
-            <div style={{
-              fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
-              color: 'var(--smoke)', textTransform: 'uppercase',
-              letterSpacing: '.06em', marginBottom: '.3rem',
-            }}>
-              Your bake timeline
-            </div>
-            <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden', height: '20px' }}>
-              {segs.map(s => {
-                const pct = s.h / total;
-                const showFull = pct >= 0.15;
-                const showShort = !showFull && pct >= 0.07;
-                const hLabel = formatHours(s.h);
-                return (
-                  <div
-                    key={s.key}
-                    title={`${s.label}: ${hLabel}`}
-                    style={{
-                      flex: s.h,
-                      background: s.color,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {showFull && (
-                      <span style={{
-                        fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
-                        color: 'white', whiteSpace: 'nowrap', lineHeight: 1,
-                      }}>
-                        {s.label} · {hLabel}
-                      </span>
-                    )}
-                    {showShort && (
-                      <span style={{
-                        fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
-                        color: 'white', whiteSpace: 'nowrap', lineHeight: 1,
-                      }}>
-                        {hLabel}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* ── Schedule note ───────────────────────────── */}
-      {scheduleNote && (
-        <div style={{
-          fontFamily: 'DM Sans, sans-serif',
-          fontSize: '12px',
-          color: 'var(--smoke)',
-          textAlign: 'center',
-          marginTop: '8px',
-        }}>
-          {scheduleNote}
-        </div>
-      )}
     </div>
   );
 }
