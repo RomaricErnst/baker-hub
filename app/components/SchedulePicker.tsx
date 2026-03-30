@@ -822,8 +822,25 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setRecommendedHBF(null);
       setShowFallbackPopup(true);
     } else {
-      const newStart = new Date(et.getTime() - result.mixHBF * 3600000);
-      setRecommendedHBF(result.mixHBF);
+      let finalMixHBF = result.mixHBF;
+
+      // Proactively avoid bulk conflict
+      const bulkDurationH = 4; // conservative estimate
+      const proposedStart = new Date(et.getTime() - finalMixHBF * 3600000);
+      const proposedBulkEnd = new Date(proposedStart.getTime() + bulkDurationH * 3600000);
+
+      for (const block of currentBlocks) {
+        if (block.from < proposedBulkEnd && block.to > proposedStart) {
+          const neededStart = new Date(block.from.getTime() - bulkDurationH * 3600000 - 30 * 60000);
+          const neededHBF = (et.getTime() - neededStart.getTime()) / 3600000;
+          if (neededHBF > finalMixHBF) {
+            finalMixHBF = neededHBF;
+          }
+        }
+      }
+
+      const newStart = new Date(et.getTime() - finalMixHBF * 3600000);
+      setRecommendedHBF(finalMixHBF);
       setShowFallbackPopup(false);
       setPendingStart(newStart);
       onChange(newStart, et, currentBlocks);
