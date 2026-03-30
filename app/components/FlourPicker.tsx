@@ -28,6 +28,16 @@ const BLEND_PRESETS: Record<string, { label: string; type: FlourKey; ratio: numb
   contemporary:  [{ label: '+ Wholemeal 10%', type: 'wholemeal', ratio: 90 }, { label: '+ Rye 5%', type: 'rye', ratio: 95 }],
 };
 
+// ── Blend generic types ───────────────────────────
+const BLEND_GENERIC_TYPES: Record<string, { label: string; w: number; protein: number }> = {
+  semolina:   { label: 'Semolina rimacinata', w: 200, protein: 12.5 },
+  manitoba:   { label: 'Manitoba',            w: 380, protein: 14.0 },
+  wholemeal:  { label: 'Wholemeal',           w: 185, protein: 12.0 },
+  rye:        { label: 'Rye',                 w: 160, protein: 10.0 },
+  allpurpose: { label: 'All-purpose',         w: 190, protein: 10.5 },
+  bread:      { label: 'Bread flour',         w: 270, protein: 12.8 },
+};
+
 // ── Origin groups (display-label keyed) ──────────
 const ORIGIN_GROUPS: Record<string, string[]> = {
   'France':       ['fr'],
@@ -74,9 +84,9 @@ const QUICK_TYPES = [
   { label: 'T110 / T150', w: 190, protein: 11.0 },
   { label: 'Bread flour', w: 270, protein: 12.8 },
   { label: 'All-purpose', w: 190, protein: 10.5 },
+  { label: 'Manitoba',    w: 380, protein: 14.0 },
   { label: 'Wholemeal',   w: 185, protein: 12.0 },
   { label: 'Rye',         w: 160, protein: 10.0 },
-  { label: 'Semolina',    w: 0,   protein: 12.5 },
 ];
 
 // ── W strength helper ─────────────────────────────
@@ -141,7 +151,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   }, [activeDropdown]);
 
   // suppress unused-var lint for blend filter states (reserved for future use)
-  void blendFilterType; void blendFilterOrigin; void blendFilterBrand;
+  void blendFilterOrigin;
 
   function selectDBEntry(f: FlourEntry) {
     const autoTile: FlourKey = f.w >= 270 ? 'strong00' : 'pizza00';
@@ -606,7 +616,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#1A1612', fontFamily: 'DM Sans, sans-serif' }}>
-                        {blendSelectedF2.brand} {blendSelectedF2.name}
+                        {blendSelectedF2.brand ? `${blendSelectedF2.brand} ${blendSelectedF2.name}` : blendSelectedF2.name}
                       </div>
                       <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
                         W{blendSelectedF2.w} · {blendSelectedF2.protein}% protein
@@ -648,7 +658,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               ) : (
                 <div>
                   {/* Preset chips — only if styleKey has presets */}
-                  {styleKey && BLEND_PRESETS[styleKey] && BLEND_PRESETS[styleKey].length > 0 && !blendShowFullSearch && (
+                  {styleKey && BLEND_PRESETS[styleKey] && BLEND_PRESETS[styleKey].length > 0 && (
                     <div style={{ marginBottom: '14px' }}>
                       <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
                         Popular with {styleKey.replace('_', ' ')}:
@@ -658,14 +668,19 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                           <button
                             key={preset.label}
                             onClick={() => {
-                              const pt = preset.type as string;
-                              const match = FLOUR_DB.find(f => (f.type as string) === pt || f.type.includes(pt as never));
-                              if (match) {
-                                setBlendSelectedF2(match);
+                              const generic = BLEND_GENERIC_TYPES[preset.type];
+                              if (generic) {
+                                const genericEntry: FlourEntry = {
+                                  id: preset.type, brand: '', name: generic.label,
+                                  type: 'bread', country: 'us', w: generic.w, wPublished: false,
+                                  protein: generic.protein, hydration: [60, 75],
+                                  bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
+                                };
+                                setBlendSelectedF2(genericEntry);
                                 setBlendRatio(preset.ratio);
                                 const f1w = blend.wOverride ?? 260;
-                                const blendedW = Math.round((f1w * preset.ratio / 100) + (match.w * (100 - preset.ratio) / 100));
-                                onBlendChange({ ...blend, ratio1: preset.ratio, wOverride: blendedW, customFlour2Name: `${match.brand} ${match.name}` });
+                                const blendedW = Math.round((f1w * preset.ratio / 100) + (generic.w * (100 - preset.ratio) / 100));
+                                onBlendChange({ ...blend, ratio1: preset.ratio, wOverride: blendedW, customFlour2Name: generic.label });
                               }
                             }}
                             style={{
@@ -682,108 +697,178 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     </div>
                   )}
 
-                  {/* Search input — always visible in blend section */}
-                  {!blendShowFullSearch && (
-                    <button
-                      onClick={() => setBlendShowFullSearch(true)}
-                      style={{
-                        width: '100%', padding: '10px 14px',
-                        borderRadius: '10px', border: '1px solid #E8E0D5',
-                        background: '#F5F0E8', textAlign: 'left',
-                        fontSize: '13px', color: '#8A7F78',
-                        fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
-                      }}
-                    >
-                      Search & pick a flour →
-                    </button>
-                  )}
-
-                  {/* Full flour search */}
-                  {blendShowFullSearch && (
-                    <div>
+                  <div style={{ marginTop: '12px' }}>
+                    {/* Search + filter row */}
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
                       <input
                         type="text"
-                        placeholder="Search second flour..."
+                        placeholder="Or find a specific brand..."
                         value={blendSearchQuery}
-                        onChange={e => setBlendSearchQuery(e.target.value)}
+                        onChange={e => { setBlendSearchQuery(e.target.value); setBlendShowFullSearch(true); }}
                         style={{
-                          width: '100%', padding: '8px 12px',
+                          flex: 1, padding: '8px 12px',
                           border: '1px solid #E8E0D5', borderRadius: '10px',
                           fontSize: '13px', fontFamily: 'DM Sans, sans-serif',
-                          background: 'white', outline: 'none', color: '#1A1612',
-                          boxSizing: 'border-box',
+                          background: 'white', outline: 'none', color: '#1A1612', minWidth: 0,
                         }}
                       />
-                      {/* Results */}
-                      {(() => {
-                        const blendResults = FLOUR_DB
-                          .filter(f => !blendSearchQuery || `${f.brand} ${f.name}`.toLowerCase().includes(blendSearchQuery.toLowerCase()))
-                          .slice(0, 50);
-                        const showGeneric = blendResults.length === 0;
-                        if (showGeneric) {
-                          return (
-                            <div style={{ marginTop: '8px' }}>
-                              <div style={{ fontSize: '12px', color: '#8A7F78', marginBottom: '8px', fontFamily: 'DM Sans, sans-serif' }}>
-                                No flours found — pick a type:
-                              </div>
-                              {QUICK_TYPES.map(t => (
-                                <div
-                                  key={t.label}
-                                  onClick={() => {
-                                    const generic: FlourEntry = {
-                                      id: t.label, brand: 'Generic', name: t.label,
-                                      type: 'bread', country: 'us', w: t.w, wPublished: false,
-                                      protein: t.protein, hydration: [60, 75], bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
-                                    };
-                                    setBlendSelectedF2(generic);
-                                    setBlendRatio(85);
-                                    const f1w = blend.wOverride ?? 260;
-                                    const blendedW = Math.round((f1w * 85 / 100) + (t.w * 15 / 100));
-                                    onBlendChange({ ...blend, ratio1: 85, wOverride: blendedW, customFlour2Name: t.label });
-                                  }}
-                                  style={{ padding: '8px 0', borderBottom: '0.5px solid #E8E0D5', cursor: 'pointer', fontSize: '13px', color: '#1A1612', fontFamily: 'DM Sans, sans-serif', display: 'flex', justifyContent: 'space-between' }}
-                                >
-                                  <span>{t.label}</span>
-                                  <span style={{ color: '#8A7F78', fontFamily: 'var(--font-dm-mono)', fontSize: '12px' }}>{t.w > 0 ? `~W${t.w}` : '—'}</span>
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        }
+                      <select
+                        value={blendFilterType ?? ''}
+                        onChange={e => setBlendFilterType(e.target.value || null)}
+                        style={{
+                          padding: '6px 8px', borderRadius: '20px', border: 'none',
+                          background: blendFilterType ? '#1A1612' : '#F5F0E8',
+                          color: blendFilterType ? 'white' : '#3D3530',
+                          fontSize: '12px', fontFamily: 'DM Sans, sans-serif',
+                          cursor: 'pointer', outline: 'none', flexShrink: 0,
+                        }}
+                      >
+                        <option value="">Type ▾</option>
+                        {[...new Set(FLOUR_DB.map(f => f.type))].sort().map(t => (
+                          <option key={t} value={t}>{TYPE_LABELS[t] ?? t}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={blendFilterBrand ?? ''}
+                        onChange={e => setBlendFilterBrand(e.target.value || null)}
+                        style={{
+                          padding: '6px 8px', borderRadius: '20px', border: 'none',
+                          background: blendFilterBrand ? '#1A1612' : '#F5F0E8',
+                          color: blendFilterBrand ? 'white' : '#3D3530',
+                          fontSize: '12px', fontFamily: 'DM Sans, sans-serif',
+                          cursor: 'pointer', outline: 'none', flexShrink: 0,
+                        }}
+                      >
+                        <option value="">Brand ▾</option>
+                        {[...new Set(FLOUR_DB.map(f => f.brand))].sort().map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Results — only when search/filter active */}
+                    {(blendSearchQuery || blendFilterType || blendFilterBrand) && (() => {
+                      const blendResults = FLOUR_DB
+                        .filter(f => !blendSearchQuery || `${f.brand} ${f.name}`.toLowerCase().includes(blendSearchQuery.toLowerCase()))
+                        .filter(f => !blendFilterType || f.type === blendFilterType)
+                        .filter(f => !blendFilterBrand || f.brand === blendFilterBrand)
+                        .slice(0, 30);
+                      if (blendResults.length === 0) {
                         return (
-                          <div style={{ maxHeight: '240px', overflowY: 'auto', marginTop: '8px' }}>
-                            {blendResults.map(f => (
-                              <div
-                                key={f.id}
-                                onClick={() => {
-                                  setBlendSelectedF2(f);
-                                  setBlendShowFullSearch(false);
-                                  setBlendRatio(85);
-                                  const f1w = blend.wOverride ?? 260;
-                                  const blendedW = Math.round((f1w * 85 / 100) + (f.w * 15 / 100));
-                                  onBlendChange({ ...blend, ratio1: 85, wOverride: blendedW, customFlour2Name: `${f.brand} ${f.name}` });
-                                }}
-                                style={{ padding: '10px 0', borderBottom: '0.5px solid #E8E0D5', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
-                                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
-                              >
-                                <div>
-                                  <div style={{ fontSize: '13px', fontWeight: 500, color: '#1A1612', fontFamily: 'DM Sans, sans-serif' }}>{f.brand}</div>
-                                  <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>{f.name}</div>
-                                </div>
-                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                  <div style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', color: f.wPublished ? '#1A1612' : '#8A7F78' }}>
-                                    {f.wPublished ? `W${f.w}` : `~W${f.w}`}
-                                  </div>
-                                  <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>{f.protein}%</div>
-                                </div>
-                              </div>
-                            ))}
+                          <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', padding: '8px 0' }}>
+                            Not in our database — use the type or W option below.
                           </div>
                         );
-                      })()}
+                      }
+                      return (
+                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                          {blendResults.map(f => (
+                            <div
+                              key={f.id}
+                              onClick={() => {
+                                setBlendSelectedF2(f);
+                                setBlendRatio(85);
+                                setBlendSearchQuery('');
+                                setBlendFilterType(null);
+                                setBlendFilterBrand(null);
+                                const f1w = blend.wOverride ?? 260;
+                                const blendedW = Math.round((f1w * 85 / 100) + (f.w * 15 / 100));
+                                onBlendChange({ ...blend, ratio1: 85, wOverride: blendedW, customFlour2Name: `${f.brand} ${f.name}` });
+                              }}
+                              style={{ padding: '8px 0', borderBottom: '0.5px solid #E8E0D5', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                            >
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: 500, color: '#1A1612', fontFamily: 'DM Sans, sans-serif' }}>{f.brand}</div>
+                                <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>{f.name}</div>
+                              </div>
+                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                <div style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', color: f.wPublished ? '#1A1612' : '#8A7F78' }}>
+                                  {f.wPublished ? `W${f.w}` : `~W${f.w}`}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>{f.protein}%</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Type or W fallback — always visible */}
+                    <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '0.5px solid #E8E0D5' }}>
+                      <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
+                        Don&apos;t see your flour? Pick a type or enter W:
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        {[
+                          { label: 'Semolina rimacinata', w: 200, protein: 12.5 },
+                          { label: 'Manitoba',            w: 380, protein: 14.0 },
+                          { label: 'Wholemeal',           w: 185, protein: 12.0 },
+                          { label: 'Rye',                 w: 160, protein: 10.0 },
+                          { label: 'Bread flour',         w: 270, protein: 12.8 },
+                          { label: 'All-purpose',         w: 190, protein: 10.5 },
+                        ].map(t => (
+                          <button
+                            key={t.label}
+                            onClick={() => {
+                              const genericEntry: FlourEntry = {
+                                id: t.label, brand: '', name: t.label,
+                                type: 'bread', country: 'us', w: t.w, wPublished: false,
+                                protein: t.protein, hydration: [60, 75],
+                                bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
+                              };
+                              setBlendSelectedF2(genericEntry);
+                              setBlendRatio(85);
+                              const f1w = blend.wOverride ?? 260;
+                              const blendedW = Math.round((f1w * 85 / 100) + (t.w * 15 / 100));
+                              onBlendChange({ ...blend, ratio1: 85, wOverride: blendedW, customFlour2Name: t.label });
+                            }}
+                            style={{
+                              padding: '4px 10px', borderRadius: '20px',
+                              border: '1px solid #E8E0D5', background: 'transparent',
+                              fontSize: '12px', color: '#3D3530',
+                              fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
+                            }}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                        {/* W value input */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>W</span>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            placeholder="e.g. 380"
+                            min={100} max={450}
+                            style={{
+                              width: '72px', padding: '4px 8px',
+                              border: '1.5px solid #E8E0D5', borderRadius: '8px',
+                              fontFamily: 'var(--font-dm-mono)', fontSize: '13px',
+                              color: '#1A1612', background: 'white', outline: 'none', textAlign: 'center',
+                            }}
+                            onChange={e => {
+                              const v = parseInt(e.target.value);
+                              if (!isNaN(v) && v >= 100 && v <= 450) {
+                                const genericEntry: FlourEntry = {
+                                  id: `W${v}`, brand: '', name: `Custom W${v}`,
+                                  type: 'bread', country: 'us', w: v, wPublished: true,
+                                  protein: 12, hydration: [60, 75],
+                                  bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
+                                };
+                                setBlendSelectedF2(genericEntry);
+                                setBlendRatio(85);
+                                const f1w = blend.wOverride ?? 260;
+                                const blendedW = Math.round((f1w * 85 / 100) + (v * 15 / 100));
+                                onBlendChange({ ...blend, ratio1: 85, wOverride: blendedW, customFlour2Name: `Custom W${v}` });
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
             </div>
