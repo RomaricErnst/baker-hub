@@ -52,7 +52,7 @@
   "steps": {
     "1": { "title": "Qu'est-ce que vous préparez ?" },
     "2": { "title": "Choisissez votre style de pâte" },
-    "3": { "title": "Quantité" },
+    "3": { "title": "Quantité & Taille" },
     "4": { "title": "Votre four" },
     "5": { "title": "Le climat de votre cuisine" },
     "6": { "title": "Votre méthode de pétrissage" },
