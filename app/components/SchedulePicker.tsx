@@ -376,12 +376,18 @@ function findOptimalPosition(
     for (const sign of [0, 1, -1]) {
       const candidate = sweetCenter + (sign * delta);
       if (candidate < sweetTo - 2 || candidate > sweetFrom + 2) continue;
-      const mixClear  = !isInBlocker(candidate);
-      const prefClear = !hasPref || !isInBlocker(candidate + prefOffsetH);
-      if (mixClear && prefClear) {
+      const mixClear = !isInBlocker(candidate);
+      if (mixClear) {
+        let bestPrefHBF = candidate + prefOffsetH;
+        if (hasPref && isInBlocker(bestPrefHBF)) {
+          for (let pd = 0.25; pd <= 4; pd += 0.25) {
+            if (!isInBlocker(candidate + prefOffsetH + pd)) { bestPrefHBF = candidate + prefOffsetH + pd; break; }
+            if (!isInBlocker(candidate + prefOffsetH - pd)) { bestPrefHBF = candidate + prefOffsetH - pd; break; }
+          }
+        }
         return {
           mixHBF:        candidate,
-          prefHBF:       candidate + prefOffsetH,
+          prefHBF:       bestPrefHBF,
           mixInZone:     inSweet(candidate),
           prefInZone:    true,
           fallback:      !inSweet(candidate),
