@@ -997,22 +997,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     letterSpacing: '.01em',
   };
 
-  // ── PHASE 1: Bake time ────────────────────────
-  if (phase === 'bake_time') {
-    return (
-      <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
-        <div style={{ marginBottom: '.9rem' }}>
-          <div style={{
-            fontWeight: 700, fontSize: '.95rem', color: 'var(--char)',
-            marginBottom: '.25rem',
-          }}>
-            {bakeType === 'bread' ? t('bakeTimeLabelBread') : t('bakeTimeLabelPizza')}
-          </div>
-          <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5 }}>
-            {t('bakeTimeSub')}
-          </div>
+  // ── Unified render (bake time always visible) ─
+  const { scenario } = suggestion;
+  const startInvalid = startComputed && pendingStart >= pendingEatTime;
+  const bulkConflict = schedule?.bulkConflict ?? null;
+
+  return (
+    <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
+
+      {/* Bake time inputs — always visible */}
+      <div style={{ marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--char)', marginBottom: '.3rem' }}>
+          {bakeType === 'bread' ? t('bakeTimeLabelBread') : t('bakeTimeLabelPizza')}
         </div>
-        <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1rem' }}>
+        <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
+          {t('bakeTimeSub')}
+        </div>
+        <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center' }}>
           <input
             type="date"
             value={pickerDate}
@@ -1045,44 +1046,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           </select>
         </div>
       </div>
-    );
-  }
 
-  // ── PHASE 2: Start suggestion + blockers + confirm (merged) ──
-  const { scenario } = suggestion;
-
-  const startInvalid = startComputed && pendingStart >= pendingEatTime;
-  const bulkConflict = schedule?.bulkConflict ?? null;
-
-  return (
-    <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
-
-      {/* Bake time summary — click Edit to go back to phase 1 */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '.65rem',
-        padding: '.5rem .85rem',
-        background: 'var(--cream)', border: '1.5px solid var(--border)',
-        borderRadius: '10px', marginBottom: '1rem',
-      }}>
-        <span style={{ fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}>
-          {t('bakeTime')}
-        </span>
-        <span style={{ flex: 1, fontSize: '.82rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-          {formatDayShort(pendingEatTime)}
-        </span>
-        <button
-          onClick={() => { setPhase('bake_time'); setStartComputed(false); }}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--smoke)', fontSize: '.72rem',
-            fontFamily: 'var(--font-dm-mono)', padding: '.1rem .35rem',
-            borderRadius: '5px', flexShrink: 0,
-            textDecoration: 'underline', textUnderlineOffset: '2px',
-          }}
-        >
-          {tCommon('edit')}
-        </button>
-      </div>
+      {/* Phase 2 content — only once bake time is set */}
+      {eatTimeSet && (<div>
 
       {/* too_short compact note */}
       {scenario === 'too_short' && (
@@ -1159,7 +1125,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           </div>
           {!constraintsOpen && (
             <div style={{ fontSize: '.72rem', color: 'var(--smoke)', marginTop: '.15rem' }}>
-              {blocks.length > 0 ? `${blocks.length} window${blocks.length > 1 ? 's' : ''} set` : 'Optional — tap to add'}
+              Optional — tap to add unavailable windows and we&apos;ll plan around them
             </div>
           )}
         </div>
@@ -1523,7 +1489,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               onClick={() => {
                 hasManuallyDragged.current = false;
                 computeAndApplyRecommendation(blocks, pendingEatTime);
-                setAdjustOpen(false);
               }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
@@ -1715,6 +1680,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           {blockerNote}
         </div>
       )}
+
+      </div>)} {/* end eatTimeSet */}
 
     </div>
   );
