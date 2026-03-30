@@ -309,13 +309,18 @@ export default function FermentChart({
     const x1 = hToX(fromHBF, W, WH);
     const x2 = hToX(toHBF,   W, WH);
     if (x2 <= x1 + 1) return null;
+    const isForDough = markerId === 'sage';
+    const peakH = isForDough ? doughPeakHBF : prefPeakHBF;
+    const sig   = isForDough ? DOUGH_SIG    : prefSig;
+    const yAtX1 = BL - bell(xToHBF(x1, W, WH), peakH, sig) * MAXH;
+    const yAtX2 = BL - bell(xToHBF(x2, W, WH), peakH, sig) * MAXH;
     return (
       <g>
         <rect x={x1} y={0} width={x2 - x1} height={BL}
           fill={`${color}12`} />
-        <line x1={x1} y1={0} x2={x1} y2={BL}
+        <line x1={x1} y1={yAtX1} x2={x1} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
-        <line x1={x2} y1={0} x2={x2} y2={BL}
+        <line x1={x2} y1={yAtX2} x2={x2} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
         <rect
           x={(x1 + x2) / 2 - label.length * 4}
@@ -414,7 +419,7 @@ export default function FermentChart({
       <svg
         ref={svgRef}
         width={W}
-        height={CHART_H + 30}
+        height={CHART_H + 24}
         style={{ display: 'block', touchAction: 'none', overflow: 'visible' }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -563,7 +568,7 @@ export default function FermentChart({
         {hasPref && (
           <text
             x={prefX}
-            y={labelsClose ? AXIS_Y + 46 : AXIS_Y + 32}
+            y={labelsClose ? AXIS_Y + 42 : AXIS_Y + 28}
             fontSize={12}
             fill={prefColor}
             fontFamily="DM Mono, monospace"
@@ -587,7 +592,7 @@ export default function FermentChart({
         )}
         {/* ── Mix label ── */}
         <text
-          x={mixX} y={AXIS_Y + 32}
+          x={mixX} y={AXIS_Y + 28}
           fontSize={12} fill="#3D5A30"
           fontFamily="DM Mono, monospace"
           textAnchor="middle" fontWeight="600"
