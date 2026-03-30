@@ -466,8 +466,8 @@ export default function FermentChart({
             'Make Poolish window';
           return (
             <>
-              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start Dough window', 14, 'sage')}
-              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, prefWindowLabel, 36, 'pref')}
+              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start Dough window', 12, 'sage')}
+              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, prefWindowLabel, 38, 'pref')}
             </>
           );
         })()}
