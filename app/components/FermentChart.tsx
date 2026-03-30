@@ -28,10 +28,10 @@ export interface FermentChartProps {
 // ── Constants ────────────────────────────────────────────────
 const WINDOW_H_DEFAULT = 96;
 const PAD       = 16;
-const CHART_H   = 210;
-const BL        = 144;  // single baseline for ALL bells
+const CHART_H   = 195;
+const BL        = 132;  // single baseline for ALL bells
 const MAXH      = 140;  // max bell height
-const AXIS_Y    = 192;  // axis line Y
+const AXIS_Y    = 165;  // axis line Y
 
 // DOUGH_SIG and DOUGH_SWEET_CENTER are computed inside the component
 // based on hasColdRetard — see derived physics section
@@ -414,7 +414,7 @@ export default function FermentChart({
       <svg
         ref={svgRef}
         width={W}
-        height={CHART_H + 24}
+        height={CHART_H + 34}
         style={{ display: 'block', touchAction: 'none', overflow: 'visible' }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -563,7 +563,7 @@ export default function FermentChart({
         {hasPref && (
           <text
             x={prefX}
-            y={labelsClose ? AXIS_Y + 42 : AXIS_Y + 28}
+            y={labelsClose ? AXIS_Y + 52 : AXIS_Y + 38}
             fontSize={12}
             fill={prefColor}
             fontFamily="DM Mono, monospace"
@@ -587,7 +587,7 @@ export default function FermentChart({
         )}
         {/* ── Mix label ── */}
         <text
-          x={mixX} y={AXIS_Y + 28}
+          x={mixX} y={AXIS_Y + 38}
           fontSize={12} fill="#3D5A30"
           fontFamily="DM Mono, monospace"
           textAnchor="middle" fontWeight="600"
@@ -609,70 +609,6 @@ export default function FermentChart({
           </g>
         )}
       </svg>
-
-      {/* ── Info cards ─────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '6px', marginTop: '1.4rem', flexWrap: 'wrap' }}>
-        {/* Pref card */}
-        {hasPref && prefTime && (
-          <div style={{
-            flex: 1, minWidth: '120px',
-            background: 'var(--cream)', border: '1.5px solid var(--border)',
-            borderRadius: '10px', padding: '14px 16px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
-              <div style={{ width: 8, height: 8, background: prefColor, transform: 'rotate(45deg)', flexShrink: 0 }} />
-              <div style={{
-                fontSize: '13px', color: 'var(--smoke)',
-                fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
-              }}>{prefLabel}</div>
-            </div>
-            <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-              {fmtDT(prefTime)}
-            </div>
-            <div style={{ fontSize: '12px', marginTop: '.1rem', color: prefInZone ? '#4A7A3A' : '#C49A28' }}>
-              {prefStatus}
-            </div>
-            {prefInFridge && (
-              <div style={{ fontSize: '12px', marginTop: '.2rem', color: '#3A5A8A', fontFamily: 'var(--font-dm-mono)' }}>
-                🧊 Cold ferment — use fridge
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Mix card */}
-        <div style={{
-          flex: 1, minWidth: '120px',
-          background: 'var(--cream)', border: '1.5px solid var(--border)',
-          borderRadius: '10px', padding: '14px 16px',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
-            <div style={{ width: 8, height: 8, background: DARK_SAGE, transform: 'rotate(45deg)', flexShrink: 0 }} />
-            <div style={{
-              fontSize: '13px', color: 'var(--smoke)',
-              fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
-            }}>Start Dough</div>
-          </div>
-          <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-            {fmtDT(mixTime)}
-          </div>
-          <div style={{ fontSize: '12px', marginTop: '.1rem', color: mixInZone ? '#4A7A3A' : TERRA }}>
-            {mixStatus}
-          </div>
-          {!mixInZone && effectiveMixHBF > 0 &&
-           blocks.some(b => {
-             const s2 = (bakeMs - b.from.getTime()) / 3600000;
-             const e2 = (bakeMs - b.to.getTime())   / 3600000;
-             return effectiveMixHBF >= Math.min(s2, e2) &&
-                    effectiveMixHBF <= Math.max(s2, e2);
-           }) && (
-            <div style={{ fontSize: '11px', color: '#7A5A10',
-              marginTop: '4px', lineHeight: 1.4 }}>
-              ⚠️ Within a blocked window — intentional?
-            </div>
-          )}
-        </div>
-      </div>
 
     </div>
   );

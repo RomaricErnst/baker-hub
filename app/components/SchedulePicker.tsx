@@ -24,6 +24,20 @@ interface SchedulePickerProps {
 type PickerPhase = 'bake_time' | 'start_confirm';
 type Scenario = 'plenty' | 'tight' | 'too_short';
 
+// ── Card date+time formatter ─────────────────
+// "Fri 28 Mar · 9pm"
+function fmtCardHM(d: Date): string {
+  const h = d.getHours(), m = d.getMinutes();
+  const ap = h < 12 ? 'am' : 'pm';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return m === 0 ? `${h12}${ap}` : `${h12}:${String(m).padStart(2, '0')}${ap}`;
+}
+function fmtCardDT(d: Date): string {
+  const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
+  const mo = d.toLocaleDateString('en-US', { month: 'short' });
+  return `${wd} ${d.getDate()} ${mo} · ${fmtCardHM(d)}`;
+}
+
 // ── Time formatter ────────────────────────────
 // "4pm" / "4:30pm" — minutes omitted when zero
 function formatTimeShort(d: Date): string {
@@ -1474,8 +1488,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
 
         {adjustOpen && (
-          <div style={{ paddingTop: '12px', paddingBottom: '12px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+          <div style={{ paddingTop: '8px', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
               <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
                 <span style={{ color: '#3D5A30', fontWeight: 600 }}>◆ Dough:</span> drag the green diamond — green curve should peak at Bake
               </div>
@@ -1503,6 +1517,88 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         )}
       </div>
 
+      {/* ── Info cards (pref + mix start times) ── */}
+      {startComputed && (() => {
+        const isLevainType = prefermentType === 'levain' || isSourdough;
+        const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
+        const infoOptH = (hasPrefActive || isSourdough) ? getPrefOptH(isSourdough ? 'sourdough' : prefermentType, kitchenTemp) : 0;
+        const cardPrefInZone = (hasPrefActive || isSourdough) && prefOffsetH >= infoOptH - 3 && prefOffsetH <= infoOptH + 3;
+        const cardPrefStatus = cardPrefInZone ? '🟢 Ready at mix' : '🟡 Adjust start time';
+        const cardPrefTime = hasPrefActive
+          ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
+          : isSourdough && feedTime ? feedTime : null;
+        const doughZoneFrom = hasColdRetard ? 52 : 26;
+        const doughZoneTo   = hasColdRetard ? 20 : 14;
+        const mixInZone   = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
+        const mixTooEarly = mixOffsetH > doughZoneFrom;
+        const mixStatus   = mixInZone ? '🟢 Dough ready at bake'
+          : mixTooEarly ? '🔴 Too early — over-fermented'
+          : '🔴 Too late — under-fermented';
+        const bakeMs = pendingEatTime.getTime();
+        const mixInBlocker = !mixInZone && mixOffsetH > 0 && blocks.some(b => {
+          const s2 = (bakeMs - b.from.getTime()) / 3600000;
+          const e2 = (bakeMs - b.to.getTime())   / 3600000;
+          return mixOffsetH >= Math.min(s2, e2) && mixOffsetH <= Math.max(s2, e2);
+        });
+        return (
+          <div style={{ display: 'flex', gap: '6px', marginTop: '1rem', flexWrap: 'wrap' }}>
+            {/* Pref card */}
+            {cardPrefTime && (
+              <div style={{
+                flex: 1, minWidth: '120px',
+                background: 'var(--cream)', border: '1.5px solid var(--border)',
+                borderRadius: '10px', padding: '14px 16px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
+                  <div style={{ width: 8, height: 8, background: cardPrefColor, transform: 'rotate(45deg)', flexShrink: 0 }} />
+                  <div style={{
+                    fontSize: '13px', color: 'var(--smoke)',
+                    fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
+                  }}>{prefLabel}</div>
+                </div>
+                <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                  {fmtCardDT(cardPrefTime)}
+                </div>
+                <div style={{ fontSize: '12px', marginTop: '.1rem', color: cardPrefInZone ? '#4A7A3A' : '#C49A28' }}>
+                  {cardPrefStatus}
+                </div>
+                {prefGoesInFridge && (
+                  <div style={{ fontSize: '12px', marginTop: '.2rem', color: '#3A5A8A', fontFamily: 'var(--font-dm-mono)' }}>
+                    🧊 Cold ferment — use fridge
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mix card */}
+            <div style={{
+              flex: 1, minWidth: '120px',
+              background: 'var(--cream)', border: '1.5px solid var(--border)',
+              borderRadius: '10px', padding: '14px 16px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
+                <div style={{ width: 8, height: 8, background: '#3D5A30', transform: 'rotate(45deg)', flexShrink: 0 }} />
+                <div style={{
+                  fontSize: '13px', color: 'var(--smoke)',
+                  fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
+                }}>Start Dough</div>
+              </div>
+              <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                {fmtCardDT(pendingStart)}
+              </div>
+              <div style={{ fontSize: '12px', marginTop: '.1rem', color: mixInZone ? '#4A7A3A' : '#C4522A' }}>
+                {mixStatus}
+              </div>
+              {mixInBlocker && (
+                <div style={{ fontSize: '11px', color: '#7A5A10', marginTop: '4px', lineHeight: 1.4 }}>
+                  ⚠️ Within a blocked window — intentional?
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Your bake timeline ── */}
       {phases && (() => {
         const segs = [
@@ -1519,7 +1615,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           return `${h.toFixed(1)}h`;
         };
         return (
-          <div style={{ marginTop: '.7rem' }}>
+          <div style={{ marginTop: '1rem' }}>
             <div style={{
               fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
               color: 'var(--smoke)', textTransform: 'uppercase',
