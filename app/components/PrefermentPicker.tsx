@@ -90,11 +90,11 @@ export default function PrefermentPicker({
                 src={pData.image}
                 alt={pData.name}
                 style={{
-                  width: '70px',
-                  height: '70px',
+                  width: '80px',
+                  height: '80px',
                   objectFit: 'cover',
                   borderRadius: '10px',
-                  marginBottom: '.5rem',
+                  marginBottom: '.6rem',
                 }}
               />
             ) : (
@@ -116,9 +116,13 @@ export default function PrefermentPicker({
 
             {/* Desc */}
             {isNone ? (
-              <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.3rem' }}>
-                {isFr ? pData.descFr : pData.desc}
-              </div>
+              <>
+                <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.55rem' }}>
+                  {isFr ? pData.descFr : pData.desc}
+                </div>
+                {/* Invisible spacer to match pill row height of other cards */}
+                <div style={{ height: '20px' }} />
+              </>
             ) : (
               <>
                 <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.55rem' }}>
