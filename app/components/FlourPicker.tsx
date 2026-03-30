@@ -65,17 +65,17 @@ const APAC_COUNTRIES: { code: string; flag: string; name: string }[] = [
 
 // ── Type display labels ───────────────────────────
 const TYPE_LABELS: Record<string, string> = {
-  '00': '00', '0': '0', '1': 'Tipo 1', '2': 'Tipo 2',
+  '00': '00 · Pizza flour', '0': '0', '1': 'Tipo 1', '2': 'Tipo 2',
   'T45': 'T45', 'T55': 'T55', 'T65': 'T65', 'T80': 'T80',
   'T110': 'T110', 'T150': 'T150',
-  'bread': 'Bread', 'all_purpose': 'All-purpose',
-  'high_gluten': 'High gluten', 'wholemeal': 'Wholemeal',
+  'bread': 'Bread flour', 'all_purpose': 'All-purpose',
+  'high_gluten': 'High gluten · Manitoba', 'wholemeal': 'Wholemeal',
   'rye': 'Rye', 'spelt': 'Spelt', 'semolina': 'Semolina',
 };
 
 // ── Quick pick type list ──────────────────────────
 const QUICK_TYPES = [
-  { label: '00 (soft)',    w: 260, protein: 12.0 },
+  { label: '00 · Pizza flour', w: 260, protein: 12.0 },
   { label: '0',           w: 240, protein: 11.5 },
   { label: 'T45 / Gruau', w: 310, protein: 13.0 },
   { label: 'T55',         w: 200, protein: 10.5 },
@@ -138,6 +138,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [blendShowFullSearch, setBlendShowFullSearch] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const blendRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!activeDropdown) return;
@@ -150,8 +151,14 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [activeDropdown]);
 
-  // suppress unused-var lint for blend filter states (reserved for future use)
-  void blendFilterOrigin;
+  useEffect(() => {
+    if (openSection === 'blend' && blendRef.current) {
+      const rect = blendRef.current.getBoundingClientRect();
+      if (rect.bottom > window.innerHeight) {
+        setTimeout(() => blendRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
+      }
+    }
+  }, [openSection]);
 
   function selectDBEntry(f: FlourEntry) {
     const autoTile: FlourKey = f.w >= 270 ? 'strong00' : 'pizza00';
@@ -605,10 +612,39 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
       {/* ══ SECTION 3: Blend (custom mode only) ══════ */}
       {mode === 'custom' && (
-        <div>
-          {sectionHeader('Blend: Add a second flour', 'blend')}
+        <div ref={blendRef}>
+          <div
+            onClick={() => {
+              if (openSection === 'blend') {
+                setBlendFilterOrigin(null);
+                setBlendFilterType(null);
+                setBlendFilterBrand(null);
+                setBlendSearchQuery('');
+              }
+              setOpenSection(openSection === 'blend' ? null : 'blend');
+            }}
+            style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '12px 0', cursor: 'pointer',
+              borderTop: '2px solid #E8E0D5',
+              marginTop: '8px',
+              fontFamily: 'var(--font-dm-sans)', fontSize: '13px', fontWeight: 500,
+              color: '#8A7F78',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Blend: Add a second flour</span>
+              <span style={{
+                fontSize: '10px', fontFamily: 'DM Sans, sans-serif',
+                background: '#F5F0E8', color: '#8A7F78',
+                borderRadius: '20px', padding: '1px 7px',
+                border: '1px solid #E8E0D5',
+              }}>optional</span>
+            </div>
+            <span style={{ fontSize: '12px', color: '#8A7F78' }}>{openSection === 'blend' ? '▾' : '›'}</span>
+          </div>
           {openSection === 'blend' && (
-            <div style={{ paddingTop: '10px', paddingBottom: '14px' }}>
+            <div style={{ paddingTop: '10px', paddingBottom: '14px', scrollMarginTop: '80px' }}>
 
               {/* If flour2 selected: show confirmation + ratio slider */}
               {blendSelectedF2 ? (
@@ -729,6 +765,22 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         ))}
                       </select>
                       <select
+                        value={blendFilterOrigin ?? ''}
+                        onChange={e => setBlendFilterOrigin(e.target.value || null)}
+                        style={{
+                          padding: '6px 8px', borderRadius: '20px', border: 'none',
+                          background: blendFilterOrigin ? '#1A1612' : '#F5F0E8',
+                          color: blendFilterOrigin ? 'white' : '#3D3530',
+                          fontSize: '12px', fontFamily: 'DM Sans, sans-serif',
+                          cursor: 'pointer', outline: 'none', flexShrink: 0,
+                        }}
+                      >
+                        <option value="">Origin ▾</option>
+                        {Object.keys(ORIGIN_GROUPS).map(g => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                      <select
                         value={blendFilterBrand ?? ''}
                         onChange={e => setBlendFilterBrand(e.target.value || null)}
                         style={{
@@ -747,10 +799,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     </div>
 
                     {/* Results — only when search/filter active */}
-                    {(blendSearchQuery || blendFilterType || blendFilterBrand) && (() => {
+                    {(blendSearchQuery || blendFilterType || blendFilterOrigin || blendFilterBrand) && (() => {
                       const blendResults = FLOUR_DB
                         .filter(f => !blendSearchQuery || `${f.brand} ${f.name}`.toLowerCase().includes(blendSearchQuery.toLowerCase()))
                         .filter(f => !blendFilterType || f.type === blendFilterType)
+                        .filter(f => !blendFilterOrigin || (ORIGIN_GROUPS[blendFilterOrigin] ?? []).includes(f.country))
                         .filter(f => !blendFilterBrand || f.brand === blendFilterBrand)
                         .slice(0, 30);
                       if (blendResults.length === 0) {
@@ -802,6 +855,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                         {[
+                          { label: '00 · Pizza flour',   w: 260, protein: 12.0 },
                           { label: 'Semolina rimacinata', w: 200, protein: 12.5 },
                           { label: 'Manitoba',            w: 380, protein: 14.0 },
                           { label: 'Wholemeal',           w: 185, protein: 12.0 },
