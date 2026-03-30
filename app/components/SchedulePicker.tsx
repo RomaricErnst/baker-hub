@@ -954,13 +954,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     onChange(d, pendingEatTime, blocks);
   }
 
-  // Apply blocker overlap whenever blocks change
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
-    const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(pendingStart, newBlocks);
-    if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
-    setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
-    onChange(resolvedStart, pendingEatTime, newBlocks);
-    // Recompute recommendation if baker hasn't manually dragged
+    onChange(pendingStart, pendingEatTime, newBlocks);
     if (!hasManuallyDragged.current && eatTimeSet) {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
@@ -1489,7 +1484,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
         {adjustOpen && (
           <div style={{ paddingTop: '4px', paddingBottom: '6px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '6px' }}>
               <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
                 <span style={{ color: '#3D5A30', fontWeight: 600 }}>◆ Dough:</span> drag the green diamond — green curve should peak at Bake
               </div>
