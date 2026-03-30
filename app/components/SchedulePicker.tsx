@@ -674,7 +674,7 @@ function SimpleColourBar({
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
             <div style={{ width: 8, height: 8, background: '#1A1612', transform: 'rotate(45deg)', flexShrink: 0 }} />
             <div style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-              Start mixing
+              Start Dough
             </div>
           </div>
           <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
@@ -765,6 +765,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     inBlocker:   { mixHBF: number; overlapMin: number } | null;
   } | null>(null);
   const hasManuallyDragged = useRef(false);
+  const [constraintsOpen, setConstraintsOpen] = useState(false);
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const pickerDateRef = useRef(pickerDate);
+  const pickerHourRef = useRef<number>(pickerHour);
+
+  const prefLabel = prefermentType === 'poolish' ? 'Make Poolish'
+    : prefermentType === 'biga' ? 'Make Biga'
+    : (prefermentType === 'levain' || isSourdough) ? 'Feed Starter'
+    : 'Make Preferment';
 
   function updateEatTime(dateStr: string, hour: number) {
     if (!dateStr) return;
@@ -877,17 +886,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Phase transitions ────────────────────────
   function confirmBakeTime() {
+    const date = pickerDateRef.current;
+    const hour = pickerHourRef.current;
+    if (!date || hour === null) return;
+    const parts = date.split('-').map(Number);
+    const et = new Date(parts[0], parts[1] - 1, parts[2], hour, 0, 0, 0);
+    setPendingEatTime(et);
+    setEatTimeSet(true);
     hasManuallyDragged.current = false;
-    computeAndApplyRecommendation(blocks, pendingEatTime);
+    computeAndApplyRecommendation(blocks, et);
     setStartComputed(true);
     setDismissedConflict(false);
     setPhase('start_confirm');
     if (isSourdough) {
       const peak = starterPeakHours(kitchenTemp, starterMature);
       const ft = pushToReasonableHour(
-        new Date(pendingEatTime.getTime() -
-          (pendingEatTime.getTime() - pendingStart.getTime()) /
-          3600000 * 3600000 - peak.mid * 3600000)
+        new Date(pendingStart.getTime() - peak.mid * 3600000)
       );
       setFeedTime(ft);
       onFeedTimeChange?.(ft);
@@ -979,8 +993,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             type="date"
             value={pickerDate}
             onChange={e => {
-              setPickerDate(e.target.value);
-              if (e.target.value) updateEatTime(e.target.value, pickerHour);
+              const newDate = e.target.value;
+              pickerDateRef.current = newDate;
+              setPickerDate(newDate);
+              if (newDate) updateEatTime(newDate, pickerHour);
+              if (pickerHour !== null) { confirmBakeTime(); }
             }}
             style={{ ...INPUT_STYLE, flex: 2, width: undefined }}
           />
@@ -988,8 +1005,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             value={pickerHour}
             onChange={e => {
               const h = Number(e.target.value);
+              pickerHourRef.current = h;
               setPickerHour(h);
               if (pickerDate) updateEatTime(pickerDate, h);
+              if (pickerDate !== '') { confirmBakeTime(); }
             }}
             style={{
               ...INPUT_STYLE, width: 'auto', flex: 1,
@@ -1001,18 +1020,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             ))}
           </select>
         </div>
-        <button
-          onClick={confirmBakeTime}
-          disabled={!eatTimeSet}
-          style={{
-            ...continueBtnStyle,
-            background: eatTimeSet ? 'var(--terra)' : 'var(--border)',
-            color: eatTimeSet ? '#fff' : 'var(--smoke)',
-            cursor: eatTimeSet ? 'pointer' : 'default',
-          }}
-        >
-          {t('planMyBake')}
-        </button>
       </div>
     );
   }
@@ -1113,12 +1120,35 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       )}
 
       {/* Blocker section — moved above slider */}
-      <div style={{ fontSize: '.82rem', color: 'var(--char)', fontWeight: 600, marginBottom: '.3rem' }}>
-        {t('blockers.heading')}
+      <div
+        onClick={() => setConstraintsOpen(o => !o)}
+        style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          cursor: 'pointer', marginBottom: constraintsOpen ? '.75rem' : '1rem',
+          paddingBottom: constraintsOpen ? '.75rem' : 0,
+          borderBottom: constraintsOpen ? '1px solid var(--border)' : 'none',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--char)' }}>
+            {t('blockers.heading')}
+          </div>
+          {!constraintsOpen && (
+            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', marginTop: '.15rem' }}>
+              {blocks.length > 0 ? `${blocks.length} window${blocks.length > 1 ? 's' : ''} set` : 'Optional — tap to add'}
+            </div>
+          )}
+        </div>
+        <span style={{ fontSize: '12px', color: 'var(--smoke)' }}>
+          {constraintsOpen ? '▾' : '›'}
+        </span>
       </div>
-      <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.9rem', lineHeight: 1.5 }}>
-        {t('blockers.sub')}
-      </div>
+
+      {constraintsOpen && (
+        <div>
+          <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.9rem', lineHeight: 1.5 }}>
+            {t('blockers.sub')}
+          </div>
 
       {/* Quick presets — work toggle */}
       {workdays.length > 0 && (
@@ -1328,15 +1358,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           })}
         </div>
       )}
+        </div>
+      )}
 
       {/* Divider */}
       <div style={{ borderTop: '1px solid var(--border)', margin: '1.1rem 0 1rem' }} />
 
       {/* Fermentation chart */}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
-        <label style={LABEL_STYLE}>
-          {hasPrefActive ? t('schedulerTitle.withPref') : t('schedulerTitle.noPref')}
-        </label>
+        <div style={{ fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.6rem' }}>
+          {hasManuallyDragged.current ? 'Your fermentation plan' : 'Recommended fermentation plan'}
+        </div>
         {startComputed ? (
           mode === 'simple' ? (
             <SimpleColourBar
@@ -1369,6 +1401,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               scheduleNote={schedule?.scheduleNote ?? null}
               blocks={blocks}
               recommendedMixHBF={recommendedHBF}
+              showZoneLabels={adjustOpen}
               onMixChange={(h) => {
                 // Baker is manually adjusting — clear ghost
                 hasManuallyDragged.current = true;
@@ -1428,6 +1461,104 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               }}
             >
               Reset mix to starter peak →
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Adjust schedule */}
+      <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+        <div
+          onClick={() => setAdjustOpen(o => !o)}
+          style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            cursor: 'pointer', padding: '.6rem 0',
+            borderTop: '1px solid var(--border)',
+            borderBottom: adjustOpen ? 'none' : '1px solid var(--border)',
+          }}
+        >
+          <span style={{ fontSize: '.8rem', fontWeight: 500, color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
+            Adjust schedule
+          </span>
+          <span style={{ fontSize: '12px', color: '#8A7F78' }}>{adjustOpen ? '▾' : '›'}</span>
+        </div>
+
+        {adjustOpen && (
+          <div style={{ paddingTop: '12px', paddingBottom: '8px' }}>
+
+            {/* Dough start slider */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginBottom: '4px' }}>
+                Dough start — green curve should peak close to Bake
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={windowH}
+                step={0.25}
+                value={Math.max(1, Math.min(windowH, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000))}
+                onChange={e => {
+                  const h = Number(e.target.value);
+                  hasManuallyDragged.current = true;
+                  setRecommendedHBF(null);
+                  const sweetCenter = hasColdRetard ? 34 : 20;
+                  const snapped = snapToBlockerEdgeIfBlocked(h, blocks, pendingEatTime, sweetCenter);
+                  const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - snapped * 3600000));
+                  setPendingStart(newStart);
+                  onChange(newStart, pendingEatTime, blocks);
+                }}
+                style={{ width: '100%', accentColor: 'var(--sage)', cursor: 'pointer' }}
+              />
+              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '2px' }}>
+                {formatSliderDisplay(pendingStart)}
+              </div>
+            </div>
+
+            {/* Preferment start slider — only when hasPrefActive */}
+            {hasPrefActive && !isSourdough && (
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginBottom: '4px' }}>
+                  {prefLabel} — gold curve should peak at Start Dough
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={windowH}
+                  step={0.25}
+                  value={Math.min(windowH, Math.max(1, prefOffsetH))}
+                  onChange={e => {
+                    const h = Number(e.target.value);
+                    setPrefOffsetH(h);
+                    onPrefOffsetChange?.(h);
+                  }}
+                  style={{ width: '100%', accentColor: 'var(--gold)', cursor: 'pointer' }}
+                />
+                {(() => {
+                  const prefTime = new Date(pendingStart.getTime() - prefOffsetH * 3600000);
+                  return (
+                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '2px' }}>
+                      {formatSliderDisplay(prefTime)}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* Reset to recommended */}
+            <button
+              onClick={() => {
+                hasManuallyDragged.current = false;
+                computeAndApplyRecommendation(blocks, pendingEatTime);
+                setAdjustOpen(false);
+              }}
+              style={{
+                marginTop: '12px', background: 'none', border: 'none',
+                cursor: 'pointer', color: 'var(--smoke)', fontSize: '.72rem',
+                fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline',
+                textUnderlineOffset: '2px', padding: 0,
+              }}
+            >
+              Reset to recommended →
             </button>
           </div>
         )}

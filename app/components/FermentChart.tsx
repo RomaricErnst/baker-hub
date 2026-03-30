@@ -22,6 +22,7 @@ export interface FermentChartProps {
   };
   scheduleNote?: string | null;
   recommendedMixHBF?: number | null;
+  showZoneLabels?: boolean;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -117,7 +118,7 @@ export default function FermentChart({
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange,
   windowH, prefInFridge, hasColdRetard, phases, scheduleNote,
-  recommendedMixHBF,
+  recommendedMixHBF, showZoneLabels,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -286,8 +287,8 @@ export default function FermentChart({
   const prefTime = hasPref ? new Date(bakeMs - prefStartAbsHBF * 3600000) : null;
 
   const prefLabel = prefermentType === 'sourdough' || prefermentType === 'levain'
-    ? 'Feed starter'
-    : prefermentType === 'biga'    ? 'Start Biga'
+    ? 'Feed Starter'
+    : prefermentType === 'biga'    ? 'Make Biga'
     : prefermentType === 'poolish' ? 'Make Poolish'
     : prefermentType;
 
@@ -384,37 +385,6 @@ export default function FermentChart({
       ref={containerRef}
       style={{ width: '100%', userSelect: 'none', overflow: 'hidden', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
     >
-      {/* ── Instruction pills ── */}
-      {glowState !== 'done' && (
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '5px',
-            fontSize: '12px', color: glowState === 'mix' ? 'var(--char)' : 'var(--smoke)',
-            background: glowState === 'mix' ? '#FFF8F3' : 'var(--cream)',
-            border: `1px solid ${glowState === 'mix' ? 'var(--terra)' : 'var(--border)'}`,
-            borderRadius: '20px', padding: '3px 10px',
-            opacity: glowState === 'mix' ? 1 : 0.65,
-          }}>
-            <span>◆ Drag to set dough start
-              <span style={{ color: 'var(--smoke)', marginLeft: '4px' }}>· Green curve should peak at ▲ Bake</span>
-            </span>
-          </div>
-          {hasPref && (
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: '5px',
-              fontSize: '12px', color: glowState === 'pref' ? 'var(--char)' : 'var(--smoke)',
-              background: glowState === 'pref' ? '#FFF8F3' : 'var(--cream)',
-              border: `1px solid ${glowState === 'pref' ? 'var(--terra)' : 'var(--border)'}`,
-              borderRadius: '20px', padding: '3px 10px',
-              opacity: glowState === 'pref' ? 1 : 0.65,
-            }}>
-              <span>◇ Drag to set {prefTypeName.toLowerCase()} start
-                <span style={{ color: 'var(--smoke)', marginLeft: '4px' }}>· Gold curve should peak at ◆ Mix</span>
-              </span>
-            </div>
-          )}
-        </div>
-      )}
       {/* ── Curve legend (hasPref only) ── */}
       {hasPref && (
         <div style={{
@@ -484,7 +454,7 @@ export default function FermentChart({
         )}
 
         {/* ── Sweet-spot zones ── */}
-        {(() => {
+        {showZoneLabels && (() => {
           const prefZoneLabel =
             prefermentType === 'biga'      ? 'Start biga'   :
             prefermentType === 'levain'    ? 'Start levain' :
@@ -596,10 +566,10 @@ export default function FermentChart({
             textAnchor="middle"
             fontWeight="600"
           >
-            {prefermentType === 'biga'      ? 'Start Biga'   :
-             prefermentType === 'levain'    ? 'Start Levain' :
-             prefermentType === 'sourdough' ? 'Start Levain' :
-             'Start Poolish'}
+            {prefermentType === 'biga'      ? 'Make Biga'    :
+             prefermentType === 'levain'    ? 'Feed Starter' :
+             prefermentType === 'sourdough' ? 'Feed Starter' :
+             'Make Poolish'}
           </text>
         )}
 
@@ -617,7 +587,7 @@ export default function FermentChart({
           fontSize={12} fill="#3D5A30"
           fontFamily="DM Mono, monospace"
           textAnchor="middle" fontWeight="600"
-        >Start Mixing</text>
+        >Start Dough</text>
 
         {/* ── Ghost diamond (recommended position) ── */}
         {recommendedMixHBF != null &&
@@ -677,7 +647,7 @@ export default function FermentChart({
             <div style={{
               fontSize: '13px', color: 'var(--smoke)',
               fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
-            }}>Start mixing</div>
+            }}>Start Dough</div>
           </div>
           <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
             {fmtDT(mixTime)}
