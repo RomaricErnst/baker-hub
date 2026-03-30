@@ -28,10 +28,11 @@ export interface FermentChartProps {
 // ── Constants ────────────────────────────────────────────────
 const WINDOW_H_DEFAULT = 96;
 const PAD       = 16;
-const CHART_H   = 195;
-const BL        = 132;  // single baseline for ALL bells
-const MAXH      = 140;  // max bell height
-const AXIS_Y    = 152;  // axis line Y
+const CHART_H   = 220;
+const TOP_PAD   = 60;   // space above curves for window labels
+const BL        = 175;  // baseline = TOP_PAD + curve height area
+const MAXH      = 110;  // max bell height (fits within TOP_PAD to BL)
+const AXIS_Y    = 195;  // axis line below baseline
 
 // DOUGH_SIG and DOUGH_SWEET_CENTER are computed inside the component
 // based on hasColdRetard — see derived physics section
@@ -311,11 +312,11 @@ export default function FermentChart({
     if (x2 <= x1 + 1) return null;
     return (
       <g>
-        <rect x={x1} y={0} width={x2 - x1} height={BL}
+        <rect x={x1} y={TOP_PAD} width={x2 - x1} height={BL - TOP_PAD}
           fill={`${color}12`} />
-        <line x1={x1} y1={0} x2={x1} y2={BL}
+        <line x1={x1} y1={TOP_PAD} x2={x1} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
-        <line x1={x2} y1={0} x2={x2} y2={BL}
+        <line x1={x2} y1={TOP_PAD} x2={x2} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
         <rect
           x={(x1 + x2) / 2 - label.length * 4}
@@ -414,7 +415,7 @@ export default function FermentChart({
       <svg
         ref={svgRef}
         width={W}
-        height={CHART_H + 30}
+        height={CHART_H + 20}
         style={{ display: 'block', touchAction: 'none', overflow: 'visible' }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -428,7 +429,7 @@ export default function FermentChart({
             const x2 = hToX(hbfEnd,   W, WH);
             return (
               <clipPath key={i} id={`bc-${i}`}>
-                <rect x={x1} y={0} width={Math.max(0, x2 - x1)} height={AXIS_Y} />
+                <rect x={x1} y={TOP_PAD} width={Math.max(0, x2 - x1)} height={AXIS_Y - TOP_PAD} />
               </clipPath>
             );
           })}
@@ -482,13 +483,13 @@ export default function FermentChart({
           const n = Math.ceil((x2 - x1 + AXIS_Y) / 7) + 2;
           return (
             <g key={i}>
-              <rect x={x1} y={0} width={x2 - x1} height={AXIS_Y} fill="rgba(196,82,42,0.09)" />
+              <rect x={x1} y={TOP_PAD} width={x2 - x1} height={AXIS_Y - TOP_PAD} fill="rgba(196,82,42,0.09)" />
               <g clipPath={`url(#bc-${i})`}>
                 {Array.from({ length: n }, (_, j) => {
                   const ox = x1 + j * 7 - AXIS_Y;
                   return (
                     <line key={j}
-                      x1={ox} y1={0} x2={ox + AXIS_Y} y2={AXIS_Y}
+                      x1={ox} y1={TOP_PAD} x2={ox + AXIS_Y} y2={AXIS_Y}
                       stroke="rgba(196,82,42,0.16)" strokeWidth={1}
                     />
                   );
