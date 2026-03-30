@@ -69,6 +69,7 @@ export default function PrefermentPicker({
               transition: 'all .2s',
               boxShadow: hovered === key ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
               transform: hovered === key ? 'translateY(-2px)' : 'none',
+              textAlign: 'center',
             }}
           >
             {/* Recommended badge */}
@@ -86,29 +87,30 @@ export default function PrefermentPicker({
 
             {/* Emoji or image */}
             {pData.image ? (
-              <img
-                src={pData.image}
-                alt={pData.name}
-                style={{
-                  width: '80px',
-                  height: '80px',
-                  objectFit: 'cover',
-                  borderRadius: '10px',
-                  marginBottom: '.6rem',
-                }}
-              />
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '.75rem' }}>
+                <img
+                  src={pData.image}
+                  alt={pData.name}
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    objectFit: 'cover',
+                    borderRadius: '10px',
+                  }}
+                />
+              </div>
             ) : (
-              <div style={{ fontSize: '2rem', marginBottom: '.5rem', lineHeight: 1 }}>
-                {pData.emoji}
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '.75rem' }}>
+                <div style={{ fontSize: '2rem', lineHeight: 1 }}>{pData.emoji}</div>
               </div>
             )}
 
             {/* Name + check */}
             <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               marginBottom: '.3rem', gap: '.4rem',
             }}>
-              <div style={{ fontWeight: 600, fontSize: '.88rem', color: 'var(--char)' }}>
+              <div style={{ fontWeight: 600, fontSize: '.88rem', color: 'var(--char)', textAlign: 'center' }}>
                 {isFr ? pData.nameFr : pData.name}
               </div>
               {isSelected && <span style={{ color: 'var(--terra)', fontSize: '.85rem', flexShrink: 0 }}>✓</span>}
@@ -117,15 +119,14 @@ export default function PrefermentPicker({
             {/* Desc */}
             {isNone ? (
               <>
-                <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.55rem' }}>
+                <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.55rem', textAlign: 'center' }}>
                   {isFr ? pData.descFr : pData.desc}
                 </div>
-                {/* Invisible spacer to match pill row height of other cards */}
-                <div style={{ height: '20px' }} />
+                <div style={{ height: '22px' }} />
               </>
             ) : (
               <>
-                <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.55rem' }}>
+                <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.55rem', textAlign: 'center' }}>
                   {isFr ? pData.descFr : pData.desc}
                 </div>
 
