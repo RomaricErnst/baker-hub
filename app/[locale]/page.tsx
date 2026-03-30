@@ -195,7 +195,7 @@ function ContinueBtn({ onClick, label = 'Continue →' }: { onClick: () => void;
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase',
+      fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase',
       letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.4rem',
     }}>
       {children}
@@ -1891,7 +1891,7 @@ export default function Home() {
                           min={sliderMin} max={sliderMax} step={1}
                           value={currentHyd}
                           onChange={e => setManualHydration(Number(e.target.value))}
-                          style={{ position: 'absolute', left: 0, right: 0, width: '100%', appearance: 'none', background: 'transparent', cursor: 'pointer', height: '36px', margin: 0 }}
+                          style={{ position: 'absolute', left: 0, right: 0, width: '100%', appearance: 'none', background: 'transparent', cursor: 'pointer', height: '36px', margin: 0, accentColor: 'var(--terra)' }}
                         />
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem' }}>
@@ -1919,7 +1919,7 @@ export default function Home() {
                 })()}
 
                 {/* Oil + Sugar side by side */}
-                <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ display: 'flex', gap: '1.25rem' }}>
                   {/* Oil stepper */}
                   {(() => {
                     const v = manualOil ?? 0;
@@ -1928,20 +1928,20 @@ export default function Home() {
                     return (
                       <div style={{ flex: 1 }}>
                         <FieldLabel>Oil %</FieldLabel>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
                           <button
                             onClick={() => setManualOil(Math.max(0, Math.round((v - STEP) * 10) / 10))}
-                            style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '1.1rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                            style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
                           >−</button>
-                          <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem', color: 'var(--char)' }}>
+                          <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', color: 'var(--char)' }}>
                             {v === 0 ? 'None' : `${v}%`}
                           </span>
                           <button
                             onClick={() => setManualOil(Math.min(10, Math.round((v + STEP) * 10) / 10))}
-                            style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '1.1rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                            style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
                           >+</button>
                         </div>
-                        <div style={{ fontSize: '.72rem', color: v > 0 && isHighTemp ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginTop: '.35rem' }}>
+                        <div style={{ fontSize: '.72rem', color: v > 0 && isHighTemp ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
                           {oilGuidance(v, ovenType, styleKey ?? '')}
                         </div>
                       </div>
@@ -1955,20 +1955,20 @@ export default function Home() {
                     return (
                       <div style={{ flex: 1 }}>
                         <FieldLabel>Sugar %</FieldLabel>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
                           <button
                             onClick={() => setManualSugar(Math.max(0, Math.round((v - STEP) * 10) / 10))}
-                            style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '1.1rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                            style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
                           >−</button>
-                          <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem', color: 'var(--char)' }}>
+                          <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', color: 'var(--char)' }}>
                             {v === 0 ? 'None' : `${v}%`}
                           </span>
                           <button
                             onClick={() => setManualSugar(Math.min(10, Math.round((v + STEP) * 10) / 10))}
-                            style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '1.1rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                            style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
                           >+</button>
                         </div>
-                        <div style={{ fontSize: '.72rem', color: sg.warn ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginTop: '.35rem' }}>
+                        <div style={{ fontSize: '.72rem', color: sg.warn ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
                           {sg.note}
                         </div>
                       </div>
