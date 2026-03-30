@@ -158,8 +158,23 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [blendFilterType, setBlendFilterType] = useState<string | null>(null);
   const [blendFilterOrigin, setBlendFilterOrigin] = useState<string | null>(null);
   const [blendFilterBrand, setBlendFilterBrand] = useState<string | null>(null);
-  const [blendSelectedF2, setBlendSelectedF2] = useState<FlourEntry | null>(null);
-  const [blendRatio, setBlendRatio] = useState(85);
+  const [blendSelectedF2, setBlendSelectedF2] = useState<FlourEntry | null>(() => {
+    if (!blend.flour2 || !blend.customFlour2Name) return null;
+    // Reconstruct a minimal FlourEntry from saved blend data so the selected state is restored
+    return {
+      id: 'restored',
+      brand: blend.customFlour2Name.split(' ')[0] ?? '',
+      name: blend.customFlour2Name,
+      type: 'bread',
+      country: 'it',
+      w: blend.wOverride ?? 260,
+      wPublished: false,
+      protein: 12,
+      hydration: [60, 75] as [number, number],
+      bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
+    };
+  });
+  const [blendRatio, setBlendRatio] = useState(() => blend.ratio1 < 100 ? blend.ratio1 : 85);
   const [blendShowFullSearch, setBlendShowFullSearch] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -805,7 +820,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                 setBlendRatio(preset.ratio);
                                 const f1w = blend.wOverride ?? 260;
                                 const blendedW = Math.round((f1w * preset.ratio / 100) + (generic.w * (100 - preset.ratio) / 100));
-                                onBlendChange({ ...blend, ratio1: preset.ratio, wOverride: blendedW, customFlour2Name: generic.label });
+                                onBlendChange({ ...blend, flour2: preset.type as FlourKey, ratio1: preset.ratio, wOverride: blendedW, customFlour2Name: generic.label });
                               }
                             }}
                             style={{
@@ -963,7 +978,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                 setBlendFilterBrand(null);
                                 const f1w = blend.wOverride ?? 260;
                                 const blendedW = Math.round((f1w * 85 / 100) + (f.w * 15 / 100));
-                                onBlendChange({ ...blend, ratio1: 85, wOverride: blendedW, customFlour2Name: `${f.brand} ${f.name}` });
+                                onBlendChange({ ...blend, flour2: f.type as FlourKey, ratio1: 85, wOverride: blendedW, customFlour2Name: `${f.brand} ${f.name}` });
                               }}
                               style={{ padding: '8px 0', borderBottom: '0.5px solid #E8E0D5', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                               onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
@@ -991,15 +1006,15 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         Don&apos;t see your flour? Pick a type or enter W:
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                        {[
-                          { label: '00 · Pizza flour',   w: 260, protein: 12.0 },
-                          { label: 'Semolina rimacinata', w: 200, protein: 12.5 },
-                          { label: 'Manitoba',            w: 380, protein: 14.0 },
-                          { label: 'Wholemeal',           w: 185, protein: 12.0 },
-                          { label: 'Rye',                 w: 160, protein: 10.0 },
-                          { label: 'Bread flour',         w: 270, protein: 12.8 },
-                          { label: 'All-purpose',         w: 190, protein: 10.5 },
-                        ].map(t => (
+                        {([
+                          { label: '00 · Pizza flour',   type: 'pizza00',    w: 260, protein: 12.0 },
+                          { label: 'Semolina rimacinata', type: 'semolina',   w: 200, protein: 12.5 },
+                          { label: 'Manitoba',            type: 'manitoba',   w: 380, protein: 14.0 },
+                          { label: 'Wholemeal',           type: 'wholemeal',  w: 185, protein: 12.0 },
+                          { label: 'Rye',                 type: 'rye',        w: 160, protein: 10.0 },
+                          { label: 'Bread flour',         type: 'bread',      w: 270, protein: 12.8 },
+                          { label: 'All-purpose',         type: 'allpurpose', w: 190, protein: 10.5 },
+                        ] as { label: string; type: FlourKey; w: number; protein: number }[]).map(t => (
                           <button
                             key={t.label}
                             onClick={() => {
@@ -1013,7 +1028,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                               setBlendRatio(85);
                               const f1w = blend.wOverride ?? 260;
                               const blendedW = Math.round((f1w * 85 / 100) + (t.w * 15 / 100));
-                              onBlendChange({ ...blend, ratio1: 85, wOverride: blendedW, customFlour2Name: t.label });
+                              onBlendChange({ ...blend, flour2: t.type as FlourKey, ratio1: 85, wOverride: blendedW, customFlour2Name: t.label });
                             }}
                             style={{
                               padding: '4px 10px', borderRadius: '20px',
@@ -1052,7 +1067,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                 setBlendRatio(85);
                                 const f1w = blend.wOverride ?? 260;
                                 const blendedW = Math.round((f1w * 85 / 100) + (v * 15 / 100));
-                                onBlendChange({ ...blend, ratio1: 85, wOverride: blendedW, customFlour2Name: `Custom W${v}` });
+                                onBlendChange({ ...blend, flour2: (v >= 270 ? 'strong00' : 'pizza00') as FlourKey, ratio1: 85, wOverride: blendedW, customFlour2Name: `Custom W${v}` });
                               }
                             }}
                           />

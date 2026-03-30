@@ -1684,7 +1684,15 @@ export default function Home() {
               idPrefix="adv-step"
               num={7} title={t('steps.flour.title')}
               activeStep={advancedStep}
-              summary={computeBlendProfile(flourBlend).displayName}
+              summary={(() => {
+                if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
+                  return computeBlendProfile(flourBlend).displayName;
+                }
+                const ratio2 = 100 - flourBlend.ratio1;
+                const flour1Name = computeBlendProfile({ ...flourBlend, flour2: null, ratio1: 100 }).displayName;
+                const flour2Name = flourBlend.customFlour2Name ?? computeBlendProfile(flourBlend).displayName.split('+')[1]?.trim() ?? '';
+                return `${flourBlend.ratio1}% ${flour1Name} · ${ratio2}% ${flour2Name}`;
+              })()}
               onEdit={() => setAdvancedStep(7)}
             >
               <FlourPicker
