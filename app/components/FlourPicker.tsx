@@ -823,32 +823,25 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   )}
 
                   <div style={{ marginTop: '12px' }}>
-                    {/* Row 1 — Label + full-width search input */}
-                    <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '6px' }}>
-                        Or find a specific brand:
-                      </div>
+                    {/* Row 1 — Input + Type + Origin + Brand on single row */}
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
                       <input
                         type="text"
                         placeholder="Search flour..."
                         value={blendSearchQuery}
                         onChange={e => { setBlendSearchQuery(e.target.value); setBlendShowFullSearch(true); }}
                         style={{
-                          width: '100%', padding: '8px 12px',
+                          flex: 1, padding: '8px 12px',
                           border: '1px solid #E8E0D5', borderRadius: '10px',
                           fontSize: '13px', fontFamily: 'DM Sans, sans-serif',
-                          background: 'white', outline: 'none', color: '#1A1612',
-                          boxSizing: 'border-box',
+                          background: 'white', outline: 'none', color: '#1A1612', minWidth: 0,
                         }}
                       />
-                    </div>
-                    {/* Row 2 — Type + Origin + Brand on same row */}
-                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
                       <select
                         value={blendFilterType ?? ''}
                         onChange={e => setBlendFilterType(e.target.value || null)}
                         style={{
-                          padding: '6px 8px', borderRadius: '20px', border: 'none',
+                          padding: '7px 10px', borderRadius: '20px', border: 'none',
                           background: blendFilterType ? '#1A1612' : '#F5F0E8',
                           color: blendFilterType ? 'white' : '#3D3530',
                           fontSize: '12px', fontFamily: 'DM Sans, sans-serif',
@@ -864,7 +857,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         value={blendFilterOrigin ?? ''}
                         onChange={e => { setBlendFilterOrigin(e.target.value || null); setBlendApacCountry(null); setBlendEuropeCountry(null); setBlendAmericasCountry(null); }}
                         style={{
-                          padding: '6px 8px', borderRadius: '20px', border: 'none',
+                          padding: '7px 10px', borderRadius: '20px', border: 'none',
                           background: blendFilterOrigin ? '#1A1612' : '#F5F0E8',
                           color: blendFilterOrigin ? 'white' : '#3D3530',
                           fontSize: '12px', fontFamily: 'DM Sans, sans-serif',
@@ -880,7 +873,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         value={blendFilterBrand ?? ''}
                         onChange={e => setBlendFilterBrand(e.target.value || null)}
                         style={{
-                          padding: '6px 8px', borderRadius: '20px', border: 'none',
+                          padding: '7px 10px', borderRadius: '20px', border: 'none',
                           background: blendFilterBrand ? '#1A1612' : '#F5F0E8',
                           color: blendFilterBrand ? 'white' : '#3D3530',
                           fontSize: '12px', fontFamily: 'DM Sans, sans-serif',
