@@ -1018,7 +1018,7 @@ export default function Home() {
               onEdit={() => setActiveStep(7)}
             >
               <div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.65rem', marginBottom: '.65rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem', marginBottom: '.65rem' }}>
                   {(Object.entries(YEAST_TYPES) as [YeastType, typeof YEAST_TYPES[YeastType]][]).map(([yt, y]) => {
                     const active = yeastType === yt;
                     const yImg = (y as { image?: string }).image;
@@ -1034,28 +1034,31 @@ export default function Home() {
                         onClick={() => { setYeastType(yt); advance(7); }}
                         style={{
                           border: `2px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                          borderRadius: '14px', padding: '.75rem .6rem',
+                          borderRadius: '14px', padding: '.75rem .75rem',
                           cursor: 'pointer', background: active ? '#FEF4EF' : 'var(--warm)',
-                          transition: 'all .15s', textAlign: 'center',
-                          display: 'flex', flexDirection: 'column', alignItems: 'center',
+                          transition: 'all .15s', textAlign: 'left',
+                          display: 'flex', flexDirection: 'row', alignItems: 'center',
+                          gap: '12px',
                         }}
                       >
                         {yImg ? (
                           <img src={yImg} alt={y.name}
-                            style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '10px', marginBottom: '.4rem' }} />
+                            style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '10px', flexShrink: 0 }} />
                         ) : (
-                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '.4rem' }}>{y.emoji}</span>
+                          <span style={{ fontSize: '1.5rem', display: 'block', flexShrink: 0, width: '48px', textAlign: 'center' }}>{y.emoji}</span>
                         )}
-                        <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--char)', marginBottom: '.2rem' }}>
-                          {y.name}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--char)', marginBottom: '.2rem' }}>
+                            {y.name}
+                          </div>
+                          <span style={{
+                            fontSize: '.65rem', fontFamily: 'var(--font-dm-sans)',
+                            color: 'var(--smoke)', lineHeight: 1.45,
+                            display: 'block',
+                          }}>
+                            {guidedDesc[yt]}
+                          </span>
                         </div>
-                        <span style={{
-                          fontSize: '.65rem', fontFamily: 'var(--font-dm-sans)',
-                          color: 'var(--smoke)', textAlign: 'center', lineHeight: 1.45,
-                          maxWidth: '140px', display: 'block', marginTop: '.1rem',
-                        }}>
-                          {guidedDesc[yt]}
-                        </span>
                       </div>
                     );
                   })}
@@ -1699,7 +1702,7 @@ export default function Home() {
               onEdit={() => setAdvancedStep(8)}
             >
               <div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.65rem', marginBottom: '.65rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem', marginBottom: '.65rem' }}>
                   {(Object.entries(YEAST_TYPES) as [YeastType, typeof YEAST_TYPES[YeastType]][]).map(([yt, y]) => {
                     const active = yeastType === yt;
                     const yImg = (y as { image?: string }).image;
@@ -1732,28 +1735,31 @@ export default function Home() {
                         }}
                         style={{
                           border: `2px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                          borderRadius: '14px', padding: '.75rem .6rem',
+                          borderRadius: '14px', padding: '.75rem .75rem',
                           cursor: 'pointer', background: active ? '#FEF4EF' : 'var(--warm)',
-                          transition: 'all .15s', textAlign: 'center',
-                          display: 'flex', flexDirection: 'column', alignItems: 'center',
+                          transition: 'all .15s', textAlign: 'left',
+                          display: 'flex', flexDirection: 'row', alignItems: 'center',
+                          gap: '12px',
                         }}
                       >
                         {yImg ? (
                           <img src={yImg} alt={y.name}
-                            style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '10px', marginBottom: '.4rem' }} />
+                            style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '10px', flexShrink: 0 }} />
                         ) : (
-                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '.4rem' }}>{y.emoji}</span>
+                          <span style={{ fontSize: '1.5rem', display: 'block', flexShrink: 0, width: '48px', textAlign: 'center' }}>{y.emoji}</span>
                         )}
-                        <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--char)', marginBottom: '.2rem' }}>
-                          {y.name}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--char)', marginBottom: '.2rem' }}>
+                            {y.name}
+                          </div>
+                          <span style={{
+                            fontSize: '.65rem', fontFamily: 'var(--font-dm-sans)',
+                            color: 'var(--smoke)', lineHeight: 1.45,
+                            display: 'block',
+                          }}>
+                            {advDesc[yt]}
+                          </span>
                         </div>
-                        <span style={{
-                          fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-                          color: 'var(--smoke)', textAlign: 'center', lineHeight: 1.45,
-                          maxWidth: '140px', display: 'block', marginTop: '.1rem',
-                        }}>
-                          {advDesc[yt]}
-                        </span>
                       </div>
                     );
                   })}
