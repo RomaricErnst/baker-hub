@@ -725,6 +725,7 @@ export default function Home() {
           padding: '3px',
           display: 'flex',
           marginBottom: '12px',
+          border: '1.5px solid #E8E0D5',
         }}>
           {([
             { key: 'setup' as const, label: t('tabs.setup'), locked: false },
