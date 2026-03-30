@@ -371,7 +371,7 @@ function findOptimalPosition(
     return hbf >= sweetTo && hbf <= sweetFrom;
   }
   const STEP = 0.25;
-  const SEARCH_RANGE = (sweetFrom - sweetTo) / 2 + 2;
+  const SEARCH_RANGE = (sweetFrom - sweetTo) + 8;
   for (let delta = 0; delta <= SEARCH_RANGE; delta += STEP) {
     for (const sign of [0, 1, -1]) {
       const candidate = sweetCenter + (sign * delta);
@@ -801,9 +801,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     currentBlocks: AvailabilityBlock[],
     et: Date,
   ) {
-    const sweetCenter = hasColdRetard ? 34 : 20;
-    const sweetFrom   = hasColdRetard ? 52 : 26;
-    const sweetTo     = hasColdRetard ? 20 : 14;
+    // Compute hasColdRetard from schedule prop, not from stale pendingStart
+    const localHasColdRetard = (schedule?.coldRetardHours ?? 0) > 0;
+    const sweetCenter = localHasColdRetard ? 34 : 20;
+    const sweetFrom   = localHasColdRetard ? 52 : 26;
+    const sweetTo     = localHasColdRetard ? 20 : 14;
 
     const result = findOptimalPosition(
       sweetCenter, sweetFrom, sweetTo,
@@ -811,57 +813,29 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       hasPrefActive, prefOffsetH,
     );
 
-    if (result.fallback) {
-      const outsideHBF = result.mixHBF;
-      const maxDist = sweetFrom - sweetCenter;
-      const dist = Math.abs(outsideHBF - sweetCenter);
-      const qualityPct = Math.max(50, Math.round(100 - (dist / maxDist) * 40));
+    // Always apply the best found position regardless of zone
+    let finalMixHBF = result.mixHBF;
 
-      const overlapMin = (() => {
-        const bakeMs2 = et.getTime();
-        for (const b of currentBlocks) {
-          const s = (bakeMs2 - b.from.getTime()) / 3600000;
-          const e = (bakeMs2 - b.to.getTime())   / 3600000;
-          const lo = Math.max(Math.min(s, e), sweetCenter - 1);
-          const hi = Math.min(Math.max(s, e), sweetCenter + 1);
-          if (hi > lo) return Math.round((hi - lo) * 60);
-        }
-        return 30;
-      })();
-
-      setFallbackOptions({
-        outsideZone: { mixHBF: outsideHBF, qualityPct },
-        inBlocker:   { mixHBF: sweetCenter, overlapMin },
-      });
-      setRecommendedHBF(null);
-      setShowFallbackPopup(true);
-    } else {
-      let finalMixHBF = result.mixHBF;
-
-      // Proactively avoid bulk conflict
-      const bulkDurationH = 4; // conservative estimate
-      const proposedStart = new Date(et.getTime() - finalMixHBF * 3600000);
-      const proposedBulkEnd = new Date(proposedStart.getTime() + bulkDurationH * 3600000);
-
-      for (const block of currentBlocks) {
-        if (block.from < proposedBulkEnd && block.to > proposedStart) {
-          const neededStart = new Date(block.from.getTime() - bulkDurationH * 3600000 - 30 * 60000);
-          const neededHBF = (et.getTime() - neededStart.getTime()) / 3600000;
-          if (neededHBF > finalMixHBF) {
-            finalMixHBF = neededHBF;
-          }
-        }
+    // Proactively avoid bulk conflict
+    const bulkDurationH = 4;
+    const proposedStart = new Date(et.getTime() - finalMixHBF * 3600000);
+    const proposedBulkEnd = new Date(proposedStart.getTime() + bulkDurationH * 3600000);
+    for (const block of currentBlocks) {
+      if (block.from < proposedBulkEnd && block.to > proposedStart) {
+        const neededStart = new Date(block.from.getTime() - bulkDurationH * 3600000 - 30 * 60000);
+        const neededHBF = (et.getTime() - neededStart.getTime()) / 3600000;
+        if (neededHBF > finalMixHBF) finalMixHBF = neededHBF;
       }
+    }
 
-      const newStart = new Date(et.getTime() - finalMixHBF * 3600000);
-      setRecommendedHBF(finalMixHBF);
-      setShowFallbackPopup(false);
-      setPendingStart(newStart);
-      onChange(newStart, et, currentBlocks);
-      if (hasPrefActive) {
-        setPrefOffsetH(result.prefHBF - result.mixHBF);
-        onPrefOffsetChange?.(result.prefHBF - result.mixHBF);
-      }
+    const newStart = new Date(et.getTime() - finalMixHBF * 3600000);
+    setRecommendedHBF(finalMixHBF);
+    setShowFallbackPopup(false);
+    setPendingStart(newStart);
+    onChange(newStart, et, currentBlocks);
+    if (hasPrefActive) {
+      setPrefOffsetH(result.prefHBF - result.mixHBF);
+      onPrefOffsetChange?.(result.prefHBF - result.mixHBF);
     }
   }
 
