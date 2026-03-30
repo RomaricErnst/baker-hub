@@ -43,7 +43,7 @@ const ORIGIN_GROUPS: Record<string, string[]> = {
   'France':       ['fr'],
   'Italy':        ['it'],
   'UK':           ['uk'],
-  'Americas':     ['us', 'ca', 'br', 'mx', 'ar'],
+  'Americas':     ['us', 'ca', 'br'],
   'Europe':       ['de', 'nl', 'se', 'no', 'fi', 'pl', 'at'],
   'Asia-Pacific': ['jp', 'cn', 'kr', 'sg', 'au', 'in', 'th', 'id', 'my', 'vn', 'ph'],
 };
@@ -232,6 +232,20 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
   const results = baseFiltered([])
     .sort((a, b) => a.brand.localeCompare(b.brand) || a.name.localeCompare(b.name));
+
+  // ── Blend brand options (filtered dynamically) ──
+  const blendFilteredForBrands = FLOUR_DB
+    .filter(f => !blendSearchQuery || `${f.brand} ${f.name}`.toLowerCase().includes(blendSearchQuery.toLowerCase()))
+    .filter(f => !blendFilterType || f.type === blendFilterType)
+    .filter(f => {
+      if (!blendFilterOrigin) return true;
+      const groupCountries = ORIGIN_GROUPS[blendFilterOrigin] ?? [];
+      if (blendFilterOrigin === 'Asia-Pacific' && blendApacCountry) return f.country === blendApacCountry;
+      if (blendFilterOrigin === 'Europe' && blendEuropeCountry) return f.country === blendEuropeCountry;
+      if (blendFilterOrigin === 'Americas' && blendAmericasCountry) return f.country === blendAmericasCountry;
+      return groupCountries.includes(f.country);
+    });
+  const blendBrandOptions = [...new Set(blendFilteredForBrands.map(f => f.brand))].sort();
 
   // ── Section header factory ──
   const sectionHeader = (label: string, key: 'search' | 'blend') => (
@@ -874,7 +888,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         }}
                       >
                         <option value="">Brand ▾</option>
-                        {[...new Set(FLOUR_DB.map(f => f.brand))].sort().map(b => (
+                        {blendBrandOptions.map(b => (
                           <option key={b} value={b}>{b}</option>
                         ))}
                       </select>
