@@ -69,7 +69,6 @@ export default function PrefermentPicker({
               transition: 'all .2s',
               boxShadow: hovered === key ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
               transform: hovered === key ? 'translateY(-2px)' : 'none',
-              textAlign: 'center',
             }}
           >
             {/* Recommended badge */}
@@ -85,166 +84,136 @@ export default function PrefermentPicker({
               </div>
             )}
 
-            {/* Emoji or image */}
-            {pData.image ? (
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '.75rem' }}>
-                <img
-                  src={pData.image}
-                  alt={pData.name}
-                  style={{
-                    width: '64px',
-                    height: '64px',
-                    objectFit: 'cover',
-                    borderRadius: '10px',
-                  }}
-                />
-              </div>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '.75rem' }}>
-                <div style={{ fontSize: '2rem', lineHeight: 1 }}>{pData.emoji}</div>
-              </div>
-            )}
-
-            {/* Name + check */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              marginBottom: '.3rem', gap: '.4rem',
-            }}>
-              <div style={{ fontWeight: 600, fontSize: '.88rem', color: 'var(--char)', textAlign: 'center' }}>
-                {isFr ? pData.nameFr : pData.name}
-              </div>
-              {isSelected && <span style={{ color: 'var(--terra)', fontSize: '.85rem', flexShrink: 0 }}>✓</span>}
-            </div>
-
-            {/* Desc */}
-            {isNone ? (
-              <>
-                <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.55rem', textAlign: 'center' }}>
-                  {isFr ? pData.descFr : pData.desc}
-                </div>
-                <div style={{ height: '22px' }} />
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.55rem', textAlign: 'center' }}>
-                  {isFr ? pData.descFr : pData.desc}
-                </div>
-
-                {/* Pills */}
-                <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
-                  <span style={{
-                    fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-                    background: 'var(--cream)', color: 'var(--ash)',
-                    borderRadius: '20px', padding: '.1rem .45rem',
-                    border: '1px solid var(--border)',
-                  }}>
-                    {isSelected ? localFlourPct : pData.flourPct}% flour
-                  </span>
-                  <span style={{
-                    fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-                    background: 'var(--cream)', color: 'var(--ash)',
-                    borderRadius: '20px', padding: '.1rem .45rem',
-                    border: '1px solid var(--border)',
-                  }}>
-                    {pData.hydration}% hydration
-                  </span>
-                  <span style={{
-                    fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-                    background: 'var(--cream)', color: 'var(--ash)',
-                    borderRadius: '20px', padding: '.1rem .45rem',
-                    border: '1px solid var(--border)',
-                  }}>
-                    {pData.fermentHoursMin}–{pData.fermentHoursMax}h
-                  </span>
-                  {pData.cold && (
-                    <span style={{
-                      fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-                      background: '#EEF6FF', color: '#4A78A8',
-                      borderRadius: '20px', padding: '.1rem .45rem',
-                      border: '1px solid #B0CDE8',
-                    }}>
-                      ❄️ Cold ferment
-                    </span>
-                  )}
-                </div>
-
-                {/* Expanded section when selected */}
-                {isSelected && (
-                  <div
-                    onClick={e => e.stopPropagation()}
-                    style={{
-                      marginTop: '.85rem',
-                      borderTop: '1px solid rgba(196,82,42,0.15)',
-                      paddingTop: '.75rem',
-                    }}
-                  >
-                    {/* Ratio label row */}
-                    <div style={{
-                      display: 'flex', justifyContent: 'space-between',
-                      alignItems: 'baseline', marginBottom: '.35rem',
-                    }}>
-                      <span style={{
-                        fontSize: '.72rem', color: 'var(--char)',
-                        fontFamily: 'var(--font-dm-mono)', fontWeight: 600,
-                      }}>
-                        Flour in {isFr ? pData.nameFr : pData.name}: {localFlourPct}%
-                      </span>
-                      <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontStyle: 'italic' }}>
-                        {PREFERMENT_LABELS[key]?.(localFlourPct)}
-                      </span>
-                    </div>
-
-                    {/* Slider */}
-                    <input
-                      type="range"
-                      min={pData.flourPctMin ?? 10}
-                      max={pData.flourPctMax ?? 80}
-                      step={pData.flourPctStep ?? 5}
-                      value={localFlourPct}
-                      onChange={e => {
-                        const v = Number(e.target.value);
-                        setLocalFlourPct(v);
-                        onFlourPctChange?.(v);
-                      }}
-                      style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer' }}
-                    />
-                    <div style={{
-                      display: 'flex', justifyContent: 'space-between',
-                      fontSize: '.6rem', color: 'var(--smoke)',
-                      fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem',
-                    }}>
-                      <span>Less complex</span><span>More complex</span>
-                    </div>
-
-                    {/* Climate note for poolish/biga */}
-                    {key === 'poolish' && kitchenTemp !== undefined && kitchenTemp >= 26 && (
-                      <div style={{
-                        marginTop: '.65rem',
-                        background: '#EEF6FF', border: '1px solid #B0CDE8',
-                        borderRadius: '8px', padding: '.5rem .65rem',
-                        fontSize: '.72rem', color: '#3A5F80', lineHeight: 1.5,
-                        display: 'flex', gap: '.4rem', alignItems: 'flex-start',
-                      }}>
-                        <span>🌡️</span>
-                        <span>Warm kitchen — keep poolish in the fridge after 1–2h at room temperature to avoid over-fermentation.</span>
-                      </div>
-                    )}
-                    {key === 'biga' && (
-                      <div style={{
-                        marginTop: '.65rem',
-                        background: '#EEF6FF', border: '1px solid #B0CDE8',
-                        borderRadius: '8px', padding: '.5rem .65rem',
-                        fontSize: '.72rem', color: '#3A5F80', lineHeight: 1.5,
-                        display: 'flex', gap: '.4rem', alignItems: 'flex-start',
-                      }}>
-                        <span>❄️</span>
-                        <span>Biga ferments best cold — refrigerate for 16–24h at 4°C for optimal flavour and gluten structure.</span>
-                      </div>
-                    )}
-
+            {/* Horizontal layout: image left, text right */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+              {/* Image — left, fixed size */}
+              <div style={{ flexShrink: 0 }}>
+                {pData.image ? (
+                  <img
+                    src={pData.image}
+                    alt={pData.name}
+                    style={{ width: '52px', height: '52px', objectFit: 'cover', borderRadius: '10px' }}
+                  />
+                ) : (
+                  <div style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem' }}>
+                    {pData.emoji}
                   </div>
                 )}
-              </>
+              </div>
+
+              {/* Text — right */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {/* Name + checkmark */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem', marginBottom: '.25rem' }}>
+                  <div style={{ fontWeight: 600, fontSize: '.88rem', color: 'var(--char)' }}>
+                    {isFr ? pData.nameFr : pData.name}
+                  </div>
+                  {isSelected && <span style={{ color: 'var(--terra)', fontSize: '.85rem', flexShrink: 0 }}>✓</span>}
+                </div>
+
+                {/* Description */}
+                <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: isNone ? 0 : '.5rem' }}>
+                  {isFr ? pData.descFr : pData.desc}
+                </div>
+
+                {/* Pills — only for non-direct */}
+                {!isNone && (
+                  <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', color: 'var(--ash)', borderRadius: '20px', padding: '.1rem .45rem', border: '1px solid var(--border)' }}>
+                      {isSelected ? localFlourPct : pData.flourPct}% flour
+                    </span>
+                    <span style={{ fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', color: 'var(--ash)', borderRadius: '20px', padding: '.1rem .45rem', border: '1px solid var(--border)' }}>
+                      {pData.hydration}% hydration
+                    </span>
+                    {pData.fermentHoursMin && pData.fermentHoursMax && (
+                      <span style={{ fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'var(--cream)', color: 'var(--ash)', borderRadius: '20px', padding: '.1rem .45rem', border: '1px solid var(--border)' }}>
+                        {pData.fermentHoursMin}–{pData.fermentHoursMax}h
+                      </span>
+                    )}
+                    {pData.cold && (
+                      <span style={{ fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)', background: 'rgba(107,122,90,0.1)', color: 'var(--sage)', borderRadius: '20px', padding: '.1rem .45rem', border: '1px solid rgba(107,122,90,0.25)' }}>
+                        ❄ Cold ferment
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Expanded section when selected */}
+            {isSelected && !isNone && (
+              <div
+                onClick={e => e.stopPropagation()}
+                style={{
+                  marginTop: '.85rem',
+                  borderTop: '1px solid rgba(196,82,42,0.15)',
+                  paddingTop: '.75rem',
+                }}
+              >
+                {/* Ratio label row */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  alignItems: 'baseline', marginBottom: '.35rem',
+                }}>
+                  <span style={{
+                    fontSize: '.72rem', color: 'var(--char)',
+                    fontFamily: 'var(--font-dm-mono)', fontWeight: 600,
+                  }}>
+                    Flour in {isFr ? pData.nameFr : pData.name}: {localFlourPct}%
+                  </span>
+                  <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontStyle: 'italic' }}>
+                    {PREFERMENT_LABELS[key]?.(localFlourPct)}
+                  </span>
+                </div>
+
+                {/* Slider */}
+                <input
+                  type="range"
+                  min={pData.flourPctMin ?? 10}
+                  max={pData.flourPctMax ?? 80}
+                  step={pData.flourPctStep ?? 5}
+                  value={localFlourPct}
+                  onChange={e => {
+                    const v = Number(e.target.value);
+                    setLocalFlourPct(v);
+                    onFlourPctChange?.(v);
+                  }}
+                  style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer' }}
+                />
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  fontSize: '.6rem', color: 'var(--smoke)',
+                  fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem',
+                }}>
+                  <span>Less complex</span><span>More complex</span>
+                </div>
+
+                {/* Climate note for poolish/biga */}
+                {key === 'poolish' && kitchenTemp !== undefined && kitchenTemp >= 26 && (
+                  <div style={{
+                    marginTop: '.65rem',
+                    background: '#EEF6FF', border: '1px solid #B0CDE8',
+                    borderRadius: '8px', padding: '.5rem .65rem',
+                    fontSize: '.72rem', color: '#3A5F80', lineHeight: 1.5,
+                    display: 'flex', gap: '.4rem', alignItems: 'flex-start',
+                  }}>
+                    <span>🌡️</span>
+                    <span>Warm kitchen — keep poolish in the fridge after 1–2h at room temperature to avoid over-fermentation.</span>
+                  </div>
+                )}
+                {key === 'biga' && (
+                  <div style={{
+                    marginTop: '.65rem',
+                    background: '#EEF6FF', border: '1px solid #B0CDE8',
+                    borderRadius: '8px', padding: '.5rem .65rem',
+                    fontSize: '.72rem', color: '#3A5F80', lineHeight: 1.5,
+                    display: 'flex', gap: '.4rem', alignItems: 'flex-start',
+                  }}>
+                    <span>❄️</span>
+                    <span>Biga ferments best cold — refrigerate for 16–24h at 4°C for optimal flavour and gluten structure.</span>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         );
