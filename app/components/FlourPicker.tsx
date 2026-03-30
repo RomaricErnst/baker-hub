@@ -734,20 +734,27 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   )}
 
                   <div style={{ marginTop: '12px' }}>
-                    {/* Search + filter row */}
-                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                    {/* Row 1 — Label + full-width search input */}
+                    <div style={{ marginBottom: '8px' }}>
+                      <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '6px' }}>
+                        Or find a specific brand:
+                      </div>
                       <input
                         type="text"
-                        placeholder="Or find a specific brand..."
+                        placeholder="Search flour..."
                         value={blendSearchQuery}
                         onChange={e => { setBlendSearchQuery(e.target.value); setBlendShowFullSearch(true); }}
                         style={{
-                          flex: 1, padding: '8px 12px',
+                          width: '100%', padding: '8px 12px',
                           border: '1px solid #E8E0D5', borderRadius: '10px',
                           fontSize: '13px', fontFamily: 'DM Sans, sans-serif',
-                          background: 'white', outline: 'none', color: '#1A1612', minWidth: 0,
+                          background: 'white', outline: 'none', color: '#1A1612',
+                          boxSizing: 'border-box',
                         }}
                       />
+                    </div>
+                    {/* Row 2 — Three filter selects */}
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
                       <select
                         value={blendFilterType ?? ''}
                         onChange={e => setBlendFilterType(e.target.value || null)}
