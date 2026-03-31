@@ -869,6 +869,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  // On mount: if bake time already set (refresh / return-to-edit),
+  // always run the recommendation engine before showing the graph
+  useEffect(() => {
+    if (!alreadySet) return;
+    if (hasManuallyDragged.current) return;
+    computeAndApplyRecommendation(blocks, pendingEatTime);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!eatTimeSet) return;
     setStartComputed(false);
