@@ -32,7 +32,7 @@ const CHART_H   = 220;
 const TOP_PAD   = 60;   // space above curves for window labels
 const BL        = 175;  // baseline = TOP_PAD + curve height area
 const MAXH      = 110;  // max bell height (fits within TOP_PAD to BL)
-const AXIS_Y    = 195;  // axis line below baseline
+const AXIS_Y    = 175;  // axis line = same as baseline BL
 
 // DOUGH_SIG and DOUGH_SWEET_CENTER are computed inside the component
 // based on hasColdRetard — see derived physics section
@@ -418,7 +418,7 @@ export default function FermentChart({
       <svg
         ref={svgRef}
         width={W}
-        height={CHART_H + 20}
+        height={CHART_H}
         style={{ display: 'block', touchAction: 'none', overflow: 'visible' }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
