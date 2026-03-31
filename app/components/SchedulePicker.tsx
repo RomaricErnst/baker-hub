@@ -1429,10 +1429,27 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               hasColdRetard={hasColdRetard}
               kitchenTemp={kitchenTemp}
               onStartChange={(newStart) => {
-                const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(newStart, blocks);
-                setPendingStart(resolvedStart);
-                setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
-                onChange(resolvedStart, pendingEatTime, blocks);
+                setPendingStart(newStart);
+                const bakeMs = pendingEatTime.getTime();
+                const h = (bakeMs - newStart.getTime()) / 3600000;
+                const inB = blocks.some(b => {
+                  const s = (bakeMs - b.from.getTime()) / 3600000;
+                  const e = (bakeMs - b.to.getTime())   / 3600000;
+                  return h > Math.min(s,e) && h < Math.max(s,e);
+                });
+                const typicalBulkH = kitchenTemp >= 30 ? 0.5 : kitchenTemp >= 28 ? 0.75 : 1.5;
+                const bulkEndHBF = h - typicalBulkH;
+                const bulkEndInB = !inB && bulkEndHBF > 0 && blocks.some(b => {
+                  const s = (bakeMs - b.from.getTime()) / 3600000;
+                  const e = (bakeMs - b.to.getTime())   / 3600000;
+                  return bulkEndHBF > Math.min(s,e) && bulkEndHBF < Math.max(s,e);
+                });
+                setBlockerNote(
+                  inB ? "Start Dough falls in one of your busy windows — that's fine if it works for you."
+                  : bulkEndInB ? "Make sure you're available shortly after to continue with your dough."
+                  : null
+                );
+                onChange(newStart, pendingEatTime, blocks);
               }}
             />
           ) : (
