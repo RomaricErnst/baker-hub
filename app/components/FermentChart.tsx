@@ -523,11 +523,17 @@ export default function FermentChart({
           d={makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH)}
           fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
         />
-        {renderDropLine(
-          effectiveMixHBF, doughPeakHBF, DOUGH_SIG,
-          inBlocker(effectiveMixHBF) ? '#aaaaaa' : SAGE,
-          hasPref ? BL - bell(effectiveMixHBF, prefPeakHBF, prefSig) * MAXH : undefined,
-        )}
+        {(() => {
+          const prefY = hasPref ? BL - bell(effectiveMixHBF, prefPeakHBF, prefSig) * MAXH : undefined;
+          const doughY = BL - bell(effectiveMixHBF, doughPeakHBF, DOUGH_SIG) * MAXH;
+          // Only use prefY as startY if pref curve is below dough curve (between dough and baseline)
+          const startY = (prefY !== undefined && prefY > doughY) ? prefY : undefined;
+          return renderDropLine(
+            effectiveMixHBF, doughPeakHBF, DOUGH_SIG,
+            inBlocker(effectiveMixHBF) ? '#aaaaaa' : SAGE,
+            startY,
+          );
+        })()}
 
         {/* ── Baseline ── */}
         <line x1={PAD} y1={BL} x2={W - PAD} y2={BL}

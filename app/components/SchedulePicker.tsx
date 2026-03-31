@@ -836,12 +836,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setShowFallbackPopup(true);
     } else {
       let finalMixHBF = result.mixHBF;
-      const startMs = et.getTime() - finalMixHBF * 3600000;
+      const bakeMs = et.getTime();
+      function isInAnyBlocker(hbf: number): boolean {
+        return currentBlocks.some(b => {
+          const s = (bakeMs - b.from.getTime()) / 3600000;
+          const e = (bakeMs - b.to.getTime())   / 3600000;
+          return hbf >= Math.min(s,e) && hbf <= Math.max(s,e);
+        });
+      }
+      const startMs = bakeMs - finalMixHBF * 3600000;
       const bulkEndMs = startMs + 4 * 3600000;
       for (const b of currentBlocks) {
         if (b.from.getTime() < bulkEndMs && b.to.getTime() > startMs) {
-          const shiftedHBF = (et.getTime() - b.from.getTime()) / 3600000 + 4.5;
-          if (shiftedHBF > finalMixHBF) finalMixHBF = shiftedHBF;
+          const shiftedHBF = (bakeMs - b.from.getTime()) / 3600000 + 4.5;
+          if (shiftedHBF > finalMixHBF && !isInAnyBlocker(shiftedHBF)) {
+            finalMixHBF = shiftedHBF;
+          }
         }
       }
       const newStart = new Date(et.getTime() - finalMixHBF * 3600000);
