@@ -330,6 +330,9 @@ export default function Home() {
   // M2 — Mode chosen: false on page load, true after baker selects a mode
   const [modeChosen, setModeChosen] = useState(false);
 
+  // Custom mode — fermentation plan recommended
+  const [scheduleReady, setScheduleReady] = useState(false);
+
   // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -359,6 +362,10 @@ export default function Home() {
       setProtocolStale(true);
     }
   }, [bakeType, styleKey, numItems, itemWeight, ovenType, mixerType, yeastType, kitchenTemp, humidity, fridgeTemp, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct]);
+
+  useEffect(() => {
+    setScheduleReady(false);
+  }, [bakeType, styleKey]);
 
   // ── Computed ──────────────────────────────
   const ovenData = bakeType === 'bread'
@@ -2009,11 +2016,12 @@ export default function Home() {
                 onFeedTimeChange={setFeedTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                onReady={() => setScheduleReady(true)}
               />
             </StepCard>
 
             {/* ── Generate button (setup tab) ── */}
-            {canGenerate && (
+            {canGenerate && scheduleReady && (
               <div style={{ position: 'sticky', bottom: '16px', margin: '8px 0 0' }}>
                 <button
                   onClick={handleGenerate}

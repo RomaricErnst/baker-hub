@@ -19,6 +19,7 @@ interface SchedulePickerProps {
   prefermentType?: string;
   onPrefOffsetChange?: (h: number) => void;
   mode?: 'simple' | 'custom';   // default 'custom'
+  onReady?: () => void;
 }
 
 type PickerPhase = 'bake_time' | 'start_confirm';
@@ -731,7 +732,7 @@ function SimpleColourBar({
 }
 
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, mode = 'custom' }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, mode = 'custom', onReady }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tCommon = useTranslations('common');
   const alreadySet = eatTime !== null && eatTime > new Date();
@@ -1342,6 +1343,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             hasManuallyDragged.current = false;
             computeAndApplyRecommendation(blocks, pendingEatTime);
             setStartComputed(true);
+            onReady?.();
           }}
           style={{
             width: '100%', padding: '.85rem 1.25rem',
