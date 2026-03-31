@@ -77,7 +77,7 @@ function snap15(h: number): number {
 }
 
 // Sample bell curve into a closed SVG path
-function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_DEFAULT, startHBF = 0): string {
+function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_DEFAULT): string {
   const N = 260;
   const pts: string[] = [];
   for (let i = 0; i <= N; i++) {
@@ -436,16 +436,6 @@ export default function FermentChart({
               </clipPath>
             );
           })}
-          <clipPath id="clip-pref">
-            <rect x={0} y={0}
-              width={hToX(prefStartAbsHBF, W, WH)}
-              height={CHART_H + 40} />
-          </clipPath>
-          <clipPath id="clip-mix">
-            <rect x={0} y={0}
-              width={hToX(effectiveMixHBF, W, WH)}
-              height={CHART_H + 40} />
-          </clipPath>
           {/* Bidirectional arrow markers for zone width indicators */}
           <marker id="arrow-sage-start" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
             <path d="M6,0 L0,3 L6,6" fill="none" stroke="#6B7A5A" strokeWidth="1.2"/>
@@ -520,7 +510,6 @@ export default function FermentChart({
             <path
               d={makeBellPath(prefPeakHBF, prefSig, W, WH)}
               fill={`${prefColor}2E`} stroke={`${prefColor}A5`} strokeWidth={1.5}
-              clipPath="url(#clip-pref)"
             />
             <line
               x1={hToX(prefStartAbsHBF, W, WH)}
@@ -536,7 +525,6 @@ export default function FermentChart({
         <path
           d={makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH)}
           fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
-          clipPath="url(#clip-mix)"
         />
         <line
           x1={hToX(effectiveMixHBF, W, WH)}
