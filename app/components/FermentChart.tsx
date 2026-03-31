@@ -80,8 +80,10 @@ function snap15(h: number): number {
 function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_DEFAULT, startHBF = 0): string {
   const N = 260;
   const pts: string[] = [];
+  // Start loop from startHBF (diamond position) not from 0 (bake)
+  // hbf increases left on screen, so startHBF → wh = diamond → leftmost
   for (let i = 0; i <= N; i++) {
-    const hbf = (i / N) * wh;
+    const hbf = startHBF + (i / N) * (wh - startHBF);
     const x = hToX(hbf, W, wh);
     const y = BL - bell(hbf, peakHBF, sigma) * MAXH;
     pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
