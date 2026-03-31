@@ -467,7 +467,7 @@ function SimpleColourBar({
   const zones = [
     { from: barWin,     to: goldL_HBF,  fill: 'rgba(196,82,42,0.2)',   label: 'Too early' },
     { from: goldL_HBF,  to: sweetL_HBF, fill: 'rgba(212,168,83,0.35)', label: 'Still ok'  },
-    { from: sweetL_HBF, to: sweetR_HBF, fill: 'rgba(107,122,90,0.5)',  label: 'Mix here'  },
+    { from: sweetL_HBF, to: sweetR_HBF, fill: 'rgba(107,122,90,0.5)',  label: 'Start Dough' },
     { from: sweetR_HBF, to: goldR2_HBF, fill: 'rgba(212,168,83,0.35)', label: 'Still ok'  },
     { from: goldR2_HBF, to: 0,          fill: 'rgba(196,82,42,0.2)',   label: 'Too late'  },
   ];
@@ -1764,8 +1764,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         );
       })()}
 
-      {/* ── Info cards (pref + mix start times) ── */}
-      {startComputed && (() => {
+      {/* ── Info cards (pref + mix start times) — custom mode only ── */}
+      {startComputed && mode !== 'simple' && (() => {
         const isLevainType = prefermentType === 'levain' || isSourdough;
         const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
         const infoOptH = (hasPrefActive || isSourdough) ? getPrefOptH(isSourdough ? 'sourdough' : prefermentType, kitchenTemp) : 0;

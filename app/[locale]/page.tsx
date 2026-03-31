@@ -1118,7 +1118,7 @@ export default function Home() {
 
             {/* ── Generate button (setup tab) ── */}
             {canGenerate && (
-              <div style={{ position: 'sticky', bottom: '16px', margin: '8px 0 0' }}>
+              <div style={{ margin: '8px 0 0' }}>
                 <button
                   onClick={handleGenerate}
                   style={{
