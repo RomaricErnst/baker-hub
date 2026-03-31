@@ -818,8 +818,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     currentBlocks: AvailabilityBlock[],
     et: Date,
   ) {
-    const sweetFrom   = hasColdRetard ? 52 : 26;
-    const sweetTo     = hasColdRetard ? 20 : 14;
+    // Derive cold retard independently of schedule prop (which may be stale on first call)
+    const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
+    const isTrop = kitchenTemp >= 28;
+    const minBulkRTLocal = isTrop ? 0.5 : 1.5;
+    const minTotalRTLocal = minBulkRTLocal + 1.0 + (preheatMin / 60);
+    const totalWindowH = (et.getTime() - new Date().getTime()) / 3600000;
+    const expectedColdRetard = defaults.coldH > 0 && totalWindowH >= defaults.coldH + minTotalRTLocal;
+    const sweetFrom   = expectedColdRetard ? 52 : 26;
+    const sweetTo     = expectedColdRetard ? 20 : 14;
     const sweetCenter = (sweetFrom + sweetTo) / 2;
 
     const optimalPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp) : prefOffsetH;
