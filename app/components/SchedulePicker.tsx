@@ -976,7 +976,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
     const { resolvedStart, moved, resolvedDate: _resolvedDate } = applyBlockerOverlap(pendingStart, newBlocks);
     if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
-    setBlockerNote(moved ? "Start Dough falls in one of your busy windows — that's fine if it works for you." : null);
+    setBlockerNote(null);
     onChange(resolvedStart, pendingEatTime, newBlocks);
     if (!hasManuallyDragged.current && phase === 'start_confirm') {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
@@ -1455,17 +1455,29 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               recommendedMixHBF={recommendedHBF}
               showZoneLabels={adjustOpen}
               onMixChange={(h) => {
-                // Baker is manually adjusting — clear ghost
                 hasManuallyDragged.current = true;
                 setRecommendedHBF(null);
-                const sweetFromD = hasColdRetard ? 52 : 26;
-                const sweetToD   = hasColdRetard ? 20 : 14;
-                const sweetCenter = (sweetFromD + sweetToD) / 2;
-                const snapped = snapToBlockerEdgeIfBlocked(h, blocks, pendingEatTime, sweetCenter);
-                const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - snapped * 3600000));
+                const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - h * 3600000));
                 if (isSourdough) setMixOverride(true);
                 setPendingStart(newStart);
-                setBlockerNote(null);
+                const bakeMs = pendingEatTime.getTime();
+                const inB = blocks.some(b => {
+                  const s = (bakeMs - b.from.getTime()) / 3600000;
+                  const e = (bakeMs - b.to.getTime())   / 3600000;
+                  return h > Math.min(s,e) && h < Math.max(s,e);
+                });
+                const typicalBulkH = kitchenTemp >= 30 ? 0.5 : kitchenTemp >= 28 ? 0.75 : 1.5;
+                const bulkEndHBF = h - typicalBulkH;
+                const bulkEndInB = !inB && bulkEndHBF > 0 && blocks.some(b => {
+                  const s = (bakeMs - b.from.getTime()) / 3600000;
+                  const e = (bakeMs - b.to.getTime())   / 3600000;
+                  return bulkEndHBF > Math.min(s,e) && bulkEndHBF < Math.max(s,e);
+                });
+                setBlockerNote(
+                  inB ? "Start Dough falls in one of your busy windows — that's fine if it works for you."
+                  : bulkEndInB ? "Make sure you're available shortly after to continue with your dough."
+                  : null
+                );
                 onChange(newStart, pendingEatTime, blocks);
               }}
               onPrefChange={(offsetH) => {
