@@ -846,8 +846,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   useEffect(() => {
     if (!eatTimeSet) return;
-    hasManuallyDragged.current = false;
-    computeAndApplyRecommendation(blocks, pendingEatTime);
+    setStartComputed(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
 
@@ -904,8 +903,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setPendingEatTime(et);
     setEatTimeSet(true);
     hasManuallyDragged.current = false;
-    computeAndApplyRecommendation(blocks, et);
-    setStartComputed(true);
     setDismissedConflict(false);
     setPhase('start_confirm');
     if (isSourdough) {
@@ -1092,6 +1089,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           })()}
         </div>
       )}
+
+      </div>)}
+
+      {eatTimeSet && (<div>
 
       {/* Blocker section — moved above slider */}
       <div
@@ -1354,6 +1355,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           Recommend fermentation plan →
         </button>
       )}
+
+      {startComputed && (<>
 
       {/* Divider */}
       <div style={{ borderTop: '1px solid var(--border)', margin: '1.1rem 0 1rem' }} />
@@ -1652,6 +1655,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           {schedule.scheduleNote}
         </div>
       )}
+
+      </>)}
 
       {/* Fallback popup — shown when no clean mix window found */}
       {showFallbackPopup && fallbackOptions && (
