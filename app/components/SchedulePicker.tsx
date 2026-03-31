@@ -424,13 +424,14 @@ function barXToHBF(x: number, W: number, barWin: number): number {
 }
 
 function SimpleColourBar({
-  eatTime, pendingStart, blocks, onStartChange, hasColdRetard,
+  eatTime, pendingStart, blocks, onStartChange, hasColdRetard, kitchenTemp,
 }: {
   eatTime: Date;
   pendingStart: Date;
   blocks: AvailabilityBlock[];
   onStartChange: (d: Date) => void;
   hasColdRetard?: boolean;
+  kitchenTemp: number;
 }) {
   const barWin       = hasColdRetard ? 72 : 48;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -510,12 +511,7 @@ function SimpleColourBar({
   }
   function onPointerUp() {
     if (dragging) {
-      // Snap to the blocker edge nearest to sweet spot center on release
-      const sweetFrom = hasColdRetard ? 52 : 26;
-      const sweetTo   = hasColdRetard ? 20 : 14;
-      const sweetCenter = (sweetFrom + sweetTo) / 2;
-      const snapped = snapToBlockerEdgeIfBlocked(lastHBFRef.current, blocks, eatTime, sweetCenter);
-      onStartChange(new Date(bakeMs - snapped * 3600000));
+      onStartChange(new Date(bakeMs - lastHBFRef.current * 3600000));
     }
     setLocalHBF(null);
     setDragging(false);
@@ -538,10 +534,17 @@ function SimpleColourBar({
   const inBlocker = blocks.some(b => {
     const bFromHBF = (bakeMs - b.to.getTime())   / 3600000;
     const bToHBF   = (bakeMs - b.from.getTime()) / 3600000;
-    return effectiveMixHBF >= bFromHBF && effectiveMixHBF <= bToHBF;
+    return effectiveMixHBF > bFromHBF && effectiveMixHBF < bToHBF;
   });
-  const dFill   = inBlocker ? '#aaaaaa' : '#1A1612';
-  const dStroke = inBlocker ? '#999999' : 'white';
+  const typicalBulkH = kitchenTemp >= 30 ? 0.5 : kitchenTemp >= 28 ? 0.75 : 1.5;
+  const bulkEndHBF = effectiveMixHBF - typicalBulkH;
+  const bulkEndInBlocker = !inBlocker && bulkEndHBF > 0 && blocks.some(b => {
+    const bFromHBF = (bakeMs - b.to.getTime())   / 3600000;
+    const bToHBF   = (bakeMs - b.from.getTime()) / 3600000;
+    return bulkEndHBF > bFromHBF && bulkEndHBF < bToHBF;
+  });
+  const dFill   = inBlocker ? '#aaaaaa' : bulkEndInBlocker ? '#C4A030' : '#1A1612';
+  const dStroke = inBlocker ? '#999999' : bulkEndInBlocker ? '#7A6010' : 'white';
 
   return (
     <div
@@ -724,13 +727,19 @@ function SimpleColourBar({
       </div>
 
       {inBlocker && (
+        <div style={{ fontSize: '.72rem', color: '#7A3A1A',
+          background: '#FEF4EF', borderRadius: '8px',
+          padding: '6px 10px', marginTop: '6px',
+          border: '0.5px solid #F0C4A0', lineHeight: 1.4 }}>
+          Your mix time falls in a busy window — that&apos;s fine if it works for you.
+        </div>
+      )}
+      {!inBlocker && bulkEndInBlocker && (
         <div style={{ fontSize: '.72rem', color: '#7A5A10',
           background: '#FEF9F0', borderRadius: '8px',
           padding: '6px 10px', marginTop: '6px',
           border: '0.5px solid #F0D9A0', lineHeight: 1.4 }}>
-          ⚠️ Your mix time overlaps a blocked window —
-          we hope this is intentional! Feel free to adjust
-          if needed.
+          Make sure you&apos;re available around {new Date(bakeMs - bulkEndHBF * 3600000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} to continue with your dough.
         </div>
       )}
 
@@ -1418,6 +1427,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               pendingStart={pendingStart}
               blocks={blocks}
               hasColdRetard={hasColdRetard}
+              kitchenTemp={kitchenTemp}
               onStartChange={(newStart) => {
                 const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(newStart, blocks);
                 setPendingStart(resolvedStart);
