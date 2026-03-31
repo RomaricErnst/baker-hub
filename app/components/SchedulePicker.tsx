@@ -1460,7 +1460,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 });
                 setBlockerNote(
                   inB ? "Start Dough falls in one of your busy windows — that's fine if it works for you."
-                  : bulkEndInB ? "Make sure you're available shortly after to continue with your dough."
+                  : bulkEndInB ? "Bulk fermentation will overlap a busy window — make sure you're free to put the dough in the fridge before then."
                   : null
                 );
                 onChange(newStart, pendingEatTime, blocks);
