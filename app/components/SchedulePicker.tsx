@@ -1510,8 +1510,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         )}
       </div>
 
-      {/* Adjust schedule */}
-      <div style={{ marginTop: '.5rem', marginBottom: '.75rem' }}>
+      {/* Adjust schedule — custom mode only */}
+      {mode !== 'simple' && <div style={{ marginTop: '.5rem', marginBottom: '.75rem' }}>
         <div
           onClick={() => setAdjustOpen(o => !o)}
           style={{
@@ -1555,7 +1555,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </button>
           </div>
         )}
-      </div>
+      </div>}
 
       {/* ── Message cards: State 1 (fallback), State 2 (blocker note), State 3 (bulk conflict) ── */}
       {showFallbackPopup && fallbackOptions && (
