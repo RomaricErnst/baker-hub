@@ -22,15 +22,17 @@ export interface FermentChartProps {
   };
   scheduleNote?: string | null;
   recommendedMixHBF?: number | null;
+  showZoneLabels?: boolean;
 }
 
 // ── Constants ────────────────────────────────────────────────
 const WINDOW_H_DEFAULT = 96;
 const PAD       = 16;
 const CHART_H   = 220;
-const BL        = 144;  // single baseline for ALL bells
-const MAXH      = 117;  // max bell height
-const AXIS_Y    = 162;  // axis line Y
+const TOP_PAD   = 60;   // space above curves for window labels
+const BL        = 175;  // baseline = TOP_PAD + curve height area
+const MAXH      = 110;  // max bell height (fits within TOP_PAD to BL)
+const AXIS_Y    = 195;  // axis line below baseline
 
 // DOUGH_SIG and DOUGH_SWEET_CENTER are computed inside the component
 // based on hasColdRetard — see derived physics section
@@ -117,7 +119,7 @@ export default function FermentChart({
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange,
   windowH, prefInFridge, hasColdRetard, phases, scheduleNote,
-  recommendedMixHBF,
+  recommendedMixHBF, showZoneLabels,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -194,6 +196,9 @@ export default function FermentChart({
   const mixX  = hToX(effectiveMixHBF, W, WH);
   const prefX = hasPref ? hToX(prefStartAbsHBF, W, WH) : 0;
   const bakeX = hToX(0, W, WH);
+
+  // ── Label collision detection ────────────────────────────
+  const labelsClose = hasPref && Math.abs(mixX - prefX) < 80;
 
   // ── Blocker helpers ──────────────────────────────────────
   const bakeMs = eatTime.getTime();
@@ -286,8 +291,8 @@ export default function FermentChart({
   const prefTime = hasPref ? new Date(bakeMs - prefStartAbsHBF * 3600000) : null;
 
   const prefLabel = prefermentType === 'sourdough' || prefermentType === 'levain'
-    ? 'Feed starter'
-    : prefermentType === 'biga'    ? 'Start Biga'
+    ? 'Feed Starter'
+    : prefermentType === 'biga'    ? 'Make Biga'
     : prefermentType === 'poolish' ? 'Make Poolish'
     : prefermentType;
 
@@ -307,18 +312,18 @@ export default function FermentChart({
     if (x2 <= x1 + 1) return null;
     return (
       <g>
-        <rect x={x1} y={0} width={x2 - x1} height={BL}
+        <rect x={x1} y={TOP_PAD} width={x2 - x1} height={BL - TOP_PAD}
           fill={`${color}12`} />
-        <line x1={x1} y1={0} x2={x1} y2={BL}
+        <line x1={x1} y1={TOP_PAD} x2={x1} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
-        <line x1={x2} y1={0} x2={x2} y2={BL}
+        <line x1={x2} y1={TOP_PAD} x2={x2} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
         <rect
           x={(x1 + x2) / 2 - label.length * 4}
           y={labelY - 11}
           width={label.length * 8}
           height={14}
-          fill="rgba(245,240,232,0.82)"
+          fill="rgba(255,255,255,0.92)"
           rx={3}
         />
         <text x={(x1 + x2) / 2} y={labelY} fontSize={11} fill={color}
@@ -341,8 +346,10 @@ export default function FermentChart({
     cx: number, fill: string, stroke: string, warn: boolean,
     which: 'mix' | 'pref',
   ) {
-    const shouldGlow = (which === 'mix' && glowState === 'mix')
-      || (which === 'pref' && (glowState === 'pref'));
+    const shouldGlow = showZoneLabels && (
+      (which === 'mix' && glowState === 'mix')
+      || (which === 'pref' && glowState === 'pref')
+    );
     return (
       <g
         style={{ cursor: dragging === which ? 'grabbing' : 'grab' }}
@@ -365,13 +372,14 @@ export default function FermentChart({
   }
 
   // ── Drop-line renderer ───────────────────────────────────
-  function renderDropLine(hbf: number, peakHBF: number, sigma: number, color: string) {
+  function renderDropLine(hbf: number, peakHBF: number, sigma: number, color: string, startY?: number) {
     const x  = hToX(hbf, W, WH);
     const v  = bell(hbf, peakHBF, sigma) * MAXH;
     const cy = BL - v;
+    const y1 = startY ?? BL;
     return (
       <>
-        <line x1={x} y1={BL} x2={x} y2={cy}
+        <line x1={x} y1={y1} x2={x} y2={cy}
           stroke={color} strokeWidth={1} strokeDasharray="3 4" strokeOpacity={0.5} />
         <circle cx={x} cy={cy} r={3.5} fill={color} stroke="white" strokeWidth={1} />
       </>
@@ -384,63 +392,33 @@ export default function FermentChart({
       ref={containerRef}
       style={{ width: '100%', userSelect: 'none', overflow: 'hidden', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
     >
-      {/* ── Instruction pills ── */}
-      {glowState !== 'done' && (
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '5px',
-            fontSize: '12px', color: glowState === 'mix' ? 'var(--char)' : 'var(--smoke)',
-            background: glowState === 'mix' ? '#FFF8F3' : 'var(--cream)',
-            border: `1px solid ${glowState === 'mix' ? 'var(--terra)' : 'var(--border)'}`,
-            borderRadius: '20px', padding: '3px 10px',
-            opacity: glowState === 'mix' ? 1 : 0.65,
-          }}>
-            <span>◆ Drag to set dough start
-              <span style={{ color: 'var(--smoke)', marginLeft: '4px' }}>· Green curve should peak at ▲ Bake</span>
-            </span>
-          </div>
-          {hasPref && (
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: '5px',
-              fontSize: '12px', color: glowState === 'pref' ? 'var(--char)' : 'var(--smoke)',
-              background: glowState === 'pref' ? '#FFF8F3' : 'var(--cream)',
-              border: `1px solid ${glowState === 'pref' ? 'var(--terra)' : 'var(--border)'}`,
-              borderRadius: '20px', padding: '3px 10px',
-              opacity: glowState === 'pref' ? 1 : 0.65,
-            }}>
-              <span>◇ Drag to set {prefTypeName.toLowerCase()} start
-                <span style={{ color: 'var(--smoke)', marginLeft: '4px' }}>· Gold curve should peak at ◆ Mix</span>
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-      {/* ── Curve legend (hasPref only) ── */}
-      {hasPref && (
-        <div style={{
-          display: 'flex', gap: '16px', marginBottom: '8px',
-          fontFamily: 'DM Sans, sans-serif', fontSize: '12px',
-          alignItems: 'center',
-        }}>
+      {/* ── Curve legend ── */}
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '8px' }}>
+        {hasPref && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ fontSize: '14px', color: prefColor, lineHeight: 1 }}>◇</span>
-            <span style={{ color: '#3D3530' }}>
-              {prefermentType === 'biga'       ? 'Biga'   :
-               prefermentType === 'levain'     ? 'Levain' :
-               prefermentType === 'sourdough'  ? 'Levain' :
+            <svg width="24" height="10" viewBox="0 0 24 10">
+              <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke={prefColor} strokeWidth="2" fill="none" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+              {prefermentType === 'biga' ? 'Biga' :
+               prefermentType === 'levain' || prefermentType === 'sourdough' ? 'Starter' :
                'Poolish'}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ fontSize: '14px', color: '#3D5A30', lineHeight: 1 }}>◆</span>
-            <span style={{ color: '#3D3530' }}>Dough</span>
-          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <svg width="24" height="10" viewBox="0 0 24 10">
+            <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke="#4A6B3A" strokeWidth="2" fill="none" strokeLinecap="round"/>
+          </svg>
+          <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+            Dough
+          </span>
         </div>
-      )}
+      </div>
       <svg
         ref={svgRef}
         width={W}
-        height={CHART_H}
+        height={CHART_H + 20}
         style={{ display: 'block', touchAction: 'none', overflow: 'visible' }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -454,7 +432,7 @@ export default function FermentChart({
             const x2 = hToX(hbfEnd,   W, WH);
             return (
               <clipPath key={i} id={`bc-${i}`}>
-                <rect x={x1} y={0} width={Math.max(0, x2 - x1)} height={AXIS_Y} />
+                <rect x={x1} y={TOP_PAD} width={Math.max(0, x2 - x1)} height={AXIS_Y - TOP_PAD} />
               </clipPath>
             );
           })}
@@ -484,16 +462,16 @@ export default function FermentChart({
         )}
 
         {/* ── Sweet-spot zones ── */}
-        {(() => {
-          const prefZoneLabel =
-            prefermentType === 'biga'      ? 'Start biga'   :
-            prefermentType === 'levain'    ? 'Start levain' :
-            prefermentType === 'sourdough' ? 'Start levain' :
-            'Start poolish';
+        {showZoneLabels && (() => {
+          const prefWindowLabel =
+            prefermentType === 'biga'      ? 'Make Biga window'    :
+            prefermentType === 'levain'    ? 'Feed Starter window' :
+            prefermentType === 'sourdough' ? 'Feed Starter window' :
+            'Make Poolish window';
           return (
             <>
-              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start dough window', 10, 'sage')}
-              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, `${prefZoneLabel} window`, 22, 'pref')}
+              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start Dough window', 12, 'sage')}
+              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, prefWindowLabel, 38, 'pref')}
             </>
           );
         })()}
@@ -508,19 +486,19 @@ export default function FermentChart({
           const n = Math.ceil((x2 - x1 + AXIS_Y) / 7) + 2;
           return (
             <g key={i}>
-              <rect x={x1} y={0} width={x2 - x1} height={AXIS_Y} fill="rgba(196,82,42,0.09)" />
+              <rect x={x1} y={TOP_PAD} width={x2 - x1} height={AXIS_Y - TOP_PAD} fill="rgba(196,82,42,0.09)" />
               <g clipPath={`url(#bc-${i})`}>
                 {Array.from({ length: n }, (_, j) => {
                   const ox = x1 + j * 7 - AXIS_Y;
                   return (
                     <line key={j}
-                      x1={ox} y1={0} x2={ox + AXIS_Y} y2={AXIS_Y}
+                      x1={ox} y1={TOP_PAD} x2={ox + AXIS_Y} y2={AXIS_Y}
                       stroke="rgba(196,82,42,0.16)" strokeWidth={1}
                     />
                   );
                 })}
               </g>
-              <line x1={x1} y1={0} x2={x2} y2={0}
+              <line x1={x1} y1={TOP_PAD} x2={x2} y2={TOP_PAD}
                 stroke="rgba(196,82,42,0.5)" strokeWidth={2.5} />
             </g>
           );
@@ -548,6 +526,7 @@ export default function FermentChart({
         {renderDropLine(
           effectiveMixHBF, doughPeakHBF, DOUGH_SIG,
           inBlocker(effectiveMixHBF) ? '#aaaaaa' : SAGE,
+          hasPref ? BL - bell(effectiveMixHBF, prefPeakHBF, prefSig) * MAXH : undefined,
         )}
 
         {/* ── Baseline ── */}
@@ -563,7 +542,7 @@ export default function FermentChart({
           <g key={i}>
             <line x1={tk.x} y1={AXIS_Y} x2={tk.x} y2={AXIS_Y + 3}
               stroke="var(--border)" strokeWidth={1} />
-            <text x={tk.x} y={AXIS_Y + 18} fontSize={12} fill="var(--smoke)"
+            <text x={tk.x} y={AXIS_Y + 20} fontSize={12} fill="var(--smoke)"
               fontFamily="DM Mono, monospace" textAnchor="middle">
               {tk.label}
             </text>
@@ -575,7 +554,7 @@ export default function FermentChart({
           points={`${bakeX - 8},${AXIS_Y} ${bakeX},${AXIS_Y - 12} ${bakeX + 8},${AXIS_Y}`}
           fill={TERRA}
         />
-        <text x={bakeX} y={AXIS_Y + 18} fontSize={14} fontWeight="600" fill={TERRA}
+        <text x={bakeX} y={AXIS_Y + 20} fontSize={14} fontWeight="600" fill={TERRA}
           fontFamily="DM Mono, monospace" textAnchor="middle">Bake</text>
 
         {/* ── Pref diamond ── */}
@@ -589,17 +568,17 @@ export default function FermentChart({
         {hasPref && (
           <text
             x={prefX}
-            y={AXIS_Y + 30}
+            y={labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
             fontSize={12}
             fill={prefColor}
             fontFamily="DM Mono, monospace"
             textAnchor="middle"
             fontWeight="600"
           >
-            {prefermentType === 'biga'      ? 'Start Biga'   :
-             prefermentType === 'levain'    ? 'Start Levain' :
-             prefermentType === 'sourdough' ? 'Start Levain' :
-             'Start Poolish'}
+            {prefermentType === 'biga'      ? 'Make Biga'    :
+             prefermentType === 'levain'    ? 'Feed Starter' :
+             prefermentType === 'sourdough' ? 'Feed Starter' :
+             'Make Poolish'}
           </text>
         )}
 
@@ -613,11 +592,11 @@ export default function FermentChart({
         )}
         {/* ── Mix label ── */}
         <text
-          x={mixX} y={AXIS_Y + 30}
+          x={mixX} y={AXIS_Y + 36}
           fontSize={12} fill="#3D5A30"
           fontFamily="DM Mono, monospace"
           textAnchor="middle" fontWeight="600"
-        >Start Mixing</text>
+        >Start Dough</text>
 
         {/* ── Ghost diamond (recommended position) ── */}
         {recommendedMixHBF != null &&
@@ -636,142 +615,6 @@ export default function FermentChart({
         )}
       </svg>
 
-      {/* ── Info cards ─────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '6px', marginTop: '1.4rem', flexWrap: 'wrap' }}>
-        {/* Pref card */}
-        {hasPref && prefTime && (
-          <div style={{
-            flex: 1, minWidth: '120px',
-            background: 'var(--cream)', border: '1.5px solid var(--border)',
-            borderRadius: '10px', padding: '14px 16px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
-              <div style={{ width: 8, height: 8, background: prefColor, transform: 'rotate(45deg)', flexShrink: 0 }} />
-              <div style={{
-                fontSize: '13px', color: 'var(--smoke)',
-                fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
-              }}>{prefLabel}</div>
-            </div>
-            <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-              {fmtDT(prefTime)}
-            </div>
-            <div style={{ fontSize: '12px', marginTop: '.1rem', color: prefInZone ? '#4A7A3A' : '#C49A28' }}>
-              {prefStatus}
-            </div>
-            {prefInFridge && (
-              <div style={{ fontSize: '12px', marginTop: '.2rem', color: '#3A5A8A', fontFamily: 'var(--font-dm-mono)' }}>
-                🧊 Cold ferment — use fridge
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Mix card */}
-        <div style={{
-          flex: 1, minWidth: '120px',
-          background: 'var(--cream)', border: '1.5px solid var(--border)',
-          borderRadius: '10px', padding: '14px 16px',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
-            <div style={{ width: 8, height: 8, background: DARK_SAGE, transform: 'rotate(45deg)', flexShrink: 0 }} />
-            <div style={{
-              fontSize: '13px', color: 'var(--smoke)',
-              fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
-            }}>Start mixing</div>
-          </div>
-          <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-            {fmtDT(mixTime)}
-          </div>
-          <div style={{ fontSize: '12px', marginTop: '.1rem', color: mixInZone ? '#4A7A3A' : TERRA }}>
-            {mixStatus}
-          </div>
-          {!mixInZone && effectiveMixHBF > 0 &&
-           blocks.some(b => {
-             const s2 = (bakeMs - b.from.getTime()) / 3600000;
-             const e2 = (bakeMs - b.to.getTime())   / 3600000;
-             return effectiveMixHBF >= Math.min(s2, e2) &&
-                    effectiveMixHBF <= Math.max(s2, e2);
-           }) && (
-            <div style={{ fontSize: '11px', color: '#7A5A10',
-              marginTop: '4px', lineHeight: 1.4 }}>
-              ⚠️ Within a blocked window — intentional?
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Phase timeline strip ────────────────────────── */}
-      {phases && (() => {
-        const segs = [
-          { key: 'bulk',   h: phases.bulkFermH,   color: '#C4A030', label: 'Bulk' },
-          { key: 'fridge', h: phases.coldRetardH,  color: '#4A7FA5', label: 'Fridge' },
-          { key: 'proof',  h: phases.finalProofH,  color: '#6B7A5A', label: 'Proof' },
-          { key: 'heat',   h: phases.preheatH,     color: '#C4522A', label: 'Preheat' },
-        ].filter(s => s.h > 0);
-        const total = segs.reduce((sum, s) => sum + s.h, 0);
-        if (total === 0) return null;
-        return (
-          <div style={{ marginTop: '.7rem' }}>
-            <div style={{
-              fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
-              color: 'var(--smoke)', textTransform: 'uppercase',
-              letterSpacing: '.06em', marginBottom: '.3rem',
-            }}>
-              Your bake timeline
-            </div>
-            <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden', height: '20px' }}>
-              {segs.map(s => {
-                const pct = s.h / total;
-                const showFull = pct >= 0.15;
-                const showShort = !showFull && pct >= 0.07;
-                const hLabel = formatHours(s.h);
-                return (
-                  <div
-                    key={s.key}
-                    title={`${s.label}: ${hLabel}`}
-                    style={{
-                      flex: s.h,
-                      background: s.color,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {showFull && (
-                      <span style={{
-                        fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
-                        color: 'white', whiteSpace: 'nowrap', lineHeight: 1,
-                      }}>
-                        {s.label} · {hLabel}
-                      </span>
-                    )}
-                    {showShort && (
-                      <span style={{
-                        fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
-                        color: 'white', whiteSpace: 'nowrap', lineHeight: 1,
-                      }}>
-                        {hLabel}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* ── Schedule note ───────────────────────────── */}
-      {scheduleNote && (
-        <div style={{
-          fontFamily: 'DM Sans, sans-serif',
-          fontSize: '12px',
-          color: 'var(--smoke)',
-          textAlign: 'center',
-          marginTop: '8px',
-        }}>
-          {scheduleNote}
-        </div>
-      )}
     </div>
   );
 }
