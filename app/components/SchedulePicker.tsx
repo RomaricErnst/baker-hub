@@ -812,10 +812,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const sweetFrom   = hasColdRetard ? 52 : 26;
     const sweetTo     = hasColdRetard ? 20 : 14;
 
+    const optimalPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp) : prefOffsetH;
+    if (hasPrefActive) {
+      setPrefOffsetH(optimalPrefOffset);
+      onPrefOffsetChange?.(optimalPrefOffset);
+    }
     const result = findOptimalPosition(
       sweetCenter, sweetFrom, sweetTo,
       currentBlocks, et,
-      hasPrefActive, prefOffsetH,
+      hasPrefActive, optimalPrefOffset,
     );
 
     if (result.mixInBlocker) {
@@ -842,6 +847,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setShowFallbackPopup(true);
     } else {
       const newStart = new Date(et.getTime() - result.mixHBF * 3600000);
+      setBlockerNote(null);
       setRecommendedHBF(result.mixHBF);
       setShowFallbackPopup(false);
       setPendingStart(newStart);
