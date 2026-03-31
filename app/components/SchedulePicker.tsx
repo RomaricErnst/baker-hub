@@ -351,6 +351,7 @@ function findOptimalPosition(
   et: Date,
   hasPref: boolean,
   prefOffsetH: number,
+  kitchenTemp: number,
 ): {
   mixHBF: number;
   prefHBF: number;
@@ -379,12 +380,10 @@ function findOptimalPosition(
       if (candidate < sweetTo - 2 || candidate > sweetFrom + 2) continue;
       const mixClear  = !isInBlocker(candidate);
       const prefClear = !hasPref || !isInBlocker(candidate + prefOffsetH);
-      // Also check bulk fermentation window (4h after start) doesn't overlap a blocker
-      const bulkClear = !activeBlocks.some(b => {
-        const startMs = ms - candidate * 3600000;
-        const bulkEndMs = startMs + 4 * 3600000;
-        return b.from.getTime() < bulkEndMs && b.to.getTime() > startMs;
-      });
+      // Check baker is free at end of bulk (when dough goes in fridge)
+      const typicalBulkH = kitchenTemp >= 30 ? 0.5 : kitchenTemp >= 28 ? 0.75 : 1.5;
+      const bulkEndHBF = candidate - typicalBulkH;
+      const bulkClear = bulkEndHBF > 0 && !isInBlocker(bulkEndHBF);
       if (mixClear && prefClear && bulkClear) {
         return {
           mixHBF:        candidate,
@@ -823,6 +822,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       sweetCenter, sweetFrom, sweetTo,
       currentBlocks, et,
       hasPrefActive, optimalPrefOffset,
+      kitchenTemp,
     );
 
     if (result.mixInBlocker) {
