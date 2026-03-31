@@ -326,7 +326,7 @@ export default function FermentChart({
           y={labelY - 11}
           width={label.length * 8}
           height={14}
-          fill="rgba(255,255,255,0.92)"
+          fill="transparent"
           rx={3}
         />
         <text x={(x1 + x2) / 2} y={labelY} fontSize={11} fill={color}
