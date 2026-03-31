@@ -801,11 +801,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     currentBlocks: AvailabilityBlock[],
     et: Date,
   ) {
-    // Compute hasColdRetard from schedule prop, not from stale pendingStart
-    const localHasColdRetard = (schedule?.coldRetardHours ?? 0) > 0;
-    const sweetCenter = localHasColdRetard ? 34 : 20;
-    const sweetFrom   = localHasColdRetard ? 52 : 26;
-    const sweetTo     = localHasColdRetard ? 20 : 14;
+    const sweetCenter = hasColdRetard ? 34 : 20;
+    const sweetFrom   = hasColdRetard ? 52 : 26;
+    const sweetTo     = hasColdRetard ? 20 : 14;
 
     const result = findOptimalPosition(
       sweetCenter, sweetFrom, sweetTo,
@@ -929,8 +927,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
-    onChange(pendingStart, pendingEatTime, newBlocks);
-    if (!hasManuallyDragged.current && eatTimeSet) {
+    const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(pendingStart, newBlocks);
+    if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
+    setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
+    onChange(resolvedStart, pendingEatTime, newBlocks);
+    if (!hasManuallyDragged.current && phase === 'start_confirm') {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
   }
@@ -1332,6 +1333,26 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
         </div>
+      )}
+
+      {eatTimeSet && !startComputed && (
+        <button
+          onClick={() => {
+            hasManuallyDragged.current = false;
+            computeAndApplyRecommendation(blocks, pendingEatTime);
+            setStartComputed(true);
+          }}
+          style={{
+            width: '100%', padding: '.85rem 1.25rem',
+            border: 'none', borderRadius: '12px',
+            background: 'var(--terra)', color: '#fff',
+            fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700,
+            cursor: 'pointer', marginTop: '.75rem',
+            boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
+          }}
+        >
+          Recommend fermentation plan →
+        </button>
       )}
 
       {/* Divider */}
