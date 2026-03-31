@@ -314,9 +314,9 @@ export default function FermentChart({
       <g>
         <rect x={x1} y={TOP_PAD} width={x2 - x1} height={BL - TOP_PAD}
           fill={`${color}12`} />
-        <line x1={x1} y1={TOP_PAD} x2={x1} y2={BL}
+        <line x1={x1} y1={labelY + 9} x2={x1} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
-        <line x1={x2} y1={TOP_PAD} x2={x2} y2={BL}
+        <line x1={x2} y1={labelY + 9} x2={x2} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
         <rect
           x={(x1 + x2) / 2 - label.length * 4}
