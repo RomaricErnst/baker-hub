@@ -83,21 +83,11 @@ function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_D
   for (let i = 0; i <= N; i++) {
     const hbf = (i / N) * wh;
     const x = hToX(hbf, W, wh);
-    let y: number;
-    if (hbf < startHBF) {
-      y = BL;
-    } else {
-      // Compute bell value at diamond position (startHBF) as baseline offset
-      const bellAtStart = bell(startHBF, peakHBF, sigma) * MAXH;
-      const bellAtPoint = bell(hbf, peakHBF, sigma) * MAXH;
-      // Subtract bellAtStart so curve starts at y=BL at the diamond
-      const adjustedHeight = Math.max(0, bellAtPoint - bellAtStart);
-      y = BL - adjustedHeight;
-    }
+    const y = BL - bell(hbf, peakHBF, sigma) * MAXH;
     pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
   }
   pts.push(`L ${hToX(wh, W, wh).toFixed(1)} ${BL}`);
-  pts.push(`L ${hToX(0, W, wh).toFixed(1)} ${BL}`);
+  pts.push(`L ${hToX(0,  W, wh).toFixed(1)} ${BL}`);
   pts.push('Z');
   return pts.join(' ');
 }
@@ -446,6 +436,16 @@ export default function FermentChart({
               </clipPath>
             );
           })}
+          <clipPath id="clip-pref">
+            <rect x={0} y={0}
+              width={hToX(prefStartAbsHBF, W, WH)}
+              height={CHART_H + 40} />
+          </clipPath>
+          <clipPath id="clip-mix">
+            <rect x={0} y={0}
+              width={hToX(effectiveMixHBF, W, WH)}
+              height={CHART_H + 40} />
+          </clipPath>
           {/* Bidirectional arrow markers for zone width indicators */}
           <marker id="arrow-sage-start" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
             <path d="M6,0 L0,3 L6,6" fill="none" stroke="#6B7A5A" strokeWidth="1.2"/>
@@ -518,32 +518,33 @@ export default function FermentChart({
         {hasPref && (
           <>
             <path
-              d={makeBellPath(prefPeakHBF, prefSig, W, WH, prefStartAbsHBF)}
+              d={makeBellPath(prefPeakHBF, prefSig, W, WH)}
               fill={`${prefColor}2E`} stroke={`${prefColor}A5`} strokeWidth={1.5}
+              clipPath="url(#clip-pref)"
             />
-            {renderDropLine(
-              prefStartAbsHBF, prefPeakHBF, prefSig,
-              inBlocker(prefStartAbsHBF) ? '#aaaaaa' : prefColor,
-            )}
+            <line
+              x1={hToX(prefStartAbsHBF, W, WH)}
+              y1={BL - bell(prefStartAbsHBF, prefPeakHBF, prefSig) * MAXH}
+              x2={hToX(prefStartAbsHBF, W, WH)}
+              y2={BL}
+              stroke={`${prefColor}A5`} strokeWidth={1.5}
+            />
           </>
         )}
 
         {/* ── Dough bell (drawn on top) ── */}
         <path
-          d={makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF)}
+          d={makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH)}
           fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
+          clipPath="url(#clip-mix)"
         />
-        {(() => {
-          const prefY = hasPref ? BL - bell(effectiveMixHBF, prefPeakHBF, prefSig) * MAXH : undefined;
-          const doughY = BL - bell(effectiveMixHBF, doughPeakHBF, DOUGH_SIG) * MAXH;
-          // Only use prefY as startY if pref curve is below dough curve (between dough and baseline)
-          const startY = (prefY !== undefined && prefY > doughY) ? prefY : undefined;
-          return renderDropLine(
-            effectiveMixHBF, doughPeakHBF, DOUGH_SIG,
-            inBlocker(effectiveMixHBF) ? '#aaaaaa' : SAGE,
-            startY,
-          );
-        })()}
+        <line
+          x1={hToX(effectiveMixHBF, W, WH)}
+          y1={BL - bell(effectiveMixHBF, doughPeakHBF, DOUGH_SIG) * MAXH}
+          x2={hToX(effectiveMixHBF, W, WH)}
+          y2={BL}
+          stroke={`${SAGE}A5`} strokeWidth={1.5}
+        />
 
         {/* ── Baseline ── */}
         <line x1={PAD} y1={BL} x2={W - PAD} y2={BL}
