@@ -929,7 +929,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
     setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
     onChange(resolvedStart, pendingEatTime, newBlocks);
-    if (!hasManuallyDragged.current && phase === 'start_confirm') {
+    if (!hasManuallyDragged.current && startComputed) {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
   }
@@ -1349,7 +1349,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             width: '100%', padding: '.85rem 1.25rem',
             border: 'none', borderRadius: '12px',
             background: 'var(--terra)', color: '#fff',
-            fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700,
+            fontFamily: 'var(--font-dm-sans)', fontSize: '.95rem', fontWeight: 600,
             cursor: 'pointer', marginTop: '.75rem',
             boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
           }}
