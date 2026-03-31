@@ -128,6 +128,13 @@ function pushToReasonableHour(d: Date): Date {
     pushed.setHours(7, 0, 0, 0);
     return pushed;
   }
+  if (h >= 23) {
+    // Push to 7am next day
+    const pushed = new Date(d);
+    pushed.setDate(pushed.getDate() + 1);
+    pushed.setHours(7, 0, 0, 0);
+    return pushed;
+  }
   return d;
 }
 
@@ -1481,7 +1488,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
                 setRecommendedHBF(null);
-                const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - h * 3600000));
+                const newStart = new Date(pendingEatTime.getTime() - h * 3600000);
                 if (isSourdough) setMixOverride(true);
                 setPendingStart(newStart);
                 const bakeMs = pendingEatTime.getTime();
