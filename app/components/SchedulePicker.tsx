@@ -864,6 +864,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   useEffect(() => {
     if (!eatTimeSet) return;
     setStartComputed(false);
+    setShowFallbackPopup(false);
+    setDismissedConflict(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
 
@@ -943,7 +945,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
     const { resolvedStart, moved, resolvedDate: _resolvedDate } = applyBlockerOverlap(pendingStart, newBlocks);
     if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
-    setBlockerNote(moved ? "Start Dough is in one of your busy windows — that's fine if it works for you." : null);
+    setBlockerNote(moved ? "Start Dough falls in one of your busy windows — that's fine if it works for you." : null);
     onChange(resolvedStart, pendingEatTime, newBlocks);
     if (!hasManuallyDragged.current && phase === 'start_confirm') {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
@@ -1357,6 +1359,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <button
           onClick={() => {
             hasManuallyDragged.current = false;
+            setShowFallbackPopup(false);
             setDismissedConflict(false);
             setPhase('start_confirm');
             computeAndApplyRecommendation(blocks, pendingEatTime);
@@ -1537,11 +1540,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           borderRadius: '10px', padding: '.75rem 1rem',
           marginBottom: '.75rem', fontFamily: 'var(--font-dm-sans)',
         }}>
-          <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.3rem' }}>
-            No free window found
+          <div style={{ fontSize: '.9rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.4rem' }}>
+            No perfect time found
           </div>
-          <div style={{ fontSize: '.78rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
-            Your busy windows overlap the ideal mixing time. Pick what works best:
+          <div style={{ fontSize: '.82rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
+            Your schedule doesn&apos;t leave a free mixing window. What works best for you?
           </div>
           <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
             {fallbackOptions.outsideZone && (
@@ -1558,10 +1561,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   background: 'var(--terra)', color: 'white', border: 'none',
                   borderRadius: '8px', padding: '.4rem .9rem', fontSize: '.78rem',
                   fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                  marginBottom: '8px',
                 }}
               >
-                <div>Start just outside the window</div>
-                <div style={{ fontSize: '.68rem', opacity: .85, marginTop: '2px' }}>Dough will still be great.</div>
+                <div>Start just before or after my busy time</div>
+                <div style={{ fontSize: '.74rem', marginTop: '2px', opacity: 0.8 }}>Dough will still be great.</div>
               </button>
             )}
             {fallbackOptions.inBlocker && (
@@ -1590,10 +1594,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   border: '1px solid var(--border)',
                   borderRadius: '8px', padding: '.4rem .9rem', fontSize: '.78rem',
                   cursor: 'pointer', textAlign: 'left',
+                  marginBottom: '12px',
                 }}
               >
-                <div>Start at the edge of a busy window</div>
-                <div style={{ fontSize: '.68rem', opacity: .85, marginTop: '2px' }}>Overlaps by ~{fallbackOptions.inBlocker.overlapMin} min — your call.</div>
+                <div>Mix during my busy time — I&apos;ll make it work</div>
+                <div style={{ fontSize: '.74rem', marginTop: '2px', opacity: 0.8 }}>Still within the ideal window — dough will be great.</div>
               </button>
             )}
             <button
@@ -1606,7 +1611,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 border: 'none', fontSize: '.78rem', cursor: 'pointer', padding: '.4rem 0',
               }}
             >
-              I&apos;ll adjust myself
+              I&apos;ll set it myself
             </button>
           </div>
         </div>
@@ -1639,19 +1644,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             {earlierIsReasonable && earlierStart ? (
               <>
                 <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.2rem' }}>
-                  Your bulk fermentation starts during a busy window.
+                  Your bulk fermentation begins during a busy window.
                 </div>
                 <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '.65rem' }}>
-                  Start at {formatSliderDisplay(earlierStart)} to begin before your busy window.
+                  Start dough at {formatSliderDisplay(earlierStart)} so you can kick off bulk fermentation while you&apos;re free.
                 </div>
               </>
             ) : (
               <>
                 <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.2rem' }}>
-                  Your bulk fermentation overlaps a busy window.
+                  Your bulk fermentation will run into your busy window.
                 </div>
                 <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '.65rem' }}>
-                  Starting earlier isn&apos;t practical here — carrying on is fine.
+                  Starting earlier isn&apos;t practical here — your dough will be worth the compromise.
                 </div>
               </>
             )}
@@ -1680,7 +1685,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   fontSize: '.78rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
                 }}
               >
-                {earlierIsReasonable && earlierStart ? 'Keep as is' : 'Got it'}
+                {earlierIsReasonable && earlierStart ? 'Keep as is' : 'Got it, I\'ll make it work'}
               </button>
             </div>
           </div>
