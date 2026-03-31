@@ -1335,7 +1335,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
-      {eatTimeSet && !startComputed && (
+      {eatTimeSet && (
         <button
           onClick={() => {
             hasManuallyDragged.current = false;
