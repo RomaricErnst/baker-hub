@@ -379,7 +379,13 @@ function findOptimalPosition(
       if (candidate < sweetTo - 2 || candidate > sweetFrom + 2) continue;
       const mixClear  = !isInBlocker(candidate);
       const prefClear = !hasPref || !isInBlocker(candidate + prefOffsetH);
-      if (mixClear && prefClear) {
+      // Also check bulk fermentation window (4h after start) doesn't overlap a blocker
+      const bulkClear = !activeBlocks.some(b => {
+        const startMs = ms - candidate * 3600000;
+        const bulkEndMs = startMs + 4 * 3600000;
+        return b.from.getTime() < bulkEndMs && b.to.getTime() > startMs;
+      });
+      if (mixClear && prefClear && bulkClear) {
         return {
           mixHBF:        candidate,
           prefHBF:       candidate + prefOffsetH,
@@ -835,27 +841,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setRecommendedHBF(null);
       setShowFallbackPopup(true);
     } else {
-      let finalMixHBF = result.mixHBF;
-      const bakeMs = et.getTime();
-      function isInAnyBlocker(hbf: number): boolean {
-        return currentBlocks.some(b => {
-          const s = (bakeMs - b.from.getTime()) / 3600000;
-          const e = (bakeMs - b.to.getTime())   / 3600000;
-          return hbf >= Math.min(s,e) && hbf <= Math.max(s,e);
-        });
-      }
-      const startMs = bakeMs - finalMixHBF * 3600000;
-      const bulkEndMs = startMs + 4 * 3600000;
-      for (const b of currentBlocks) {
-        if (b.from.getTime() < bulkEndMs && b.to.getTime() > startMs) {
-          const shiftedHBF = (bakeMs - b.from.getTime()) / 3600000 + 4.5;
-          if (shiftedHBF > finalMixHBF && !isInAnyBlocker(shiftedHBF)) {
-            finalMixHBF = shiftedHBF;
-          }
-        }
-      }
-      const newStart = new Date(et.getTime() - finalMixHBF * 3600000);
-      setRecommendedHBF(finalMixHBF);
+      const newStart = new Date(et.getTime() - result.mixHBF * 3600000);
+      setRecommendedHBF(result.mixHBF);
       setShowFallbackPopup(false);
       setPendingStart(newStart);
       onChange(newStart, et, currentBlocks);
@@ -1701,10 +1688,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Fallback popup — shown when no clean mix window found */}
       {showFallbackPopup && fallbackOptions && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 200,
-          background: 'rgba(26,22,18,0.45)',
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'center', padding: '1rem',
+          marginTop: '1rem',
         }}>
           <div style={{
             background: 'var(--warm)', borderRadius: '18px',
