@@ -88,7 +88,6 @@ function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_D
     const y = BL - bell(hbf, peakHBF, sigma) * MAXH;
     pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
   }
-  pts.push(`L ${hToX(wh, W, wh).toFixed(1)} ${BL}`);
   pts.push(`L ${hToX(startHBF, W, wh).toFixed(1)} ${BL}`);
   pts.push('Z');
   return pts.join(' ');
