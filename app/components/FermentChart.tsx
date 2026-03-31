@@ -357,13 +357,13 @@ export default function FermentChart({
       >
         <polygon
           className={shouldGlow ? 'fc-diamond-glow' : undefined}
-          points={`${cx},${AXIS_Y - S} ${cx + S},${AXIS_Y} ${cx},${AXIS_Y + S} ${cx - S},${AXIS_Y}`}
+          points={`${cx},${BL - S} ${cx + S},${BL} ${cx},${BL + S} ${cx - S},${BL}`}
           fill={fill} stroke={stroke} strokeWidth={1.5}
         />
         {warn && (
           <>
-            <circle cx={cx + S + 3} cy={AXIS_Y - S} r={5} fill="rgba(196,82,42,0.9)" />
-            <text x={cx + S + 3} y={AXIS_Y - S + 4} fontSize={10} fill="white"
+            <circle cx={cx + S + 3} cy={BL - S} r={5} fill="rgba(196,82,42,0.9)" />
+            <text x={cx + S + 3} y={BL - S + 4} fontSize={10} fill="white"
               textAnchor="middle" fontFamily="DM Mono, monospace">!</text>
           </>
         )}
