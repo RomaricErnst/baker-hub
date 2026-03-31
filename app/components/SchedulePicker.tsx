@@ -512,7 +512,9 @@ function SimpleColourBar({
   function onPointerUp() {
     if (dragging) {
       // Snap to the blocker edge nearest to sweet spot center on release
-      const sweetCenter = hasColdRetard ? 34 : 20;
+      const sweetFrom = hasColdRetard ? 52 : 26;
+      const sweetTo   = hasColdRetard ? 20 : 14;
+      const sweetCenter = (sweetFrom + sweetTo) / 2;
       const snapped = snapToBlockerEdgeIfBlocked(lastHBFRef.current, blocks, eatTime, sweetCenter);
       onStartChange(new Date(bakeMs - snapped * 3600000));
     }
@@ -808,9 +810,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     currentBlocks: AvailabilityBlock[],
     et: Date,
   ) {
-    const sweetCenter = hasColdRetard ? 34 : 20;
     const sweetFrom   = hasColdRetard ? 52 : 26;
     const sweetTo     = hasColdRetard ? 20 : 14;
+    const sweetCenter = (sweetFrom + sweetTo) / 2;
 
     const optimalPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp) : prefOffsetH;
     if (hasPrefActive) {
@@ -885,7 +887,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // Cold-aware fermentation curve
   const mixOffsetH = Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000);
-  const hasColdRetard = (schedule?.coldRetardHours ?? 0) > 0 || mixOffsetH > 22;
+  const hasColdRetard = (schedule?.coldRetardHours ?? 0) > 0;
   const prefGoesInFridge = hasPrefActive && (
     prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26)
   );
@@ -1432,7 +1434,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 // Baker is manually adjusting — clear ghost
                 hasManuallyDragged.current = true;
                 setRecommendedHBF(null);
-                const sweetCenter = hasColdRetard ? 34 : 20;
+                const sweetFromD = hasColdRetard ? 52 : 26;
+                const sweetToD   = hasColdRetard ? 20 : 14;
+                const sweetCenter = (sweetFromD + sweetToD) / 2;
                 const snapped = snapToBlockerEdgeIfBlocked(h, blocks, pendingEatTime, sweetCenter);
                 const newStart = pushToReasonableHour(new Date(pendingEatTime.getTime() - snapped * 3600000));
                 if (isSourdough) setMixOverride(true);
@@ -1578,7 +1582,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               <button
                 onClick={() => {
                   const bakeMs = pendingEatTime.getTime();
-                  const sc = hasColdRetard ? 34 : 20;
+                  const scFrom = hasColdRetard ? 52 : 26;
+                  const scTo   = hasColdRetard ? 20 : 14;
+                  const sc = (scFrom + scTo) / 2;
                   let bestHBF = sc;
                   let bestDist = Infinity;
                   for (const b of blocks) {
