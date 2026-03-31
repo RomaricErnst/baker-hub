@@ -452,6 +452,10 @@ export default function FermentChart({
           <marker id="arrow-pref-end" markerWidth="6" markerHeight="6" refX="0" refY="3" orient="auto">
             <path d="M0,0 L6,3 L0,6" fill="none" stroke={prefColor} strokeWidth="1.2"/>
           </marker>
+          {/* Chart area clip — hide anything below axis */}
+          <clipPath id="chart-area-clip">
+            <rect x={0} y={0} width={W} height={AXIS_Y} />
+          </clipPath>
           {/* Bell clip paths — hide left tail before each diamond */}
           <clipPath id="dough-bell-clip">
             <rect x={hToX(effectiveMixHBF, W, WH)} y={0} width={W} height={CHART_H} />
@@ -522,7 +526,7 @@ export default function FermentChart({
             <path
               d={makeBellPath(prefPeakHBF, prefSig, W, WH, prefStartAbsHBF)}
               fill={`${prefColor}2E`} stroke={`${prefColor}A5`} strokeWidth={1.5}
-              clipPath="url(#pref-bell-clip)"
+              clipPath="url(#chart-area-clip)"
             />
             <line
               x1={hToX(prefStartAbsHBF, W, WH)}
@@ -539,7 +543,7 @@ export default function FermentChart({
         <path
           d={makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF)}
           fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
-          clipPath="url(#dough-bell-clip)"
+          clipPath="url(#chart-area-clip)"
         />
         <line
           x1={hToX(effectiveMixHBF, W, WH)}
