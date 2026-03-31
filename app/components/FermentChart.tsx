@@ -323,7 +323,7 @@ export default function FermentChart({
           y={labelY - 11}
           width={label.length * 8}
           height={14}
-          fill="rgba(245,240,232,0.82)"
+          fill="rgba(255,255,255,0.92)"
           rx={3}
         />
         <text x={(x1 + x2) / 2} y={labelY} fontSize={11} fill={color}
@@ -346,8 +346,10 @@ export default function FermentChart({
     cx: number, fill: string, stroke: string, warn: boolean,
     which: 'mix' | 'pref',
   ) {
-    const shouldGlow = (which === 'mix' && glowState === 'mix')
-      || (which === 'pref' && (glowState === 'pref'));
+    const shouldGlow = showZoneLabels && (
+      (which === 'mix' && glowState === 'mix')
+      || (which === 'pref' && glowState === 'pref')
+    );
     return (
       <g
         style={{ cursor: dragging === which ? 'grabbing' : 'grab' }}
@@ -370,13 +372,14 @@ export default function FermentChart({
   }
 
   // ── Drop-line renderer ───────────────────────────────────
-  function renderDropLine(hbf: number, peakHBF: number, sigma: number, color: string) {
+  function renderDropLine(hbf: number, peakHBF: number, sigma: number, color: string, startY?: number) {
     const x  = hToX(hbf, W, WH);
     const v  = bell(hbf, peakHBF, sigma) * MAXH;
     const cy = BL - v;
+    const y1 = startY ?? BL;
     return (
       <>
-        <line x1={x} y1={BL} x2={x} y2={cy}
+        <line x1={x} y1={y1} x2={x} y2={cy}
           stroke={color} strokeWidth={1} strokeDasharray="3 4" strokeOpacity={0.5} />
         <circle cx={x} cy={cy} r={3.5} fill={color} stroke="white" strokeWidth={1} />
       </>
@@ -495,7 +498,7 @@ export default function FermentChart({
                   );
                 })}
               </g>
-              <line x1={x1} y1={0} x2={x2} y2={0}
+              <line x1={x1} y1={TOP_PAD} x2={x2} y2={TOP_PAD}
                 stroke="rgba(196,82,42,0.5)" strokeWidth={2.5} />
             </g>
           );
@@ -523,6 +526,7 @@ export default function FermentChart({
         {renderDropLine(
           effectiveMixHBF, doughPeakHBF, DOUGH_SIG,
           inBlocker(effectiveMixHBF) ? '#aaaaaa' : SAGE,
+          hasPref ? BL - bell(effectiveMixHBF, prefPeakHBF, prefSig) * MAXH : undefined,
         )}
 
         {/* ── Baseline ── */}
