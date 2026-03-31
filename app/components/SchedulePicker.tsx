@@ -765,7 +765,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
     return '';
   });
-  const [pickerHour, setPickerHour] = useState<number>(() => alreadySet ? eatTime!.getHours() : 20);
+  const [pickerHour, setPickerHour] = useState<number>(() => alreadySet ? eatTime!.getHours() : 18);
   const [dismissedConflict, setDismissedConflict] = useState(false);
 
   // Sourdough state
