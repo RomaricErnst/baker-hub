@@ -452,12 +452,12 @@ export default function FermentChart({
         </defs>
 
         {/* ── Bake reference line ── */}
-        <line x1={bakeX} y1={0} x2={bakeX} y2={AXIS_Y}
+        <line x1={bakeX} y1={TOP_PAD} x2={bakeX} y2={AXIS_Y}
           stroke={TERRA} strokeWidth={1} strokeDasharray="3 3" strokeOpacity={0.25} />
 
         {/* ── Mix reference line (hasPref only) ── */}
         {hasPref && (
-          <line x1={mixX} y1={0} x2={mixX} y2={AXIS_Y}
+          <line x1={mixX} y1={TOP_PAD} x2={mixX} y2={AXIS_Y}
             stroke={CHAR} strokeWidth={1} strokeDasharray="3 4" strokeOpacity={0.2} />
         )}
 
