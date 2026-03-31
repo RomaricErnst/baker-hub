@@ -83,9 +83,17 @@ function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_D
   for (let i = 0; i <= N; i++) {
     const hbf = (i / N) * wh;
     const x = hToX(hbf, W, wh);
-    // For hbf < startHBF (right of diamond toward bake), force y=BL
-    // For hbf >= startHBF (left of diamond), draw the bell curve
-    const y = hbf < startHBF ? BL : BL - bell(hbf, peakHBF, sigma) * MAXH;
+    let y: number;
+    if (hbf < startHBF) {
+      y = BL;
+    } else {
+      // Compute bell value at diamond position (startHBF) as baseline offset
+      const bellAtStart = bell(startHBF, peakHBF, sigma) * MAXH;
+      const bellAtPoint = bell(hbf, peakHBF, sigma) * MAXH;
+      // Subtract bellAtStart so curve starts at y=BL at the diamond
+      const adjustedHeight = Math.max(0, bellAtPoint - bellAtStart);
+      y = BL - adjustedHeight;
+    }
     pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
   }
   pts.push(`L ${hToX(wh, W, wh).toFixed(1)} ${BL}`);
