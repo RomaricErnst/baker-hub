@@ -25,6 +25,20 @@ interface SchedulePickerProps {
 type PickerPhase = 'bake_time' | 'start_confirm';
 type Scenario = 'plenty' | 'tight' | 'too_short';
 
+// ── Card date+time formatter ─────────────────
+// "Fri 28 Mar · 9pm"
+function fmtCardHM(d: Date): string {
+  const h = d.getHours(), m = d.getMinutes();
+  const ap = h < 12 ? 'am' : 'pm';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return m === 0 ? `${h12}${ap}` : `${h12}:${String(m).padStart(2, '0')}${ap}`;
+}
+function fmtCardDT(d: Date): string {
+  const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
+  const mo = d.toLocaleDateString('en-US', { month: 'short' });
+  return `${wd} ${d.getDate()} ${mo} · ${fmtCardHM(d)}`;
+}
+
 // ── Time formatter ────────────────────────────
 // "4pm" / "4:30pm" — minutes omitted when zero
 function formatTimeShort(d: Date): string {
@@ -675,7 +689,7 @@ function SimpleColourBar({
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
             <div style={{ width: 8, height: 8, background: '#1A1612', transform: 'rotate(45deg)', flexShrink: 0 }} />
             <div style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-              Start mixing
+              Start Dough
             </div>
           </div>
           <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
@@ -718,7 +732,7 @@ function SimpleColourBar({
 }
 
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, mode = 'custom' }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, mode = 'custom', onReady }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tCommon = useTranslations('common');
   const alreadySet = eatTime !== null && eatTime > new Date();
@@ -766,6 +780,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     inBlocker:   { mixHBF: number; overlapMin: number } | null;
   } | null>(null);
   const hasManuallyDragged = useRef(false);
+  const [constraintsOpen, setConstraintsOpen] = useState(false);
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const pickerDateRef = useRef(pickerDate);
+  const pickerHourRef = useRef<number>(pickerHour);
+
+  const prefLabel = prefermentType === 'poolish' ? 'Make Poolish'
+    : prefermentType === 'biga' ? 'Make Biga'
+    : (prefermentType === 'levain' || isSourdough) ? 'Feed Starter'
+    : 'Make Preferment';
 
   function updateEatTime(dateStr: string, hour: number) {
     if (!dateStr) return;
@@ -789,40 +812,29 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       hasPrefActive, prefOffsetH,
     );
 
-    if (result.fallback) {
-      const outsideHBF = result.mixHBF;
-      const maxDist = sweetFrom - sweetCenter;
-      const dist = Math.abs(outsideHBF - sweetCenter);
-      const qualityPct = Math.max(50, Math.round(100 - (dist / maxDist) * 40));
+    // Always apply the best found position regardless of zone
+    let finalMixHBF = result.mixHBF;
 
-      const overlapMin = (() => {
-        const bakeMs2 = et.getTime();
-        for (const b of currentBlocks) {
-          const s = (bakeMs2 - b.from.getTime()) / 3600000;
-          const e = (bakeMs2 - b.to.getTime())   / 3600000;
-          const lo = Math.max(Math.min(s, e), sweetCenter - 1);
-          const hi = Math.min(Math.max(s, e), sweetCenter + 1);
-          if (hi > lo) return Math.round((hi - lo) * 60);
-        }
-        return 30;
-      })();
-
-      setFallbackOptions({
-        outsideZone: { mixHBF: outsideHBF, qualityPct },
-        inBlocker:   { mixHBF: sweetCenter, overlapMin },
-      });
-      setRecommendedHBF(null);
-      setShowFallbackPopup(true);
-    } else {
-      const newStart = new Date(et.getTime() - result.mixHBF * 3600000);
-      setRecommendedHBF(result.mixHBF);
-      setShowFallbackPopup(false);
-      setPendingStart(newStart);
-      onChange(newStart, et, currentBlocks);
-      if (hasPrefActive) {
-        setPrefOffsetH(result.prefHBF - result.mixHBF);
-        onPrefOffsetChange?.(result.prefHBF - result.mixHBF);
+    // Proactively avoid bulk conflict
+    const bulkDurationH = 4;
+    const proposedStart = new Date(et.getTime() - finalMixHBF * 3600000);
+    const proposedBulkEnd = new Date(proposedStart.getTime() + bulkDurationH * 3600000);
+    for (const block of currentBlocks) {
+      if (block.from < proposedBulkEnd && block.to > proposedStart) {
+        const neededStart = new Date(block.from.getTime() - bulkDurationH * 3600000 - 30 * 60000);
+        const neededHBF = (et.getTime() - neededStart.getTime()) / 3600000;
+        if (neededHBF > finalMixHBF) finalMixHBF = neededHBF;
       }
+    }
+
+    const newStart = new Date(et.getTime() - finalMixHBF * 3600000);
+    setRecommendedHBF(finalMixHBF);
+    setShowFallbackPopup(false);
+    setPendingStart(newStart);
+    onChange(newStart, et, currentBlocks);
+    if (hasPrefActive) {
+      setPrefOffsetH(result.prefHBF - result.mixHBF);
+      onPrefOffsetChange?.(result.prefHBF - result.mixHBF);
     }
   }
 
@@ -832,6 +844,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
+
+  useEffect(() => {
+    if (!eatTimeSet) return;
+    setStartComputed(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingEatTime]);
 
   const suggestion = useMemo(
     () => computeSuggestion(pendingEatTime, preheatMin, styleKey, kitchenTemp),
@@ -878,17 +896,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Phase transitions ────────────────────────
   function confirmBakeTime() {
+    const date = pickerDateRef.current;
+    const hour = pickerHourRef.current;
+    if (!date || hour === null) return;
+    const parts = date.split('-').map(Number);
+    const et = new Date(parts[0], parts[1] - 1, parts[2], hour, 0, 0, 0);
+    setPendingEatTime(et);
+    setEatTimeSet(true);
     hasManuallyDragged.current = false;
-    computeAndApplyRecommendation(blocks, pendingEatTime);
-    setStartComputed(true);
     setDismissedConflict(false);
     setPhase('start_confirm');
     if (isSourdough) {
       const peak = starterPeakHours(kitchenTemp, starterMature);
       const ft = pushToReasonableHour(
-        new Date(pendingEatTime.getTime() -
-          (pendingEatTime.getTime() - pendingStart.getTime()) /
-          3600000 * 3600000 - peak.mid * 3600000)
+        new Date(pendingStart.getTime() - peak.mid * 3600000)
       );
       setFeedTime(ft);
       onFeedTimeChange?.(ft);
@@ -903,13 +924,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     onChange(d, pendingEatTime, blocks);
   }
 
-  // Apply blocker overlap whenever blocks change
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
     const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(pendingStart, newBlocks);
     if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
     setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
     onChange(resolvedStart, pendingEatTime, newBlocks);
-    // Recompute recommendation if baker hasn't manually dragged
     if (!hasManuallyDragged.current && phase === 'start_confirm') {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
@@ -960,28 +979,32 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     letterSpacing: '.01em',
   };
 
-  // ── PHASE 1: Bake time ────────────────────────
-  if (phase === 'bake_time') {
-    return (
-      <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
-        <div style={{ marginBottom: '.9rem' }}>
-          <div style={{
-            fontWeight: 700, fontSize: '.95rem', color: 'var(--char)',
-            marginBottom: '.25rem',
-          }}>
-            {bakeType === 'bread' ? t('bakeTimeLabelBread') : t('bakeTimeLabelPizza')}
-          </div>
-          <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5 }}>
-            {t('bakeTimeSub')}
-          </div>
+  // ── Unified render (bake time always visible) ─
+  const { scenario } = suggestion;
+  const startInvalid = startComputed && pendingStart >= pendingEatTime;
+  const bulkConflict = schedule?.bulkConflict ?? null;
+
+  return (
+    <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
+
+      {/* Bake time inputs — always visible */}
+      <div style={{ marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--char)', marginBottom: '.3rem' }}>
+          {bakeType === 'bread' ? t('bakeTimeLabelBread') : t('bakeTimeLabelPizza')}
         </div>
-        <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1rem' }}>
+        <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
+          {t('bakeTimeSub')}
+        </div>
+        <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center' }}>
           <input
             type="date"
             value={pickerDate}
             onChange={e => {
-              setPickerDate(e.target.value);
-              if (e.target.value) updateEatTime(e.target.value, pickerHour);
+              const newDate = e.target.value;
+              pickerDateRef.current = newDate;
+              setPickerDate(newDate);
+              if (newDate) updateEatTime(newDate, pickerHour);
+              if (pickerHour !== null) { confirmBakeTime(); }
             }}
             style={{ ...INPUT_STYLE, flex: 2, width: undefined }}
           />
@@ -989,8 +1012,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             value={pickerHour}
             onChange={e => {
               const h = Number(e.target.value);
+              pickerHourRef.current = h;
               setPickerHour(h);
               if (pickerDate) updateEatTime(pickerDate, h);
+              if (pickerDate !== '') { confirmBakeTime(); }
             }}
             style={{
               ...INPUT_STYLE, width: 'auto', flex: 1,
@@ -1002,57 +1027,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             ))}
           </select>
         </div>
-        <button
-          onClick={confirmBakeTime}
-          disabled={!eatTimeSet}
-          style={{
-            ...continueBtnStyle,
-            background: eatTimeSet ? 'var(--terra)' : 'var(--border)',
-            color: eatTimeSet ? '#fff' : 'var(--smoke)',
-            cursor: eatTimeSet ? 'pointer' : 'default',
-          }}
-        >
-          {t('planMyBake')}
-        </button>
       </div>
-    );
-  }
 
-  // ── PHASE 2: Start suggestion + blockers + confirm (merged) ──
-  const { scenario } = suggestion;
-
-  const startInvalid = startComputed && pendingStart >= pendingEatTime;
-  const bulkConflict = schedule?.bulkConflict ?? null;
-
-  return (
-    <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
-
-      {/* Bake time summary — click Edit to go back to phase 1 */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '.65rem',
-        padding: '.5rem .85rem',
-        background: 'var(--cream)', border: '1.5px solid var(--border)',
-        borderRadius: '10px', marginBottom: '1rem',
-      }}>
-        <span style={{ fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0 }}>
-          {t('bakeTime')}
-        </span>
-        <span style={{ flex: 1, fontSize: '.82rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-          {formatDayShort(pendingEatTime)}
-        </span>
-        <button
-          onClick={() => { setPhase('bake_time'); setStartComputed(false); }}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--smoke)', fontSize: '.72rem',
-            fontFamily: 'var(--font-dm-mono)', padding: '.1rem .35rem',
-            borderRadius: '5px', flexShrink: 0,
-            textDecoration: 'underline', textUnderlineOffset: '2px',
-          }}
-        >
-          {tCommon('edit')}
-        </button>
-      </div>
+      {/* Phase 2 content — only once bake time is set */}
+      {eatTimeSet && (<div>
 
       {/* too_short compact note */}
       {scenario === 'too_short' && (
@@ -1113,13 +1091,40 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
+      </div>)}
+
+      {eatTimeSet && (<div>
+
       {/* Blocker section — moved above slider */}
-      <div style={{ fontSize: '.82rem', color: 'var(--char)', fontWeight: 600, marginBottom: '.3rem' }}>
-        {t('blockers.heading')}
+      <div
+        onClick={() => setConstraintsOpen(o => !o)}
+        style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          cursor: 'pointer', marginBottom: constraintsOpen ? '.75rem' : '1rem',
+          paddingBottom: constraintsOpen ? '.75rem' : 0,
+          borderBottom: constraintsOpen ? '1px solid var(--border)' : 'none',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--char)' }}>
+            {t('blockers.heading')}
+          </div>
+          {!constraintsOpen && (
+            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', marginTop: '.15rem' }}>
+              Optional — tap to add unavailable windows and we&apos;ll plan around them
+            </div>
+          )}
+        </div>
+        <span style={{ fontSize: '12px', color: 'var(--smoke)' }}>
+          {constraintsOpen ? '▾' : '›'}
+        </span>
       </div>
-      <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.9rem', lineHeight: 1.5 }}>
-        {t('blockers.sub')}
-      </div>
+
+      {constraintsOpen && (
+        <div>
+          <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.9rem', lineHeight: 1.5 }}>
+            {t('blockers.sub')}
+          </div>
 
       {/* Quick presets — work toggle */}
       {workdays.length > 0 && (
@@ -1329,15 +1334,41 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           })}
         </div>
       )}
+        </div>
+      )}
+
+      {eatTimeSet && (
+        <button
+          onClick={() => {
+            hasManuallyDragged.current = false;
+            setPhase('start_confirm');
+            computeAndApplyRecommendation(blocks, pendingEatTime);
+            setStartComputed(true);
+            onReady?.();
+          }}
+          style={{
+            width: '100%', padding: '.85rem 1.25rem',
+            border: 'none', borderRadius: '12px',
+            background: 'var(--terra)', color: '#fff',
+            fontFamily: 'var(--font-dm-sans)', fontSize: '.95rem', fontWeight: 600,
+            cursor: 'pointer', marginTop: '.75rem',
+            boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
+          }}
+        >
+          Recommend fermentation plan →
+        </button>
+      )}
+
+      {startComputed && (<>
 
       {/* Divider */}
       <div style={{ borderTop: '1px solid var(--border)', margin: '1.1rem 0 1rem' }} />
 
       {/* Fermentation chart */}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
-        <label style={LABEL_STYLE}>
-          {hasPrefActive ? t('schedulerTitle.withPref') : t('schedulerTitle.noPref')}
-        </label>
+        <div style={{ fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem' }}>
+          {hasManuallyDragged.current ? 'Your fermentation plan' : 'Recommended fermentation plan'}
+        </div>
         {startComputed ? (
           mode === 'simple' ? (
             <SimpleColourBar
@@ -1370,6 +1401,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               scheduleNote={schedule?.scheduleNote ?? null}
               blocks={blocks}
               recommendedMixHBF={recommendedHBF}
+              showZoneLabels={adjustOpen}
               onMixChange={(h) => {
                 // Baker is manually adjusting — clear ghost
                 hasManuallyDragged.current = true;
@@ -1433,6 +1465,201 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           </div>
         )}
       </div>
+
+      {/* Adjust schedule */}
+      <div style={{ marginTop: '.5rem', marginBottom: '.75rem' }}>
+        <div
+          onClick={() => setAdjustOpen(o => !o)}
+          style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            cursor: 'pointer', padding: '.4rem 0',
+            borderTop: '1px solid var(--border)',
+            borderBottom: adjustOpen ? 'none' : '1px solid var(--border)',
+          }}
+        >
+          <span style={{ fontSize: '.8rem', fontWeight: 500, color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
+            Adjust schedule
+          </span>
+          <span style={{ fontSize: '12px', color: '#8A7F78' }}>{adjustOpen ? '▾' : '›'}</span>
+        </div>
+
+        {adjustOpen && (
+          <div style={{ paddingTop: '4px', paddingBottom: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '6px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
+                <span style={{ color: '#3D5A30', fontWeight: 600 }}>◆ Dough:</span> drag the green diamond — green curve should peak at Bake
+              </div>
+              {hasPrefActive && (
+                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
+                  <span style={{ color: '#C4A030', fontWeight: 600 }}>◇ {prefLabel}:</span> drag the gold diamond — gold curve should peak at Start Dough
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                hasManuallyDragged.current = false;
+                computeAndApplyRecommendation(blocks, pendingEatTime);
+              }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--smoke)', fontSize: '.72rem',
+                fontFamily: 'var(--font-dm-mono)',
+                textDecoration: 'underline', textUnderlineOffset: '2px', padding: 0,
+              }}
+            >
+              Reset to recommendation →
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Info cards (pref + mix start times) ── */}
+      {startComputed && (() => {
+        const isLevainType = prefermentType === 'levain' || isSourdough;
+        const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
+        const infoOptH = (hasPrefActive || isSourdough) ? getPrefOptH(isSourdough ? 'sourdough' : prefermentType, kitchenTemp) : 0;
+        const cardPrefInZone = (hasPrefActive || isSourdough) && prefOffsetH >= infoOptH - 3 && prefOffsetH <= infoOptH + 3;
+        const cardPrefStatus = cardPrefInZone ? '🟢 Ready at mix' : '🟡 Adjust start time';
+        const cardPrefTime = hasPrefActive
+          ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
+          : isSourdough && feedTime ? feedTime : null;
+        const doughZoneFrom = hasColdRetard ? 52 : 26;
+        const doughZoneTo   = hasColdRetard ? 20 : 14;
+        const mixInZone   = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
+        const mixTooEarly = mixOffsetH > doughZoneFrom;
+        const mixStatus   = mixInZone ? '🟢 Dough ready at bake'
+          : mixTooEarly ? '🔴 Too early — over-fermented'
+          : '🔴 Too late — under-fermented';
+        const bakeMs = pendingEatTime.getTime();
+        const mixInBlocker = !mixInZone && mixOffsetH > 0 && blocks.some(b => {
+          const s2 = (bakeMs - b.from.getTime()) / 3600000;
+          const e2 = (bakeMs - b.to.getTime())   / 3600000;
+          return mixOffsetH >= Math.min(s2, e2) && mixOffsetH <= Math.max(s2, e2);
+        });
+        return (
+          <div style={{ display: 'flex', gap: '6px', marginTop: '1rem', flexWrap: 'wrap' }}>
+            {/* Pref card */}
+            {cardPrefTime && (
+              <div style={{
+                flex: 1, minWidth: '120px',
+                background: 'var(--cream)', border: '1.5px solid var(--border)',
+                borderRadius: '10px', padding: '14px 16px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
+                  <div style={{ width: 8, height: 8, background: cardPrefColor, transform: 'rotate(45deg)', flexShrink: 0 }} />
+                  <div style={{
+                    fontSize: '13px', color: 'var(--smoke)',
+                    fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
+                  }}>{prefLabel}</div>
+                </div>
+                <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                  {fmtCardDT(cardPrefTime)}
+                </div>
+                <div style={{ fontSize: '12px', marginTop: '.1rem', color: cardPrefInZone ? '#4A7A3A' : '#C49A28' }}>
+                  {cardPrefStatus}
+                </div>
+                {prefGoesInFridge && (
+                  <div style={{ fontSize: '12px', marginTop: '.2rem', color: '#3A5A8A', fontFamily: 'var(--font-dm-mono)' }}>
+                    🧊 Cold ferment — use fridge
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mix card */}
+            <div style={{
+              flex: 1, minWidth: '120px',
+              background: 'var(--cream)', border: '1.5px solid var(--border)',
+              borderRadius: '10px', padding: '14px 16px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
+                <div style={{ width: 8, height: 8, background: '#3D5A30', transform: 'rotate(45deg)', flexShrink: 0 }} />
+                <div style={{
+                  fontSize: '13px', color: 'var(--smoke)',
+                  fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
+                }}>Start Dough</div>
+              </div>
+              <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                {fmtCardDT(pendingStart)}
+              </div>
+              <div style={{ fontSize: '12px', marginTop: '.1rem', color: mixInZone ? '#4A7A3A' : '#C4522A' }}>
+                {mixStatus}
+              </div>
+              {mixInBlocker && (
+                <div style={{ fontSize: '11px', color: '#7A5A10', marginTop: '4px', lineHeight: 1.4 }}>
+                  ⚠️ Within a blocked window — intentional?
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Your bake timeline ── */}
+      {phases && (() => {
+        const segs = [
+          { key: 'bulk',   h: phases.bulkFermH,   color: '#C4A030', label: 'Bulk' },
+          { key: 'fridge', h: phases.coldRetardH,  color: '#4A7FA5', label: 'Fridge' },
+          { key: 'proof',  h: phases.finalProofH,  color: '#6B7A5A', label: 'Proof' },
+          { key: 'heat',   h: phases.preheatH,     color: '#C4522A', label: 'Preheat' },
+        ].filter(s => s.h > 0);
+        const total = segs.reduce((sum, s) => sum + s.h, 0);
+        if (total === 0) return null;
+        const formatHours = (h: number) => {
+          if (h < 1) return `${Math.round(h * 60)}m`;
+          if (Number.isInteger(h)) return `${h}h`;
+          return `${h.toFixed(1)}h`;
+        };
+        return (
+          <div style={{ marginTop: '1rem' }}>
+            <div style={{
+              fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
+              color: 'var(--smoke)', textTransform: 'uppercase',
+              letterSpacing: '.06em', marginBottom: '.3rem',
+            }}>
+              Your bake timeline
+            </div>
+            <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden', height: '20px' }}>
+              {segs.map(s => {
+                const pct = s.h / total;
+                const showFull = pct >= 0.15;
+                const showShort = !showFull && pct >= 0.07;
+                const hLabel = formatHours(s.h);
+                return (
+                  <div
+                    key={s.key}
+                    title={`${s.label}: ${hLabel}`}
+                    style={{
+                      flex: s.h, background: s.color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {showFull && (
+                      <span style={{ fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)', color: 'white', whiteSpace: 'nowrap', lineHeight: 1 }}>
+                        {s.label} · {hLabel}
+                      </span>
+                    )}
+                    {showShort && (
+                      <span style={{ fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)', color: 'white', whiteSpace: 'nowrap', lineHeight: 1 }}>
+                        {hLabel}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {schedule?.scheduleNote && (
+        <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'var(--smoke)', textAlign: 'center', marginTop: '8px' }}>
+          {schedule.scheduleNote}
+        </div>
+      )}
+
+      </>)}
 
       {/* Fallback popup — shown when no clean mix window found */}
       {showFallbackPopup && fallbackOptions && (
@@ -1611,6 +1838,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           {blockerNote}
         </div>
       )}
+
+      </div>)} {/* end eatTimeSet */}
 
     </div>
   );
