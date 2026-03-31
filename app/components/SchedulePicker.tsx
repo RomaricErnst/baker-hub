@@ -365,7 +365,7 @@ function findOptimalPosition(
     return activeBlocks.some(b => {
       const s = (ms - b.from.getTime()) / 3600000;
       const e = (ms - b.to.getTime())   / 3600000;
-      return hbf >= Math.min(s, e) && hbf <= Math.max(s, e);
+      return hbf > Math.min(s, e) && hbf < Math.max(s, e);
     });
   }
   function inSweet(hbf: number): boolean {
@@ -818,7 +818,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       hasPrefActive, prefOffsetH,
     );
 
-    if (result.fallback) {
+    if (result.mixInBlocker) {
       const outsideHBF = result.mixHBF;
       const maxDist = sweetFrom - sweetCenter;
       const dist = Math.abs(outsideHBF - sweetCenter);

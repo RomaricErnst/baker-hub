@@ -213,7 +213,7 @@ export default function FermentChart({
   function inBlocker(hbf: number): boolean {
     return blocks.some(b => {
       const { hbfStart, hbfEnd } = blockerHBF(b);
-      return hbf >= hbfEnd && hbf <= hbfStart;
+      return hbf > hbfEnd && hbf < hbfStart;
     });
   }
 
