@@ -83,11 +83,13 @@ function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_D
   for (let i = 0; i <= N; i++) {
     const hbf = (i / N) * wh;
     const x = hToX(hbf, W, wh);
-    const y = BL - bell(hbf, peakHBF, sigma) * MAXH;
+    // For hbf < startHBF (right of diamond toward bake), force y=BL
+    // For hbf >= startHBF (left of diamond), draw the bell curve
+    const y = hbf < startHBF ? BL : BL - bell(hbf, peakHBF, sigma) * MAXH;
     pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
   }
-  pts.push(`L ${hToX(startHBF, W, wh).toFixed(1)} ${BL.toFixed(1)}`);
-  pts.push(`L ${hToX(0, W, wh).toFixed(1)} ${BL.toFixed(1)}`);
+  pts.push(`L ${hToX(wh, W, wh).toFixed(1)} ${BL}`);
+  pts.push(`L ${hToX(0, W, wh).toFixed(1)} ${BL}`);
   pts.push('Z');
   return pts.join(' ');
 }
@@ -436,12 +438,6 @@ export default function FermentChart({
               </clipPath>
             );
           })}
-          <clipPath id="clip-pref">
-            <rect x={0} y={0} width={hToX(prefStartAbsHBF, W, WH)} height={CHART_H + 40} />
-          </clipPath>
-          <clipPath id="clip-mix">
-            <rect x={0} y={0} width={hToX(effectiveMixHBF, W, WH)} height={CHART_H + 40} />
-          </clipPath>
           {/* Bidirectional arrow markers for zone width indicators */}
           <marker id="arrow-sage-start" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
             <path d="M6,0 L0,3 L6,6" fill="none" stroke="#6B7A5A" strokeWidth="1.2"/>
@@ -516,7 +512,6 @@ export default function FermentChart({
             <path
               d={makeBellPath(prefPeakHBF, prefSig, W, WH, prefStartAbsHBF)}
               fill={`${prefColor}2E`} stroke={`${prefColor}A5`} strokeWidth={1.5}
-              clipPath="url(#clip-pref)"
             />
             {renderDropLine(
               prefStartAbsHBF, prefPeakHBF, prefSig,
@@ -529,7 +524,6 @@ export default function FermentChart({
         <path
           d={makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF)}
           fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
-          clipPath="url(#clip-mix)"
         />
         {(() => {
           const prefY = hasPref ? BL - bell(effectiveMixHBF, prefPeakHBF, prefSig) * MAXH : undefined;
