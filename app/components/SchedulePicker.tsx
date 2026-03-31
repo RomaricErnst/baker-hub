@@ -846,6 +846,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setShowFallbackPopup(false);
       setPendingStart(newStart);
       onChange(newStart, et, currentBlocks);
+      setDismissedConflict(true);
       if (hasPrefActive) {
         setPrefOffsetH(result.prefHBF - result.mixHBF);
         onPrefOffsetChange?.(result.prefHBF - result.mixHBF);
@@ -940,9 +941,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
-    const { resolvedStart, moved, resolvedDate } = applyBlockerOverlap(pendingStart, newBlocks);
+    const { resolvedStart, moved, resolvedDate: _resolvedDate } = applyBlockerOverlap(pendingStart, newBlocks);
     if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
-    setBlockerNote(moved ? t('startMovedNote', { time: formatDayShort(resolvedDate) }) : null);
+    setBlockerNote(moved ? "Start Dough is in one of your busy windows — that's fine if it works for you." : null);
     onChange(resolvedStart, pendingEatTime, newBlocks);
     if (!hasManuallyDragged.current && phase === 'start_confirm') {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
@@ -1356,6 +1357,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <button
           onClick={() => {
             hasManuallyDragged.current = false;
+            setDismissedConflict(false);
             setPhase('start_confirm');
             computeAndApplyRecommendation(blocks, pendingEatTime);
             setStartComputed(true);
@@ -1528,13 +1530,170 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         )}
       </div>
 
+      {/* ── Message cards: State 1 (fallback), State 2 (blocker note), State 3 (bulk conflict) ── */}
+      {showFallbackPopup && fallbackOptions && (
+        <div style={{
+          background: 'var(--cream)', borderLeft: '4px solid var(--terra)',
+          borderRadius: '10px', padding: '.75rem 1rem',
+          marginBottom: '.75rem', fontFamily: 'var(--font-dm-sans)',
+        }}>
+          <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.3rem' }}>
+            No free window found
+          </div>
+          <div style={{ fontSize: '.78rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
+            Your busy windows overlap the ideal mixing time. Pick what works best:
+          </div>
+          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            {fallbackOptions.outsideZone && (
+              <button
+                onClick={() => {
+                  const { mixHBF } = fallbackOptions!.outsideZone!;
+                  const newStart = new Date(pendingEatTime.getTime() - mixHBF * 3600000);
+                  setPendingStart(newStart);
+                  setRecommendedHBF(mixHBF);
+                  onChange(newStart, pendingEatTime, blocks);
+                  setShowFallbackPopup(false);
+                }}
+                style={{
+                  background: 'var(--terra)', color: 'white', border: 'none',
+                  borderRadius: '8px', padding: '.4rem .9rem', fontSize: '.78rem',
+                  fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <div>Start just outside the window</div>
+                <div style={{ fontSize: '.68rem', opacity: .85, marginTop: '2px' }}>Dough will still be great.</div>
+              </button>
+            )}
+            {fallbackOptions.inBlocker && (
+              <button
+                onClick={() => {
+                  const bakeMs = pendingEatTime.getTime();
+                  const sc = hasColdRetard ? 34 : 20;
+                  let bestHBF = sc;
+                  let bestDist = Infinity;
+                  for (const b of blocks) {
+                    const edgeStart = (bakeMs - b.from.getTime()) / 3600000;
+                    const edgeEnd   = (bakeMs - b.to.getTime())   / 3600000;
+                    for (const edge of [edgeStart, edgeEnd]) {
+                      const dist = Math.abs(edge - sc);
+                      if (dist < bestDist) { bestDist = dist; bestHBF = edge; }
+                    }
+                  }
+                  const newStart = new Date(bakeMs - bestHBF * 3600000);
+                  setPendingStart(newStart);
+                  setRecommendedHBF(null);
+                  onChange(newStart, pendingEatTime, blocks);
+                  setShowFallbackPopup(false);
+                }}
+                style={{
+                  background: 'transparent', color: 'var(--smoke)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px', padding: '.4rem .9rem', fontSize: '.78rem',
+                  cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <div>Start at the edge of a busy window</div>
+                <div style={{ fontSize: '.68rem', opacity: .85, marginTop: '2px' }}>Overlaps by ~{fallbackOptions.inBlocker.overlapMin} min — your call.</div>
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setShowFallbackPopup(false);
+                hasManuallyDragged.current = true;
+              }}
+              style={{
+                background: 'transparent', color: 'var(--smoke)',
+                border: 'none', fontSize: '.78rem', cursor: 'pointer', padding: '.4rem 0',
+              }}
+            >
+              I&apos;ll adjust myself
+            </button>
+          </div>
+        </div>
+      )}
+
+      {blockerNote && (
+        <div style={{
+          background: 'var(--cream)', borderLeft: '4px solid var(--terra)',
+          borderRadius: '10px', padding: '.75rem 1rem',
+          marginBottom: '.75rem', fontFamily: 'var(--font-dm-sans)',
+        }}>
+          <div style={{ fontSize: '.82rem', color: 'var(--char)', lineHeight: 1.5 }}>
+            {blockerNote}
+          </div>
+        </div>
+      )}
+
+      {bulkConflict && !dismissedConflict && (() => {
+        const MIN_REASONABLE_HOUR = 7;
+        const earlierStart = bulkConflict.suggestedEarlierStart;
+        const earlierIsReasonable = earlierStart
+          ? earlierStart.getHours() >= MIN_REASONABLE_HOUR
+          : false;
+        return (
+          <div style={{
+            background: 'var(--cream)', borderLeft: '4px solid var(--terra)',
+            borderRadius: '10px', padding: '.75rem 1rem',
+            marginBottom: '.75rem', fontFamily: 'var(--font-dm-sans)',
+          }}>
+            {earlierIsReasonable && earlierStart ? (
+              <>
+                <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.2rem' }}>
+                  Your bulk fermentation starts during a busy window.
+                </div>
+                <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '.65rem' }}>
+                  Start at {formatSliderDisplay(earlierStart)} to begin before your busy window.
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.2rem' }}>
+                  Your bulk fermentation overlaps a busy window.
+                </div>
+                <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '.65rem' }}>
+                  Starting earlier isn&apos;t practical here — carrying on is fine.
+                </div>
+              </>
+            )}
+            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+              {earlierIsReasonable && earlierStart && (
+                <button
+                  onClick={() => {
+                    adjustStart(-(bulkConflict.suggestEarlierByMin / 60));
+                    setDismissedConflict(true);
+                  }}
+                  style={{
+                    background: 'var(--terra)', color: 'white', border: 'none',
+                    borderRadius: '8px', padding: '.4rem .9rem',
+                    fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
+                    fontFamily: 'var(--font-dm-sans)',
+                  }}
+                >
+                  Start at {formatSliderDisplay(earlierStart)} →
+                </button>
+              )}
+              <button
+                onClick={() => setDismissedConflict(true)}
+                style={{
+                  background: 'transparent', color: 'var(--smoke)',
+                  border: '1px solid var(--border)', borderRadius: '8px', padding: '.4rem .9rem',
+                  fontSize: '.78rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                }}
+              >
+                {earlierIsReasonable && earlierStart ? 'Keep as is' : 'Got it'}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Info cards (pref + mix start times) ── */}
       {startComputed && (() => {
         const isLevainType = prefermentType === 'levain' || isSourdough;
         const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
         const infoOptH = (hasPrefActive || isSourdough) ? getPrefOptH(isSourdough ? 'sourdough' : prefermentType, kitchenTemp) : 0;
         const cardPrefInZone = (hasPrefActive || isSourdough) && prefOffsetH >= infoOptH - 3 && prefOffsetH <= infoOptH + 3;
-        const cardPrefStatus = cardPrefInZone ? '🟢 Ready at mix' : '🟡 Adjust start time';
+        const cardPrefStatus = cardPrefInZone ? '🟢 Ready when dough starts' : '🟡 Adjust timing';
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
           : isSourdough && feedTime ? feedTime : null;
@@ -1610,15 +1769,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         );
       })()}
 
-      {blockerNote && (
-        <div style={{
-          fontSize: '.74rem', color: 'var(--smoke)',
-          marginTop: '.4rem', fontStyle: 'italic', lineHeight: 1.4,
-        }}>
-          {blockerNote}
-        </div>
-      )}
-
       {/* ── Your bake timeline ── */}
       {phases && (() => {
         const segs = [
@@ -1685,160 +1835,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       </>)}
 
-      {/* Fallback popup — shown when no clean mix window found */}
-      {showFallbackPopup && fallbackOptions && (
-        <div style={{
-          marginTop: '1rem',
-        }}>
-          <div style={{
-            background: 'var(--warm)', borderRadius: '18px',
-            padding: '1.5rem', maxWidth: '340px', width: '100%',
-            boxShadow: '0 8px 32px rgba(26,22,18,0.18)',
-          }}>
-            <div style={{ fontSize: '15px', fontWeight: 700,
-              color: 'var(--char)', marginBottom: '.5rem' }}>
-              No perfect window found
-            </div>
-            <div style={{ fontSize: '13px', color: 'var(--smoke)',
-              marginBottom: '1.2rem', lineHeight: 1.5 }}>
-              Your blocked times overlap the ideal mixing window.
-              Choose the best option for you:
-            </div>
 
-            {fallbackOptions.outsideZone && (
-              <button
-                onClick={() => {
-                  const { mixHBF } = fallbackOptions!.outsideZone!;
-                  const newStart = new Date(pendingEatTime.getTime() - mixHBF * 3600000);
-                  setPendingStart(newStart);
-                  setRecommendedHBF(mixHBF);
-                  onChange(newStart, pendingEatTime, blocks);
-                  setShowFallbackPopup(false);
-                }}
-                style={{ width: '100%', padding: '12px 14px',
-                borderRadius: '12px', border: '1.5px solid var(--border)',
-                background: 'white', textAlign: 'left',
-                cursor: 'pointer', marginBottom: '8px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--char)' }}>
-                  Start slightly outside sweet spot
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--smoke)', marginTop: '2px' }}>
-                  ~{fallbackOptions.outsideZone.qualityPct}% optimal — dough still very good
-                </div>
-              </button>
-            )}
-
-            {fallbackOptions.inBlocker && (
-              <button
-                onClick={() => {
-                  const { mixHBF } = fallbackOptions!.inBlocker!;
-                  const newStart = new Date(pendingEatTime.getTime() - mixHBF * 3600000);
-                  setPendingStart(newStart);
-                  setRecommendedHBF(null);
-                  onChange(newStart, pendingEatTime, blocks);
-                  setShowFallbackPopup(false);
-                }}
-                style={{ width: '100%', padding: '12px 14px',
-                borderRadius: '12px', border: '1.5px solid var(--border)',
-                background: 'white', textAlign: 'left',
-                cursor: 'pointer', marginBottom: '12px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--char)' }}>
-                  Start during a blocked window
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--smoke)', marginTop: '2px' }}>
-                  Overlaps by ~{fallbackOptions.inBlocker.overlapMin} min — make sure this works for you
-                </div>
-              </button>
-            )}
-
-            <button
-              onClick={() => {
-                setShowFallbackPopup(false);
-                hasManuallyDragged.current = true;
-              }}
-              style={{ width: '100%', padding: '10px',
-              borderRadius: '12px', border: 'none',
-              background: 'transparent', color: 'var(--smoke)',
-              fontSize: '13px', cursor: 'pointer' }}>
-              Adjust manually
-            </button>
-          </div>
-        </div>
-      )}
-
-      {bulkConflict && !dismissedConflict && (() => {
-        const MIN_REASONABLE_HOUR = 7;
-        const earlierStart = bulkConflict.suggestedEarlierStart;
-        const earlierIsReasonable = earlierStart
-          ? earlierStart.getHours() >= MIN_REASONABLE_HOUR
-          : false;
-        function formatDuration(min: number): string {
-          const snapped = Math.round(min / 15) * 15;
-          const h = Math.floor(snapped / 60);
-          const m = snapped % 60;
-          if (h === 0) return `${m}min`;
-          if (m === 0) return `${h}h`;
-          return `${h}h${m}`;
-        }
-        return (
-          <div style={{
-            background: '#FFF8E8', border: '1.5px solid #E8D080',
-            borderRadius: '10px', padding: '.75rem 1rem',
-            marginTop: '.75rem', color: '#7A5A10',
-          }}>
-            <div style={{ marginBottom: '.5rem' }}>
-              {earlierIsReasonable && earlierStart ? (
-                <>
-                  <div style={{ fontSize: '.82rem', fontWeight: 600, lineHeight: 1.55 }}>
-                    ⏰ Your unavailability window overlaps with bulk fermentation.
-                  </div>
-                  <div style={{ fontSize: '.74rem', opacity: .8, marginTop: '.2rem', lineHeight: 1.55 }}>
-                    Starting at {formatSliderDisplay(earlierStart)} clears the window before it starts.
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontSize: '.82rem', fontWeight: 600, lineHeight: 1.55 }}>
-                    ⏰ Your unavailability window overlaps with bulk fermentation.
-                  </div>
-                  <div style={{ fontSize: '.74rem', opacity: .8, marginTop: '.2rem', lineHeight: 1.55 }}>
-                    A shorter bulk still makes great dough — the difference is minimal.
-                  </div>
-                </>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-              {earlierIsReasonable && earlierStart && (
-                <button
-                  onClick={() => {
-                    adjustStart(-(bulkConflict.suggestEarlierByMin / 60));
-                    setDismissedConflict(true);
-                  }}
-                  style={{
-                    padding: '.4rem .9rem', border: 'none', borderRadius: '8px',
-                    background: 'var(--terra)', color: '#fff',
-                    fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
-                    fontFamily: 'var(--font-dm-sans)',
-                  }}
-                >
-                  Start at {formatTimeShort(earlierStart)}
-                </button>
-              )}
-              <button
-                onClick={() => setDismissedConflict(true)}
-                style={{
-                  padding: '.4rem .9rem', borderRadius: '8px',
-                  border: '1.5px solid #E8D080', background: 'transparent',
-                  color: '#7A5A10', fontSize: '.78rem', fontWeight: 500,
-                  cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
-                }}
-              >
-                {t('conflict.continueAnyway')}
-              </button>
-            </div>
-          </div>
-        );
-      })()}
 
       {startInvalid && (
         <div style={{
