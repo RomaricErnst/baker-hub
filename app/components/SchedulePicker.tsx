@@ -874,7 +874,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   useEffect(() => {
     if (!alreadySet) return;
     if (hasManuallyDragged.current) return;
-    computeAndApplyRecommendation(blocks, pendingEatTime);
+    // Small delay so parent onChange resets scheduleReady first, then we set it back
+    setTimeout(() => {
+      computeAndApplyRecommendation(blocks, pendingEatTime);
+      setStartComputed(true);
+      onReady?.();
+    }, 0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
