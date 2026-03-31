@@ -835,8 +835,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setRecommendedHBF(null);
       setShowFallbackPopup(true);
     } else {
-      const newStart = new Date(et.getTime() - result.mixHBF * 3600000);
-      setRecommendedHBF(result.mixHBF);
+      let finalMixHBF = result.mixHBF;
+      const startMs = et.getTime() - finalMixHBF * 3600000;
+      const bulkEndMs = startMs + 4 * 3600000;
+      for (const b of currentBlocks) {
+        if (b.from.getTime() < bulkEndMs && b.to.getTime() > startMs) {
+          const shiftedHBF = (et.getTime() - b.from.getTime()) / 3600000 + 4.5;
+          if (shiftedHBF > finalMixHBF) finalMixHBF = shiftedHBF;
+        }
+      }
+      const newStart = new Date(et.getTime() - finalMixHBF * 3600000);
+      setRecommendedHBF(finalMixHBF);
       setShowFallbackPopup(false);
       setPendingStart(newStart);
       onChange(newStart, et, currentBlocks);
@@ -1346,7 +1355,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
-      {eatTimeSet && (
+      {eatTimeSet && !startComputed && (
         <button
           onClick={() => {
             hasManuallyDragged.current = false;
@@ -1604,6 +1613,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         );
       })()}
 
+      {blockerNote && (
+        <div style={{
+          fontSize: '.74rem', color: 'var(--smoke)',
+          marginTop: '.4rem', fontStyle: 'italic', lineHeight: 1.4,
+        }}>
+          {blockerNote}
+        </div>
+      )}
+
       {/* ── Your bake timeline ── */}
       {phases && (() => {
         const segs = [
@@ -1836,15 +1854,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           marginBottom: '.75rem', marginTop: '.5rem',
         }}>
           {t('startBeforeBake')}
-        </div>
-      )}
-
-      {blockerNote && (
-        <div style={{
-          fontSize: '.74rem', color: 'var(--smoke)',
-          marginTop: '.4rem', fontStyle: 'italic', lineHeight: 1.4,
-        }}>
-          {blockerNote}
         </div>
       )}
 
