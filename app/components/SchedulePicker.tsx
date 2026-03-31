@@ -333,7 +333,7 @@ function snapToBlockerEdgeIfBlocked(
   for (const b of activeBlocks) {
     const bFrom = (ms - b.to.getTime())   / 3600000; // HBF closer to bake
     const bTo   = (ms - b.from.getTime()) / 3600000; // HBF further from bake
-    if (hbf >= bFrom && hbf <= bTo) {
+    if (hbf > bFrom && hbf < bTo) {
       const distFrom = Math.abs(bFrom - sweetCenter);
       const distTo   = Math.abs(bTo   - sweetCenter);
       return distFrom <= distTo ? bFrom : bTo;
