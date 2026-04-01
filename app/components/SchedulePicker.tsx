@@ -1171,11 +1171,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {eatTimeSet && (<div>
 
       {/* Blocker section — moved above slider */}
+      <div style={{ marginBottom: constraintsOpen ? '.75rem' : '1rem' }}>
       <div
         onClick={() => setConstraintsOpen(o => !o)}
         style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          cursor: 'pointer', marginBottom: constraintsOpen ? '.75rem' : '1rem',
+          cursor: 'pointer',
           paddingBottom: constraintsOpen ? '.75rem' : 0,
           borderBottom: constraintsOpen ? '1px solid var(--border)' : 'none',
         }}
@@ -1195,15 +1196,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </span>
       </div>
 
+      </div>
+
       {constraintsOpen && (
         <div>
           <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.9rem', lineHeight: 1.5 }}>
             {t('blockers.sub')}
           </div>
 
-      {/* Quick presets — work toggle */}
-      {workdays.length > 0 && (
-        <div style={{ marginBottom: '.75rem' }}>
+      {/* Quick presets — all toggles on one row */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem', width: '100%', overflow: 'visible', paddingLeft: 0 }}>
+        {workdays.length > 0 && (
           <button
             onClick={toggleWork}
             style={{
@@ -1224,11 +1227,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </span>
             {isWorkActive && <span style={{ opacity: .7 }}>✓</span>}
           </button>
-        </div>
-      )}
-
-      {/* Nights toggle — single button for all nights */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem', width: '100%', overflow: 'visible', paddingLeft: 0 }}>
+        )}
         {nights.length > 0 && (() => {
           const active = isAnyNightActive();
           return (
