@@ -1533,15 +1533,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               }}
               onPrefChange={(offsetH) => {
                 if (isSourdough) {
-                  const newFeed = pushToReasonableHour(new Date(pendingStart.getTime() - offsetH * 3600000));
+                  const newFeed = new Date(pendingStart.getTime() - offsetH * 3600000);
                   setFeedTime(newFeed);
                   onFeedTimeChange?.(newFeed);
-                  if (!mixOverride) {
-                    const peak = starterPeakHours(kitchenTemp, starterMature);
-                    const newMix = pushToReasonableHour(new Date(newFeed.getTime() + peak.mid * 3600000));
-                    setPendingStart(newMix);
-                    onChange(newMix, pendingEatTime, blocks);
-                  }
+                  // Starter diamond moves independently — Start Dough stays.
+                  // Baker uses "Reset mix to starter peak" to relink.
                 } else {
                   setPrefOffsetH(offsetH);
                   onPrefOffsetChange?.(offsetH);
@@ -1560,7 +1556,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         )}
 
         {/* Sourdough reset-mix link */}
-        {isSourdough && feedTime && startComputed && mixOverride && (
+        {isSourdough && feedTime && startComputed && (
           <div style={{ marginTop: '.4rem', textAlign: 'right' }}>
             <button
               onClick={() => {

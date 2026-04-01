@@ -254,7 +254,7 @@ export default function FermentChart({
       const h = Math.max(3, Math.min(WH - 2, snap15(xToHBF(x, W, WH))));
       setLocalMixHBF(h);
     } else {
-      const abs = Math.max(mixOffsetH + 1, Math.min(WH - 2, snap15(xToHBF(x, W, WH))));
+      const abs = Math.max(mixOffsetH + 0.25, Math.min(WH - 2, snap15(xToHBF(x, W, WH))));
       onPrefChange(abs - mixOffsetH);
     }
   }
