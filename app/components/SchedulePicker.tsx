@@ -768,13 +768,30 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const mi = String(d.getMinutes()).padStart(2, '0');
       return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
     }
-    // Default to today at 6pm
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}T18:00`;
   });
+  // Split state for custom time picker UI
+  const [pickerDate, setPickerDate] = useState<string>(() => {
+    if (alreadySet && eatTime) {
+      const d = eatTime;
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  });
+  const [pickerHour, setPickerHour] = useState<number>(() => alreadySet && eatTime ? eatTime.getHours() : 18);
+  const [pickerMinute, setPickerMinute] = useState<number>(() => {
+    if (alreadySet && eatTime) {
+      const m = eatTime.getMinutes();
+      return [0,15,30,45].reduce((prev, cur) => Math.abs(cur-m) < Math.abs(prev-m) ? cur : prev, 0);
+    }
+    return 0;
+  });
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [dismissedConflict, setDismissedConflict] = useState(false);
 
   // Sourdough state
@@ -804,6 +821,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     : prefermentType === 'biga' ? 'Make Biga'
     : (prefermentType === 'levain' || isSourdough) ? 'Feed Starter'
     : 'Make Preferment';
+
+  function applyTimePick(date: string, hour: number, minute: number) {
+    const hh = String(hour).padStart(2, '0');
+    const mi = String(minute).padStart(2, '0');
+    const dt = `${date}T${hh}:${mi}`;
+    pickerDateTimeRef.current = dt;
+    setPickerDateTime(dt);
+    updateEatTime(dt);
+    if (date) { confirmBakeTime(); }
+    setShowTimePicker(false);
+  }
 
   function updateEatTime(dt: string) {
     if (!dt || dt.length < 16) return;
@@ -1064,19 +1092,77 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
           {t('bakeTimeSub')}
         </div>
-        <input
-          type="datetime-local"
-          step={900}
-          value={pickerDateTime}
-          onChange={e => {
-            const dt = e.target.value;
-            pickerDateTimeRef.current = dt;
-            setPickerDateTime(dt);
-            updateEatTime(dt);
-            if (dt.length >= 16) { confirmBakeTime(); }
-          }}
-          style={{ ...INPUT_STYLE, width: '100%' }}
-        />
+        <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center', position: 'relative' }}>
+          {/* Date — native picker */}
+          <input
+            type="date"
+            value={pickerDate}
+            onChange={e => {
+              const d = e.target.value;
+              setPickerDate(d);
+              if (d && pickerHour !== null) applyTimePick(d, pickerHour, pickerMinute);
+            }}
+            style={{ ...INPUT_STYLE, flex: 2, width: undefined }}
+          />
+          {/* Time — custom pill picker */}
+          <div style={{ flex: 1, position: 'relative' }}>
+            <button
+              onClick={() => setShowTimePicker(v => !v)}
+              style={{
+                ...INPUT_STYLE, width: '100%', textAlign: 'left', cursor: 'pointer',
+                background: 'var(--warm)', border: '1.5px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}
+            >
+              <span>{`${pickerHour === 0 ? 12 : pickerHour > 12 ? pickerHour - 12 : pickerHour}:${String(pickerMinute).padStart(2,'0')} ${pickerHour < 12 ? 'am' : 'pm'}`}</span>
+              <span style={{ fontSize: '10px', color: 'var(--smoke)', marginLeft: '4px' }}>▾</span>
+            </button>
+            {showTimePicker && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                background: 'var(--warm)', border: '1.5px solid var(--border)',
+                borderRadius: '12px', padding: '.75rem', marginTop: '4px',
+                boxShadow: '0 4px 16px rgba(26,22,18,0.12)',
+              }}>
+                {/* Hours */}
+                <div style={{ fontSize: '.65rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.4rem' }}>Hour</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '.75rem' }}>
+                  {Array.from({ length: 24 }, (_, h) => {
+                    const label = h === 0 ? '12am' : h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h-12}pm`;
+                    const active = pickerHour === h;
+                    return (
+                      <button key={h} onClick={() => { setPickerHour(h); if (pickerDate) applyTimePick(pickerDate, h, pickerMinute); }}
+                        style={{
+                          padding: '3px 7px', borderRadius: '8px', fontSize: '.72rem',
+                          fontFamily: 'var(--font-dm-mono)', cursor: 'pointer',
+                          border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
+                          background: active ? '#FEF4EF' : 'transparent',
+                          color: active ? 'var(--terra)' : 'var(--smoke)',
+                        }}>{label}</button>
+                    );
+                  })}
+                </div>
+                {/* Minutes */}
+                <div style={{ fontSize: '.65rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.4rem' }}>Minute</div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {[0, 15, 30, 45].map(m => {
+                    const active = pickerMinute === m;
+                    return (
+                      <button key={m} onClick={() => { setPickerMinute(m); if (pickerDate) applyTimePick(pickerDate, pickerHour, m); }}
+                        style={{
+                          flex: 1, padding: '4px 0', borderRadius: '8px', fontSize: '.78rem',
+                          fontFamily: 'var(--font-dm-mono)', cursor: 'pointer',
+                          border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
+                          background: active ? '#FEF4EF' : 'transparent',
+                          color: active ? 'var(--terra)' : 'var(--smoke)',
+                        }}>{`:${String(m).padStart(2,'0')}`}</button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Phase 2 content — only once bake time is set */}
