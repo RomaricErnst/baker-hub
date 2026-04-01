@@ -11,6 +11,8 @@ export interface FermentChartProps {
   blocks: AvailabilityBlock[];
   onMixChange: (h: number) => void;
   onPrefChange: (h: number) => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
   windowH?: number;         // total window to display (default 96h)
   prefInFridge?: boolean;   // show fridge climate note in pref card
   hasColdRetard?: boolean;  // widens bell and sweet zone for cold schedules
@@ -120,7 +122,7 @@ function fmtDT(d: Date): string {
 export default function FermentChart({
   eatTime, prefermentType, kitchenTemp,
   mixOffsetH, prefOffsetH,
-  blocks, onMixChange, onPrefChange,
+  blocks, onMixChange, onPrefChange, onDragStart, onDragEnd,
   windowH, prefInFridge, hasColdRetard, phases, scheduleNote,
   recommendedMixHBF, showZoneLabels,
 }: FermentChartProps) {
@@ -243,6 +245,7 @@ export default function FermentChart({
     e.stopPropagation();
     setDragging(which);
     (e.target as Element).setPointerCapture(e.pointerId);
+    onDragStart?.();
   }
 
   function onPointerMove(e: React.PointerEvent) {
@@ -260,6 +263,7 @@ export default function FermentChart({
   }
 
   function onPointerUp() {
+    onDragEnd?.();
     if (dragging === 'mix' && localMixHBF !== null) {
       hasMovedMixRef.current = true;
       onMixChange(localMixHBF);

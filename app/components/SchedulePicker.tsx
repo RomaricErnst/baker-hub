@@ -752,6 +752,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // startComputed: false until engine runs at least once; true on return-to-edit
   const [startComputed, setStartComputed] = useState(alreadySet);
 
+  const [isDragging, setIsDragging] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
   const [customFrom, setCustomFrom] = useState('');
@@ -960,13 +961,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   } : undefined;
 
   // Dynamic chart window — fits mix+pref duration with breathing room
+  const windowHRef = useRef(96);
   const windowH = useMemo(() => {
+    if (isDragging) return windowHRef.current;
     const mixOffH = Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000);
     const neededH = hasPrefActive
       ? mixOffH + prefOffsetH + 10
       : mixOffH + 10;
-    return Math.min(144, Math.max(36, Math.ceil(neededH / 12) * 12));
-  }, [pendingEatTime, pendingStart, prefOffsetH, hasPrefActive]);
+    const computed = Math.min(144, Math.max(36, Math.ceil(neededH / 12) * 12));
+    windowHRef.current = computed;
+    return computed;
+  }, [isDragging, pendingEatTime, pendingStart, prefOffsetH, hasPrefActive]);
 
   // Fixed window start — always covers 5 days before bake regardless of diamond position
   const windowStart = useMemo(() => {
@@ -1469,6 +1474,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               blocks={blocks}
               recommendedMixHBF={recommendedHBF}
               showZoneLabels={adjustOpen}
+              onDragStart={() => setIsDragging(true)}
+              onDragEnd={() => setIsDragging(false)}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
                 setRecommendedHBF(null);
