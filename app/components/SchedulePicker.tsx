@@ -851,36 +851,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const minBulkRTLocal = isTrop ? 0.5 : 1.5;
     const minTotalRTLocal = minBulkRTLocal + 1.0 + (preheatMin / 60);
     const totalWindowH = (et.getTime() - new Date().getTime()) / 3600000;
-
-    // Bail out: past date or window too short for any fermentation
-    if (totalWindowH <= 0) {
-      setBlockerNote("This bake time is in the past — please pick a future date.");
-      return;
-    }
-    if (totalWindowH < minTotalRTLocal) {
-      setBlockerNote(`Not enough time — you need at least ${Math.ceil(minTotalRTLocal)}h. Pick a later bake time.`);
-      return;
-    }
-
     const expectedColdRetard = defaults.coldH > 0 && totalWindowH >= defaults.coldH + minTotalRTLocal;
+    const sweetFrom   = expectedColdRetard ? 52 : 26;
+    const sweetTo     = expectedColdRetard ? 20 : 14;
+    const sweetCenter = (sweetFrom + sweetTo) / 2;
 
-    // Raw sweet zone from cold retard model
-    const sweetFromRaw  = expectedColdRetard ? 52 : 26;
-    const sweetToRaw    = expectedColdRetard ? 20 : 14;
-    const sweetCenterRaw = (sweetFromRaw + sweetToRaw) / 2;
-
-    // Clamp to available window — mix must be in the future (before now)
-    const nowHBF = totalWindowH; // hours from now until bake = available window
-    const sweetCenter = Math.min(sweetCenterRaw, nowHBF - 0.5);
-    const sweetFrom   = Math.min(sweetFromRaw,   nowHBF - 0.25);
-    const sweetTo     = Math.min(sweetToRaw,     sweetCenter);
-
-    // Clamp pref offset so poolish never starts in the past
-    const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp) : prefOffsetH;
-    const maxPrefOffset = Math.max(0.25, nowHBF - sweetCenter - 0.25);
-    const optimalPrefOffset = hasPrefActive
-      ? Math.min(rawPrefOffset, maxPrefOffset)
-      : prefOffsetH;
+    const optimalPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp) : prefOffsetH;
     if (hasPrefActive) {
       setPrefOffsetH(optimalPrefOffset);
       onPrefOffsetChange?.(optimalPrefOffset);
