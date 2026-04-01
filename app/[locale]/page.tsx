@@ -417,6 +417,8 @@ export default function Home() {
     };
   }, [recipe, appliedMultiplier]);
 
+  const effPref: PrefermentType = (prefermentType ?? 'none') as PrefermentType;
+
   // Advanced recipe — includes manual hydration/oil/sugar overrides
   const advancedRecipe = useMemo(() => {
     if (!styleKey || !schedule) return null;
