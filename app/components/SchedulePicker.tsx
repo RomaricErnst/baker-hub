@@ -1013,14 +1013,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     applyAndUpdate(newBlocks);
   }
 
-  function isNightActive(label: string): boolean {
-    return blocks.some(b => b.label === label);
+  function isAnyNightActive(): boolean {
+    return nights.some(n => blocks.some(b => b.label === n.label));
   }
 
-  function toggleNight(night: { key: string; label: string; blockStart: Date; blockEnd: Date }) {
-    const newBlocks = isNightActive(night.label)
-      ? blocks.filter(b => b.label !== night.label)
-      : [...blocks, { from: night.blockStart, to: night.blockEnd, label: night.label }];
+  function toggleAllNights() {
+    const anyActive = isAnyNightActive();
+    const nightLabels = new Set(nights.map(n => n.label));
+    const withoutNights = blocks.filter(b => !nightLabels.has(b.label));
+    const newBlocks = anyActive
+      ? withoutNights
+      : [...withoutNights, ...nights.map(n => ({ from: n.blockStart, to: n.blockEnd, label: n.label }))];
     applyAndUpdate(newBlocks);
   }
 
@@ -1224,40 +1227,33 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
-      {/* Night toggles */}
+      {/* Nights toggle — single button for all nights */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem', width: '100%', overflow: 'visible', paddingLeft: 0 }}>
-        {nights.length === 0 ? (
-          <div style={{ fontSize: '.76rem', color: 'var(--smoke)', fontStyle: 'italic', padding: '.2rem 0' }}>
-            {t('blockers.noOvernights')}
-          </div>
-        ) : (
-          nights.map(night => {
-            const active = isNightActive(night.label);
-            return (
-              <button
-                key={night.key}
-                onClick={() => toggleNight(night)}
-                style={{
-                  padding: '.38rem .85rem', borderRadius: '20px',
-                  border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                  background: active ? '#FEF4EF' : 'var(--warm)',
-                  color: active ? 'var(--terra)' : 'var(--smoke)',
-                  fontSize: '.78rem', fontWeight: active ? 500 : 400,
-                  cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
-                  transition: 'all .15s',
-                  display: 'inline-flex', alignItems: 'center', gap: '.3rem',
-                  whiteSpace: 'nowrap', flexShrink: 0,
-                }}
-              >
-                🌙 {night.label}
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
-                  {t('blockers.nightHours')}
-                </span>
-                {active && <span style={{ opacity: .7 }}>✓</span>}
-              </button>
-            );
-          })
-        )}
+        {nights.length > 0 && (() => {
+          const active = isAnyNightActive();
+          return (
+            <button
+              onClick={toggleAllNights}
+              style={{
+                padding: '.38rem .85rem', borderRadius: '20px',
+                border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
+                background: active ? '#FEF4EF' : 'var(--warm)',
+                color: active ? 'var(--terra)' : 'var(--smoke)',
+                fontSize: '.78rem', fontWeight: active ? 500 : 400,
+                cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                transition: 'all .15s',
+                display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+                whiteSpace: 'nowrap', flexShrink: 0,
+              }}
+            >
+              🌙 Nights
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
+                · 10pm → 7am
+              </span>
+              {active && <span style={{ opacity: .7 }}>✓</span>}
+            </button>
+          );
+        })()}
 
         <button
           onClick={() => setShowCustom(v => !v)}
