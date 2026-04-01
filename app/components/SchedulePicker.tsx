@@ -803,6 +803,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     inBlocker:   { mixHBF: number; overlapMin: number } | null;
   } | null>(null);
   const hasManuallyDragged = useRef(false);
+  const suppressStartReset = useRef(false);
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
   const pickerDateRef = useRef(pickerDate);
@@ -964,10 +965,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (!date || hour === null) return;
     const parts = date.split('-').map(Number);
     const et = new Date(parts[0], parts[1] - 1, parts[2], hour, 0, 0, 0);
+    suppressStartReset.current = true;
     setPendingEatTime(et);
     setEatTimeSet(true);
     hasManuallyDragged.current = false;
     setDismissedConflict(false);
+    setShowFallbackPopup(false);
     setPhase('start_confirm');
     if (isSourdough) {
       const peak = starterPeakHours(kitchenTemp, starterMature);
@@ -977,6 +980,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setFeedTime(ft);
       onFeedTimeChange?.(ft);
     }
+    setTimeout(() => {
+      computeAndApplyRecommendation(blocks, et);
+      setStartComputed(true);
+      onReady?.();
+      suppressStartReset.current = false;
+    }, 0);
   }
 
   // ── Handlers ─────────────────────────────────
@@ -1398,30 +1407,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
         </div>
-      )}
-
-      {eatTimeSet && !startComputed && (
-        <button
-          onClick={() => {
-            hasManuallyDragged.current = false;
-            setShowFallbackPopup(false);
-            setDismissedConflict(false);
-            setPhase('start_confirm');
-            computeAndApplyRecommendation(blocks, pendingEatTime);
-            setStartComputed(true);
-            onReady?.();
-          }}
-          style={{
-            width: '100%', padding: '.85rem 1.25rem',
-            border: 'none', borderRadius: '12px',
-            background: 'var(--terra)', color: '#fff',
-            fontFamily: 'var(--font-dm-sans)', fontSize: '.95rem', fontWeight: 600,
-            cursor: 'pointer', marginTop: '.75rem',
-            boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
-          }}
-        >
-          Recommend fermentation plan →
-        </button>
       )}
 
       {startComputed && (<>
