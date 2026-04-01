@@ -1161,39 +1161,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       {eatTimeSet && (<div>
 
-      {/* Blocker section — moved above slider */}
-      <div style={{ marginBottom: constraintsOpen ? '.75rem' : '1rem' }}>
-      <div
-        onClick={() => setConstraintsOpen(o => !o)}
-        style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          cursor: 'pointer',
-          paddingBottom: constraintsOpen ? '.75rem' : 0,
-          borderBottom: constraintsOpen ? '1px solid var(--border)' : 'none',
-        }}
-      >
-        <div>
-          <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--char)' }}>
-            {t('blockers.heading')}
-          </div>
-          {!constraintsOpen && (
-            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', marginTop: '.15rem' }}>
-              Optional — tap to add unavailable windows and we&apos;ll plan around them
-            </div>
-          )}
+      {/* Blocker section — always visible */}
+      <div style={{ marginBottom: '1rem' }}>
+        <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.6rem' }}>
+          Block your unavailable times — we&apos;ll plan around them.
         </div>
-        <span style={{ fontSize: '12px', color: 'var(--smoke)' }}>
-          {constraintsOpen ? '▾' : '›'}
-        </span>
-      </div>
-
-      </div>
-
-      {constraintsOpen && (
         <div>
-          <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.9rem', lineHeight: 1.5 }}>
-            {t('blockers.sub')}
-          </div>
 
       {/* Quick presets — all toggles on one row */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem', width: '100%', overflow: 'visible', paddingLeft: 0 }}>
@@ -1395,7 +1368,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
         </div>
-      )}
+      </div>
 
       {startComputed && (<>
 
@@ -1548,7 +1521,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           }}
         >
           <span style={{ fontSize: '.8rem', fontWeight: 500, color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
-            Adjust schedule
+            Adjust
           </span>
           <span style={{ fontSize: '12px', color: '#8A7F78' }}>{adjustOpen ? '▾' : '›'}</span>
         </div>
@@ -1826,63 +1799,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         );
       })()}
 
-      {/* ── Your bake timeline ── */}
-      {phases && (() => {
-        const segs = [
-          { key: 'bulk',   h: phases.bulkFermH,   color: '#C4A030', label: 'Bulk' },
-          { key: 'fridge', h: phases.coldRetardH,  color: '#4A7FA5', label: 'Fridge' },
-          { key: 'proof',  h: phases.finalProofH,  color: '#6B7A5A', label: 'Proof' },
-          { key: 'heat',   h: phases.preheatH,     color: '#C4522A', label: 'Preheat' },
-        ].filter(s => s.h > 0);
-        const total = segs.reduce((sum, s) => sum + s.h, 0);
-        if (total === 0) return null;
-        const formatHours = (h: number) => {
-          if (h < 1) return `${Math.round(h * 60)}m`;
-          if (Number.isInteger(h)) return `${h}h`;
-          return `${h.toFixed(1)}h`;
-        };
-        return (
-          <div style={{ marginTop: '1rem' }}>
-            <div style={{
-              fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
-              color: 'var(--smoke)', textTransform: 'uppercase',
-              letterSpacing: '.06em', marginBottom: '.3rem',
-            }}>
-              Your bake timeline
-            </div>
-            <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden', height: '20px' }}>
-              {segs.map(s => {
-                const pct = s.h / total;
-                const showFull = pct >= 0.15;
-                const showShort = !showFull && pct >= 0.07;
-                const hLabel = formatHours(s.h);
-                return (
-                  <div
-                    key={s.key}
-                    title={`${s.label}: ${hLabel}`}
-                    style={{
-                      flex: s.h, background: s.color,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {showFull && (
-                      <span style={{ fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)', color: 'white', whiteSpace: 'nowrap', lineHeight: 1 }}>
-                        {s.label} · {hLabel}
-                      </span>
-                    )}
-                    {showShort && (
-                      <span style={{ fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)', color: 'white', whiteSpace: 'nowrap', lineHeight: 1 }}>
-                        {hLabel}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
 
       {schedule?.scheduleNote && (
         <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'var(--smoke)', textAlign: 'center', marginTop: '8px' }}>
