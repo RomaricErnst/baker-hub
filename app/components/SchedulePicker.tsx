@@ -482,12 +482,12 @@ function SimpleColourBar({
   // Axis ticks every 12h
   const ticks: { x: number; label: string }[] = [];
   for (let h = 12; h < barWin; h += 12) {
-    const t   = new Date(bakeMs - h * 3600000);
-    const wd  = t.toLocaleDateString('en-US', { weekday: 'short' });
-    const hr  = t.getHours();
-    const ap  = hr < 12 ? 'a' : 'p';
-    const h12 = hr === 0 ? 12 : hr > 12 ? hr - 12 : hr;
-    ticks.push({ x: barHToX(h, W, barWin), label: `${wd} ${h12}${ap}` });
+    const t  = new Date(bakeMs - h * 3600000);
+    const wd = t.toLocaleDateString('en-US', { weekday: 'short' });
+    const hr = t.getHours();
+    const timeLabel = hr === 0 ? 'midnight' : hr === 12 ? 'noon'
+      : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
+    ticks.push({ x: barHToX(h, W, barWin), label: `${wd} ${timeLabel}` });
   }
 
   // Status — uses dynamic zone boundaries
