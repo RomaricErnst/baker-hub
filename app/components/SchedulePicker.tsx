@@ -774,15 +774,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [customTo, setCustomTo] = useState('');
   const [isNarrow, setIsNarrow] = useState(false);
   const [blockerNote, setBlockerNote] = useState<string | null>(null);
-  const [pickerDate, setPickerDate] = useState<string>(() => {
-    if (alreadySet) {
-      const d = eatTime!;
-      const p = (n: number) => String(n).padStart(2, '0');
-      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  const [pickerDateTime, setPickerDateTime] = useState<string>(() => {
+    if (alreadySet && eatTime) {
+      const d = eatTime;
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
     }
-    return '';
+    // Default to today at 6pm
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T18:00`;
   });
-  const [pickerHour, setPickerHour] = useState<number>(() => alreadySet ? eatTime!.getHours() : 18);
   const [dismissedConflict, setDismissedConflict] = useState(false);
 
   // Sourdough state
@@ -806,18 +814,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const suppressStartReset = useRef(false);
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
-  const pickerDateRef = useRef(pickerDate);
-  const pickerHourRef = useRef<number>(pickerHour);
+  const pickerDateTimeRef = useRef<string>(pickerDateTime);
 
   const prefLabel = prefermentType === 'poolish' ? 'Make Poolish'
     : prefermentType === 'biga' ? 'Make Biga'
     : (prefermentType === 'levain' || isSourdough) ? 'Feed Starter'
     : 'Make Preferment';
 
-  function updateEatTime(dateStr: string, hour: number) {
-    if (!dateStr) return;
-    const parts = dateStr.split('-').map(Number);
-    const d = new Date(parts[0], parts[1] - 1, parts[2], hour, 0, 0, 0);
+  function updateEatTime(dt: string) {
+    if (!dt || dt.length < 16) return;
+    const [datePart, timePart] = dt.split('T');
+    const [yyyy, mm, dd] = datePart.split('-').map(Number);
+    const [hh, mi] = timePart.split(':').map(Number);
+    const d = new Date(yyyy, mm - 1, dd, hh, mi, 0, 0);
     setPendingEatTime(d);
     setEatTimeSet(true);
   }
@@ -960,11 +969,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Phase transitions ────────────────────────
   function confirmBakeTime() {
-    const date = pickerDateRef.current;
-    const hour = pickerHourRef.current;
-    if (!date || hour === null) return;
-    const parts = date.split('-').map(Number);
-    const et = new Date(parts[0], parts[1] - 1, parts[2], hour, 0, 0, 0);
+    const dt = pickerDateTimeRef.current;
+    if (!dt || dt.length < 16) return;
+    const [datePart, timePart] = dt.split('T');
+    const [yyyy, mm, dd] = datePart.split('-').map(Number);
+    const [hh, mi] = timePart.split(':').map(Number);
+    const et = new Date(yyyy, mm - 1, dd, hh, mi, 0, 0);
     suppressStartReset.current = true;
     setPendingEatTime(et);
     setEatTimeSet(true);
@@ -1070,38 +1080,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <div style={{ fontSize: '.74rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
           {t('bakeTimeSub')}
         </div>
-        <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center' }}>
-          <input
-            type="date"
-            value={pickerDate}
-            onChange={e => {
-              const newDate = e.target.value;
-              pickerDateRef.current = newDate;
-              setPickerDate(newDate);
-              if (newDate) updateEatTime(newDate, pickerHour);
-              if (pickerHour !== null) { confirmBakeTime(); }
-            }}
-            style={{ ...INPUT_STYLE, flex: 2, width: undefined }}
-          />
-          <select
-            value={pickerHour}
-            onChange={e => {
-              const h = Number(e.target.value);
-              pickerHourRef.current = h;
-              setPickerHour(h);
-              if (pickerDate) updateEatTime(pickerDate, h);
-              if (pickerDate !== '') { confirmBakeTime(); }
-            }}
-            style={{
-              ...INPUT_STYLE, width: 'auto', flex: 1,
-              appearance: 'none' as React.CSSProperties['appearance'],
-            }}
-          >
-            {Array.from({ length: 24 }, (_, h) => (
-              <option key={h} value={h}>{hourLabel(h)}</option>
-            ))}
-          </select>
-        </div>
+        <input
+          type="datetime-local"
+          value={pickerDateTime}
+          onChange={e => {
+            const dt = e.target.value;
+            pickerDateTimeRef.current = dt;
+            setPickerDateTime(dt);
+            updateEatTime(dt);
+            if (dt.length >= 16) { confirmBakeTime(); }
+          }}
+          style={{ ...INPUT_STYLE, width: '100%' }}
+        />
       </div>
 
       {/* Phase 2 content — only once bake time is set */}
