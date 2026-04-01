@@ -1082,6 +1082,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
         <input
           type="datetime-local"
+          step={900}
           value={pickerDateTime}
           onChange={e => {
             const dt = e.target.value;
@@ -1289,6 +1290,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 </div>
                 <input
                   type="datetime-local"
+                  step={900}
                   value={customFrom}
                   onChange={e => setCustomFrom(e.target.value)}
                   style={{
@@ -1305,6 +1307,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 </div>
                 <input
                   type="datetime-local"
+                  step={900}
                   value={customTo}
                   onChange={e => setCustomTo(e.target.value)}
                   style={{
