@@ -417,7 +417,7 @@ function findOptimalPosition(
 
 // ── Simple colour bar (Simple mode only) ──────
 const BAR_PAD = 14;
-const BAR_SVG_H = 72;
+const BAR_SVG_H = 80;
 const BAR_Y = 36;
 const BAR_H = 18;
 const BAR_AXIS_Y = 60;
@@ -673,9 +673,9 @@ function SimpleColourBar({
             <>
               <polygon points={`${bx - 6},${BAR_AXIS_Y} ${bx},${BAR_AXIS_Y - 10} ${bx + 6},${BAR_AXIS_Y}`}
                 fill="#C4522A" />
-              <text x={bx - 2} y={BAR_AXIS_Y + 12} fontSize={9} fill="#C4522A"
-                fontFamily="DM Mono, monospace" textAnchor="end">
-                {fmtDT(eatTime)}
+              <text x={bx} y={BAR_AXIS_Y + 12} fontSize={9} fill="#C4522A"
+                fontFamily="DM Mono, monospace" textAnchor="middle">
+                Bake
               </text>
             </>
           );
