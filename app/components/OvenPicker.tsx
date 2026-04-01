@@ -65,9 +65,6 @@ export default function OvenPicker({ bakeType, selected, onSelect }: OvenPickerP
             <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.45 }}>
               {displayDesc}
             </div>
-            {isSelected && (
-              <div style={{ marginTop: '.5rem', color: 'var(--terra)', fontSize: '.8rem', fontWeight: 600 }}>✓</div>
-            )}
           </div>
         );
       })}

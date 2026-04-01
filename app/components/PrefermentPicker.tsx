@@ -109,7 +109,6 @@ export default function PrefermentPicker({
                   <div style={{ fontWeight: 600, fontSize: '.88rem', color: 'var(--char)' }}>
                     {isFr ? pData.nameFr : pData.name}
                   </div>
-                  {isSelected && <span style={{ color: 'var(--terra)', fontSize: '.85rem', flexShrink: 0 }}>✓</span>}
                 </div>
 
                 {/* Description */}

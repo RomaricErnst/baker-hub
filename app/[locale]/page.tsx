@@ -258,10 +258,10 @@ export default function Home() {
   const [avpnOpen, setAvpnOpen] = useState(false);
 
   // Step 3 — oven
-  const [ovenType, setOvenType] = useState<AnyOvenType>('home_oven_steel');
+  const [ovenType, setOvenType] = useState<AnyOvenType | null>(null);
 
   // Step 4 — mixer
-  const [mixerType, setMixerType] = useState<MixerType>('hand');
+  const [mixerType, setMixerType] = useState<MixerType | null>(null);
 
   // Step 5 — schedule + yeast
   const [startTime, setStartTime] = useState<Date>(() => {
@@ -269,7 +269,7 @@ export default function Home() {
   });
   const [eatTime, setEatTime] = useState<Date | null>(null);
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
-  const [yeastType, setYeastType] = useState<YeastType>('instant');
+  const [yeastType, setYeastType] = useState<YeastType | null>(null);
 
   // Step 6 — climate
   const [kitchenTemp, setKitchenTemp] = useState(22);
@@ -368,9 +368,11 @@ export default function Home() {
   }, [bakeType, styleKey]);
 
   // ── Computed ──────────────────────────────
-  const ovenData = bakeType === 'bread'
-    ? BREAD_OVEN_TYPES[ovenType as BreadOvenType]
-    : OVEN_TYPES[ovenType as OvenType];
+  const ovenData = ovenType
+    ? bakeType === 'bread'
+      ? BREAD_OVEN_TYPES[ovenType as BreadOvenType]
+      : OVEN_TYPES[ovenType as OvenType]
+    : undefined;
   const preheatMin = ovenData?.preheatMin ?? 30;
 
   const hasNightBlocker = blocks.some(b =>
@@ -379,6 +381,7 @@ export default function Home() {
 
   const schedule = useMemo(() => {
     if (!eatTime || startTime >= eatTime) return null;
+    if (!mixerType) return null;
     return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey ?? 'neapolitan');
   }, [startTime, eatTime, blocks, kitchenTemp, preheatMin]);
 
@@ -390,7 +393,7 @@ export default function Home() {
   }, [startTime, prefOffsetH, prefermentType]);
 
   const recipe = useMemo(() => {
-    if (!styleKey || !schedule) return null;
+    if (!styleKey || !schedule || !ovenType || !yeastType) return null;
     try {
       return calculateRecipe(
         styleKey, ovenType as OvenType, numItems, itemWeight,
@@ -421,7 +424,7 @@ export default function Home() {
 
   // Advanced recipe — includes manual hydration/oil/sugar overrides
   const advancedRecipe = useMemo(() => {
-    if (!styleKey || !schedule) return null;
+    if (!styleKey || !schedule || !ovenType || !yeastType) return null;
     try {
       return calculateRecipe(
         styleKey, ovenType as OvenType, numItems, itemWeight,
@@ -502,11 +505,11 @@ export default function Home() {
   function startOver() {
     setBakeType(null); setStyleKey(null);
     setNumItems(2); setItemWeight(270);
-    setOvenType('home_oven_steel'); setMixerType('hand');
+    setOvenType(null); setMixerType(null);
     const now = new Date(); now.setMinutes(0, 0, 0);
     setStartTime(now);
     setEatTime(null);
-    setBlocks([]); setYeastType('instant');
+    setBlocks([]); setYeastType(null);
     setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(4);
     setShowResults(false); setActiveStep(1);
     setYeastMultiplier(1.0); setAppliedMultiplier(1.0);
@@ -529,7 +532,7 @@ export default function Home() {
   }
 
   async function handleSaveRecipe(mode: 'simple' | 'custom') {
-    if (!styleKey || !schedule) return;
+    if (!styleKey || !schedule || !ovenType || !mixerType || !yeastType) return;
     const activeRecipe = mode === 'custom' ? (advancedDisplayRecipe ?? advancedRecipe) : (displayRecipe ?? recipe);
     if (!activeRecipe) return;
     setSaveStatus('saving');
@@ -1016,7 +1019,7 @@ export default function Home() {
             <StepCard
               num={6} title={t('steps.6.title')}
               activeStep={activeStep}
-              summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
+              summary={mixerType ? `${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}` : undefined}
               onEdit={() => setActiveStep(6)}
             >
               <MixerPicker
@@ -1032,7 +1035,7 @@ export default function Home() {
             <StepCard
               num={7} title={t('steps.7.title')}
               activeStep={activeStep}
-              summary={<>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name}</>}
+              summary={yeastType ? <>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name}</> : undefined}
               onEdit={() => setActiveStep(7)}
             >
               <div>
@@ -1263,7 +1266,7 @@ export default function Home() {
                         itemWeight={itemWeight}
                         styleName={ALL_STYLES[styleKey!].name}
                         styleEmoji={ALL_STYLES[styleKey!].emoji}
-                        mixerType={mixerType}
+                        mixerType={mixerType!}
                         kitchenTemp={kitchenTemp}
                         fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
                         totalColdHours={schedule ? schedule.totalColdHours : 0}
@@ -1401,7 +1404,7 @@ export default function Home() {
                           preheatMin={preheatMin}
                           startTime={startTime}
                           eatTime={eatTime!}
-                          mixerType={mixerType}
+                          mixerType={mixerType!}
                           styleKey={styleKey ?? ''}
                           oil={recipe?.oil ?? 0}
                           hydration={recipe?.hydration ?? 0}
@@ -1676,7 +1679,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={6} title={t('steps.6.title')}
               activeStep={advancedStep}
-              summary={`${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}`}
+              summary={mixerType ? `${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}` : undefined}
               onEdit={() => setAdvancedStep(6)}
             >
               <MixerPicker
@@ -1733,7 +1736,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={8} title={t('steps.7.title')}
               activeStep={advancedStep}
-              summary={<>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{YEAST_TYPES[yeastType].shortName}</span></>}
+              summary={yeastType ? <>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{YEAST_TYPES[yeastType].shortName}</span></> : undefined}
               onEdit={() => setAdvancedStep(8)}
             >
               <div>
@@ -1959,7 +1962,7 @@ export default function Home() {
                           >+</button>
                         </div>
                         <div style={{ fontSize: '.72rem', color: v > 0 && isHighTemp ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
-                          {oilGuidance(v, ovenType, styleKey ?? '')}
+                          {oilGuidance(v, ovenType ?? '', styleKey ?? '')}
                         </div>
                       </div>
                     );
@@ -1967,7 +1970,7 @@ export default function Home() {
                   {/* Sugar stepper */}
                   {(() => {
                     const v = manualSugar ?? 0;
-                    const sg = sugarGuidance(v, ovenType);
+                    const sg = sugarGuidance(v, ovenType ?? '');
                     const STEP = 0.5;
                     return (
                       <div style={{ flex: 1 }}>
@@ -2156,7 +2159,7 @@ export default function Home() {
                         itemWeight={itemWeight}
                         styleName={ALL_STYLES[styleKey!].name}
                         styleEmoji={ALL_STYLES[styleKey!].emoji}
-                        mixerType={mixerType}
+                        mixerType={mixerType!}
                         kitchenTemp={kitchenTemp}
                         fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
                         totalColdHours={schedule ? schedule.totalColdHours : 0}
@@ -2173,7 +2176,7 @@ export default function Home() {
                           preheatMin={preheatMin}
                           startTime={startTime}
                           eatTime={eatTime!}
-                          mixerType={mixerType}
+                          mixerType={mixerType!}
                           styleKey={styleKey ?? ''}
                           oil={advancedRecipe?.oil ?? 0}
                           hydration={advancedRecipe?.hydration ?? 0}

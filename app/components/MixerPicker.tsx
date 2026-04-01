@@ -79,9 +79,6 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
                 {mixer.folds}× folds
               </span>
             </div>
-            {isSelected && (
-              <div style={{ marginTop: '.5rem', color: 'var(--terra)', fontSize: '.8rem', fontWeight: 600 }}>✓</div>
-            )}
           </div>
         );
       })}
