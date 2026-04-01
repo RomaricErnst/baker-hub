@@ -289,7 +289,7 @@ export default function Home() {
   const [feedTime, setFeedTime] = useState<Date | null>(null);
 
   // Advanced mode manual overrides
-  const [prefermentType, setPrefermentType] = useState<PrefermentType>('none');
+  const [prefermentType, setPrefermentType] = useState<PrefermentType | null>('none');
   const [prefermentFlourPct, setPrefermentFlourPct] = useState<number | undefined>(undefined);
   const [prefOffsetH, setPrefOffsetH] = useState<number>(0);
 
@@ -424,7 +424,7 @@ export default function Home() {
       return calculateRecipe(
         styleKey, ovenType as OvenType, numItems, itemWeight,
         kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom',
-        manualHydration, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride,
+        manualHydration, manualOil, manualSugar, flourBlend, effPref, priorityOverride,
         prefermentFlourPct,
       );
     } catch {
@@ -560,6 +560,7 @@ export default function Home() {
   const simpleRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime);
   const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend);
   const canGenerate = tab === 'simple' ? simpleRequiredDone : customRequiredDone;
+  const effPref: PrefermentType = prefermentType ?? 'none';
 
   const simpleStepsCompleted = [
     !!bakeType,
@@ -629,7 +630,7 @@ export default function Home() {
             <div
               onClick={() => {
                 if (tab === 'custom') {
-                  customOnlyStateRef.current = { flourBlend, hydration: manualHydration, oil: manualOil, sugar: manualSugar, prefermentType, prefermentFlourPct };
+                  customOnlyStateRef.current = { flourBlend, hydration: manualHydration, oil: manualOil, sugar: manualSugar, prefermentType: effPref, prefermentFlourPct };
                   setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
                 }
                 setTab('simple'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
@@ -681,9 +682,13 @@ export default function Home() {
                     setManualSugar(customOnlyStateRef.current.sugar);
                     setPrefermentType(customOnlyStateRef.current.prefermentType);
                     setPrefermentFlourPct(customOnlyStateRef.current.prefermentFlourPct);
-                  } else if (styleKey) {
-                    const s = ALL_STYLES[styleKey];
-                    setManualHydration(s.hydration); setManualOil(s.oil); setManualSugar(s.sugar);
+                  } else {
+                    // First time entering Custom — no pre-selection for preferment
+                    setPrefermentType(null as any);
+                    if (styleKey) {
+                      const s = ALL_STYLES[styleKey];
+                      setManualHydration(s.hydration); setManualOil(s.oil); setManualSugar(s.sugar);
+                    }
                   }
                 }
                 setTab('custom'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
@@ -1407,7 +1412,7 @@ export default function Home() {
                           feedTime={feedTime}
                           kitchenTemp={kitchenTemp}
                           prefStartTime={prefStartTime}
-                          prefermentType={prefermentType}
+                          prefermentType={effPref}
                           onStartBaking={() => { /* Baking mode — future feature */ }}
                         />
                       )}
@@ -1813,11 +1818,11 @@ export default function Home() {
                 idPrefix="adv-step"
                 num={9} title="Preferment method"
                 activeStep={advancedStep}
-                summary={prefermentType !== 'none' ? `${PREFERMENT_TYPES[prefermentType].emoji} ${PREFERMENT_TYPES[prefermentType].name}` : '⚡ Direct'}
+                summary={effPref !== 'none' ? `${PREFERMENT_TYPES[effPref].emoji} ${PREFERMENT_TYPES[effPref].name}` : '⚡ Direct'}
                 onEdit={() => setAdvancedStep(9)}
               >
                 <PrefermentPicker
-                  selected={prefermentType}
+                  selected={effPref}
                   onSelect={pt => {
                     setPrefermentType(pt);
                     if (pt === 'none') advanceAdv(9);
@@ -2160,7 +2165,7 @@ export default function Home() {
                         totalColdHours={schedule ? schedule.totalColdHours : 0}
                         mode={tab}
                         bakeType={bakeType ?? 'pizza'}
-                        prefermentType={prefermentType}
+                        prefermentType={effPref}
                         priorityOverride={priorityOverride}
                         onPriorityOverride={v => setPriorityOverride(v)}
                       />
@@ -2179,7 +2184,7 @@ export default function Home() {
                           feedTime={feedTime}
                           kitchenTemp={kitchenTemp}
                           prefStartTime={prefStartTime}
-                          prefermentType={prefermentType}
+                          prefermentType={effPref}
                           onStartBaking={() => { /* Baking mode — future feature */ }}
                         />
                       )}
