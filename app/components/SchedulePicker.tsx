@@ -791,7 +791,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
     return 0;
   });
-  const [showTimePicker, setShowTimePicker] = useState(false);
   const [dismissedConflict, setDismissedConflict] = useState(false);
 
   // Sourdough state
@@ -830,7 +829,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setPickerDateTime(dt);
     updateEatTime(dt);
     if (date) { confirmBakeTime(); }
-    setShowTimePicker(false);
   }
 
   function updateEatTime(dt: string) {
@@ -1104,64 +1102,30 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             }}
             style={{ ...INPUT_STYLE, flex: 2, width: undefined }}
           />
-          {/* Time — custom pill picker */}
-          <div style={{ flex: 1, position: 'relative' }}>
-            <button
-              onClick={() => setShowTimePicker(v => !v)}
-              style={{
-                ...INPUT_STYLE, width: '100%', textAlign: 'left', cursor: 'pointer',
-                background: 'var(--warm)', border: '1.5px solid var(--border)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}
-            >
-              <span>{`${pickerHour === 0 ? 12 : pickerHour > 12 ? pickerHour - 12 : pickerHour}:${String(pickerMinute).padStart(2,'0')} ${pickerHour < 12 ? 'am' : 'pm'}`}</span>
-              <span style={{ fontSize: '10px', color: 'var(--smoke)', marginLeft: '4px' }}>▾</span>
-            </button>
-            {showTimePicker && (
-              <div style={{
-                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
-                background: 'var(--warm)', border: '1.5px solid var(--border)',
-                borderRadius: '12px', padding: '.75rem', marginTop: '4px',
-                boxShadow: '0 4px 16px rgba(26,22,18,0.12)',
-              }}>
-                {/* Hours */}
-                <div style={{ fontSize: '.65rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.4rem' }}>Hour</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '.75rem' }}>
-                  {Array.from({ length: 24 }, (_, h) => {
-                    const label = h === 0 ? '12am' : h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h-12}pm`;
-                    const active = pickerHour === h;
-                    return (
-                      <button key={h} onClick={() => { setPickerHour(h); if (pickerDate) applyTimePick(pickerDate, h, pickerMinute); }}
-                        style={{
-                          padding: '3px 7px', borderRadius: '8px', fontSize: '.72rem',
-                          fontFamily: 'var(--font-dm-mono)', cursor: 'pointer',
-                          border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                          background: active ? '#FEF4EF' : 'transparent',
-                          color: active ? 'var(--terra)' : 'var(--smoke)',
-                        }}>{label}</button>
-                    );
-                  })}
-                </div>
-                {/* Minutes */}
-                <div style={{ fontSize: '.65rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.4rem' }}>Minute</div>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {[0, 15, 30, 45].map(m => {
-                    const active = pickerMinute === m;
-                    return (
-                      <button key={m} onClick={() => { setPickerMinute(m); if (pickerDate) applyTimePick(pickerDate, pickerHour, m); }}
-                        style={{
-                          flex: 1, padding: '4px 0', borderRadius: '8px', fontSize: '.78rem',
-                          fontFamily: 'var(--font-dm-mono)', cursor: 'pointer',
-                          border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                          background: active ? '#FEF4EF' : 'transparent',
-                          color: active ? 'var(--terra)' : 'var(--smoke)',
-                        }}>{`:${String(m).padStart(2,'0')}`}</button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Time — select with 15-min steps */}
+          <select
+            value={`${pickerHour}:${String(pickerMinute).padStart(2,'0')}`}
+            onChange={e => {
+              const [h, m] = e.target.value.split(':').map(Number);
+              setPickerHour(h);
+              setPickerMinute(m);
+              if (pickerDate) applyTimePick(pickerDate, h, m);
+            }}
+            style={{ ...INPUT_STYLE, flex: 1, width: undefined, appearance: 'none' as React.CSSProperties['appearance'] }}
+          >
+            {Array.from({ length: 96 }, (_, i) => {
+              const h = Math.floor(i / 4);
+              const m = (i % 4) * 15;
+              const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+              const ap = h < 12 ? 'am' : 'pm';
+              const label = `${h12}:${String(m).padStart(2,'0')} ${ap}`;
+              return (
+                <option key={i} value={`${h}:${String(m).padStart(2,'0')}`}>
+                  {label}
+                </option>
+              );
+            })}
+          </select>
         </div>
       </div>
 
