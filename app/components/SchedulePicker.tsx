@@ -733,22 +733,6 @@ function SimpleColourBar({
         </div>
       </div>
 
-      {inBlocker && (
-        <div style={{ fontSize: '.72rem', color: '#7A3A1A',
-          background: '#FEF4EF', borderRadius: '8px',
-          padding: '6px 10px', marginTop: '6px',
-          border: '0.5px solid #F0C4A0', lineHeight: 1.4 }}>
-          Your mix time falls in a busy window — that&apos;s fine if it works for you.
-        </div>
-      )}
-      {!inBlocker && bulkEndInBlocker && (
-        <div style={{ fontSize: '.72rem', color: '#7A5A10',
-          background: '#FEF9F0', borderRadius: '8px',
-          padding: '6px 10px', marginTop: '6px',
-          border: '0.5px solid #F0D9A0', lineHeight: 1.4 }}>
-          Make sure you&apos;re available around {new Date(bakeMs - bulkEndHBF * 3600000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} to continue with your dough.
-        </div>
-      )}
 
     </div>
   );
@@ -1404,9 +1388,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   const e = (bakeMs - b.to.getTime())   / 3600000;
                   return bulkEndHBF > Math.min(s,e) && bulkEndHBF < Math.max(s,e);
                 });
+                const fmtBulkDur = (h: number) => h === 0.5 ? '30min' : h === 0.75 ? '45min' : '1h30';
+                const fmtBulkTime = (hbf: number) => new Date(bakeMs - hbf * 3600000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
                 setBlockerNote(
                   inB ? "Start Dough falls in one of your busy windows — that's fine if it works for you."
-                  : bulkEndInB ? "Bulk fermentation will overlap a busy window — make sure you're free to put the dough in the fridge before then."
+                  : bulkEndInB ? `Your dough needs ~${fmtBulkDur(typicalBulkH)} to rise — be free by ${fmtBulkTime(bulkEndHBF)} to put it in the fridge, or start a bit earlier.`
                   : null
                 );
                 onChange(newStart, pendingEatTime, blocks);
@@ -1450,9 +1436,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   const e = (bakeMs - b.to.getTime())   / 3600000;
                   return bulkEndHBF > Math.min(s,e) && bulkEndHBF < Math.max(s,e);
                 });
+                const fmtBulkDur = (h: number) => h === 0.5 ? '30min' : h === 0.75 ? '45min' : '1h30';
+                const fmtBulkTime = (hbf: number) => new Date(bakeMs - hbf * 3600000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
                 setBlockerNote(
                   inB ? "Start Dough falls in one of your busy windows — that's fine if it works for you."
-                  : bulkEndInB ? "Make sure you're available shortly after to continue with your dough."
+                  : bulkEndInB ? `Your dough needs ~${fmtBulkDur(typicalBulkH)} to rise — be free by ${fmtBulkTime(bulkEndHBF)} to put it in the fridge, or start a bit earlier.`
                   : null
                 );
                 onChange(newStart, pendingEatTime, blocks);
