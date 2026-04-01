@@ -2015,13 +2015,13 @@ export default function Home() {
                 prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
                 onPrefOffsetChange={setPrefOffsetH}
-                onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); setScheduleReady(false); }}
-                onReady={() => setScheduleReady(true)}
+                onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                onReady={() => {}}
               />
             </StepCard>
 
             {/* ── Generate button (setup tab) ── */}
-            {canGenerate && scheduleReady && (
+            {canGenerate && eatTime && (
               <div style={{ marginTop: '1rem' }}>
                 <button
                   onClick={handleGenerate}
