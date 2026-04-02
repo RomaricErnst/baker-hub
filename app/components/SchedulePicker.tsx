@@ -431,7 +431,7 @@ function barXToHBF(x: number, W: number, barWin: number): number {
 }
 
 function SimpleColourBar({
-  eatTime, pendingStart, blocks, onStartChange, hasColdRetard, kitchenTemp,
+  eatTime, pendingStart, blocks, onStartChange, hasColdRetard, kitchenTemp, sweetFrom, sweetTo,
 }: {
   eatTime: Date;
   pendingStart: Date;
@@ -439,6 +439,8 @@ function SimpleColourBar({
   onStartChange: (d: Date) => void;
   hasColdRetard?: boolean;
   kitchenTemp: number;
+  sweetFrom?: number;
+  sweetTo?: number;
 }) {
   const barWin       = hasColdRetard ? 72 : 48;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -464,11 +466,11 @@ function SimpleColourBar({
   const diamondX   = barHToX(Math.max(0.5, Math.min(barWin - 0.5, effectiveMixHBF)), W, barWin);
   const barCY      = BAR_Y + BAR_H / 2; // diamond center y
 
-  // Zone boundaries — wider for cold retard schedules
-  const sweetL_HBF = hasColdRetard ? 52 : 26;
-  const sweetR_HBF = hasColdRetard ? 20 : 14;
-  const goldL_HBF  = hasColdRetard ? 62 : 36;
-  const goldR2_HBF = hasColdRetard ? 10 : 8;
+  // Zone boundaries — driven by style+timing aware sweet zone props
+  const sweetL_HBF = sweetFrom ?? (hasColdRetard ? 52 : 26);
+  const sweetR_HBF = sweetTo   ?? (hasColdRetard ? 20 : 14);
+  const goldL_HBF  = sweetL_HBF + 10;
+  const goldR2_HBF = Math.max(0.5, sweetR_HBF - 6);
 
   // Colour zones: [fromHBF (left), toHBF (right), fill, label]
   const zones = [
@@ -491,11 +493,17 @@ function SimpleColourBar({
   }
 
   // Status — uses dynamic zone boundaries
-  const inZone   = mixOffsetH >= sweetR_HBF && mixOffsetH <= sweetL_HBF;
-  const nearZone = mixOffsetH >= goldR2_HBF  && mixOffsetH <= goldL_HBF;
-  const status   = inZone   ? '🟢 Dough ready at bake'
-    : nearZone ? '🟡 Close — slight risk'
-    : '🔴 Adjust timing';
+  const inZone    = mixOffsetH >= sweetR_HBF && mixOffsetH <= sweetL_HBF;
+  const tooEarly  = mixOffsetH > goldL_HBF;
+  const tooLate   = mixOffsetH < goldR2_HBF;
+  const nearEarly = !inZone && mixOffsetH > sweetL_HBF;
+  const nearLate  = !inZone && mixOffsetH < sweetR_HBF && !tooLate;
+  const status    = inZone
+    ? '🟢 Dough ready at bake'
+    : nearEarly ? '🟡 A little early — dough will be great'
+    : nearLate  ? '🟡 A little late — dough will still work'
+    : tooEarly  ? '🔴 Too early — risk of over-fermentation'
+    : '🔴 Too late — risk of under-fermentation';
 
   // Pointer handling
   function getSvgX(e: React.PointerEvent): number {
@@ -712,7 +720,7 @@ function SimpleColourBar({
           <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
             {fmtDT(pendingStart)}
           </div>
-          <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: inZone ? '#4A7A3A' : nearZone ? '#C49A28' : '#C4522A' }}>
+          <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: inZone ? '#4A7A3A' : (nearEarly || nearLate) ? '#C49A28' : '#C4522A' }}>
             {status}
           </div>
         </div>
@@ -1499,6 +1507,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               blocks={blocks}
               hasColdRetard={hasColdRetard}
               kitchenTemp={kitchenTemp}
+              sweetFrom={renderSweetFrom}
+              sweetTo={renderSweetTo}
               onStartChange={(newStart) => {
                 setPendingStart(newStart);
                 const bakeMs = pendingEatTime.getTime();
@@ -1844,9 +1854,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const doughZoneTo   = renderSweetTo;
         const mixInZone   = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
         const mixTooEarly = mixOffsetH > doughZoneFrom;
-        const mixStatus   = mixInZone ? '🟢 Dough ready at bake'
-          : mixTooEarly ? '🔴 Too early — over-fermented'
-          : '🔴 Too late — under-fermented';
+        const mixStatus   = mixInZone
+          ? '🟢 Dough ready at bake'
+          : mixTooEarly
+          ? '🟡 A little early — dough will be great'
+          : '🟡 A little late — dough will still work';
         const bakeMs = pendingEatTime.getTime();
         const mixInBlocker = !mixInZone && mixOffsetH > 0 && blocks.some(b => {
           const s2 = (bakeMs - b.from.getTime()) / 3600000;
