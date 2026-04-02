@@ -17,6 +17,8 @@ export interface FermentChartProps {
   prefInFridge?: boolean;   // show fridge climate note in pref card
   hasColdRetard?: boolean;  // widens bell and sweet zone for cold schedules
   sweetCenterH?: number;    // actual sweet center HBF for this style+window — sets dough peak
+  sweetFromH?: number;      // upper sweet zone boundary HBF
+  sweetToH?: number;        // lower sweet zone boundary HBF
   nowHBF?: number;          // hours before bake right now — used to clamp drag
   phases?: {
     bulkFermH: number;
@@ -125,7 +127,8 @@ export default function FermentChart({
   eatTime, prefermentType, kitchenTemp,
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange, onDragStart, onDragEnd,
-  windowH, prefInFridge, hasColdRetard, sweetCenterH, phases, scheduleNote,
+  windowH, prefInFridge, hasColdRetard, sweetCenterH, sweetFromH, sweetToH,
+  nowHBF = 999, phases, scheduleNote,
   recommendedMixHBF, showZoneLabels,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
@@ -193,9 +196,9 @@ export default function FermentChart({
   const doughPeakHBF    = effectiveMixHBF - DOUGH_SWEET_CENTER;
   const prefPeakHBF     = prefStartAbsHBF - optH;
 
-  // Sweet-spot zones (cold retard: 20–52h; RT: 14–26h)
-  const doughZoneFrom = hasColdRetard ? 52 : 26;
-  const doughZoneTo   = hasColdRetard ? 20 : 14;
+  // Sweet-spot zones — driven by style+timing aware props
+  const doughZoneFrom = sweetFromH ?? (hasColdRetard ? 52 : 26);
+  const doughZoneTo   = sweetToH   ?? (hasColdRetard ? 20 : 14);
   const prefZoneFrom  = hasPref ? effectiveMixHBF + optH + 3 : 0;
   const prefZoneTo    = hasPref ? effectiveMixHBF + optH - 3 : 0;
 
@@ -255,11 +258,11 @@ export default function FermentChart({
     e.preventDefault();
     const x = getSvgX(e);
     if (dragging === 'mix') {
-      // Free visual movement only — no blocker check, no onMixChange during drag
-      const h = Math.max(3, Math.min(WH - 2, snap15(xToHBF(x, W, WH))));
+      const h = Math.max(1, Math.min(nowHBF - 0.25, snap15(xToHBF(x, W, WH))));
       setLocalMixHBF(h);
     } else {
-      const abs = Math.max(mixOffsetH + 0.25, Math.min(WH - 2, snap15(xToHBF(x, W, WH))));
+      const maxAbs = Math.min(WH - 2, nowHBF - 0.25);
+      const abs = Math.max(mixOffsetH + 0.25, Math.min(maxAbs, snap15(xToHBF(x, W, WH))));
       onPrefChange(abs - mixOffsetH);
     }
   }

@@ -96,28 +96,33 @@ function hourLabel(h: number): string {
 }
 
 // ── Per-style optimal fermentation defaults ───
-// coldH = hours in fridge at 4°C, rtH = room-temperature hours
-// preferredColdH = longer cold option for styles that benefit from extra time
-// Source: Craig's model, Definition B (70-80% max rise, home-baker forgiving)
-const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; preferredColdH?: number }> = {
+// coldH values aligned with utils.ts buildSchedule (source of truth)
+// preferredColdH = longer cold option when window allows
+// minColdH = minimum cold retard that's actually beneficial for this style
+// rtH = minimum RT hours needed at the end
+const STYLE_FERM_DEFAULTS: Record<string, {
+  coldH: number; rtH: number;
+  preferredColdH?: number; minColdH?: number;
+  coldHRequired?: boolean;
+}> = {
   // Pizza
-  neapolitan:      { coldH: 24, rtH: 2,  preferredColdH: 48 },
-  newyork:         { coldH: 48, rtH: 2,  preferredColdH: 72 },
-  roman:           { coldH: 0,  rtH: 8  },
-  pan:             { coldH: 0,  rtH: 6  },
-  sourdough:       { coldH: 24, rtH: 4,  preferredColdH: 48 },
+  neapolitan:    { coldH: 24, rtH: 2, preferredColdH: 48, minColdH: 12 },
+  newyork:       { coldH: 24, rtH: 2, preferredColdH: 48, minColdH: 12 },
+  roman:         { coldH: 0,  rtH: 8, minColdH: 0 },
+  pan:           { coldH: 0,  rtH: 6, minColdH: 0 },
+  sourdough:     { coldH: 0,  rtH: 4, minColdH: 0 },
   // Bread
-  pain_campagne:   { coldH: 12, rtH: 4  },
-  pain_levain:     { coldH: 24, rtH: 4  },
-  baguette:        { coldH: 24, rtH: 2  },
-  pain_complet:    { coldH: 12, rtH: 3  },
-  pain_seigle:     { coldH: 0,  rtH: 4  },
-  fougasse:        { coldH: 0,  rtH: 3  },
-  brioche:         { coldH: 0,  rtH: 4  },
-  pain_mie:        { coldH: 0,  rtH: 3  },
-  pain_viennois:   { coldH: 0,  rtH: 3  },
+  pain_campagne: { coldH: 18, rtH: 4, minColdH: 8 },
+  pain_levain:   { coldH: 0,  rtH: 4, minColdH: 0 },
+  baguette:      { coldH: 16, rtH: 2, minColdH: 8 },
+  pain_complet:  { coldH: 12, rtH: 3, minColdH: 6 },
+  pain_seigle:   { coldH: 0,  rtH: 4, minColdH: 0 },
+  fougasse:      { coldH: 0,  rtH: 3, minColdH: 0 },
+  brioche:       { coldH: 8,  rtH: 4, minColdH: 0, coldHRequired: true },
+  pain_mie:      { coldH: 6,  rtH: 3, minColdH: 0, coldHRequired: true },
+  pain_viennois: { coldH: 6,  rtH: 3, minColdH: 0, coldHRequired: true },
 };
-const FERM_FALLBACK: { coldH: number; rtH: number } = { coldH: 0, rtH: 8 };
+const FERM_FALLBACK: { coldH: number; rtH: number; minColdH?: number } = { coldH: 0, rtH: 4, minColdH: 0 };
 
 // ── Reasonable hours constraint ───────────────
 // Never suggest a start between 00:00 and 07:00 — push to 07:00 that morning.
@@ -431,7 +436,7 @@ function barXToHBF(x: number, W: number, barWin: number): number {
 }
 
 function SimpleColourBar({
-  eatTime, pendingStart, blocks, onStartChange, hasColdRetard, kitchenTemp, sweetFrom, sweetTo,
+  eatTime, pendingStart, blocks, onStartChange, hasColdRetard, kitchenTemp, sweetFrom, sweetTo, nowHBF,
 }: {
   eatTime: Date;
   pendingStart: Date;
@@ -441,6 +446,7 @@ function SimpleColourBar({
   kitchenTemp: number;
   sweetFrom?: number;
   sweetTo?: number;
+  nowHBF?: number;
 }) {
   const barWin       = hasColdRetard ? 72 : 48;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -519,7 +525,9 @@ function SimpleColourBar({
   function onPointerMove(e: React.PointerEvent) {
     if (!dragging) return;
     e.preventDefault();
-    const hbf = Math.round(barXToHBF(getSvgX(e), W, barWin) * 4) / 4;
+    const rawHbf = Math.round(barXToHBF(getSvgX(e), W, barWin) * 4) / 4;
+    const maxHBF = nowHBF ? Math.min(barWin - 0.5, nowHBF - 0.25) : barWin - 0.5;
+    const hbf = Math.max(0.5, Math.min(maxHBF, rawHbf));
     lastHBFRef.current = hbf;
     // Update local visual only — no applyBlockerOverlap during drag (free movement)
     setLocalHBF(hbf);
@@ -888,35 +896,56 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const hasColdLocal = expectedColdH > 0;
     setRecommendedColdH(expectedColdH);
 
-    // Style-aware sweet zones from STYLE_FERM_DEFAULTS
-    // sweetFrom = upper bound given available window
-    // sweetTo   = minimum acceptable fermentation
+    const minColdH = defaults.minColdH ?? 0;
+    const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp) : prefOffsetH;
+    const poolishMinH = 3;
+
+    // Sweet zones: sweetFrom = maximize cold, sweetTo = style minimum cold
     const sweetFromRaw = hasColdLocal
       ? expectedColdH + defaults.rtH
       : defaults.rtH + 4;
     const sweetToRaw = hasColdLocal
-      ? Math.max(defaults.coldH * 0.7 + defaults.rtH, minTotalRTLocal + 1)
+      ? Math.max(minColdH + defaults.rtH, minTotalRTLocal + 1)
       : minTotalRTLocal + 1;
-    const sweetCenterRaw = (sweetFromRaw + sweetToRaw) / 2;
+    const sweetFrom = Math.min(sweetFromRaw, nowHBF - 0.25);
+    const sweetTo   = Math.min(sweetToRaw,   sweetFrom - 0.5);
 
-    // Clamp so mix diamond never falls in the past
-    const sweetFrom   = Math.min(sweetFromRaw,   nowHBF - 0.25);
-    const sweetTo     = Math.min(sweetToRaw,     nowHBF - 0.5);
-    const sweetCenter = Math.min(sweetCenterRaw, nowHBF - 0.5);
+    // Ideal mix = sweetFrom (maximize cold retard)
+    const idealMixHBF = sweetFrom;
+    const idealPrefOffset = Math.min(rawPrefOffset, nowHBF - idealMixHBF - 0.25);
 
-    // Short window note — RT-only tight windows only
-    // Cold retard reduction already covered by scheduleNote from buildSchedule
+    // Poolish priority: baker chose it — try to keep it even at cost of less cold
+    let finalMixHBF: number;
+    let finalPrefOffset: number;
+
+    if (!hasPrefActive || idealPrefOffset >= poolishMinH) {
+      // Poolish fits at ideal position — or no poolish
+      finalMixHBF = idealMixHBF;
+      finalPrefOffset = idealPrefOffset;
+    } else {
+      // Reduce mix HBF to make room for minimum poolish
+      const reducedMixHBF = Math.max(minTotalRTLocal, nowHBF - poolishMinH - 0.25);
+      const reducedPrefOffset = Math.min(rawPrefOffset, nowHBF - reducedMixHBF - 0.25);
+      if (reducedPrefOffset >= poolishMinH && reducedMixHBF >= minTotalRTLocal) {
+        finalMixHBF = reducedMixHBF;
+        finalPrefOffset = reducedPrefOffset;
+      } else {
+        // Truly no room — suppress poolish, keep ideal mix
+        finalMixHBF = idealMixHBF;
+        finalPrefOffset = 0;
+      }
+    }
+
+    const sweetCenter = Math.min(finalMixHBF, nowHBF - 0.5);
+
     if (!hasColdLocal && totalWindowH < sweetToRaw) {
       setGuardNote('Tight schedule — start as early as possible. Same-day dough can still be great.');
     } else {
       setGuardNote(null);
     }
 
-    // Poolish offset — clamp so it never starts in the past
-    const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp) : prefOffsetH;
-    const maxPrefOffset = Math.max(0.25, nowHBF - sweetCenter - 0.25);
     const optimalPrefOffset = hasPrefActive
-      ? Math.min(rawPrefOffset, maxPrefOffset)
+      ? Math.max(0.25, finalPrefOffset)
       : prefOffsetH;
     if (hasPrefActive) {
       setPrefOffsetH(optimalPrefOffset);
@@ -1009,13 +1038,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const hasColdRetard = (schedule?.coldRetardHours ?? 0) > 0;
   const _sfDef = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
   const _minTotalRT = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0 + (preheatMin / 60);
+  const _minColdH = _sfDef.minColdH ?? 0;
   const renderSweetFrom = recommendedColdH > 0
     ? recommendedColdH + _sfDef.rtH
     : _sfDef.rtH + 4;
-  const renderSweetTo = recommendedColdH > 0
-    ? Math.max(_sfDef.coldH * 0.7 + _sfDef.rtH, _minTotalRT + 1)
+  const renderSweetToRaw = recommendedColdH > 0
+    ? Math.max(_minColdH + _sfDef.rtH, _minTotalRT + 1)
     : _minTotalRT + 1;
-  const renderSweetCenter = (renderSweetFrom + renderSweetTo) / 2;
+  const renderSweetTo = Math.min(renderSweetToRaw, renderSweetFrom - 0.5);
+  const renderSweetCenter = recommendedColdH > 0 ? renderSweetFrom : (renderSweetFrom + renderSweetTo) / 2;
   const prefGoesInFridge = hasPrefActive && (
     prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26)
   );
@@ -1531,6 +1562,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               kitchenTemp={kitchenTemp}
               sweetFrom={renderSweetFrom}
               sweetTo={renderSweetTo}
+              nowHBF={(pendingEatTime.getTime() - Date.now()) / 3600000}
               onStartChange={(newStart) => {
                 setPendingStart(newStart);
                 const bakeMs = pendingEatTime.getTime();
@@ -1579,6 +1611,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               onDragStart={() => setIsDragging(true)}
               onDragEnd={() => setIsDragging(false)}
               sweetCenterH={renderSweetCenter}
+              sweetFromH={renderSweetFrom}
+              sweetToH={renderSweetTo}
               nowHBF={(pendingEatTime.getTime() - Date.now()) / 3600000}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
