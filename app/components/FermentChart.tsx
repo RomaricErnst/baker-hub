@@ -17,6 +17,7 @@ export interface FermentChartProps {
   prefInFridge?: boolean;   // show fridge climate note in pref card
   hasColdRetard?: boolean;  // widens bell and sweet zone for cold schedules
   sweetCenterH?: number;    // actual sweet center HBF for this style+window — sets dough peak
+  nowHBF?: number;          // hours before bake right now — used to clamp drag
   phases?: {
     bulkFermH: number;
     coldRetardH: number;

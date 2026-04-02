@@ -768,6 +768,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [isNarrow, setIsNarrow] = useState(false);
   const [blockerNote, setBlockerNote] = useState<string | null>(null);
   const [guardNote, setGuardNote] = useState<string | null>(null);
+  const [recommendedColdH, setRecommendedColdH] = useState<number>(0);
   const [pickerDateTime, setPickerDateTime] = useState<string>(() => {
     if (alreadySet && eatTime) {
       const d = eatTime;
@@ -885,6 +886,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       expectedColdH = 0;
     }
     const hasColdLocal = expectedColdH > 0;
+    setRecommendedColdH(expectedColdH);
 
     // Style-aware sweet zones from STYLE_FERM_DEFAULTS
     // sweetFrom = upper bound given available window
@@ -1006,12 +1008,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const mixOffsetH = Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000);
   const hasColdRetard = (schedule?.coldRetardHours ?? 0) > 0;
   const _sfDef = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
-  const _actualColdH = schedule?.coldRetardHours ?? 0;
   const _minTotalRT = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0 + (preheatMin / 60);
-  const renderSweetFrom = _actualColdH > 0
-    ? _actualColdH + _sfDef.rtH
+  const renderSweetFrom = recommendedColdH > 0
+    ? recommendedColdH + _sfDef.rtH
     : _sfDef.rtH + 4;
-  const renderSweetTo = _actualColdH > 0
+  const renderSweetTo = recommendedColdH > 0
     ? Math.max(_sfDef.coldH * 0.7 + _sfDef.rtH, _minTotalRT + 1)
     : _minTotalRT + 1;
   const renderSweetCenter = (renderSweetFrom + renderSweetTo) / 2;
@@ -1558,6 +1559,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               onDragStart={() => setIsDragging(true)}
               onDragEnd={() => setIsDragging(false)}
               sweetCenterH={renderSweetCenter}
+              nowHBF={(pendingEatTime.getTime() - Date.now()) / 3600000}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
                 setRecommendedHBF(null);
