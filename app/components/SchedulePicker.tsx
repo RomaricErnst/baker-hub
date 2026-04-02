@@ -1172,7 +1172,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ...INPUT_STYLE, width: '100%',
               display: 'flex', alignItems: 'center',
               color: pickerDate ? 'var(--char)' : 'var(--smoke)',
-              pointerEvents: 'none', position: 'relative', zIndex: 1,
+              position: 'relative', zIndex: 1,
             }}>
               {pickerDate ? (() => {
                 const [y, m, d] = pickerDate.split('-').map(Number);
@@ -1193,6 +1193,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               style={{
                 position: 'absolute', inset: 0, opacity: 0,
                 cursor: 'pointer', width: '100%', height: '100%',
+                zIndex: 2,
               }}
             />
           </div>
