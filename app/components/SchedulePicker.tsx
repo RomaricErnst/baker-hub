@@ -769,12 +769,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const mi = String(d.getMinutes()).padStart(2, '0');
       return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
     }
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const yyyy = tomorrow.getFullYear();
-    const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
-    const dd = String(tomorrow.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}T18:00`;
+    return '';
   });
   // Split state for custom time picker UI
   const [pickerDate, setPickerDate] = useState<string>(() => {
@@ -782,9 +777,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const d = eatTime;
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
+    return '';
   });
   const [pickerHour, setPickerHour] = useState<number>(() => alreadySet && eatTime ? eatTime.getHours() : 18);
   const [pickerMinute, setPickerMinute] = useState<number>(() => {
@@ -1172,8 +1165,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               setPickerMinute(m);
               if (pickerDate) applyTimePick(pickerDate, h, m);
             }}
-            style={{ ...INPUT_STYLE, flex: 1, width: undefined, appearance: 'none' as React.CSSProperties['appearance'] }}
+            disabled={!pickerDate}
+            style={{ ...INPUT_STYLE, flex: 1, width: undefined, appearance: 'none' as React.CSSProperties['appearance'], opacity: pickerDate ? 1 : 0.45, cursor: pickerDate ? 'pointer' : 'not-allowed' }}
           >
+            {!pickerDate && <option value="" disabled>Select date first</option>}
             {Array.from({ length: 96 }, (_, i) => {
               const h = Math.floor(i / 4);
               const m = (i % 4) * 15;
