@@ -1014,6 +1014,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const renderSweetTo = _actualColdH > 0
     ? Math.max(_sfDef.coldH * 0.7 + _sfDef.rtH, _minTotalRT + 1)
     : _minTotalRT + 1;
+  const renderSweetCenter = (renderSweetFrom + renderSweetTo) / 2;
   const prefGoesInFridge = hasPrefActive && (
     prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26)
   );
@@ -1556,6 +1557,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               showZoneLabels={adjustOpen}
               onDragStart={() => setIsDragging(true)}
               onDragEnd={() => setIsDragging(false)}
+              sweetCenterH={renderSweetCenter}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
                 setRecommendedHBF(null);

@@ -16,6 +16,7 @@ export interface FermentChartProps {
   windowH?: number;         // total window to display (default 96h)
   prefInFridge?: boolean;   // show fridge climate note in pref card
   hasColdRetard?: boolean;  // widens bell and sweet zone for cold schedules
+  sweetCenterH?: number;    // actual sweet center HBF for this style+window — sets dough peak
   phases?: {
     bulkFermH: number;
     coldRetardH: number;
@@ -123,7 +124,7 @@ export default function FermentChart({
   eatTime, prefermentType, kitchenTemp,
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange, onDragStart, onDragEnd,
-  windowH, prefInFridge, hasColdRetard, phases, scheduleNote,
+  windowH, prefInFridge, hasColdRetard, sweetCenterH, phases, scheduleNote,
   recommendedMixHBF, showZoneLabels,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
@@ -180,7 +181,7 @@ export default function FermentChart({
   // ── Physics ──────────────────────────────────────────────
   // Cold-aware dough bell: wider sigma, later peak for cold retard schedules
   const DOUGH_SIG          = hasColdRetard ? 18 : 10;
-  const DOUGH_SWEET_CENTER = hasColdRetard ? 34 : 20;
+  const DOUGH_SWEET_CENTER = sweetCenterH ?? (hasColdRetard ? 34 : 20);
 
   const optH            = hasPref ? getPrefOptH(prefermentType, kitchenTemp) : 0;
   const prefSig         = hasPref ? getPrefSig(prefermentType, kitchenTemp)  : 1;
