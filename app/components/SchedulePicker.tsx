@@ -1166,17 +1166,36 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           {t('bakeTimeSub')}
         </div>
         <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center', position: 'relative' }}>
-          {/* Date — native picker */}
-          <input
-            type="date"
-            value={pickerDate}
-            onChange={e => {
-              const d = e.target.value;
-              setPickerDate(d);
-              if (d && pickerHour !== null) applyTimePick(d, pickerHour, pickerMinute);
-            }}
-            style={{ ...INPUT_STYLE, flex: 2, width: undefined }}
-          />
+          {/* Date — native picker styled as "Sat 4 Apr" */}
+          <div style={{ flex: 2, position: 'relative' }}>
+            <div style={{
+              ...INPUT_STYLE, width: '100%',
+              display: 'flex', alignItems: 'center',
+              color: pickerDate ? 'var(--char)' : 'var(--smoke)',
+              pointerEvents: 'none', position: 'relative', zIndex: 1,
+            }}>
+              {pickerDate ? (() => {
+                const [y, m, d] = pickerDate.split('-').map(Number);
+                const dt = new Date(y, m - 1, d);
+                const wd = dt.toLocaleDateString('en-US', { weekday: 'short' });
+                const mo = dt.toLocaleDateString('en-US', { month: 'short' });
+                return `${wd} ${d} ${mo}`;
+              })() : 'Pick a date'}
+            </div>
+            <input
+              type="date"
+              value={pickerDate}
+              onChange={e => {
+                const d = e.target.value;
+                setPickerDate(d);
+                if (d && pickerHour !== null) applyTimePick(d, pickerHour, pickerMinute);
+              }}
+              style={{
+                position: 'absolute', inset: 0, opacity: 0,
+                cursor: 'pointer', width: '100%', height: '100%',
+              }}
+            />
+          </div>
           {/* Time — select with 15-min steps */}
           <select
             value={`${pickerHour}:${String(pickerMinute).padStart(2,'0')}`}
