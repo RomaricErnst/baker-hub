@@ -759,6 +759,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [customTo, setCustomTo] = useState('');
   const [isNarrow, setIsNarrow] = useState(false);
   const [blockerNote, setBlockerNote] = useState<string | null>(null);
+  const [guardNote, setGuardNote] = useState<string | null>(null);
   const [pickerDateTime, setPickerDateTime] = useState<string>(() => {
     if (alreadySet && eatTime) {
       const d = eatTime;
@@ -851,13 +852,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     // Guard: bake time in the past
     if (totalWindowH <= 0) {
-      setBlockerNote('This bake time is in the past — please pick a future date.');
+      setGuardNote('This bake time is in the past — please pick a future date.');
       return;
     }
 
     // Guard: window too short for any fermentation
     if (totalWindowH < minTotalRTLocal) {
-      setBlockerNote(`Not enough time — you need at least ${Math.ceil(minTotalRTLocal)}h. Pick a later bake time.`);
+      setGuardNote(`Not enough time — you need at least ${Math.ceil(minTotalRTLocal)}h. Pick a later bake time.`);
       return;
     }
 
@@ -896,9 +897,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Short window note — RT-only tight windows only
     // Cold retard reduction already covered by scheduleNote from buildSchedule
     if (!hasColdLocal && totalWindowH < sweetToRaw) {
-      setBlockerNote('Tight schedule — start as early as possible. Same-day dough can still be great.');
+      setGuardNote('Tight schedule — start as early as possible. Same-day dough can still be great.');
     } else {
-      setBlockerNote(null);
+      setGuardNote(null);
     }
 
     // Poolish offset — clamp so it never starts in the past
@@ -981,6 +982,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setStartComputed(false);
     setShowFallbackPopup(false);
     setDismissedConflict(false);
+    setGuardNote(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
 
@@ -995,6 +997,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // Cold-aware fermentation curve
   const mixOffsetH = Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000);
   const hasColdRetard = (schedule?.coldRetardHours ?? 0) > 0;
+  const _sfDef = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
+  const _actualColdH = schedule?.coldRetardHours ?? 0;
+  const _minTotalRT = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0 + (preheatMin / 60);
+  const renderSweetFrom = _actualColdH > 0
+    ? _actualColdH + _sfDef.rtH
+    : _sfDef.rtH + 4;
+  const renderSweetTo = _actualColdH > 0
+    ? Math.max(_sfDef.coldH * 0.7 + _sfDef.rtH, _minTotalRT + 1)
+    : _minTotalRT + 1;
   const prefGoesInFridge = hasPrefActive && (
     prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26)
   );
@@ -1460,6 +1471,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       </div>
 
+      {guardNote && (
+        <div style={{
+          background: 'var(--cream)', borderLeft: '4px solid var(--terra)',
+          borderRadius: 10, padding: '.75rem 1rem', marginBottom: '1rem',
+          fontSize: '.82rem', color: 'var(--char)', lineHeight: 1.5,
+        }}>
+          {guardNote}
+        </div>
+      )}
+
       {startComputed && (<>
 
       {/* Divider */}
@@ -1687,8 +1708,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               <button
                 onClick={() => {
                   const bakeMs = pendingEatTime.getTime();
-                  const scFrom = hasColdRetard ? 52 : 26;
-                  const scTo   = hasColdRetard ? 20 : 14;
+                  const scFrom = renderSweetFrom;
+                  const scTo   = renderSweetTo;
                   const sc = (scFrom + scTo) / 2;
                   let bestHBF = sc;
                   let bestDist = Infinity;
@@ -1819,8 +1840,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
           : isSourdough && feedTime ? feedTime : null;
-        const doughZoneFrom = hasColdRetard ? 52 : 26;
-        const doughZoneTo   = hasColdRetard ? 20 : 14;
+        const doughZoneFrom = renderSweetFrom;
+        const doughZoneTo   = renderSweetTo;
         const mixInZone   = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
         const mixTooEarly = mixOffsetH > doughZoneFrom;
         const mixStatus   = mixInZone ? '🟢 Dough ready at bake'
