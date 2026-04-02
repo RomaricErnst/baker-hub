@@ -848,18 +848,72 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     currentBlocks: AvailabilityBlock[],
     et: Date,
   ) {
-    // Derive cold retard independently of schedule prop (which may be stale on first call)
     const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
     const isTrop = kitchenTemp >= 28;
     const minBulkRTLocal = isTrop ? 0.5 : 1.5;
     const minTotalRTLocal = minBulkRTLocal + 1.0 + (preheatMin / 60);
-    const totalWindowH = (et.getTime() - new Date().getTime()) / 3600000;
-    const expectedColdRetard = defaults.coldH > 0 && totalWindowH >= defaults.coldH + minTotalRTLocal;
-    const sweetFrom   = expectedColdRetard ? 52 : 26;
-    const sweetTo     = expectedColdRetard ? 20 : 14;
-    const sweetCenter = (sweetFrom + sweetTo) / 2;
+    const nowMs = Date.now();
+    const totalWindowH = (et.getTime() - nowMs) / 3600000;
+    const nowHBF = totalWindowH;
 
-    const optimalPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp) : prefOffsetH;
+    // Guard: bake time in the past
+    if (totalWindowH <= 0) {
+      setBlockerNote('This bake time is in the past — please pick a future date.');
+      return;
+    }
+
+    // Guard: window too short for any fermentation
+    if (totalWindowH < minTotalRTLocal) {
+      setBlockerNote(`Not enough time — you need at least ${Math.ceil(minTotalRTLocal)}h. Pick a later bake time.`);
+      return;
+    }
+
+    // CT maximization — exact same model as buildSchedule
+    const preferredColdH = defaults.preferredColdH ?? defaults.coldH;
+    let expectedColdH: number;
+    if (defaults.coldH === 0) {
+      expectedColdH = 0;
+    } else if (totalWindowH >= preferredColdH + minTotalRTLocal) {
+      expectedColdH = preferredColdH;
+    } else if (totalWindowH >= defaults.coldH + minTotalRTLocal) {
+      expectedColdH = defaults.coldH;
+    } else if (totalWindowH > minTotalRTLocal) {
+      expectedColdH = totalWindowH - minTotalRTLocal;
+    } else {
+      expectedColdH = 0;
+    }
+    const hasColdLocal = expectedColdH > 0;
+
+    // Style-aware sweet zones from STYLE_FERM_DEFAULTS
+    // sweetFrom = upper bound given available window
+    // sweetTo   = minimum acceptable fermentation
+    const sweetFromRaw = hasColdLocal
+      ? expectedColdH + defaults.rtH
+      : defaults.rtH + 4;
+    const sweetToRaw = hasColdLocal
+      ? Math.max(defaults.coldH * 0.7 + defaults.rtH, minTotalRTLocal + 1)
+      : minTotalRTLocal + 1;
+    const sweetCenterRaw = (sweetFromRaw + sweetToRaw) / 2;
+
+    // Clamp so mix diamond never falls in the past
+    const sweetFrom   = Math.min(sweetFromRaw,   nowHBF - 0.25);
+    const sweetTo     = Math.min(sweetToRaw,     nowHBF - 0.5);
+    const sweetCenter = Math.min(sweetCenterRaw, nowHBF - 0.5);
+
+    // Short window note — RT-only tight windows only
+    // Cold retard reduction already covered by scheduleNote from buildSchedule
+    if (!hasColdLocal && totalWindowH < sweetToRaw) {
+      setBlockerNote('Tight schedule — start as early as possible. Same-day dough can still be great.');
+    } else {
+      setBlockerNote(null);
+    }
+
+    // Poolish offset — clamp so it never starts in the past
+    const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp) : prefOffsetH;
+    const maxPrefOffset = Math.max(0.25, nowHBF - sweetCenter - 0.25);
+    const optimalPrefOffset = hasPrefActive
+      ? Math.min(rawPrefOffset, maxPrefOffset)
+      : prefOffsetH;
     if (hasPrefActive) {
       setPrefOffsetH(optimalPrefOffset);
       onPrefOffsetChange?.(optimalPrefOffset);
