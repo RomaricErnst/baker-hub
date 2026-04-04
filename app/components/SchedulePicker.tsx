@@ -386,25 +386,38 @@ function findOptimalPosition(
   }
   const STEP = 0.25;
   const SEARCH_RANGE = (sweetFrom - sweetTo) / 2 + 2;
+  const typicalBulkH = kitchenTemp >= 30 ? 0.5 : kitchenTemp >= 28 ? 0.75 : 1.5;
+  const prefMinH = 3;
+
   for (let delta = 0; delta <= SEARCH_RANGE; delta += STEP) {
     for (const sign of [0, 1, -1]) {
       const candidate = sweetCenter + (sign * delta);
       if (candidate < sweetTo - 2 || candidate > sweetFrom + 2) continue;
-      const mixClear  = !isInBlocker(candidate);
-      const prefClear = !hasPref || !isInBlocker(candidate + prefOffsetH);
-      // Check baker is free at end of bulk (when dough goes in fridge)
-      const typicalBulkH = kitchenTemp >= 30 ? 0.5 : kitchenTemp >= 28 ? 0.75 : 1.5;
+      const mixClear = !isInBlocker(candidate);
+      if (!mixClear) continue;
       const bulkEndHBF = candidate - typicalBulkH;
       const bulkClear = bulkEndHBF > 0 && !isInBlocker(bulkEndHBF);
-      if (mixClear && prefClear && bulkClear) {
+      if (!bulkClear) continue;
+      if (!hasPref) {
         return {
-          mixHBF:        candidate,
-          prefHBF:       candidate + prefOffsetH,
-          mixInZone:     inSweet(candidate),
-          prefInZone:    true,
-          fallback:      !inSweet(candidate),
-          mixInBlocker:  false,
-          prefInBlocker: false,
+          mixHBF: candidate, prefHBF: candidate,
+          mixInZone: inSweet(candidate), prefInZone: true,
+          fallback: !inSweet(candidate), mixInBlocker: false, prefInBlocker: false,
+        };
+      }
+      // Try full offset first, then reduce to minimum to clear blocker
+      let bestPrefOffset = 0;
+      for (let p = prefOffsetH; p >= prefMinH; p -= STEP) {
+        if (!isInBlocker(candidate + p)) {
+          bestPrefOffset = p;
+          break;
+        }
+      }
+      if (bestPrefOffset >= prefMinH) {
+        return {
+          mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
+          mixInZone: inSweet(candidate), prefInZone: bestPrefOffset >= prefOffsetH * 0.7,
+          fallback: !inSweet(candidate), mixInBlocker: false, prefInBlocker: false,
         };
       }
     }
@@ -618,18 +631,25 @@ function SimpleColourBar({
         </g>
 
         {/* Zone labels above bar */}
-        {zones.map((z, i) => {
-          const zx1 = barHToX(z.from, W, barWin);
-          const zx2 = barHToX(z.to, W, barWin);
-          if (zx2 - zx1 < 28) return null;
-          return (
-            <text key={i} x={(zx1 + zx2) / 2} y={BAR_Y - 6}
+        {(() => {
+          const items = zones.map((z, i) => {
+            const zx1 = barHToX(z.from, W, barWin);
+            const zx2 = barHToX(z.to, W, barWin);
+            return { i, cx: (zx1 + zx2) / 2, width: zx2 - zx1, label: z.label };
+          }).filter(item => item.width >= 40);
+          const visible: typeof items = [];
+          for (const item of items) {
+            const prev = visible[visible.length - 1];
+            if (!prev || item.cx - prev.cx > 40) visible.push(item);
+          }
+          return visible.map(item => (
+            <text key={item.i} x={item.cx} y={BAR_Y - 6}
               fontSize={9.5} fill="#1A1612" fillOpacity={0.45}
               textAnchor="middle" fontFamily="DM Mono, monospace">
-              {z.label}
+              {item.label}
             </text>
-          );
-        })}
+          ));
+        })()}
 
         {/* Bake reference line */}
         <line x1={barHToX(0, W, barWin)} y1={0} x2={barHToX(0, W, barWin)} y2={BAR_AXIS_Y}
@@ -671,16 +691,23 @@ function SimpleColourBar({
           stroke="#E8E0D5" strokeWidth={1} />
 
         {/* Ticks */}
-        {ticks.map((tk, i) => (
-          <g key={i}>
-            <line x1={tk.x} y1={BAR_AXIS_Y} x2={tk.x} y2={BAR_AXIS_Y + 3}
-              stroke="#E8E0D5" strokeWidth={1} />
-            <text x={tk.x} y={BAR_AXIS_Y + 12} fontSize={9.5} fill="var(--smoke)"
-              fontFamily="DM Mono, monospace" textAnchor="middle">
-              {tk.label}
-            </text>
-          </g>
-        ))}
+        {(() => {
+          const visible: typeof ticks = [];
+          for (const t of ticks) {
+            const prev = visible[visible.length - 1];
+            if (!prev || t.x - prev.x > 45) visible.push(t);
+          }
+          return visible.map((tk, i) => (
+            <g key={i}>
+              <line x1={tk.x} y1={BAR_AXIS_Y} x2={tk.x} y2={BAR_AXIS_Y + 3}
+                stroke="#E8E0D5" strokeWidth={1} />
+              <text x={tk.x} y={BAR_AXIS_Y + 12} fontSize={9.5} fill="var(--smoke)"
+                fontFamily="DM Mono, monospace" textAnchor="middle">
+                {tk.label}
+              </text>
+            </g>
+          ));
+        })()}
 
         {/* Bake marker */}
         {(() => {
@@ -776,7 +803,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [isNarrow, setIsNarrow] = useState(false);
   const [blockerNote, setBlockerNote] = useState<string | null>(null);
   const [guardNote, setGuardNote] = useState<string | null>(null);
-  const [recommendedColdH, setRecommendedColdH] = useState<number>(0);
+  const [recommendedColdH, setRecommendedColdH] = useState<number>(() => {
+    const d = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
+    return d.coldH ?? 0;
+  });
   const [pickerDateTime, setPickerDateTime] = useState<string>(() => {
     if (alreadySet && eatTime) {
       const d = eatTime;
@@ -910,29 +940,41 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const sweetFrom = Math.min(sweetFromRaw, nowHBF - 0.25);
     const sweetTo   = Math.min(sweetToRaw,   sweetFrom - 0.5);
 
-    // Ideal mix = sweetFrom (maximize cold retard)
+    // Priority: (1) maximize cold — mix at idealMixHBF = sweetFrom
+    //           (2) fit poolish before now — full offset if possible
+    //           (3) reduce offset if full doesn't fit
+    //           (4) move mix later (less cold) to make room for min poolish
+    //           (5) suppress poolish only when truly impossible
     const idealMixHBF = sweetFrom;
-    const idealPrefOffset = Math.min(rawPrefOffset, nowHBF - idealMixHBF - 0.25);
-
-    // Poolish priority: baker chose it — try to keep it even at cost of less cold
     let finalMixHBF: number;
     let finalPrefOffset: number;
 
-    if (!hasPrefActive || idealPrefOffset >= poolishMinH) {
-      // Poolish fits at ideal position — or no poolish
+    if (!hasPrefActive) {
       finalMixHBF = idealMixHBF;
-      finalPrefOffset = idealPrefOffset;
+      finalPrefOffset = 0;
     } else {
-      // Reduce mix HBF to make room for minimum poolish
-      const reducedMixHBF = Math.max(minTotalRTLocal, nowHBF - poolishMinH - 0.25);
-      const reducedPrefOffset = Math.min(rawPrefOffset, nowHBF - reducedMixHBF - 0.25);
-      if (reducedPrefOffset >= poolishMinH && reducedMixHBF >= minTotalRTLocal) {
-        finalMixHBF = reducedMixHBF;
-        finalPrefOffset = reducedPrefOffset;
-      } else {
-        // Truly no room — suppress poolish, keep ideal mix
+      const poolishAtFull = idealMixHBF + rawPrefOffset;
+      const poolishAtMin  = idealMixHBF + poolishMinH;
+
+      if (poolishAtFull <= nowHBF - 0.25) {
+        // Full poolish fits before now at ideal mix — perfect
         finalMixHBF = idealMixHBF;
-        finalPrefOffset = 0;
+        finalPrefOffset = rawPrefOffset;
+      } else if (poolishAtMin <= nowHBF - 0.25) {
+        // Reduced poolish fits — use ideal mix, reduce offset to what fits
+        finalMixHBF = idealMixHBF;
+        finalPrefOffset = nowHBF - 0.25 - idealMixHBF;
+      } else {
+        // Poolish can't fit at ideal mix — move mix later to make room
+        const latestMix = nowHBF - poolishMinH - 0.25;
+        if (latestMix >= minTotalRTLocal) {
+          finalMixHBF = latestMix;
+          finalPrefOffset = Math.min(rawPrefOffset, nowHBF - 0.25 - latestMix);
+        } else {
+          // Truly no room — suppress poolish, keep ideal mix
+          finalMixHBF = idealMixHBF;
+          finalPrefOffset = 0;
+        }
       }
     }
 
