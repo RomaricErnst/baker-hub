@@ -343,23 +343,23 @@ function roundTo15(d: Date | null): Date | null {
   return r;
 }
 
-const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; coldHRequired?: boolean }> = {
-  // Pizza
-  neapolitan:    { coldH: 24 },
-  newyork:       { coldH: 24 },
-  roman:         { coldH: 0  },
-  pan:           { coldH: 0  },
-  sourdough:     { coldH: 0  },
+const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHRequired?: boolean }> = {
+  // Pizza — sweet spot = coldH + rtH (where dough peaks at bake)
+  neapolitan:    { coldH: 24, rtH: 2 },                          // sweet: 26h
+  newyork:       { coldH: 24, rtH: 2 },                          // sweet: 26h
+  roman:         { coldH: 0,  rtH: 6 },                          // RT only: sweet 6h
+  pan:           { coldH: 0,  rtH: 5 },                          // RT only: sweet 5h
+  sourdough:     { coldH: 24, rtH: 4 },                          // sweet: 28h
   // Bread
-  pain_campagne: { coldH: 18 },
-  pain_levain:   { coldH: 0  },
-  baguette:      { coldH: 16 },
-  pain_complet:  { coldH: 12 },
-  pain_seigle:   { coldH: 0  },
-  fougasse:      { coldH: 0  },
-  brioche:       { coldH: 8,  coldHRequired: true },
-  pain_mie:      { coldH: 6,  coldHRequired: true },
-  pain_viennois: { coldH: 6,  coldHRequired: true },
+  pain_campagne: { coldH: 18, rtH: 3 },                          // sweet: 21h
+  pain_levain:   { coldH: 16, rtH: 4 },                          // sweet: 20h
+  baguette:      { coldH: 12, rtH: 2 },                          // sweet: 14h
+  pain_complet:  { coldH: 12, rtH: 3 },                          // sweet: 15h
+  pain_seigle:   { coldH: 0,  rtH: 5 },                          // RT only: sweet 5h
+  fougasse:      { coldH: 8,  rtH: 2 },                          // sweet: 10h
+  brioche:       { coldH: 8,  rtH: 2, coldHRequired: true },     // sweet: 10h
+  pain_mie:      { coldH: 8,  rtH: 2, coldHRequired: true },     // sweet: 10h
+  pain_viennois: { coldH: 6,  rtH: 2, coldHRequired: true },     // sweet: 8h
 };
 
 export function buildSchedule(

@@ -188,9 +188,11 @@ export default function FermentChart({
   const DARK_SAGE_STR   = '#4A6B3A';
 
   // ── Physics ──────────────────────────────────────────────
-  // Cold-aware dough bell: wider sigma, later peak for cold retard schedules
+  // DOUGH_SWEET_CENTER = offset from mix to dough peak = coldH + rtH per style
+  // Passed as sweetCenterH from SchedulePicker. Fallback: 26h cold, 6h RT.
+  // When mixHBF = DOUGH_SWEET_CENTER → doughPeakHBF = 0 = bake (correct).
   const DOUGH_SIG          = hasColdRetard ? 18 : 10;
-  const DOUGH_SWEET_CENTER = sweetCenterH ?? (hasColdRetard ? 34 : 20);
+  const DOUGH_SWEET_CENTER = sweetCenterH ?? (hasColdRetard ? 26 : 6);
 
   const optH            = hasPref ? getPrefOptH(prefermentType, kitchenTemp, prefInFridge) : 0;
   const prefSigBase     = hasPref ? getPrefSig(prefermentType, kitchenTemp, prefInFridge) : 1;

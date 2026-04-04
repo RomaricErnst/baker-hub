@@ -105,22 +105,25 @@ const STYLE_FERM_DEFAULTS: Record<string, {
   preferredColdH?: number; minColdH?: number;
   minTotalFermH: number; coldHRequired?: boolean;
 }> = {
-  // Pizza — minTotalFermH = minimum total fermentation for acceptable dough
+  // Pizza — sweet spot = coldH + rtH. RT durations are minimums; climate adjusts yeast not timing.
+  // preferredColdH = max useful cold before diminishing returns
+  // minColdH = minimum cold retard for acceptable results
+  // minTotalFermH = absolute minimum total fermentation
   neapolitan:    { coldH: 24, rtH: 2, preferredColdH: 48, minColdH: 12, minTotalFermH: 8  },
   newyork:       { coldH: 24, rtH: 2, preferredColdH: 48, minColdH: 12, minTotalFermH: 8  },
-  roman:         { coldH: 0,  rtH: 8, minColdH: 0,        minTotalFermH: 4  },
-  pan:           { coldH: 0,  rtH: 6, minColdH: 0,        minTotalFermH: 4  },
-  sourdough:     { coldH: 0,  rtH: 4, preferredColdH: 48, minColdH: 0,  minTotalFermH: 10 },
+  roman:         { coldH: 0,  rtH: 6, minColdH: 0,        minTotalFermH: 4  },
+  pan:           { coldH: 0,  rtH: 5, minColdH: 0,        minTotalFermH: 3  },
+  sourdough:     { coldH: 24, rtH: 4, preferredColdH: 48, minColdH: 12, minTotalFermH: 12 },
   // Bread
-  pain_campagne: { coldH: 18, rtH: 4, minColdH: 8,        minTotalFermH: 6  },
-  pain_levain:   { coldH: 0,  rtH: 4, preferredColdH: 48, minColdH: 0,  minTotalFermH: 10 },
-  baguette:      { coldH: 16, rtH: 2, minColdH: 8,        minTotalFermH: 6  },
-  pain_complet:  { coldH: 12, rtH: 3, minColdH: 6,        minTotalFermH: 6  },
-  pain_seigle:   { coldH: 0,  rtH: 4, minColdH: 0,        minTotalFermH: 4  },
-  fougasse:      { coldH: 0,  rtH: 3, minColdH: 0,        minTotalFermH: 4  },
-  brioche:       { coldH: 8,  rtH: 4, minColdH: 0,        minTotalFermH: 6,  coldHRequired: true },
-  pain_mie:      { coldH: 6,  rtH: 3, minColdH: 0,        minTotalFermH: 4,  coldHRequired: true },
-  pain_viennois: { coldH: 6,  rtH: 3, minColdH: 0,        minTotalFermH: 4,  coldHRequired: true },
+  pain_campagne: { coldH: 18, rtH: 3, preferredColdH: 24, minColdH: 8,  minTotalFermH: 10 },
+  pain_levain:   { coldH: 16, rtH: 4, preferredColdH: 24, minColdH: 8,  minTotalFermH: 12 },
+  baguette:      { coldH: 12, rtH: 2, preferredColdH: 16, minColdH: 6,  minTotalFermH: 8  },
+  pain_complet:  { coldH: 12, rtH: 3, preferredColdH: 18, minColdH: 6,  minTotalFermH: 8  },
+  pain_seigle:   { coldH: 0,  rtH: 5, minColdH: 0,        minTotalFermH: 4  },
+  fougasse:      { coldH: 8,  rtH: 2, preferredColdH: 12, minColdH: 4,  minTotalFermH: 6  },
+  brioche:       { coldH: 8,  rtH: 2, preferredColdH: 12, minColdH: 4,  minTotalFermH: 4,  coldHRequired: true },
+  pain_mie:      { coldH: 8,  rtH: 2, preferredColdH: 12, minColdH: 4,  minTotalFermH: 4,  coldHRequired: true },
+  pain_viennois: { coldH: 6,  rtH: 2, preferredColdH: 8,  minColdH: 3,  minTotalFermH: 4,  coldHRequired: true },
 };
 const FERM_FALLBACK: { coldH: number; rtH: number; minColdH?: number; minTotalFermH: number } = { coldH: 0, rtH: 4, minColdH: 0, minTotalFermH: 4 };
 
@@ -945,27 +948,31 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setRecommendedColdH(expectedColdH);
 
     const minColdH = defaults.minColdH ?? 0;
+    // fridge-aware poolish offset — pass directly, per-candidate clamp happens in findOptimalPosition
     const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridge) : prefOffsetH;
-    // Use same fridge-aware minimum as findOptimalPosition receives
+    // fridge-aware minimum: 12h for fridge poolish/biga, 3h for RT poolish
     const poolishMinH = prefGoesInFridge ? 12 : 3;
 
-    // Sweet zones: sweetFrom = maximize cold, sweetTo = style minimum cold
+    // sweetCenter = coldH + rtH = the style sweet spot where dough peaks at bake
+    // This is a style constant — NOT climate sensitive (climate adjusts yeast, not timing)
+    // sweetFrom = leftmost boundary (preferredColdH + rtH) — widest useful cold
+    // sweetTo = rightmost boundary (minimum viable total fermentation)
+    const optimalColdH = hasColdLocal ? (defaults.coldH + defaults.rtH) : 0;
+    const sweetCenterRaw = hasColdLocal
+      ? defaults.coldH + defaults.rtH           // dough peaks at bake at this position
+      : defaults.rtH;                            // RT only: peak at rtH before bake
+    const maxUsefulColdH = defaults.preferredColdH ?? defaults.coldH;
     const sweetFromRaw = hasColdLocal
-      ? expectedColdH + defaults.rtH
-      : defaults.rtH + 4;
+      ? maxUsefulColdH + defaults.rtH           // max useful cold retard boundary
+      : defaults.rtH + 4;                       // RT only: allow some flexibility
     const sweetToRaw = hasColdLocal
       ? Math.max(minColdH + defaults.rtH, minTotalRTLocal + 1)
       : minTotalRTLocal + 1;
-    const sweetFrom = Math.min(sweetFromRaw, nowHBF - 0.25);
-    const sweetTo   = Math.min(sweetToRaw,   sweetFrom - 0.5);
 
-    // Correct sequence:
-    // 1. Green settles at sweetFrom (maximize cold retard)
-    // 2. findOptimalPosition searches outward from there
-    // 3. For each mix candidate it tries to fit poolish before now
-    // 4. Only if no mix position allows poolish → accept without poolish
-    // Green never moves pre-emptively to make room for poolish.
-    const sweetCenter = sweetFrom;
+    // Clip all to nowHBF — cannot start in the past
+    const sweetCenter = Math.min(sweetCenterRaw, nowHBF - 0.5);
+    const sweetFrom   = Math.min(sweetFromRaw,   nowHBF - 0.25);
+    const sweetTo     = Math.min(sweetToRaw,     sweetFrom - 0.5);
 
     if (!hasColdLocal && totalWindowH < sweetToRaw) {
       setGuardNote('Tight schedule — start as early as possible. Same-day dough can still be great.');
@@ -973,16 +980,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setGuardNote(null);
     }
 
-    // Pass full raw offset — findOptimalPosition computes per-candidate
-    // clamp correctly inside the loop: maxPrefOffset = min(rawPrefOffset, nowHBF - candidate - 0.25)
-    // This gives the right poolish room for each candidate independently
+    // Pass full raw offset — findOptimalPosition computes per-candidate clamp:
+    //   maxPrefOffset = min(rawPrefOffset, nowHBF - candidate - 0.25)
+    // This correctly handles every candidate independently.
     const optimalPrefOffset = hasPrefActive ? rawPrefOffset : prefOffsetH;
     if (hasPrefActive) {
       setPrefOffsetH(optimalPrefOffset);
       onPrefOffsetChange?.(optimalPrefOffset);
     }
-    // Minimum viable poolish: 3h RT, 12h fridge (25% of 48h optimal)
-    const prefMinViableH = prefGoesInFridge ? 12 : 3;
+
+    // Minimum viable poolish: 3h RT, 12h fridge
+    const prefMinViableH = poolishMinH;
     const result = findOptimalPosition(
       sweetCenter, sweetFrom, sweetTo,
       currentBlocks, et,
@@ -1081,10 +1089,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const renderSweetTo   = (_sfDef.minTotalFermH ?? 4) / _tropFactor;
   // Yellow zone extends 2h past green right edge
   const renderYellowTo  = Math.max(0.5, renderSweetTo - 2);
-  // Optimal diamond = style cold target / tropFactor, clipped to zone
+  // _optimalMix = style sweet spot where dough peaks at bake = coldH + rtH
+  // For RT-only styles, use rtH. Climate adjusts yeast not timing so no tropFactor here.
   const _optimalMix = _sfDef.coldH > 0
-    ? (_sfDef.coldH + _sfDef.rtH) / _tropFactor
-    : (renderSweetFrom + renderSweetTo) / 2;
+    ? _sfDef.coldH + _sfDef.rtH
+    : _sfDef.rtH;
   const renderSweetCenter = Math.min(_optimalMix, renderSweetFrom - 0.25);
   const prefGoesInFridge = hasPrefActive && (
     prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26)
