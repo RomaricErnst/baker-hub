@@ -8,7 +8,6 @@ interface RecipeOutputProps {
   numItems: number;
   itemWeight: number;
   styleName: string;
-  styleEmoji: string;
   mixerType: string;
   kitchenTemp: number;
   fermEquivHours: number;
@@ -18,6 +17,8 @@ interface RecipeOutputProps {
   prefermentType?: PrefermentType;
   priorityOverride?: string | null;
   onPriorityOverride?: (p: string | null) => void;
+  saveStatus?: 'idle' | 'saving' | 'saved' | 'error';
+  onSave?: () => void;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -288,8 +289,8 @@ function StarterPrepCard({ sourdough }: { sourdough: { starterGramsMin: number; 
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, styleEmoji, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
-  priorityOverride, onPriorityOverride,
+  result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
+  priorityOverride, onPriorityOverride, saveStatus, onSave,
 }: RecipeOutputProps) {
   const [showPriorityOverride, setShowPriorityOverride] = useState(false);
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
@@ -366,43 +367,52 @@ export default function RecipeOutput({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-      {/* ── Summary callout ──────────────────────── */}
+      {/* ── Combined header card ─────────────────── */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: '.75rem',
-        background: 'var(--terra)',
-        borderRadius: '18px',
-        padding: '1.5rem',
+        background: 'var(--char)', borderRadius: '18px',
+        border: '1px solid rgba(212,168,83,0.15)',
+        padding: '1.3rem 1.6rem',
+        display: 'flex', justifyContent: 'space-between',
+        alignItems: 'center', flexWrap: 'wrap', gap: '.75rem',
       }}>
         <div>
-          <div style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.7)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '.2rem' }}>
-            {styleEmoji} {styleName}
+          <div style={{
+            fontFamily: 'var(--font-playfair)', fontSize: '1.3rem',
+            fontWeight: 700, color: 'var(--gold)', marginBottom: '.3rem',
+          }}>
+            Your recipe is ready
           </div>
-          <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.25rem', fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>
-            <span style={{ fontFamily: 'var(--font-dm-mono)' }}>{numItems}</span>
-            {' × '}
-            <span style={{ fontFamily: 'var(--font-dm-mono)' }}>{itemWeight}</span>
-            {' g = '}
-            <span style={{ fontFamily: 'var(--font-dm-mono)' }}>{totalDough}</span>
-            {' g total'}
+          <div style={{
+            fontSize: '.78rem', color: 'rgba(245,240,232,.6)',
+            fontFamily: 'var(--font-dm-mono)',
+          }}>
+            {styleName}
+            {' · '}
+            <span style={{ color: 'rgba(245,240,232,.9)', fontWeight: 600 }}>
+              {numItems} × {itemWeight}g
+            </span>
+            {' · '}
+            <span style={{ color: 'rgba(245,240,232,.9)', fontWeight: 600 }}>
+              {hydration}% hydration
+            </span>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-          <span style={{
-            background: 'rgba(255,255,255,.18)', borderRadius: '20px',
-            padding: '.3rem .8rem', fontSize: '.75rem',
-            fontFamily: 'var(--font-dm-mono)', color: '#fff',
-          }}>
-            {hydration}% hydration
-          </span>
-          <span style={{
-            background: 'rgba(255,255,255,.18)', borderRadius: '20px',
-            padding: '.3rem .8rem', fontSize: '.75rem',
-            fontFamily: 'var(--font-dm-mono)', color: '#fff',
-          }}>
-            {numItems} {itemLabel}
-          </span>
-        </div>
+        {onSave && (
+          <button
+            onClick={onSave}
+            disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+            style={{
+              padding: '.45rem .9rem', borderRadius: '8px',
+              border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'rgba(212,168,83,0.4)'}`,
+              background: 'transparent',
+              color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--gold)',
+              fontSize: '.78rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
+              fontFamily: 'var(--font-dm-mono)',
+            }}
+          >
+            {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved ✓' : saveStatus === 'error' ? 'Error' : 'Save recipe'}
+          </button>
+        )}
       </div>
 
       {/* ── Ingredients / Preferment cards ──────── */}

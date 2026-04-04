@@ -1197,56 +1197,7 @@ export default function Home() {
               {recipeGenerated && (
                 <div ref={resultsRef} style={{ marginTop: '1rem' }}>
 
-                  {/* Results header */}
-                  <div style={{
-                    background: 'var(--char)', borderRadius: '18px',
-                    border: '1px solid rgba(212,168,83,0.15)',
-                    padding: '1.3rem 1.6rem', marginBottom: '2rem',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    flexWrap: 'wrap', gap: '.75rem',
-                  }}>
-                    <div>
-                      <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
-                        {t('results.ready')}
-                      </div>
-                      {styleKey && (
-                        <div style={{ fontSize: '.78rem', color: 'rgba(245,240,232,.55)', marginTop: '.2rem', fontFamily: 'var(--font-dm-mono)' }}>
-                          {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {ovenData?.name ?? ''}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-                      {user && (
-                        <button
-                          onClick={() => handleSaveRecipe('simple')}
-                          disabled={saveStatus === 'saving' || saveStatus === 'saved'}
-                          className="btn"
-                          style={{
-                            padding: '.5rem 1rem', borderRadius: '8px',
-                            border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'rgba(212,168,83,0.4)'}`,
-                            background: saveStatus === 'saved' ? 'rgba(107,122,90,0.15)' : 'transparent',
-                            color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--gold)',
-                            fontSize: '.8rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
-                            transition: 'all .15s',
-                          }}
-                        >
-                          {saveStatus === 'saving' ? t('results.saving') : saveStatus === 'saved' ? t('results.saved') : saveStatus === 'error' ? t('results.saveFailed') : t('results.saveRecipe')}
-                        </button>
-                      )}
-                      <button
-                        onClick={startOver}
-                        className="btn"
-                        style={{
-                          padding: '.5rem 1rem', borderRadius: '8px',
-                          border: '1.5px solid rgba(245,240,232,.2)',
-                          background: 'transparent', color: 'rgba(245,240,232,.7)',
-                          fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s',
-                        }}
-                      >
-                        {t('results.startNew')}
-                      </button>
-                    </div>
-                  </div>
+                  {/* Results header now lives inside RecipeOutput */}
 
                   {/* Recipe null-guard */}
                   {!recipe ? (
@@ -1265,13 +1216,14 @@ export default function Home() {
                         numItems={numItems}
                         itemWeight={itemWeight}
                         styleName={ALL_STYLES[styleKey!].name}
-                        styleEmoji={ALL_STYLES[styleKey!].emoji}
                         mixerType={mixerType!}
                         kitchenTemp={kitchenTemp}
                         fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
                         totalColdHours={schedule ? schedule.totalColdHours : 0}
                         mode={tab}
                         bakeType={bakeType ?? 'pizza'}
+                        saveStatus={user ? saveStatus : undefined}
+                        onSave={user ? () => handleSaveRecipe('simple') : undefined}
                       />
 
                       {/* ── Large-batch yeast adjustment ── */}
@@ -2101,51 +2053,7 @@ export default function Home() {
               {recipeGenerated && (
                 <div style={{ marginTop: '1rem' }}>
 
-                  {/* ── Results header ── */}
-                  <div style={{
-                    background: 'var(--char)', borderRadius: '18px',
-                    border: '1px solid rgba(212,168,83,0.15)',
-                    padding: '1.3rem 1.6rem', marginBottom: '2rem',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    flexWrap: 'wrap', gap: '.75rem',
-                  }}>
-                    <div>
-                      <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
-                        {t('results.ready')}
-                      </div>
-                      {styleKey && (
-                        <div style={{ fontSize: '.78rem', color: 'rgba(245,240,232,.55)', marginTop: '.2rem', fontFamily: 'var(--font-dm-mono)' }}>
-                          {ALL_STYLES[styleKey].name} · {numItems} × {itemWeight} g · {ovenData?.name ?? ''} · {computeBlendProfile(flourBlend).displayName}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-                      {user && (
-                        <button
-                          onClick={() => handleSaveRecipe('custom')}
-                          disabled={saveStatus === 'saving' || saveStatus === 'saved'}
-                          className="btn"
-                          style={{
-                            padding: '.5rem 1rem', borderRadius: '8px',
-                            border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'rgba(212,168,83,0.4)'}`,
-                            background: saveStatus === 'saved' ? 'rgba(107,122,90,0.15)' : 'transparent',
-                            color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--gold)',
-                            fontSize: '.8rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
-                            transition: 'all .15s',
-                          }}
-                        >
-                          {saveStatus === 'saving' ? t('results.saving') : saveStatus === 'saved' ? t('results.saved') : saveStatus === 'error' ? t('results.saveFailed') : t('results.saveRecipe')}
-                        </button>
-                      )}
-                      <button
-                        onClick={startOver}
-                        className="btn"
-                        style={{ padding: '.5rem 1rem', borderRadius: '8px', border: '1.5px solid rgba(245,240,232,.2)', background: 'transparent', color: 'rgba(245,240,232,.7)', fontSize: '.8rem', cursor: 'pointer', transition: 'all .15s' }}
-                      >
-                        {t('results.startNew')}
-                      </button>
-                    </div>
-                  </div>
+                  {/* Results header now lives inside RecipeOutput */}
 
                   {!advancedRecipe ? (
                     <div style={{ background: '#FEF4EF', border: '1.5px solid #F5C4B0', borderRadius: '12px', padding: '1.25rem', textAlign: 'center', color: 'var(--terra)', fontSize: '.88rem' }}>
@@ -2158,7 +2066,6 @@ export default function Home() {
                         numItems={numItems}
                         itemWeight={itemWeight}
                         styleName={ALL_STYLES[styleKey!].name}
-                        styleEmoji={ALL_STYLES[styleKey!].emoji}
                         mixerType={mixerType!}
                         kitchenTemp={kitchenTemp}
                         fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
@@ -2168,6 +2075,8 @@ export default function Home() {
                         prefermentType={prefermentType}
                         priorityOverride={priorityOverride}
                         onPriorityOverride={v => setPriorityOverride(v)}
+                        saveStatus={user ? saveStatus : undefined}
+                        onSave={user ? () => handleSaveRecipe('custom') : undefined}
                       />
                       {schedule && (
                         <Timeline
