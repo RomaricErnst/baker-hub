@@ -203,7 +203,10 @@ export default function FermentChart({
   // During drag, use local position for all mix-derived values
   const effectiveMixHBF = localMixHBF !== null ? localMixHBF : mixOffsetH;
 
-  const prefStartAbsHBF = effectiveMixHBF + prefOffsetH;
+  const prefStartAbsHBF = Math.min(
+    effectiveMixHBF + prefOffsetH,
+    nowHBF - 0.25
+  );
   const doughPeakHBF    = effectiveMixHBF - DOUGH_SWEET_CENTER;
   const prefPeakHBF     = prefStartAbsHBF - optH;
 
