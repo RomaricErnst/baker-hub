@@ -431,9 +431,6 @@ export function buildSchedule(
 
   const hasColdRetard = coldH > 0;
 
-  // Two-phase tropical: only when tropical AND cold retard AND window >= 16h
-  const isTwoPhase = isTropical && hasColdRetard && totalWindowH >= 16;
-
   // Schedule note (first match wins)
   let scheduleNote: string | null = null;
   if (coldHRequired && isTropical) {
@@ -451,6 +448,12 @@ export function buildSchedule(
 
   // Initial bulk at RT (temp-aware)
   const initialBulkH = isVeryHot ? 0.5 : (isTropical ? 0.75 : 1.5);
+
+  const minCold1H = isTropical ? 2 : 4;
+  const minCold2H = 2;
+  const divideH   = 15 / 60;
+  const minTwoPhaseWindow = initialBulkH + minCold1H + divideH + minCold2H + minFinalRT + preheatH;
+  const isTwoPhase = hasColdRetard && totalWindowH >= minTwoPhaseWindow;
 
   // Filter blocks overlapping the fermentation window [fermStart, bakeTime)
   const relevantBlocks = availabilityBlocks
@@ -474,25 +477,18 @@ export function buildSchedule(
     }
     const coldRetard1Start = new Date(fermStart.getTime() + actualBulkH * 3600000);
 
-    // Total cold time driven by style default
-    const totalColdAvailableH = coldH;
-
-    // Phase 1 end: either first block's end or half of available cold
-    let coldRetard1End: Date;
-    if (relevantBlocks.length > 0) {
-      const halfPoint = new Date(coldRetard1Start.getTime() + totalColdAvailableH * 0.5 * 3600000);
-      coldRetard1End = new Date(Math.max(relevantBlocks[0].to.getTime(), halfPoint.getTime()));
-    } else {
-      coldRetard1End = new Date(coldRetard1Start.getTime() + totalColdAvailableH * 0.5 * 3600000);
+    const earliestDivide = new Date(coldRetard1Start.getTime() + minCold1H * 3600000);
+    const latestDivide   = new Date(bakeTime.getTime() - (minCold2H + minFinalRT + preheatH) * 3600000);
+    const isInAnyBlocker = (t: Date) => relevantBlocks.some(b => t >= b.from && t < b.to);
+    let divideBallTime: Date = earliestDivide;
+    if (earliestDivide.getTime() <= latestDivide.getTime()) {
+      let scan = new Date(earliestDivide);
+      while (scan.getTime() <= latestDivide.getTime()) {
+        if (!isInAnyBlocker(scan)) { divideBallTime = scan; break; }
+        scan = new Date(scan.getTime() + 15 * 60000);
+      }
     }
-
-    // Safety: phase 1 end must not precede start
-    if (coldRetard1End.getTime() < coldRetard1Start.getTime()) {
-      coldRetard1End = new Date(coldRetard1Start.getTime());
-    }
-
-    // Divide & Ball happens when phase 1 ends (pushed out of any blocker)
-    const divideBallTime = pushOutOfBlockers(coldRetard1End, relevantBlocks);
+    const coldRetard1End = divideBallTime;
 
     // Divide & ball duration
     // numItems not available here; use a placeholder of 4 balls (15 min base)

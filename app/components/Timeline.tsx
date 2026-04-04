@@ -253,17 +253,7 @@ function buildItems(
       });
     }
 
-    // 4 — Divide & Ball (when dough comes OUT of fridge)
-    items.push({
-      kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
-      time: schedule.divideBallTime,
-      label: 'Divide & Ball',
-      icon: '⚖️',
-      tip: divideBallTip(),
-      durationH: divideH,
-    });
-
-    // 5 — Remove from fridge / rest at RT (only if restRtHours > 0)
+    // 4 — Remove from fridge FIRST (before divide & ball)
     if (schedule.coldRetardEnd && schedule.restRtHours > 0) {
       items.push({
         kind: 'step', id: 'rest_rt', stepKind: 'rest_rt',
@@ -274,6 +264,16 @@ function buildItems(
         durationH: schedule.restRtHours,
       });
     }
+
+    // 5 — Divide & Ball (after rest)
+    items.push({
+      kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
+      time: schedule.divideBallTime,
+      label: 'Divide & Ball',
+      icon: '⚖️',
+      tip: divideBallTip(),
+      durationH: divideH,
+    });
   }
 
   // Final Proof (both paths)
