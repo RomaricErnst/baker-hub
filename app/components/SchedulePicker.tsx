@@ -365,6 +365,7 @@ function findOptimalPosition(
   prefOffsetH: number,
   kitchenTemp: number,
   nowHBF: number = 999,
+  prefMinH: number = 3,
 ): {
   mixHBF: number;
   prefHBF: number;
@@ -388,8 +389,6 @@ function findOptimalPosition(
   const STEP = 0.25;
   const SEARCH_RANGE = (sweetFrom - sweetTo) / 2 + 2;
   const typicalBulkH = kitchenTemp >= 30 ? 0.5 : kitchenTemp >= 28 ? 0.75 : 1.5;
-  const prefMinH = 3;
-
   for (let delta = 0; delta <= SEARCH_RANGE; delta += STEP) {
     for (const sign of [0, 1, -1]) {
       const candidate = sweetCenter + (sign * delta);
@@ -1005,12 +1004,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setPrefOffsetH(optimalPrefOffset);
       onPrefOffsetChange?.(optimalPrefOffset);
     }
+    // Minimum viable poolish: 3h RT, 12h fridge (25% of 48h optimal)
+    const prefMinViableH = prefGoesInFridge ? 12 : 3;
     const result = findOptimalPosition(
       sweetCenter, sweetFrom, sweetTo,
       currentBlocks, et,
       hasPrefActive, optimalPrefOffset,
       kitchenTemp,
       nowHBF,
+      prefMinViableH,
     );
 
     if (result.mixInBlocker) {
