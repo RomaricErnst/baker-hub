@@ -486,9 +486,10 @@ function SimpleColourBar({
   const barCY      = BAR_Y + BAR_H / 2; // diamond center y
 
   // Zone boundaries — driven by style+timing aware sweet zone props
-  const sweetL_HBF = sweetFrom ?? (hasColdRetard ? 52 : 26);
+  const _nowHBFBar = nowHBF ?? barWin;
+  const sweetL_HBF = Math.min(sweetFrom ?? (hasColdRetard ? 52 : 26), _nowHBFBar - 0.25);
   const sweetR_HBF = sweetTo   ?? (hasColdRetard ? 20 : 14);
-  const goldL_HBF  = sweetL_HBF + 10;
+  const goldL_HBF  = Math.min(sweetL_HBF + 10, _nowHBFBar - 0.1);
   const goldR2_HBF = Math.max(0.5, sweetR_HBF - 6);
 
   // Colour zones: [fromHBF (left), toHBF (right), fill, label]
@@ -1080,14 +1081,26 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const _sfDef = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
   const _minTotalRT = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0 + (preheatMin / 60);
   const _minColdH = _sfDef.minColdH ?? 0;
-  const renderSweetFrom = recommendedColdH > 0
-    ? recommendedColdH + _sfDef.rtH
+  // Compute effective cold hours directly from window — never rely on
+  // recommendedColdH state which may be 0 on first render
+  const _nowHBF = eatTimeSet
+    ? (pendingEatTime.getTime() - Date.now()) / 3600000
+    : 0;
+  const _prefColdH = _sfDef.preferredColdH ?? _sfDef.coldH;
+  let _effectiveColdH = 0;
+  if (_sfDef.coldH > 0 && _nowHBF > 0) {
+    if (_nowHBF >= _prefColdH + _minTotalRT) _effectiveColdH = _prefColdH;
+    else if (_nowHBF >= _sfDef.coldH + _minTotalRT) _effectiveColdH = _sfDef.coldH;
+    else if (_nowHBF > _minTotalRT) _effectiveColdH = _nowHBF - _minTotalRT;
+  }
+  const renderSweetFrom = _effectiveColdH > 0
+    ? _effectiveColdH + _sfDef.rtH
     : _sfDef.rtH + 4;
-  const renderSweetToRaw = recommendedColdH > 0
+  const renderSweetToRaw = _effectiveColdH > 0
     ? Math.max(_minColdH + _sfDef.rtH, _minTotalRT + 1)
     : _minTotalRT + 1;
   const renderSweetTo = Math.min(renderSweetToRaw, renderSweetFrom - 0.5);
-  const renderSweetCenter = recommendedColdH > 0 ? renderSweetFrom : (renderSweetFrom + renderSweetTo) / 2;
+  const renderSweetCenter = _effectiveColdH > 0 ? renderSweetFrom : (renderSweetFrom + renderSweetTo) / 2;
   const prefGoesInFridge = hasPrefActive && (
     prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26)
   );
