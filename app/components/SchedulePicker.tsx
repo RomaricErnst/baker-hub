@@ -1081,9 +1081,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const _sfDef = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
   const _minTotalRT = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0 + (preheatMin / 60);
   const _minColdH = _sfDef.minColdH ?? 0;
-  const _nowHBF = eatTimeSet
-    ? (pendingEatTime.getTime() - Date.now()) / 3600000
-    : 0;
+  const _nowHBF = (pendingEatTime.getTime() - Date.now()) / 3600000;
   const _prefColdH = _sfDef.preferredColdH ?? _sfDef.coldH;
   let _effectiveColdH = 0;
   if (_sfDef.coldH > 0 && _nowHBF > 0) {
