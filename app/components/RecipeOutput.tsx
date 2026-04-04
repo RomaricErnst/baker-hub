@@ -323,6 +323,11 @@ export default function RecipeOutput({
       {'💧 Use at '}
       <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', fontSize: '.9rem', color: waterTempColor }}>{waterInfo.targetTemp}°C</span>
       {` · ${waterInfo.tempGuidance}`}
+      {waterInfo.targetTemp <= 15 && (
+        <span style={{ display: 'block', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '.1rem' }}>
+          Keeps dough at target temperature despite mixer friction
+        </span>
+      )}
     </>
   );
 

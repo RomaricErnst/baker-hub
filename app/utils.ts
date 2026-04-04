@@ -737,6 +737,7 @@ export function calculateRecipe(
   fridgeTemp: number,
   yeastType: YeastType,
   mode: 'simple' | 'custom',
+  mixerType: MixerType = 'hand',           // needed for DDT friction factor
   manualHydration?: number,                // custom mode only
   manualOil?: number,                      // custom mode only
   manualSugar?: number,                    // custom mode only
@@ -791,10 +792,20 @@ export function calculateRecipe(
   const oilG   = oil   > 0 ? Math.round(flour * oil / 100)   : 0;
   const sugarG = sugar > 0 ? Math.round(flour * sugar / 100 * 10) / 10 : 0;
 
-  // Water temperature (DDT method — target FDT 24°C)
-  const frictionFactor = 3; // default stand mixer
-  const waterTemp = Math.max(4, Math.min(40,
-    24 * 3 - kitchenTemp - kitchenTemp - frictionFactor
+  // Water temperature — DDT method (Desired Dough Temperature)
+  // Formula: waterTemp = (FDT × 3) - flourTemp - kitchenTemp - frictionFactor
+  // flourTemp ≈ kitchenTemp (flour stored at room temperature)
+  // FDT varies by style: extensible doughs target lower, enriched higher
+  const TARGET_FDT: Record<string, number> = {
+    neapolitan: 23, newyork: 24, roman: 25, pan: 25,
+    sourdough: 24, pain_campagne: 24, pain_levain: 24,
+    baguette: 24, pain_complet: 24, pain_seigle: 24,
+    fougasse: 25, brioche: 22, pain_mie: 24, pain_viennois: 23,
+  };
+  const targetFDT = TARGET_FDT[styleKey] ?? 24;
+  const frictionFactor = MIXER_TYPES[mixerType]?.frictionFactor ?? 3;
+  const waterTemp = Math.max(2, Math.min(40,
+    targetFDT * 3 - kitchenTemp - kitchenTemp - frictionFactor
   ));
 
   // Yeast or sourdough

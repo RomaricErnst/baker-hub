@@ -398,6 +398,7 @@ export default function Home() {
       return calculateRecipe(
         styleKey, ovenType as OvenType, numItems, itemWeight,
         kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'simple',
+        mixerType as MixerType,
       );
     } catch {
       return null;
@@ -429,6 +430,7 @@ export default function Home() {
       return calculateRecipe(
         styleKey, ovenType as OvenType, numItems, itemWeight,
         kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom',
+        mixerType as MixerType,
         manualHydration, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride,
         prefermentFlourPct,
       );
