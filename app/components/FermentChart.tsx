@@ -348,33 +348,45 @@ export default function FermentChart({
     const x1 = hToX(fromHBF, W, WH);
     const x2 = hToX(toHBF,   W, WH);
     if (x2 <= x1 + 1) return null;
+    // Visible portion of zone clipped to screen
+    const visLeft  = Math.max(x1, 0);
+    const visRight = Math.min(x2, W);
+    const visWidth = visRight - visLeft;
+    // Label aims for center of visible screen portion, stays within zone bounds
+    // If visible zone too narrow → label clips naturally (no orphan floating label)
+    const labelW = label.length * 7;
+    const labelX = Math.min(
+      Math.max((visLeft + visRight) / 2, visLeft + labelW / 2),
+      visRight - labelW / 2
+    );
+    const showLabel = visWidth > labelW * 0.6; // only render if enough visible space
+    // Arrow clamped to visible area
+    const arrowX1 = Math.max(x1 + 4, 2);
+    const arrowX2 = Math.min(x2 - 4, W - 2);
     return (
       <g>
-        <rect x={x1} y={TOP_PAD} width={x2 - x1} height={BL - TOP_PAD}
+        {/* Zone fill — clipped to screen */}
+        <rect x={visLeft} y={TOP_PAD} width={visWidth} height={BL - TOP_PAD}
           fill={`${color}12`} />
-        <line x1={x1} y1={labelY + 9} x2={x1} y2={BL}
-          stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
+        {/* Left boundary line — only if on screen */}
+        {x1 >= 0 && <line x1={x1} y1={labelY + 9} x2={x1} y2={BL}
+          stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />}
+        {/* Right boundary line */}
         <line x1={x2} y1={labelY + 9} x2={x2} y2={BL}
           stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
-        <rect
-          x={(x1 + x2) / 2 - label.length * 4}
-          y={labelY - 11}
-          width={label.length * 8}
-          height={14}
-          fill="transparent"
-          rx={3}
-        />
-        <text x={(x1 + x2) / 2} y={labelY} fontSize={11} fill={color}
+        {/* Label — aims for visible center, within zone bounds */}
+        {showLabel && <text x={labelX} y={labelY} fontSize={11} fill={color}
           textAnchor="middle" fontFamily="DM Mono, monospace" fillOpacity={0.85} fontWeight="600">
           {label}
-        </text>
-        <line
-          x1={x1 + 4} x2={x2 - 4}
+        </text>}
+        {/* Arrow — clipped to visible area, left arrowhead only if zone left is on screen */}
+        {arrowX2 > arrowX1 + 8 && <line
+          x1={arrowX1} x2={arrowX2}
           y1={labelY + 9} y2={labelY + 9}
           stroke={color} strokeWidth={1.2} strokeOpacity={0.7}
-          markerStart={`url(#arrow-${markerId}-start)`}
+          markerStart={x1 >= 0 ? `url(#arrow-${markerId}-start)` : undefined}
           markerEnd={`url(#arrow-${markerId}-end)`}
-        />
+        />}
       </g>
     );
   }
