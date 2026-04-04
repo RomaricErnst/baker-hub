@@ -199,7 +199,7 @@ export default function FermentChart({
   const doughZoneFrom = sweetFromH ?? (hasColdRetard ? 52 : 26);
   const doughZoneTo   = sweetToH   ?? (hasColdRetard ? 20 : 14);
   const prefZoneFrom  = hasPref ? effectiveMixHBF + optH + 3 : 0;
-  const prefZoneTo    = hasPref ? effectiveMixHBF + optH - 3 : 0;
+  const prefZoneTo    = hasPref ? effectiveMixHBF + 3 : 0;
 
   // ── Pixel positions ──────────────────────────────────────
   const mixX  = hToX(effectiveMixHBF, W, WH);
@@ -294,8 +294,8 @@ export default function FermentChart({
     : mixTooEarly ? '🔴 Too early — over-fermented'
     : '🔴 Too late — under-fermented';
 
-  const prefInZone = hasPref && prefOffsetH >= optH - 3 && prefOffsetH <= optH + 3;
-  const prefStatus = prefInZone ? '🟢 Ready at mix' : '🟡 Adjust start time';
+  const prefInZone = hasPref && prefOffsetH >= 3 && prefOffsetH <= optH + 3;
+  const prefStatus = prefInZone ? '🟢 Ready when dough starts' : '🟡 Adjust timing';
 
   // ── Info card data ───────────────────────────────────────
   const mixTime  = new Date(bakeMs - effectiveMixHBF * 3600000);

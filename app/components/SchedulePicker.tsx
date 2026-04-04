@@ -1081,8 +1081,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const _sfDef = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
   const _minTotalRT = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0 + (preheatMin / 60);
   const _minColdH = _sfDef.minColdH ?? 0;
-  // Compute effective cold hours directly from window — never rely on
-  // recommendedColdH state which may be 0 on first render
   const _nowHBF = eatTimeSet
     ? (pendingEatTime.getTime() - Date.now()) / 3600000
     : 0;
@@ -1100,7 +1098,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     ? Math.max(_minColdH + _sfDef.rtH, _minTotalRT + 1)
     : _minTotalRT + 1;
   const renderSweetTo = Math.min(renderSweetToRaw, renderSweetFrom - 0.5);
-  const renderSweetCenter = _effectiveColdH > 0 ? renderSweetFrom : (renderSweetFrom + renderSweetTo) / 2;
+  const renderSweetCenter = _effectiveColdH > 0
+    ? renderSweetFrom
+    : (renderSweetFrom + renderSweetTo) / 2;
   const prefGoesInFridge = hasPrefActive && (
     prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26)
   );
@@ -1257,7 +1257,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ...INPUT_STYLE, width: '100%',
               display: 'flex', alignItems: 'center',
               color: pickerDate ? 'var(--char)' : 'var(--smoke)',
-              position: 'relative', zIndex: 1,
+              position: 'relative', zIndex: 1, cursor: 'pointer',
             }}>
               {pickerDate ? (() => {
                 const [y, m, d] = pickerDate.split('-').map(Number);
@@ -1278,7 +1278,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               style={{
                 position: 'absolute', inset: 0, opacity: 0,
                 cursor: 'pointer', width: '100%', height: '100%',
-                zIndex: 2,
+                zIndex: 2, fontSize: 16,
               }}
             />
           </div>
