@@ -807,6 +807,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const d = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
     return d.coldH ?? 0;
   });
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const [pickerDateTime, setPickerDateTime] = useState<string>(() => {
     if (alreadySet && eatTime) {
       const d = eatTime;
@@ -1250,7 +1251,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
         <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center', position: 'relative' }}>
           {/* Date — native picker styled as "Sat 4 Apr" */}
-          <div style={{ flex: 2, position: 'relative' }}>
+          <div style={{ flex: 2, position: 'relative' }}
+            onClick={() => { try { dateInputRef.current?.showPicker(); } catch { dateInputRef.current?.click(); } }}
+          >
             <div style={{
               ...INPUT_STYLE, width: '100%',
               display: 'flex', alignItems: 'center',
@@ -1266,6 +1269,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               })() : 'Pick a date'}
             </div>
             <input
+              ref={dateInputRef}
               type="date"
               value={pickerDate}
               onChange={e => {
