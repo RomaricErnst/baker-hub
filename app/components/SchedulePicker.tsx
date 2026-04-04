@@ -364,6 +364,7 @@ function findOptimalPosition(
   hasPref: boolean,
   prefOffsetH: number,
   kitchenTemp: number,
+  nowHBF: number = 999,
 ): {
   mixHBF: number;
   prefHBF: number;
@@ -405,9 +406,11 @@ function findOptimalPosition(
           fallback: !inSweet(candidate), mixInBlocker: false, prefInBlocker: false,
         };
       }
-      // Try full offset first, then reduce to minimum to clear blocker
+      // Try full offset first, then reduce to minimum to clear blocker.
+      // Clamp poolish to nowHBF — never push it into the past.
+      const maxPrefOffset = Math.min(prefOffsetH, nowHBF - candidate - 0.25);
       let bestPrefOffset = 0;
-      for (let p = prefOffsetH; p >= prefMinH; p -= STEP) {
+      for (let p = maxPrefOffset; p >= prefMinH; p -= STEP) {
         if (!isInBlocker(candidate + p)) {
           bestPrefOffset = p;
           break;
@@ -422,14 +425,15 @@ function findOptimalPosition(
       }
     }
   }
+  const fallbackPrefOffset = Math.min(prefOffsetH, nowHBF - sweetCenter - 0.25);
   return {
     mixHBF:        sweetCenter,
-    prefHBF:       sweetCenter + prefOffsetH,
+    prefHBF:       sweetCenter + Math.max(0, fallbackPrefOffset),
     mixInZone:     false,
     prefInZone:    false,
     fallback:      true,
     mixInBlocker:  isInBlocker(sweetCenter),
-    prefInBlocker: hasPref && isInBlocker(sweetCenter + prefOffsetH),
+    prefInBlocker: hasPref && isInBlocker(sweetCenter + Math.max(0, fallbackPrefOffset)),
   };
 }
 
@@ -1006,6 +1010,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       currentBlocks, et,
       hasPrefActive, optimalPrefOffset,
       kitchenTemp,
+      nowHBF,
     );
 
     if (result.mixInBlocker) {
