@@ -188,8 +188,11 @@ export default function FermentChart({
 
   const optH            = hasPref ? getPrefOptH(prefermentType, kitchenTemp) : 0;
   const prefSigBase     = hasPref ? getPrefSig(prefermentType, kitchenTemp) : 1;
-  const prefSig         = hasPref && prefOffsetH < optH
-    ? Math.min(prefSigBase, prefOffsetH * 0.6)
+  // When offset < optH, the peak is far from diamond → curve looks flat.
+  // Widen sigma so the bell rises to ~40% of its max at the diamond.
+  // sigma = optH * 0.75 achieves ~40% height at optH distance from peak.
+  const prefSig = hasPref && prefOffsetH < optH && optH > 0
+    ? Math.max(prefSigBase, optH * 0.75)
     : prefSigBase;
   // During drag, use local position for all mix-derived values
   const effectiveMixHBF = localMixHBF !== null ? localMixHBF : mixOffsetH;
