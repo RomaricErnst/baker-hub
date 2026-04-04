@@ -196,8 +196,10 @@ export default function FermentChart({
   const prefPeakHBF     = prefStartAbsHBF - optH;
 
   // Sweet-spot zones — driven by style+timing aware props
-  const doughZoneFrom = sweetFromH ?? (hasColdRetard ? 52 : 26);
-  const doughZoneTo   = sweetToH   ?? (hasColdRetard ? 20 : 14);
+  // Zone: left = max useful start (min of now and preferredCold+rtH)
+  // Zone: right = minTotalFermH boundary — unified cold/RT
+  const doughZoneFrom = sweetFromH ?? (hasColdRetard ? 50 : 26);
+  const doughZoneTo   = sweetToH   ?? (hasColdRetard ? 8  : 8 );
   const prefZoneFrom  = hasPref ? effectiveMixHBF + optH + 3 : 0;
   const prefZoneTo    = hasPref ? effectiveMixHBF + 3 : 0;
 
@@ -289,7 +291,7 @@ export default function FermentChart({
 
   // ── Status logic ─────────────────────────────────────────
   const mixInZone   = effectiveMixHBF >= doughZoneTo   && effectiveMixHBF <= doughZoneFrom;
-  const mixTooEarly = effectiveMixHBF > doughZoneFrom;
+  const mixTooEarly = false;
   const mixStatus   = mixInZone   ? '🟢 Dough ready at bake'
     : mixTooEarly ? '🔴 Too early — over-fermented'
     : '🔴 Too late — under-fermented';
