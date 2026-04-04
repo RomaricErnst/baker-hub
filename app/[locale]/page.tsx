@@ -10,6 +10,7 @@ import SchedulePicker from '../components/SchedulePicker';
 import ClimatePicker from '../components/ClimatePicker';
 import RecipeOutput from '../components/RecipeOutput';
 import Timeline from '../components/Timeline';
+import BakeGuide from '../components/BakeGuide';
 import YeastHelper from '../components/YeastHelper';
 import FlourPicker from '../components/FlourPicker';
 import PrefermentPicker from '../components/PrefermentPicker';
@@ -1367,13 +1368,33 @@ export default function Home() {
                           kitchenTemp={kitchenTemp}
                           prefStartTime={prefStartTime}
                           prefermentType={prefermentType}
-                          onStartBaking={() => { /* Baking mode — future feature */ }}
+                          onStartBaking={() => setActiveTab('guide')}
                         />
                       )}
                     </div>
                   )}
                 </div>
               )}
+
+              {/* Start Bake Guide CTA */}
+              <button
+                onClick={() => setActiveTab('guide')}
+                style={{
+                  background: 'var(--terra)',
+                  border: 'none',
+                  color: 'var(--cream)',
+                  borderRadius: '12px',
+                  padding: '12px 0',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  width: '100%',
+                  marginTop: '12px',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-dm-sans)',
+                }}
+              >
+                ▶ Start Bake Guide
+              </button>
 
               {/* Edit setup button */}
               <button
@@ -1387,7 +1408,7 @@ export default function Home() {
                   fontSize: '14px',
                   fontWeight: 500,
                   width: '100%',
-                  marginTop: '16px',
+                  marginTop: '8px',
                   cursor: 'pointer',
                 }}
               >
@@ -1400,14 +1421,22 @@ export default function Home() {
             <div style={{ display: activeTab === 'guide' ? 'block' : 'none' }}>
               {!recipeGenerated ? (
                 <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-                  <div style={{ fontSize: '24px', marginBottom: '12px' }}>◆</div>
+                  <div style={{ fontSize: '24px', marginBottom: '12px' }}>⏳</div>
                   <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>Generate your recipe first</div>
                 </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-                  <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '18px', color: 'var(--char)', marginBottom: '12px' }}>Bake guide</div>
-                  <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>Your step-by-step guide will appear here.</div>
-                </div>
+              ) : schedule && recipe && mixerType && (
+                <BakeGuide
+                  schedule={schedule}
+                  mixerType={mixerType}
+                  styleKey={styleKey ?? 'neapolitan'}
+                  kitchenTemp={kitchenTemp}
+                  numItems={numItems}
+                  prefermentType={prefermentType}
+                  oil={recipe.oil}
+                  hydration={recipe.hydration}
+                  prefStartTime={prefStartTime}
+                  feedTime={feedTime}
+                />
               )}
             </div>{/* end guide tab */}
 
@@ -2096,13 +2125,33 @@ export default function Home() {
                           kitchenTemp={kitchenTemp}
                           prefStartTime={prefStartTime}
                           prefermentType={prefermentType}
-                          onStartBaking={() => { /* Baking mode — future feature */ }}
+                          onStartBaking={() => setActiveTab('guide')}
                         />
                       )}
                     </div>
                   )}
                 </div>
               )}
+
+              {/* Start Bake Guide CTA */}
+              <button
+                onClick={() => setActiveTab('guide')}
+                style={{
+                  background: 'var(--terra)',
+                  border: 'none',
+                  color: 'var(--cream)',
+                  borderRadius: '12px',
+                  padding: '12px 0',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  width: '100%',
+                  marginTop: '12px',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-dm-sans)',
+                }}
+              >
+                ▶ Start Bake Guide
+              </button>
 
               {/* Edit setup button */}
               <button
@@ -2116,7 +2165,7 @@ export default function Home() {
                   fontSize: '14px',
                   fontWeight: 500,
                   width: '100%',
-                  marginTop: '16px',
+                  marginTop: '8px',
                   cursor: 'pointer',
                 }}
               >
@@ -2129,14 +2178,22 @@ export default function Home() {
             <div style={{ display: activeTab === 'guide' ? 'block' : 'none' }}>
               {!recipeGenerated ? (
                 <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-                  <div style={{ fontSize: '24px', marginBottom: '12px' }}>◆</div>
+                  <div style={{ fontSize: '24px', marginBottom: '12px' }}>⏳</div>
                   <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>Generate your recipe first</div>
                 </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-                  <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '18px', color: 'var(--char)', marginBottom: '12px' }}>Bake guide</div>
-                  <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>Your step-by-step guide will appear here.</div>
-                </div>
+              ) : schedule && advancedRecipe && mixerType && (
+                <BakeGuide
+                  schedule={schedule}
+                  mixerType={mixerType}
+                  styleKey={styleKey ?? 'neapolitan'}
+                  kitchenTemp={kitchenTemp}
+                  numItems={numItems}
+                  prefermentType={prefermentType}
+                  oil={advancedRecipe.oil}
+                  hydration={advancedRecipe.hydration}
+                  prefStartTime={prefStartTime}
+                  feedTime={feedTime}
+                />
               )}
             </div>{/* end guide tab */}
 
