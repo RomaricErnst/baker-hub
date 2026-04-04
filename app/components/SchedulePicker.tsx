@@ -973,10 +973,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setGuardNote(null);
     }
 
-    // Pass full preferred offset — findOptimalPosition will reduce if needed
-    const optimalPrefOffset = hasPrefActive
-      ? Math.max(0.25, Math.min(rawPrefOffset, nowHBF - sweetCenter - 0.25))
-      : prefOffsetH;
+    // Pass full raw offset — findOptimalPosition computes per-candidate
+    // clamp correctly inside the loop: maxPrefOffset = min(rawPrefOffset, nowHBF - candidate - 0.25)
+    // This gives the right poolish room for each candidate independently
+    const optimalPrefOffset = hasPrefActive ? rawPrefOffset : prefOffsetH;
     if (hasPrefActive) {
       setPrefOffsetH(optimalPrefOffset);
       onPrefOffsetChange?.(optimalPrefOffset);
