@@ -187,7 +187,10 @@ export default function FermentChart({
   const DOUGH_SWEET_CENTER = sweetCenterH ?? (hasColdRetard ? 34 : 20);
 
   const optH            = hasPref ? getPrefOptH(prefermentType, kitchenTemp) : 0;
-  const prefSig         = hasPref ? getPrefSig(prefermentType, kitchenTemp)  : 1;
+  const prefSigBase     = hasPref ? getPrefSig(prefermentType, kitchenTemp) : 1;
+  const prefSig         = hasPref && prefOffsetH < optH
+    ? Math.min(prefSigBase, prefOffsetH * 0.6)
+    : prefSigBase;
   // During drag, use local position for all mix-derived values
   const effectiveMixHBF = localMixHBF !== null ? localMixHBF : mixOffsetH;
 
@@ -198,7 +201,7 @@ export default function FermentChart({
   // Sweet-spot zones — driven by style+timing aware props
   // Zone: left = max useful start (min of now and preferredCold+rtH)
   // Zone: right = minTotalFermH boundary — unified cold/RT
-  const doughZoneFrom = sweetFromH ?? (hasColdRetard ? 50 : 26);
+  const doughZoneFrom = sweetFromH ?? (hasColdRetard ? 52 : 26);
   const doughZoneTo   = sweetToH   ?? (hasColdRetard ? 8  : 8 );
   const prefZoneFrom  = hasPref ? effectiveMixHBF + optH + 3 : 0;
   const prefZoneTo    = hasPref ? effectiveMixHBF + 3 : 0;
@@ -263,8 +266,8 @@ export default function FermentChart({
       setLocalMixHBF(h);
     } else {
       const maxAbs = Math.min(WH - 2, nowHBF - 0.25);
-      const abs = Math.max(mixOffsetH + 0.25, Math.min(maxAbs, snap15(xToHBF(x, W, WH))));
-      onPrefChange(abs - mixOffsetH);
+      const abs = Math.max(effectiveMixHBF + 0.25, Math.min(maxAbs, snap15(xToHBF(x, W, WH))));
+      onPrefChange(abs - effectiveMixHBF);
     }
   }
 
@@ -296,7 +299,7 @@ export default function FermentChart({
     : mixTooEarly ? '🔴 Too early — over-fermented'
     : '🔴 Too late — under-fermented';
 
-  const prefInZone = hasPref && prefOffsetH >= 3 && prefOffsetH <= optH + 3;
+  const prefInZone = hasPref && prefOffsetH >= 2.75 && prefOffsetH <= optH + 3;
   const prefStatus = prefInZone ? '🟢 Ready when dough starts' : '🟡 Adjust timing';
 
   // ── Info card data ───────────────────────────────────────
