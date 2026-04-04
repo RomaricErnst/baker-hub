@@ -366,6 +366,7 @@ function findOptimalPosition(
   kitchenTemp: number,
   nowHBF: number = 999,
   prefMinH: number = 3,
+  minTotalRT: number = 3,
 ): {
   mixHBF: number;
   prefHBF: number;
@@ -387,12 +388,18 @@ function findOptimalPosition(
     return hbf >= sweetTo && hbf <= sweetFrom;
   }
   const STEP = 0.25;
-  const SEARCH_RANGE = (sweetFrom - sweetTo) / 2 + 2;
+  // Search range must reach from sweetCenter down to minTotalRT
+  // so valid positions just below sweetTo are not missed when blocker
+  // fills the entire sweet zone
+  const SEARCH_RANGE = Math.max(
+    (sweetFrom - sweetTo) / 2 + 2,
+    sweetCenter - minTotalRT + 1
+  );
   const typicalBulkH = kitchenTemp >= 30 ? 0.5 : kitchenTemp >= 28 ? 0.75 : 1.5;
   for (let delta = 0; delta <= SEARCH_RANGE; delta += STEP) {
     for (const sign of [0, 1, -1]) {
       const candidate = sweetCenter + (sign * delta);
-      if (candidate < sweetTo - 2 || candidate > sweetFrom + 2) continue;
+      if (candidate < minTotalRT || candidate > sweetFrom + 2) continue;
       const mixClear = !isInBlocker(candidate);
       if (!mixClear) continue;
       const bulkEndHBF = candidate - typicalBulkH;
@@ -1013,6 +1020,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       kitchenTemp,
       nowHBF,
       prefMinViableH,
+      minTotalRTLocal,
     );
 
     if (result.mixInBlocker) {
