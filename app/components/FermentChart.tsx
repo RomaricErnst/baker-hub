@@ -187,13 +187,18 @@ export default function FermentChart({
   const DOUGH_SWEET_CENTER = sweetCenterH ?? (hasColdRetard ? 34 : 20);
 
   const optH            = hasPref ? getPrefOptH(prefermentType, kitchenTemp) : 0;
-  const prefSig         = hasPref ? getPrefSig(prefermentType, kitchenTemp)  : 1;
+  const prefSigBase     = hasPref ? getPrefSig(prefermentType, kitchenTemp) : 1;
+  const prefSig         = hasPref && prefOffsetH < optH
+    ? Math.min(prefSigBase, prefOffsetH * 0.55)
+    : prefSigBase;
   // During drag, use local position for all mix-derived values
   const effectiveMixHBF = localMixHBF !== null ? localMixHBF : mixOffsetH;
 
   const prefStartAbsHBF = effectiveMixHBF + prefOffsetH;
   const doughPeakHBF    = effectiveMixHBF - DOUGH_SWEET_CENTER;
-  const prefPeakHBF     = prefStartAbsHBF - optH;
+  const prefPeakHBF = prefOffsetH >= optH
+    ? prefStartAbsHBF - optH
+    : prefStartAbsHBF;
 
   // Sweet-spot zones — driven by style+timing aware props
   // Zone: left = max useful start (min of now and preferredCold+rtH)
@@ -263,8 +268,10 @@ export default function FermentChart({
       setLocalMixHBF(h);
     } else {
       const maxAbs = Math.min(WH - 2, nowHBF - 0.25);
-      const abs = Math.max(mixOffsetH + 0.25, Math.min(maxAbs, snap15(xToHBF(x, W, WH))));
-      onPrefChange(abs - mixOffsetH);
+      const minAbs = mixOffsetH + 0.25;
+      const raw = snap15(xToHBF(x, W, WH));
+      const abs = Math.max(minAbs, Math.min(maxAbs, raw));
+      if (abs > mixOffsetH) onPrefChange(abs - mixOffsetH);
     }
   }
 
@@ -296,7 +303,7 @@ export default function FermentChart({
     : mixTooEarly ? '🔴 Too early — over-fermented'
     : '🔴 Too late — under-fermented';
 
-  const prefInZone = hasPref && prefOffsetH >= 3 && prefOffsetH <= optH + 3;
+  const prefInZone = hasPref && prefOffsetH >= 2.75 && prefOffsetH <= optH + 3;
   const prefStatus = prefInZone ? '🟢 Ready when dough starts' : '🟡 Adjust timing';
 
   // ── Info card data ───────────────────────────────────────
