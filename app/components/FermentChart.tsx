@@ -118,8 +118,7 @@ function fmtHM(d: Date): string {
 
 function fmtDT(d: Date): string {
   const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
-  const mo = d.toLocaleDateString('en-US', { month: 'short' });
-  return `${wd} ${d.getDate()} ${mo} · ${fmtHM(d)}`;
+  return `${wd} ${d.getDate()} · ${fmtHM(d)}`;
 }
 
 // ── Component ─────────────────────────────────────────────────
