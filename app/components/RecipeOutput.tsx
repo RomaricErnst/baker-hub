@@ -313,6 +313,11 @@ export default function RecipeOutput({
 
   const isSpiral = mixerType === 'spiral';
   const waterInfo = computeWaterInfo(waterTemp, water, kitchenTemp, isSpiral);
+  // For preferment mode: ice protocol applies to final dough water only
+  // Preferment water is mixed by hand at RT — no DDT adjustment needed
+  const finalDoughWaterInfo = result.preferment
+    ? computeWaterInfo(waterTemp, result.preferment.finalWater, kitchenTemp, isSpiral)
+    : null;
 
   // Water temp colour: terra when ice-cold, gold when cool, plain when normal
   const waterTempColor = waterTemp < 10 ? 'var(--terra)' : waterTemp <= 18 ? 'var(--gold)' : undefined;
@@ -437,9 +442,12 @@ export default function RecipeOutput({
                 {pf.schedule}
               </div>
               <IngRow label="Flour" grams={gStr(pf.prefFlour)} noPct highlight />
-              <IngRow label="Water" grams={gStr(pf.prefWater)} noPct />
+              <IngRow label="Water" grams={gStr(pf.prefWater)} noPct
+                advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefWater / pf.prefFlour * 1000) / 10) : undefined}
+                sub="🌡️ Room temperature — preferment mixes by hand" />
               {pf.prefYeastGrams > 0 && (
-                <IngRow label="Yeast (IDY)" grams={gStr(pf.prefYeastGrams)} noPct />
+                <IngRow label="Yeast (IDY)" grams={gStr(pf.prefYeastGrams)} noPct
+                  advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
                 <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
@@ -460,9 +468,12 @@ export default function RecipeOutput({
                 Add your {pd.name} to the remaining ingredients
               </div>
               <IngRow label={`Your ${pd.name} (all of it)`} grams={gStr(prefTotal)} noPct highlight />
-              <IngRow label="Remaining flour" grams={gStr(pf.finalFlour)} noPct />
-              <IngRow label="Remaining water" grams={gStr(pf.finalWater)} noPct sub={waterSubNode} />
-              <IngRow label="Salt" grams={gStr(salt)} noPct />
+              <IngRow label="Remaining flour" grams={gStr(pf.finalFlour)} noPct
+                advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
+              <IngRow label="Remaining water" grams={gStr(pf.finalWater)} noPct sub={waterSubNode}
+                advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
+              <IngRow label="Salt" grams={gStr(salt)} noPct
+                advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
               {oil > 0 && <IngRow label="Olive Oil" grams={gStr(oil)} noPct />}
               {sugar > 0 && <IngRow label="Sugar" grams={gStr(sugar)} noPct />}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
@@ -473,6 +484,24 @@ export default function RecipeOutput({
                   {numItems * itemWeight} g
                 </div>
               </div>
+              {/* Inline ice protocol for final dough water */}
+              {finalDoughWaterInfo && finalDoughWaterInfo.needsIce && (
+                <div style={{ background: '#EEF6FF', border: '1.5px solid #B0CDE8', borderRadius: '10px', padding: '.75rem 1rem', marginTop: '1rem' }}>
+                  <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.4rem' }}>
+                    <span style={{ fontSize: '1rem' }}>🧊</span>
+                    <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#1E4A6A' }}>Ice water — final dough</span>
+                  </div>
+                  <div style={{ fontSize: '.78rem', color: '#2A5070', lineHeight: 1.6 }}>
+                    {'Mix '}
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{finalDoughWaterInfo.iceGrams}g</span>
+                    {' ice + '}
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{finalDoughWaterInfo.tapGrams}g</span>
+                    {' cold water. Strain ice just before mixing. Target: '}
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{finalDoughWaterInfo.targetTemp}°C</span>
+                    {'.'}
+                  </div>
+                </div>
+              )}
             </div>
           </>
         );
@@ -648,8 +677,8 @@ export default function RecipeOutput({
         );
       })()}
 
-      {/* ── Ice water protocol ───────────────────── */}
-      {waterTemp < 15 && (
+      {/* Ice water protocol — only for non-preferment mode */}
+      {!result.preferment && waterTemp < 15 && (
         <div style={{
           background: '#EEF6FF',
           border: '1.5px solid #B0CDE8',
@@ -662,10 +691,10 @@ export default function RecipeOutput({
           </div>
           <div style={{ fontSize: '.78rem', color: '#2A5070', lineHeight: 1.6 }}>
             {'Your dough needs very cold water. Mix '}
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{Math.round(water * 0.3)}g</span>
-            {' of ice with '}
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{water - Math.round(water * 0.3)}g</span>
-            {' of cold water. Remove ice just before adding to flour — you want water at '}
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{waterInfo.iceGrams}g</span>
+            {' ice + '}
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{waterInfo.tapGrams}g</span>
+            {' cold water. Strain ice just before mixing. Target: '}
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{waterInfo.targetTemp}°C</span>
             {'.'}
           </div>
