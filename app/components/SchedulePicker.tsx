@@ -946,7 +946,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     const minColdH = defaults.minColdH ?? 0;
     const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridge) : prefOffsetH;
-    const poolishMinH = 3;
+    // Use same fridge-aware minimum as findOptimalPosition receives
+    const poolishMinH = prefGoesInFridge ? 12 : 3;
 
     // Sweet zones: sweetFrom = maximize cold, sweetTo = style minimum cold
     const sweetFromRaw = hasColdLocal
