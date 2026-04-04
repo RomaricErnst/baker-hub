@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { type RecipeResult, type YeastResult } from '../utils';
-import { YEAST_TYPES, PREFERMENT_TYPES, type PrefermentType } from '../data';
+import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, type PrefermentType } from '../data';
 
 interface RecipeOutputProps {
   result: RecipeResult;
@@ -293,7 +293,26 @@ export default function RecipeOutput({
   priorityOverride, onPriorityOverride, saveStatus, onSave,
 }: RecipeOutputProps) {
   const [showPriorityOverride, setShowPriorityOverride] = useState(false);
+
+  // Batch splitting — auto-triggered when total dough exceeds mixer default capacity
+  const mixerMaxG   = (MIXER_TYPES as Record<string, { maxDoughG?: number }>)[mixerType]?.maxDoughG ?? 9999;
+  const totalDoughG = numItems * itemWeight;
+  const minBatches  = Math.ceil(totalDoughG / mixerMaxG);
+  const needsBatches = minBatches > 1;
+  const [numBatches, setNumBatches] = useState(minBatches);
+  // Recompute if minBatches changes (different mixer or quantity)
+  const effectiveBatches = Math.max(numBatches, 1);
+
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
+
+  // Per-batch amounts
+  const flourPerBatch = Math.round(flour / effectiveBatches);
+  const waterPerBatch = Math.round(water / effectiveBatches);
+  const saltPerBatch  = Math.round(salt  / effectiveBatches);
+  const yeastGramsTotal = (yeast as YeastResult | null)?.convertedGrams ?? 0;
+  const yeastPerBatch   = yeastGramsTotal > 0
+    ? Math.round(yeastGramsTotal / effectiveBatches * 10) / 10
+    : null;
 
   const yeastInfo = yeast as YeastResult | null;
   const yeastTypeName = yeastInfo ? YEAST_TYPES[yeastInfo.yeastType]?.name ?? yeastInfo.yeastType : '';
@@ -677,7 +696,73 @@ export default function RecipeOutput({
         );
       })()}
 
-      {/* Ice water protocol — only for non-preferment mode */}
+      {/* ── Batch splitting callout ──────────────────────────────── */}
+      {needsBatches && (
+        <div style={{
+          background: '#F5F0E8',
+          border: '1.5px solid #D4A853',
+          borderRadius: '12px',
+          padding: '1rem 1.25rem',
+        }}>
+          {/* Header */}
+          <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.4rem' }}>
+            <span style={{ fontSize: '1rem' }}>🔄</span>
+            <span style={{ fontSize: '.85rem', fontWeight: 700, color: '#7A5A10', fontFamily: 'var(--font-dm-sans)' }}>
+              Large batch — mix in stages
+            </span>
+          </div>
+          {/* Explanation */}
+          <div style={{ fontSize: '.78rem', color: '#5A4A10', lineHeight: 1.65, fontFamily: 'var(--font-dm-sans)', marginBottom: '.9rem' }}>
+            Your total dough is <strong>{totalDoughG}g</strong> — more than your {(MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer'} comfortably handles in one go.
+            How many batches would you like to mix?
+          </div>
+          {/* Batch count selector */}
+          <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.9rem', flexWrap: 'wrap' }}>
+            {Array.from({ length: Math.min(6, minBatches + 2) }, (_, i) => i + minBatches).map(n => (
+              <button
+                key={n}
+                onClick={() => setNumBatches(n)}
+                style={{
+                  padding: '.3rem .8rem',
+                  borderRadius: '20px',
+                  border: `1.5px solid ${effectiveBatches === n ? '#D4A853' : '#C4B898'}`,
+                  background: effectiveBatches === n ? '#D4A85320' : 'white',
+                  color: effectiveBatches === n ? '#7A5A10' : '#8A7F78',
+                  fontSize: '.8rem',
+                  fontFamily: 'var(--font-dm-mono)',
+                  fontWeight: effectiveBatches === n ? 700 : 400,
+                  cursor: 'pointer',
+                }}
+              >
+                {n}×
+              </button>
+            ))}
+          </div>
+          {/* Per-batch breakdown */}
+          <div style={{ background: 'white', borderRadius: '8px', padding: '.65rem .9rem', border: '1px solid #E8D890', marginBottom: '.65rem' }}>
+            <div style={{ fontSize: '.65rem', fontWeight: 600, color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '.07em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.45rem' }}>
+              Per batch ({effectiveBatches} × ~{Math.round(totalDoughG / effectiveBatches)}g)
+            </div>
+            {[
+              { label: 'Flour', value: `${flourPerBatch}g` },
+              { label: 'Water', value: `${waterPerBatch}g` },
+              { label: 'Salt',  value: `${saltPerBatch}g` },
+              ...(yeastPerBatch !== null ? [{ label: `Yeast (${(yeast as YeastResult | null)?.yeastType ?? 'IDY'})`, value: `${yeastPerBatch}g` }] : []),
+            ].map((row, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', color: '#3D3530', padding: '.12rem 0' }}>
+                <span>{row.label}</span>
+                <span style={{ fontWeight: 600 }}>{row.value}</span>
+              </div>
+            ))}
+          </div>
+          {/* Footer note */}
+          <div style={{ fontSize: '.71rem', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+            💡 Combine all batches into one container immediately after mixing. Bulk fermentation and schedule are unchanged.
+          </div>
+        </div>
+      )}
+
+      {/* ── Ice water protocol ───────────────────────────────────── */}
       {!result.preferment && waterTemp < 15 && (
         <div style={{
           background: '#EEF6FF',

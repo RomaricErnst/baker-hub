@@ -350,18 +350,20 @@ export const MIXER_TYPES = {
     maxHydration: 72,
     kneadMin: 8,
     folds: 2,
-    frictionFactor: 4, // °C heat added by stand mixer friction
+    frictionFactor: 4,
+    maxDoughG: 1200,
     instructions: 'Speed 1 for 2 min to combine, Speed 2 for 6–8 min until dough clears the bowl.',
   },
   hand: {
     name: 'By Hand',
-    emoji: '🙌',
+    emoji: '🤲',
     image: '/mixer_hand.png',
     desc: 'Classic technique',
     maxHydration: 70,
     kneadMin: 10,
     folds: 4,
-    frictionFactor: 1, // °C — minimal friction from hand mixing
+    frictionFactor: 1,
+    maxDoughG: 1500,
     instructions: 'Mix until shaggy, rest 20 min (autolyse), then knead 8–10 min until smooth and elastic. Dough passes windowpane test.',
   },
   no_knead: {
@@ -372,7 +374,8 @@ export const MIXER_TYPES = {
     maxHydration: 100,
     kneadMin: 0,
     folds: 4,
-    frictionFactor: 0, // °C — no mechanical friction
+    frictionFactor: 0,
+    maxDoughG: 3000,
     instructions: 'Mix just until no dry flour remains (~2 min). Time and stretch & folds develop the gluten.',
   },
   spiral: {
@@ -383,7 +386,8 @@ export const MIXER_TYPES = {
     maxHydration: 100,
     kneadMin: 14,
     folds: 1,
-    frictionFactor: 7, // °C — spiral mixer generates significant friction heat
+    frictionFactor: 7,
+    maxDoughG: 5000,
     instructions: '1st speed 3 min, 2nd speed 5–7 min. Handles high hydration effortlessly. In hot kitchens (≥26°C): add ice cubes directly into the mixing bowl with the water — the breaker bar will break them down as mixing progresses. This is the professional technique used in pizzerias in warm climates. Aim for roughly 20–30% ice by weight of your total water. For other mixers use ice-cold water only — ice cubes can damage stand mixer hooks.',
   },
 } as const;
