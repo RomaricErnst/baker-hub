@@ -935,7 +935,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setRecommendedColdH(expectedColdH);
 
     const minColdH = defaults.minColdH ?? 0;
-    const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp) : prefOffsetH;
+    const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridge) : prefOffsetH;
     const poolishMinH = 3;
 
     // Sweet zones: sweetFrom = maximize cold, sweetTo = style minimum cold
@@ -1960,9 +1960,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {startComputed && mode !== 'simple' && (() => {
         const isLevainType = prefermentType === 'levain' || isSourdough;
         const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
-        const infoOptH = (hasPrefActive || isSourdough) ? getPrefOptH(isSourdough ? 'sourdough' : prefermentType, kitchenTemp) : 0;
-        const cardPrefInZone = (hasPrefActive || isSourdough) && prefOffsetH >= infoOptH - 3 && prefOffsetH <= infoOptH + 3;
-        const cardPrefStatus = cardPrefInZone ? '🟢 Ready when dough starts' : '🟡 Adjust timing';
+        const infoOptH = (hasPrefActive || isSourdough) ? getPrefOptH(isSourdough ? 'sourdough' : prefermentType, kitchenTemp, prefGoesInFridge) : 0;
+        const infoZoneMax = (prefermentType === 'biga' || prefGoesInFridge) ? 72 : Math.min(infoOptH + 3, 16);
+        const cardPrefInZone = (hasPrefActive || isSourdough) && prefOffsetH >= 2.75 && prefOffsetH <= infoZoneMax;
+        const cardPrefTooShort = (hasPrefActive || isSourdough) && prefOffsetH < 2.75;
+        const cardPrefNeedsFridge = prefOffsetH > 13 && !prefGoesInFridge;
+        const cardPrefStatus = cardPrefInZone
+          ? (prefGoesInFridge
+              ? '🧊 In fridge — ready when dough starts'
+              : '🟢 Ready when dough starts')
+          : cardPrefTooShort
+          ? '🟡 Start poolish a little earlier'
+          : cardPrefNeedsFridge
+          ? '🧊 Move to fridge — getting long for room temp'
+          : '🟡 Poolish past its window — use it now';
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
           : isSourdough && feedTime ? feedTime : null;
@@ -2000,7 +2011,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
                   {fmtCardDT(cardPrefTime)}
                 </div>
-                <div style={{ fontSize: '12px', marginTop: '.1rem', color: cardPrefInZone ? '#4A7A3A' : '#C49A28' }}>
+                <div style={{ fontSize: '12px', marginTop: '.1rem', color: cardPrefInZone ? (prefGoesInFridge ? '#3A5A8A' : '#4A7A3A') : '#C49A28' }}>
                   {cardPrefStatus}
                 </div>
                 {prefGoesInFridge && (

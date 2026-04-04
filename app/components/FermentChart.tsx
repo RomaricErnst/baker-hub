@@ -47,18 +47,24 @@ const AXIS_Y    = 175;  // axis line = same as baseline BL
 const S = 10;
 
 // ── Sigma / optimal-hours functions ──────────────────────────
-function getPrefSig(type: string, temp: number): number {
-  if (type === 'biga') return 6;
-  if (type === 'poolish') return temp >= 26 ? 3.5 : 5;
+function getPrefSig(type: string, temp: number, inFridge = false): number {
+  if (type === 'biga') return 14;              // fridge biga — wide bell
+  if (type === 'poolish') {
+    if (inFridge || temp >= 26) return 14;    // fridge poolish — wide bell
+    return temp >= 22 ? 4 : 5;               // RT poolish — narrower bell
+  }
   // levain / sourdough
   if (temp >= 30) return 2;
   if (temp >= 26) return 3;
   return 4;
 }
 
-export function getPrefOptH(type: string, temp: number): number {
-  if (type === 'biga') return 20;
-  if (type === 'poolish') return temp >= 26 ? 12 : 10;
+export function getPrefOptH(type: string, temp: number, inFridge = false): number {
+  if (type === 'biga') return 48;              // always fridge — 48h optimal
+  if (type === 'poolish') {
+    if (inFridge || temp >= 26) return 48;     // fridge poolish — 48h optimal
+    return temp >= 22 ? 10 : 12;              // RT poolish — 10-12h optimal
+  }
   // levain / sourdough
   if (temp >= 30) return 5;
   if (temp >= 26) return 7;
@@ -186,8 +192,8 @@ export default function FermentChart({
   const DOUGH_SIG          = hasColdRetard ? 18 : 10;
   const DOUGH_SWEET_CENTER = sweetCenterH ?? (hasColdRetard ? 34 : 20);
 
-  const optH            = hasPref ? getPrefOptH(prefermentType, kitchenTemp) : 0;
-  const prefSigBase     = hasPref ? getPrefSig(prefermentType, kitchenTemp) : 1;
+  const optH            = hasPref ? getPrefOptH(prefermentType, kitchenTemp, prefInFridge) : 0;
+  const prefSigBase     = hasPref ? getPrefSig(prefermentType, kitchenTemp, prefInFridge) : 1;
   // When offset < optH, the peak is far from diamond → curve looks flat.
   // Widen sigma so the bell rises to ~40% of its max at the diamond.
   // sigma = optH * 0.75 achieves ~40% height at optH distance from peak.
@@ -206,7 +212,9 @@ export default function FermentChart({
   // Zone: right = minTotalFermH boundary — unified cold/RT
   const doughZoneFrom = sweetFromH ?? (hasColdRetard ? 52 : 26);
   const doughZoneTo   = sweetToH   ?? (hasColdRetard ? 8  : 8 );
-  const prefZoneFrom  = hasPref ? effectiveMixHBF + optH + 3 : 0;
+  // Zone: 3h min to 72h max for fridge preferments, optH+3 for RT
+  const prefZoneMax   = hasPref ? ((prefermentType === 'biga' || prefInFridge) ? 72 : Math.min(optH + 3, 16)) : 0;
+  const prefZoneFrom  = hasPref ? effectiveMixHBF + prefZoneMax : 0;
   const prefZoneTo    = hasPref ? effectiveMixHBF + 3 : 0;
 
   // ── Pixel positions ──────────────────────────────────────
@@ -302,8 +310,14 @@ export default function FermentChart({
     : mixTooEarly ? '🔴 Too early — over-fermented'
     : '🔴 Too late — under-fermented';
 
-  const prefInZone = hasPref && prefOffsetH >= 2.75 && prefOffsetH <= optH + 3;
-  const prefStatus = prefInZone ? '🟢 Ready when dough starts' : '🟡 Adjust timing';
+  const prefZoneMaxH  = (prefermentType === 'biga' || prefInFridge) ? 72 : Math.min(optH + 3, 16);
+  const prefInZone    = hasPref && prefOffsetH >= 2.75 && prefOffsetH <= prefZoneMaxH;
+  const prefTooShort  = hasPref && prefOffsetH < 2.75;
+  const prefStatus    = prefInZone
+    ? '🟢 Ready when dough starts'
+    : prefTooShort
+    ? '🟡 Start poolish a little earlier'
+    : '🟡 Poolish past its window — use it now';
 
   // ── Info card data ───────────────────────────────────────
   const mixTime  = new Date(bakeMs - effectiveMixHBF * 3600000);
