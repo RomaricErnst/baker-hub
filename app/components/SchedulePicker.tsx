@@ -959,45 +959,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const sweetFrom = Math.min(sweetFromRaw, nowHBF - 0.25);
     const sweetTo   = Math.min(sweetToRaw,   sweetFrom - 0.5);
 
-    // Priority: (1) maximize cold — mix at idealMixHBF = sweetFrom
-    //           (2) fit poolish before now — full offset if possible
-    //           (3) reduce offset if full doesn't fit
-    //           (4) move mix later (less cold) to make room for min poolish
-    //           (5) suppress poolish only when truly impossible
-    const idealMixHBF = sweetFrom;
-    let finalMixHBF: number;
-    let finalPrefOffset: number;
-
-    if (!hasPrefActive) {
-      finalMixHBF = idealMixHBF;
-      finalPrefOffset = 0;
-    } else {
-      const poolishAtFull = idealMixHBF + rawPrefOffset;
-      const poolishAtMin  = idealMixHBF + poolishMinH;
-
-      if (poolishAtFull <= nowHBF - 0.25) {
-        // Full poolish fits before now at ideal mix — perfect
-        finalMixHBF = idealMixHBF;
-        finalPrefOffset = rawPrefOffset;
-      } else if (poolishAtMin <= nowHBF - 0.25) {
-        // Reduced poolish fits — use ideal mix, reduce offset to what fits
-        finalMixHBF = idealMixHBF;
-        finalPrefOffset = nowHBF - 0.25 - idealMixHBF;
-      } else {
-        // Poolish can't fit at ideal mix — move mix later to make room
-        const latestMix = nowHBF - poolishMinH - 0.25;
-        if (latestMix >= minTotalRTLocal) {
-          finalMixHBF = latestMix;
-          finalPrefOffset = Math.min(rawPrefOffset, nowHBF - 0.25 - latestMix);
-        } else {
-          // Truly no room — suppress poolish, keep ideal mix
-          finalMixHBF = idealMixHBF;
-          finalPrefOffset = 0;
-        }
-      }
-    }
-
-    const sweetCenter = Math.min(finalMixHBF, nowHBF - 0.5);
+    // Correct sequence:
+    // 1. Green settles at sweetFrom (maximize cold retard)
+    // 2. findOptimalPosition searches outward from there
+    // 3. For each mix candidate it tries to fit poolish before now
+    // 4. Only if no mix position allows poolish → accept without poolish
+    // Green never moves pre-emptively to make room for poolish.
+    const sweetCenter = sweetFrom;
 
     if (!hasColdLocal && totalWindowH < sweetToRaw) {
       setGuardNote('Tight schedule — start as early as possible. Same-day dough can still be great.');
@@ -1005,8 +973,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setGuardNote(null);
     }
 
+    // Pass full preferred offset — findOptimalPosition will reduce if needed
     const optimalPrefOffset = hasPrefActive
-      ? Math.max(0.25, finalPrefOffset)
+      ? Math.max(0.25, Math.min(rawPrefOffset, nowHBF - sweetCenter - 0.25))
       : prefOffsetH;
     if (hasPrefActive) {
       setPrefOffsetH(optimalPrefOffset);
