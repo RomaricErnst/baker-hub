@@ -1084,9 +1084,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const _nowHBF = (pendingEatTime.getTime() - Date.now()) / 3600000;
   const _tropFactor = kitchenTemp >= 33 ? 1.25 : kitchenTemp >= 30 ? 1.15 : 1.0;
   const _prefColdH = _sfDef.preferredColdH ?? _sfDef.coldH;
-  // Green zone: left = min(nowHBF, max useful start) right = minTotalFerm / temp
-  const renderSweetFrom = Math.min(_nowHBF, (_prefColdH + _sfDef.rtH));
-  const renderSweetTo   = (_sfDef.minTotalFermH ?? 4) / _tropFactor;
+  // Green zone: always shows full style window — NOT clipped to nowHBF.
+  // Zone guides the baker on what's ideal. Diamond clamped to nowHBF separately.
+  const renderSweetFrom = _prefColdH + _sfDef.rtH;
+  const renderSweetTo   = _sfDef.minTotalFermH ?? 4;
   // Yellow zone extends 2h past green right edge
   const renderYellowTo  = Math.max(0.5, renderSweetTo - 2);
   // _optimalMix = style sweet spot where dough peaks at bake = coldH + rtH
@@ -1112,10 +1113,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const windowH = useMemo(() => {
     if (isDragging) return windowHRef.current;
     const mixOffH = Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000);
-    const neededH = hasPrefActive
-      ? mixOffH + prefOffsetH + 10
-      : mixOffH + 10;
-    const computed = Math.min(144, Math.max(36, Math.ceil(neededH / 12) * 12));
+    const diamondH = hasPrefActive ? mixOffH + prefOffsetH + 10 : mixOffH + 10;
+    // Also ensure zone arrows are visible — use whichever is larger
+    const zoneH = renderSweetFrom + 8;
+    const computed = Math.min(144, Math.max(36, Math.ceil(Math.max(diamondH, zoneH) / 12) * 12));
     windowHRef.current = computed;
     return computed;
   }, [isDragging, pendingEatTime, pendingStart, prefOffsetH, hasPrefActive]);
