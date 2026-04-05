@@ -415,20 +415,24 @@ function findOptimalPosition(
           fallback: !inSweet(candidate), mixInBlocker: false, prefInBlocker: false,
         };
       }
-      // Try full offset first, then reduce to minimum to clear blocker.
-      // Clamp poolish to nowHBF — never push it into the past.
-      const maxPrefOffset = Math.min(prefOffsetH, nowHBF - candidate - 0.25);
+      // Search the FULL zone window (up to 72h) for poolish — not just prefOffsetH.
+      // This allows poolish to go to Sunday when Monday is fully blocked.
+      // Prefer positions close to prefOffsetH (optimal), but accept any clear slot.
+      // Strategy: scan from fullMax down to prefMinH, return first clear position.
+      const fullMax = Math.min(72, nowHBF - candidate - 0.25);
       let bestPrefOffset = 0;
-      for (let p = maxPrefOffset; p >= prefMinH; p -= STEP) {
+      for (let p = fullMax; p >= prefMinH; p -= STEP) {
         if (!isInBlocker(candidate + p)) {
           bestPrefOffset = p;
           break;
         }
       }
       if (bestPrefOffset >= prefMinH) {
+        // prefInZone: true if within unified green zone (3-72h)
+        const prefInZone = bestPrefOffset >= 3 && bestPrefOffset <= 72;
         return {
           mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
-          mixInZone: inSweet(candidate), prefInZone: bestPrefOffset >= prefOffsetH * 0.7,
+          mixInZone: inSweet(candidate), prefInZone,
           fallback: !inSweet(candidate), mixInBlocker: false, prefInBlocker: false,
         };
       }
