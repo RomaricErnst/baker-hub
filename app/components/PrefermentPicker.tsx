@@ -1,6 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { PREFERMENT_TYPES, PREFERMENT_LABELS, type PrefermentType } from '../data';
+import { useState } from 'react';
+import { PREFERMENT_TYPES, type PrefermentType } from '../data';
 import { useLocale } from 'next-intl';
 
 interface PrefermentPickerProps {
@@ -21,14 +21,6 @@ export default function PrefermentPicker({
   const locale = useLocale();
   const isFr = locale === 'fr';
   const [hovered, setHovered] = useState<PrefermentType | null>(null);
-
-  const [localFlourPct, setLocalFlourPct] = useState<number>(
-    flourPct ?? ((PREFERMENT_TYPES[selected] as { flourPct?: number }).flourPct ?? 50)
-  );
-
-  useEffect(() => {
-    setLocalFlourPct((PREFERMENT_TYPES[selected] as { flourPct?: number }).flourPct ?? 50);
-  }, [selected]);
 
   const types = (Object.entries(PREFERMENT_TYPES) as [PrefermentType, typeof PREFERMENT_TYPES[PrefermentType]][])
     .filter(([key]) => !hideTypes.includes(key));
@@ -128,7 +120,7 @@ export default function PrefermentPicker({
                     borderRadius: '20px', padding: '.1rem .45rem',
                     border: '1px solid var(--border)',
                   }}>
-                    {localFlourPct}% flour
+                    {flourPct ?? pData.flourPct ?? 50}% flour
                   </span>
                 )}
                 {pData.hydration && (
@@ -164,79 +156,29 @@ export default function PrefermentPicker({
               </div>
             )}
 
-            {/* Expanded section when selected */}
-            {isSelected && !isNone && (
-              <div
-                onClick={e => e.stopPropagation()}
-                style={{
-                  marginTop: '.85rem',
-                  borderTop: '1px solid rgba(196,82,42,0.15)',
-                  paddingTop: '.75rem',
-                }}
-              >
-                {/* Ratio label row */}
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between',
-                  alignItems: 'baseline', marginBottom: '.35rem',
-                }}>
-                  <span style={{
-                    fontSize: '.72rem', color: 'var(--char)',
-                    fontFamily: 'var(--font-dm-mono)', fontWeight: 600,
-                  }}>
-                    Flour in {isFr ? pData.nameFr : pData.name}: {localFlourPct}%
-                  </span>
-                  <span style={{ fontSize: '.68rem', color: 'var(--smoke)', fontStyle: 'italic' }}>
-                    {PREFERMENT_LABELS[key]?.(localFlourPct)}
-                  </span>
-                </div>
-
-                {/* Slider */}
-                <input
-                  type="range"
-                  min={pData.flourPctMin ?? 10}
-                  max={pData.flourPctMax ?? 80}
-                  step={pData.flourPctStep ?? 5}
-                  value={localFlourPct}
-                  onChange={e => {
-                    const v = Number(e.target.value);
-                    setLocalFlourPct(v);
-                    onFlourPctChange?.(v);
-                  }}
-                  style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer' }}
-                />
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between',
-                  fontSize: '.6rem', color: 'var(--smoke)',
-                  fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem',
-                }}>
-                  <span>Less complex</span><span>More complex</span>
-                </div>
-
-                {/* Climate note for poolish/biga */}
-                {key === 'poolish' && kitchenTemp !== undefined && kitchenTemp >= 26 && (
-                  <div style={{
-                    marginTop: '.65rem',
-                    background: '#EEF6FF', border: '1px solid #B0CDE8',
-                    borderRadius: '8px', padding: '.5rem .65rem',
-                    fontSize: '.72rem', color: '#3A5F80', lineHeight: 1.5,
-                    display: 'flex', gap: '.4rem', alignItems: 'flex-start',
-                  }}>
-                    <span>🌡️</span>
-                    <span>Warm kitchen — keep poolish in the fridge after 1–2h at room temperature to avoid over-fermentation.</span>
-                  </div>
-                )}
-                {key === 'biga' && (
-                  <div style={{
-                    marginTop: '.65rem',
-                    background: '#EEF6FF', border: '1px solid #B0CDE8',
-                    borderRadius: '8px', padding: '.5rem .65rem',
-                    fontSize: '.72rem', color: '#3A5F80', lineHeight: 1.5,
-                    display: 'flex', gap: '.4rem', alignItems: 'flex-start',
-                  }}>
-                    <span>❄️</span>
-                    <span>Biga ferments best cold — refrigerate for 16–24h at 4°C for optimal flavour and gluten structure.</span>
-                  </div>
-                )}
+            {/* Climate notes inline */}
+            {isSelected && !isNone && key === 'poolish' && kitchenTemp !== undefined && kitchenTemp >= 26 && (
+              <div style={{
+                marginTop: '.65rem',
+                background: '#EEF6FF', border: '1px solid #B0CDE8',
+                borderRadius: '8px', padding: '.5rem .65rem',
+                fontSize: '.72rem', color: '#3A5F80', lineHeight: 1.5,
+                display: 'flex', gap: '.4rem', alignItems: 'flex-start',
+              }}>
+                <span>🌡️</span>
+                <span>Warm kitchen — keep poolish in the fridge after 1–2h at room temperature to avoid over-fermentation.</span>
+              </div>
+            )}
+            {isSelected && !isNone && key === 'biga' && (
+              <div style={{
+                marginTop: '.65rem',
+                background: '#EEF6FF', border: '1px solid #B0CDE8',
+                borderRadius: '8px', padding: '.5rem .65rem',
+                fontSize: '.72rem', color: '#3A5F80', lineHeight: 1.5,
+                display: 'flex', gap: '.4rem', alignItems: 'flex-start',
+              }}>
+                <span>❄️</span>
+                <span>Biga ferments best cold — refrigerate for 16–24h at 4°C for optimal flavour and gluten structure.</span>
               </div>
             )}
           </div>

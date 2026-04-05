@@ -718,7 +718,7 @@ export default function RecipeOutput({
           </div>
           {/* Batch count selector */}
           <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.9rem', flexWrap: 'wrap' }}>
-            {Array.from({ length: Math.min(6, minBatches + 2) }, (_, i) => i + minBatches).map(n => (
+            {[2, 3].map(n => (
               <button
                 key={n}
                 onClick={() => setNumBatches(n)}
@@ -737,6 +737,25 @@ export default function RecipeOutput({
                 {n}×
               </button>
             ))}
+            <input
+              type="number"
+              min={minBatches}
+              placeholder="other"
+              value={effectiveBatches > 3 ? effectiveBatches : ''}
+              onChange={e => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= minBatches) setNumBatches(v); }}
+              style={{
+                width: '60px',
+                padding: '.3rem .5rem',
+                borderRadius: '20px',
+                border: `1.5px solid ${effectiveBatches > 3 ? '#D4A853' : '#C4B898'}`,
+                background: effectiveBatches > 3 ? '#D4A85320' : 'white',
+                color: effectiveBatches > 3 ? '#7A5A10' : '#8A7F78',
+                fontSize: '.8rem',
+                fontFamily: 'var(--font-dm-mono)',
+                textAlign: 'center',
+                outline: 'none',
+              }}
+            />
           </div>
           {/* Per-batch breakdown */}
           <div style={{ background: 'white', borderRadius: '8px', padding: '.65rem .9rem', border: '1px solid #E8D890', marginBottom: '.65rem' }}>

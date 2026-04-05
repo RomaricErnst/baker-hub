@@ -1827,7 +1827,7 @@ export default function Home() {
                   onSelect={pt => {
                     setPrefermentType(pt);
                     if (pt === 'none') advanceAdv(9);
-                    // poolish, biga: stay on step so baker sees the flour % slider
+                    // poolish, biga: stay on step for confirmation, flour % adjusted in Dial In (step 11)
                   }}
                   flourPct={prefermentFlourPct}
                   onFlourPctChange={setPrefermentFlourPct}
@@ -1839,19 +1839,90 @@ export default function Home() {
               </StepCard>
             )}
 
-            {/* ─── ADV STEP 10: Dial your dough ────── */}
+            {/* ─── ADV STEP 10: Scheduler ──────────── */}
             <StepCard
               idPrefix="adv-step"
               num={10}
+              title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
+              activeStep={advancedStep}
+              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
+              onEdit={() => setAdvancedStep(10)}
+            >
+              <SchedulePicker
+                mode="custom"
+                startTime={startTime} eatTime={eatTime} blocks={blocks}
+                preheatMin={preheatMin}
+                styleKey={styleKey ?? ''}
+                kitchenTemp={kitchenTemp}
+                schedule={schedule}
+                bakeType={bakeType ?? 'pizza'}
+                isSourdough={yeastType === 'sourdough'}
+                prefermentType={prefermentType ?? 'none'}
+                onFeedTimeChange={setFeedTime}
+                onPrefOffsetChange={setPrefOffsetH}
+                onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                onReady={() => advanceAdv(10)}
+              />
+            </StepCard>
+
+            {/* ─── ADV STEP 11: Dial your dough ────── */}
+            <StepCard
+              idPrefix="adv-step"
+              num={11}
               title="Dial in your dough"
               activeStep={advancedStep}
               summary={manualHydration !== undefined ? `${manualHydration}% hydration` : styleKey ? `${ALL_STYLES[styleKey].hydration}% hydration` : undefined}
-              onEdit={() => setAdvancedStep(10)}
+              onEdit={() => setAdvancedStep(11)}
             >
               <div>
                 <div style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '1rem', lineHeight: 1.5 }}>
                   Defaults are set for your style — adjust if you know what you&apos;re doing.
                 </div>
+
+                {/* Preferment flour % slider */}
+                {prefermentType !== 'none' && prefermentType !== 'levain' && (() => {
+                  const pData = PREFERMENT_TYPES[prefermentType] as {
+                    name: string; flourPct?: number; flourPctMin?: number; flourPctMax?: number; flourPctStep?: number; hydration?: number;
+                  };
+                  const minPct = pData.flourPctMin ?? 10;
+                  const maxPct = pData.flourPctMax ?? 80;
+                  const step = pData.flourPctStep ?? 5;
+                  const timeDefault = prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20;
+                  const currentPct = prefermentFlourPct ?? pData.flourPct ?? timeDefault;
+                  const prefHydration = pData.hydration ?? 100;
+                  const prefWaterPct = currentPct * (prefHydration / 100);
+                  return (
+                    <div style={{ marginBottom: '1.1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
+                        <label style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
+                          Flour in {pData.name}
+                        </label>
+                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--char)' }}>
+                          {currentPct}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={minPct} max={maxPct} step={step}
+                        value={currentPct}
+                        onChange={e => setPrefermentFlourPct(Number(e.target.value))}
+                        style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer', marginBottom: '.25rem' }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginBottom: '.6rem' }}>
+                        <span>Less complex</span><span>More complex</span>
+                      </div>
+                      <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.5 }}>
+                        {currentPct}% of flour + ~{Math.round(prefWaterPct)}% water goes into the {pData.name} — the rest is mixed at dough time.
+                        {prefOffsetH > 0 && (
+                          <span style={{ color: 'var(--gold)', fontStyle: 'italic' }}>
+                            {' '}Suggested for a {Math.round(prefOffsetH)}h window: {timeDefault}%.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Hydration slider */}
                 {(() => {
                   const zone = STYLE_HYDRATION_ZONES[styleKey!] ?? FALLBACK_ZONE;
@@ -1996,34 +2067,8 @@ export default function Home() {
                     );
                   })()}
                 </div>
-                <ContinueBtn onClick={() => advanceAdv(10)} />
+                <ContinueBtn onClick={() => advanceAdv(11)} />
               </div>
-            </StepCard>
-
-            {/* ─── ADV STEP 11: Scheduler ──────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={11}
-              title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
-              activeStep={advancedStep}
-              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
-              onEdit={() => setAdvancedStep(11)}
-            >
-              <SchedulePicker
-                mode="custom"
-                startTime={startTime} eatTime={eatTime} blocks={blocks}
-                preheatMin={preheatMin}
-                styleKey={styleKey ?? ''}
-                kitchenTemp={kitchenTemp}
-                schedule={schedule}
-                bakeType={bakeType ?? 'pizza'}
-                isSourdough={yeastType === 'sourdough'}
-                prefermentType={prefermentType ?? 'none'}
-                onFeedTimeChange={setFeedTime}
-                onPrefOffsetChange={setPrefOffsetH}
-                onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
-                onReady={() => {}}
-              />
             </StepCard>
 
             {/* ── Generate button (setup tab) ── */}
