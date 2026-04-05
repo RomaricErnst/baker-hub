@@ -434,13 +434,13 @@ export function buildSchedule(
   // Schedule note (first match wins)
   let scheduleNote: string | null = null;
   if (coldHRequired && isTropical) {
-    scheduleNote = `🧈 Butter needs the cold — fridge retard is mandatory at ${kitchenTemp}°C`;
+    scheduleNote = `🧈 Enriched dough needs the fridge at ${kitchenTemp}°C — cold retard locked in.`;
   } else if (hasColdRetard && coldH < preferredColdH) {
-    scheduleNote = `⏱ Short window — cold retard reduced to ${formatHoursSchedule(coldH)} to fit your schedule`;
+    scheduleNote = `⏱ Cold retard shortened to ${formatHoursSchedule(coldH)} to fit your window — flavour will still develop.`;
   } else if (!hasColdRetard && preferredColdH > 0) {
-    scheduleNote = `🌡️ Tight schedule — pure room temperature fermentation`;
+    scheduleNote = `🌡️ Working within your window — pure room temperature fermentation.`;
   } else if (isTropical && !hasColdRetard) {
-    scheduleNote = `🌴 Tropical kitchen — reduced fermentation times applied`;
+    scheduleNote = `🌴 Tropical kitchen — fermentation times adjusted for your climate.`;
   }
 
   // Warm-up and final proof durations (temp-aware)

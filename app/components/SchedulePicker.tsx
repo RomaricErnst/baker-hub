@@ -541,7 +541,7 @@ function SimpleColourBar({
   const status    = inZone
     ? '🟢 Dough ready at bake'
     : nearEarly ? '🟡 A little early — dough will be great'
-    : nearLate  ? '🟡 A little late — dough will still work'
+    : nearLate  ? '🟡 Slightly outside the sweet spot'
     : tooEarly  ? '🔴 Too early — risk of over-fermentation'
     : '🔴 Too late — risk of under-fermentation';
 
@@ -920,13 +920,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     // Guard: bake time in the past
     if (totalWindowH <= 0) {
-      setGuardNote('This bake time is in the past — please pick a future date.');
+      setGuardNote('This bake time has passed — try picking a later date.');
       return;
     }
 
     // Guard: window too short for any fermentation
     if (totalWindowH < minTotalRTLocal) {
-      setGuardNote(`Not enough time — you need at least ${Math.ceil(minTotalRTLocal)}h. Pick a later bake time.`);
+      setGuardNote(`You'll need at least ${Math.ceil(minTotalRTLocal)}h for fermentation — try a later bake time.`);
       return;
     }
 
@@ -975,7 +975,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const sweetTo     = Math.min(sweetToRaw,     sweetFrom - 0.5);
 
     if (!hasColdLocal && totalWindowH < sweetToRaw) {
-      setGuardNote('Tight schedule — start as early as possible. Same-day dough can still be great.');
+      setGuardNote('Working with a short window — same-day dough can still be wonderful.');
     } else {
       setGuardNote(null);
     }
@@ -1807,10 +1807,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           marginBottom: '.75rem', fontFamily: 'var(--font-dm-sans)',
         }}>
           <div style={{ fontSize: '.9rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.4rem' }}>
-            No perfect time found
+            No free mixing window found
           </div>
           <div style={{ fontSize: '.82rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
-            Your schedule doesn&apos;t leave a free mixing window. What works best for you?
+            Your blocked times don&apos;t leave a clear mixing window. Here are your options:
           </div>
           <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
             {fallbackOptions.outsideZone && (
@@ -1924,7 +1924,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   Your bulk fermentation will run into your busy window.
                 </div>
                 <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '.65rem' }}>
-                  Starting earlier isn&apos;t practical here — your dough will be worth the compromise.
+                  Your dough will still be worth it — the flavour develops regardless.
                 </div>
               </>
             )}
@@ -1968,11 +1968,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const cardPrefTooShort = (hasPrefActive || isSourdough) && prefOffsetH < 3;
         const cardPrefStatus = cardPrefInZone
           ? (prefGoesInFridge
-              ? '🧊 In fridge — peaks at Start Dough'
+              ? '🧊 In fridge — ready at Start Dough'
               : '🟢 Ready when dough starts')
           : cardPrefTooShort
-          ? '🟡 Start poolish a little earlier'
-          : '🟡 Poolish past its window — use it now';
+          ? '🟡 Poolish not yet at peak at mix time'
+          : '🟡 Poolish will be past its peak at this time';
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
           : isSourdough && feedTime ? feedTime : null;
@@ -1980,11 +1980,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const doughZoneTo   = renderSweetTo;
         const mixInZone   = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
         const mixTooEarly = mixOffsetH > doughZoneFrom;
-        const mixStatus   = mixInZone
-          ? '🟢 Dough ready at bake'
-          : mixTooEarly
-          ? '🟡 A little early — dough will be great'
-          : '🟡 A little late — dough will still work';
+        const mixStatus = mixInZone ? '🟢 Dough ready at bake'
+          : mixTooEarly ? '🟡 Dough peaks before bake'
+          : '🟡 Dough peaks just after bake';
         const bakeMs = pendingEatTime.getTime();
         const mixInBlocker = !mixInZone && mixOffsetH > 0 && blocks.some(b => {
           const s2 = (bakeMs - b.from.getTime()) / 3600000;

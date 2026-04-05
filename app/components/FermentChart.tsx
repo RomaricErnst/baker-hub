@@ -349,17 +349,17 @@ export default function FermentChart({
   // ── Status logic ─────────────────────────────────────────
   const mixInZone   = effectiveMixHBF >= doughZoneTo   && effectiveMixHBF <= doughZoneFrom;
   const mixTooEarly = false;
-  const mixStatus   = mixInZone   ? '🟢 Dough ready at bake'
-    : mixTooEarly ? '🔴 Too early — over-fermented'
-    : '🔴 Too late — under-fermented';
+  const mixStatus = mixInZone   ? '🟢 Dough ready at bake'
+    : mixTooEarly ? '🟡 Dough peaks before bake'
+    : '🟡 Dough peaks just after bake';
 
   const prefInZone   = hasPref && prefOffsetH >= 3 && prefOffsetH <= 72;
   const prefTooShort = hasPref && prefOffsetH < 3;
-  const prefStatus   = prefInZone
-    ? (prefNeedsFridge ? '🧊 In fridge — peaks at Start Dough' : '🟢 Ready when dough starts')
+  const prefStatus = prefInZone
+    ? (prefNeedsFridge ? '🧊 In fridge — ready at Start Dough' : '🟢 Ready when dough starts')
     : prefTooShort
-    ? '🟡 Start poolish a little earlier'
-    : '🟡 Poolish past its window — use it now';
+    ? '🟡 Poolish not yet at peak at mix time'
+    : '🟡 Poolish will be past its peak at this time';
 
   // ── Info card data ───────────────────────────────────────
   const mixTime  = new Date(bakeMs - effectiveMixHBF * 3600000);
