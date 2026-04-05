@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
-import FermentChart, { getPrefOptH } from './FermentChart';
+import FermentChart, { getPrefOptH, getPrefPeakH_RT, getPrefRTWarmupH } from './FermentChart';
 
 interface SchedulePickerProps {
   startTime: Date;
@@ -1096,9 +1096,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     ? _sfDef.coldH + _sfDef.rtH
     : _sfDef.rtH;
   const renderSweetCenter = Math.min(_optimalMix, renderSweetFrom - 0.25);
+  // Two-temperature protocol: needs fridge when offset > RT peak time for style+temp
+  // Biga always fridge. Poolish: depends on offset vs RT peak.
+  const prefRTPeakH    = hasPrefActive ? getPrefPeakH_RT(prefermentType, kitchenTemp, styleKey ?? 'neapolitan') : 0;
   const prefGoesInFridge = hasPrefActive && (
-    prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26)
+    prefermentType === 'biga' || prefOffsetH > prefRTPeakH
   );
+  // "Remove poolish from fridge" time: rtWarmupH before mix, pushed out of blockers
+  const prefRTWarmupH = prefGoesInFridge ? getPrefRTWarmupH(kitchenTemp) : 0;
+  const prefRemoveFromFridgeHBF = prefGoesInFridge ? mixOffsetH + prefRTWarmupH : null;
+  const prefRemoveFromFridgeTime = prefRemoveFromFridgeHBF !== null
+    ? new Date(pendingEatTime.getTime() - prefRemoveFromFridgeHBF * 3600000)
+    : null;
 
   // Phase timeline strip data for FermentChart
   const phases = schedule ? {
@@ -1955,19 +1964,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {startComputed && mode !== 'simple' && (() => {
         const isLevainType = prefermentType === 'levain' || isSourdough;
         const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
-        const infoOptH = (hasPrefActive || isSourdough) ? getPrefOptH(isSourdough ? 'sourdough' : prefermentType, kitchenTemp, prefGoesInFridge) : 0;
-        const infoZoneMax = (prefermentType === 'biga' || prefGoesInFridge) ? 72 : Math.min(infoOptH + 3, 16);
-        const cardPrefInZone = (hasPrefActive || isSourdough) && prefOffsetH >= 2.75 && prefOffsetH <= infoZoneMax;
-        const cardPrefTooShort = (hasPrefActive || isSourdough) && prefOffsetH < 2.75;
-        const cardPrefNeedsFridge = prefOffsetH > 13 && !prefGoesInFridge;
+        const cardPrefInZone   = (hasPrefActive || isSourdough) && prefOffsetH >= 3 && prefOffsetH <= 72;
+        const cardPrefTooShort = (hasPrefActive || isSourdough) && prefOffsetH < 3;
         const cardPrefStatus = cardPrefInZone
           ? (prefGoesInFridge
-              ? '🧊 In fridge — ready when dough starts'
+              ? '🧊 In fridge — peaks at Start Dough'
               : '🟢 Ready when dough starts')
           : cardPrefTooShort
           ? '🟡 Start poolish a little earlier'
-          : cardPrefNeedsFridge
-          ? '🧊 Move to fridge — getting long for room temp'
           : '🟡 Poolish past its window — use it now';
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
@@ -2009,6 +2013,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 <div style={{ fontSize: '12px', marginTop: '.1rem', color: cardPrefInZone ? (prefGoesInFridge ? '#3A5A8A' : '#4A7A3A') : '#C49A28' }}>
                   {cardPrefStatus}
                 </div>
+                {prefGoesInFridge && prefRemoveFromFridgeTime && (
+                  <div style={{ fontSize: '11px', color: '#3A5A8A', marginTop: '.3rem', fontFamily: 'var(--font-dm-mono)' }}>
+                    🌡️ Remove from fridge: {fmtCardDT(prefRemoveFromFridgeTime)}
+                  </div>
+                )}
                 {prefGoesInFridge && (
                   <div style={{ fontSize: '12px', marginTop: '.2rem', color: '#3A5A8A', fontFamily: 'var(--font-dm-mono)' }}>
                     🧊 Cold ferment — use fridge

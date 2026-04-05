@@ -47,23 +47,57 @@ const AXIS_Y    = 175;  // axis line = same as baseline BL
 const S = 10;
 
 // ── Sigma / optimal-hours functions ──────────────────────────
-function getPrefSig(type: string, temp: number, inFridge = false): number {
-  if (type === 'biga') return 14;              // fridge biga — wide bell
-  if (type === 'poolish') {
-    if (inFridge || temp >= 26) return 14;    // fridge poolish — wide bell
-    return temp >= 22 ? 4 : 5;               // RT poolish — narrower bell
+// ── Poolish RT peak time (hours from start to peak at room temp) ─────
+// Style-sensitive: pizza doughs ferment slightly faster (more yeast activity)
+// than bread styles. Biga always goes to fridge so RT peak not applicable.
+export function getPrefPeakH_RT(type: string, temp: number, styleKey = 'neapolitan'): number {
+  if (type === 'biga') return 0; // always fridge — no RT peak concept
+  const isBread = ['pain_campagne','pain_levain','baguette','pain_complet',
+                   'pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
+  // Bread styles: slightly slower RT peak (lower yeast, more enzymatic)
+  if (isBread) {
+    if (temp >= 30) return 5;
+    if (temp >= 28) return 7;
+    if (temp >= 26) return 9;
+    if (temp >= 24) return 11;
+    return 14;
   }
-  // levain / sourdough
+  // Pizza / sourdough styles
+  if (temp >= 32) return 3;
+  if (temp >= 30) return 4;
+  if (temp >= 28) return 5;
+  if (temp >= 26) return 7;
+  if (temp >= 24) return 9;
+  return 11;
+}
+
+// ── RT warmup time to bring cold poolish to peak ─────────────────────
+// How long poolish needs at room temp after coming out of fridge.
+// Climate-sensitive: hotter kitchen = faster warmup.
+export function getPrefRTWarmupH(temp: number): number {
+  if (temp >= 30) return 0.5;
+  if (temp >= 28) return 0.75;
+  if (temp >= 26) return 1.0;
+  return 2.0;
+}
+
+function getPrefSig(type: string, temp: number, inFridge = false, prefOffsetH = 10): number {
+  if (type === 'biga') return Math.max(8, prefOffsetH * 0.4);
+  if (type === 'poolish') {
+    if (inFridge) return Math.max(6, prefOffsetH * 0.4); // scales with actual window
+    return temp >= 26 ? 3 : temp >= 22 ? 4 : 5;         // RT poolish
+  }
   if (temp >= 30) return 2;
   if (temp >= 26) return 3;
   return 4;
 }
 
-export function getPrefOptH(type: string, temp: number, inFridge = false): number {
-  if (type === 'biga') return 48;              // always fridge — 48h optimal
+export function getPrefOptH(type: string, temp: number, inFridge = false, styleKey = 'neapolitan'): number {
+  if (type === 'biga') return 48;
   if (type === 'poolish') {
-    if (inFridge || temp >= 26) return 48;     // fridge poolish — 48h optimal
-    return temp >= 22 ? 10 : 12;              // RT poolish — 10-12h optimal
+    if (inFridge) return 48;
+    // RT poolish optimal = RT peak time for this style+temp
+    return getPrefPeakH_RT(type, temp, styleKey);
   }
   // levain / sourdough
   if (temp >= 30) return 5;
@@ -194,14 +228,14 @@ export default function FermentChart({
   const DOUGH_SIG          = hasColdRetard ? 18 : 10;
   const DOUGH_SWEET_CENTER = sweetCenterH ?? (hasColdRetard ? 26 : 6);
 
-  const optH            = hasPref ? getPrefOptH(prefermentType, kitchenTemp, prefInFridge) : 0;
-  const prefSigBase     = hasPref ? getPrefSig(prefermentType, kitchenTemp, prefInFridge) : 1;
-  // When offset < optH, the peak is far from diamond → curve looks flat.
-  // Widen sigma so the bell rises to ~40% of its max at the diamond.
-  // sigma = optH * 0.75 achieves ~40% height at optH distance from peak.
-  const prefSig = hasPref && prefOffsetH < optH && optH > 0
-    ? Math.max(prefSigBase, optH * 0.75)
-    : prefSigBase;
+  // Two-temperature poolish protocol:
+  // needsFridge = offset > RT peak time for this style+temp
+  // If fridge: peak = AT mix (fridge cold phase + RT warmup lands at mix)
+  // If RT only: peak = after mix naturally (curve still rising at mix = honest)
+  const rtPeakH = hasPref ? getPrefPeakH_RT(prefermentType, kitchenTemp) : 0;
+  const prefNeedsFridge = hasPref && (prefermentType === 'biga' || prefOffsetH > rtPeakH);
+  const prefSig = hasPref ? getPrefSig(prefermentType, kitchenTemp, prefNeedsFridge, prefOffsetH) : 1;
+
   // During drag, use local position for all mix-derived values
   const effectiveMixHBF = localMixHBF !== null ? localMixHBF : mixOffsetH;
 
@@ -209,16 +243,20 @@ export default function FermentChart({
     effectiveMixHBF + prefOffsetH,
     nowHBF - 0.25
   );
-  const doughPeakHBF    = effectiveMixHBF - DOUGH_SWEET_CENTER;
-  const prefPeakHBF     = prefStartAbsHBF - optH;
+  const doughPeakHBF = effectiveMixHBF - DOUGH_SWEET_CENTER;
+  // Fridge protocol: RT warmup guarantees peak exactly at mix
+  // Full RT: peak happens naturally at rtPeakH after poolish start
+  const prefPeakHBF = prefNeedsFridge
+    ? effectiveMixHBF                           // peaks AT mix — protocol guarantees it
+    : prefStartAbsHBF - rtPeakH;               // peaks naturally (may be after mix)
 
   // Sweet-spot zones — driven by style+timing aware props
   // Zone: left = max useful start (min of now and preferredCold+rtH)
   // Zone: right = minTotalFermH boundary — unified cold/RT
   const doughZoneFrom = sweetFromH ?? (hasColdRetard ? 52 : 26);
   const doughZoneTo   = sweetToH   ?? (hasColdRetard ? 8  : 8 );
-  // Zone: 3h min to 72h max for fridge preferments, optH+3 for RT
-  const prefZoneMax   = hasPref ? ((prefermentType === 'biga' || prefInFridge) ? 72 : Math.min(optH + 3, 16)) : 0;
+  // Unified zone: 3h min to 72h max for all poolish/biga
+  const prefZoneMax = hasPref ? 72 : 0;
   const prefZoneFrom  = hasPref ? effectiveMixHBF + prefZoneMax : 0;
   const prefZoneTo    = hasPref ? effectiveMixHBF + 3 : 0;
 
@@ -315,11 +353,10 @@ export default function FermentChart({
     : mixTooEarly ? '🔴 Too early — over-fermented'
     : '🔴 Too late — under-fermented';
 
-  const prefZoneMaxH  = (prefermentType === 'biga' || prefInFridge) ? 72 : Math.min(optH + 3, 16);
-  const prefInZone    = hasPref && prefOffsetH >= 2.75 && prefOffsetH <= prefZoneMaxH;
-  const prefTooShort  = hasPref && prefOffsetH < 2.75;
-  const prefStatus    = prefInZone
-    ? '🟢 Ready when dough starts'
+  const prefInZone   = hasPref && prefOffsetH >= 3 && prefOffsetH <= 72;
+  const prefTooShort = hasPref && prefOffsetH < 3;
+  const prefStatus   = prefInZone
+    ? (prefNeedsFridge ? '🧊 In fridge — peaks at Start Dough' : '🟢 Ready when dough starts')
     : prefTooShort
     ? '🟡 Start poolish a little earlier'
     : '🟡 Poolish past its window — use it now';

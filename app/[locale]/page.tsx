@@ -11,6 +11,7 @@ import ClimatePicker from '../components/ClimatePicker';
 import RecipeOutput from '../components/RecipeOutput';
 import Timeline from '../components/Timeline';
 import BakeGuide from '../components/BakeGuide';
+import { getPrefPeakH_RT, getPrefRTWarmupH } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
 import FlourPicker from '../components/FlourPicker';
 import PrefermentPicker from '../components/PrefermentPicker';
@@ -392,6 +393,21 @@ export default function Home() {
     if (prefOffsetH <= 0) return null;
     return new Date(startTime.getTime() - prefOffsetH * 3600000);
   }, [startTime, prefOffsetH, prefermentType]);
+
+  // Two-temperature poolish protocol — fridge flag and remove-from-fridge time
+  const prefGoesInFridge = useMemo(() => {
+    if (!prefermentType || prefermentType === 'none' || prefermentType === 'levain') return false;
+    const rtPeakH = getPrefPeakH_RT(prefermentType, kitchenTemp, styleKey ?? 'neapolitan');
+    return prefermentType === 'biga' || prefOffsetH > rtPeakH;
+  }, [prefermentType, kitchenTemp, styleKey, prefOffsetH]);
+
+  const prefRemoveFromFridgeTime = useMemo(() => {
+    if (!prefGoesInFridge || !eatTime) return null;
+    const rtWarmupH = getPrefRTWarmupH(kitchenTemp);
+    const mixHBF = schedule ? (eatTime.getTime() - schedule.bulkFermStart.getTime()) / 3600000 : 0;
+    const removeHBF = mixHBF + rtWarmupH;
+    return new Date(eatTime.getTime() - removeHBF * 3600000);
+  }, [prefGoesInFridge, kitchenTemp, eatTime, schedule]);
 
   const recipe = useMemo(() => {
     if (!styleKey || !schedule || !ovenType || !yeastType) return null;
@@ -1368,6 +1384,8 @@ export default function Home() {
                           kitchenTemp={kitchenTemp}
                           prefStartTime={prefStartTime}
                           prefermentType={prefermentType}
+                          prefGoesInFridge={prefGoesInFridge}
+                          prefRemoveFromFridgeTime={prefRemoveFromFridgeTime}
                           onStartBaking={() => setActiveTab('guide')}
                         />
                       )}
@@ -2125,6 +2143,8 @@ export default function Home() {
                           kitchenTemp={kitchenTemp}
                           prefStartTime={prefStartTime}
                           prefermentType={prefermentType}
+                          prefGoesInFridge={prefGoesInFridge}
+                          prefRemoveFromFridgeTime={prefRemoveFromFridgeTime}
                           onStartBaking={() => setActiveTab('guide')}
                         />
                       )}

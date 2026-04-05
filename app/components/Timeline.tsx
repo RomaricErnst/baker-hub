@@ -25,6 +25,8 @@ interface TimelineProps {
   onStartBaking?: () => void;
   prefStartTime?: Date | null;
   prefermentType?: string;
+  prefGoesInFridge?: boolean;
+  prefRemoveFromFridgeTime?: Date | null;
 }
 
 // ── Step kinds ────────────────────────────────
@@ -75,6 +77,8 @@ function buildItems(
   isSourdough?: boolean,
   prefStartTime?: Date | null,
   prefermentType?: string,
+  prefGoesInFridge?: boolean,
+  prefRemoveFromFridgeTime?: Date | null,
 ): TimelineStep[] {
   const items: TimelineStep[] = [];
 
@@ -87,9 +91,39 @@ function buildItems(
       label: isPoolish ? 'Make your Poolish' : 'Make your Biga',
       icon: isPoolish ? '🏺' : '🧱',
       tip: isPoolish
-        ? 'Mix equal weight flour and water (100% hydration) with a pinch of yeast. Stir until no dry flour remains. Cover and ferment at room temperature until bubbly and slightly domed, then use immediately for best results.'
-        : 'Combine flour, water and a tiny amount of yeast (0.1–0.2%). Mix roughly — biga is intentionally shaggy, not smooth. Cover and ferment in the fridge until ready.',
+        ? (prefGoesInFridge
+            ? 'Mix equal weight flour and water (100% hydration) with a pinch of yeast. Stir until combined. Cover tightly and place in the fridge immediately — remove from fridge at the time shown in the next step.'
+            : 'Mix equal weight flour and water (100% hydration) with a pinch of yeast. Stir until no dry flour remains. Leave at room temperature — it peaks when domed and bubbly. Mix your dough immediately at peak.')
+        : 'Combine flour, water and a tiny amount of yeast (0.1–0.2%). Mix roughly — biga is intentionally shaggy, not smooth. Cover and place in the fridge until the removal step.',
       durationH: null,
+    });
+  }
+
+  // 0a2 — Remove Poolish / Biga from Fridge (fridge protocol only)
+  if (prefGoesInFridge && prefRemoveFromFridgeTime && prefStartTime &&
+      (prefermentType === 'poolish' || prefermentType === 'biga')) {
+    const temp = kitchenTemp ?? 20;
+    // Push remove time out of any blocker (same pattern as dough warmup)
+    let removeTime = new Date(prefRemoveFromFridgeTime);
+    let safety = 0;
+    while (safety++ < 10) {
+      const inBlock = blocks.find(b => removeTime >= b.from && removeTime < b.to);
+      if (!inBlock) break;
+      // Push earlier by blocker duration (extend RT warmup)
+      removeTime = new Date(inBlock.from.getTime() - 15 * 60000);
+    }
+    const warmupH = (schedule.bulkFermStart.getTime() - removeTime.getTime()) / 3600000;
+    items.push({
+      kind: 'step', id: 'remove_pref_fridge', stepKind: 'rest_rt',
+      time: removeTime,
+      label: prefermentType === 'biga' ? 'Remove Biga from fridge' : 'Remove Poolish from fridge',
+      icon: '🌡️',
+      tip: prefermentType === 'biga'
+        ? `Take your biga out of the fridge and leave covered at room temperature for ~${warmupH.toFixed(1)}h. It will reach its peak just as you start mixing.`
+        : temp >= 28
+        ? `Take your poolish out of the fridge. At ${temp}°C it will reach peak in ~${warmupH.toFixed(1)}h — mix your dough when it peaks.`
+        : `Take your poolish out of the fridge and leave covered at room temperature for ~${warmupH.toFixed(1)}h. It peaks when the surface is domed and bubbly — mix immediately.`,
+      durationH: warmupH,
     });
   }
 
@@ -368,13 +402,13 @@ function InfoBadge({ term, onOpen }: { term: string; onOpen: (t: string) => void
 
 // ── Component ─────────────────────────────────
 export default function Timeline({
-  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, oil, hydration, numItems, feedTime, kitchenTemp, onStartBaking, prefStartTime, prefermentType,
+  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, oil, hydration, numItems, feedTime, kitchenTemp, onStartBaking, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime,
 }: TimelineProps) {
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
 
   const isSourdough = styleKey === 'sourdough' || styleKey === 'pain_levain';
 
-  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType);
+  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime);
   const phases = buildPhases(schedule, preheatMin);
 
   const lastStepId = items[items.length - 1]?.id;
