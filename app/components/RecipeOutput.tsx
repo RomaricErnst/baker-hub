@@ -173,7 +173,8 @@ function computeWaterInfo(
   const rawIce = waterGrams * (ambientTemp - targetTemp) / (targetTemp + 80);
   const iceGrams = Math.max(0, Math.round(rawIce));
   const tapGrams = waterGrams - iceGrams;
-  const needsIce = iceGrams > 0;
+  // Below 50g, ice has negligible temperature effect — not worth the fuss
+  const needsIce = iceGrams >= 50;
 
   let iceGuidance = '';
   let tempGuidance: string;
