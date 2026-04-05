@@ -1826,8 +1826,7 @@ export default function Home() {
                   selected={prefermentType}
                   onSelect={pt => {
                     setPrefermentType(pt);
-                    if (pt === 'none') advanceAdv(9);
-                    // poolish, biga: stay on step for confirmation, flour % adjusted in Dial In (step 11)
+                    advanceAdv(9);
                   }}
                   flourPct={prefermentFlourPct}
                   onFlourPctChange={setPrefermentFlourPct}
@@ -1835,7 +1834,6 @@ export default function Home() {
                   hideTypes={['levain']}
                   kitchenTemp={kitchenTemp}
                 />
-                {prefermentType !== 'none' && <ContinueBtn onClick={() => advanceAdv(9)} />}
               </StepCard>
             )}
 
@@ -1861,8 +1859,9 @@ export default function Home() {
                 onFeedTimeChange={setFeedTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
-                onReady={() => advanceAdv(10)}
+                onReady={() => {}}
               />
+              {eatTime && <ContinueBtn onClick={() => advanceAdv(10)} label="Continue to Dial In →" />}
             </StepCard>
 
             {/* ─── ADV STEP 11: Dial your dough ────── */}
@@ -1887,8 +1886,9 @@ export default function Home() {
                   const minPct = pData.flourPctMin ?? 10;
                   const maxPct = pData.flourPctMax ?? 80;
                   const step = pData.flourPctStep ?? 5;
+                  // Time-sensitive default: 3-4h→45%, 5-7h→40%, 8-12h→30%, 13h+→20%
                   const timeDefault = prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20;
-                  const currentPct = prefermentFlourPct ?? pData.flourPct ?? timeDefault;
+                  const currentPct = prefermentFlourPct ?? timeDefault;
                   const prefHydration = pData.hydration ?? 100;
                   const prefWaterPct = currentPct * (prefHydration / 100);
                   return (
@@ -1903,22 +1903,40 @@ export default function Home() {
                       </div>
                       <input
                         type="range"
-                        min={minPct} max={maxPct} step={step}
+                        min={10} max={60} step={5}
                         value={currentPct}
                         onChange={e => setPrefermentFlourPct(Number(e.target.value))}
                         style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer', marginBottom: '.25rem' }}
                       />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginBottom: '.6rem' }}>
-                        <span>Less complex</span><span>More complex</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginBottom: '.4rem' }}>
+                        <span>10%</span>
+                        <span style={{ color: 'var(--gold)' }}>20% · 16h+</span>
+                        <span style={{ color: 'var(--gold)' }}>30% · 8-12h</span>
+                        <span style={{ color: 'var(--gold)' }}>45% · 3-4h</span>
+                        <span>60%</span>
                       </div>
-                      <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.5 }}>
-                        {currentPct}% of flour + ~{Math.round(prefWaterPct)}% water goes into the {pData.name} — the rest is mixed at dough time.
-                        {prefOffsetH > 0 && (
-                          <span style={{ color: 'var(--gold)', fontStyle: 'italic' }}>
-                            {' '}Suggested for a {Math.round(prefOffsetH)}h window: {timeDefault}%.
-                          </span>
-                        )}
+                      <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.55, marginBottom: '.4rem' }}>
+                        {currentPct}% of your flour (+ ~{Math.round(prefWaterPct)}% water) goes into the {pData.name} — the rest mixes at dough time.
                       </div>
+                      {prefOffsetH > 0 && currentPct !== timeDefault && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '.1rem' }}>
+                          <div style={{ fontSize: '.72rem', color: 'var(--gold)', fontStyle: 'italic' }}>
+                            For your {Math.round(prefOffsetH)}h window, {timeDefault}% is typical.
+                          </div>
+                          <button
+                            onClick={() => setPrefermentFlourPct(undefined)}
+                            style={{
+                              background: 'none', border: 'none', cursor: 'pointer',
+                              fontSize: '.7rem', color: 'var(--smoke)',
+                              fontFamily: 'var(--font-dm-sans)',
+                              textDecoration: 'underline', textUnderlineOffset: '2px',
+                              padding: 0, flexShrink: 0,
+                            }}
+                          >
+                            Reset to recommendation
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -2067,7 +2085,6 @@ export default function Home() {
                     );
                   })()}
                 </div>
-                <ContinueBtn onClick={() => advanceAdv(11)} />
               </div>
             </StepCard>
 
