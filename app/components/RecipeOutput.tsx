@@ -744,7 +744,7 @@ export default function RecipeOutput({
               value={effectiveBatches > 3 ? effectiveBatches : ''}
               onChange={e => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= minBatches) setNumBatches(v); }}
               style={{
-                width: '60px',
+                width: '80px',
                 padding: '.3rem .5rem',
                 borderRadius: '20px',
                 border: `1.5px solid ${effectiveBatches > 3 ? '#D4A853' : '#C4B898'}`,

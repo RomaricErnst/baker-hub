@@ -110,19 +110,9 @@ export default function PrefermentPicker({
               </div>
             </div>
 
-            {/* Pills inside selected card */}
+            {/* Pills: hydration always shown, cold ferment for biga only */}
             {isSelected && !isNone && (
               <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '.6rem' }}>
-                {pData.flourPct && (
-                  <span style={{
-                    fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-                    background: 'var(--cream)', color: 'var(--ash)',
-                    borderRadius: '20px', padding: '.1rem .45rem',
-                    border: '1px solid var(--border)',
-                  }}>
-                    {flourPct ?? pData.flourPct ?? 50}% flour
-                  </span>
-                )}
                 {pData.hydration && (
                   <span style={{
                     fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
@@ -131,16 +121,6 @@ export default function PrefermentPicker({
                     border: '1px solid var(--border)',
                   }}>
                     {pData.hydration}% hydration
-                  </span>
-                )}
-                {pData.fermentHoursMin && pData.fermentHoursMax && (
-                  <span style={{
-                    fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-                    background: 'var(--cream)', color: 'var(--ash)',
-                    borderRadius: '20px', padding: '.1rem .45rem',
-                    border: '1px solid var(--border)',
-                  }}>
-                    {pData.fermentHoursMin}–{pData.fermentHoursMax}h
                   </span>
                 )}
                 {pData.cold && (
@@ -153,32 +133,6 @@ export default function PrefermentPicker({
                     ❄ Cold ferment
                   </span>
                 )}
-              </div>
-            )}
-
-            {/* Climate notes inline */}
-            {isSelected && !isNone && key === 'poolish' && kitchenTemp !== undefined && kitchenTemp >= 26 && (
-              <div style={{
-                marginTop: '.65rem',
-                background: '#EEF6FF', border: '1px solid #B0CDE8',
-                borderRadius: '8px', padding: '.5rem .65rem',
-                fontSize: '.72rem', color: '#3A5F80', lineHeight: 1.5,
-                display: 'flex', gap: '.4rem', alignItems: 'flex-start',
-              }}>
-                <span>🌡️</span>
-                <span>Warm kitchen — keep poolish in the fridge after 1–2h at room temperature to avoid over-fermentation.</span>
-              </div>
-            )}
-            {isSelected && !isNone && key === 'biga' && (
-              <div style={{
-                marginTop: '.65rem',
-                background: '#EEF6FF', border: '1px solid #B0CDE8',
-                borderRadius: '8px', padding: '.5rem .65rem',
-                fontSize: '.72rem', color: '#3A5F80', lineHeight: 1.5,
-                display: 'flex', gap: '.4rem', alignItems: 'flex-start',
-              }}>
-                <span>❄️</span>
-                <span>Biga ferments best cold — refrigerate for 16–24h at 4°C for optimal flavour and gluten structure.</span>
               </div>
             )}
           </div>

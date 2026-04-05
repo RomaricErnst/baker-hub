@@ -1861,7 +1861,7 @@ export default function Home() {
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onReady={() => {}}
               />
-              {eatTime && <ContinueBtn onClick={() => advanceAdv(10)} label="Continue to Dial In →" />}
+              {eatTime && <ContinueBtn onClick={() => advanceAdv(10)} />}
             </StepCard>
 
             {/* ─── ADV STEP 11: Dial your dough ────── */}
@@ -1915,8 +1915,19 @@ export default function Home() {
                         <span style={{ color: 'var(--gold)' }}>45% · 3-4h</span>
                         <span>60%</span>
                       </div>
+                      {/* Zone colour band */}
+                      <div style={{ display: 'flex', height: '4px', borderRadius: '2px', marginBottom: '.5rem', overflow: 'hidden' }}>
+                        <div style={{ flex: 2, background: '#B8A898' }} title="Best for long fermentation" />
+                        <div style={{ flex: 3, background: '#D4A853' }} title="Great for overnight" />
+                        <div style={{ flex: 5, background: '#6B7A5A' }} title="Short fermentation" />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.58rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginBottom: '.6rem' }}>
+                        <span style={{ color: '#8A7A70' }}>Long (16h+)</span>
+                        <span style={{ color: 'var(--gold)' }}>Overnight (8-12h)</span>
+                        <span style={{ color: 'var(--sage)' }}>Short (3-4h)</span>
+                      </div>
                       <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.55, marginBottom: '.4rem' }}>
-                        {currentPct}% of your flour (+ ~{Math.round(prefWaterPct)}% water) goes into the {pData.name} — the rest mixes at dough time.
+                        {currentPct}% of your flour goes into the {pData.name}, with an equal weight of water ({Math.round((currentPct / 100) * (advancedRecipe?.flour ?? 0))}g flour + {Math.round((currentPct / 100) * (advancedRecipe?.flour ?? 0))}g water). The rest mixes at dough time.
                       </div>
                       {prefOffsetH > 0 && currentPct !== timeDefault && (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '.1rem' }}>
@@ -2089,7 +2100,7 @@ export default function Home() {
             </StepCard>
 
             {/* ── Generate button (setup tab) ── */}
-            {canGenerate && eatTime && (
+            {canGenerate && eatTime && advancedStep > 10 && (
               <div style={{ marginTop: '1rem' }}>
                 <button
                   onClick={handleGenerate}
