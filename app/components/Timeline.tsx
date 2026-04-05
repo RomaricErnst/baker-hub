@@ -434,22 +434,7 @@ export default function Timeline({
           </div>
         </div>
 
-        <button
-          onClick={onStartBaking}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '.45rem',
-            padding: '.55rem 1.1rem',
-            background: 'var(--char)', color: 'var(--cream)',
-            border: 'none', borderRadius: '12px',
-            fontSize: '.8rem', fontWeight: 500,
-            cursor: 'pointer',
-            transition: 'opacity .15s',
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ fontSize: '.85rem' }}>▶</span>
-          Start Baking Mode
-        </button>
+        {/* Start Bake Guide button removed — baker uses tab navigation instead */}
       </div>
 
       {/* ── Auto-adjust banner ──────────────────── */}
