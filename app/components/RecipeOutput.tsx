@@ -301,19 +301,26 @@ export default function RecipeOutput({
   const minBatches  = Math.ceil(totalDoughG / mixerMaxG);
   const needsBatches = minBatches > 1;
   const [numBatches, setNumBatches] = useState(minBatches);
-  // Recompute if minBatches changes (different mixer or quantity)
-  const effectiveBatches = Math.max(numBatches, 1);
+  // effectiveBatches can be 1 if baker overrides — no Math.max constraint
+  const effectiveBatches = numBatches >= 1 ? numBatches : minBatches;
 
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
 
-  // Per-batch amounts
-  const flourPerBatch = Math.round(flour / effectiveBatches);
-  const waterPerBatch = Math.round(water / effectiveBatches);
+  // Per-batch amounts — for preferment mode, batch the final dough only.
+  // Poolish/biga is always made in one go (hand-mixed); yeast is already in it.
+  const hasPref = result.preferment != null;
+  const batchFlour = hasPref ? (result.preferment?.finalFlour ?? flour) : flour;
+  const batchWater = hasPref ? (result.preferment?.finalWater ?? water) : water;
+  const flourPerBatch = Math.round(batchFlour / effectiveBatches);
+  const waterPerBatch = Math.round(batchWater / effectiveBatches);
   const saltPerBatch  = Math.round(salt  / effectiveBatches);
   const yeastGramsTotal = (yeast as YeastResult | null)?.convertedGrams ?? 0;
-  const yeastPerBatch   = yeastGramsTotal > 0
+  // Yeast goes in the batch only when there's no preferment (direct dough)
+  const yeastPerBatch = !hasPref && yeastGramsTotal > 0
     ? Math.round(yeastGramsTotal / effectiveBatches * 10) / 10
     : null;
+  const batchDoughG = batchFlour + batchWater + salt
+    + (!hasPref && yeastGramsTotal > 0 ? yeastGramsTotal : 0);
 
   const yeastInfo = yeast as YeastResult | null;
   const yeastTypeName = yeastInfo ? YEAST_TYPES[yeastInfo.yeastType]?.name ?? yeastInfo.yeastType : '';
@@ -714,12 +721,14 @@ export default function RecipeOutput({
           </div>
           {/* Explanation */}
           <div style={{ fontSize: '.78rem', color: '#5A4A10', lineHeight: 1.65, fontFamily: 'var(--font-dm-sans)', marginBottom: '.9rem' }}>
-            Your total dough is <strong>{totalDoughG}g</strong> — more than your {(MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer'} comfortably handles in one go.
-            How many batches would you like to mix?
+            {hasPref
+              ? <>Your final dough is <strong>{Math.round(batchDoughG)}g</strong> — more than your {(MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer'} handles in one go. The {prefermentType === 'biga' ? 'biga' : 'poolish'} is made separately. How many batches for the dough?</>
+              : <>Your total dough is <strong>{totalDoughG}g</strong> — more than your {(MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer'} handles in one go. How many batches would you like to mix?</>
+            }
           </div>
-          {/* Batch count selector */}
-          <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.9rem', flexWrap: 'wrap' }}>
-            {[2, 3].map(n => (
+          {/* Batch count selector: ×1, ×2, ×3 pills + free input */}
+          <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.9rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {[1, 2, 3].map(n => (
               <button
                 key={n}
                 onClick={() => setNumBatches(n)}
@@ -740,10 +749,10 @@ export default function RecipeOutput({
             ))}
             <input
               type="number"
-              min={minBatches}
+              min={1}
               placeholder="other"
               value={effectiveBatches > 3 ? effectiveBatches : ''}
-              onChange={e => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= minBatches) setNumBatches(v); }}
+              onChange={e => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) setNumBatches(v); }}
               style={{
                 width: '80px',
                 padding: '.3rem .5rem',
@@ -761,7 +770,7 @@ export default function RecipeOutput({
           {/* Per-batch breakdown */}
           <div style={{ background: 'white', borderRadius: '8px', padding: '.65rem .9rem', border: '1px solid #E8D890', marginBottom: '.65rem' }}>
             <div style={{ fontSize: '.65rem', fontWeight: 600, color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '.07em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.45rem' }}>
-              Per batch ({effectiveBatches} × ~{Math.round(totalDoughG / effectiveBatches)}g)
+              {hasPref ? `Final dough per batch (${effectiveBatches} × ~${Math.round(batchDoughG / effectiveBatches)}g)` : `Per batch (${effectiveBatches} × ~${Math.round(totalDoughG / effectiveBatches)}g)`}
             </div>
             {[
               { label: 'Flour', value: `${flourPerBatch}g` },
