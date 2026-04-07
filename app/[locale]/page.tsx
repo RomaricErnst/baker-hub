@@ -1916,9 +1916,9 @@ export default function Home() {
                         />
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem' }}>
-                        <span style={{ color: '#8A7A70' }}>Long (16h+)</span>
-                        <span style={{ color: 'var(--gold)' }}>Overnight</span>
-                        <span style={{ color: 'var(--sage)' }}>Short (3-4h)</span>
+                        <span style={{ color: '#8A7A70' }}>16h+ ahead</span>
+                        <span style={{ color: 'var(--gold)' }}>Night before</span>
+                        <span style={{ color: 'var(--sage)' }}>Same day</span>
                       </div>
                       {prefOffsetH > 0 && currentPct !== timeDefault && (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '.1rem' }}>
