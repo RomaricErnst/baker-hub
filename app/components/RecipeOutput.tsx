@@ -306,20 +306,24 @@ export default function RecipeOutput({
 
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
 
-  // Per-batch amounts — for preferment mode, batch the final dough only.
-  // Poolish/biga is always made in one go (hand-mixed); yeast is already in it.
+  // Per-batch: final dough ingredients only.
+  // When preferment active: poolish/biga added whole, yeast excluded (already in preferment).
   const hasPref = result.preferment != null;
-  const batchFlour = hasPref ? (result.preferment?.finalFlour ?? flour) : flour;
-  const batchWater = hasPref ? (result.preferment?.finalWater ?? water) : water;
-  const flourPerBatch = Math.round(batchFlour / effectiveBatches);
-  const waterPerBatch = Math.round(batchWater / effectiveBatches);
-  const saltPerBatch  = Math.round(salt  / effectiveBatches);
+  const pf = result.preferment;
+  const poolishTotalG = hasPref
+    ? Math.round((pf?.prefFlour ?? 0) + (pf?.prefWater ?? 0) + (pf?.prefYeastGrams ?? 0))
+    : 0;
+  const batchFlour = hasPref ? (pf?.finalFlour ?? flour) : flour;
+  const batchWater = hasPref ? (pf?.finalWater ?? water) : water;
+  const flourPerBatch   = Math.round(batchFlour / effectiveBatches);
+  const waterPerBatch   = Math.round(batchWater / effectiveBatches);
+  const saltPerBatch    = Math.round(salt / effectiveBatches);
+  const poolishPerBatch = hasPref ? Math.round(poolishTotalG / effectiveBatches) : null;
   const yeastGramsTotal = (yeast as YeastResult | null)?.convertedGrams ?? 0;
-  // Yeast goes in the batch only when there's no preferment (direct dough)
-  const yeastPerBatch = !hasPref && yeastGramsTotal > 0
+  const yeastPerBatch   = !hasPref && yeastGramsTotal > 0
     ? Math.round(yeastGramsTotal / effectiveBatches * 10) / 10
     : null;
-  const batchDoughG = batchFlour + batchWater + salt
+  const batchDoughG = batchFlour + batchWater + salt + poolishTotalG
     + (!hasPref && yeastGramsTotal > 0 ? yeastGramsTotal : 0);
 
   const yeastInfo = yeast as YeastResult | null;
@@ -722,7 +726,7 @@ export default function RecipeOutput({
           {/* Explanation */}
           <div style={{ fontSize: '.78rem', color: '#5A4A10', lineHeight: 1.65, fontFamily: 'var(--font-dm-sans)', marginBottom: '.9rem' }}>
             {hasPref
-              ? <>Your final dough is <strong>{Math.round(batchDoughG)}g</strong> — more than your {(MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer'} handles in one go. The {prefermentType === 'biga' ? 'biga' : 'poolish'} is made separately. How many batches for the dough?</>
+              ? <>Your final dough is <strong>~{Math.round(batchDoughG)}g</strong> — more than your {(MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer'} handles in one go. The {prefermentType === 'biga' ? 'biga' : 'poolish'} is made separately in one go. How many batches for the final dough?</>
               : <>Your total dough is <strong>{totalDoughG}g</strong> — more than your {(MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer'} handles in one go. How many batches would you like to mix?</>
             }
           </div>
@@ -773,13 +777,30 @@ export default function RecipeOutput({
               {hasPref ? `Final dough per batch (${effectiveBatches} × ~${Math.round(batchDoughG / effectiveBatches)}g)` : `Per batch (${effectiveBatches} × ~${Math.round(totalDoughG / effectiveBatches)}g)`}
             </div>
             {[
-              { label: 'Flour', value: `${flourPerBatch}g` },
-              { label: 'Water', value: `${waterPerBatch}g` },
-              { label: 'Salt',  value: `${saltPerBatch}g` },
-              ...(yeastPerBatch !== null ? [{ label: `Yeast (${(yeast as YeastResult | null)?.yeastType ?? 'IDY'})`, value: `${yeastPerBatch}g` }] : []),
+              ...(poolishPerBatch !== null ? [{
+                label: prefermentType === 'biga' ? 'Biga' : 'Poolish',
+                value: `${poolishPerBatch}g`,
+                highlight: true,
+              }] : []),
+              { label: hasPref ? 'Flour (final dough)' : 'Flour', value: `${flourPerBatch}g`, highlight: false },
+              { label: hasPref ? 'Water (final dough)' : 'Water', value: `${waterPerBatch}g`, highlight: false },
+              { label: 'Salt', value: `${saltPerBatch}g`, highlight: false },
+              ...(yeastPerBatch !== null ? [{
+                label: `Yeast (${(yeast as YeastResult | null)?.yeastType ?? 'IDY'})`,
+                value: `${yeastPerBatch}g`,
+                highlight: false,
+              }] : []),
             ].map((row, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', color: '#3D3530', padding: '.12rem 0' }}>
-                <span>{row.label}</span>
+              <div key={i} style={{
+                display: 'flex', justifyContent: 'space-between',
+                fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)',
+                color: row.highlight ? '#7A5A10' : '#3D3530',
+                padding: '.12rem 0',
+                borderBottom: row.highlight ? '1px solid #E8D890' : 'none',
+                paddingBottom: row.highlight ? '.3rem' : '.12rem',
+                marginBottom: row.highlight ? '.2rem' : 0,
+              }}>
+                <span style={{ fontWeight: row.highlight ? 600 : 400 }}>{row.label}</span>
                 <span style={{ fontWeight: 600 }}>{row.value}</span>
               </div>
             ))}
