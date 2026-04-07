@@ -19,6 +19,7 @@ interface RecipeOutputProps {
   onPriorityOverride?: (p: string | null) => void;
   saveStatus?: 'idle' | 'saving' | 'saved' | 'error';
   onSave?: () => void;
+  wastePct?: number;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -291,7 +292,7 @@ function StarterPrepCard({ sourdough }: { sourdough: { starterGramsMin: number; 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
   result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
-  priorityOverride, onPriorityOverride, saveStatus, onSave,
+  priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct,
 }: RecipeOutputProps) {
   const [showPriorityOverride, setShowPriorityOverride] = useState(false);
   const [showTotals, setShowTotals] = useState(false);
@@ -438,6 +439,11 @@ export default function RecipeOutput({
               {hydration}% hydration
             </span>
           </div>
+          {wastePct !== undefined && wastePct > 0 && (
+            <div style={{ fontSize: '.68rem', color: 'rgba(212,168,83,0.55)', fontFamily: 'var(--font-dm-mono)', marginTop: '.25rem' }}>
+              Includes {wastePct}% mixing buffer
+            </div>
+          )}
         </div>
         {onSave && (
           <button

@@ -299,6 +299,9 @@ export default function Home() {
   const [manualOil, setManualOil]             = useState<number | undefined>(undefined);
   const [manualSugar, setManualSugar]         = useState<number | undefined>(undefined);
   const [manualSalt, setManualSalt]           = useState<number | undefined>(undefined);
+  const [targetDoughTemp, setTargetDoughTemp] = useState<number | undefined>(undefined);
+  const [flourInFridge, setFlourInFridge]     = useState<boolean>(false);
+  const [wastePct, setWastePct]               = useState<number | undefined>(undefined);
 
   // BakeType card hover state
   const [hoveredBakeType, setHoveredBakeType] = useState<BakeType | null>(null);
@@ -452,11 +455,14 @@ export default function Home() {
         manualHydration, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride,
         prefermentFlourPct,
         manualSalt,
+        targetDoughTemp,
+        flourInFridge,
+        wastePct,
       );
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, manualSalt]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, manualSalt, targetDoughTemp, flourInFridge, wastePct]);
 
   // Advanced recipe with yeast multiplier applied
   const advancedDisplayRecipe = useMemo(() => {
@@ -2147,6 +2153,101 @@ export default function Home() {
               </div>
             </StepCard>
 
+            {/* –– SECTION 4: Precision –– */}
+            {advancedStep >= 11 && (
+              <div style={{
+                background: 'white', borderRadius: '18px',
+                padding: '1.25rem 1.4rem',
+                border: '1px solid var(--border)',
+                marginBottom: '0',
+              }}>
+                <div style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '1rem' }}>
+                  Precision
+                </div>
+
+                {/* DDT stepper + flour fridge toggle */}
+                {(() => {
+                  const styleFDT = styleKey ? ({ neapolitan:23, newyork:24, roman:25, pan:25, sourdough:24, pain_campagne:24, pain_levain:24, baguette:24, pain_complet:24, pain_seigle:24, fougasse:25, brioche:22, pain_mie:24, pain_viennois:23 } as Record<string,number>)[styleKey] ?? 24 : 24;
+                  const v = targetDoughTemp ?? styleFDT;
+                  const mixerFriction = mixerType ? ({ stand:5, hand:1, no_knead:0, spiral:8 } as Record<string,number>)[mixerType] ?? 3 : 3;
+                  const isDefaultDDT = targetDoughTemp === undefined || targetDoughTemp === styleFDT;
+                  return (
+                    <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
+                        <FieldLabel>Target dough temp</FieldLabel>
+                        {!isDefaultDDT && (
+                          <button
+                            onClick={() => setTargetDoughTemp(undefined)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', textUnderlineOffset: '2px', padding: 0 }}
+                          >Reset to {styleFDT}°C</button>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem', marginBottom: '.5rem' }}>
+                        <button
+                          onClick={() => setTargetDoughTemp(Math.max(18, v - 1))}
+                          style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                        >−</button>
+                        <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', color: 'var(--char)' }}>{v}°C</span>
+                        <button
+                          onClick={() => setTargetDoughTemp(Math.min(28, v + 1))}
+                          style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                        >+</button>
+                      </div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '.5rem', cursor: 'pointer', marginBottom: '.4rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={flourInFridge}
+                          onChange={e => setFlourInFridge(e.target.checked)}
+                          style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: 'var(--terra)' }}
+                        />
+                        <span style={{ fontSize: '.78rem', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>
+                          Flour stored in fridge (4°C)
+                        </span>
+                      </label>
+                      <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4 }}>
+                        Your {mixerType === 'stand' ? 'stand mixer' : mixerType === 'spiral' ? 'spiral mixer' : 'hands'} adds ~{mixerFriction}°C friction. Water temperature adjusted accordingly.
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Waste % stepper */}
+                {(() => {
+                  const v = wastePct ?? 1.5;
+                  const STEP = 0.5;
+                  return (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
+                        <FieldLabel>Mixing loss</FieldLabel>
+                        {wastePct !== undefined && wastePct !== 1.5 && (
+                          <button
+                            onClick={() => setWastePct(undefined)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', textUnderlineOffset: '2px', padding: 0 }}
+                          >Reset to 1.5%</button>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                        <button
+                          onClick={() => setWastePct(Math.max(0, Math.round((v - STEP) * 10) / 10))}
+                          style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                        >−</button>
+                        <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', color: 'var(--char)' }}>
+                          {wastePct === 0 ? 'None' : `${v}%`}
+                        </span>
+                        <button
+                          onClick={() => setWastePct(Math.min(5, Math.round((v + STEP) * 10) / 10))}
+                          style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                        >+</button>
+                      </div>
+                      <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
+                        Adds a small ingredient buffer to account for dough left in the bowl. Schedule unchanged.
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
             {/* ── Generate button (setup tab) ── */}
             {canGenerate && eatTime && advancedStep > 10 && (
               <div style={{ marginTop: '1rem' }}>
@@ -2247,6 +2348,7 @@ export default function Home() {
                         onPriorityOverride={v => setPriorityOverride(v)}
                         saveStatus={user ? saveStatus : undefined}
                         onSave={user ? () => handleSaveRecipe('custom') : undefined}
+                        wastePct={wastePct}
                       />
                       {schedule && (
                         <Timeline

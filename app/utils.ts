@@ -707,6 +707,8 @@ export interface RecipeResult {
   hydration: number;
   totalDough: number;
   autoPriority: string | null;     // what the engine chose automatically
+  wastePct?: number;               // mixing loss buffer applied
+  targetDoughTemp?: number;        // DDT used for water temp calculation
   blendProfile?: BlendProfile;
   preferment?: {
     prefFlour: number;
@@ -742,6 +744,9 @@ export function calculateRecipe(
   manualPriorityOverride?: string | null,  // custom mode only
   flourPctOverride?: number,               // custom mode only
   manualSalt?: number,                     // custom mode only
+  targetDoughTemp?: number,                // custom mode only — overrides TARGET_FDT
+  flourInFridge?: boolean,                 // custom mode only — flour temp = 4°C vs kitchenTemp
+  wastePct?: number,                       // custom mode only — mixing loss buffer
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = OVEN_TYPES[ovenType];
@@ -785,8 +790,11 @@ export function calculateRecipe(
     ? manualSugar
     : oven.forceSugar !== null ? oven.forceSugar : s.sugar;
 
-  // Quantities
-  const totalDough = numItems * itemWeight;
+  // Quantities — apply waste buffer if set
+  const wasteMult = mode === 'custom' && wastePct !== undefined && wastePct > 0
+    ? 1 + wastePct / 100
+    : 1;
+  const totalDough = Math.round(numItems * itemWeight * wasteMult);
   const hydPct = hydration / 100;
   const flour  = Math.round(totalDough / (1 + hydPct + saltPct / 100));
   const water  = Math.round(flour * hydPct);
@@ -804,10 +812,15 @@ export function calculateRecipe(
     baguette: 24, pain_complet: 24, pain_seigle: 24,
     fougasse: 25, brioche: 22, pain_mie: 24, pain_viennois: 23,
   };
-  const targetFDT = TARGET_FDT[styleKey] ?? 24;
+  const targetFDT = (mode === 'custom' && targetDoughTemp !== undefined)
+    ? targetDoughTemp
+    : TARGET_FDT[styleKey] ?? 24;
+  const flourTemp = (mode === 'custom' && flourInFridge)
+    ? 4
+    : kitchenTemp;
   const frictionFactor = MIXER_TYPES[mixerType]?.frictionFactor ?? 3;
   const waterTemp = Math.max(2, Math.min(40,
-    targetFDT * 3 - kitchenTemp - kitchenTemp - frictionFactor
+    targetFDT * 3 - flourTemp - kitchenTemp - frictionFactor
   ));
 
   // Yeast or sourdough
@@ -879,6 +892,8 @@ export function calculateRecipe(
     oil: oilG, sugar: sugarG,
     waterTemp, hydration, totalDough,
     autoPriority,
+    wastePct: mode === 'custom' && wastePct !== undefined && wastePct > 0 ? wastePct : undefined,
+    targetDoughTemp: mode === 'custom' && targetDoughTemp !== undefined ? targetDoughTemp : undefined,
     blendProfile: blendProfile ?? undefined,
     preferment,
   };
