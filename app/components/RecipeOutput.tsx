@@ -439,9 +439,25 @@ export default function RecipeOutput({
             </span>
           </div>
         </div>
-        {/* Total ingredients — expandable, preferment mode only */}
+        {onSave && (
+          <button
+            onClick={onSave}
+            disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+            style={{
+              padding: '.45rem .9rem', borderRadius: '8px',
+              border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'rgba(212,168,83,0.4)'}`,
+              background: 'transparent',
+              color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--gold)',
+              fontSize: '.78rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
+              fontFamily: 'var(--font-dm-mono)',
+            }}
+          >
+            {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved ✓' : saveStatus === 'error' ? 'Error' : 'Save recipe'}
+          </button>
+        )}
+        {/* Total ingredients — full width, bottom of card */}
         {result.preferment && prefermentType && prefermentType !== 'none' && (
-          <div style={{ marginTop: '.75rem', borderTop: '1px solid rgba(212,168,83,0.15)', paddingTop: '.6rem' }}>
+          <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(212,168,83,0.15)', paddingTop: '.75rem' }}>
             <button
               onClick={() => setShowTotals(v => !v)}
               style={{
@@ -461,19 +477,20 @@ export default function RecipeOutput({
               const totalSalt  = salt;
               const totalYeast = pf.prefYeastGrams;
               return (
-                <div style={{ marginTop: '.5rem', display: 'flex', flexDirection: 'column', gap: '.2rem' }}>
+                <div style={{ marginTop: '.6rem', display: 'flex', flexDirection: 'column', gap: '.45rem' }}>
                   {[
-                    { label: 'Flour (total)', value: `${Math.round(totalFlour)}g` },
-                    { label: 'Water (total)', value: `${Math.round(totalWater)}g` },
-                    { label: 'Salt', value: `${Math.round(totalSalt)}g` },
-                    ...(totalYeast > 0 ? [{ label: 'Yeast (IDY)', value: `${totalYeast}g` }] : []),
+                    { label: 'Flour', pct: '100%', value: `${Math.round(totalFlour)}g` },
+                    { label: 'Water', pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: `${Math.round(totalWater)}g` },
+                    { label: 'Salt',  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: `${Math.round(totalSalt)}g` },
+                    ...(totalYeast > 0 ? [{ label: 'Yeast (IDY)', pct: `${Math.round(totalYeast / totalFlour * 1000) / 10}%`, value: `${totalYeast}g` }] : []),
                   ].map((row, i) => (
                     <div key={i} style={{
-                      display: 'flex', justifyContent: 'space-between',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
                       fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
                       color: 'rgba(245,240,232,0.65)',
                     }}>
-                      <span>{row.label}</span>
+                      <span style={{ flex: 1 }}>{row.label}</span>
+                      <span style={{ color: 'rgba(245,240,232,0.4)', fontSize: '.65rem', marginRight: '.75rem' }}>{row.pct}</span>
                       <span style={{ color: 'rgba(245,240,232,0.9)', fontWeight: 600 }}>{row.value}</span>
                     </div>
                   ))}
@@ -481,23 +498,6 @@ export default function RecipeOutput({
               );
             })()}
           </div>
-        )}
-
-        {onSave && (
-          <button
-            onClick={onSave}
-            disabled={saveStatus === 'saving' || saveStatus === 'saved'}
-            style={{
-              padding: '.45rem .9rem', borderRadius: '8px',
-              border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'rgba(212,168,83,0.4)'}`,
-              background: 'transparent',
-              color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--gold)',
-              fontSize: '.78rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
-              fontFamily: 'var(--font-dm-mono)',
-            }}
-          >
-            {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved ✓' : saveStatus === 'error' ? 'Error' : 'Save recipe'}
-          </button>
         )}
       </div>
 
