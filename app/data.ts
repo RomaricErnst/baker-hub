@@ -351,7 +351,7 @@ export const MIXER_TYPES = {
     kneadMin: 8,
     folds: 2,
     frictionFactor: 4,
-    maxDoughG: 1200,
+    maxDoughG: 1500,
     instructions: 'Speed 1 for 2 min to combine, Speed 2 for 6–8 min until dough clears the bowl.',
   },
   hand: {
