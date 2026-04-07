@@ -93,9 +93,9 @@ function getPrefSig(type: string, temp: number, inFridge = false, prefOffsetH = 
 }
 
 export function getPrefOptH(type: string, temp: number, inFridge = false, styleKey = 'neapolitan'): number {
-  if (type === 'biga') return 48;
+  if (type === 'biga') return 48;       // biga fridge: 48h optimal, up to 72h safe
   if (type === 'poolish') {
-    if (inFridge) return 48;
+    if (inFridge) return 18;            // poolish fridge: 18h optimal (overnight), 24h max
     // RT poolish optimal = RT peak time for this style+temp
     return getPrefPeakH_RT(type, temp, styleKey);
   }

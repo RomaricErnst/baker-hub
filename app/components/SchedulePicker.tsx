@@ -368,6 +368,7 @@ function findOptimalPosition(
   prefOffsetH: number,
   kitchenTemp: number,
   nowHBF: number = 999,
+  prefermentType: string = 'poolish',
   prefMinH: number = 3,
   minTotalRT: number = 3,
 ): {
@@ -415,21 +416,29 @@ function findOptimalPosition(
           fallback: !inSweet(candidate), mixInBlocker: false, prefInBlocker: false,
         };
       }
-      // Search the FULL zone window (up to 72h) for poolish — not just prefOffsetH.
-      // This allows poolish to go to Sunday when Monday is fully blocked.
-      // Prefer positions close to prefOffsetH (optimal), but accept any clear slot.
-      // Strategy: scan from fullMax down to prefMinH, return first clear position.
-      const fullMax = Math.min(72, nowHBF - candidate - 0.25);
+      // Zone max is type-aware: poolish liquid 24h max, biga stiff 72h max.
+      // Search strategy: expand OUTWARD from optH (closest to optimal first).
+      // This ensures the recommendation is as close as possible to the ideal time,
+      // not the earliest possible (which risks over-fermentation for poolish).
+      const prefZoneMax = prefermentType === 'biga' ? 72 : 24;
+      const prefZoneMin = prefermentType === 'biga' ? 12 : 3;
+      const prefOptH = prefOffsetH; // passed in as optimalPrefOffset from computeAndApplyRecommendation
+      const hardMax = Math.min(prefZoneMax, nowHBF - candidate - 0.25);
       let bestPrefOffset = 0;
-      for (let p = fullMax; p >= prefMinH; p -= STEP) {
-        if (!isInBlocker(candidate + p)) {
-          bestPrefOffset = p;
-          break;
+      // Scan outward from optH in both directions, prefer closer positions
+      for (let delta = 0; delta <= prefZoneMax; delta += STEP) {
+        for (const dir of [0, 1, -1]) {
+          const p = prefOptH + dir * delta;
+          if (p < prefZoneMin || p > hardMax) continue;
+          if (!isInBlocker(candidate + p)) {
+            bestPrefOffset = p;
+            break;
+          }
         }
+        if (bestPrefOffset >= prefZoneMin) break;
       }
-      if (bestPrefOffset >= prefMinH) {
-        // prefInZone: true if within unified green zone (3-72h)
-        const prefInZone = bestPrefOffset >= 3 && bestPrefOffset <= 72;
+      if (bestPrefOffset >= prefZoneMin) {
+        const prefInZone = bestPrefOffset >= prefZoneMin && bestPrefOffset <= prefZoneMax;
         return {
           mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
           mixInZone: inSweet(candidate), prefInZone,
@@ -1001,6 +1010,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       hasPrefActive, optimalPrefOffset,
       kitchenTemp,
       nowHBF,
+      prefermentType,
       prefMinViableH,
       minTotalRTLocal,
     );
@@ -1968,7 +1978,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {startComputed && mode !== 'simple' && (() => {
         const isLevainType = prefermentType === 'levain' || isSourdough;
         const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
-        const cardPrefInZone   = (hasPrefActive || isSourdough) && prefOffsetH >= 3 && prefOffsetH <= 72;
+        const prefZoneMaxCard = prefermentType === 'biga' ? 72 : 24;
+        const cardPrefInZone  = (hasPrefActive || isSourdough) && prefOffsetH >= 3 && prefOffsetH <= prefZoneMaxCard;
         const cardPrefTooShort = (hasPrefActive || isSourdough) && prefOffsetH < 3;
         const cardPrefStatus = cardPrefInZone
           ? (prefGoesInFridge
