@@ -2012,19 +2012,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
                   {fmtCardDT(cardPrefTime)}
                 </div>
-                <div style={{ fontSize: '12px', marginTop: '.1rem', color: cardPrefInZone ? (prefGoesInFridge ? '#3A5A8A' : '#4A7A3A') : '#C49A28' }}>
+                <div style={{ fontSize: '12px', marginTop: '.1rem', color: cardPrefInZone ? '#4A7A3A' : '#C49A28' }}>
                   {cardPrefStatus}
                 </div>
-                {prefGoesInFridge && prefRemoveFromFridgeTime && (
-                  <div style={{ fontSize: '11px', color: '#3A5A8A', marginTop: '.3rem', fontFamily: 'var(--font-dm-mono)' }}>
-                    🌡️ Remove from fridge: {fmtCardDT(prefRemoveFromFridgeTime)}
-                  </div>
-                )}
-                {prefGoesInFridge && (
-                  <div style={{ fontSize: '12px', marginTop: '.2rem', color: '#3A5A8A', fontFamily: 'var(--font-dm-mono)' }}>
-                    🧊 Cold ferment — use fridge
-                  </div>
-                )}
               </div>
             )}
 
@@ -2052,17 +2042,30 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   ⚠️ Within a blocked window — intentional?
                 </div>
               )}
+              {schedule?.scheduleNote && (
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+                  marginTop: '.4rem',
+                  background: 'rgba(138,127,120,0.08)',
+                  border: '1px solid rgba(138,127,120,0.2)',
+                  borderRadius: '20px',
+                  padding: '.15rem .55rem',
+                  fontSize: '11px',
+                  color: 'var(--smoke)',
+                  fontFamily: 'var(--font-dm-sans)',
+                  lineHeight: 1.4,
+                }}>
+                  <span style={{ flexShrink: 0 }}>ℹ️</span>
+                  <span>{schedule.scheduleNote.replace(/^[^\s]+\s/, '')}</span>
+                </div>
+              )}
             </div>
           </div>
         );
       })()}
 
 
-      {schedule?.scheduleNote && (
-        <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'var(--smoke)', textAlign: 'center', marginTop: '8px' }}>
-          {schedule.scheduleNote}
-        </div>
-      )}
+      {/* scheduleNote moved into Start Dough card */}
 
       </>)}
 
