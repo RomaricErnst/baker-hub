@@ -741,6 +741,7 @@ export function calculateRecipe(
   prefermentType?: PrefermentType,         // custom mode only
   manualPriorityOverride?: string | null,  // custom mode only
   flourPctOverride?: number,               // custom mode only
+  manualSalt?: number,                     // custom mode only
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = OVEN_TYPES[ovenType];
@@ -770,6 +771,11 @@ export function calculateRecipe(
     hydration = Math.round((hydration + delta) * 10) / 10;
   }
 
+  // Salt
+  const saltPct = mode === 'custom' && manualSalt !== undefined
+    ? manualSalt
+    : s.salt;
+
   // Oil and sugar
   const oil = mode === 'custom' && manualOil !== undefined
     ? manualOil
@@ -782,9 +788,9 @@ export function calculateRecipe(
   // Quantities
   const totalDough = numItems * itemWeight;
   const hydPct = hydration / 100;
-  const flour  = Math.round(totalDough / (1 + hydPct + s.salt / 100));
+  const flour  = Math.round(totalDough / (1 + hydPct + saltPct / 100));
   const water  = Math.round(flour * hydPct);
-  const salt   = Math.round(flour * s.salt / 100);
+  const salt   = Math.round(flour * saltPct / 100);
   const oilG   = oil   > 0 ? Math.round(flour * oil / 100)   : 0;
   const sugarG = sugar > 0 ? Math.round(flour * sugar / 100 * 10) / 10 : 0;
 
