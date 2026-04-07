@@ -169,28 +169,35 @@ function computeWaterInfo(
   ambientTemp: number,
   isSpiral: boolean,
 ): WaterInfo {
-  // Physics-based ice split: iceWeight × 80 + iceWeight × target = tapWater × (ambient - target)
-  // → iceWeight = waterGrams × (ambient - target) / (target + 80)
+  // Physics-based ice split
   const rawIce = waterGrams * (ambientTemp - targetTemp) / (targetTemp + 80);
   const iceGrams = Math.max(0, Math.round(rawIce));
   const tapGrams = waterGrams - iceGrams;
-  // Below 50g, ice has negligible temperature effect — not worth the fuss
+  const tempDiff = ambientTemp - targetTemp;
+
+  // Ice protocol: full mixing instructions when ≥50g needed
   const needsIce = iceGrams >= 50;
 
   let iceGuidance = '';
   let tempGuidance: string;
 
   if (needsIce) {
+    // Full ice protocol
     tempGuidance = 'ice water — see protocol below';
     iceGuidance = isSpiral
-      ? `${iceGrams}g ice + ${tapGrams}g tap water — add ice directly to mixing bowl`
-      : `fill jug with ${iceGrams}g ice + ${tapGrams}g water, stir 1 min, strain`;
-  } else if (targetTemp <= 13) {
-    tempGuidance = 'very cold fridge water — chill 2h before mixing';
-  } else if (targetTemp <= 19) {
-    tempGuidance = 'cold fridge water';
+      ? `${iceGrams}g ice + ${tapGrams}g water — add ice directly to bowl`
+      : `mix ${iceGrams}g ice + ${tapGrams}g water, stir 1 min, strain before using`;
+  } else if (iceGrams >= 20 && tempDiff >= 3) {
+    // Ice helpful but not critical — suggest as an easy option
+    tempGuidance = `chilled water, or add ${iceGrams}g ice to ${tapGrams}g water`;
+  } else if (tempDiff >= 12) {
+    tempGuidance = 'very cold water';
+  } else if (tempDiff >= 5) {
+    tempGuidance = 'chilled water';
+  } else if (tempDiff >= 2) {
+    tempGuidance = 'slightly below room temperature';
   } else {
-    tempGuidance = 'room temperature tap water';
+    tempGuidance = 'at room temperature';
   }
 
   return { targetTemp, needsIce, iceGrams, tapGrams, iceGuidance, tempGuidance };
@@ -352,22 +359,27 @@ export default function RecipeOutput({
     ? computeWaterInfo(waterTemp, result.preferment.finalWater, kitchenTemp, isSpiral)
     : null;
 
-  // Water temp colour: terra when ice-cold, gold when cool, plain when normal
-  const waterTempColor = waterTemp < 10 ? 'var(--terra)' : waterTemp <= 18 ? 'var(--gold)' : undefined;
-
-  // Water row sub-line: bold temperature as a precision signal
-  const waterSubNode: React.ReactNode = (
-    <>
-      {'💧 Use at '}
-      <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', fontSize: '.9rem', color: waterTempColor }}>{waterInfo.targetTemp}°C</span>
-      {` · ${waterInfo.tempGuidance}`}
-      {waterInfo.targetTemp <= 15 && (
-        <span style={{ display: 'block', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '.1rem' }}>
-          Keeps dough at target temperature despite mixer friction
-        </span>
-      )}
-    </>
-  );
+  // Water row sub-line: source-agnostic temperature guidance
+  function makeWaterSubNode(info: WaterInfo, kitchenT: number): React.ReactNode {
+    const tempDiff = kitchenT - info.targetTemp;
+    const tempColor = tempDiff >= 14 ? 'var(--terra)' : tempDiff >= 8 ? 'var(--gold)' : undefined;
+    return (
+      <>
+        {'💧 Use at '}
+        <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', fontSize: '.9rem', color: tempColor }}>{info.targetTemp}°C</span>
+        {` · ${info.tempGuidance}`}
+        {tempDiff >= 8 && (
+          <span style={{ display: 'block', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '.1rem' }}>
+            Keeps dough at target temperature despite mixer friction
+          </span>
+        )}
+      </>
+    );
+  }
+  const waterSubNode = makeWaterSubNode(waterInfo, kitchenTemp);
+  const finalDoughWaterSubNode = finalDoughWaterInfo
+    ? makeWaterSubNode(finalDoughWaterInfo, kitchenTemp)
+    : waterSubNode;
 
   // Yeast sub-line: IDY conversion only (precision scale moved to its own callout)
   const needsPrecision = yeastInfo ? yeastInfo.convertedGrams < 0.5 : false;
@@ -553,7 +565,7 @@ export default function RecipeOutput({
               <IngRow label={`Your ${pd.name} (all of it)`} grams={gStr(prefTotal)} noPct highlight />
               <IngRow label="Remaining flour" grams={gStr(pf.finalFlour)} noPct
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
-              <IngRow label="Remaining water" grams={gStr(pf.finalWater)} noPct sub={waterSubNode}
+              <IngRow label="Remaining water" grams={gStr(pf.finalWater)} noPct sub={finalDoughWaterSubNode}
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
               <IngRow label="Salt" grams={gStr(salt)} noPct
                 advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
