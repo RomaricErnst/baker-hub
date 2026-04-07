@@ -1901,38 +1901,29 @@ export default function Home() {
                           {currentPct}%
                         </span>
                       </div>
-                      <input
-                        type="range"
-                        min={10} max={60} step={5}
-                        value={currentPct}
-                        onChange={e => setPrefermentFlourPct(Number(e.target.value))}
-                        style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer', marginBottom: '.25rem' }}
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginBottom: '.4rem' }}>
-                        <span>10%</span>
-                        <span style={{ color: 'var(--gold)' }}>20% · 16h+</span>
-                        <span style={{ color: 'var(--gold)' }}>30% · 8-12h</span>
-                        <span style={{ color: 'var(--gold)' }}>45% · 3-4h</span>
-                        <span>60%</span>
+                      {/* Integrated colour bar slider — same pattern as Hydration */}
+                      <div style={{ position: 'relative', height: '36px', display: 'flex', alignItems: 'center' }}>
+                        <div style={{
+                          position: 'absolute', left: 0, right: 0, height: '8px', borderRadius: '4px',
+                          background: 'linear-gradient(to right, #B8A898 0%, #B8A898 20%, #D4A853 20%, #D4A853 55%, #6B7A5A 55%, #6B7A5A 100%)',
+                        }} />
+                        <input
+                          type="range"
+                          min={10} max={60} step={5}
+                          value={currentPct}
+                          onChange={e => setPrefermentFlourPct(Number(e.target.value))}
+                          style={{ position: 'absolute', left: 0, right: 0, width: '100%', appearance: 'none', background: 'transparent', cursor: 'pointer', height: '36px', margin: 0, accentColor: 'var(--terra)' }}
+                        />
                       </div>
-                      {/* Zone colour band */}
-                      <div style={{ display: 'flex', height: '4px', borderRadius: '2px', marginBottom: '.5rem', overflow: 'hidden' }}>
-                        <div style={{ flex: 2, background: '#B8A898' }} title="Best for long fermentation" />
-                        <div style={{ flex: 3, background: '#D4A853' }} title="Great for overnight" />
-                        <div style={{ flex: 5, background: '#6B7A5A' }} title="Short fermentation" />
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.58rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginBottom: '.6rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem' }}>
                         <span style={{ color: '#8A7A70' }}>Long (16h+)</span>
-                        <span style={{ color: 'var(--gold)' }}>Overnight (8-12h)</span>
+                        <span style={{ color: 'var(--gold)' }}>Overnight</span>
                         <span style={{ color: 'var(--sage)' }}>Short (3-4h)</span>
-                      </div>
-                      <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.55, marginBottom: '.4rem' }}>
-                        {currentPct}% of your flour goes into the {pData.name}, with an equal weight of water ({Math.round((currentPct / 100) * (advancedRecipe?.flour ?? 0))}g flour + {Math.round((currentPct / 100) * (advancedRecipe?.flour ?? 0))}g water). The rest mixes at dough time.
                       </div>
                       {prefOffsetH > 0 && currentPct !== timeDefault && (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '.1rem' }}>
                           <div style={{ fontSize: '.72rem', color: 'var(--gold)', fontStyle: 'italic' }}>
-                            For your {Math.round(prefOffsetH)}h window, {timeDefault}% is typical.
+                            For your {Math.round(prefOffsetH)}h window, {timeDefault}% of total flour is typical.
                           </div>
                           <button
                             onClick={() => setPrefermentFlourPct(undefined)}
@@ -1993,10 +1984,10 @@ export default function Home() {
 
                   const hZone = hydrationZoneLabel(currentHyd);
                   return (
-                    <div style={{ marginBottom: '.85rem' }}>
+                    <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
                         <label style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
-                          Hydration
+                          Dough Hydration
                         </label>
                         <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.1rem', fontWeight: 700, color: hZone.color }}>
                           {currentHyd}%
@@ -2040,6 +2031,7 @@ export default function Home() {
                 })()}
 
                 {/* Oil + Sugar side by side */}
+                <div style={{ paddingTop: '.25rem' }}>
                 <div style={{ display: 'flex', gap: '1.25rem' }}>
                   {/* Oil stepper */}
                   {(() => {
@@ -2095,6 +2087,7 @@ export default function Home() {
                       </div>
                     );
                   })()}
+                </div>
                 </div>
               </div>
             </StepCard>
