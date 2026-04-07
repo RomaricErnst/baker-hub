@@ -294,6 +294,7 @@ export default function RecipeOutput({
   priorityOverride, onPriorityOverride, saveStatus, onSave,
 }: RecipeOutputProps) {
   const [showPriorityOverride, setShowPriorityOverride] = useState(false);
+  const [showTotals, setShowTotals] = useState(false);
 
   // Batch splitting — auto-triggered when total dough exceeds mixer default capacity
   const mixerMaxG   = (MIXER_TYPES as Record<string, { maxDoughG?: number }>)[mixerType]?.maxDoughG ?? 9999;
@@ -438,6 +439,50 @@ export default function RecipeOutput({
             </span>
           </div>
         </div>
+        {/* Total ingredients — expandable, preferment mode only */}
+        {result.preferment && prefermentType && prefermentType !== 'none' && (
+          <div style={{ marginTop: '.75rem', borderTop: '1px solid rgba(212,168,83,0.15)', paddingTop: '.6rem' }}>
+            <button
+              onClick={() => setShowTotals(v => !v)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                display: 'flex', alignItems: 'center', gap: '.4rem',
+                fontSize: '.72rem', color: 'rgba(212,168,83,0.7)',
+                fontFamily: 'var(--font-dm-mono)',
+              }}
+            >
+              <span>Total ingredients</span>
+              <span style={{ fontSize: '.6rem', transition: 'transform .2s', transform: showTotals ? 'rotate(180deg)' : 'none' }}>▾</span>
+            </button>
+            {showTotals && (() => {
+              const pf = result.preferment!;
+              const totalFlour = flour;
+              const totalWater = water;
+              const totalSalt  = salt;
+              const totalYeast = pf.prefYeastGrams;
+              return (
+                <div style={{ marginTop: '.5rem', display: 'flex', flexDirection: 'column', gap: '.2rem' }}>
+                  {[
+                    { label: 'Flour (total)', value: `${Math.round(totalFlour)}g` },
+                    { label: 'Water (total)', value: `${Math.round(totalWater)}g` },
+                    { label: 'Salt', value: `${Math.round(totalSalt)}g` },
+                    ...(totalYeast > 0 ? [{ label: 'Yeast (IDY)', value: `${totalYeast}g` }] : []),
+                  ].map((row, i) => (
+                    <div key={i} style={{
+                      display: 'flex', justifyContent: 'space-between',
+                      fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
+                      color: 'rgba(245,240,232,0.65)',
+                    }}>
+                      <span>{row.label}</span>
+                      <span style={{ color: 'rgba(245,240,232,0.9)', fontWeight: 600 }}>{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {onSave && (
           <button
             onClick={onSave}
