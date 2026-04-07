@@ -2043,9 +2043,47 @@ export default function Home() {
                   );
                 })()}
 
-                {/* Oil + Sugar side by side */}
+                {/* Salt · Oil · Sugar — one row, wraps on mobile */}
                 <div style={{ paddingTop: '.25rem' }}>
-                <div style={{ display: 'flex', gap: '1.25rem' }}>
+                <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
+                  {/* Salt stepper — first, most important */}
+                  {(() => {
+                    const styleSalt = styleKey ? (ALL_STYLES[styleKey]?.salt ?? 2.5) : 2.5;
+                    const v = manualSalt ?? styleSalt;
+                    const STEP = 0.1;
+                    const isDefault = manualSalt === undefined || manualSalt === styleSalt;
+                    return (
+                      <div style={{ flex: 1, minWidth: '80px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
+                          <FieldLabel>Salt %</FieldLabel>
+                          {!isDefault && (
+                            <button
+                              onClick={() => setManualSalt(undefined)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.65rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', padding: 0 }}
+                            >↺ {styleSalt}%</button>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                          <button
+                            onClick={() => setManualSalt(Math.max(1.5, Math.round((v - STEP) * 10) / 10))}
+                            style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                          >−</button>
+                          <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', color: 'var(--char)' }}>{v}%</span>
+                          <button
+                            onClick={() => setManualSalt(Math.min(3.5, Math.round((v + STEP) * 10) / 10))}
+                            style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
+                          >+</button>
+                        </div>
+                        <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
+                          {v < 2 ? 'Very low — may taste flat.' :
+                           v <= 2.5 ? 'Bread range — mild.' :
+                           v <= 3 ? 'Classic pizza range.' :
+                           v <= 3.2 ? 'Full-flavoured.' :
+                           'High — slows yeast slightly.'}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {/* Oil stepper */}
                   {(() => {
                     const v = manualOil ?? 0;
@@ -2101,152 +2139,84 @@ export default function Home() {
                     );
                   })()}
                 </div>
-                {/* Salt stepper — full width below Oil + Sugar */}
-                {(() => {
-                  const styleSalt = styleKey ? (ALL_STYLES[styleKey]?.salt ?? 2.5) : 2.5;
-                  const v = manualSalt ?? styleSalt;
-                  const STEP = 0.1;
-                  const isDefault = manualSalt === undefined || manualSalt === styleSalt;
-                  return (
-                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
-                        <FieldLabel>Salt %</FieldLabel>
-                        {!isDefault && (
-                          <button
-                            onClick={() => setManualSalt(undefined)}
-                            style={{
-                              background: 'none', border: 'none', cursor: 'pointer',
-                              fontSize: '.7rem', color: 'var(--smoke)',
-                              fontFamily: 'var(--font-dm-sans)',
-                              textDecoration: 'underline', textUnderlineOffset: '2px',
-                              padding: 0,
-                            }}
-                          >
-                            Reset to {styleSalt}%
-                          </button>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
-                        <button
-                          onClick={() => setManualSalt(Math.max(1.5, Math.round((v - STEP) * 10) / 10))}
-                          style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
-                        >−</button>
-                        <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', color: 'var(--char)' }}>
-                          {v}%
-                        </span>
-                        <button
-                          onClick={() => setManualSalt(Math.min(3.5, Math.round((v + STEP) * 10) / 10))}
-                          style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
-                        >+</button>
-                      </div>
-                      <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
-                        {v < 2 ? 'Very low — dough may taste flat. Controls fermentation rate.' :
-                         v <= 2.5 ? 'Bread range — mild salt flavour, traditional.' :
-                         v <= 3 ? `Classic ${styleKey === 'neapolitan' ? 'Neapolitan' : 'pizza'} range — balanced flavour.` :
-                         v <= 3.2 ? 'Full-flavoured — strong crust character.' :
-                         'High — inhibits yeast activity slightly. Extend fermentation if needed.'}
-                      </div>
-                    </div>
-                  );
-                })()}
+                </div>
+                {/* Precision — 4th sub-section inside Dial In */}
+                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '1rem' }}>
+                    Precision
+                  </div>
+                  <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                    {/* DDT stepper */}
+                    {(() => {
+                      const styleFDT = styleKey ? ({ neapolitan:23, newyork:24, roman:25, pan:25, sourdough:24, pain_campagne:24, pain_levain:24, baguette:24, pain_complet:24, pain_seigle:24, fougasse:25, brioche:22, pain_mie:24, pain_viennois:23 } as Record<string,number>)[styleKey] ?? 24 : 24;
+                      const v = targetDoughTemp ?? styleFDT;
+                      const mixerFriction = mixerType ? ({ stand:5, hand:1, no_knead:0, spiral:8 } as Record<string,number>)[mixerType] ?? 3 : 3;
+                      const isDefaultDDT = targetDoughTemp === undefined || targetDoughTemp === styleFDT;
+                      return (
+                        <div style={{ flex: 1, minWidth: '120px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
+                            <FieldLabel>Dough temp</FieldLabel>
+                            {!isDefaultDDT && (
+                              <button onClick={() => setTargetDoughTemp(undefined)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.65rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', padding: 0 }}>
+                                ↺ {styleFDT}°C
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem', marginBottom: '.4rem' }}>
+                            <button onClick={() => setTargetDoughTemp(Math.max(18, v - 1))}
+                              style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>−</button>
+                            <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', color: 'var(--char)' }}>{v}°C</span>
+                            <button onClick={() => setTargetDoughTemp(Math.min(28, v + 1))}
+                              style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>+</button>
+                          </div>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '.4rem', cursor: 'pointer', marginBottom: '.3rem' }}>
+                            <input type="checkbox" checked={flourInFridge} onChange={e => setFlourInFridge(e.target.checked)}
+                              style={{ width: '13px', height: '13px', cursor: 'pointer', accentColor: 'var(--terra)', flexShrink: 0 }} />
+                            <span style={{ fontSize: '.72rem', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>Flour in fridge</span>
+                          </label>
+                          <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4 }}>
+                            +{mixerFriction}°C from {mixerType === 'spiral' ? 'spiral' : mixerType === 'stand' ? 'stand' : 'hand'} mixer.
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    {/* Mixing loss stepper */}
+                    {(() => {
+                      const v = wastePct ?? 1.5;
+                      const STEP = 0.5;
+                      return (
+                        <div style={{ flex: 1, minWidth: '120px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
+                            <FieldLabel>Mixing loss</FieldLabel>
+                            {wastePct !== undefined && wastePct !== 1.5 && (
+                              <button onClick={() => setWastePct(undefined)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.65rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', padding: 0 }}>
+                                ↺ 1.5%
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                            <button onClick={() => setWastePct(Math.max(0, Math.round((v - STEP) * 10) / 10))}
+                              style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>−</button>
+                            <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', color: 'var(--char)' }}>
+                              {wastePct === 0 ? 'None' : `${v}%`}
+                            </span>
+                            <button onClick={() => setWastePct(Math.min(5, Math.round((v + STEP) * 10) / 10))}
+                              style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>+</button>
+                          </div>
+                          <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
+                            Buffer for bowl residue. Schedule unchanged.
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             </StepCard>
 
-            {/* –– SECTION 4: Precision –– */}
-            {advancedStep >= 11 && (
-              <div style={{
-                background: 'white', borderRadius: '18px',
-                padding: '1.25rem 1.4rem',
-                border: '1px solid var(--border)',
-                marginBottom: '0',
-              }}>
-                <div style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '1rem' }}>
-                  Precision
-                </div>
-
-                {/* DDT stepper + flour fridge toggle */}
-                {(() => {
-                  const styleFDT = styleKey ? ({ neapolitan:23, newyork:24, roman:25, pan:25, sourdough:24, pain_campagne:24, pain_levain:24, baguette:24, pain_complet:24, pain_seigle:24, fougasse:25, brioche:22, pain_mie:24, pain_viennois:23 } as Record<string,number>)[styleKey] ?? 24 : 24;
-                  const v = targetDoughTemp ?? styleFDT;
-                  const mixerFriction = mixerType ? ({ stand:5, hand:1, no_knead:0, spiral:8 } as Record<string,number>)[mixerType] ?? 3 : 3;
-                  const isDefaultDDT = targetDoughTemp === undefined || targetDoughTemp === styleFDT;
-                  return (
-                    <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
-                        <FieldLabel>Target dough temp</FieldLabel>
-                        {!isDefaultDDT && (
-                          <button
-                            onClick={() => setTargetDoughTemp(undefined)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', textUnderlineOffset: '2px', padding: 0 }}
-                          >Reset to {styleFDT}°C</button>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem', marginBottom: '.5rem' }}>
-                        <button
-                          onClick={() => setTargetDoughTemp(Math.max(18, v - 1))}
-                          style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
-                        >−</button>
-                        <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', color: 'var(--char)' }}>{v}°C</span>
-                        <button
-                          onClick={() => setTargetDoughTemp(Math.min(28, v + 1))}
-                          style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
-                        >+</button>
-                      </div>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '.5rem', cursor: 'pointer', marginBottom: '.4rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={flourInFridge}
-                          onChange={e => setFlourInFridge(e.target.checked)}
-                          style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: 'var(--terra)' }}
-                        />
-                        <span style={{ fontSize: '.78rem', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>
-                          Flour stored in fridge (4°C)
-                        </span>
-                      </label>
-                      <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4 }}>
-                        Your {mixerType === 'stand' ? 'stand mixer' : mixerType === 'spiral' ? 'spiral mixer' : 'hands'} adds ~{mixerFriction}°C friction. Water temperature adjusted accordingly.
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Waste % stepper */}
-                {(() => {
-                  const v = wastePct ?? 1.5;
-                  const STEP = 0.5;
-                  return (
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
-                        <FieldLabel>Mixing loss</FieldLabel>
-                        {wastePct !== undefined && wastePct !== 1.5 && (
-                          <button
-                            onClick={() => setWastePct(undefined)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', textUnderlineOffset: '2px', padding: 0 }}
-                          >Reset to 1.5%</button>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
-                        <button
-                          onClick={() => setWastePct(Math.max(0, Math.round((v - STEP) * 10) / 10))}
-                          style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
-                        >−</button>
-                        <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '.82rem', color: 'var(--char)' }}>
-                          {wastePct === 0 ? 'None' : `${v}%`}
-                        </span>
-                        <button
-                          onClick={() => setWastePct(Math.min(5, Math.round((v + STEP) * 10) / 10))}
-                          style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
-                        >+</button>
-                      </div>
-                      <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
-                        Adds a small ingredient buffer to account for dough left in the bowl. Schedule unchanged.
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
+            {/* Precision section removed — merged into StepCard below */}
 
             {/* ── Generate button (setup tab) ── */}
             {canGenerate && eatTime && advancedStep > 10 && (
