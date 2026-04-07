@@ -1915,10 +1915,10 @@ export default function Home() {
                           style={{ position: 'absolute', left: 0, right: 0, width: '100%', appearance: 'none', background: 'transparent', cursor: 'pointer', height: '36px', margin: 0, accentColor: 'var(--terra)' }}
                         />
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem' }}>
-                        <span>16h+ ahead</span>
-                        <span style={{ color: 'var(--sage)', fontWeight: 600 }}>Night before</span>
-                        <span>Same day</span>
+                      <div style={{ position: 'relative', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem', height: '1rem' }}>
+                        <span style={{ position: 'absolute', left: 0 }}>16h+ ahead</span>
+                        <span style={{ position: 'absolute', left: '37.5%', transform: 'translateX(-50%)', color: 'var(--sage)', fontWeight: 600, whiteSpace: 'nowrap' }}>Night before</span>
+                        <span style={{ position: 'absolute', right: 0 }}>Same day</span>
                       </div>
                       {prefOffsetH > 0 && currentPct !== timeDefault && (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '.1rem' }}>
@@ -2006,11 +2006,16 @@ export default function Home() {
                           style={{ position: 'absolute', left: 0, right: 0, width: '100%', appearance: 'none', background: 'transparent', cursor: 'pointer', height: '36px', margin: 0, accentColor: 'var(--terra)' }}
                         />
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem' }}>
-                        <span>{sliderMin}%</span>
-                        <span style={{ color: 'var(--sage)', fontWeight: 600 }}>{zone.classicMin}–{zone.classicMax}% classic</span>
-                        <span>{sliderMax}%</span>
-                      </div>
+                      {(() => {
+                        const greenCentrePct = (lowPct + classicMaxPct) / 2;
+                        return (
+                          <div style={{ position: 'relative', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem', height: '1rem' }}>
+                            <span style={{ position: 'absolute', left: 0 }}>{sliderMin}%</span>
+                            <span style={{ position: 'absolute', left: `${greenCentrePct}%`, transform: 'translateX(-50%)', color: 'var(--sage)', fontWeight: 600, whiteSpace: 'nowrap' }}>{zone.classicMin}–{zone.classicMax}% classic</span>
+                            <span style={{ position: 'absolute', right: 0 }}>{sliderMax}%</span>
+                          </div>
+                        );
+                      })()}
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.5rem', marginBottom: '.25rem' }}>
                         <span style={{
                           fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)', fontWeight: 600,
