@@ -1905,7 +1905,7 @@ export default function Home() {
                       <div style={{ position: 'relative', height: '36px', display: 'flex', alignItems: 'center' }}>
                         <div style={{
                           position: 'absolute', left: 0, right: 0, height: '8px', borderRadius: '4px',
-                          background: 'linear-gradient(to right, #B8A898 0%, #B8A898 20%, #D4A853 20%, #D4A853 55%, #6B7A5A 55%, #6B7A5A 100%)',
+                          background: 'linear-gradient(to right, #A8B8D0 0%, #A8B8D0 20%, #8BA888 20%, #8BA888 55%, #D4A853 55%, #D4A853 100%)',
                         }} />
                         <input
                           type="range"
@@ -1915,10 +1915,10 @@ export default function Home() {
                           style={{ position: 'absolute', left: 0, right: 0, width: '100%', appearance: 'none', background: 'transparent', cursor: 'pointer', height: '36px', margin: 0, accentColor: 'var(--terra)' }}
                         />
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem' }}>
-                        <span style={{ color: '#8A7A70' }}>16h+ ahead</span>
-                        <span style={{ color: 'var(--gold)' }}>Night before</span>
-                        <span style={{ color: 'var(--sage)' }}>Same day</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem' }}>
+                        <span>16h+ ahead</span>
+                        <span style={{ color: 'var(--sage)', fontWeight: 600 }}>Night before</span>
+                        <span>Same day</span>
                       </div>
                       {prefOffsetH > 0 && currentPct !== timeDefault && (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '.1rem' }}>
@@ -1958,7 +1958,7 @@ export default function Home() {
                   function hydrationZoneLabel(h: number): { label: string; color: string; note: string } {
                     if (h < zone.classicMin) return {
                       label: 'Below classic range',
-                      color: '#7A5A10',
+                      color: '#5A7A98',
                       note: h < zone.min + 3
                         ? 'Dough will be quite stiff — a little more water may help with stretching.'
                         : `Below the ${zone.name} classic range. Dough will be firmer and a bit denser.`,
@@ -1975,7 +1975,7 @@ export default function Home() {
                     };
                     return {
                       label: '⚡ Advanced technique',
-                      color: 'var(--terra)',
+                      color: '#C4624A',
                       note: h >= zone.max - 2
                         ? 'Extreme hydration. Expect very sticky dough — wet hands, bench scraper essential.'
                         : 'High hydration territory. Excellent open crumb but challenging to handle.',
@@ -1996,7 +1996,7 @@ export default function Home() {
                       <div style={{ position: 'relative', height: '36px', display: 'flex', alignItems: 'center' }}>
                         <div style={{
                           position: 'absolute', left: 0, right: 0, height: '8px', borderRadius: '4px',
-                          background: `linear-gradient(to right, #E8D080 0%, #E8D080 ${lowPct}%, #B8D4A8 ${lowPct}%, #B8D4A8 ${classicMaxPct}%, #E8D890 ${classicMaxPct}%, #E8D890 ${advancedMaxPct}%, #F5C4B0 ${advancedMaxPct}%, #F5C4B0 100%)`,
+                          background: `linear-gradient(to right, #A8B8D0 0%, #A8B8D0 ${lowPct}%, #8BA888 ${lowPct}%, #8BA888 ${classicMaxPct}%, #D4A853 ${classicMaxPct}%, #D4A853 ${advancedMaxPct}%, #E8A898 ${advancedMaxPct}%, #E8A898 100%)`,
                         }} />
                         <input
                           type="range"
@@ -2015,9 +2015,9 @@ export default function Home() {
                         <span style={{
                           fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)', fontWeight: 600,
                           color: hZone.color, flexShrink: 0,
-                          background: hZone.color === 'var(--sage)' ? 'rgba(107,122,90,0.1)' :
+                          background: hZone.color === 'var(--sage)' ? 'rgba(139,168,136,0.12)' :
                                       hZone.color === 'var(--gold)' ? 'rgba(212,168,83,0.12)' :
-                                      hZone.color === 'var(--terra)' ? 'rgba(196,82,42,0.1)' : 'rgba(122,90,16,0.1)',
+                                      hZone.color === '#C4624A' ? 'rgba(196,98,74,0.1)' : 'rgba(90,122,152,0.1)',
                           borderRadius: '20px', padding: '.2rem .6rem',
                         }}>
                           {hZone.label}
