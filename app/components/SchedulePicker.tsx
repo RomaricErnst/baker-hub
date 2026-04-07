@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
 import FermentChart, { getPrefOptH, getPrefPeakH_RT, getPrefRTWarmupH } from './FermentChart';
@@ -2004,8 +2004,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const e2 = (bakeMs - b.to.getTime())   / 3600000;
           return mixOffsetH >= Math.min(s2, e2) && mixOffsetH <= Math.max(s2, e2);
         });
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const [showNote, setShowNote] = React.useState(false);
         return (
           <div style={{ display: 'flex', gap: '6px', marginTop: '1rem', flexWrap: 'wrap' }}>
             {/* Pref card */}
@@ -2071,36 +2069,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   ⚠️ Within a blocked window — intentional?
                 </div>
               )}
-              {schedule?.scheduleNote && (
-                <div style={{ marginTop: '.4rem', display: 'flex', alignItems: 'flex-start', gap: '.4rem', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => setShowNote(v => !v)}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      width: '18px', height: '18px', flexShrink: 0,
-                      background: showNote ? 'rgba(138,127,120,0.15)' : 'rgba(138,127,120,0.08)',
-                      border: '1px solid rgba(138,127,120,0.25)',
-                      borderRadius: '50%',
-                      fontSize: '10px', color: 'var(--smoke)',
-                      cursor: 'pointer', padding: 0,
-                      fontFamily: 'var(--font-dm-mono)',
-                      lineHeight: 1,
-                    }}
-                    title="Schedule note"
-                  >
-                    i
-                  </button>
-                  {showNote && (
-                    <div style={{
-                      fontSize: '11px', color: 'var(--smoke)',
-                      fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
-                      flex: 1,
-                    }}>
-                      {schedule.scheduleNote.replace(/^[^\s]+\s/, '')}
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* scheduleNote removed — info available in timeline */}
             </div>
           </div>
         );
