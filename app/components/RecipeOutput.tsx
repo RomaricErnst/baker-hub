@@ -29,9 +29,9 @@ function pctStr(n: number): string {
 }
 
 function gStr(n: number): string {
-  return n < 1
-    ? `${parseFloat(n.toFixed(2))} g`
-    : `${Math.round(n)} g`;
+  if (n < 1) return `${parseFloat(n.toFixed(2))} g`;
+  const rounded = Math.round(n);
+  return `${rounded >= 1000 ? rounded.toLocaleString() : rounded} g`;
 }
 
 // ── Theme tokens for dark card ────────────────
@@ -479,19 +479,20 @@ export default function RecipeOutput({
               return (
                 <div style={{ marginTop: '.6rem', display: 'flex', flexDirection: 'column', gap: '.45rem' }}>
                   {[
-                    { label: 'Flour', pct: '100%', value: `${Math.round(totalFlour)}g` },
-                    { label: 'Water', pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: `${Math.round(totalWater)}g` },
-                    { label: 'Salt',  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: `${Math.round(totalSalt)}g` },
+                    { label: 'Flour', pct: '100%', value: `${Math.round(totalFlour).toLocaleString()}g` },
+                    { label: 'Water', pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: `${Math.round(totalWater).toLocaleString()}g` },
+                    { label: 'Salt',  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: `${Math.round(totalSalt).toLocaleString()}g` },
                     ...(totalYeast > 0 ? [{ label: 'Yeast (IDY)', pct: `${Math.round(totalYeast / totalFlour * 1000) / 10}%`, value: `${totalYeast}g` }] : []),
                   ].map((row, i) => (
                     <div key={i} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem',
                       fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
                       color: 'rgba(245,240,232,0.65)',
+                      padding: '.12rem 0',
                     }}>
                       <span style={{ flex: 1 }}>{row.label}</span>
-                      <span style={{ color: 'rgba(245,240,232,0.4)', fontSize: '.65rem', marginRight: '.75rem' }}>{row.pct}</span>
-                      <span style={{ color: 'rgba(245,240,232,0.9)', fontWeight: 600 }}>{row.value}</span>
+                      <span style={{ color: 'rgba(245,240,232,0.38)', fontSize: '.65rem' }}>{row.pct}</span>
+                      <span style={{ color: 'rgba(245,240,232,0.9)', fontWeight: 600, minWidth: '3.5rem', textAlign: 'right' }}>{row.value}</span>
                     </div>
                   ))}
                 </div>
