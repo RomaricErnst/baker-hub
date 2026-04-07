@@ -2061,7 +2061,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
                 {fmtCardDT(pendingStart)}
               </div>
-              <div style={{ fontSize: '12px', marginTop: '.1rem', color: mixInZone ? '#4A7A3A' : '#C4522A' }}>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+                marginTop: '.3rem',
+                background: mixInZone ? 'rgba(74,122,58,0.1)' : 'rgba(196,82,42,0.1)',
+                border: `1px solid ${mixInZone ? 'rgba(74,122,58,0.3)' : 'rgba(196,82,42,0.3)'}`,
+                borderRadius: '20px',
+                padding: '.15rem .55rem',
+                fontSize: '11px',
+                color: mixInZone ? '#4A7A3A' : '#C4522A',
+                fontFamily: 'var(--font-dm-mono)',
+              }}>
                 {mixStatus}
               </div>
               {mixInBlocker && (
