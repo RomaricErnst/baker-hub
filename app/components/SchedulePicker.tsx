@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
 import FermentChart, { getPrefOptH, getPrefPeakH_RT, getPrefRTWarmupH } from './FermentChart';
@@ -2004,6 +2004,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const e2 = (bakeMs - b.to.getTime())   / 3600000;
           return mixOffsetH >= Math.min(s2, e2) && mixOffsetH <= Math.max(s2, e2);
         });
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const [showNote, setShowNote] = React.useState(false);
         return (
           <div style={{ display: 'flex', gap: '6px', marginTop: '1rem', flexWrap: 'wrap' }}>
             {/* Pref card */}
@@ -2023,9 +2025,25 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
                   {fmtCardDT(cardPrefTime)}
                 </div>
-                <div style={{ fontSize: '12px', marginTop: '.1rem', color: cardPrefInZone ? '#4A7A3A' : '#C49A28' }}>
-                  {cardPrefStatus}
-                </div>
+                {cardPrefInZone ? (
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+                    marginTop: '.3rem',
+                    background: 'rgba(74,122,58,0.1)',
+                    border: '1px solid rgba(74,122,58,0.3)',
+                    borderRadius: '20px',
+                    padding: '.15rem .55rem',
+                    fontSize: '11px',
+                    color: '#4A7A3A',
+                    fontFamily: 'var(--font-dm-mono)',
+                  }}>
+                    🟢 Ready at Start Dough
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '12px', marginTop: '.1rem', color: '#C49A28' }}>
+                    {cardPrefStatus}
+                  </div>
+                )}
               </div>
             )}
 
@@ -2054,20 +2072,33 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 </div>
               )}
               {schedule?.scheduleNote && (
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '.3rem',
-                  marginTop: '.4rem',
-                  background: 'rgba(138,127,120,0.08)',
-                  border: '1px solid rgba(138,127,120,0.2)',
-                  borderRadius: '20px',
-                  padding: '.15rem .55rem',
-                  fontSize: '11px',
-                  color: 'var(--smoke)',
-                  fontFamily: 'var(--font-dm-sans)',
-                  lineHeight: 1.4,
-                }}>
-                  <span style={{ flexShrink: 0 }}>ℹ️</span>
-                  <span>{schedule.scheduleNote.replace(/^[^\s]+\s/, '')}</span>
+                <div style={{ marginTop: '.4rem', display: 'flex', alignItems: 'flex-start', gap: '.4rem', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setShowNote(v => !v)}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      width: '18px', height: '18px', flexShrink: 0,
+                      background: showNote ? 'rgba(138,127,120,0.15)' : 'rgba(138,127,120,0.08)',
+                      border: '1px solid rgba(138,127,120,0.25)',
+                      borderRadius: '50%',
+                      fontSize: '10px', color: 'var(--smoke)',
+                      cursor: 'pointer', padding: 0,
+                      fontFamily: 'var(--font-dm-mono)',
+                      lineHeight: 1,
+                    }}
+                    title="Schedule note"
+                  >
+                    i
+                  </button>
+                  {showNote && (
+                    <div style={{
+                      fontSize: '11px', color: 'var(--smoke)',
+                      fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
+                      flex: 1,
+                    }}>
+                      {schedule.scheduleNote.replace(/^[^\s]+\s/, '')}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
