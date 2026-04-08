@@ -1011,18 +1011,22 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     {/* Type or W fallback — always visible */}
                     <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '0.5px solid #E8E0D5' }}>
                       <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
-                        Don&apos;t see your flour? Pick a type or enter W:
+                        Or pick a flour type:
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                        {([
-                          { label: '00 · Pizza flour',   type: 'pizza00',    w: 260, protein: 12.0 },
-                          { label: 'Semolina rimacinata', type: 'semolina',   w: 200, protein: 12.5 },
-                          { label: 'Manitoba',            type: 'manitoba',   w: 380, protein: 14.0 },
-                          { label: 'Wholemeal',           type: 'wholemeal',  w: 185, protein: 12.0 },
-                          { label: 'Rye',                 type: 'rye',        w: 160, protein: 10.0 },
-                          { label: 'Bread flour',         type: 'bread',      w: 270, protein: 12.8 },
-                          { label: 'All-purpose',         type: 'allpurpose', w: 190, protein: 10.5 },
-                        ] as { label: string; type: FlourKey; w: number; protein: number }[]).map(t => (
+                        {(() => {
+                          const presetTypes = new Set((BLEND_PRESETS[styleKey ?? ''] ?? []).map(p => p.type));
+                          return ([
+                            { label: '00 · Pizza flour',   type: 'pizza00',    w: 260, protein: 12.0 },
+                            { label: 'Semolina rimacinata', type: 'semolina',   w: 200, protein: 12.5 },
+                            { label: 'Manitoba',            type: 'manitoba',   w: 380, protein: 14.0 },
+                            { label: 'Wholemeal',           type: 'wholemeal',  w: 185, protein: 12.0 },
+                            { label: 'Rye',                 type: 'rye',        w: 160, protein: 10.0 },
+                            { label: 'Bread flour',         type: 'bread',      w: 270, protein: 12.8 },
+                            { label: 'All-purpose',         type: 'allpurpose', w: 190, protein: 10.5 },
+                          ] as { label: string; type: FlourKey; w: number; protein: number }[])
+                            .filter(t => !presetTypes.has(t.type as FlourKey))
+                            .map(t => (
                           <button
                             key={t.label}
                             onClick={() => {
@@ -1047,7 +1051,9 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                           >
                             {t.label}
                           </button>
-                        ))}
+                        ))
+                        })()
+                        }
                         {/* W value input */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>W</span>
