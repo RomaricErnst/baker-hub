@@ -521,10 +521,15 @@ export default function Home() {
       const msg = t('generate.confirmOverwrite');
       if (!window.confirm(msg)) return;
     }
+    if (prefermentType !== 'none' && prefermentFlourPct === undefined) {
+      const timeDefault = prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20;
+      setPrefermentFlourPct(timeDefault);
+    }
     setRecipeGenerated(true);
     setProtocolStale(false);
     setShowResults(true);
     setActiveTab('plan');
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
   }
 
   async function handleSaveRecipe(mode: 'simple' | 'custom') {

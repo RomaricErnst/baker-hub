@@ -619,13 +619,14 @@ export default function RecipeOutput({
                 <IngRow label="Yeast (IDY)" grams={gStr(pf.prefYeastGrams)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
                 <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
                   {pd.name} total
                 </div>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   ~{prefTotal} g
                 </div>
+                <div style={{ minWidth: '4rem' }} />
               </div>
             </div>
 
@@ -661,13 +662,14 @@ export default function RecipeOutput({
                 advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
               {oil > 0 && <IngRow label="Olive Oil" grams={gStr(oil)} noPct />}
               {sugar > 0 && <IngRow label="Sugar" grams={gStr(sugar)} noPct />}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
                 <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
                   Total Dough
                 </div>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   {(numItems * itemWeight).toLocaleString('en')} g
                 </div>
+                <div style={{ minWidth: '4rem' }} />
               </div>
               {/* Total ingredients accordion — preferment mode */}
               <div style={{ marginTop: '1rem', borderTop: `1px solid ${D.line}`, paddingTop: '.75rem' }}>
