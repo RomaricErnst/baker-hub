@@ -962,7 +962,7 @@ export default function RecipeOutput({
                 highlight: false,
                 isTotal: false,
               }] : []),
-              { label: 'Batch total', value: `${Math.round(batchDoughG / effectiveBatches).toLocaleString('en')}g`, highlight: true, isTotal: true },
+              { label: 'Batch total', value: `${(flourPerBatch + waterPerBatch + saltPerBatch + (poolishPerBatch ?? 0) + (yeastPerBatch !== null ? Math.round(yeastPerBatch) : 0)).toLocaleString('en')}g`, highlight: true, isTotal: true },
             ].map((row, i) => (
               <div key={i} style={{
                 display: 'flex', justifyContent: 'space-between',
