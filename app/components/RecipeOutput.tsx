@@ -133,7 +133,7 @@ function IngRow({
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: noPct ? '1fr auto' : '1fr auto auto',
+      gridTemplateColumns: '1fr auto auto',
       gap: '0 1.5rem',
       alignItems: 'center',
       padding: '.6rem .1rem',
@@ -177,18 +177,16 @@ function IngRow({
         )}
       </div>
 
-      {!noPct && (
-        <div style={{
-          fontFamily: 'var(--font-dm-mono)',
-          fontSize: '.72rem',
-          color: 'var(--gold)',
-          textAlign: 'right',
-          minWidth: '4rem',
-          whiteSpace: 'nowrap',
-        }}>
-          {pct}
-        </div>
-      )}
+      <div style={{
+        fontFamily: 'var(--font-dm-mono)',
+        fontSize: '.72rem',
+        color: 'var(--gold)',
+        textAlign: 'right',
+        minWidth: '4rem',
+        whiteSpace: 'nowrap',
+      }}>
+        {noPct ? '' : pct}
+      </div>
     </div>
   );
 }
