@@ -439,7 +439,7 @@ export default function RecipeOutput({
     if (info.iceGrams >= 50) {
       return (
         <>
-          {'🧊 Add '}
+          {'Add '}
           <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.iceGrams}g</span>
           {' ice to '}
           <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.tapGrams}g</span>
@@ -451,7 +451,7 @@ export default function RecipeOutput({
     const tempColor = tempDiff >= 14 ? 'var(--terra)' : tempDiff >= 8 ? 'var(--gold)' : undefined;
     return (
       <>
-        {'🌡 Use at '}
+        {'Use at '}
         <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', fontSize: '.9rem', color: tempColor }}>{info.targetTemp}°C</span>
         {` · ${info.tempGuidance}`}
         {tempDiff >= 8 && (
@@ -621,7 +621,7 @@ export default function RecipeOutput({
               <IngRow label="Flour" grams={gStr(pf.prefFlour)} noPct highlight />
               <IngRow label="Water" grams={gStr(pf.prefWater)} noPct
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefWater / pf.prefFlour * 1000) / 10) : undefined}
-                sub="🌡️ Room temperature — preferment mixes by hand" />
+                sub="Room temperature — preferment mixes by hand" />
               {pf.prefYeastGrams > 0 && (
                 <IngRow label="Yeast (IDY)" grams={gStr(pf.prefYeastGrams)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
@@ -665,7 +665,6 @@ export default function RecipeOutput({
               {finalDoughWaterInfo && finalDoughWaterInfo.needsIce && (
                 <div style={{ background: '#EEF6FF', border: '1.5px solid #B0CDE8', borderRadius: '10px', padding: '.75rem 1rem', marginTop: '1rem' }}>
                   <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.4rem' }}>
-                    <span style={{ fontSize: '1rem' }}>🧊</span>
                     <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#1E4A6A' }}>Ice water — final dough</span>
                   </div>
                   <div style={{ fontSize: '.78rem', color: '#2A5070', lineHeight: 1.6 }}>
@@ -804,7 +803,7 @@ export default function RecipeOutput({
 
           {yeastInfo && yeastInfo.convertedGrams < 2 && totalColdHours >= 24 && (
             <span style={{ fontSize: '.72rem', color: 'rgba(245,240,232,0.50)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', marginTop: '.25rem', display: 'block', padding: '0 .1rem' }}>
-              Yes, that&apos;s intentional — less yeast, more time = deeper flavour. Trust the process. 🍕
+              Yes, that&apos;s intentional — less yeast, more time = deeper flavour. Trust the process.
             </span>
           )}
 
@@ -856,7 +855,6 @@ export default function RecipeOutput({
         }}>
           {/* Header */}
           <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.4rem' }}>
-            <span style={{ fontSize: '1rem' }}>🔄</span>
             <span style={{ fontSize: '.85rem', fontWeight: 700, color: '#7A5A10', fontFamily: 'var(--font-dm-sans)' }}>
               Large batch — mix in stages
             </span>
@@ -948,7 +946,7 @@ export default function RecipeOutput({
           </div>
           {/* Footer note */}
           <div style={{ fontSize: '.71rem', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
-            💡 Combine all batches into one container immediately after mixing. Bulk fermentation and schedule are unchanged.
+            Combine all batches into one container immediately after mixing. Bulk fermentation and schedule are unchanged.
           </div>
         </div>
       )}
@@ -967,7 +965,6 @@ export default function RecipeOutput({
               padding: '.85rem 1rem',
             }}>
               <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-                <span style={{ fontSize: '1rem' }}>⚠️</span>
                 <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#7A5A10' }}>
                   Precision scale recommended — this is a very small amount of yeast.
                 </span>
@@ -984,7 +981,6 @@ export default function RecipeOutput({
               padding: '.85rem 1rem',
             }}>
               <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.3rem' }}>
-                <span style={{ fontSize: '1rem' }}>⚠️</span>
                 <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#7A5A10' }}>
                   Precision scale required
                 </span>
@@ -1003,7 +999,7 @@ export default function RecipeOutput({
           {/* Dilution tip */}
           {yeastInfo.dilutionTip && (
             <InfoCard
-              icon="🧪"
+              icon=""
               level="info"
               title="Dilution required — amount too small to weigh directly"
               body={yeastInfo.dilutionTip}
@@ -1029,7 +1025,7 @@ export default function RecipeOutput({
           {/* Not recommended warning */}
           {yeastInfo.notRecommended && (
             <InfoCard
-              icon="⚠️"
+              icon=""
               level="alert"
               title="This fermentation schedule is not recommended"
               body="The combination of time and temperature will likely cause over-fermentation. Add a cold retard phase or shorten room-temperature time."
@@ -1038,7 +1034,7 @@ export default function RecipeOutput({
 
           {/* Filtered warnings */}
           {filteredWarnings.map((w, i) => (
-            <InfoCard key={i} icon="⚠️" level="warn" title="Watch out" body={w} />
+            <InfoCard key={i} icon="" level="warn" title="Watch out" body={w} />
           ))}
         </div>
       )}
@@ -1055,7 +1051,7 @@ export default function RecipeOutput({
             border: '1px solid rgba(212,168,83,0.12)',
           }}>
             <div style={{ fontSize: '.7rem', color: D.sub, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem' }}>
-              Sourdough Starter 🫙
+              Sourdough Starter
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '.75rem', flexWrap: 'wrap' }}>
               <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
