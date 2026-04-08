@@ -258,7 +258,7 @@ function computeWaterInfo(
 
   if (needsIce) {
     // Full ice protocol
-    tempGuidance = 'ice water — see protocol below';
+    tempGuidance = 'add ice — see water row below';
     iceGuidance = isSpiral
       ? `${iceGrams}g ice + ${tapGrams}g water — add ice directly to bowl`
       : `mix ${iceGrams}g ice + ${tapGrams}g water, stir 1 min, strain before using`;
@@ -702,23 +702,6 @@ export default function RecipeOutput({
                   );
                 })()}
               </div>
-              {/* Inline ice protocol for final dough water */}
-              {finalDoughWaterInfo && finalDoughWaterInfo.needsIce && (
-                <div style={{ background: '#EEF6FF', border: '1.5px solid #B0CDE8', borderRadius: '10px', padding: '.75rem 1rem', marginTop: '1rem' }}>
-                  <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.4rem' }}>
-                    <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#1E4A6A' }}>Ice water — final dough</span>
-                  </div>
-                  <div style={{ fontSize: '.78rem', color: '#2A5070', lineHeight: 1.6 }}>
-                    {'Mix '}
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{finalDoughWaterInfo.iceGrams}g</span>
-                    {' ice + '}
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{finalDoughWaterInfo.tapGrams}g</span>
-                    {' cold water. Strain ice just before mixing. Target: '}
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{finalDoughWaterInfo.targetTemp}°C</span>
-                    {'.'}
-                  </div>
-                </div>
-              )}
             </div>
           </>
         );
