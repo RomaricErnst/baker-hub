@@ -433,12 +433,13 @@ export default function RecipeOutput({
     if (info.iceGrams >= 50) {
       return (
         <>
-          {'Add '}
+          {'Target: '}
+          <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', color: 'var(--terra)' }}>{info.targetTemp}°C</span>
+          {' · '}
           <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.iceGrams}g</span>
-          {' ice to '}
+          {' ice + '}
           <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.tapGrams}g</span>
-          {' water · Strain just before mixing · Target: '}
-          <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.targetTemp}°C</span>
+          {' cold water'}
         </>
       );
     }
@@ -614,9 +615,11 @@ export default function RecipeOutput({
               <IngRow label="Flour" grams={gStr(pf.prefFlour)} noPct highlight />
               <IngRow label="Water" grams={gStr(pf.prefWater)} noPct
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefWater / pf.prefFlour * 1000) / 10) : undefined}
-                sub="Room temperature — preferment mixes by hand" />
+                sub="At room temperature" />
               {pf.prefYeastGrams > 0 && (
-                <IngRow label="Yeast (IDY)" grams={gStr(pf.prefYeastGrams)} noPct
+                <IngRow
+                  label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem' }}>Yeast (IDY)<YeastTooltip /></span>}
+                  grams={gStr(pf.prefYeastGrams)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
