@@ -588,8 +588,8 @@ export default function RecipeOutput({
                       padding: '.12rem 0',
                     }}>
                       <span style={{ flex: 1 }}>{row.label}</span>
-                      <span style={{ color: 'rgba(245,240,232,0.38)', fontSize: '.65rem' }}>{row.pct}</span>
                       <span style={{ color: 'rgba(245,240,232,0.9)', fontWeight: 600, minWidth: '3.5rem', textAlign: 'right' }}>{row.value}</span>
+                      <span style={{ color: 'rgba(245,240,232,0.38)', fontSize: '.65rem', minWidth: '3rem', textAlign: 'right' }}>{row.pct}</span>
                     </div>
                   ))}
                 </div>
