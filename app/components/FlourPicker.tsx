@@ -282,46 +282,44 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   return (
     <div>
 
-      {/* ══ SECTION 1: Scan (standalone hero) ════════ */}
-      <div style={{ marginBottom: '12px' }}>
-        <button
-          onClick={() => { setScanOpen(s => !s); }}
-          style={{
-            width: '100%', padding: '13px 16px',
-            borderRadius: '12px', border: '1.5px solid #E8E0D5',
-            background: '#FDFBF7', display: 'flex',
-            alignItems: 'center', justifyContent: 'space-between',
-            cursor: 'pointer',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '20px' }}>📷</span>
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: '#1A1612', fontFamily: 'DM Sans, sans-serif' }}>Scan your bag</div>
-              <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>Point your camera at any flour bag</div>
-            </div>
-          </div>
-          <span style={{ fontSize: '16px', color: '#C4522A' }}>→</span>
-        </button>
-        {scanOpen && (
-          <div style={{ marginTop: '8px' }}>
-            <FlourScan
-              onResult={result => {
-                const autoTile: FlourKey = result.w >= 270 ? 'strong00' : 'pizza00';
-                onBlendChange({ ...blend, flour1: autoTile, wOverride: result.w });
-                setScanOpen(false);
-              }}
-              onCancel={() => setScanOpen(false)}
-            />
-          </div>
-        )}
-      </div>
-
       {/* ══ SECTION 2: Find your flour ════════════════ */}
       <div style={{ borderBottom: '1px solid #E8E0D5' }}>
         {sectionHeader('Find your flour', 'search')}
         {openSection === 'search' && (
           <div style={{ paddingTop: '12px', paddingBottom: '14px' }}>
+
+            {/* Scan your bag — first option inside Find your flour */}
+            <button
+              onClick={() => { setScanOpen(s => !s); }}
+              style={{
+                width: '100%', padding: '11px 14px',
+                borderRadius: '10px', border: '1.5px solid #E8E0D5',
+                background: '#FDFBF7', display: 'flex',
+                alignItems: 'center', justifyContent: 'space-between',
+                cursor: 'pointer', marginBottom: '12px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '18px' }}>📷</span>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1A1612', fontFamily: 'DM Sans, sans-serif' }}>Scan your bag</div>
+                  <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>Point your camera at any flour bag</div>
+                </div>
+              </div>
+              <span style={{ fontSize: '15px', color: '#C4522A' }}>→</span>
+            </button>
+            {scanOpen && (
+              <div style={{ marginBottom: '12px' }}>
+                <FlourScan
+                  onResult={result => {
+                    const autoTile: FlourKey = result.w >= 270 ? 'strong00' : 'pizza00';
+                    onBlendChange({ ...blend, flour1: autoTile, wOverride: result.w });
+                    setScanOpen(false);
+                  }}
+                  onCancel={() => setScanOpen(false)}
+                />
+              </div>
+            )}
 
             {/* Search bar + filter chips — single row */}
             <div ref={dropdownRef} style={{ marginBottom: '8px' }}>
@@ -577,7 +575,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               }
               return (
                 <div>
-                  {!noFiltersActive && (
+                  {noFiltersActive ? (
+                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                      Crowd favourites · 285 flours in database
+                    </div>
+                  ) : (
                     <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'DM Sans, sans-serif' }}>
                       {displayList.length} flour{displayList.length !== 1 ? 's' : ''} found
                     </div>
@@ -716,7 +718,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
       {/* ══ SECTION 3: Blend (custom mode only) ══════ */}
       {mode === 'custom' && (
-        <div ref={blendRef}>
+        <div ref={blendRef} style={{ marginTop: '12px', borderRadius: '10px', border: '1px solid #E8E0D5', background: '#F8F4EF', overflow: 'hidden' }}>
           <div
             onClick={() => {
               if (openSection === 'blend') {
@@ -729,26 +731,26 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             }}
             style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '12px 0', cursor: 'pointer',
-              borderTop: '2px solid #E8E0D5',
-              marginTop: '8px',
+              padding: '12px 14px', cursor: 'pointer',
               fontFamily: 'var(--font-dm-sans)', fontSize: '13px', fontWeight: 500,
-              color: '#8A7F78',
+              color: '#3D3530',
+              borderBottom: openSection === 'blend' ? '1px solid #E8E0D5' : 'none',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>Blend: Add a second flour</span>
+              <span style={{ fontSize: '14px', color: '#C4522A', fontWeight: 600 }}>+</span>
+              <span>Add a second flour</span>
               <span style={{
                 fontSize: '10px', fontFamily: 'DM Sans, sans-serif',
-                background: '#F5F0E8', color: '#8A7F78',
+                background: '#EDE8E0', color: '#8A7F78',
                 borderRadius: '20px', padding: '1px 7px',
-                border: '1px solid #E8E0D5',
+                border: '1px solid #DDD8D0',
               }}>optional</span>
             </div>
             <span style={{ fontSize: '12px', color: '#8A7F78' }}>{openSection === 'blend' ? '▾' : '›'}</span>
           </div>
           {openSection === 'blend' && (
-            <div style={{ paddingTop: '10px', paddingBottom: '14px', scrollMarginTop: '80px' }}>
+            <div style={{ paddingTop: '10px', paddingBottom: '14px', paddingLeft: '14px', paddingRight: '14px', scrollMarginTop: '80px' }}>
 
               {/* If flour2 selected: show confirmation + ratio slider */}
               {blendSelectedF2 ? (
