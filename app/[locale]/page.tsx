@@ -283,9 +283,6 @@ export default function Home() {
   const [showYeastHelper, setShowYeastHelper] = useState(false);
   const [showResults, setShowResults]         = useState(false);
 
-  // Large-batch yeast adjustment
-  const [yeastMultiplier, setYeastMultiplier]   = useState(1.0); // live stepper value
-  const [appliedMultiplier, setAppliedMultiplier] = useState(1.0); // applied to RecipeOutput
 
   // Sourdough feed time
   const [feedTime, setFeedTime] = useState<Date | null>(null);
@@ -427,20 +424,7 @@ export default function Home() {
   }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType]);
 
   // Recipe with yeast adjusted by appliedMultiplier (large-batch tuning)
-  const displayRecipe = useMemo(() => {
-    if (!recipe || !recipe.yeast || appliedMultiplier === 1.0) return recipe;
-    const y = recipe.yeast;
-    return {
-      ...recipe,
-      yeast: {
-        ...y,
-        pct:            Math.round(y.pct            * appliedMultiplier * 10000) / 10000,
-        grams:          Math.round(y.grams          * appliedMultiplier * 1000)  / 1000,
-        convertedPct:   Math.round(y.convertedPct   * appliedMultiplier * 10000) / 10000,
-        convertedGrams: Math.round(y.convertedGrams * appliedMultiplier * 1000)  / 1000,
-      },
-    };
-  }, [recipe, appliedMultiplier]);
+  const displayRecipe = recipe;
 
   const effPref: PrefermentType = (prefermentType ?? 'none') as PrefermentType;
 
@@ -464,21 +448,7 @@ export default function Home() {
     }
   }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, manualSalt, targetDoughTemp, flourInFridge, wastePct]);
 
-  // Advanced recipe with yeast multiplier applied
-  const advancedDisplayRecipe = useMemo(() => {
-    if (!advancedRecipe || !advancedRecipe.yeast || appliedMultiplier === 1.0) return advancedRecipe;
-    const y = advancedRecipe.yeast;
-    return {
-      ...advancedRecipe,
-      yeast: {
-        ...y,
-        pct:            Math.round(y.pct            * appliedMultiplier * 10000) / 10000,
-        grams:          Math.round(y.grams          * appliedMultiplier * 1000)  / 1000,
-        convertedPct:   Math.round(y.convertedPct   * appliedMultiplier * 10000) / 10000,
-        convertedGrams: Math.round(y.convertedGrams * appliedMultiplier * 1000)  / 1000,
-      },
-    };
-  }, [advancedRecipe, appliedMultiplier]);
+  const advancedDisplayRecipe = advancedRecipe;
 
   // ── Handlers ──────────────────────────────
   function selectBakeType(bt: BakeType) {
@@ -539,7 +509,6 @@ export default function Home() {
     setBlocks([]); setYeastType(null);
     setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(4);
     setShowResults(false); setActiveStep(1);
-    setYeastMultiplier(1.0); setAppliedMultiplier(1.0);
     setAdvancedStep(1); setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
@@ -1254,128 +1223,6 @@ export default function Home() {
                         onSave={user ? () => handleSaveRecipe('simple') : undefined}
                       />
 
-                      {/* ── Large-batch yeast adjustment ── */}
-                      {numItems > 12 && recipe?.yeast && (() => {
-                        const base = recipe.yeast!;
-                        const adjPct   = Math.round(base.convertedPct   * yeastMultiplier * 1000) / 1000;
-                        const adjGrams = Math.round(base.convertedGrams * yeastMultiplier * 100)  / 100;
-
-                        return (
-                          <div style={{
-                            border: '1.5px solid #E8D890',
-                            borderRadius: '16px',
-                            padding: '1.25rem 1.4rem',
-                            background: '#FDFBF2',
-                          }}>
-                            <div style={{ marginBottom: '1rem' }}>
-                              <div style={{ fontWeight: 700, fontSize: '.95rem', color: '#6A5000', marginBottom: '.3rem' }}>
-                                {t('results.largeBatchTitle')}
-                              </div>
-                              <div style={{ fontSize: '.78rem', color: '#7A6010', lineHeight: 1.55 }}>
-                                {t('results.largeBatchDesc')}
-                              </div>
-                            </div>
-                            <div style={{
-                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                              padding: '.5rem .75rem',
-                              background: 'rgba(255,255,255,.6)', borderRadius: '8px',
-                              marginBottom: '.65rem',
-                              fontSize: '.78rem',
-                            }}>
-                              <span style={{ color: 'var(--smoke)' }}>Recommended</span>
-                              <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--ash)', fontWeight: 500 }}>
-                                {base.convertedPct}% · {base.convertedGrams} g
-                              </span>
-                            </div>
-                            <div style={{ marginBottom: '.65rem' }}>
-                              <div style={{
-                                fontSize: '.7rem', color: '#7A6010', textTransform: 'uppercase',
-                                letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.45rem',
-                              }}>
-                                Adjustment multiplier
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}>
-                                <button
-                                  onClick={() => setYeastMultiplier(m => Math.max(0.5, Math.round((m - 0.05) * 100) / 100))}
-                                  disabled={yeastMultiplier <= 0.5}
-                                  className="btn"
-                                  style={{
-                                    width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-                                    border: 'none',
-                                    background: yeastMultiplier <= 0.5 ? 'var(--border)' : 'var(--char)',
-                                    color: yeastMultiplier <= 0.5 ? 'var(--smoke)' : '#fff',
-                                    cursor: yeastMultiplier <= 0.5 ? 'default' : 'pointer',
-                                    fontSize: '1.1rem', fontWeight: 700,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  }}
-                                >−</button>
-                                <div style={{
-                                  fontFamily: 'var(--font-dm-mono)', fontSize: '1.2rem', fontWeight: 700,
-                                  color: 'var(--gold)', minWidth: '52px', textAlign: 'center',
-                                }}>
-                                  {yeastMultiplier.toFixed(2)}×
-                                </div>
-                                <button
-                                  onClick={() => setYeastMultiplier(m => Math.min(1.5, Math.round((m + 0.05) * 100) / 100))}
-                                  disabled={yeastMultiplier >= 1.5}
-                                  className="btn"
-                                  style={{
-                                    width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-                                    border: 'none',
-                                    background: yeastMultiplier >= 1.5 ? 'var(--border)' : 'var(--terra)',
-                                    color: yeastMultiplier >= 1.5 ? 'var(--smoke)' : '#fff',
-                                    cursor: yeastMultiplier >= 1.5 ? 'default' : 'pointer',
-                                    fontSize: '1.1rem', fontWeight: 700,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  }}
-                                >+</button>
-                                <div style={{
-                                  marginLeft: '.25rem',
-                                  fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)',
-                                  color: 'var(--gold)', fontWeight: 600,
-                                }}>
-                                  → {adjPct}% · {adjGrams} g
-                                </div>
-                              </div>
-                            </div>
-                            {appliedMultiplier !== 1.0 && (
-                              <div style={{
-                                fontSize: '.72rem', color: '#7A6010',
-                                fontFamily: 'var(--font-dm-mono)',
-                                marginBottom: '.65rem',
-                              }}>
-                                ✓ Applied: {appliedMultiplier.toFixed(2)}× — recipe above reflects this adjustment.
-                              </div>
-                            )}
-                            <div style={{ display: 'flex', gap: '.6rem' }}>
-                              <button
-                                onClick={() => setAppliedMultiplier(yeastMultiplier)}
-                                className="btn"
-                                style={{
-                                  flex: 2, padding: '.65rem',
-                                  border: 'none', borderRadius: '12px',
-                                  background: 'var(--gold)', color: '#fff',
-                                  fontSize: '.84rem', fontWeight: 600, cursor: 'pointer',
-                                }}
-                              >
-                                Apply adjustment
-                              </button>
-                              <button
-                                onClick={() => { setYeastMultiplier(1.0); setAppliedMultiplier(1.0); }}
-                                className="btn"
-                                style={{
-                                  flex: 1, padding: '.65rem',
-                                  border: '1.5px solid #E8D890', borderRadius: '12px',
-                                  background: 'transparent', color: '#7A6010',
-                                  fontSize: '.84rem', cursor: 'pointer',
-                                }}
-                              >
-                                Reset
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })()}
 
                       {schedule && (
                         <Timeline
