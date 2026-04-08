@@ -361,11 +361,22 @@ export default function RecipeOutput({
 
   // Water row sub-line: source-agnostic temperature guidance
   function makeWaterSubNode(info: WaterInfo, kitchenT: number): React.ReactNode {
+    if (info.iceGrams >= 50) {
+      return (
+        <>
+          {'🧊 Add '}
+          <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.iceGrams}g</span>
+          {' ice to '}
+          <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.tapGrams}g</span>
+          {' water · Strain just before mixing'}
+        </>
+      );
+    }
     const tempDiff = kitchenT - info.targetTemp;
     const tempColor = tempDiff >= 14 ? 'var(--terra)' : tempDiff >= 8 ? 'var(--gold)' : undefined;
     return (
       <>
-        {'💧 Use at '}
+        {'🌡 Use at '}
         <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', fontSize: '.9rem', color: tempColor }}>{info.targetTemp}°C</span>
         {` · ${info.tempGuidance}`}
         {tempDiff >= 8 && (
@@ -427,8 +438,7 @@ export default function RecipeOutput({
         background: 'var(--char)', borderRadius: '18px',
         border: '1px solid rgba(212,168,83,0.15)',
         padding: '1.3rem 1.6rem',
-        display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', flexWrap: 'wrap', gap: '.75rem',
+        display: 'flex', flexDirection: 'column', gap: '.5rem',
       }}>
         <div>
           <div style={{
@@ -530,11 +540,8 @@ export default function RecipeOutput({
           <>
             {/* CARD 1: Make your preferment */}
             <div style={{ background: 'var(--char)', borderRadius: '18px', padding: '1.5rem 1.6rem', border: '1px solid rgba(212,168,83,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
-              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--cream)', marginBottom: '.3rem' }}>
-                {pd.emoji} Make your {pd.name}
-              </div>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'var(--gold)', marginBottom: '1rem' }}>
-                {pf.schedule}
+              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--cream)', marginBottom: '1rem' }}>
+                Make your {pd.name}
               </div>
               <IngRow label="Flour" grams={gStr(pf.prefFlour)} noPct highlight />
               <IngRow label="Water" grams={gStr(pf.prefWater)} noPct
@@ -844,27 +851,30 @@ export default function RecipeOutput({
               ...(poolishPerBatch !== null ? [{
                 label: prefermentType === 'biga' ? 'Biga' : 'Poolish',
                 value: `${poolishPerBatch}g`,
-                highlight: true,
+                highlight: false,
+                isTotal: false,
               }] : []),
-              { label: hasPref ? 'Flour (final dough)' : 'Flour', value: `${flourPerBatch}g`, highlight: false },
-              { label: hasPref ? 'Water (final dough)' : 'Water', value: `${waterPerBatch}g`, highlight: false },
-              { label: 'Salt', value: `${saltPerBatch}g`, highlight: false },
+              { label: hasPref ? 'Flour (final dough)' : 'Flour', value: `${flourPerBatch}g`, highlight: false, isTotal: false },
+              { label: hasPref ? 'Water (final dough)' : 'Water', value: `${waterPerBatch}g`, highlight: false, isTotal: false },
+              { label: 'Salt', value: `${saltPerBatch}g`, highlight: false, isTotal: false },
               ...(yeastPerBatch !== null ? [{
                 label: `Yeast (${(yeast as YeastResult | null)?.yeastType ?? 'IDY'})`,
                 value: `${yeastPerBatch}g`,
                 highlight: false,
+                isTotal: false,
               }] : []),
+              { label: 'Batch total', value: `${Math.round(batchDoughG / effectiveBatches)}g`, highlight: true, isTotal: true },
             ].map((row, i) => (
               <div key={i} style={{
                 display: 'flex', justifyContent: 'space-between',
                 fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)',
-                color: row.highlight ? '#7A5A10' : '#3D3530',
+                color: row.isTotal ? '#3D3530' : '#3D3530',
                 padding: '.12rem 0',
-                borderBottom: row.highlight ? '1px solid #E8D890' : 'none',
-                paddingBottom: row.highlight ? '.3rem' : '.12rem',
-                marginBottom: row.highlight ? '.2rem' : 0,
+                borderTop: row.isTotal ? '1px solid #E8D890' : 'none',
+                paddingTop: row.isTotal ? '.4rem' : '.12rem',
+                marginTop: row.isTotal ? '.2rem' : 0,
               }}>
-                <span style={{ fontWeight: row.highlight ? 600 : 400 }}>{row.label}</span>
+                <span style={{ fontWeight: row.isTotal ? 600 : 400 }}>{row.label}</span>
                 <span style={{ fontWeight: 600 }}>{row.value}</span>
               </div>
             ))}
@@ -876,29 +886,6 @@ export default function RecipeOutput({
         </div>
       )}
 
-      {/* ── Ice water protocol ───────────────────────────────────── */}
-      {!result.preferment && waterTemp < 15 && (
-        <div style={{
-          background: '#EEF6FF',
-          border: '1.5px solid #B0CDE8',
-          borderRadius: '10px',
-          padding: '.75rem 1rem',
-        }}>
-          <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.4rem' }}>
-            <span style={{ fontSize: '1rem' }}>🧊</span>
-            <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#1E4A6A' }}>Ice water protocol</span>
-          </div>
-          <div style={{ fontSize: '.78rem', color: '#2A5070', lineHeight: 1.6 }}>
-            {'Your dough needs very cold water. Mix '}
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{waterInfo.iceGrams}g</span>
-            {' ice + '}
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{waterInfo.tapGrams}g</span>
-            {' cold water. Strain ice just before mixing. Target: '}
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>{waterInfo.targetTemp}°C</span>
-            {'.'}
-          </div>
-        </div>
-      )}
 
       {/* ── Yeast details ─────────────────────────── */}
       {yeastInfo && (
