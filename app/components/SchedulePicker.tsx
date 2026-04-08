@@ -961,10 +961,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setRecommendedColdH(expectedColdH);
 
     const minColdH = defaults.minColdH ?? 0;
+    // Compute fridge decision locally — same logic as render-time prefGoesInFridge
+    // but using fresh values to avoid stale closure
+    const localEnoughTimeForFridge = (nowHBF - mixOffsetH) >= 14;
+    const localPrefGoesInFridge = hasPrefActive && (
+      prefermentType === 'biga'
+      || (prefermentType === 'poolish' && (kitchenTemp >= 26 || localEnoughTimeForFridge))
+    );
     // fridge-aware poolish offset — pass directly, per-candidate clamp happens in findOptimalPosition
-    const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridge) : prefOffsetH;
+    const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp, localPrefGoesInFridge) : prefOffsetH;
     // fridge-aware minimum: 12h for fridge poolish/biga, 3h for RT poolish
-    const poolishMinH = prefGoesInFridge ? 12 : 3;
+    const poolishMinH = localPrefGoesInFridge ? 12 : 3;
 
     // sweetCenter = coldH + rtH = the style sweet spot where dough peaks at bake
     // This is a style constant — NOT climate sensitive (climate adjusts yeast, not timing)
@@ -1110,11 +1117,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     ? _sfDef.coldH + _sfDef.rtH
     : _sfDef.rtH;
   const renderSweetCenter = Math.min(_optimalMix, renderSweetFrom - 0.25);
-  // Two-temperature protocol: needs fridge when offset > RT peak time for style+temp
-  // Biga always fridge. Poolish: depends on offset vs RT peak.
-  const prefRTPeakH    = hasPrefActive ? getPrefPeakH_RT(prefermentType, kitchenTemp, styleKey ?? 'neapolitan') : 0;
+  // Two-temperature protocol:
+  // Biga: always fridge.
+  // Poolish: fridge when there is enough time (>= 14h between now and Start Dough),
+  //          or when kitchen >= 26°C regardless of time (RT window too narrow/fragile).
+  //          Falls back to RT only when window is short AND kitchen is cool (< 26°C).
+  const prefRTPeakH = hasPrefActive ? getPrefPeakH_RT(prefermentType, kitchenTemp, styleKey ?? 'neapolitan') : 0;
+  const enoughTimeForFridge = (_nowHBF - mixOffsetH) >= 14;
   const prefGoesInFridge = hasPrefActive && (
-    prefermentType === 'biga' || prefOffsetH > prefRTPeakH
+    prefermentType === 'biga'
+    || (prefermentType === 'poolish' && (kitchenTemp >= 26 || enoughTimeForFridge))
   );
   // "Remove poolish from fridge" time: rtWarmupH before mix, pushed out of blockers
   const prefRTWarmupH = prefGoesInFridge ? getPrefRTWarmupH(kitchenTemp) : 0;
