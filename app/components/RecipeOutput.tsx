@@ -43,7 +43,42 @@ const D = {
   sub:    'rgba(245,240,232,0.38)',  // secondary / column headers
 };
 
-// ── Ingredient row ────────────────────────────
+// ── Yeast tooltip ─────────────────────────────
+function YeastTooltip() {
+  const [open, setOpen] = useState(false);
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+      <span
+        onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
+        style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: '13px', height: '13px', borderRadius: '50%',
+          border: '1px solid rgba(138,127,120,0.6)',
+          color: 'rgba(138,127,120,0.8)',
+          fontSize: '.58rem', cursor: 'pointer', flexShrink: 0,
+          fontFamily: 'var(--font-dm-sans)', lineHeight: 1,
+          userSelect: 'none',
+        }}
+      >i</span>
+      {open && (
+        <span style={{
+          position: 'absolute', bottom: '120%', left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--ash)', color: 'var(--cream)',
+          fontSize: '.72rem', fontFamily: 'var(--font-dm-sans)',
+          padding: '.4rem .65rem', borderRadius: '8px',
+          whiteSpace: 'nowrap', zIndex: 10,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+          pointerEvents: 'none',
+        }}>
+          Less yeast, more time — longer fermentation builds deeper flavour.
+        </span>
+      )}
+    </span>
+  );
+}
+
+// ── Ingredient row ─────────────────────────────
 function IngRow({
   label, sub, grams, pct = '', highlight = false, range = false, advancedPct, noPct = false,
 }: {
@@ -632,18 +667,7 @@ export default function RecipeOutput({
               label={
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem' }}>
                   {yeastTypeName}
-                  <span
-                    title="Less yeast, more time — longer fermentation builds deeper flavour."
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      width: '13px', height: '13px', borderRadius: '50%',
-                      border: '1px solid rgba(138,127,120,0.6)',
-                      color: 'rgba(138,127,120,0.8)',
-                      fontSize: '.58rem', cursor: 'default', flexShrink: 0,
-                      fontFamily: 'var(--font-dm-sans)', lineHeight: 1,
-                      userSelect: 'none',
-                    }}
-                  >i</span>
+                  <YeastTooltip />
                 </span>
               }
               sub={yeastSub}
