@@ -643,7 +643,21 @@ export default function RecipeOutput({
               </div>
               <IngRow label={`Your ${pd.name} (all of it)`} grams={gStr(prefTotal)} noPct highlight />
               <IngRow label="Remaining flour" grams={gStr(pf.finalFlour)} noPct
-                advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
+                advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined}
+                sub={mode === 'custom' && flourBlend && flourBlend.flour2 && flourBlend.ratio1 < 100 ? (() => {
+                  const f1 = FLOUR_DATA[flourBlend.flour1];
+                  const f2 = FLOUR_DATA[flourBlend.flour2];
+                  const f1Weight = Math.round(pf.finalFlour * flourBlend.ratio1 / 100);
+                  const f2Weight = pf.finalFlour - f1Weight;
+                  return (
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>
+                      {flourBlend.ratio1}% {f1.name} ({f1Weight.toLocaleString('en')}g)
+                      {' · '}
+                      {100 - flourBlend.ratio1}% {flourBlend.customFlour2Name ?? f2.name} ({f2Weight.toLocaleString('en')}g)
+                    </span>
+                  );
+                })() : undefined}
+              />
               <IngRow label="Remaining water" grams={gStr(pf.finalWater)} noPct sub={finalDoughWaterSubNode}
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
               <IngRow label="Salt" grams={gStr(salt)} noPct
