@@ -30,7 +30,8 @@ function pctStr(n: number): string {
 }
 
 function gStr(n: number): string {
-  if (n < 1) return `${parseFloat(n.toFixed(2))} g`;
+  if (n <= 0) return '0 g';
+  if (n < 1) return `${Math.max(0.1, parseFloat(n.toFixed(1)))} g`;
   const rounded = Math.round(n);
   return `${rounded >= 1000 ? rounded.toLocaleString() : rounded} g`;
 }
@@ -629,7 +630,9 @@ export default function RecipeOutput({
           {yeastInfo && (
             <IngRow
               label={yeastTypeName}
-              sub={yeastSub}
+              sub={yeastSub ?? (yeastInfo.explanation
+                ? <span style={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.45)', fontSize: '.72rem' }}>{yeastInfo.explanation}</span>
+                : undefined)}
               grams={gStr(yeastInfo.convertedGrams)}
               pct={pctStr(yeastInfo.convertedPct)}
               advancedPct={mode === 'custom' ? pctStr(yeastInfo.convertedPct) : undefined}
@@ -932,17 +935,6 @@ export default function RecipeOutput({
             </div>
           )}
 
-          {/* Explanation */}
-          {showExplanation && (
-            <div style={{
-              fontSize: '.8rem', color: 'var(--smoke)',
-              background: 'var(--warm)', border: '1px solid var(--border)',
-              borderRadius: '10px', padding: '.65rem .9rem',
-              fontFamily: 'var(--font-dm-mono)', lineHeight: 1.55,
-            }}>
-              {yeastInfo.explanation}
-            </div>
-          )}
 
           {/* Dilution tip */}
           {yeastInfo.dilutionTip && (
