@@ -473,11 +473,7 @@ export default function RecipeOutput({
       })()
     : undefined;
 
-  // Sachet dilution note: when convertedGrams < 1g
-  // X = needed_grams × 10 (ml of solution to use from a 70ml batch)
-  const sachetDilutionNote = yeastInfo && yeastInfo.convertedGrams < 1
-    ? `Can't measure this precisely? Dissolve your full yeast sachet in 10× its weight in water. Use ${Math.round(yeastInfo.convertedGrams * 10 * 10) / 10}ml of that solution.`
-    : null;
+  const sachetDilutionNote = null;
 
   // Allowlist approach: only keep warnings about structural issues, never temperature context
   const WARN_ALLOWLIST = ['precision scale', 'poolish', 'not recommended', 'dilution'];
