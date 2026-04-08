@@ -1717,7 +1717,7 @@ export default function Home() {
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onReady={() => {}}
               />
-              {eatTime && <ContinueBtn onClick={() => advanceAdv(10)} />}
+              {eatTime && <ContinueBtn onClick={() => { setPrefermentFlourPct(undefined); advanceAdv(10); }} />}
             </StepCard>
 
             {/* ─── ADV STEP 11: Dial your dough ────── */}

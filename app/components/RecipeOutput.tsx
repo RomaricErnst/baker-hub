@@ -170,11 +170,6 @@ function IngRow({
         whiteSpace: 'nowrap',
       }}>
         {grams}
-        {advancedPct && (
-          <span style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginLeft: '.35rem' }}>
-            · {advancedPct}
-          </span>
-        )}
       </div>
 
       <div style={{
@@ -185,7 +180,7 @@ function IngRow({
         minWidth: '4rem',
         whiteSpace: 'nowrap',
       }}>
-        {noPct ? '' : pct}
+        {noPct ? (advancedPct ?? '') : (advancedPct ?? pct)}
       </div>
     </div>
   );
@@ -442,7 +437,8 @@ export default function RecipeOutput({
           <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.iceGrams}g</span>
           {' ice to '}
           <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.tapGrams}g</span>
-          {' water · Strain just before mixing'}
+          {' water · Strain just before mixing · Target: '}
+          <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.targetTemp}°C</span>
         </>
       );
     }
@@ -642,22 +638,23 @@ export default function RecipeOutput({
                 Add your {pd.name} to the remaining ingredients
               </div>
               <IngRow label={`Your ${pd.name} (all of it)`} grams={gStr(prefTotal)} noPct highlight />
-              <IngRow label="Remaining flour" grams={gStr(pf.finalFlour)} noPct
-                advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined}
-                sub={mode === 'custom' && flourBlend && flourBlend.flour2 && flourBlend.ratio1 < 100 ? (() => {
-                  const f1 = FLOUR_DATA[flourBlend.flour1];
-                  const f2 = FLOUR_DATA[flourBlend.flour2];
-                  const f1Weight = Math.round(pf.finalFlour * flourBlend.ratio1 / 100);
-                  const f2Weight = pf.finalFlour - f1Weight;
-                  return (
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>
-                      {flourBlend.ratio1}% {f1.name} ({f1Weight.toLocaleString('en')}g)
-                      {' · '}
-                      {100 - flourBlend.ratio1}% {flourBlend.customFlour2Name ?? f2.name} ({f2Weight.toLocaleString('en')}g)
-                    </span>
-                  );
-                })() : undefined}
-              />
+              {mode === 'custom' && flourBlend && flourBlend.flour2 && flourBlend.ratio1 < 100 ? (() => {
+                const f1 = FLOUR_DATA[flourBlend.flour1];
+                const f2 = FLOUR_DATA[flourBlend.flour2];
+                const f1Weight = Math.round(pf.finalFlour * flourBlend.ratio1 / 100);
+                const f2Weight = pf.finalFlour - f1Weight;
+                const f1Pct = Math.round(f1Weight / flour * 1000) / 10;
+                const f2Pct = Math.round(f2Weight / flour * 1000) / 10;
+                return (
+                  <>
+                    <IngRow label={f1.name} grams={gStr(f1Weight)} noPct advancedPct={pctStr(f1Pct)} />
+                    <IngRow label={flourBlend.customFlour2Name ?? f2.name} grams={gStr(f2Weight)} noPct advancedPct={pctStr(f2Pct)} />
+                  </>
+                );
+              })() : (
+                <IngRow label="Remaining flour" grams={gStr(pf.finalFlour)} noPct
+                  advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
+              )}
               <IngRow label="Remaining water" grams={gStr(pf.finalWater)} noPct sub={finalDoughWaterSubNode}
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
               <IngRow label="Salt" grams={gStr(salt)} noPct
