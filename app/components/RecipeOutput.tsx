@@ -378,6 +378,7 @@ export default function RecipeOutput({
 }: RecipeOutputProps) {
   const [showPriorityOverride, setShowPriorityOverride] = useState(false);
   const [showTotals, setShowTotals] = useState(false);
+  const [showDilution, setShowDilution] = useState(false);
 
   // Batch splitting — auto-triggered when total dough exceeds mixer default capacity
   const mixerMaxG   = (MIXER_TYPES as Record<string, { maxDoughG?: number }>)[mixerType]?.maxDoughG ?? 9999;
@@ -508,36 +509,34 @@ export default function RecipeOutput({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-      {/* ── Combined header card ─────────────────── */}
+      {/* ── Compact header row ───────────────────── */}
       <div style={{
-        background: 'var(--char)', borderRadius: '18px',
-        border: '1px solid rgba(212,168,83,0.15)',
-        padding: '1.3rem 1.6rem',
-        display: 'flex', flexDirection: 'column', gap: '.5rem',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+        padding: '.25rem .1rem .5rem',
       }}>
         <div>
           <div style={{
             fontFamily: 'var(--font-playfair)', fontSize: '1.3rem',
-            fontWeight: 700, color: 'var(--gold)', marginBottom: '.3rem',
+            fontWeight: 700, color: 'var(--char)', marginBottom: '.2rem',
           }}>
             Your recipe is ready
           </div>
           <div style={{
-            fontSize: '.78rem', color: 'rgba(245,240,232,.6)',
+            fontSize: '.78rem', color: 'var(--smoke)',
             fontFamily: 'var(--font-dm-mono)',
           }}>
             {styleName}
             {' · '}
-            <span style={{ color: 'rgba(245,240,232,.9)', fontWeight: 600 }}>
+            <span style={{ color: 'var(--ash)', fontWeight: 600 }}>
               {numItems} × {itemWeight}g
             </span>
             {' · '}
-            <span style={{ color: 'rgba(245,240,232,.9)', fontWeight: 600 }}>
+            <span style={{ color: 'var(--ash)', fontWeight: 600 }}>
               {hydration}% hydration
             </span>
           </div>
           {wastePct !== undefined && wastePct > 0 && (
-            <div style={{ fontSize: '.68rem', color: 'rgba(212,168,83,0.55)', fontFamily: 'var(--font-dm-mono)', marginTop: '.25rem' }}>
+            <div style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.2rem' }}>
               Includes {wastePct}% mixing buffer
             </div>
           )}
@@ -547,10 +546,10 @@ export default function RecipeOutput({
             onClick={onSave}
             disabled={saveStatus === 'saving' || saveStatus === 'saved'}
             style={{
-              padding: '.45rem .9rem', borderRadius: '8px',
-              border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'rgba(212,168,83,0.4)'}`,
+              padding: '.45rem .9rem', borderRadius: '8px', flexShrink: 0, marginLeft: '1rem',
+              border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--border)'}`,
               background: 'transparent',
-              color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--gold)',
+              color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--smoke)',
               fontSize: '.78rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
               fontFamily: 'var(--font-dm-mono)',
             }}
@@ -558,9 +557,9 @@ export default function RecipeOutput({
             {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved ✓' : saveStatus === 'error' ? 'Error' : 'Save recipe'}
           </button>
         )}
-        {/* Total ingredients — full width, bottom of card */}
-        {result.preferment && prefermentType && prefermentType !== 'none' && (
-          <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(212,168,83,0.15)', paddingTop: '.75rem' }}>
+        {/* Total ingredients accordion now lives in the Final Dough card */}
+        {false && (
+          <div>
             <button
               onClick={() => setShowTotals(v => !v)}
               style={{
@@ -660,6 +659,48 @@ export default function RecipeOutput({
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   {(numItems * itemWeight).toLocaleString('en')} g
                 </div>
+              </div>
+              {/* Total ingredients accordion — preferment mode */}
+              <div style={{ marginTop: '1rem', borderTop: `1px solid ${D.line}`, paddingTop: '.75rem' }}>
+                <button
+                  onClick={() => setShowTotals(v => !v)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                    display: 'flex', alignItems: 'center', gap: '.4rem',
+                    fontSize: '.72rem', color: 'rgba(212,168,83,0.7)',
+                    fontFamily: 'var(--font-dm-mono)',
+                  }}
+                >
+                  <span>Total ingredients</span>
+                  <span style={{ fontSize: '.6rem', transition: 'transform .2s', transform: showTotals ? 'rotate(180deg)' : 'none' }}>▾</span>
+                </button>
+                {showTotals && (() => {
+                  const pf = result.preferment!;
+                  const totalFlour = flour;
+                  const totalWater = water;
+                  const totalSalt  = salt;
+                  const totalYeast = pf.prefYeastGrams;
+                  return (
+                    <div style={{ marginTop: '.6rem', display: 'flex', flexDirection: 'column', gap: '.45rem' }}>
+                      {[
+                        { label: 'Flour', pct: '100%', value: `${Math.round(totalFlour).toLocaleString('en')}g` },
+                        { label: 'Water', pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: `${Math.round(totalWater).toLocaleString('en')}g` },
+                        { label: 'Salt',  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: `${Math.round(totalSalt).toLocaleString('en')}g` },
+                        ...(totalYeast > 0 ? [{ label: 'Yeast (IDY)', pct: `${Math.round(totalYeast / totalFlour * 1000) / 10}%`, value: `${totalYeast}g` }] : []),
+                      ].map((row, i) => (
+                        <div key={i} style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem',
+                          fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
+                          color: 'rgba(245,240,232,0.65)', padding: '.12rem 0',
+                        }}>
+                          <span style={{ flex: 1 }}>{row.label}</span>
+                          <span style={{ color: 'rgba(245,240,232,0.38)', fontSize: '.65rem' }}>{row.pct}</span>
+                          <span style={{ color: 'rgba(245,240,232,0.9)', fontWeight: 600, minWidth: '3.5rem', textAlign: 'right' }}>{row.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
               {/* Inline ice protocol for final dough water */}
               {finalDoughWaterInfo && finalDoughWaterInfo.needsIce && (
@@ -801,15 +842,25 @@ export default function RecipeOutput({
             );
           })()}
 
-          {yeastInfo && yeastInfo.convertedGrams < 2 && totalColdHours >= 24 && (
-            <span style={{ fontSize: '.72rem', color: 'rgba(245,240,232,0.50)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', marginTop: '.25rem', display: 'block', padding: '0 .1rem' }}>
-              Yes, that&apos;s intentional — less yeast, more time = deeper flavour. Trust the process.
-            </span>
-          )}
 
           {sachetDilutionNote && (
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.73rem', color: 'rgba(245,240,232,0.50)', padding: '.4rem .1rem .35rem', lineHeight: 1.55, borderBottom: `1px solid ${D.line}` }}>
-              {sachetDilutionNote}
+            <div style={{ padding: '.2rem .1rem .35rem', borderBottom: `1px solid ${D.line}` }}>
+              <button
+                onClick={() => setShowDilution(v => !v)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  fontSize: '.72rem', color: 'rgba(245,240,232,0.40)',
+                  fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline',
+                  textUnderlineOffset: '2px',
+                }}
+              >
+                {showDilution ? 'Hide measuring tip ↑' : 'Can\'t measure this precisely? →'}
+              </button>
+              {showDilution && (
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.73rem', color: 'rgba(245,240,232,0.50)', marginTop: '.35rem', lineHeight: 1.55 }}>
+                  {sachetDilutionNote}
+                </div>
+              )}
             </div>
           )}
 
@@ -837,7 +888,7 @@ export default function RecipeOutput({
               Total Dough
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-              {numItems * itemWeight} g
+              {(numItems * itemWeight).toLocaleString('en')} g
             </div>
             <div style={{ minWidth: '4rem' }} />
           </div>
@@ -1009,7 +1060,7 @@ export default function RecipeOutput({
           {/* Poolish recommendation */}
           {yeastInfo.recommendPoolish && (
             <InfoCard
-              icon="🏺"
+              icon=""
               level="poolish"
               title="Poolish preferment recommended"
               body={
