@@ -47,7 +47,7 @@ const D = {
 function IngRow({
   label, sub, grams, pct = '', highlight = false, range = false, advancedPct, noPct = false,
 }: {
-  label: string;
+  label: React.ReactNode;
   sub?: React.ReactNode;
   grams: string;
   pct?: string;
@@ -584,7 +584,7 @@ export default function RecipeOutput({
                   Total Dough
                 </div>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  {numItems * itemWeight} g
+                  {(numItems * itemWeight).toLocaleString('en')} g
                 </div>
               </div>
               {/* Inline ice protocol for final dough water */}
@@ -629,10 +629,24 @@ export default function RecipeOutput({
 
           {yeastInfo && (
             <IngRow
-              label={yeastTypeName}
-              sub={yeastSub ?? (yeastInfo.explanation
-                ? <span style={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.45)', fontSize: '.72rem' }}>{yeastInfo.explanation}</span>
-                : undefined)}
+              label={
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem' }}>
+                  {yeastTypeName}
+                  <span
+                    title="Less yeast, more time — longer fermentation builds deeper flavour."
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      width: '13px', height: '13px', borderRadius: '50%',
+                      border: '1px solid rgba(138,127,120,0.6)',
+                      color: 'rgba(138,127,120,0.8)',
+                      fontSize: '.58rem', cursor: 'default', flexShrink: 0,
+                      fontFamily: 'var(--font-dm-sans)', lineHeight: 1,
+                      userSelect: 'none',
+                    }}
+                  >i</span>
+                </span>
+              }
+              sub={yeastSub}
               grams={gStr(yeastInfo.convertedGrams)}
               pct={pctStr(yeastInfo.convertedPct)}
               advancedPct={mode === 'custom' ? pctStr(yeastInfo.convertedPct) : undefined}
@@ -744,43 +758,6 @@ export default function RecipeOutput({
         </div>
       )}
 
-      {/* ── Flour note (Simple mode only) ───────── */}
-      {mode === 'simple' && (() => {
-        let main: string;
-        if (bakeType === 'bread') {
-          if (fermEquivHours < 8) {
-            main = 'Bread flour works well for this plan.';
-          } else if (fermEquivHours < 24) {
-            main = 'Strong bread flour recommended — T65 or bread flour W200+ 🌾';
-          } else {
-            main = 'High-protein flour essential — T65 forte or bread flour W260+ 🌾';
-          }
-        } else {
-          if (fermEquivHours < 8) {
-            main = 'Pizza or bread flour works well for this plan.';
-          } else if (fermEquivHours < 24) {
-            main = 'Pizza flour gives the best results — Italian 00 is ideal. French T45 forte works too 🌾';
-          } else {
-            main = 'Strong pizza flour recommended — Italian 00 W270+. French alternative: T45 forte W260+ 🌾';
-          }
-        }
-        return (
-          <div style={{
-            background: 'var(--warm)',
-            border: '1px solid var(--border)',
-            borderLeft: '3px solid var(--sage)',
-            borderRadius: '10px',
-            padding: '.75rem 1rem',
-          }}>
-            <div style={{ fontSize: '.8rem', fontFamily: 'var(--font-dm-sans)', color: 'var(--char)', lineHeight: 1.55 }}>
-              {main}
-            </div>
-            <div style={{ fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', textDecoration: 'underline', cursor: 'pointer', marginTop: '.35rem', display: 'block' }}>
-              Using plain flour or T55? Tap to adapt →
-            </div>
-          </div>
-        );
-      })()}
 
       {/* ── Batch splitting callout ──────────────────────────────── */}
       {needsBatches && (
