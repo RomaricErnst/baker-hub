@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { type RecipeResult, type YeastResult } from '../utils';
-import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, type PrefermentType } from '../data';
+import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
 
 interface RecipeOutputProps {
   result: RecipeResult;
@@ -20,6 +20,7 @@ interface RecipeOutputProps {
   saveStatus?: 'idle' | 'saving' | 'saved' | 'error';
   onSave?: () => void;
   wastePct?: number;
+  flourBlend?: FlourBlend;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -72,6 +73,44 @@ function YeastTooltip() {
           pointerEvents: 'none',
         }}>
           Less yeast, more time — longer fermentation builds deeper flavour.
+        </span>
+      )}
+    </span>
+  );
+}
+
+// ── Flour tooltip (Simple mode) ────────────────
+function FlourTooltip({ bakeType }: { bakeType?: string }) {
+  const [open, setOpen] = useState(false);
+  const msg = bakeType === 'bread'
+    ? 'Strong bread flour works best — T65 or W200+. Plain flour works for short ferments.'
+    : 'Italian 00 or T45 forte gives the best results. Plain flour or T55? Reduce hydration by 3–5%.';
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+      <span
+        onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
+        style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: '13px', height: '13px', borderRadius: '50%',
+          border: '1px solid rgba(138,127,120,0.6)',
+          color: 'rgba(138,127,120,0.8)',
+          fontSize: '.58rem', cursor: 'pointer', flexShrink: 0,
+          fontFamily: 'var(--font-dm-sans)', lineHeight: 1,
+          userSelect: 'none', marginLeft: '.35rem',
+        }}
+      >i</span>
+      {open && (
+        <span style={{
+          position: 'absolute', bottom: '120%', left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--ash)', color: 'var(--cream)',
+          fontSize: '.72rem', fontFamily: 'var(--font-dm-sans)',
+          padding: '.4rem .65rem', borderRadius: '8px',
+          whiteSpace: 'nowrap', zIndex: 10,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+          pointerEvents: 'none',
+        }}>
+          {msg}
         </span>
       )}
     </span>
@@ -335,7 +374,7 @@ function StarterPrepCard({ sourdough }: { sourdough: { starterGramsMin: number; 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
   result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
-  priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct,
+  priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend,
 }: RecipeOutputProps) {
   const [showPriorityOverride, setShowPriorityOverride] = useState(false);
   const [showTotals, setShowTotals] = useState(false);
@@ -658,7 +697,32 @@ export default function RecipeOutput({
             </div>
           </div>
 
-          <IngRow label="Flour" grams={gStr(flour)} pct="100%" highlight advancedPct={mode === 'custom' ? '100%' : undefined} />
+          <IngRow
+            label={mode === 'simple'
+              ? <span style={{ display: 'inline-flex', alignItems: 'center' }}>Flour<FlourTooltip bakeType={bakeType} /></span>
+              : 'Flour'
+            }
+            grams={gStr(flour)}
+            pct="100%"
+            highlight
+            advancedPct={mode === 'custom' ? '100%' : undefined}
+            sub={mode === 'custom' && flourBlend ? (() => {
+              const f1 = FLOUR_DATA[flourBlend.flour1];
+              const f1Weight = Math.round(flour * flourBlend.ratio1 / 100);
+              if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
+                return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>{f1.name}</span>;
+              }
+              const f2 = FLOUR_DATA[flourBlend.flour2];
+              const f2Weight = flour - f1Weight;
+              return (
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>
+                  {flourBlend.ratio1}% {f1.name} ({f1Weight.toLocaleString('en')}g)
+                  {' · '}
+                  {100 - flourBlend.ratio1}% {flourBlend.customFlour2Name ?? f2.name} ({f2Weight.toLocaleString('en')}g)
+                </span>
+              );
+            })() : undefined}
+          />
           <IngRow label="Water" grams={gStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
           <IngRow label="Salt"  grams={gStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
 

@@ -1249,6 +1249,7 @@ export default function Home() {
                         totalColdHours={schedule ? schedule.totalColdHours : 0}
                         mode={tab}
                         bakeType={bakeType ?? 'pizza'}
+                        flourBlend={flourBlend}
                         saveStatus={user ? saveStatus : undefined}
                         onSave={user ? () => handleSaveRecipe('simple') : undefined}
                       />
@@ -2316,6 +2317,7 @@ export default function Home() {
                         prefermentType={prefermentType}
                         priorityOverride={priorityOverride}
                         onPriorityOverride={v => setPriorityOverride(v)}
+                        flourBlend={flourBlend}
                         saveStatus={user ? saveStatus : undefined}
                         onSave={user ? () => handleSaveRecipe('custom') : undefined}
                         wastePct={wastePct}
