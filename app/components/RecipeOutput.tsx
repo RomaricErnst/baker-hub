@@ -684,28 +684,27 @@ export default function RecipeOutput({
             } as Record<string, { emoji: string; text: string; color: string }>)[result.autoPriority ?? ''] ?? { emoji: '⚖️', text: 'Balanced yeast for your schedule', color: 'var(--smoke)' };
             return (
               <>
-                <div style={{
-                  fontSize: '.72rem', color: priorityLabel.color,
-                  fontStyle: 'italic', fontFamily: 'var(--font-dm-sans)',
-                  padding: '.2rem .1rem .4rem',
-                  display: 'flex', alignItems: 'center', gap: '.35rem',
-                  justifyContent: 'space-between',
-                }}>
-                  <span>{priorityLabel.emoji} {priorityLabel.text}</span>
-                  {mode === 'custom' && (
+                {mode === 'custom' && (
+                  <div style={{
+                    fontSize: '.72rem',
+                    fontStyle: 'italic', fontFamily: 'var(--font-dm-sans)',
+                    padding: '.2rem .1rem .4rem',
+                    display: 'flex', alignItems: 'center',
+                    justifyContent: 'flex-end',
+                  }}>
                     <button
                       onClick={() => setShowPriorityOverride(v => !v)}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
                         color: 'rgba(245,240,232,0.45)', fontSize: '.68rem',
                         fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline',
-                        textUnderlineOffset: '2px', padding: 0, flexShrink: 0,
+                        textUnderlineOffset: '2px', padding: 0,
                       }}
                     >
                       {showPriorityOverride ? 'Reset ✕' : 'Adjust →'}
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
                 {showPriorityOverride && mode === 'custom' && (
                   <div style={{ display: 'flex', gap: '.4rem', padding: '.35rem .1rem .5rem', borderBottom: `1px solid rgba(212,168,83,0.16)` }}>
                     {([
@@ -858,16 +857,16 @@ export default function RecipeOutput({
                 highlight: false,
                 isTotal: false,
               }] : []),
-              { label: hasPref ? 'Flour (final dough)' : 'Flour', value: `${flourPerBatch}g`, highlight: false, isTotal: false },
-              { label: hasPref ? 'Water (final dough)' : 'Water', value: `${waterPerBatch}g`, highlight: false, isTotal: false },
-              { label: 'Salt', value: `${saltPerBatch}g`, highlight: false, isTotal: false },
+              { label: hasPref ? 'Flour (final dough)' : 'Flour', value: `${flourPerBatch.toLocaleString('en')}g`, highlight: false, isTotal: false },
+              { label: hasPref ? 'Water (final dough)' : 'Water', value: `${waterPerBatch.toLocaleString('en')}g`, highlight: false, isTotal: false },
+              { label: 'Salt', value: `${saltPerBatch.toLocaleString('en')}g`, highlight: false, isTotal: false },
               ...(yeastPerBatch !== null ? [{
                 label: `Yeast (${(yeast as YeastResult | null)?.yeastType ?? 'IDY'})`,
                 value: `${yeastPerBatch}g`,
                 highlight: false,
                 isTotal: false,
               }] : []),
-              { label: 'Batch total', value: `${Math.round(batchDoughG / effectiveBatches)}g`, highlight: true, isTotal: true },
+              { label: 'Batch total', value: `${Math.round(batchDoughG / effectiveBatches).toLocaleString('en')}g`, highlight: true, isTotal: true },
             ].map((row, i) => (
               <div key={i} style={{
                 display: 'flex', justifyContent: 'space-between',
