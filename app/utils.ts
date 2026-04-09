@@ -757,23 +757,20 @@ export function calculateRecipe(
     : null;
 
   // Hydration
+  // manualHydration = baker's exact value, zero engine adjustment
+  // Otherwise: style + oven delta + climate + blend delta (all modes)
+  // Climate is a physical reality — applies regardless of simple/custom
   let hydration: number;
   if (mode === 'custom' && manualHydration !== undefined) {
-    hydration = manualHydration; // never auto-adjust in advanced
-  } else if (mode === 'custom' && blendProfile) {
-    // Apply blend's hydration delta on top of style baseline + oven delta
-    hydration = s.hydration + oven.hydrationDelta + blendProfile.hydrationDelta;
+    hydration = manualHydration;
   } else {
     hydration = s.hydration + oven.hydrationDelta;
-    // Climate adjustment (guided only)
     if (kitchenTemp >= 28 || humidity === 'very-humid') hydration -= 2;
     else if (kitchenTemp <= 18) hydration += 2;
-  }
-
-  // STEP 3 — Apply hydration delta from blend
-  if (blendProfile) {
-    const delta = Math.max(-5, Math.min(8, blendProfile.hydrationDelta));
-    hydration = Math.round((hydration + delta) * 10) / 10;
+    if (blendProfile) {
+      const delta = Math.max(-5, Math.min(8, blendProfile.hydrationDelta));
+      hydration = Math.round((hydration + delta) * 10) / 10;
+    }
   }
 
   // Salt

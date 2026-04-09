@@ -1818,7 +1818,32 @@ export default function Home() {
                   const classicMaxPct  = ((zone.classicMax - sliderMin) / totalRange) * 100;
                   const advancedMaxPct = ((zone.advancedMax - sliderMin) / totalRange) * 100;
                   const defaultHyd = Math.round((zone.classicMin + zone.classicMax) / 2);
-                  const currentHyd = manualHydration ?? defaultHyd;
+                  // Engine recommendation rounded to 0.5% — used as slider default
+                  const engineHyd = advancedRecipe
+                    ? Math.round(advancedRecipe.hydration * 2) / 2
+                    : defaultHyd;
+                  const currentHyd = manualHydration ?? engineHyd;
+                  // Adjustment note: only when engine rec differs from style baseline
+                  // and baker has not manually set a value
+                  const styleBaseHyd = styleKey ? ALL_STYLES[styleKey].hydration : defaultHyd;
+                  const hydDiff = Math.round((engineHyd - styleBaseHyd) * 2) / 2;
+                  const hydAdjustNote: string | null = (manualHydration === undefined && Math.abs(hydDiff) >= 0.5)
+                    ? (() => {
+                        const reasons: string[] = [];
+                        const bp = flourBlend ? computeBlendProfile(flourBlend) : null;
+                        const blendDelta   = bp ? Math.round(bp.hydrationDelta * 2) / 2 : 0;
+                        const climateDelta = (kitchenTemp >= 28 || humidity === 'very-humid') ? -2
+                                           : kitchenTemp <= 18 ? 2 : 0;
+                        const ovenDelta    = Math.round((hydDiff - blendDelta - climateDelta) * 2) / 2;
+                        if (Math.abs(blendDelta)   >= 0.5) reasons.push(`your flour blend (${blendDelta > 0 ? '+' : ''}${blendDelta}%)`);
+                        if (Math.abs(climateDelta) >= 0.5) reasons.push(
+                          climateDelta < 0 ? 'your warm kitchen (−2%)' : 'your cool kitchen (+2%)'
+                        );
+                        if (Math.abs(ovenDelta)    >= 0.5) reasons.push(`your oven setup (${ovenDelta > 0 ? '+' : ''}${ovenDelta}%)`);
+                        if (reasons.length === 0) return null;
+                        return `${zone.name} calls for ${styleBaseHyd}% — adjusted to ${engineHyd}% for ${reasons.join(' and ')}.`;
+                      })()
+                    : null;
 
                   function hydrationZoneLabel(h: number): { label: string; color: string; note: string } {
                     if (h < zone.classicMin) return {
@@ -1881,6 +1906,17 @@ export default function Home() {
                           </div>
                         );
                       })()}
+                      {hydAdjustNote && (
+                        <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '.5rem' }}>
+                          {hydAdjustNote}{' '}
+                          <button
+                            onClick={() => setManualHydration(styleBaseHyd)}
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--smoke)', fontSize: '.72rem', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', textUnderlineOffset: '2px' }}
+                          >
+                            Use {styleBaseHyd}% instead ↩
+                          </button>
+                        </div>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.5rem', marginBottom: '.25rem' }}>
                         <span style={{
                           fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)', fontWeight: 600,
