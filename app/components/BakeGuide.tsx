@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
 import { MIXER_TYPES, type MixerType } from '../data';
 import LearnModal from './LearnModal';
+import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
 
 interface BakeGuideProps {
   schedule: ScheduleResult;
@@ -124,7 +125,7 @@ function Pill({ label, color }: { label: string; color?: string }) {
 function StepCard({
   number, icon, title, time, duration, accent = D.terra, children,
 }: {
-  number: number; icon: string; title: string;
+  number: number; icon: React.ReactNode; title: string;
   time?: Date; duration?: number | null;
   accent?: string; children: React.ReactNode;
 }) {
@@ -152,7 +153,9 @@ function StepCard({
           fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
           color: accent, fontWeight: 700, flexShrink: 0,
         }}>{number}</span>
-        <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{icon}</span>
+        <span style={{ width: '22px', height: '22px', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: accent }}>{icon}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontFamily: 'var(--font-playfair)', fontSize: '1rem',
@@ -243,7 +246,7 @@ export default function BakeGuide({
 
       {/* ── STEP: Make Poolish / Biga ───────────────── */}
       {hasPref && prefStartTime && (
-        <StepCard number={n()} icon={isPoolish ? '🏺' : '🧱'}
+        <StepCard number={n()} icon={<IconPreferment />}
           title={isPoolish ? 'Make your Poolish' : 'Make your Biga'}
           time={prefStartTime} accent={D.gold}>
 
@@ -289,7 +292,7 @@ export default function BakeGuide({
 
       {/* ── STEP: Feed Starter (sourdough) ──────────── */}
       {isSourdough && feedTime && (
-        <StepCard number={n()} icon="🫙" title="Feed your starter" time={feedTime} accent="#6A7FA8">
+        <StepCard number={n()} icon={<IconStarter />} title="Feed your starter" time={feedTime} accent="#6A7FA8">
           <Section icon="🥄" title="What to do">
             <Steps items={[
               { bold: 'Discard all but 50g of starter', note: 'fresh ratio ferments faster and more predictably' },
@@ -317,7 +320,7 @@ export default function BakeGuide({
       )}
 
       {/* ── STEP: Mix Dough ─────────────────────────── */}
-      <StepCard number={n()} icon="🤲" title="Mix your dough"
+      <StepCard number={n()} icon={<IconMix />} title="Mix your dough"
         time={schedule.bulkFermStart} duration={schedule.mixingDurationH} accent={D.ash}>
 
         <Section icon="🥄" title="Mixing order">
@@ -415,7 +418,7 @@ export default function BakeGuide({
       </StepCard>
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
-      <StepCard number={n()} icon="🌡️" title="Bulk Fermentation"
+      <StepCard number={n()} icon={<IconBulk />} title="Bulk Fermentation"
         time={schedule.bulkFermStart} duration={schedule.bulkFermHours} accent={D.terra}>
 
         <Section icon="🥄" title="What to do">
@@ -461,7 +464,7 @@ export default function BakeGuide({
 
       {/* ── STEP: Cold Retard 1 ──────────────────────── */}
       {hasCold && schedule.coldRetard1Start && schedule.coldRetard1End && (
-        <StepCard number={n()} icon="❄️"
+        <StepCard number={n()} icon={<IconCold />}
           title={isTwoPhase ? 'Cold Retard — Whole Dough' : 'Cold Retard'}
           time={schedule.coldRetard1Start}
           duration={(schedule.coldRetard1End.getTime() - schedule.coldRetard1Start.getTime()) / 3600000}
@@ -496,7 +499,7 @@ export default function BakeGuide({
 
       {/* ── STEP: Divide & Ball ──────────────────────── */}
       {schedule.divideBallTime && (
-        <StepCard number={n()} icon="⚖️" title="Divide & Ball"
+        <StepCard number={n()} icon={<IconDivide />} title="Divide & Ball"
           time={schedule.divideBallTime} duration={divideMin / 60} accent="#8A6A4A">
 
           <Section icon="🥄" title="What to do">
@@ -531,7 +534,7 @@ export default function BakeGuide({
 
       {/* ── STEP: Cold Retard 2 (two-phase) ─────────── */}
       {isTwoPhase && schedule.coldRetard2Start && schedule.coldRetard2End && (
-        <StepCard number={n()} icon="❄️" title="Cold Retard — Balls"
+        <StepCard number={n()} icon={<IconCold />} title="Cold Retard — Balls"
           time={schedule.coldRetard2Start}
           duration={(schedule.coldRetard2End.getTime() - schedule.coldRetard2Start.getTime()) / 3600000}
           accent="#6A7FA8">
@@ -563,7 +566,7 @@ export default function BakeGuide({
 
       {/* ── STEP: Final Proof (merged warmup + proof for cold-retard styles) */}
       {(schedule.finalProofHours > 0 || schedule.restRtHours > 0 || schedule.rtWarmupStart) && (
-        <StepCard number={n()} icon="⏰" title="Final Proof"
+        <StepCard number={n()} icon={<IconProof />} title="Final Proof"
           time={schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart}
           duration={(() => {
             const proofEnd = schedule.bakeStart;
@@ -612,7 +615,7 @@ export default function BakeGuide({
       )}
 
       {/* ── STEP: Preheat Oven ───────────────────────── */}
-      <StepCard number={n()} icon="🔥" title="Preheat Oven"
+      <StepCard number={n()} icon={<IconPreheat />} title="Preheat Oven"
         time={schedule.preheatStart} accent={D.gold}>
 
         <div style={{ fontSize: '.75rem', color: D.smoke, fontStyle: 'italic',
@@ -642,7 +645,7 @@ export default function BakeGuide({
       </StepCard>
 
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
-      <StepCard number={n()} icon="🍕" title="Bake & Eat!" time={schedule.bakeStart} accent="#5A9A50">
+      <StepCard number={n()} icon={<IconBake />} title="Bake & Eat!" time={schedule.bakeStart} accent="#5A9A50">
 
         <Section icon="🥄" title="What to do">
           {isBread ? (

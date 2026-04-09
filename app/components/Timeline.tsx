@@ -7,6 +7,7 @@ import {
   hoursLabel,
 } from '../utils';
 import { MIXER_TYPES, type MixerType } from '../data';
+import { StepIcon, IconProof } from './StepIcons';
 import LearnModal from './LearnModal';
 
 interface TimelineProps {
@@ -40,6 +41,7 @@ interface TimelineStep {
   label: string;
   tip: string;
   icon: string;
+  iconKey: string;
   durationH: number | null;
   coldBlocks?: AvailabilityBlock[];
 }
@@ -90,6 +92,7 @@ function buildItems(
       time: prefStartTime,
       label: isPoolish ? 'Make your Poolish' : 'Make your Biga',
       icon: isPoolish ? '🏺' : '🧱',
+      iconKey: 'preferment',
       tip: isPoolish
         ? (prefGoesInFridge
             ? 'Mix equal weight flour and water (100% hydration) with a pinch of yeast. Stir until combined. Cover tightly and place in the fridge immediately — remove from fridge at the time shown in the next step.'
@@ -118,6 +121,7 @@ function buildItems(
       time: removeTime,
       label: prefermentType === 'biga' ? 'Remove Biga from fridge' : 'Remove Poolish from fridge',
       icon: '🌡️',
+      iconKey: 'proof',
       tip: prefermentType === 'biga'
         ? `Take your biga out of the fridge and leave covered at room temperature for ~${warmupH.toFixed(1)}h. It will reach its peak just as you start mixing.`
         : temp >= 28
@@ -140,6 +144,7 @@ function buildItems(
       time: feedTime,
       label: 'Feed your starter',
       icon: '🫙',
+      iconKey: 'starter',
       tip,
       durationH: null,
     });
@@ -183,6 +188,7 @@ function buildItems(
     time: startTime,
     label: 'Mix & Knead',
     icon: '🤌',
+    iconKey: 'mix',
     tip: 'Combine flour, water, salt and yeast. Knead until smooth and elastic — dough passes the windowpane test. Cover and rest 20 min.',
     durationH: kneadMin > 0 ? kneadMin / 60 : null,
   });
@@ -194,6 +200,7 @@ function buildItems(
       time: schedule.bulkFermStart,
       label: 'Bulk Fermentation',
       icon: '🌡️',
+      iconKey: 'bulk',
       tip: bulkFermTip(schedule.bulkFermHours),
       durationH: schedule.bulkFermHours,
     });
@@ -215,6 +222,7 @@ function buildItems(
         time: schedule.coldRetard1Start,
         label: 'Cold Retard — Bulk',
         icon: '❄️',
+        iconKey: 'cold',
         tip: 'Whole dough mass goes into the fridge. Cold bulk fermentation slows yeast activity and develops flavour. No action needed.',
         durationH: cold1DurationH,
         coldBlocks: coldBlocks1,
@@ -227,6 +235,7 @@ function buildItems(
       time: schedule.divideBallTime,
       label: 'Divide & Ball',
       icon: '⚖️',
+      iconKey: 'divide',
       tip: divideBallTip(),
       durationH: divideH,
     });
@@ -244,6 +253,7 @@ function buildItems(
         time: schedule.coldRetard2Start,
         label: 'Cold Retard — Balls',
         icon: '❄️',
+        iconKey: 'cold',
         tip: 'Individual dough balls rest in the fridge. This firms them up and makes final proofing more controlled.',
         durationH: cold2DurationH,
         coldBlocks: coldBlocks2,
@@ -260,6 +270,7 @@ function buildItems(
         time: schedule.rtWarmupStart,
         label: 'Rest at room temperature',
         icon: '🌡️',
+        iconKey: 'proof',
         tip: 'Remove dough balls from fridge and let them warm up uncovered. In a hot kitchen, this is short — watch the dough, not the clock. Balls should feel slightly soft before final proof begins.',
         durationH: warmupDurationH,
       });
@@ -281,6 +292,7 @@ function buildItems(
         time: schedule.coldRetard1Start,
         label: 'Cold Retard',
         icon: '❄️',
+        iconKey: 'cold',
         tip: 'Dough rests in the fridge. Cold fermentation builds flavour slowly — no action needed, time works for you.',
         durationH: coldDurationH,
         coldBlocks,
@@ -294,6 +306,7 @@ function buildItems(
         time: schedule.coldRetardEnd,
         label: 'Remove from fridge — rest at room temperature',
         icon: '🌡️',
+        iconKey: 'proof',
         tip: 'Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch and will tear. The poke test will be unreliable until the dough has warmed through.',
         durationH: schedule.restRtHours,
       });
@@ -305,6 +318,7 @@ function buildItems(
       time: schedule.divideBallTime,
       label: 'Divide & Ball',
       icon: '⚖️',
+      iconKey: 'divide',
       tip: divideBallTip(),
       durationH: divideH,
     });
@@ -317,6 +331,7 @@ function buildItems(
       time: schedule.finalProofStart,
       label: 'Final Proof',
       icon: '⏰',
+      iconKey: 'proof',
       tip: schedule.coldRetardStart
         ? 'Shape dough balls if not already done. Cover and leave at room temperature until the poke test confirms they are ready to bake.'
         : 'Shape dough balls and let them proof covered at room temperature. The poke test tells you when they are ready to bake.',
@@ -330,6 +345,7 @@ function buildItems(
     time: schedule.preheatStart,
     label: 'Preheat Oven',
     icon: '🔥',
+    iconKey: 'preheat',
     tip: preheatMin >= 45
       ? `Heat oven to maximum temperature. Give it the full ${preheatMin} min to fully saturate your baking surface.`
       : `Set oven to maximum temperature. Preheat for ${preheatMin} minutes.`,
@@ -342,6 +358,7 @@ function buildItems(
     time: schedule.bakeStart,
     label: 'Bake & Eat!',
     icon: '🎉',
+    iconKey: 'bake',
     tip: 'Your dough is perfectly fermented. Score, load, and bake. Buon appetito!',
     durationH: null,
   });
@@ -353,28 +370,29 @@ function buildItems(
 interface Phase {
   label: string;
   icon: string;
+  iconKey: string;
   durationH: number;
   stepKind: StepKind;
 }
 
 function buildPhases(schedule: ScheduleResult, preheatMin: number): Phase[] {
   const phases: Phase[] = [
-    { label: 'Mixing', icon: '🤌', durationH: schedule.mixingDurationH || 5 / 60, stepKind: 'mixing' },
+    { label: 'Mixing', icon: '🤌', iconKey: 'mix', durationH: schedule.mixingDurationH || 5 / 60, stepKind: 'mixing' },
   ];
 
   if (schedule.bulkFermHours > 0) {
-    phases.push({ label: 'Bulk Fermentation', icon: '🌡️', durationH: schedule.bulkFermHours, stepKind: 'bulk_ferm' });
+    phases.push({ label: 'Bulk Fermentation', icon: '🌡️', iconKey: 'bulk', durationH: schedule.bulkFermHours, stepKind: 'bulk_ferm' });
   }
 
   if (schedule.coldRetardHours > 0) {
-    phases.push({ label: 'Cold Retard', icon: '❄️', durationH: schedule.coldRetardHours, stepKind: 'cold' });
+    phases.push({ label: 'Cold Retard', icon: '❄️', iconKey: 'cold', durationH: schedule.coldRetardHours, stepKind: 'cold' });
   }
 
   if (schedule.finalProofHours > 0) {
-    phases.push({ label: 'Final Proof', icon: '⏰', durationH: schedule.finalProofHours, stepKind: 'final_proof' });
+    phases.push({ label: 'Final Proof', icon: '⏰', iconKey: 'proof', durationH: schedule.finalProofHours, stepKind: 'final_proof' });
   }
 
-  phases.push({ label: 'Preheat', icon: '🔥', durationH: preheatMin / 60, stepKind: 'preheat' });
+  phases.push({ label: 'Preheat', icon: '🔥', iconKey: 'preheat', durationH: preheatMin / 60, stepKind: 'preheat' });
 
   return phases;
 }
@@ -473,7 +491,11 @@ export default function Timeline({
                 background: th.cardBg ?? 'var(--warm)',
                 minWidth: '90px',
               }}>
-                <span style={{ fontSize: '1.1rem', marginBottom: '.2rem' }}>{phase.icon}</span>
+                <span style={{ width: '22px', height: '22px', marginBottom: '.2rem',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--char)' }}>
+                  <StepIcon iconKey={phase.iconKey} size={20} />
+                </span>
                 <span style={{ fontSize: '.7rem', fontWeight: 600, color: 'var(--char)', textAlign: 'center', marginBottom: '.3rem', lineHeight: 1.3 }}>
                   {phase.label}
                 </span>
@@ -558,7 +580,11 @@ export default function Timeline({
                     fontWeight: 600, fontSize: '.9rem', color: 'var(--char)',
                     display: 'flex', alignItems: 'center', gap: '.4rem',
                   }}>
-                    <span>{item.icon}</span>
+                    <span style={{ width: '18px', height: '18px', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: th.dot }}>
+                      <StepIcon iconKey={item.iconKey} size={16} />
+                    </span>
                     <span>{item.label}</span>
                     {item.stepKind === 'bulk_ferm' && (
                       <InfoBadge term="bulk_fermentation" onOpen={setLearnTerm} />
@@ -602,51 +628,51 @@ export default function Timeline({
                   const showBassinage = hydration > 70;
 
                   type SeqItem =
-                    | { kind: 'step'; emoji: string; bold: string; note: string; noteNode?: React.ReactNode; term?: string }
+                    | { kind: 'step'; iconKey: string; bold: string; note: string; noteNode?: React.ReactNode; term?: string }
                     | { kind: 'rest'; label: string; note: string; noteNode?: React.ReactNode; term?: string };
 
                   let sequence: SeqItem[] = [];
 
                   if (isSourdough) {
                     sequence = [
-                      { kind: 'step', emoji: '🌊', bold: 'Flour + 90% of water', note: 'mix 2 min until no dry flour remains' },
-                      { kind: 'step', emoji: '🫙', bold: 'Add starter', note: 'mix to combine' },
-                      { kind: 'step', emoji: '🧂', bold: 'Add salt + remaining 10% water', note: 'mix until fully absorbed' },
-                      ...(showOil ? [{ kind: 'step' as const, emoji: '🫒', bold: 'Add oil last', note: 'oil added late preserves gluten structure' }] : []),
+                      { kind: 'step', iconKey: 'water', bold: 'Flour + 90% of water', note: 'mix 2 min until no dry flour remains' },
+                      { kind: 'step', iconKey: 'starter', bold: 'Add starter', note: 'mix to combine' },
+                      { kind: 'step', iconKey: 'salt', bold: 'Add salt + remaining 10% water', note: 'mix until fully absorbed' },
+                      ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'oil added late preserves gluten structure' }] : []),
                     ];
                   } else if (mixerType === 'hand') {
                     sequence = [
-                      { kind: 'step', emoji: '🌊', bold: 'Flour + 90% of water', note: 'mix until no dry flour remains, ~2 min' },
+                      { kind: 'step', iconKey: 'water', bold: 'Flour + 90% of water', note: 'mix until no dry flour remains, ~2 min' },
                       { kind: 'rest', label: 'Cover and rest 20 min', note: 'flour absorbs water naturally, reduces kneading time', term: 'autolyse' },
-                      { kind: 'step', emoji: '🧫', bold: 'Add yeast', note: 'mix to combine, 2 min' },
-                      { kind: 'step', emoji: '🧂', bold: 'Add salt', note: 'mix until absorbed, 2 min' },
-                      ...(showBassinage ? [{ kind: 'step' as const, emoji: '💧', bold: 'Add remaining 10% water gradually', note: 'mix until absorbed', term: 'bassinage' }] : []),
-                      ...(showOil ? [{ kind: 'step' as const, emoji: '🫒', bold: 'Add oil last', note: 'mix 1 min' }] : []),
-                      { kind: 'step', emoji: '🙌', bold: 'Knead 8–12 min until smooth and elastic', note: 'windowpane test', term: 'windowpane' },
+                      { kind: 'step', iconKey: 'yeast', bold: 'Add yeast', note: 'mix to combine, 2 min' },
+                      { kind: 'step', iconKey: 'salt', bold: 'Add salt', note: 'mix until absorbed, 2 min' },
+                      ...(showBassinage ? [{ kind: 'step' as const, iconKey: 'water', bold: 'Add remaining 10% water gradually', note: 'mix until absorbed', term: 'bassinage' }] : []),
+                      ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'mix 1 min' }] : []),
+                      { kind: 'step', iconKey: 'knead', bold: 'Knead 8–12 min until smooth and elastic', note: 'windowpane test', term: 'windowpane' },
                     ];
                   } else if (mixerType === 'stand') {
                     sequence = [
-                      { kind: 'step', emoji: '🌊', bold: 'Flour + 90% of water', note: 'Speed 1, 2 min to combine' },
-                      { kind: 'step', emoji: '🧫', bold: 'Add yeast', note: 'Speed 1, 2 min' },
-                      { kind: 'step', emoji: '🧂', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
-                      { kind: 'step', emoji: '⚙️', bold: 'Speed 2', note: '6–10 min until dough clears the bowl', term: 'windowpane' },
-                      ...(showBassinage ? [{ kind: 'step' as const, emoji: '💧', bold: 'Add bassinage water gradually at Speed 2', note: 'hydration >70%', term: 'bassinage' }] : []),
-                      ...(showOil ? [{ kind: 'step' as const, emoji: '🫒', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
+                      { kind: 'step', iconKey: 'water', bold: 'Flour + 90% of water', note: 'Speed 1, 2 min to combine' },
+                      { kind: 'step', iconKey: 'yeast', bold: 'Add yeast', note: 'Speed 1, 2 min' },
+                      { kind: 'step', iconKey: 'salt', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
+                      { kind: 'step', iconKey: 'mix', bold: 'Speed 2', note: '6–10 min until dough clears the bowl', term: 'windowpane' },
+                      ...(showBassinage ? [{ kind: 'step' as const, iconKey: 'water', bold: 'Add bassinage water gradually at Speed 2', note: 'hydration >70%', term: 'bassinage' }] : []),
+                      ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
                     ];
                   } else if (mixerType === 'spiral') {
                     sequence = [
-                      { kind: 'step', emoji: '🌊', bold: 'Flour + 90% of water + yeast', note: 'Speed 1, 3 min to combine' },
-                      { kind: 'step', emoji: '🧂', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
-                      { kind: 'step', emoji: '🌀', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if final dough temperature (FDT) exceeds 28°C', noteNode: <>typically 10–15 min, stop if final dough temperature (FDT)<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</>, term: 'pumpkin' },
-                      ...(showBassinage ? [{ kind: 'step' as const, emoji: '💧', bold: 'Once pumpkin is stable, add remaining water gradually', note: 'wait for pumpkin to reform after each addition', term: 'bassinage' }] : []),
-                      ...(showOil ? [{ kind: 'step' as const, emoji: '🫒', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
+                      { kind: 'step', iconKey: 'water', bold: 'Flour + 90% of water + yeast', note: 'Speed 1, 3 min to combine' },
+                      { kind: 'step', iconKey: 'salt', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
+                      { kind: 'step', iconKey: 'mix', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if final dough temperature (FDT) exceeds 28°C', noteNode: <>typically 10–15 min, stop if final dough temperature (FDT)<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</>, term: 'pumpkin' },
+                      ...(showBassinage ? [{ kind: 'step' as const, iconKey: 'water', bold: 'Once pumpkin is stable, add remaining water gradually', note: 'wait for pumpkin to reform after each addition', term: 'bassinage' }] : []),
+                      ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
                     ];
                   } else {
                     // no_knead
                     sequence = [
-                      { kind: 'step', emoji: '🌊', bold: 'Combine all ingredients including salt', note: 'mix just until no dry flour remains, ~2 min' },
-                      { kind: 'step', emoji: '⏰', bold: 'Cover and rest', note: 'stretch & folds every 30 min for first 2 hours' },
-                      { kind: 'step', emoji: '💡', bold: 'Time does the work', note: 'no kneading needed' },
+                      { kind: 'step', iconKey: 'water', bold: 'Combine all ingredients including salt', note: 'mix just until no dry flour remains, ~2 min' },
+                      { kind: 'step', iconKey: 'proof', bold: 'Cover and rest', note: 'stretch & folds every 30 min for first 2 hours' },
+                      { kind: 'step', iconKey: 'bulk', bold: 'Time does the work', note: 'no kneading needed' },
                     ];
                   }
 
@@ -679,7 +705,11 @@ export default function Timeline({
                                 padding: '.45rem .7rem',
                                 display: 'flex', gap: '.5rem', alignItems: 'baseline',
                               }}>
-                                <span style={{ fontSize: '.8rem', flexShrink: 0 }}>⏳</span>
+                                <span style={{ width: '16px', height: '16px', flexShrink: 0,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  color: 'var(--smoke)' }}>
+                                  <IconProof size={14} />
+                                </span>
                                 <span style={{ fontSize: '.76rem', lineHeight: 1.5 }}>
                                   <strong style={{ color: 'var(--char)' }}>{s.label}</strong>
                                   {s.term && <InfoBadge term={s.term} onOpen={setLearnTerm} />}
@@ -699,7 +729,11 @@ export default function Timeline({
                               }}>
                                 {n}.
                               </span>
-                              <span style={{ fontSize: '.8rem', flexShrink: 0 }}>{s.emoji}</span>
+                              <span style={{ width: '16px', height: '16px', flexShrink: 0,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'var(--terra)' }}>
+                                <StepIcon iconKey={(s as { iconKey: string }).iconKey} size={14} />
+                              </span>
                               <span style={{ fontSize: '.76rem', lineHeight: 1.5 }}>
                                 <strong style={{ color: 'var(--char)' }}>{s.bold}</strong>
                                 {s.term && <InfoBadge term={s.term} onOpen={setLearnTerm} />}
