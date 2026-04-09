@@ -67,8 +67,9 @@ function YeastTooltip() {
           transform: 'translateX(-50%)',
           background: 'var(--ash)', color: 'var(--cream)',
           fontSize: '.72rem', fontFamily: 'var(--font-dm-sans)',
-          padding: '.4rem .65rem', borderRadius: '8px',
-          whiteSpace: 'nowrap', zIndex: 10,
+          lineHeight: 1.5,
+          padding: '.5rem .7rem', borderRadius: '8px',
+          width: '180px', zIndex: 10,
           boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
           pointerEvents: 'none',
         }}>
@@ -105,8 +106,9 @@ function FlourTooltip({ bakeType }: { bakeType?: string }) {
           transform: 'translateX(-50%)',
           background: 'var(--ash)', color: 'var(--cream)',
           fontSize: '.72rem', fontFamily: 'var(--font-dm-sans)',
-          padding: '.4rem .65rem', borderRadius: '8px',
-          whiteSpace: 'nowrap', zIndex: 10,
+          lineHeight: 1.5,
+          padding: '.5rem .7rem', borderRadius: '8px',
+          width: '210px', zIndex: 10,
           boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
           pointerEvents: 'none',
         }}>
