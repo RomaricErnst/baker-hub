@@ -646,7 +646,10 @@ export default function Timeline({
                       { kind: 'rest', label: 'Cover and rest 20 min', note: 'flour absorbs water naturally, reduces kneading time', term: 'autolyse' },
                       { kind: 'step', iconKey: 'yeast', bold: 'Add yeast', note: 'mix to combine, 2 min' },
                       { kind: 'step', iconKey: 'salt', bold: 'Add salt', note: 'mix until absorbed, 2 min' },
-                      ...(showBassinage ? [{ kind: 'step' as const, iconKey: 'water', bold: 'Add remaining 10% water gradually', note: 'mix until absorbed', term: 'bassinage' }] : []),
+                      ...(showBassinage
+                        ? [{ kind: 'step' as const, iconKey: 'water', bold: 'Add remaining 10% water gradually', note: 'bassinage — small additions, wait for absorption between each', term: 'bassinage' }]
+                        : [{ kind: 'step' as const, iconKey: 'water', bold: 'Add remaining 10% water', note: 'mix until absorbed, ~1 min' }]
+                      ),
                       ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'mix 1 min' }] : []),
                       { kind: 'step', iconKey: 'knead', bold: 'Knead 8–12 min until smooth and elastic', note: 'windowpane test', term: 'windowpane' },
                     ];
@@ -656,15 +659,21 @@ export default function Timeline({
                       { kind: 'step', iconKey: 'yeast', bold: 'Add yeast', note: 'Speed 1, 2 min' },
                       { kind: 'step', iconKey: 'salt', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
                       { kind: 'step', iconKey: 'mix', bold: 'Speed 2', note: '6–10 min until dough clears the bowl', term: 'windowpane' },
-                      ...(showBassinage ? [{ kind: 'step' as const, iconKey: 'water', bold: 'Add bassinage water gradually at Speed 2', note: 'hydration >70%', term: 'bassinage' }] : []),
+                      ...(showBassinage
+                        ? [{ kind: 'step' as const, iconKey: 'water', bold: 'Add remaining 10% water gradually at Speed 2', note: 'bassinage — small additions, wait for absorption between each', term: 'bassinage' }]
+                        : [{ kind: 'step' as const, iconKey: 'water', bold: 'Add remaining 10% water', note: 'Speed 1, mix until absorbed, ~1 min' }]
+                      ),
                       ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
                     ];
                   } else if (mixerType === 'spiral') {
                     sequence = [
                       { kind: 'step', iconKey: 'water', bold: 'Flour + 90% of water + yeast', note: 'Speed 1, 3 min to combine' },
                       { kind: 'step', iconKey: 'salt', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
-                      { kind: 'step', iconKey: 'mix', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if final dough temperature (FDT) exceeds 28°C', noteNode: <>typically 10–15 min, stop if final dough temperature (FDT)<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</>, term: 'pumpkin' },
-                      ...(showBassinage ? [{ kind: 'step' as const, iconKey: 'water', bold: 'Once pumpkin is stable, add remaining water gradually', note: 'wait for pumpkin to reform after each addition', term: 'bassinage' }] : []),
+                      { kind: 'step', iconKey: 'mix', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if FDT exceeds 28°C', noteNode: <>typically 10–15 min, stop if final dough temperature (FDT)<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</>, term: 'pumpkin' },
+                      ...(showBassinage
+                        ? [{ kind: 'step' as const, iconKey: 'water', bold: 'Once pumpkin is stable — add remaining 10% water gradually', note: 'bassinage — small additions, wait for pumpkin to reform each time', term: 'bassinage' }]
+                        : [{ kind: 'step' as const, iconKey: 'water', bold: 'Add remaining 10% water', note: 'Speed 1, mix until absorbed, ~1 min' }]
+                      ),
                       ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
                     ];
                   } else {
