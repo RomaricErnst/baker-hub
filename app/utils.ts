@@ -319,7 +319,14 @@ function maxRTHours(kitchenTemp: number): number {
   return 8;
 }
 
-function maxFinalProofHours(kitchenTemp: number): number {
+function maxFinalProofHours(kitchenTemp: number, hasColdRetard: boolean): number {
+  // Balls from cold retard are already partially fermented — proof faster
+  if (hasColdRetard) {
+    if (kitchenTemp >= 28) return 1.0;
+    if (kitchenTemp >= 25) return 1.5;
+    if (kitchenTemp >= 22) return 2.5;
+    return 3.5;
+  }
   if (kitchenTemp >= 28) return 1.5;
   if (kitchenTemp >= 25) return 2.5;
   if (kitchenTemp >= 22) return 3.5;
@@ -398,8 +405,8 @@ export function buildSchedule(
   }
 
   const totalWindowH = (eatTime.getTime() - startTime.getTime()) / 3600000;
-  const restH     = restRtMinutes(kitchenTemp) / 60;
-  const maxFinalH = maxFinalProofHours(kitchenTemp);
+  const restH = restRtMinutes(kitchenTemp) / 60;
+  // maxFinalH computed after hasColdRetard is known — see below
 
   // ── Style-aware cold retard model ────────────────────────────
   const styleFerm = STYLE_FERM_DEFAULTS[styleKey] ?? { coldH: 0 };
@@ -430,6 +437,7 @@ export function buildSchedule(
   }
 
   const hasColdRetard = coldH > 0;
+  const maxFinalH = maxFinalProofHours(kitchenTemp, hasColdRetard);
 
   // Schedule note (first match wins)
   let scheduleNote: string | null = null;
