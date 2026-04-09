@@ -371,6 +371,8 @@ function findOptimalPosition(
   prefermentType: string = 'poolish',
   prefMinH: number = 3,
   minTotalRT: number = 3,
+  prefRTWarmupH: number = 0,
+  prefGoesInFridge: boolean = false,
 ): {
   mixHBF: number;
   prefHBF: number;
@@ -409,6 +411,12 @@ function findOptimalPosition(
       const bulkEndHBF = candidate - typicalBulkH;
       const bulkClear = bulkEndHBF > 0 && !isInBlocker(bulkEndHBF);
       if (!bulkClear) continue;
+      // Poolish fridge: removal time (mixHBF + rtWarmupH) must also be clear.
+      // If removal falls in a blocker, skip this candidate and try a later mix time.
+      if (hasPref && prefermentType === 'poolish' && prefGoesInFridge && prefRTWarmupH > 0) {
+        const removeHBF = candidate + prefRTWarmupH;
+        if (isInBlocker(removeHBF)) continue;
+      }
       if (!hasPref) {
         return {
           mixHBF: candidate, prefHBF: candidate,
@@ -1020,6 +1028,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       prefermentType,
       prefMinViableH,
       minTotalRTLocal,
+      localPrefGoesInFridge ? getPrefRTWarmupH(kitchenTemp) : 0,
+      localPrefGoesInFridge,
     );
 
     if (result.mixInBlocker) {
