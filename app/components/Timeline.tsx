@@ -260,21 +260,7 @@ function buildItems(
       });
     }
 
-    // 6 — RT Warmup
-    if (schedule.rtWarmupStart && schedule.rtWarmupEnd) {
-      const warmupDurationH = Math.max(0,
-        (schedule.rtWarmupEnd.getTime() - schedule.rtWarmupStart.getTime()) / 3600000
-      );
-      items.push({
-        kind: 'step', id: 'rt_warmup', stepKind: 'rt_warmup',
-        time: schedule.rtWarmupStart,
-        label: 'Rest at room temperature',
-        icon: '🌡️',
-        iconKey: 'proof',
-        tip: 'Remove dough balls from fridge and let them warm up uncovered. In a hot kitchen, this is short — watch the dough, not the clock. Balls should feel slightly soft before final proof begins.',
-        durationH: warmupDurationH,
-      });
-    }
+    // rt_warmup merged into Final Proof step below
 
   } else {
     // ── SINGLE-PHASE SEQUENCE ───────────────────────────────────
@@ -299,18 +285,7 @@ function buildItems(
       });
     }
 
-    // 4 — Remove from fridge FIRST (before divide & ball)
-    if (schedule.coldRetardEnd && schedule.restRtHours > 0) {
-      items.push({
-        kind: 'step', id: 'rest_rt', stepKind: 'rest_rt',
-        time: schedule.coldRetardEnd,
-        label: 'Remove from fridge — rest at room temperature',
-        icon: '🌡️',
-        iconKey: 'proof',
-        tip: 'Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch and will tear. The poke test will be unreliable until the dough has warmed through.',
-        durationH: schedule.restRtHours,
-      });
-    }
+    // rest_rt merged into Final Proof step below
 
     // 5 — Divide & Ball (after rest)
     items.push({
@@ -324,18 +299,26 @@ function buildItems(
     });
   }
 
-  // Final Proof (both paths)
-  if (schedule.finalProofHours > 0) {
+  // Final Proof — merged with warmup/rest. Starts when dough comes out of fridge.
+  // Duration runs to bakeStart (preheat overlaps with end of proof).
+  const finalProofStepStart =
+    schedule.rtWarmupStart ??
+    (schedule.restRtHours > 0 ? schedule.coldRetardEnd : null) ??
+    schedule.finalProofStart;
+  const finalProofStepDuration = finalProofStepStart
+    ? Math.max(0, (schedule.bakeStart.getTime() - finalProofStepStart.getTime()) / 3600000)
+    : schedule.finalProofHours;
+  if (finalProofStepDuration > 0 || schedule.finalProofHours > 0) {
     items.push({
       kind: 'step', id: 'final_proof', stepKind: 'final_proof',
-      time: schedule.finalProofStart,
+      time: finalProofStepStart ?? schedule.finalProofStart,
       label: 'Final Proof',
       icon: '⏰',
       iconKey: 'proof',
       tip: schedule.coldRetardStart
-        ? 'Shape dough balls if not already done. Cover and leave at room temperature until the poke test confirms they are ready to bake.'
-        : 'Shape dough balls and let them proof covered at room temperature. The poke test tells you when they are ready to bake.',
-      durationH: schedule.finalProofHours,
+        ? 'Remove balls from fridge and rest until slightly soft, then proof covered at room temperature. Start preheating your oven during the final proof — poke test tells you when to bake.'
+        : 'Shape dough balls and proof covered at room temperature. Start preheating your oven during the final proof — poke test tells you when to bake.',
+      durationH: finalProofStepDuration,
     });
   }
 
@@ -347,8 +330,8 @@ function buildItems(
     icon: '🔥',
     iconKey: 'preheat',
     tip: preheatMin >= 45
-      ? `Heat oven to maximum temperature. Give it the full ${preheatMin} min to fully saturate your baking surface.`
-      : `Set oven to maximum temperature. Preheat for ${preheatMin} minutes.`,
+      ? `Start now — while dough finishes its final proof. Give it the full ${preheatMin} min to fully saturate your baking surface.`
+      : `Start now — while dough finishes its final proof. Set oven to maximum temperature for ${preheatMin} minutes.`,
     durationH: preheatMin / 60,
   });
 
@@ -388,11 +371,14 @@ function buildPhases(schedule: ScheduleResult, preheatMin: number): Phase[] {
     phases.push({ label: 'Cold Retard', icon: '❄️', iconKey: 'cold', durationH: schedule.coldRetardHours, stepKind: 'cold' });
   }
 
-  if (schedule.finalProofHours > 0) {
-    phases.push({ label: 'Final Proof', icon: '⏰', iconKey: 'proof', durationH: schedule.finalProofHours, stepKind: 'final_proof' });
+  // Final Proof phase includes warmup. Preheat overlaps — not shown as a separate phase.
+  const warmupH = schedule.rtWarmupStart && schedule.rtWarmupEnd
+    ? Math.max(0, (schedule.rtWarmupEnd.getTime() - schedule.rtWarmupStart.getTime()) / 3600000)
+    : (schedule.restRtHours ?? 0);
+  const totalProofPhaseH = warmupH + schedule.finalProofHours;
+  if (totalProofPhaseH > 0) {
+    phases.push({ label: 'Final Proof', icon: '⏰', iconKey: 'proof', durationH: totalProofPhaseH, stepKind: 'final_proof' });
   }
-
-  phases.push({ label: 'Preheat', icon: '🔥', iconKey: 'preheat', durationH: preheatMin / 60, stepKind: 'preheat' });
 
   return phases;
 }
