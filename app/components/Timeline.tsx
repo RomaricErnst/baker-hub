@@ -451,22 +451,7 @@ export default function Timeline({
         {/* Start Bake Guide button removed — baker uses tab navigation instead */}
       </div>
 
-      {/* ── Auto-adjust banner ──────────────────── */}
-      {schedule.wasAutoAdjusted && (
-        <div style={{
-          display: 'flex', gap: '.6rem', alignItems: 'flex-start',
-          background: '#FFF8E8', border: '1.5px solid #E8D080',
-          borderRadius: '10px', padding: '.65rem .9rem',
-          marginBottom: '1.25rem', fontSize: '.78rem',
-          color: '#7A5A10', lineHeight: 1.5,
-        }}>
-          <span style={{ flexShrink: 0 }}>⚡</span>
-          <span>
-            <strong>Schedule auto-adjusted</strong> — a room temperature window was too long for your kitchen temperature.
-            A cold retard phase was added automatically to prevent over-fermentation.
-          </span>
-        </div>
-      )}
+      {/* Auto-adjust banner removed — the app adapting to your kitchen is the promise, not a warning. */}
 
       {/* ── Phase summary ──────────────────────── */}
       <div style={{
