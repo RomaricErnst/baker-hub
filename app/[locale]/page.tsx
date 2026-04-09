@@ -1917,6 +1917,9 @@ export default function Home() {
                           </button>
                         </div>
                       )}
+                      {/* Zone pill + note: only shown when baker set value manually,
+                          or when no engine adjustment is explaining the current value */}
+                      {(manualHydration !== undefined || !hydAdjustNote) && (<>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.5rem', marginBottom: '.25rem' }}>
                         <span style={{
                           fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)', fontWeight: 600,
@@ -1932,6 +1935,7 @@ export default function Home() {
                       <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '.75rem' }}>
                         {hZone.note}
                       </div>
+                      </>)}
                     </div>
                   );
                 })()}
