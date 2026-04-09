@@ -40,7 +40,7 @@ interface TimelineStep {
   time: Date;
   label: string;
   tip: string;
-  icon: string;
+  icon?: string;
   iconKey: string;
   durationH: number | null;
   coldBlocks?: AvailabilityBlock[];
@@ -91,7 +91,6 @@ function buildItems(
       kind: 'step', id: 'make_preferment', stepKind: 'make_preferment',
       time: prefStartTime,
       label: isPoolish ? 'Make your Poolish' : 'Make your Biga',
-      icon: isPoolish ? '🏺' : '🧱',
       iconKey: 'preferment',
       tip: isPoolish
         ? (prefGoesInFridge
@@ -125,7 +124,6 @@ function buildItems(
       kind: 'step', id: 'remove_pref_fridge', stepKind: 'mixing',
       time: removeTime,
       label: prefermentType === 'biga' ? 'Remove Biga from fridge' : 'Remove Poolish from fridge',
-      icon: prefermentType === 'biga' ? '🧱' : '🏺',
       iconKey: 'preferment',
       tip: prefermentType === 'biga'
         ? `Take your biga out of the fridge — no warmup needed, biga goes straight into the mix cold. Break it into small chunks and soak briefly in the recipe water before adding remaining ingredients. It should smell yeasty and slightly tangy.`
