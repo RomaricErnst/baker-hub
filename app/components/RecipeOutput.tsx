@@ -84,7 +84,7 @@ function FlourTooltip({ bakeType }: { bakeType?: string }) {
   const [open, setOpen] = useState(false);
   const msg = bakeType === 'bread'
     ? 'Strong bread flour works best — T65 or W200+. Plain flour works for short ferments.'
-    : 'Italian 00 or T45 forte gives the best results. Plain flour or T55? Reduce hydration by 3–5%.';
+    : 'Italian 00 or T45 forte gives the best results. Using plain flour or T55? Switch to Custom mode to adapt your recipe.';
   return (
     <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
       <span

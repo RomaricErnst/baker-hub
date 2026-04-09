@@ -758,8 +758,14 @@ export function calculateRecipe(
 
   // Hydration
   // manualHydration = baker's exact value, zero engine adjustment
-  // Otherwise: style + oven delta + climate + blend delta (all modes)
-  // Climate is a physical reality — applies regardless of simple/custom
+  // Otherwise: style baseline + oven + climate + blend — all modes
+  // Climate is a physical reality, not a UI mode concept
+  const HYDRATION_FLOOR: Record<string, number> = {
+    neapolitan: 56, newyork: 58, roman: 70, pan: 68,
+    sourdough: 58, pain_campagne: 68, pain_levain: 70,
+    baguette: 65, pain_complet: 68, pain_seigle: 70,
+    fougasse: 68, brioche: 52, pain_mie: 55, pain_viennois: 52,
+  };
   let hydration: number;
   if (mode === 'custom' && manualHydration !== undefined) {
     hydration = manualHydration;
@@ -771,6 +777,9 @@ export function calculateRecipe(
       const delta = Math.max(-5, Math.min(8, blendProfile.hydrationDelta));
       hydration = Math.round((hydration + delta) * 10) / 10;
     }
+    // Never go below the style's minimum workable hydration
+    const hydFloor = HYDRATION_FLOOR[styleKey] ?? 55;
+    hydration = Math.max(hydFloor, hydration);
   }
 
   // Salt

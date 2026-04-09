@@ -1839,7 +1839,7 @@ export default function Home() {
                         if (Math.abs(climateDelta) >= 0.5) reasons.push(
                           climateDelta < 0 ? 'your warm kitchen (−2%)' : 'your cool kitchen (+2%)'
                         );
-                        if (Math.abs(ovenDelta)    >= 0.5) reasons.push(`your oven setup (${ovenDelta > 0 ? '+' : ''}${ovenDelta}%)`);
+                        if (Math.abs(ovenDelta)    >= 0.5) reasons.push(`your oven (${ovenDelta > 0 ? '+' : ''}${ovenDelta}%)`);
                         if (reasons.length === 0) return null;
                         return `${zone.name} calls for ${styleBaseHyd}% — adjusted to ${engineHyd}% for ${reasons.join(' and ')}.`;
                       })()
