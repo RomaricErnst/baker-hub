@@ -189,7 +189,15 @@ function buildItems(
     label: 'Mix & Knead',
     icon: '🤌',
     iconKey: 'mix',
-    tip: 'Combine flour, water, salt and yeast. Knead until smooth and elastic — dough passes the windowpane test. Cover and rest 20 min.',
+    tip: isSourdough
+      ? 'Combine flour and water, then add your starter. Add salt with the remaining water. Mix until fully absorbed.'
+      : mixerType === 'hand'
+      ? 'Flour + 90% water first — cover and rest 20 min (autolyse). Then yeast, salt, remaining water, and knead 8–12 min until the windowpane test passes.'
+      : mixerType === 'spiral'
+      ? 'Flour + water + yeast at Speed 1. Add salt, then Speed 2 until pumpkin shape forms and the windowpane test passes.'
+      : mixerType === 'no_knead'
+      ? 'Combine all ingredients and mix until no dry flour remains — time and stretch & folds do the rest.'
+      : 'Flour + water at Speed 1. Add yeast, then salt, then remaining water. Speed 2 until dough clears the bowl and passes the windowpane test.',
     durationH: kneadMin > 0 ? kneadMin / 60 : null,
   });
 
@@ -640,26 +648,38 @@ export default function Timeline({
                       { kind: 'step', iconKey: 'knead', bold: 'Knead 8–12 min until smooth and elastic', note: 'windowpane test', term: 'windowpane' },
                     ];
                   } else if (mixerType === 'stand') {
-                    sequence = [
+                    sequence = showBassinage ? [
+                      // >70% hydration: build structure first, then bassinage at Speed 2
                       { kind: 'step', iconKey: 'water', bold: 'Flour + 90% of water', note: 'Speed 1, 2 min to combine' },
                       { kind: 'step', iconKey: 'yeast', bold: 'Add yeast', note: 'Speed 1, 2 min' },
                       { kind: 'step', iconKey: 'salt', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
-                      { kind: 'step', iconKey: 'mix', bold: 'Speed 2', note: '6–10 min until dough clears the bowl', term: 'windowpane' },
-                      ...(showBassinage
-                        ? [{ kind: 'step' as const, iconKey: 'water', bold: 'Add remaining 10% water gradually at Speed 2', note: 'bassinage — small additions, wait for absorption between each', term: 'bassinage' }]
-                        : [{ kind: 'step' as const, iconKey: 'water', bold: 'Add remaining 10% water', note: 'Speed 1, mix until absorbed, ~1 min' }]
-                      ),
+                      { kind: 'step', iconKey: 'mix', bold: 'Speed 2 — 4–5 min', note: 'build gluten structure before adding remaining water' },
+                      { kind: 'step', iconKey: 'water', bold: 'Add remaining 10% water gradually at Speed 2', note: 'bassinage — small additions, wait for absorption between each', term: 'bassinage' },
+                      { kind: 'step', iconKey: 'mix', bold: 'Continue Speed 2', note: 'until dough clears the bowl and passes windowpane test', term: 'windowpane' },
+                      ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
+                    ] : [
+                      // ≤70% hydration: remaining water before Speed 2
+                      { kind: 'step', iconKey: 'water', bold: 'Flour + 90% of water', note: 'Speed 1, 2 min to combine' },
+                      { kind: 'step', iconKey: 'yeast', bold: 'Add yeast', note: 'Speed 1, 2 min' },
+                      { kind: 'step', iconKey: 'salt', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
+                      { kind: 'step', iconKey: 'water', bold: 'Add remaining 10% water', note: 'Speed 1, mix until absorbed, ~1 min' },
+                      { kind: 'step', iconKey: 'mix', bold: 'Speed 2 — 6–10 min', note: 'until dough clears the bowl and passes windowpane test', term: 'windowpane' },
                       ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
                     ];
                   } else if (mixerType === 'spiral') {
-                    sequence = [
+                    sequence = showBassinage ? [
+                      // >70% hydration: pumpkin first, then bassinage
                       { kind: 'step', iconKey: 'water', bold: 'Flour + 90% of water + yeast', note: 'Speed 1, 3 min to combine' },
                       { kind: 'step', iconKey: 'salt', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
                       { kind: 'step', iconKey: 'mix', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if FDT exceeds 28°C', noteNode: <>typically 10–15 min, stop if final dough temperature (FDT)<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</>, term: 'pumpkin' },
-                      ...(showBassinage
-                        ? [{ kind: 'step' as const, iconKey: 'water', bold: 'Once pumpkin is stable — add remaining 10% water gradually', note: 'bassinage — small additions, wait for pumpkin to reform each time', term: 'bassinage' }]
-                        : [{ kind: 'step' as const, iconKey: 'water', bold: 'Add remaining 10% water', note: 'Speed 1, mix until absorbed, ~1 min' }]
-                      ),
+                      { kind: 'step', iconKey: 'water', bold: 'Once pumpkin is stable — add remaining 10% water gradually', note: 'bassinage — small additions, wait for pumpkin to reform each time', term: 'bassinage' },
+                      ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
+                    ] : [
+                      // ≤70% hydration: remaining water before Speed 2
+                      { kind: 'step', iconKey: 'water', bold: 'Flour + 90% of water + yeast', note: 'Speed 1, 3 min to combine' },
+                      { kind: 'step', iconKey: 'salt', bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
+                      { kind: 'step', iconKey: 'water', bold: 'Add remaining 10% water', note: 'Speed 1, mix until absorbed, ~1 min' },
+                      { kind: 'step', iconKey: 'mix', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if FDT exceeds 28°C', noteNode: <>typically 10–15 min, stop if final dough temperature (FDT)<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</>, term: 'pumpkin' },
                       ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
                     ];
                   } else {

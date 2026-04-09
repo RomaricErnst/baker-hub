@@ -325,36 +325,68 @@ export default function BakeGuide({
 
         <Section icon="🥄" title="Mixing order">
           {mixerType === 'hand' && !isSourdough && (
-            <Steps items={[
+            <Steps items={hydration > 70 ? [
+              // >70%: autolyse, then yeast+salt, brief knead, then bassinage, then full knead
               { bold: 'Flour + 90% of your water', note: 'mix until no dry flour — ~2 min' },
               { bold: 'Cover and rest 20 min', note: 'autolyse — gluten forms without kneading' },
               { bold: 'Add yeast', note: 'mix to combine — 2 min' },
               { bold: 'Add salt', note: 'mix until absorbed — 2 min' },
-              ...(hydration > 70 ? [{ bold: 'Add remaining 10% water gradually', note: 'bassinage — wait for absorption between additions' }] : []),
               ...(hasPref ? [{ bold: `Add your ${prefermentType} (all of it)`, note: 'mix until fully incorporated' }] : []),
+              { bold: 'Knead 5 min to build base structure', note: 'dough should feel cohesive before adding remaining water' },
+              { bold: 'Add remaining 10% water gradually', note: 'bassinage — small splash at a time, knead until absorbed, repeat' },
               ...(oil > 0 ? [{ bold: 'Add oil last', note: 'mix 1 min — oil added late preserves gluten' }] : []),
-              { bold: 'Knead 8-12 min until smooth and elastic', note: 'passes windowpane test' },
+              { bold: 'Continue kneading until smooth and elastic', note: 'windowpane test — typically 5–8 min more' },
+            ] : [
+              // ≤70%: autolyse, yeast, salt, remaining water, then full knead
+              { bold: 'Flour + 90% of your water', note: 'mix until no dry flour — ~2 min' },
+              { bold: 'Cover and rest 20 min', note: 'autolyse — gluten forms without kneading' },
+              { bold: 'Add yeast', note: 'mix to combine — 2 min' },
+              { bold: 'Add salt', note: 'mix until absorbed — 2 min' },
+              ...(hasPref ? [{ bold: `Add your ${prefermentType} (all of it)`, note: 'mix until fully incorporated' }] : []),
+              { bold: 'Add remaining 10% water', note: 'mix until absorbed — ~1 min' },
+              ...(oil > 0 ? [{ bold: 'Add oil last', note: 'mix 1 min — oil added late preserves gluten' }] : []),
+              { bold: 'Knead 8–12 min until smooth and elastic', note: 'windowpane test' },
             ]} />
           )}
           {mixerType === 'stand' && !isSourdough && (
-            <Steps items={[
+            <Steps items={hydration > 70 ? [
+              // >70%: build structure first, then bassinage, then final Speed 2
               { bold: 'Flour + 90% of water', note: 'Speed 1, 2 min to combine' },
               ...(hasPref ? [{ bold: `Add ${prefermentType}`, note: 'Speed 1, mix until incorporated' }] : []),
               { bold: 'Add yeast', note: 'Speed 1, 2 min' },
               { bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
-              { bold: 'Speed 2 — 6-10 min', note: 'until dough clears the bowl — passes windowpane test' },
-              ...(hydration > 70 ? [{ bold: 'Add remaining water at Speed 2', note: 'slowly — bassinage' }] : []),
+              { bold: 'Speed 2 — 4–5 min', note: 'build gluten structure before adding remaining water' },
+              { bold: 'Add remaining 10% water gradually at Speed 2', note: 'bassinage — small additions, wait for absorption between each' },
+              { bold: 'Continue Speed 2', note: 'until dough clears the bowl — windowpane test' },
+              ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
+            ] : [
+              // ≤70%: remaining water before Speed 2
+              { bold: 'Flour + 90% of water', note: 'Speed 1, 2 min to combine' },
+              ...(hasPref ? [{ bold: `Add ${prefermentType}`, note: 'Speed 1, mix until incorporated' }] : []),
+              { bold: 'Add yeast', note: 'Speed 1, 2 min' },
+              { bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
+              { bold: 'Add remaining 10% water', note: 'Speed 1, mix until absorbed — ~1 min' },
+              { bold: 'Speed 2 — 6–10 min', note: 'until dough clears the bowl — windowpane test' },
               ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
             ]} />
           )}
           {mixerType === 'spiral' && !isSourdough && (
             <>
-              <Steps items={[
+              <Steps items={hydration > 70 ? [
+                // >70%: pumpkin first, bassinage after
                 { bold: 'Flour + 90% water + yeast', note: 'Speed 1, 3 min to combine' },
                 ...(hasPref ? [{ bold: `Add ${prefermentType}`, note: 'Speed 1, mix until incorporated' }] : []),
                 { bold: 'Add salt', note: 'Speed 1, 2 min' },
-                { bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10-15 min — stop if FDT exceeds 28°C' },
-                ...(hydration > 70 ? [{ bold: 'Add remaining water gradually once pumpkin is stable', note: 'wait for pumpkin to reform after each addition' }] : []),
+                { bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min — stop if FDT exceeds 28°C' },
+                { bold: 'Once pumpkin is stable — add remaining 10% water gradually', note: 'bassinage — small additions, wait for pumpkin to reform each time' },
+                ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
+              ] : [
+                // ≤70%: remaining water before Speed 2
+                { bold: 'Flour + 90% water + yeast', note: 'Speed 1, 3 min to combine' },
+                ...(hasPref ? [{ bold: `Add ${prefermentType}`, note: 'Speed 1, mix until incorporated' }] : []),
+                { bold: 'Add salt', note: 'Speed 1, 2 min' },
+                { bold: 'Add remaining 10% water', note: 'Speed 1, mix until absorbed — ~1 min' },
+                { bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min — stop if FDT exceeds 28°C' },
                 ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
               ]} />
               <div style={{ marginTop: '.75rem' }}>
@@ -402,8 +434,9 @@ export default function BakeGuide({
           ]} />
           <div style={{ marginTop: '.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
             <LearnLink term="windowpane" label="Windowpane test" onOpen={setLearnTerm} />
+            {mixerType === 'hand' && !isSourdough && <LearnLink term="autolyse" label="Autolyse" onOpen={setLearnTerm} />}
             {isSpiral && <LearnLink term="pumpkin" label="Pumpkin shape" onOpen={setLearnTerm} />}
-            {hydration > 70 && <LearnLink term="bassinage" label="Bassinage technique" onOpen={setLearnTerm} />}
+            {hydration > 70 && <LearnLink term="bassinage" label="Bassinage" onOpen={setLearnTerm} />}
           </div>
         </Section>
 
