@@ -412,7 +412,7 @@ export function buildSchedule(
   // RT minimums (climate-aware)
   const minBulkRT  = isTropical ? 0.5 : 1.5;
   const minFinalRT = 1.0;
-  const minTotalRT = minBulkRT + minFinalRT + preheatH;
+  const minTotalRT = minBulkRT + minFinalRT;
 
   // CT maximization model
   let coldH: number;
@@ -522,7 +522,7 @@ export function buildSchedule(
     const finalProofStart = rtWarmupEnd;
     const actualFinalProofH = Math.min(
       maxFinalH,
-      Math.max(0, (bakeTime.getTime() - finalProofStart.getTime()) / 3600000)
+      Math.max(0, (eatTime.getTime() - finalProofStart.getTime()) / 3600000)
     );
 
     const coldRetard1Hours = Math.max(0,
@@ -648,9 +648,11 @@ export function buildSchedule(
   );
 
   const finalProofStart = new Date(coldRetardEnd.getTime() + restH * 3600000);
+  // Final proof runs to actual bake time (eatTime), not preheat start.
+  // Preheat overlaps with the end of final proof — baker starts oven while dough finishes.
   const finalProofH = Math.min(
     maxFinalH,
-    Math.max(0, (bakeTime.getTime() - finalProofStart.getTime()) / 3600000)
+    Math.max(0, (eatTime.getTime() - finalProofStart.getTime()) / 3600000)
   );
 
   // Divide & Ball happens when dough comes out of fridge (pushed out of any blocker)

@@ -561,63 +561,39 @@ export default function BakeGuide({
         </StepCard>
       )}
 
-      {/* ── STEP: Warmup / Remove from fridge ───────── */}
-      {(schedule.rtWarmupStart || (hasCold && !isTwoPhase && schedule.restRtHours > 0)) && (
-        <StepCard number={n()} icon="🌡️"
-          title="Remove from fridge — rest at room temperature"
-          time={schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? undefined}
-          duration={schedule.rtWarmupStart && schedule.rtWarmupEnd
-            ? (schedule.rtWarmupEnd.getTime() - schedule.rtWarmupStart.getTime()) / 3600000
-            : schedule.restRtHours}
-          accent="#B87850">
-
-          <Section icon="🥄" title="What to do">
-            <Steps items={[
-              { bold: 'Remove dough boxes from fridge', note: 'keep covered — dough must not dry out' },
-              { bold: 'Leave at room temperature', note: `${kitchenTemp >= 30 ? '20-30 min' : kitchenTemp >= 26 ? '30-45 min' : '45-60 min'} — your kitchen at ${kitchenTemp}°C warms dough quickly` },
-              { bold: 'Do NOT stretch yet — wait for warmup', note: 'cold gluten tears — patience here prevents frustration later' },
-            ]} />
-          </Section>
-
-          <Section icon="👁️" title="Ready to stretch when">
-            <Bullets items={[
-              'Ball feels slightly soft when gently pressed — not rock hard',
-              'Surface has some give — pushes back slowly rather than snapping back immediately',
-              `Poke test: press 1cm into ball — should spring back slowly and partially`,
-            ]} />
-          </Section>
-
-          <Section icon="⚠️" title="Pitfalls">
-            <Bullets items={[
-              'Stretching too soon: cold gluten tears — you\'ll get holes and a thin centre',
-              `In a ${kitchenTemp >= 30 ? 'very hot' : 'warm'} kitchen: don't leave balls out too long — they can over-proof at room temperature in ${kitchenTemp >= 30 ? '30-40 min' : '1-2h'}`,
-            ]} />
-          </Section>
-        </StepCard>
-      )}
-
-      {/* ── STEP: Final Proof ────────────────────────── */}
-      {schedule.finalProofHours > 0 && (
+      {/* ── STEP: Final Proof (merged warmup + proof for cold-retard styles) */}
+      {(schedule.finalProofHours > 0 || schedule.restRtHours > 0 || schedule.rtWarmupStart) && (
         <StepCard number={n()} icon="⏰" title="Final Proof"
-          time={schedule.finalProofStart}
-          duration={schedule.finalProofHours}
+          time={schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart}
+          duration={(() => {
+            const proofEnd = schedule.bakeStart;
+            const proofStart = schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart;
+            if (!proofStart || !proofEnd) return schedule.finalProofHours;
+            return Math.max(0, (proofEnd.getTime() - proofStart.getTime()) / 3600000);
+          })()}
           accent="#7A8C6E">
 
           <Section icon="🥄" title="What to do">
             <Steps items={[
-              ...(!isTwoPhase ? [{ bold: 'Shape dough balls if not already done', note: 'tuck and drag — taut skin' }] : [
-                { bold: 'Balls are already shaped from divide & ball', note: 'just monitor proofing' },
+              ...(hasCold ? [
+                { bold: 'Remove balls from fridge', note: 'keep covered — do not stretch yet, gluten is cold and tight' },
+                { bold: `Rest ${kitchenTemp >= 30 ? '20–30' : kitchenTemp >= 26 ? '30–45' : '45–60'} min at room temperature`, note: 'warmup only — proofing begins naturally as dough relaxes' },
+              ] : [
+                ...(!isTwoPhase ? [{ bold: 'Shape dough balls', note: 'tuck and drag — taut skin' }] : [
+                  { bold: 'Balls are already shaped', note: 'just monitor proofing' },
+                ]),
               ]),
-              { bold: 'Keep covered at room temperature', note: 'no heat source needed — ambient temp is fine' },
-              { bold: 'Do the poke test every 15-20 min', note: 'do not go by time — go by feel' },
+              { bold: 'Keep covered at room temperature', note: 'no heat source needed' },
+              { bold: 'Start poke test after warmup — every 15–20 min', note: 'do not go by time — go by feel' },
+              { bold: `Start preheating your oven ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} before bake time`, note: 'oven heats while dough finishes proofing — they finish together' },
             ]} />
           </Section>
 
           <Section icon="👁️" title="Poke test — the three responses">
             <Bullets items={[
-              '🔴 Springs back immediately, feels tight — needs more time',
-              '🟢 Springs back slowly and partially — ready to bake now',
-              '🟡 Doesn\'t spring back, feels slack — over-proofed, bake immediately',
+              'Springs back immediately, feels tight — needs more time',
+              'Springs back slowly and partially — ready to bake',
+              'Does not spring back, feels slack — over-proofed, bake immediately',
             ]} />
             <div style={{ marginTop: '.5rem' }}>
               <LearnLink term="poke_test" label="Full poke test guide" onOpen={setLearnTerm} />
@@ -626,9 +602,10 @@ export default function BakeGuide({
 
           <Section icon="⚠️" title="Pitfalls">
             <Bullets items={[
-              'Going by time instead of feel — fermentation speed varies, always use the poke test',
-              `Hot kitchen (${kitchenTemp}°C): final proof can complete in ${kitchenTemp >= 30 ? '15-25 min' : kitchenTemp >= 26 ? '20-35 min' : '30-60 min'} — check early`,
-              'Over-proofed balls collapse in the oven and don\'t achieve the oven spring you want',
+              'Stretching cold dough — wait for warmup, cold gluten tears',
+              'Going by time instead of feel — always use the poke test',
+              `Warm kitchen (${kitchenTemp}°C): proof can complete in ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} after warmup — check early`,
+              'Over-proofed balls collapse in the oven and lose oven spring',
             ]} />
           </Section>
         </StepCard>
@@ -637,6 +614,11 @@ export default function BakeGuide({
       {/* ── STEP: Preheat Oven ───────────────────────── */}
       <StepCard number={n()} icon="🔥" title="Preheat Oven"
         time={schedule.preheatStart} accent={D.gold}>
+
+        <div style={{ fontSize: '.75rem', color: D.smoke, fontStyle: 'italic',
+          fontFamily: 'var(--font-dm-sans)', padding: '.75rem 0 0' }}>
+          Start preheating while dough finishes its final proof — they should be ready at the same time.
+        </div>
 
         <Section icon="🥄" title="What to do">
           <Steps items={[
