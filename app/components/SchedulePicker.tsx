@@ -2064,6 +2064,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     {cardPrefStatus}
                   </div>
                 )}
+                {(() => {
+                  if (!prefGoesInFridge || prefermentType !== 'poolish' || prefRTWarmupH <= 0) return null;
+                  const removeMs = pendingEatTime.getTime() - (mixOffsetH + prefRTWarmupH) * 3600000;
+                  const removeDate = new Date(removeMs);
+                  const inBlock = blocks.find(b => removeDate >= b.from && removeDate < b.to);
+                  if (!inBlock) return null;
+                  const delayMin = Math.round(((inBlock.to.getTime() - removeMs) / 3600000) * 60 / 15) * 15;
+                  return (
+                    <div style={{ fontSize: '11px', color: '#7A5A10', marginTop: '5px', lineHeight: 1.5 }}>
+                      Remove from fridge at {formatTimeShort(removeDate)} — falls in your busy window.
+                      {delayMin > 0 && ` Moving Start Dough ${delayMin} min later would clear it.`}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 

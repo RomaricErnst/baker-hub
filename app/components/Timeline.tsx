@@ -106,28 +106,33 @@ function buildItems(
   if (prefGoesInFridge && prefRemoveFromFridgeTime && prefStartTime &&
       (prefermentType === 'poolish' || prefermentType === 'biga')) {
     const temp = kitchenTemp ?? 20;
-    // Push remove time out of any blocker (same pattern as dough warmup)
+    // Poolish: push removal AFTER any blocker — never before.
+    // Biga: no warmup needed, use straight from fridge, no adjustment.
     let removeTime = new Date(prefRemoveFromFridgeTime);
-    let safety = 0;
-    while (safety++ < 10) {
-      const inBlock = blocks.find(b => removeTime >= b.from && removeTime < b.to);
-      if (!inBlock) break;
-      // Push earlier by blocker duration (extend RT warmup)
-      removeTime = new Date(inBlock.from.getTime() - 15 * 60000);
+    if (prefermentType === 'poolish') {
+      let safety = 0;
+      while (safety++ < 10) {
+        const inBlock = blocks.find(b => removeTime >= b.from && removeTime < b.to);
+        if (!inBlock) break;
+        removeTime = new Date(inBlock.to);
+      }
+      if (removeTime >= schedule.bulkFermStart) removeTime = new Date(prefRemoveFromFridgeTime);
     }
     const warmupH = (schedule.bulkFermStart.getTime() - removeTime.getTime()) / 3600000;
+    const idealWarmupH = temp >= 28 ? 1.5 : temp >= 24 ? 2 : 2.5;
+    const warmupShort = prefermentType === 'poolish' && warmupH < idealWarmupH * 0.6;
     items.push({
-      kind: 'step', id: 'remove_pref_fridge', stepKind: 'rest_rt',
+      kind: 'step', id: 'remove_pref_fridge', stepKind: 'mixing',
       time: removeTime,
       label: prefermentType === 'biga' ? 'Remove Biga from fridge' : 'Remove Poolish from fridge',
-      icon: '🌡️',
-      iconKey: 'proof',
+      icon: prefermentType === 'biga' ? '🧱' : '🏺',
+      iconKey: 'preferment',
       tip: prefermentType === 'biga'
-        ? `Take your biga out of the fridge and leave covered at room temperature for ~${warmupH.toFixed(1)}h. It will reach its peak just as you start mixing.`
-        : temp >= 28
-        ? `Take your poolish out of the fridge. At ${temp}°C it will reach peak in ~${warmupH.toFixed(1)}h — mix your dough when it peaks.`
-        : `Take your poolish out of the fridge and leave covered at room temperature for ~${warmupH.toFixed(1)}h. It peaks when the surface is domed and bubbly — mix immediately.`,
-      durationH: warmupH,
+        ? `Take your biga out of the fridge — no warmup needed, biga goes straight into the mix cold. Break it into small chunks and soak briefly in the recipe water before adding remaining ingredients. It should smell yeasty and slightly tangy.`
+        : warmupShort
+        ? `Take your poolish out of the fridge now — time is short before mixing. Watch for peak rather than the clock: surface domes upward, bubbles visible through the container sides, smells yeasty and slightly tangy. If it has not peaked by mix time, delay mixing by 30–60 min rather than using an under-peaked poolish.`
+        : `Take your poolish out of the fridge. At ${temp}°C it will be ready in ~${warmupH.toFixed(1)}h. Peak signs: surface domes upward, bubbles visible through the container sides or on top, smells yeasty and slightly tangy. Mix immediately at peak — do not let it collapse.`,
+      durationH: warmupH > 0 ? warmupH : null,
     });
   }
 
@@ -592,7 +597,9 @@ export default function Timeline({
                   fontSize: '.77rem', color: 'var(--smoke)',
                   lineHeight: 1.6,
                 }}>
-                  {item.stepKind === 'rest_rt'
+                  {item.id === 'remove_pref_fridge'
+                    ? item.tip
+                    : item.stepKind === 'rest_rt'
                     ? <>Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch and will tear. The poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> will be unreliable until the dough has warmed through.</>
                     : item.stepKind === 'final_proof'
                     ? schedule.coldRetard2Start !== null
@@ -766,7 +773,8 @@ export default function Timeline({
                     {item.stepKind === 'cold' && `${formatTime(item.time)} → ends at ${formatTime(new Date(item.time.getTime() + (item.durationH ?? 0) * 3600000))}`}
                     {item.stepKind === 'bulk_ferm' && `Bulk fermentation · ${hoursLabel(item.durationH ?? 0)}`}
                     {item.stepKind === 'final_proof' && `Final proof window · ${hoursLabel(schedule.finalProofHours)}`}
-                    {item.stepKind === 'rest_rt' && `Room temperature · ${hoursLabel(item.durationH ?? 0)}`}
+                    {item.stepKind === 'rest_rt' && item.id !== 'remove_pref_fridge' && `Room temperature · ${hoursLabel(item.durationH ?? 0)}`}
+                    {item.id === 'remove_pref_fridge' && item.durationH && item.durationH > 0 && `Warmup · ${hoursLabel(item.durationH)}`}
                     {item.stepKind === 'rt_warmup' && `Room temperature warmup · ${hoursLabel(item.durationH ?? 0)}`}
                   </div>
                 )}
