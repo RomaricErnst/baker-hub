@@ -71,10 +71,15 @@ export function IconDivide({ size = 20, color = 'currentColor' }: { size?: numbe
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} fill="none"
       stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="10" cy="12" r="5" />
-      <line x1="10" y1="7" x2="10" y2="17" />
-      <path d="M6 3h8" />
-      <path d="M14 1.5v4" />
+      {/* Tray outline — top view */}
+      <rect x="1.5" y="3" width="17" height="14" rx="2" />
+      {/* 6 filled dough balls — 3×2 grid */}
+      <circle cx="5.5"  cy="8"   r="1.8" fill={color} stroke="none" />
+      <circle cx="10"   cy="8"   r="1.8" fill={color} stroke="none" />
+      <circle cx="14.5" cy="8"   r="1.8" fill={color} stroke="none" />
+      <circle cx="5.5"  cy="13"  r="1.8" fill={color} stroke="none" />
+      <circle cx="10"   cy="13"  r="1.8" fill={color} stroke="none" />
+      <circle cx="14.5" cy="13"  r="1.8" fill={color} stroke="none" />
     </svg>
   );
 }
@@ -106,10 +111,14 @@ export function IconBake({ size = 20, color = 'currentColor' }: { size?: number;
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} fill="none"
       stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="9" cy="9" r="5.5" />
-      <line x1="9" y1="3.5" x2="9" y2="14.5" />
-      <line x1="3.5" y1="9" x2="14.5" y2="9" />
-      <path d="M13.5 13.5L17 17" />
+      {/* Centred filled chimney */}
+      <rect x="8.5" y="2" width="3" height="4" rx=".5" fill={color} stroke="none" />
+      {/* Dome body */}
+      <path d="M2 17V11a8 4.5 0 0116 0v6" />
+      <line x1="1.5" y1="17" x2="18.5" y2="17" />
+      {/* Wide arch door — filled opening */}
+      <path d="M6 17v-4.5a4 2.5 0 018 0V17" fill={color} fillOpacity="0.18" stroke="none" />
+      <path d="M6 17v-4.5a4 2.5 0 018 0V17" />
     </svg>
   );
 }
