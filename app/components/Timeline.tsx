@@ -313,9 +313,11 @@ function buildItems(
     schedule.rtWarmupStart ??
     (schedule.restRtHours > 0 ? schedule.coldRetardEnd : null) ??
     schedule.finalProofStart;
-  const finalProofStepDuration = finalProofStepStart
-    ? Math.max(0, (schedule.bakeStart.getTime() - finalProofStepStart.getTime()) / 3600000)
-    : schedule.finalProofHours;
+  // Show warmup + actual proof window only — preheat is parallel/independent.
+  const warmupStepH = schedule.rtWarmupStart && schedule.rtWarmupEnd
+    ? Math.max(0, (schedule.rtWarmupEnd.getTime() - schedule.rtWarmupStart.getTime()) / 3600000)
+    : (schedule.restRtHours ?? 0);
+  const finalProofStepDuration = warmupStepH + schedule.finalProofHours;
   if (finalProofStepDuration > 0 || schedule.finalProofHours > 0) {
     items.push({
       kind: 'step', id: 'final_proof', stepKind: 'final_proof',
@@ -778,7 +780,7 @@ export default function Timeline({
                     }} />
                     {item.stepKind === 'cold' && `${formatTime(item.time)} → ends at ${formatTime(new Date(item.time.getTime() + (item.durationH ?? 0) * 3600000))}`}
                     {item.stepKind === 'bulk_ferm' && `Bulk fermentation · ${hoursLabel(item.durationH ?? 0)}`}
-                    {item.stepKind === 'final_proof' && `Final proof window · ${hoursLabel(item.durationH ?? 0)}`}
+                    {item.stepKind === 'final_proof' && `Final proof window · ${hoursLabel(schedule.finalProofHours)}`}
                     {item.stepKind === 'rest_rt' && `Room temperature · ${hoursLabel(item.durationH ?? 0)}`}
                     {item.stepKind === 'rt_warmup' && `Room temperature warmup · ${hoursLabel(item.durationH ?? 0)}`}
                   </div>
