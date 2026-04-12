@@ -846,7 +846,7 @@ export default function Home() {
             <StepCard
               num={1} title={t('steps.1.title')}
               activeStep={activeStep}
-              summary={bakeType === 'pizza' ? '🍕 Pizza' : bakeType === 'bread' ? '🍞 Bread' : undefined}
+              summary={bakeType === 'pizza' ? 'Pizza' : bakeType === 'bread' ? 'Bread' : undefined}
               onEdit={() => setActiveStep(1)}
             >
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -889,7 +889,7 @@ export default function Home() {
             <StepCard
               num={2} title={t('steps.2.title')}
               activeStep={activeStep}
-              summary={styleKey ? `${ALL_STYLES[styleKey].emoji} ${ALL_STYLES[styleKey].name}` : undefined}
+              summary={styleKey ? ALL_STYLES[styleKey].name : undefined}
               onEdit={() => setActiveStep(2)}
             >
               {bakeType && (
@@ -1008,7 +1008,7 @@ export default function Home() {
             <StepCard
               num={4} title={t('steps.4.title')}
               activeStep={activeStep}
-              summary={ovenData ? `${ovenData.emoji} ${ovenData.name}` : ''}
+              summary={ovenData ? ovenData.name : ''}
               onEdit={() => setActiveStep(4)}
             >
               <OvenPicker
@@ -1039,7 +1039,7 @@ export default function Home() {
             <StepCard
               num={6} title={t('steps.6.title')}
               activeStep={activeStep}
-              summary={mixerType ? `${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}` : undefined}
+              summary={mixerType ? MIXER_TYPES[mixerType].name : undefined}
               onEdit={() => setActiveStep(6)}
             >
               <MixerPicker
@@ -1055,7 +1055,7 @@ export default function Home() {
             <StepCard
               num={7} title={t('steps.7.title')}
               activeStep={activeStep}
-              summary={yeastType ? <>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name}</> : undefined}
+              summary={yeastType ? YEAST_TYPES[yeastType].name : undefined}
               onEdit={() => setActiveStep(7)}
             >
               <div>
@@ -1356,7 +1356,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={1} title={t('steps.1.title')}
               activeStep={advancedStep}
-              summary={bakeType === 'pizza' ? '🍕 Pizza' : bakeType === 'bread' ? '🍞 Bread' : undefined}
+              summary={bakeType === 'pizza' ? 'Pizza' : bakeType === 'bread' ? 'Bread' : undefined}
               onEdit={() => setAdvancedStep(1)}
             >
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -1395,7 +1395,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={2} title={t('steps.2.title')}
               activeStep={advancedStep}
-              summary={styleKey ? `${ALL_STYLES[styleKey].emoji} ${ALL_STYLES[styleKey].name}` : undefined}
+              summary={styleKey ? ALL_STYLES[styleKey].name : undefined}
               onEdit={() => setAdvancedStep(2)}
             >
               {bakeType && (
@@ -1534,7 +1534,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={4} title={t('steps.4.title')}
               activeStep={advancedStep}
-              summary={ovenData ? `${ovenData.emoji} ${ovenData.name}` : ''}
+              summary={ovenData ? ovenData.name : ''}
               onEdit={() => setAdvancedStep(4)}
             >
               <OvenPicker
@@ -1567,7 +1567,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={6} title={t('steps.6.title')}
               activeStep={advancedStep}
-              summary={mixerType ? `${MIXER_TYPES[mixerType].emoji} ${MIXER_TYPES[mixerType].name}` : undefined}
+              summary={mixerType ? MIXER_TYPES[mixerType].name : undefined}
               onEdit={() => setAdvancedStep(6)}
             >
               <MixerPicker
@@ -1626,7 +1626,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={8} title={t('steps.7.title')}
               activeStep={advancedStep}
-              summary={yeastType ? <>{YEAST_TYPES[yeastType].emoji} {YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{YEAST_TYPES[yeastType].shortName}</span></> : undefined}
+              summary={yeastType ? <>{YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{YEAST_TYPES[yeastType].shortName}</span></> : undefined}
               onEdit={() => setAdvancedStep(8)}
             >
               <div>
@@ -1708,7 +1708,7 @@ export default function Home() {
                 idPrefix="adv-step"
                 num={9} title="Preferment method"
                 activeStep={advancedStep}
-                summary={prefermentType !== 'none' ? `${PREFERMENT_TYPES[prefermentType].emoji} ${PREFERMENT_TYPES[prefermentType].name}` : '⚡ Direct'}
+                summary={prefermentType !== 'none' ? PREFERMENT_TYPES[prefermentType].name : 'Direct'}
                 onEdit={() => setAdvancedStep(9)}
               >
                 <PrefermentPicker
