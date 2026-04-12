@@ -35,7 +35,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   const pencil = (onClick: () => void) => (
     <button onClick={onClick} style={{
       background: 'none', border: 'none', cursor: 'pointer',
-      padding: '0 0 0 4px', color: 'rgba(255,255,255,0.22)',
+      padding: '0 0 0 4px', color: 'rgba(255,255,255,0.55)',
       fontSize: '.62rem', lineHeight: 1, flexShrink: 0,
     }}>✏</button>
   );
@@ -95,7 +95,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
         }}>{recipeSubtitle(r)}</div>
         <button onClick={() => setConfirmDelete(true)} style={{
           flexShrink: 0, background: 'none', border: 'none',
-          cursor: 'pointer', color: 'rgba(255,255,255,0.2)',
+          cursor: 'pointer', color: 'rgba(255,255,255,0.5)',
           fontSize: '.72rem', padding: '0 2px', lineHeight: 1,
         }}>🗑</button>
         <button onClick={() => onLoad?.(r)} style={{
