@@ -211,7 +211,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
             flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
             color: '#E8785A', fontSize: '.68rem',
             fontFamily: 'var(--font-dm-sans)', fontWeight: 600, cursor: 'pointer',
-          }}>Load →</button>
+          }}>Load</button>
       </div>
     </div>
   );
