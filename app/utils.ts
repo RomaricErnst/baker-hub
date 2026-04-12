@@ -13,12 +13,15 @@
 import {
   ALL_STYLES,
   OVEN_TYPES,
+  BREAD_OVEN_TYPES,
   MIXER_TYPES,
   YEAST_TYPES,
   computeBlendProfile,
   computePrefermentRecipe,
   PREFERMENT_TYPES,
   type OvenType,
+  type BreadOvenType,
+  type AnyOvenType,
   type MixerType,
   type YeastType,
   type StyleKey,
@@ -736,7 +739,7 @@ export interface RecipeResult {
 
 export function calculateRecipe(
   styleKey: StyleKey,
-  ovenType: OvenType,
+  ovenType: AnyOvenType,
   numItems: number,
   itemWeight: number,
   kitchenTemp: number,
@@ -759,7 +762,9 @@ export function calculateRecipe(
   wastePct?: number,                       // custom mode only — mixing loss buffer
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
-  const oven = OVEN_TYPES[ovenType];
+  const oven = (ovenType in OVEN_TYPES)
+    ? OVEN_TYPES[ovenType as OvenType]
+    : BREAD_OVEN_TYPES[ovenType as BreadOvenType];
   if (!s || !oven) throw new Error('Unknown style or oven');
 
   const blendProfile: BlendProfile | null = flourBlend
