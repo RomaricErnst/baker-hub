@@ -83,26 +83,7 @@ function Steps({ items }: { items: { bold: string; note: string }[] }) {
 
 // ── Pumpkin shape SVG (spiral mixer) ────────────────
 function PumpkinSVG() {
-  return (
-    <svg viewBox="0 0 200 140" style={{ width: '100%', maxWidth: '200px', margin: '.5rem auto', display: 'block' }}>
-      {/* Bowl outline */}
-      <ellipse cx="100" cy="110" rx="85" ry="22" fill="none" stroke="#C8B898" strokeWidth="2" strokeDasharray="4 3" />
-      <path d="M 15 110 Q 15 60 100 55 Q 185 60 185 110" fill="none" stroke="#C8B898" strokeWidth="2" strokeDasharray="4 3" />
-      {/* Breaker bar */}
-      <rect x="94" y="20" width="12" height="90" rx="6" fill="#8A7F78" />
-      {/* Dough pumpkin wrapped around bar */}
-      <ellipse cx="100" cy="80" rx="38" ry="28" fill="#E8D4A8" stroke="#C4A030" strokeWidth="1.5" />
-      <ellipse cx="100" cy="65" rx="28" ry="20" fill="#E8D4A8" stroke="#C4A030" strokeWidth="1.5" />
-      <ellipse cx="100" cy="52" rx="18" ry="13" fill="#E8D4A8" stroke="#C4A030" strokeWidth="1.5" />
-      {/* Dough ribs/segments */}
-      <path d="M 80 80 Q 90 65 85 50" fill="none" stroke="#C4A030" strokeWidth="1" strokeOpacity="0.5" />
-      <path d="M 120 80 Q 110 65 115 50" fill="none" stroke="#C4A030" strokeWidth="1" strokeOpacity="0.5" />
-      {/* Label */}
-      <text x="100" y="130" textAnchor="middle" fontSize="10" fill="#8A7F78" fontFamily="DM Mono, monospace">
-        target shape
-      </text>
-    </svg>
-  );
+  return null;
 }
 
 // ── Pill tag ─────────────────────────────────────────
@@ -391,8 +372,7 @@ export default function BakeGuide({
                 ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
               ]} />
               <div style={{ marginTop: '.75rem' }}>
-                <div style={{ fontSize: '.72rem', color: D.smoke, fontFamily: 'var(--font-dm-mono)', marginBottom: '.25rem' }}>TARGET SHAPE</div>
-                <PumpkinSVG />
+                <ExtLink href="https://www.theperfectloaf.com/how-to-mix-bread-and-pizza-dough-with-a-ooni-halo-pro-spiral-mixer/" label="See pumpkin shape photos →" />
               </div>
             </>
           )}
