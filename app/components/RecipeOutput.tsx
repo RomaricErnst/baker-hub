@@ -610,7 +610,19 @@ export default function RecipeOutput({
               <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--cream)', marginBottom: '1rem' }}>
                 Make your {pd.name}
               </div>
-              <IngRow label="Flour" grams={gStr(pf.prefFlour)} noPct highlight />
+              <IngRow
+                label="Flour"
+                grams={gStr(pf.prefFlour)}
+                noPct
+                highlight
+                sub={mode === 'custom' && flourBlend ? (() => {
+                  const f1 = FLOUR_DATA[flourBlend.flour1];
+                  if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
+                    return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>{f1.name}</span>;
+                  }
+                  return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>Use your primary flour ({f1.name})</span>;
+                })() : undefined}
+              />
               <IngRow label="Water" grams={gStr(pf.prefWater)} noPct
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefWater / pf.prefFlour * 1000) / 10) : undefined}
                 sub="At room temperature" />
@@ -654,7 +666,11 @@ export default function RecipeOutput({
                   </>
                 );
               })() : (
-                <IngRow label="Remaining flour" grams={gStr(pf.finalFlour)} noPct
+                <IngRow
+                  label={mode === 'custom' && flourBlend && (!flourBlend.flour2 || flourBlend.ratio1 >= 100)
+                    ? FLOUR_DATA[flourBlend.flour1].name
+                    : 'Remaining flour'}
+                  grams={gStr(pf.finalFlour)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
               )}
               <IngRow label="Remaining water" grams={gStr(pf.finalWater)} noPct sub={finalDoughWaterSubNode}
