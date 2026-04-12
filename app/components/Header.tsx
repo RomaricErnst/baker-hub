@@ -4,17 +4,19 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '../navigation';
 import { createClient } from '@/app/lib/supabase/client';
 import { fetchRecipes, recipeSubtitle, type SavedRecipe } from '@/app/lib/supabase/fetchRecipes';
-import { updateRecipe } from '@/app/lib/supabase/saveRecipe';
+import { updateRecipe, deleteRecipe } from '@/app/lib/supabase/saveRecipe';
 import type { User } from '@supabase/supabase-js';
 import { type UnitSystem } from '../utils/units';
 
-function RecipeCard({ r, onUpdate, onLoad }: {
+function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   r: SavedRecipe;
   onUpdate: (id: string, field: 'recipe_name' | 'notes', value: string) => void;
   onLoad?: (r: SavedRecipe) => void;
+  onDelete?: (id: string) => void;
 }) {
-  const [editingName, setEditingName]   = useState(false);
-  const [editingNotes, setEditingNotes] = useState(false);
+  const [editingName, setEditingName]     = useState(false);
+  const [editingNotes, setEditingNotes]   = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [name, setName]   = useState(r.recipe_name ?? '');
   const [notes, setNotes] = useState(r.notes ?? '');
 
@@ -33,10 +35,47 @@ function RecipeCard({ r, onUpdate, onLoad }: {
   const pencil = (onClick: () => void) => (
     <button onClick={onClick} style={{
       background: 'none', border: 'none', cursor: 'pointer',
-      padding: '0 0 0 4px', color: 'rgba(255,255,255,0.25)',
-      fontSize: '.65rem', lineHeight: 1, flexShrink: 0,
+      padding: '0 0 0 4px', color: 'rgba(255,255,255,0.22)',
+      fontSize: '.62rem', lineHeight: 1, flexShrink: 0,
     }}>✏</button>
   );
+
+  // Confirm-delete state: card turns red, shows Yes/Cancel
+  if (confirmDelete) {
+    return (
+      <div style={{
+        padding: '9px 12px', borderRadius: '10px',
+        background: 'rgba(196,82,42,0.15)',
+        border: '1px solid rgba(196,82,42,0.4)',
+      }}>
+        <div style={{
+          fontSize: '.72rem', color: '#E8785A',
+          fontFamily: 'var(--font-dm-sans)', marginBottom: '8px',
+        }}>
+          Delete <strong>{name || 'this recipe'}</strong>?
+        </div>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button
+            onClick={() => { onDelete?.(r.id); setConfirmDelete(false); }}
+            style={{
+              flex: 1, padding: '.3rem', borderRadius: '6px',
+              background: 'var(--terra)', border: 'none',
+              color: '#fff', fontSize: '.72rem', cursor: 'pointer',
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+            }}>Yes, delete</button>
+          <button
+            onClick={() => setConfirmDelete(false)}
+            style={{
+              flex: 1, padding: '.3rem', borderRadius: '6px',
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: 'var(--smoke)', fontSize: '.72rem', cursor: 'pointer',
+              fontFamily: 'var(--font-dm-sans)',
+            }}>Cancel</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -44,16 +83,21 @@ function RecipeCard({ r, onUpdate, onLoad }: {
       background: 'rgba(255,255,255,0.05)',
       border: '1px solid rgba(255,255,255,0.08)',
     }}>
-      {/* Row 1: subtitle + Load */}
+      {/* Row 1: subtitle + Load + Delete */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', gap: '8px', marginBottom: '6px',
+        justifyContent: 'space-between', gap: '6px', marginBottom: '6px',
       }}>
         <div style={{
           fontSize: '.65rem', color: 'rgba(255,255,255,0.38)',
           fontFamily: 'var(--font-dm-mono)', flex: 1,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{recipeSubtitle(r)}</div>
+        <button onClick={() => setConfirmDelete(true)} style={{
+          flexShrink: 0, background: 'none', border: 'none',
+          cursor: 'pointer', color: 'rgba(255,255,255,0.2)',
+          fontSize: '.72rem', padding: '0 2px', lineHeight: 1,
+        }}>🗑</button>
         <button onClick={() => onLoad?.(r)} style={{
           flexShrink: 0, padding: '.18rem .5rem',
           borderRadius: '5px', border: '1px solid rgba(196,82,42,0.5)',
@@ -63,7 +107,7 @@ function RecipeCard({ r, onUpdate, onLoad }: {
         }}>Load</button>
       </div>
 
-      {/* Row 2: name — read-only or editing */}
+      {/* Row 2: name */}
       {editingName ? (
         <input
           autoFocus
@@ -85,19 +129,21 @@ function RecipeCard({ r, onUpdate, onLoad }: {
         />
       ) : (
         <div style={{
-          display: 'flex', alignItems: 'center', marginBottom: notes || editingNotes ? '3px' : 0,
+          display: 'flex', alignItems: 'center',
+          marginBottom: notes || editingNotes ? '3px' : 0,
         }}>
           <span style={{
             fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)',
             fontWeight: name ? 600 : 400,
             color: name ? 'var(--cream)' : 'rgba(255,255,255,0.22)',
-            flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            flex: 1, overflow: 'hidden',
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{name || 'Untitled recipe'}</span>
           {pencil(() => setEditingName(true))}
         </div>
       )}
 
-      {/* Row 3: notes — only shown if set, or if editing */}
+      {/* Row 3: notes */}
       {editingNotes ? (
         <textarea
           autoFocus
@@ -117,16 +163,13 @@ function RecipeCard({ r, onUpdate, onLoad }: {
           }}
         />
       ) : notes ? (
-        <div style={{
-          display: 'flex', alignItems: 'flex-start', gap: '2px',
-        }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '2px' }}>
           <span style={{
             fontSize: '.72rem', color: 'rgba(255,255,255,0.42)',
-            fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
-            flex: 1,
+            fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45, flex: 1,
             overflow: 'hidden', display: '-webkit-box',
             WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-          }}>{notes}</span>
+          } as React.CSSProperties}>{notes}</span>
           {pencil(() => setEditingNotes(true))}
         </div>
       ) : (
@@ -228,6 +271,11 @@ export default function Header({
     const trimmed = value.trim();
     setRecipes(prev => prev.map(r => r.id === id ? { ...r, [field]: trimmed || null } : r));
     updateRecipe(id, { [field]: trimmed || null });
+  }
+
+  function handleDeleteRecipe(id: string) {
+    setRecipes(prev => prev.filter(r => r.id !== id));
+    deleteRecipe(id);
   }
 
   return (
@@ -447,6 +495,7 @@ export default function Header({
                       r={r}
                       onUpdate={handleFieldBlur}
                       onLoad={r2 => { onLoadRecipe?.(r2); setMenuOpen(false); }}
+                      onDelete={handleDeleteRecipe}
                     />
                   ))}
                 </div>
