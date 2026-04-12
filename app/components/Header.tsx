@@ -326,61 +326,49 @@ export default function Header({
             overflow: 'hidden', zIndex: 200,
           }}>
 
-            {/* Language */}
-            <div style={{
-              padding: '12px 16px',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <span style={{
-                fontSize: '.68rem', color: 'var(--smoke)',
-                fontFamily: 'var(--font-dm-mono)',
-                textTransform: 'uppercase', letterSpacing: '.06em',
-              }}>Language</span>
-              <div style={{ display: 'flex', gap: '.25rem' }}>
-                {(['en', 'fr'] as const).map(l => (
-                  <button key={l}
-                    onClick={() => { router.replace(pathname, { locale: l }); setMenuOpen(false); }}
-                    style={{
-                      background: locale === l ? 'var(--terra)' : 'transparent',
-                      border: 'none', cursor: 'pointer',
-                      fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', fontWeight: 600,
-                      color: locale === l ? '#fff' : 'var(--smoke)',
-                      padding: '.2rem .45rem', borderRadius: '4px',
-                      textTransform: 'uppercase',
-                    }}>{l}</button>
-                ))}
+            {/* Language + Units — unified toggle style */}
+            {([
+              {
+                label: 'Language',
+                options: [
+                  { key: 'en', display: 'EN', active: locale === 'en', onSelect: () => { router.replace(pathname, { locale: 'en' }); setMenuOpen(false); } },
+                  { key: 'fr', display: 'FR', active: locale === 'fr', onSelect: () => { router.replace(pathname, { locale: 'fr' }); setMenuOpen(false); } },
+                ],
+              },
+              {
+                label: 'Units',
+                options: [
+                  { key: 'metric',   display: 'g/°C',   active: units === 'metric',   onSelect: () => onUnitsChange?.('metric') },
+                  { key: 'imperial', display: 'oz/°F',  active: units === 'imperial', onSelect: () => onUnitsChange?.('imperial') },
+                ],
+              },
+            ] as const).map(row => (
+              <div key={row.label} style={{
+                padding: '10px 16px',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
+                <span style={{
+                  fontSize: '.68rem', color: 'var(--smoke)',
+                  fontFamily: 'var(--font-dm-mono)',
+                  textTransform: 'uppercase', letterSpacing: '.06em',
+                }}>{row.label}</span>
+                <div style={{ display: 'flex', gap: '.25rem' }}>
+                  {row.options.map(opt => (
+                    <button key={opt.key}
+                      onClick={opt.onSelect}
+                      style={{
+                        minWidth: '48px', padding: '.22rem .4rem',
+                        borderRadius: '5px', border: 'none', cursor: 'pointer',
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', fontWeight: 600,
+                        textAlign: 'center',
+                        background: opt.active ? 'var(--terra)' : 'transparent',
+                        color: opt.active ? '#fff' : 'var(--smoke)',
+                      }}>{opt.display}</button>
+                  ))}
+                </div>
               </div>
-            </div>
-
-            {/* Units */}
-            <div style={{
-              padding: '12px 16px',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <span style={{
-                fontSize: '.68rem', color: 'var(--smoke)',
-                fontFamily: 'var(--font-dm-mono)',
-                textTransform: 'uppercase', letterSpacing: '.06em',
-              }}>Units</span>
-              <div style={{ display: 'flex', gap: '.25rem' }}>
-                {(['metric', 'imperial'] as const).map(u => (
-                  <button key={u}
-                    onClick={() => onUnitsChange?.(u)}
-                    style={{
-                      background: units === u ? 'var(--terra)' : 'transparent',
-                      border: 'none', cursor: 'pointer',
-                      fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem',
-                      fontWeight: 600,
-                      color: units === u ? '#fff' : 'var(--smoke)',
-                      padding: '.2rem .55rem', borderRadius: '4px',
-                    }}>
-                    {u === 'metric' ? 'g · °C' : 'oz · °F'}
-                  </button>
-                ))}
-              </div>
-            </div>
+            ))}
 
             {/* Auth */}
             <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
