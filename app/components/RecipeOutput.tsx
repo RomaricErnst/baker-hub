@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { type RecipeResult, type YeastResult } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
+import { type UnitSystem, displayWeight, displayTemp } from '../utils/units';
 
 interface RecipeOutputProps {
   result: RecipeResult;
@@ -21,6 +22,7 @@ interface RecipeOutputProps {
   onSave?: () => void;
   wastePct?: number;
   flourBlend?: FlourBlend;
+  units?: UnitSystem;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -30,7 +32,7 @@ function pctStr(n: number): string {
     : `${parseFloat(n.toFixed(1))}%`;
 }
 
-function gStr(n: number): string {
+function wStr(n: number): string {
   if (n <= 0) return '0 g';
   if (n < 1) return `${Math.max(0.1, parseFloat(n.toFixed(1)))} g`;
   const rounded = Math.round(n);
@@ -369,8 +371,10 @@ function StarterPrepCard({ sourdough }: { sourdough: { starterGramsMin: number; 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
   result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
-  priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend,
+  priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
 }: RecipeOutputProps) {
+  const u = units ?? 'metric';
+  const wStr = (g: number) => displayWeight(g, u);
   const [showPriorityOverride, setShowPriorityOverride] = useState(false);
   const [showTotals, setShowTotals] = useState(false);
   const [showDilution, setShowDilution] = useState(false);
@@ -436,7 +440,7 @@ export default function RecipeOutput({
       return (
         <>
           {'Target: '}
-          <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', color: 'var(--terra)' }}>{info.targetTemp}°C</span>
+          <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', color: 'var(--terra)' }}>{displayTemp(info.targetTemp, u)}</span>
           {' · '}
           <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.iceGrams}g</span>
           {' ice + '}
@@ -450,7 +454,7 @@ export default function RecipeOutput({
     return (
       <>
         {'Use at '}
-        <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', fontSize: '.9rem', color: tempColor }}>{info.targetTemp}°C</span>
+        <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', fontSize: '.9rem', color: tempColor }}>{displayTemp(info.targetTemp, u)}</span>
         {` · ${info.tempGuidance}`}
         {tempDiff >= 8 && (
           <span style={{ display: 'block', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '.1rem' }}>
@@ -470,7 +474,7 @@ export default function RecipeOutput({
   const yeastSub = yeastInfo
     ? (() => {
         const isInstant = yeastInfo.yeastType === 'instant';
-        const idyPart = !isInstant ? `= ${gStr(yeastInfo.grams)} IDY` : null;
+        const idyPart = !isInstant ? `= ${wStr(yeastInfo.grams)} IDY` : null;
         return idyPart || undefined;
       })()
     : undefined;
@@ -612,7 +616,7 @@ export default function RecipeOutput({
               </div>
               <IngRow
                 label="Flour"
-                grams={gStr(pf.prefFlour)}
+                grams={wStr(pf.prefFlour)}
                 noPct
                 highlight
                 sub={mode === 'custom' && flourBlend ? (() => {
@@ -623,13 +627,13 @@ export default function RecipeOutput({
                   return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>Use your primary flour ({f1.name})</span>;
                 })() : undefined}
               />
-              <IngRow label="Water" grams={gStr(pf.prefWater)} noPct
+              <IngRow label="Water" grams={wStr(pf.prefWater)} noPct
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefWater / pf.prefFlour * 1000) / 10) : undefined}
                 sub="At room temperature" />
               {pf.prefYeastGrams > 0 && (
                 <IngRow
                   label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem' }}>Yeast (IDY)<YeastTooltip /></span>}
-                  grams={gStr(pf.prefYeastGrams)} noPct
+                  grams={wStr(pf.prefYeastGrams)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
@@ -651,7 +655,7 @@ export default function RecipeOutput({
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: D.muted, marginBottom: '1rem' }}>
                 Add your {pd.name} to the remaining ingredients
               </div>
-              <IngRow label={`Your ${pd.name} (all of it)`} grams={gStr(prefTotal)} noPct highlight />
+              <IngRow label={`Your ${pd.name} (all of it)`} grams={wStr(prefTotal)} noPct highlight />
               {mode === 'custom' && flourBlend && flourBlend.flour2 && flourBlend.ratio1 < 100 ? (() => {
                 const f1 = FLOUR_DATA[flourBlend.flour1];
                 const f2 = FLOUR_DATA[flourBlend.flour2];
@@ -661,8 +665,8 @@ export default function RecipeOutput({
                 const f2Pct = Math.round(f2Weight / flour * 1000) / 10;
                 return (
                   <>
-                    <IngRow label={f1.name} grams={gStr(f1Weight)} noPct advancedPct={pctStr(f1Pct)} />
-                    <IngRow label={flourBlend.customFlour2Name ?? f2.name} grams={gStr(f2Weight)} noPct advancedPct={pctStr(f2Pct)} />
+                    <IngRow label={f1.name} grams={wStr(f1Weight)} noPct advancedPct={pctStr(f1Pct)} />
+                    <IngRow label={flourBlend.customFlour2Name ?? f2.name} grams={wStr(f2Weight)} noPct advancedPct={pctStr(f2Pct)} />
                   </>
                 );
               })() : (
@@ -670,15 +674,15 @@ export default function RecipeOutput({
                   label={mode === 'custom' && flourBlend && (!flourBlend.flour2 || flourBlend.ratio1 >= 100)
                     ? FLOUR_DATA[flourBlend.flour1].name
                     : 'Remaining flour'}
-                  grams={gStr(pf.finalFlour)} noPct
+                  grams={wStr(pf.finalFlour)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
               )}
-              <IngRow label="Remaining water" grams={gStr(pf.finalWater)} noPct sub={finalDoughWaterSubNode}
+              <IngRow label="Remaining water" grams={wStr(pf.finalWater)} noPct sub={finalDoughWaterSubNode}
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
-              <IngRow label="Salt" grams={gStr(salt)} noPct
+              <IngRow label="Salt" grams={wStr(salt)} noPct
                 advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
-              {oil > 0 && <IngRow label="Olive Oil" grams={gStr(oil)} noPct />}
-              {sugar > 0 && <IngRow label="Sugar" grams={gStr(sugar)} noPct />}
+              {oil > 0 && <IngRow label="Olive Oil" grams={wStr(oil)} noPct />}
+              {sugar > 0 && <IngRow label="Sugar" grams={wStr(sugar)} noPct />}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
                 <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
                   Total Dough
@@ -753,7 +757,7 @@ export default function RecipeOutput({
               ? <span style={{ display: 'inline-flex', alignItems: 'center' }}>Flour<FlourTooltip bakeType={bakeType} /></span>
               : 'Flour'
             }
-            grams={gStr(flour)}
+            grams={wStr(flour)}
             pct="100%"
             highlight
             advancedPct={mode === 'custom' ? '100%' : undefined}
@@ -774,8 +778,8 @@ export default function RecipeOutput({
               );
             })() : undefined}
           />
-          <IngRow label="Water" grams={gStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
-          <IngRow label="Salt"  grams={gStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
+          <IngRow label="Water" grams={wStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
+          <IngRow label="Salt"  grams={wStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
 
           {yeastInfo && (
             <IngRow
@@ -786,7 +790,7 @@ export default function RecipeOutput({
                 </span>
               }
               sub={yeastSub}
-              grams={gStr(yeastInfo.convertedGrams)}
+              grams={wStr(yeastInfo.convertedGrams)}
               pct={pctStr(yeastInfo.convertedPct)}
               advancedPct={mode === 'custom' ? pctStr(yeastInfo.convertedPct) : undefined}
             />
@@ -886,11 +890,11 @@ export default function RecipeOutput({
           )}
 
           {oil > 0 && (
-            <IngRow label="Olive Oil" grams={gStr(oil)} pct={pctStr(oilPct)} advancedPct={mode === 'custom' ? pctStr(oilPct) : undefined} />
+            <IngRow label="Olive Oil" grams={wStr(oil)} pct={pctStr(oilPct)} advancedPct={mode === 'custom' ? pctStr(oilPct) : undefined} />
           )}
 
           {sugar > 0 && (
-            <IngRow label="Sugar" grams={gStr(sugar)} pct={pctStr(sugarPct)} advancedPct={mode === 'custom' ? pctStr(sugarPct) : undefined} />
+            <IngRow label="Sugar" grams={wStr(sugar)} pct={pctStr(sugarPct)} advancedPct={mode === 'custom' ? pctStr(sugarPct) : undefined} />
           )}
 
           {/* TOTAL DOUGH row */}
@@ -1050,7 +1054,7 @@ export default function RecipeOutput({
               <div style={{ fontSize: '.78rem', color: '#5A4010', lineHeight: 1.6, paddingLeft: '1.5rem' }}>
                 {'Your yeast amount is '}
                 <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 700, color: '#7A5A10' }}>
-                  {gStr(yeastInfo.convertedGrams)}
+                  {wStr(yeastInfo.convertedGrams)}
                 </span>
                 {' — too small for a standard kitchen scale. Use a precision scale accurate to 0.1g, or use the dilution method.'}
               </div>

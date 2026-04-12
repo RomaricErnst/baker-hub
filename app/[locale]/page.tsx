@@ -17,6 +17,7 @@ import FlourPicker from '../components/FlourPicker';
 import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import { saveRecipe } from '../lib/supabase/saveRecipe';
+import { type UnitSystem } from '../utils/units';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
   computeBlendProfile,
@@ -277,6 +278,16 @@ export default function Home() {
   const [kitchenTemp, setKitchenTemp] = useState(22);
   const [humidity, setHumidity] = useState('normal');
   const [fridgeTemp, setFridgeTemp] = useState(4);
+  const [units, setUnits] = useState<UnitSystem>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('bh_units') as UnitSystem) ?? 'metric';
+    }
+    return 'metric';
+  });
+  function setUnitsAndPersist(u: UnitSystem) {
+    setUnits(u);
+    if (typeof window !== 'undefined') localStorage.setItem('bh_units', u);
+  }
   const [priorityOverride, setPriorityOverride] = useState<string | null | undefined>(undefined);
 
   // Modals & results
@@ -609,7 +620,7 @@ export default function Home() {
   // ── Render ────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)' }}>
-      <Header />
+      <Header units={units} onUnitsChange={setUnitsAndPersist} />
 
       {/* ── Main content ───────────────────── */}
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
@@ -1017,6 +1028,7 @@ export default function Home() {
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
                 fridgeTemp={fridgeTemp} mode="simple"
+                units={units}
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
 
@@ -1231,6 +1243,7 @@ export default function Home() {
                         mode={tab}
                         bakeType={bakeType ?? 'pizza'}
                         flourBlend={flourBlend}
+                        units={units}
                         saveStatus={user ? saveStatus : undefined}
                         onSave={user ? () => handleSaveRecipe('simple') : undefined}
                       />
@@ -1323,6 +1336,7 @@ export default function Home() {
                   ovenType={ovenType ?? undefined}
                   prefStartTime={prefStartTime}
                   feedTime={feedTime}
+                  units={units}
                 />
               )}
             </div>{/* end guide tab */}
@@ -1542,6 +1556,7 @@ export default function Home() {
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
                 fridgeTemp={fridgeTemp} mode="custom"
+                units={units}
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
               <ContinueBtn onClick={() => advanceAdv(5)} />
@@ -2221,6 +2236,7 @@ export default function Home() {
                         priorityOverride={priorityOverride}
                         onPriorityOverride={v => setPriorityOverride(v)}
                         flourBlend={flourBlend}
+                        units={units}
                         saveStatus={user ? saveStatus : undefined}
                         onSave={user ? () => handleSaveRecipe('custom') : undefined}
                         wastePct={wastePct}
@@ -2312,6 +2328,7 @@ export default function Home() {
                   ovenType={ovenType ?? undefined}
                   prefStartTime={prefStartTime}
                   feedTime={feedTime}
+                  units={units}
                 />
               )}
             </div>{/* end guide tab */}

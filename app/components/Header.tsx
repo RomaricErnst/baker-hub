@@ -6,8 +6,15 @@ import { createClient } from '@/app/lib/supabase/client';
 import { fetchRecipes, recipeSubtitle, type SavedRecipe } from '@/app/lib/supabase/fetchRecipes';
 import { updateRecipe } from '@/app/lib/supabase/saveRecipe';
 import type { User } from '@supabase/supabase-js';
+import { type UnitSystem } from '../utils/units';
 
-export default function Header() {
+export default function Header({
+  units = 'metric',
+  onUnitsChange,
+}: {
+  units?: UnitSystem;
+  onUnitsChange?: (u: UnitSystem) => void;
+}) {
   const t = useTranslations('header');
   const locale = useLocale();
   const router = useRouter();
@@ -151,6 +158,35 @@ export default function Header() {
                       padding: '.2rem .45rem', borderRadius: '4px',
                       textTransform: 'uppercase',
                     }}>{l}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Units */}
+            <div style={{
+              padding: '12px 16px',
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span style={{
+                fontSize: '.68rem', color: 'var(--smoke)',
+                fontFamily: 'var(--font-dm-mono)',
+                textTransform: 'uppercase', letterSpacing: '.06em',
+              }}>Units</span>
+              <div style={{ display: 'flex', gap: '.25rem' }}>
+                {(['metric', 'imperial'] as const).map(u => (
+                  <button key={u}
+                    onClick={() => onUnitsChange?.(u)}
+                    style={{
+                      background: units === u ? 'var(--terra)' : 'transparent',
+                      border: 'none', cursor: 'pointer',
+                      fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem',
+                      fontWeight: 600,
+                      color: units === u ? '#fff' : 'var(--smoke)',
+                      padding: '.2rem .55rem', borderRadius: '4px',
+                    }}>
+                    {u === 'metric' ? 'g · °C' : 'oz · °F'}
+                  </button>
                 ))}
               </div>
             </div>

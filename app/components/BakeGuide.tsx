@@ -4,6 +4,7 @@ import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
 import { MIXER_TYPES, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
+import { type UnitSystem, displayTemp, tempC, tempRange } from '../utils/units';
 
 interface BakeGuideProps {
   schedule: ScheduleResult;
@@ -17,6 +18,7 @@ interface BakeGuideProps {
   ovenType?: string;
   prefStartTime?: Date | null;
   feedTime?: Date | null;
+  units?: UnitSystem;
 }
 
 // ── Design tokens ────────────────────────────────────
@@ -194,8 +196,9 @@ function ExtLink({ href, label }: { href: string; label: string }) {
 // ── Main component ───────────────────────────────────
 export default function BakeGuide({
   schedule, mixerType, styleKey, kitchenTemp, numItems,
-  prefermentType, oil, hydration, ovenType, prefStartTime, feedTime,
+  prefermentType, oil, hydration, ovenType, prefStartTime, feedTime, units,
 }: BakeGuideProps) {
+  const u = units ?? 'metric';
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
 
   const isSourdough   = styleKey === 'sourdough' || styleKey === 'pain_levain';
@@ -246,7 +249,7 @@ export default function BakeGuide({
                 { bold: 'Add a pinch of IDY', note: 'very small amount — poolish ferments slowly' },
                 { bold: 'Stir vigorously until no dry flour remains', note: '~2 min — smooth, thick batter consistency' },
                 { bold: 'Cover tightly with cling film', note: 'press it to the surface to prevent skin' },
-                { bold: kitchenTemp >= 26 ? 'Place in fridge (4°C)' : 'Leave at room temperature', note: kitchenTemp >= 26 ? 'tropical kitchen — fridge prevents over-fermentation' : `${kitchenTemp}°C is ideal for a slow room temp poolish` },
+                { bold: kitchenTemp >= 26 ? `Place in fridge (${tempC(4, u)})` : 'Leave at room temperature', note: kitchenTemp >= 26 ? 'tropical kitchen — fridge prevents over-fermentation' : `${displayTemp(kitchenTemp, u)} is ideal for a slow room temp poolish` },
               ]} />
             ) : (
               <Steps items={[
@@ -254,7 +257,7 @@ export default function BakeGuide({
                 { bold: 'Add a tiny amount of IDY', note: '0.1-0.2% of flour — biga ferments very slowly' },
                 { bold: 'Mix roughly until just combined', note: 'biga is intentionally shaggy — do not over-mix' },
                 { bold: 'Cover loosely', note: 'biga needs some air exchange unlike poolish' },
-                { bold: 'Place in fridge (4°C)', note: 'biga always ferments cold — never at room temp' },
+                { bold: `Place in fridge (${tempC(4, u)})`, note: 'biga always ferments cold — never at room temp' },
               ]} />
             )}
           </Section>
@@ -293,7 +296,7 @@ export default function BakeGuide({
           </Section>
           <Section icon="👁️" title="Ready when">
             <Bullets items={[
-              `Doubled in size — at ${kitchenTemp}°C expect ${kitchenTemp >= 28 ? '3-5h' : kitchenTemp >= 24 ? '4-7h' : '6-10h'}`,
+              `Doubled in size — at ${displayTemp(kitchenTemp, u)} expect ${kitchenTemp >= 28 ? '3-5h' : kitchenTemp >= 24 ? '4-7h' : '6-10h'}`,
               'Domed top with visible bubbles on surface and sides',
               'Float test: drop a small piece in water — if it floats, it\'s ready',
               'Smells tangy and yeasty — not alcoholic',
@@ -366,7 +369,7 @@ export default function BakeGuide({
                 { bold: 'Flour + 90% water + yeast', note: 'Speed 1, 3 min to combine' },
                 ...(hasPref ? [{ bold: `Add ${prefermentType}`, note: 'Speed 1, mix until incorporated' }] : []),
                 { bold: 'Add salt', note: 'Speed 1, 2 min' },
-                { bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min — stop if FDT exceeds 28°C' },
+                { bold: 'Speed 2 until pumpkin shape forms', note: `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
                 { bold: 'Once pumpkin is stable — add remaining 10% water gradually', note: 'bassinage — small additions, wait for pumpkin to reform each time' },
                 ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
               ] : [
@@ -375,7 +378,7 @@ export default function BakeGuide({
                 ...(hasPref ? [{ bold: `Add ${prefermentType}`, note: 'Speed 1, mix until incorporated' }] : []),
                 { bold: 'Add salt', note: 'Speed 1, 2 min' },
                 { bold: 'Add remaining 10% water', note: 'Speed 1, mix until absorbed — ~1 min' },
-                { bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min — stop if FDT exceeds 28°C' },
+                { bold: 'Speed 2 until pumpkin shape forms', note: `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
                 ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
               ]} />
               <div style={{ marginTop: '.75rem' }}>
@@ -402,10 +405,10 @@ export default function BakeGuide({
 
         <Section icon="🌡️" title="Water temperature">
           <Bullets items={[
-            `Target Final Dough Temperature (FDT): ${isNeapolitan ? '23°C' : isBread ? '24°C' : '24°C'}`,
+            `Target Final Dough Temperature (FDT): ${isNeapolitan ? tempC(23, u) : tempC(24, u)}`,
             'Use the water temperature from your recipe — Baker Hub calculated this accounting for your kitchen and mixer',
             'Check FDT with a thermometer right after mixing — dough should feel cool to the touch',
-            'FDT above 28°C: refrigerate dough for 15 min before bulk fermentation',
+            `FDT above ${tempC(28, u)}: refrigerate dough for 15 min before bulk fermentation`,
           ]} />
           <div style={{ marginTop: '.5rem' }}>
             <LearnLink term="fdt" label="What is FDT?" onOpen={setLearnTerm} />
@@ -432,7 +435,7 @@ export default function BakeGuide({
           <Bullets items={[
             'Adding salt and yeast at the same time — salt kills yeast on contact, always add separately',
             'Over-kneading by hand is nearly impossible — but over-mixing in a stand mixer is not, stop when windowpane passes',
-            isSpiral ? 'Ignoring FDT — spiral mixers generate heat, dough can exceed 28°C without noticing' : '',
+            isSpiral ? `Ignoring FDT — spiral mixers generate heat, dough can exceed ${tempC(28, u)} without noticing` : '',
             'Adding oil before gluten develops — oil coats proteins and blocks gluten formation',
           ].filter(Boolean)} />
         </Section>
@@ -475,7 +478,7 @@ export default function BakeGuide({
 
         <Section icon="⚠️" title="Pitfalls">
           <Bullets items={[
-            'Bulk in a warm spot above 26°C — dough ferments too fast, less flavour',
+            `Bulk in a warm spot above ${tempC(26, u)} — dough ferments too fast, less flavour`,
             'Over-bulk: more than 75% rise means gluten has started to break down — dough will be slack and tear during shaping',
             'Under-bulk: less than 30% rise — not enough gas development, dough will be dense',
             'Skipping stretch & folds — they build gluten strength that makes shaping much easier',
@@ -511,7 +514,7 @@ export default function BakeGuide({
           <Section icon="⚠️" title="Pitfalls">
             <Bullets items={[
               'Leaving uncovered: dough skin forms, tears during shaping and creates uneven balls',
-              'Fridge temperature above 8°C: dough over-ferments during retard — check your fridge',
+              `Fridge temperature above ${tempC(8, u)}: dough over-ferments during retard — check your fridge`,
               'Rushing the cold phase: minimum cold time is important for flavour and gluten relaxation',
             ]} />
           </Section>
@@ -592,7 +595,7 @@ export default function BakeGuide({
             ] : [
               'Smooth, taut skin with no tears or folds visible on top',
               'Holds its round shape — doesn\'t immediately spread flat (if it does, gluten is weak)',
-              `At ${kitchenTemp}°C, work within ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} — warm kitchens make balls proof quickly`,
+              `At ${displayTemp(kitchenTemp, u)}, work within ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} — warm kitchens make balls proof quickly`,
             ]} />
           </Section>
 
@@ -616,7 +619,7 @@ export default function BakeGuide({
             ] : [
               'Flouring the surface: reduces friction, ball won\'t get surface tension — use bare, slightly damp surface',
               'Tearing the skin during shaping — pre-shape roughly first, rest 5 min, then final ball',
-              `Hot kitchen (${kitchenTemp >= 30 ? 'like yours at ' + kitchenTemp + '°C' : '≥30°C'}): get balls into their boxes fast — they proof very quickly at warm temps`,
+              `Hot kitchen (${kitchenTemp >= 30 ? 'like yours at ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}): get balls into their boxes fast — they proof very quickly at warm temps`,
             ]} />
           </Section>
         </StepCard>
@@ -699,7 +702,7 @@ export default function BakeGuide({
             <Bullets items={[
               'Stretching cold dough — wait for warmup, cold gluten tears',
               'Going by time instead of feel — always use the poke test',
-              `Warm kitchen (${kitchenTemp}°C): proof can complete in ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} after warmup — check early`,
+              `Warm kitchen (${displayTemp(kitchenTemp, u)}): proof can complete in ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} after warmup — check early`,
               'Over-proofed balls collapse in the oven and lose oven spring',
             ]} />
           </Section>
@@ -719,49 +722,49 @@ export default function BakeGuide({
           {isBread ? (
             <Steps items={ovenType === 'dutch_oven' ? [
               { bold: 'Place Dutch oven (with lid) inside your oven', note: 'both pot and lid must be scorching hot' },
-              { bold: 'Set oven to 240–250°C with fan', note: 'full preheat — 45 min minimum' },
-              { bold: 'Do not open the oven during preheat', note: 'every opening loses 20–30°C' },
+              { bold: `Set oven to ${tempRange(240, 250, u)} with fan`, note: 'full preheat — 45 min minimum' },
+              { bold: 'Do not open the oven during preheat', note: `every opening loses ${u === 'imperial' ? '36–54°F' : '20–30°C'} of heat` },
             ] : ovenType === 'home_oven_stone_bread' ? [
               { bold: 'Place baking stone or steel on middle rack', note: 'stone needs 45–60 min to fully absorb heat' },
               { bold: 'Place an empty metal tray on the rack below', note: 'for steam — you will add ice cubes at load time' },
-              { bold: 'Set oven to 240–250°C with fan', note: 'as hot as your oven allows' },
-              { bold: 'Do not open the oven during preheat', note: 'every opening loses 20–30°C' },
+              { bold: `Set oven to ${tempRange(240, 250, u)} with fan`, note: 'as hot as your oven allows' },
+              { bold: 'Do not open the oven during preheat', note: `every opening loses ${u === 'imperial' ? '36–54°F' : '20–30°C'} of heat` },
             ] : ovenType === 'steam_oven' ? [
-              { bold: 'Set steam oven to 240°C with 100% steam', note: 'steam programme for first phase' },
+              { bold: `Set steam oven to ${tempC(240, u)} with 100% steam`, note: 'steam programme for first phase' },
               { bold: 'Allow full preheat — 20–30 min', note: 'cavity must be fully saturated with steam' },
             ] : ovenType === 'wood_fired' ? [
-              { bold: 'Build fire and let it burn to embers', note: 'aim for 280–320°C floor temperature' },
+              { bold: 'Build fire and let it burn to embers', note: `aim for ${tempRange(280, 320, u)} floor temperature` },
               { bold: 'Push embers to one side — test floor temp with a hand', note: '3 seconds before pulling away = ready' },
               { bold: 'Let temperature stabilise before loading', note: 'even heat is more important than peak heat' },
             ] : [
               // standard_bread fallback
-              { bold: 'Set oven to 220–230°C with fan', note: 'max your oven allows' },
+              { bold: `Set oven to ${tempRange(220, 230, u)} with fan`, note: 'max your oven allows' },
               { bold: 'Place an empty metal tray on the rack below', note: 'for steam — add ice cubes or boiling water at load time' },
-              { bold: 'Do not open during preheat', note: 'every opening loses 20–30°C' },
+              { bold: 'Do not open during preheat', note: `every opening loses ${u === 'imperial' ? '36–54°F' : '20–30°C'} of heat` },
             ]} />
           ) : ovenType === 'pizza_oven' ? (
             <Steps items={[
-              { bold: 'Light the fire and build to a high flame', note: 'target 450–500°C floor temperature' },
+              { bold: 'Light the fire and build to a high flame', note: `target ${tempRange(450, 500, u)} floor temperature` },
               { bold: 'Push fire to back or side — let floor recover', note: 'floor temp drops when loading — give it time' },
               { bold: 'Check floor with infrared thermometer', note: 'never guess — launch only when floor is at temp' },
               { bold: 'Allow full 45 min — flame active throughout', note: 'stone must be saturated, not just surface-hot' },
             ]} />
           ) : ovenType === 'electric_pizza' ? (
             <Steps items={[
-              { bold: 'Set both top and bottom elements to maximum', note: 'target 400°C+ — most models reach this in 20–25 min' },
+              { bold: 'Set both top and bottom elements to maximum', note: `target ${tempC(400, u)}+ — most models reach this in 20–25 min` },
               { bold: 'Do not open lid during preheat', note: 'electric ovens lose heat fast — keep closed until ready' },
-              { bold: 'Check stone temp with infrared thermometer', note: 'stone should read 380°C+ before launching' },
+              { bold: 'Check stone temp with infrared thermometer', note: `stone should read ${tempC(380, u)}+ before launching` },
             ]} />
           ) : ovenType === 'home_oven_steel' ? (
             <Steps items={[
               { bold: 'Place stone or steel on the top rack', note: 'close to the top element — top heat drives leoparding' },
-              { bold: 'Set oven to maximum temperature with fan', note: 'typically 250–280°C — full 60 min preheat' },
+              { bold: 'Set oven to maximum temperature with fan', note: `typically ${tempRange(250, 280, u)} — full 60 min preheat` },
               { bold: 'Switch to grill/broil for the last 10 min', note: 'supercharges the top element for better char' },
-              { bold: 'Do not open during preheat', note: 'every opening loses 20–30°C' },
+              { bold: 'Do not open during preheat', note: `every opening loses ${u === 'imperial' ? '36–54°F' : '20–30°C'} of heat` },
             ]} />
           ) : ovenType === 'home_oven_standard' ? (
             <Steps items={[
-              { bold: 'Set oven to maximum temperature', note: 'typically 240–260°C — standard ovens lose heat quickly' },
+              { bold: 'Set oven to maximum temperature', note: `typically ${tempRange(240, 260, u)} — standard ovens lose heat quickly` },
               { bold: 'Preheat pizza tray or heavy baking sheet', note: 'place directly on middle rack — must be hot' },
               { bold: 'Allow 30 min minimum', note: 'thin trays heat fast but lose heat fast too — longer is better' },
             ]} />
@@ -769,7 +772,7 @@ export default function BakeGuide({
             <Steps items={[
               { bold: 'Set oven to maximum temperature', note: 'as hot as it goes' },
               { bold: 'Preheat your baking surface fully', note: 'full preheat time is non-negotiable' },
-              { bold: 'Do not open the oven during preheat', note: 'every opening loses 20–30°C' },
+              { bold: 'Do not open the oven during preheat', note: `every opening loses ${u === 'imperial' ? '36–54°F' : '20–30°C'} of heat` },
             ]} />
           )}
         </Section>
@@ -799,7 +802,7 @@ export default function BakeGuide({
           ] : ovenType === 'electric_pizza' ? [
             'Not preheating long enough: stone needs 20–25 min even if the display says ready',
             'Opening lid mid-bake: electric ovens have a small cavity — every opening drops temp significantly',
-            'Over-baking: at 400°C+ things move fast — stay close and watch the cornicione',
+            `Over-baking: at ${tempC(400, u)}+ things move fast — stay close and watch the cornicione`,
           ] : ovenType === 'home_oven_steel' ? [
             'Stone too low in the oven: top heat is what drives leoparding — use the top rack',
             'Skipping the pre-grill phase: 10 min on grill/broil before launch supercharges the top element',
@@ -821,8 +824,8 @@ export default function BakeGuide({
               <Steps items={[
                 { bold: 'Score the dough — single slash or cross', note: 'sharp lame or razor at 30–45° angle — confident single motion' },
                 { bold: 'Lower dough into Dutch oven using parchment', note: 'work quickly — every second counts' },
-                { bold: 'Bake covered at 240°C — 20 min', note: 'steam trapped inside creates the ear and oven spring' },
-                { bold: 'Remove lid — bake 20–25 min more', note: 'crust browns and crisps — internal temp 95–98°C' },
+                { bold: `Bake covered at ${tempC(240, u)} — 20 min`, note: 'steam trapped inside creates the ear and oven spring' },
+                { bold: 'Remove lid — bake 20–25 min more', note: `crust browns and crisps — internal temp ${tempRange(95, 98, u)}` },
                 { bold: 'Cool on a wire rack — minimum 30 min', note: 'crumb is still cooking from residual heat — cutting hot makes it gummy' },
               ]} />
             ) : ovenType === 'home_oven_stone_bread' ? (
@@ -831,14 +834,14 @@ export default function BakeGuide({
                 { bold: 'Add ice cubes to steam tray immediately', note: 'do this just before or just after loading — not before' },
                 { bold: 'Load onto hot stone — close oven fast', note: 'confident single motion with a peel or parchment' },
                 { bold: 'Bake 20 min with steam', note: 'do not open the door — steam must stay in' },
-                { bold: 'Remove steam tray — bake 20–25 min more', note: 'crust browns and crisps — internal temp 95–98°C' },
+                { bold: 'Remove steam tray — bake 20–25 min more', note: `crust browns and crisps — internal temp ${tempRange(95, 98, u)}` },
                 { bold: 'Cool on a wire rack — minimum 30 min', note: 'cutting hot makes the crumb gummy' },
               ]} />
             ) : ovenType === 'steam_oven' ? (
               <Steps items={[
                 { bold: 'Score the dough', note: 'sharp lame, 30–45° angle' },
-                { bold: 'Load into steam oven — 240°C, 100% steam', note: 'bake 20 min — steam does the work of a Dutch oven' },
-                { bold: 'Switch to dry heat — 220°C', note: 'bake 20–25 min more until deep brown and hollow-sounding' },
+                { bold: `Load into steam oven — ${tempC(240, u)}, 100% steam`, note: 'bake 20 min — steam does the work of a Dutch oven' },
+                { bold: `Switch to dry heat — ${tempC(220, u)}`, note: 'bake 20–25 min more until deep brown and hollow-sounding' },
                 { bold: 'Cool on a wire rack — minimum 30 min', note: 'cutting hot makes the crumb gummy' },
               ]} />
             ) : ovenType === 'wood_fired' ? (
@@ -846,7 +849,7 @@ export default function BakeGuide({
                 { bold: 'Score the dough', note: 'sharp lame, 30–45° angle' },
                 { bold: 'Load using a long-handled peel', note: 'confident single forward motion — slide, do not push' },
                 { bold: 'Close oven door or damper for first 15 min', note: 'retain steam from the dough — creates ear' },
-                { bold: 'Rotate loaf halfway — bake until deep brown', note: 'total 40–50 min at 220–250°C — internal temp 95–98°C' },
+                { bold: 'Rotate loaf halfway — bake until deep brown', note: `total 40–50 min at ${tempRange(220, 250, u)} — internal temp ${tempRange(95, 98, u)}` },
                 { bold: 'Cool on a wire rack — minimum 30 min', note: 'cutting hot makes the crumb gummy' },
               ]} />
             ) : (
@@ -854,7 +857,7 @@ export default function BakeGuide({
                 { bold: 'Score the dough', note: 'sharp lame or razor, 30–45° angle' },
                 { bold: 'Add boiling water or ice to steam tray, load quickly', note: 'close oven door immediately to keep steam in' },
                 { bold: 'Bake 20 min — do not open door', note: 'steam keeps crust extensible for oven spring' },
-                { bold: 'Remove steam tray — bake 20–25 min more', note: 'internal temp 95–98°C — deep brown crust' },
+                { bold: 'Remove steam tray — bake 20–25 min more', note: `internal temp ${tempRange(95, 98, u)} — deep brown crust` },
                 { bold: 'Cool on a wire rack — minimum 30 min', note: 'cutting hot makes the crumb gummy' },
               ]} />
             )
@@ -862,7 +865,7 @@ export default function BakeGuide({
             <Steps items={[
               { bold: 'Stretch dough to target size', note: 'no rolling pin — knuckles and gravity only' },
               { bold: 'Top quickly — sauce, cheese, minimal toppings', note: 'work fast — wet toppings stick the base to the peel' },
-              { bold: 'Check floor temp one last time', note: 'launch only above 400°C floor — ideally 450–480°C' },
+              { bold: 'Check floor temp one last time', note: `launch only above ${tempC(400, u)} floor — ideally ${tempRange(450, 480, u)}` },
               { bold: 'Launch with a confident forward motion', note: 'hesitation causes sticking — one smooth push' },
               { bold: 'Rotate every 20–30 sec with a turning peel', note: 'wood fire has a hot side — constant rotation is key' },
               { bold: 'Total bake: 60–90 sec', note: 'leoparding on cornicione + slight char on base = done' },
@@ -872,7 +875,7 @@ export default function BakeGuide({
               { bold: 'Stretch dough to target size', note: 'no rolling pin — electric ovens are forgiving but thin bases still benefit from hand stretching' },
               { bold: 'Top and launch onto hot stone', note: 'flour or fine semolina on peel — work quickly' },
               { bold: 'Close lid immediately', note: 'electric ovens have small cavities — heat escapes fast' },
-              { bold: 'Bake 3–5 min at 400°C+', note: 'watch the cornicione — colour goes from pale to brown fast' },
+              { bold: `Bake 3–5 min at ${tempC(400, u)}+`, note: 'watch the cornicione — colour goes from pale to brown fast' },
               { bold: 'Rotate halfway for even colour', note: 'electric elements can have hot spots near the edges' },
             ]} />
           ) : ovenType === 'home_oven_steel' ? (
@@ -919,7 +922,7 @@ export default function BakeGuide({
             <Bullets items={[
               'Cornicione: starts pale, then yellows, then browns — pull when it starts showing spots',
               'Base: check by lifting edge — should be golden brown with some colour',
-              'Speed: at 400°C things move fast — do not walk away',
+              `Speed: at ${tempC(400, u)} things move fast — do not walk away`,
             ]} />
           ) : ovenType === 'home_oven_steel' ? (
             <Bullets items={[

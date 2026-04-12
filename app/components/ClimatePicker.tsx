@@ -1,11 +1,13 @@
 'use client';
 import { useState } from 'react';
+import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, tempC, displayTemp } from '../utils/units';
 
 interface ClimatePickerProps {
   kitchenTemp: number;
   humidity: string;
   fridgeTemp: number;
   mode: 'simple' | 'custom';
+  units?: UnitSystem;
   onChange: (kitchenTemp: number, humidity: string, fridgeTemp: number) => void;
 }
 
@@ -88,8 +90,9 @@ interface WeatherData {
 
 // ── Component ────────────────────────────────
 export default function ClimatePicker({
-  kitchenTemp, humidity, fridgeTemp, mode, onChange,
+  kitchenTemp, humidity, fridgeTemp, mode, units, onChange,
 }: ClimatePickerProps) {
+  const u = units ?? 'metric';
   const [city, setCity] = useState('');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -277,15 +280,17 @@ export default function ClimatePicker({
             fontWeight: 700,
             color: tempColor(kitchenTemp),
           }}>
-            {kitchenTemp}°C
+            {cToDisplay(kitchenTemp, u)}{tempUnit(u)}
           </span>
         </div>
 
         <input
           type="range"
-          min={15} max={38} step={1}
-          value={kitchenTemp}
-          onChange={e => onChange(Number(e.target.value), humidity, fridgeTemp)}
+          min={u === 'imperial' ? 59 : 15}
+          max={u === 'imperial' ? 100 : 38}
+          step={1}
+          value={cToDisplay(kitchenTemp, u)}
+          onChange={e => onChange(inputTempToC(Number(e.target.value), u), humidity, fridgeTemp)}
           style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer', height: '4px' }}
         />
 
@@ -295,10 +300,10 @@ export default function ClimatePicker({
           fontSize: '.65rem', color: 'var(--smoke)',
           fontFamily: 'var(--font-dm-mono)', marginTop: '.25rem',
         }}>
-          <span>15°C cool</span>
-          <span>22°C ideal</span>
-          <span>30°C hot</span>
-          <span>38°C</span>
+          <span>{tempC(15, u)} cool</span>
+          <span>{tempC(22, u)} ideal</span>
+          <span>{tempC(30, u)} hot</span>
+          <span>{tempC(38, u)}</span>
         </div>
 
         {/* Warm climate nudge */}
@@ -313,7 +318,7 @@ export default function ClimatePicker({
             marginTop: '.75rem',
             lineHeight: 1.5,
           }}>
-            🌡️ In a warm climate, afternoon temps can push above 28°C. If your kitchen heats up during the day, consider entering your expected peak temperature instead.
+            🌡️ In a warm climate, afternoon temps can push above {tempC(28, u)}. If your kitchen heats up during the day, consider entering your expected peak temperature instead.
           </div>
         )}
       </div>
@@ -370,15 +375,17 @@ export default function ClimatePicker({
               fontWeight: 700,
               color: '#6A7FA8',
             }}>
-              {fridgeTemp}°C
+              {cToDisplay(fridgeTemp, u)}{tempUnit(u)}
             </span>
           </div>
 
           <input
             type="range"
-            min={1} max={15} step={1}
-            value={fridgeTemp}
-            onChange={e => onChange(kitchenTemp, humidity, Number(e.target.value))}
+            min={u === 'imperial' ? 34 : 1}
+            max={u === 'imperial' ? 59 : 15}
+            step={1}
+            value={cToDisplay(fridgeTemp, u)}
+            onChange={e => onChange(kitchenTemp, humidity, inputTempToC(Number(e.target.value), u))}
             style={{ width: '100%', accentColor: '#6A7FA8', cursor: 'pointer', height: '4px' }}
           />
 
@@ -387,10 +394,10 @@ export default function ClimatePicker({
             fontSize: '.65rem', color: 'var(--smoke)',
             fontFamily: 'var(--font-dm-mono)', marginTop: '.25rem',
           }}>
-            <span>1°C</span>
-            <span>4°C standard</span>
-            <span>8°C warm</span>
-            <span>15°C</span>
+            <span>{tempC(1, u)}</span>
+            <span>{tempC(4, u)} standard</span>
+            <span>{tempC(8, u)} warm</span>
+            <span>{tempC(15, u)}</span>
           </div>
 
           {fridgeTemp > 8 && (
@@ -400,7 +407,7 @@ export default function ClimatePicker({
               background: '#EEF2FA', border: '1px solid #C4CDE0',
               borderRadius: '8px', padding: '.45rem .8rem',
             }}>
-              Fridge at <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{fridgeTemp}°C</span> is warmer than the standard 4°C — yeast will be more active during cold retard.
+              Fridge at <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> is warmer than the standard {tempC(4, u)} — yeast will be more active during cold retard.
             </div>
           )}
 
