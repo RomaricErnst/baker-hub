@@ -117,7 +117,8 @@ function buildItems(
       }
       if (removeTime >= schedule.bulkFermStart) removeTime = new Date(prefRemoveFromFridgeTime);
     }
-    const warmupH = (schedule.bulkFermStart.getTime() - removeTime.getTime()) / 3600000;
+    const warmupHRaw = (schedule.bulkFermStart.getTime() - removeTime.getTime()) / 3600000;
+    const warmupH = Math.round(warmupHRaw * 4) / 4; // round to nearest 15 min
     const idealWarmupH = temp >= 28 ? 1.5 : temp >= 24 ? 2 : 2.5;
     const warmupShort = prefermentType === 'poolish' && warmupH < idealWarmupH * 0.6;
     items.push({
@@ -608,8 +609,8 @@ export default function Timeline({
                     : item.tip}
                 </div>
 
-                {/* Mixing sequence — shown on mixing step only */}
-                {item.stepKind === 'mixing' && (() => {
+                {/* Mixing sequence — shown on Mix & Knead step only, not Remove Poolish */}
+                {item.id === 'mixing' && (() => {
                   const showOil = oil > 0;
                   const showBassinage = hydration > 70;
 

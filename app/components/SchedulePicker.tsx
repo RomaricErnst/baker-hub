@@ -446,6 +446,17 @@ function findOptimalPosition(
         if (bestPrefOffset >= prefZoneMin) break;
       }
       if (bestPrefOffset >= prefZoneMin) {
+        // If we landed further back than optimal (e.g. 22h when 18h is optimal),
+        // try to find the most recent valid position at or before bestPrefOffset.
+        // This prefers a comfortable early-evening slot over a late-night one.
+        if (bestPrefOffset > prefOptH) {
+          for (let p = prefOptH; p <= bestPrefOffset; p += STEP) {
+            if (p >= prefZoneMin && p <= hardMax && !isInBlocker(candidate + p)) {
+              bestPrefOffset = p;
+              break;
+            }
+          }
+        }
         const prefInZone = bestPrefOffset >= prefZoneMin && bestPrefOffset <= prefZoneMax;
         return {
           mixHBF: candidate, prefHBF: candidate + bestPrefOffset,

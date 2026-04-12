@@ -358,9 +358,12 @@ export default function Home() {
     }
   }, [showResults]);
 
-  // Set protocolStale when config changes after recipe generated
+  // Set protocolStale when config changes after recipe generated.
+  // Skip the first mount invocation — initial state is not a user change.
+  const configMountedRef = useRef(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    if (!configMountedRef.current) { configMountedRef.current = true; return; }
     if (recipeGenerated) {
       setProtocolStale(true);
     }
