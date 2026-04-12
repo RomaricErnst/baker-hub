@@ -22,6 +22,8 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   useEffect(() => { setName(r.recipe_name ?? ''); },  [r.recipe_name]);
   useEffect(() => { setNotes(r.notes ?? ''); }, [r.notes]);
 
+  const sub = recipeSubtitle(r);
+
   function saveAll() {
     setEditing(false);
     onUpdate(r.id, 'recipe_name', name);
@@ -69,108 +71,148 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   if (editing) {
     return (
       <div style={{
-        padding: '9px 12px', borderRadius: '10px',
+        borderRadius: '10px',
         background: 'rgba(255,255,255,0.07)',
         border: '1px solid rgba(255,255,255,0.2)',
+        overflow: 'hidden',
       }}>
-        <input
-          autoFocus
-          type="text"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="Recipe name…"
-          style={{
-            display: 'block', width: '100%', boxSizing: 'border-box',
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: '5px', padding: '5px 8px',
-            color: 'var(--cream)', fontSize: '.78rem',
-            fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-            outline: 'none', marginBottom: '6px',
-          }}
-        />
-        <textarea
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          placeholder="Notes…"
-          rows={2}
-          style={{
-            display: 'block', width: '100%', boxSizing: 'border-box',
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: '5px', padding: '5px 8px',
-            color: 'rgba(255,255,255,0.7)', fontSize: '.72rem',
-            fontFamily: 'var(--font-dm-sans)',
-            outline: 'none', resize: 'none', lineHeight: 1.5,
-            marginBottom: '8px',
-          }}
-        />
-        <button
-          onClick={saveAll}
-          style={{
-            width: '100%', padding: '.35rem', borderRadius: '6px',
-            background: 'var(--terra)', border: 'none',
-            color: '#fff', fontSize: '.72rem', cursor: 'pointer',
-            fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-          }}>Save</button>
+        {/* Subtitle visible at top */}
+        <div style={{ padding: '8px 12px 6px' }}>
+          <div style={{
+            fontSize: '.65rem', color: 'rgba(255,255,255,0.38)',
+            fontFamily: 'var(--font-dm-mono)',
+          }}>{sub.line1}</div>
+          <div style={{
+            fontSize: '.62rem', color: 'rgba(255,255,255,0.25)',
+            fontFamily: 'var(--font-dm-mono)', marginTop: '1px',
+          }}>{sub.line2}</div>
+        </div>
+        <div style={{ padding: '0 12px 10px' }}>
+          <input
+            autoFocus
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Recipe name…"
+            style={{
+              display: 'block', width: '100%', boxSizing: 'border-box',
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '5px', padding: '5px 8px',
+              color: 'var(--cream)', fontSize: '.78rem',
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+              outline: 'none', marginBottom: '6px',
+            }}
+          />
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            placeholder="Notes…"
+            rows={2}
+            style={{
+              display: 'block', width: '100%', boxSizing: 'border-box',
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '5px', padding: '5px 8px',
+              color: 'rgba(255,255,255,0.7)', fontSize: '.72rem',
+              fontFamily: 'var(--font-dm-sans)',
+              outline: 'none', resize: 'none', lineHeight: 1.5,
+              marginBottom: '8px',
+            }}
+          />
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button
+              onClick={saveAll}
+              style={{
+                flex: 1, padding: '.35rem', borderRadius: '6px',
+                background: 'var(--terra)', border: 'none',
+                color: '#fff', fontSize: '.72rem', cursor: 'pointer',
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+              }}>Save</button>
+            <button
+              onClick={() => { setEditing(false); setName(r.recipe_name ?? ''); setNotes(r.notes ?? ''); }}
+              style={{
+                flex: 1, padding: '.35rem', borderRadius: '6px',
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: 'rgba(255,255,255,0.6)', fontSize: '.72rem', cursor: 'pointer',
+                fontFamily: 'var(--font-dm-sans)',
+              }}>Cancel</button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Read-only state
+  // Read-only — two-zone layout
   return (
     <div style={{
-      padding: '9px 12px', borderRadius: '10px',
+      borderRadius: '10px',
       background: 'rgba(255,255,255,0.05)',
       border: '1px solid rgba(255,255,255,0.08)',
+      overflow: 'hidden',
     }}>
-      {/* Row 1: subtitle + bin + edit + Load */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', gap: '6px', marginBottom: '6px',
-      }}>
+      {/* Identity zone — tap to edit */}
+      <div
+        onClick={() => setEditing(true)}
+        style={{ padding: '9px 12px 8px', cursor: 'pointer' }}
+      >
         <div style={{
           fontSize: '.65rem', color: 'rgba(255,255,255,0.38)',
-          fontFamily: 'var(--font-dm-mono)', flex: 1,
+          fontFamily: 'var(--font-dm-mono)',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{recipeSubtitle(r)}</div>
-        <button onClick={() => setConfirmDelete(true)} style={{
-          flexShrink: 0, background: 'none', border: 'none',
-          cursor: 'pointer', color: 'rgba(255,255,255,0.5)',
-          fontSize: '.72rem', padding: '0 2px', lineHeight: 1,
-        }}>🗑</button>
-        <button onClick={() => setEditing(true)} style={{
-          flexShrink: 0, background: 'none', border: 'none',
-          cursor: 'pointer', color: 'rgba(255,255,255,0.55)',
-          fontSize: '.65rem', padding: '0 2px', lineHeight: 1,
-        }}>✏</button>
-        <button onClick={() => onLoad?.(r)} style={{
-          flexShrink: 0, padding: '.18rem .5rem',
-          borderRadius: '5px', border: '1px solid rgba(196,82,42,0.5)',
-          background: 'rgba(196,82,42,0.15)', color: '#E8785A',
-          fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-          fontWeight: 600, cursor: 'pointer', letterSpacing: '.04em',
-        }}>Load</button>
+        }}>{sub.line1}</div>
+        <div style={{
+          fontSize: '.62rem', color: 'rgba(255,255,255,0.25)',
+          fontFamily: 'var(--font-dm-mono)', marginTop: '1px',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{sub.line2}</div>
+        <div style={{
+          marginTop: '5px',
+          fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)',
+          fontWeight: name ? 600 : 400,
+          color: name ? 'var(--cream)' : 'rgba(255,255,255,0.22)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{name || 'Untitled recipe'}</div>
+        {notes && (
+          <div style={{
+            marginTop: '3px',
+            fontSize: '.72rem', color: 'rgba(255,255,255,0.42)',
+            fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
+            overflow: 'hidden', display: '-webkit-box',
+            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+          } as React.CSSProperties}>{notes}</div>
+        )}
       </div>
 
-      {/* Name */}
+      {/* Action bar */}
       <div style={{
-        fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)',
-        fontWeight: name ? 600 : 400,
-        color: name ? 'var(--cream)' : 'rgba(255,255,255,0.22)',
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        marginBottom: notes ? '3px' : 0,
-      }}>{name || 'Untitled recipe'}</div>
-
-      {/* Notes */}
-      {notes && (
-        <div style={{
-          fontSize: '.72rem', color: 'rgba(255,255,255,0.42)',
-          fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
-          overflow: 'hidden', display: '-webkit-box',
-          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-        } as React.CSSProperties}>{notes}</div>
-      )}
+        display: 'flex', borderTop: '1px solid rgba(255,255,255,0.06)',
+      }}>
+        <button
+          onClick={() => setEditing(true)}
+          style={{
+            flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
+            borderRight: '1px solid rgba(255,255,255,0.06)',
+            color: 'rgba(255,255,255,0.5)', fontSize: '.68rem',
+            fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+          }}>✏ Edit</button>
+        <button
+          onClick={() => setConfirmDelete(true)}
+          style={{
+            flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
+            borderRight: '1px solid rgba(255,255,255,0.06)',
+            color: 'rgba(255,255,255,0.5)', fontSize: '.68rem',
+            fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+          }}>🗑 Delete</button>
+        <button
+          onClick={() => onLoad?.(r)}
+          style={{
+            flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
+            color: '#E8785A', fontSize: '.68rem',
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 600, cursor: 'pointer',
+          }}>Load →</button>
+      </div>
     </div>
   );
 }

@@ -46,12 +46,15 @@ export async function fetchRecipes(): Promise<SavedRecipe[]> {
   return data ?? [];
 }
 
-export function recipeSubtitle(r: SavedRecipe): string {
+export function recipeSubtitle(r: SavedRecipe): { line1: string; line2: string } {
   const style = (ALL_STYLES as Record<string, { name: string }>)[r.style_key];
   const styleName = style?.name ?? r.style_key;
   const date = r.created_at
     ? new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
     : '';
-  const modeLabel = r.mode === 'custom' ? ' · Custom' : '';
-  return `${styleName} · ${r.num_items} × ${r.item_weight}g · ${r.hydration}%${modeLabel} · ${date}`;
+  const modeLabel = r.mode === 'custom' ? 'Custom · ' : '';
+  return {
+    line1: `${styleName} · ${r.num_items} × ${r.item_weight}g`,
+    line2: `${r.hydration}% · ${modeLabel}${date}`,
+  };
 }
