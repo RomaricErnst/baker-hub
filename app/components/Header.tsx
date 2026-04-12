@@ -1,105 +1,266 @@
 'use client';
+import { useState, useEffect, useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '../navigation';
-import AuthButton from './AuthButton';
+import { createClient } from '@/app/lib/supabase/client';
+import { fetchRecipes, recipeSubtitle, type SavedRecipe } from '@/app/lib/supabase/fetchRecipes';
+import { updateRecipe } from '@/app/lib/supabase/saveRecipe';
+import type { User } from '@supabase/supabase-js';
 
 export default function Header() {
   const t = useTranslations('header');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const supabase = createClient();
+
+  const [user, setUser] = useState<User | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [recipes, setRecipes] = useState<SavedRecipe[]>([]);
+  const [loadingRecipes, setLoadingRecipes] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Auth state
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    if (menuOpen) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [menuOpen]);
+
+  // Load saved recipes when menu opens and user is logged in
+  useEffect(() => {
+    if (menuOpen && user) {
+      setLoadingRecipes(true);
+      fetchRecipes().then(data => {
+        setRecipes(data);
+        setLoadingRecipes(false);
+      });
+    }
+  }, [menuOpen, user]);
+
+  async function signInWithGoogle() {
+    const redirectTo = typeof window !== 'undefined'
+      ? window.location.hostname === 'localhost'
+        ? 'http://localhost:3000/auth/callback'
+        : 'https://www.bakerhub.app/auth/callback'
+      : 'https://www.bakerhub.app/auth/callback';
+    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    setUser(null);
+    setMenuOpen(false);
+  }
+
+  function handleFieldBlur(id: string, field: 'recipe_name' | 'notes', value: string) {
+    const trimmed = value.trim();
+    setRecipes(prev => prev.map(r => r.id === id ? { ...r, [field]: trimmed || null } : r));
+    updateRecipe(id, { [field]: trimmed || null });
+  }
 
   return (
     <header style={{
-      background: 'var(--char)',
-      color: 'var(--cream)',
-      padding: '0 1.5rem',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      height: '60px',
-      position: 'sticky',
-      top: 0,
-      zIndex: 100,
-      borderBottom: '2px solid var(--terra)'
+      background: 'var(--char)', color: 'var(--cream)',
+      padding: '0 1.5rem', display: 'flex', alignItems: 'center',
+      justifyContent: 'space-between', height: '60px',
+      position: 'sticky', top: 0, zIndex: 100,
+      borderBottom: '2px solid var(--terra)',
     }}>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        {/* Top row: image + name side by side, tightly spaced */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '.35rem',
-          lineHeight: 1,
-        }}>
-          <img
-            src="/logo-mark.png"
-            alt="Baker Hub"
-            className="header-logo"
-            style={{
-              objectFit: 'contain',
-              borderRadius: '6px',
-              flexShrink: 0,
-            }}
-          />
+      {/* Left: logo + tagline */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '.35rem', lineHeight: 1 }}>
+          <img src="/logo-mark.png" alt="Baker Hub" className="header-logo"
+            style={{ objectFit: 'contain', borderRadius: '6px', flexShrink: 0 }} />
           <span style={{
-            fontFamily: 'var(--font-playfair)',
-            fontSize: '1.35rem',
-            fontWeight: 700,
-            color: 'var(--cream)',
-            letterSpacing: '-.01em',
-            lineHeight: 1,
-          }}>
-            Baker Hub
-          </span>
+            fontFamily: 'var(--font-playfair)', fontSize: '1.35rem', fontWeight: 700,
+            color: 'var(--cream)', letterSpacing: '-.01em', lineHeight: 1,
+          }}>Baker Hub</span>
         </div>
-
-        {/* Tagline: centered under the full logo+name block */}
         <div style={{
-          fontFamily: 'var(--font-dm-sans)',
-          fontStyle: 'italic',
-          fontSize: '.62rem',
-          color: 'var(--gold)',
-          letterSpacing: '.04em',
-          marginTop: '.2rem',
-          lineHeight: 1,
-          textAlign: 'center',
-          width: '100%',
-        }}>
-          {t('tagline')}
-        </div>
+          fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', fontSize: '.62rem',
+          color: 'var(--gold)', letterSpacing: '.04em', marginTop: '.2rem',
+          lineHeight: 1, textAlign: 'center', width: '100%',
+        }}>{t('tagline')}</div>
       </div>
 
-      {/* Right side: language toggle + auth */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
-        <div style={{ display: 'flex', gap: '.25rem', alignItems: 'center' }}>
-          {(['en', 'fr'] as const).map(l => (
-            <button
-              key={l}
-              onClick={() => router.replace(pathname, { locale: l })}
-              style={{
-                background: locale === l ? 'var(--terra)' : 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-dm-mono)',
-                fontSize: '.78rem',
-                fontWeight: 600,
-                color: locale === l ? '#fff' : 'var(--smoke)',
-                padding: '.2rem .45rem',
-                borderRadius: '4px',
-                transition: 'background .15s, color .15s',
-                textTransform: 'uppercase',
-              }}
-            >
-              {l}
-            </button>
+      {/* Right: ☰ menu button */}
+      <div ref={menuRef} style={{ position: 'relative' }}>
+        <button
+          onClick={() => setMenuOpen(v => !v)}
+          aria-label="Menu"
+          style={{
+            background: menuOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
+            border: '1.5px solid rgba(255,255,255,0.15)',
+            borderRadius: '8px', cursor: 'pointer',
+            padding: '7px 10px', display: 'flex', flexDirection: 'column',
+            gap: '4px', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          {[0,1,2].map(i => (
+            <span key={i} style={{
+              display: 'block', width: '18px', height: '2px',
+              background: 'var(--cream)', borderRadius: '1px',
+            }} />
           ))}
-        </div>
-        <AuthButton />
+        </button>
+
+        {/* Dropdown panel */}
+        {menuOpen && (
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+            width: '300px', background: '#1A1612',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
+            overflow: 'hidden', zIndex: 200,
+          }}>
+
+            {/* Language */}
+            <div style={{
+              padding: '12px 16px',
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span style={{
+                fontSize: '.68rem', color: 'var(--smoke)',
+                fontFamily: 'var(--font-dm-mono)',
+                textTransform: 'uppercase', letterSpacing: '.06em',
+              }}>Language</span>
+              <div style={{ display: 'flex', gap: '.25rem' }}>
+                {(['en', 'fr'] as const).map(l => (
+                  <button key={l}
+                    onClick={() => { router.replace(pathname, { locale: l }); setMenuOpen(false); }}
+                    style={{
+                      background: locale === l ? 'var(--terra)' : 'transparent',
+                      border: 'none', cursor: 'pointer',
+                      fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', fontWeight: 600,
+                      color: locale === l ? '#fff' : 'var(--smoke)',
+                      padding: '.2rem .45rem', borderRadius: '4px',
+                      textTransform: 'uppercase',
+                    }}>{l}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Auth */}
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              {user ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.5rem' }}>
+                  <span style={{
+                    fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
+                  }}>{user.email}</span>
+                  <button onClick={signOut} style={{
+                    padding: '.3rem .65rem', borderRadius: '7px', flexShrink: 0,
+                    border: '1.5px solid rgba(255,255,255,0.15)', background: 'transparent',
+                    color: 'var(--smoke)', fontSize: '.7rem', cursor: 'pointer',
+                    fontFamily: 'var(--font-dm-sans)',
+                  }}>Sign out</button>
+                </div>
+              ) : (
+                <button onClick={signInWithGoogle} style={{
+                  width: '100%', padding: '.55rem', borderRadius: '9px',
+                  border: '1.5px solid rgba(255,255,255,0.15)',
+                  background: 'rgba(255,255,255,0.06)', color: 'var(--cream)',
+                  fontSize: '.82rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                  fontWeight: 500, textAlign: 'center',
+                }}>Sign in with Google</button>
+              )}
+            </div>
+
+            {/* Saved recipes */}
+            <div style={{ padding: '12px 16px' }}>
+              <div style={{
+                fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px',
+              }}>Saved recipes</div>
+
+              {!user ? (
+                <div style={{
+                  fontSize: '.78rem', color: 'rgba(255,255,255,0.3)',
+                  fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic',
+                }}>Sign in to see your saved recipes</div>
+              ) : loadingRecipes ? (
+                <div style={{
+                  fontSize: '.78rem', color: 'rgba(255,255,255,0.3)',
+                  fontFamily: 'var(--font-dm-sans)',
+                }}>Loading…</div>
+              ) : recipes.length === 0 ? (
+                <div style={{
+                  fontSize: '.78rem', color: 'rgba(255,255,255,0.3)',
+                  fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic',
+                }}>No saved recipes yet</div>
+              ) : (
+                <div style={{
+                  display: 'flex', flexDirection: 'column', gap: '8px',
+                  maxHeight: '320px', overflowY: 'auto',
+                }}>
+                  {recipes.map(r => (
+                    <div key={r.id} style={{
+                      padding: '10px 12px', borderRadius: '10px',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                    }}>
+                      {/* Subtitle: style · quantity · hydration · date */}
+                      <div style={{
+                        fontSize: '.68rem', color: 'rgba(255,255,255,0.45)',
+                        fontFamily: 'var(--font-dm-mono)', marginBottom: '8px',
+                      }}>{recipeSubtitle(r)}</div>
+
+                      {/* Name field */}
+                      <input
+                        type="text"
+                        defaultValue={r.recipe_name ?? ''}
+                        placeholder="Add a name…"
+                        onBlur={e => handleFieldBlur(r.id, 'recipe_name', e.target.value)}
+                        style={{
+                          width: '100%', boxSizing: 'border-box',
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          borderRadius: '6px', padding: '5px 8px',
+                          color: 'var(--cream)', fontSize: '.78rem',
+                          fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
+                          outline: 'none', marginBottom: '6px',
+                        }}
+                      />
+
+                      {/* Notes field */}
+                      <textarea
+                        defaultValue={r.notes ?? ''}
+                        placeholder="Add notes…"
+                        rows={2}
+                        onBlur={e => handleFieldBlur(r.id, 'notes', e.target.value)}
+                        style={{
+                          width: '100%', boxSizing: 'border-box',
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          borderRadius: '6px', padding: '5px 8px',
+                          color: 'var(--cream)', fontSize: '.75rem',
+                          fontFamily: 'var(--font-dm-sans)',
+                          outline: 'none', resize: 'vertical',
+                          lineHeight: 1.5,
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );

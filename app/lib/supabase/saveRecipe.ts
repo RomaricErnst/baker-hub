@@ -49,8 +49,23 @@ export async function saveRecipe(recipe: RecipeToSave): Promise<{ success: boole
     hydration: recipe.hydration,
     total_cold_hours: recipe.totalColdHours,
     total_rt_hours: recipe.totalRTHours,
+    recipe_name: null,
+    notes: null,
   });
 
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function updateRecipe(
+  id: string,
+  fields: { recipe_name?: string | null; notes?: string | null }
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('recipes')
+    .update(fields)
+    .eq('id', id);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
