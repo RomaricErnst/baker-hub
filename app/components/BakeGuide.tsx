@@ -201,6 +201,13 @@ export default function BakeGuide({
   const isSourdough   = styleKey === 'sourdough' || styleKey === 'pain_levain';
   const isBread       = ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois','sourdough'].includes(styleKey);
   const isNeapolitan  = styleKey === 'neapolitan';
+  const isFougasse    = styleKey === 'fougasse';
+  const isBaguette    = styleKey === 'baguette';
+  const isLoafTin     = ['brioche','pain_mie','pain_viennois','pain_seigle'].includes(styleKey);
+  const isBoule       = ['pain_campagne','pain_levain','sourdough','pain_complet'].includes(styleKey);
+  // Shaping label: what we call the shaped piece
+  const breadPieceLabel = isFougasse ? 'piece' : isBaguette ? 'baguette' : isLoafTin ? 'loaf' : 'loaf';
+  const breadPiecePlural = numItems === 1 ? breadPieceLabel : (isBaguette ? 'baguettes' : isLoafTin ? 'loaves' : 'loaves');
   const isSpiral      = mixerType === 'spiral';
   const hasPref       = !!prefermentType && prefermentType !== 'none';
   const isPoolish     = prefermentType === 'poolish';
@@ -511,25 +518,78 @@ export default function BakeGuide({
         </StepCard>
       )}
 
-      {/* ── STEP: Divide & Ball ──────────────────────── */}
+      {/* ── STEP: Divide & Shape (bread) / Divide & Ball (pizza) ── */}
       {schedule.divideBallTime && (
-        <StepCard number={n()} icon={<IconDivide />} title="Divide & Ball"
+        <StepCard number={n()} icon={<IconDivide />}
+          title={isBread ? 'Divide & Shape' : 'Divide & Ball'}
           time={schedule.divideBallTime} duration={divideMin / 60} accent="#8A6A4A">
 
           <Section icon="🥄" title="What to do">
-            <Steps items={[
-              { bold: `Weigh dough and divide into ${numItems} equal pieces`, note: 'use a scale — eyeballing leads to uneven baking' },
-              { bold: 'Pre-shape each piece into a rough round', note: 'fold edges to centre, flip seam-side down' },
-              { bold: 'Tuck and drag: cup your hand over the ball', note: 'drag it toward you on an unfloured surface — creates surface tension' },
-              { bold: 'Place in individual dough boxes or bowls', note: 'seam side down, well-spaced' },
-              ...(isTwoPhase ? [{ bold: 'Cover and return to fridge immediately', note: 'balls go back cold for phase 2' }] : [
-                { bold: 'Cover and leave at room temperature', note: 'final proof begins now' },
-              ]),
-            ]} />
+            {isBread ? (
+              <Steps items={isFougasse ? [
+                { bold: `Divide into ${numItems} equal ${breadPiecePlural}`, note: 'use a scale for even pieces' },
+                { bold: 'Flatten each piece gently with your hands', note: 'aim for roughly oval, 1.5–2cm thick' },
+                { bold: 'Cut the leaf pattern with a sharp knife or dough cutter', note: 'one central slash, 4–5 angled cuts each side — like a leaf vein' },
+                { bold: 'Open the cuts slightly with your fingers', note: 'spread them apart so they do not close during baking' },
+                { bold: 'Transfer to a lined baking tray', note: 'dust with flour — fougasse does not go in the fridge' },
+                { bold: 'Cover and leave at room temperature for final proof', note: '20–40 min at room temperature' },
+              ] : isBaguette ? [
+                { bold: `Divide into ${numItems} equal pieces`, note: `use a scale — equal pieces` },
+                { bold: 'Pre-shape: fold to a loose rectangle', note: 'do not degas — just gently fold sides in' },
+                { bold: 'Cover and bench rest 20 min', note: 'gluten relaxes, makes final shaping easier' },
+                { bold: 'Final shape: roll gently into a baguette', note: 'use your fingertips, not your palm — length ~30–40cm' },
+                { bold: 'Place in a floured couche or baguette tray', note: 'seam side up in couche, seam side down in tray' },
+                ...(isTwoPhase ? [{ bold: 'Cover and refrigerate for cold proof', note: 'retards fermentation — develops flavour and crust' }] : [
+                  { bold: 'Cover and leave at room temperature', note: 'final proof begins now' },
+                ]),
+              ] : isLoafTin ? [
+                { bold: `Divide into ${numItems} equal pieces`, note: 'use a scale for even loaves' },
+                { bold: 'Shape each piece into a log', note: 'flatten slightly, roll from top to bottom, seal the seam' },
+                { bold: 'Place seam-side down in a greased loaf tin', note: 'tin should be about two-thirds full' },
+                ...(isTwoPhase ? [{ bold: 'Cover and refrigerate for cold retard', note: 'develops flavour overnight' }] : [
+                  { bold: 'Cover and leave at room temperature', note: 'final proof begins now — dough should dome above the tin' },
+                ]),
+              ] : [
+                // Boule / pain campagne / pain levain / sourdough
+                { bold: `Divide into ${numItems} equal pieces`, note: `use a scale — equal pieces` },
+                { bold: 'Pre-shape: fold to a rough round', note: 'fold edges to centre, flip seam-side down, rest 15–20 min' },
+                { bold: 'Final shape: build surface tension', note: 'cup hands around the dough, drag toward you on unfloured surface' },
+                { bold: 'Place in a floured banneton, seam side up', note: 'dust generously with rice flour to prevent sticking' },
+                ...(isTwoPhase ? [{ bold: 'Cover and refrigerate overnight', note: 'cold proof develops flavour and makes scoring easier' }] : [
+                  { bold: 'Cover and leave at room temperature', note: 'final proof begins now' },
+                ]),
+              ]} />
+            ) : (
+              <Steps items={[
+                { bold: `Weigh dough and divide into ${numItems} equal pieces`, note: 'use a scale — eyeballing leads to uneven baking' },
+                { bold: 'Pre-shape each piece into a rough round', note: 'fold edges to centre, flip seam-side down' },
+                { bold: 'Tuck and drag: cup your hand over the ball', note: 'drag it toward you on an unfloured surface — creates surface tension' },
+                { bold: 'Place in individual dough boxes or bowls', note: 'seam side down, well-spaced' },
+                ...(isTwoPhase ? [{ bold: 'Cover and return to fridge immediately', note: 'balls go back cold for phase 2' }] : [
+                  { bold: 'Cover and leave at room temperature', note: 'final proof begins now' },
+                ]),
+              ]} />
+            )}
           </Section>
 
-          <Section icon="👁️" title="Watch for — a good ball">
-            <Bullets items={[
+          <Section icon="👁️" title={isBread ? 'Watch for' : 'Watch for — a good ball'}>
+            <Bullets items={isFougasse ? [
+              'Cuts stay open — if they close, reopen with your fingers',
+              'Even thickness — thick spots will be dense, thin spots will burn',
+              'Surface dusted with flour — prevents sticking to tray',
+            ] : isBaguette ? [
+              'Even cylinder, tapered ends — uniform diameter bakes evenly',
+              'Tight seam — open seam bursts uncontrollably in the oven',
+              'Dough springs back slowly when poked — ready to score and bake',
+            ] : isLoafTin ? [
+              'Smooth top, no tears — tight skin is important for oven spring',
+              'Dough fills about 2/3 of the tin after shaping',
+              'Before baking: dough should dome just above the tin rim',
+            ] : isBread ? [
+              'Smooth, taut surface — no tears or wrinkles',
+              'Holds its round shape without spreading',
+              'If the dough tears easily, gluten is still warm — rest 5 min and try again',
+            ] : [
               'Smooth, taut skin with no tears or folds visible on top',
               'Holds its round shape — doesn\'t immediately spread flat (if it does, gluten is weak)',
               `At ${kitchenTemp}°C, work within ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} — warm kitchens make balls proof quickly`,
@@ -537,7 +597,23 @@ export default function BakeGuide({
           </Section>
 
           <Section icon="⚠️" title="Pitfalls">
-            <Bullets items={[
+            <Bullets items={isFougasse ? [
+              'Cuts closing back up — open them wider and dust with more flour',
+              'Over-handling: fougasse is a flatbread, not a structured loaf — gentle is better',
+              'Too thin at the edges — they will burn before the centre is cooked',
+            ] : isBaguette ? [
+              'Over-flouring: reduces surface tension, baguette spreads instead of holding shape',
+              'Pressing too hard: degasses the dough — work gently to keep the bubbles',
+              'Skipping the bench rest: gluten tears during final shaping',
+            ] : isLoafTin ? [
+              'Greasing the tin: use butter or spray oil — without it the loaf sticks',
+              'Over-proofing in the tin: dough should dome slightly, not overflow',
+              'Uneven shaping: log should be the same width as the tin',
+            ] : isBread ? [
+              'Flouring the bench: reduces friction, ball won\'t develop surface tension — use bare, slightly damp surface',
+              'Skipping the bench rest: gluten tears when it\'s too tight',
+              'Under-tensioning: a slack ball spreads flat and won\'t hold shape in the oven',
+            ] : [
               'Flouring the surface: reduces friction, ball won\'t get surface tension — use bare, slightly damp surface',
               'Tearing the skin during shaping — pre-shape roughly first, rest 5 min, then final ball',
               `Hot kitchen (${kitchenTemp >= 30 ? 'like yours at ' + kitchenTemp + '°C' : '≥30°C'}): get balls into their boxes fast — they proof very quickly at warm temps`,
@@ -547,8 +623,10 @@ export default function BakeGuide({
       )}
 
       {/* ── STEP: Cold Retard 2 (two-phase) ─────────── */}
-      {isTwoPhase && schedule.coldRetard2Start && schedule.coldRetard2End && (
-        <StepCard number={n()} icon={<IconCold />} title="Cold Retard — Balls"
+      {isTwoPhase && schedule.coldRetard2Start && schedule.coldRetard2End &&
+        (schedule.coldRetard2End.getTime() - schedule.coldRetard2Start.getTime()) > 0 && (
+        <StepCard number={n()} icon={<IconCold />}
+          title={isBread ? 'Cold Proof' : 'Cold Retard — Balls'}
           time={schedule.coldRetard2Start}
           duration={(schedule.coldRetard2End.getTime() - schedule.coldRetard2Start.getTime()) / 3600000}
           accent="#6A7FA8">
