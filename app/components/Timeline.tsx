@@ -117,8 +117,11 @@ function buildItems(
       }
       if (removeTime >= schedule.bulkFermStart) removeTime = new Date(prefRemoveFromFridgeTime);
     }
-    const warmupHRaw = (schedule.bulkFermStart.getTime() - removeTime.getTime()) / 3600000;
-    const warmupH = Math.round(warmupHRaw * 4) / 4; // round to nearest 15 min
+    // Duration = time until Mix & Knead starts (not until bulk ferm starts).
+    // The poolish is used at mix time — it warms during mixing, not after.
+    const mixStartMs = schedule.bulkFermStart.getTime() - (schedule.mixingDurationH ?? 0.25) * 3600000;
+    const warmupHRaw = (mixStartMs - removeTime.getTime()) / 3600000;
+    const warmupH = Math.max(0, Math.round(warmupHRaw * 4) / 4); // round to nearest 15 min
     const idealWarmupH = temp >= 28 ? 1.5 : temp >= 24 ? 2 : 2.5;
     const warmupShort = prefermentType === 'poolish' && warmupH < idealWarmupH * 0.6;
     items.push({
