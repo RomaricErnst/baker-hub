@@ -13,68 +13,129 @@ function RecipeCard({ r, onUpdate, onLoad }: {
   onUpdate: (id: string, field: 'recipe_name' | 'notes', value: string) => void;
   onLoad?: (r: SavedRecipe) => void;
 }) {
+  const [editingName, setEditingName]   = useState(false);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [name, setName]   = useState(r.recipe_name ?? '');
+  const [notes, setNotes] = useState(r.notes ?? '');
+
+  useEffect(() => { setName(r.recipe_name ?? ''); },  [r.recipe_name]);
+  useEffect(() => { setNotes(r.notes ?? ''); }, [r.notes]);
+
+  function saveName() {
+    setEditingName(false);
+    onUpdate(r.id, 'recipe_name', name);
+  }
+  function saveNotes() {
+    setEditingNotes(false);
+    onUpdate(r.id, 'notes', notes);
+  }
+
+  const pencil = (onClick: () => void) => (
+    <button onClick={onClick} style={{
+      background: 'none', border: 'none', cursor: 'pointer',
+      padding: '0 0 0 4px', color: 'rgba(255,255,255,0.25)',
+      fontSize: '.65rem', lineHeight: 1, flexShrink: 0,
+    }}>✏</button>
+  );
+
   return (
     <div style={{
-      padding: '10px 12px', borderRadius: '10px',
+      padding: '9px 12px', borderRadius: '10px',
       background: 'rgba(255,255,255,0.05)',
       border: '1px solid rgba(255,255,255,0.08)',
     }}>
-      {/* Subtitle + Load button */}
+      {/* Row 1: subtitle + Load */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', marginBottom: '8px', gap: '8px',
+        justifyContent: 'space-between', gap: '8px', marginBottom: '6px',
       }}>
         <div style={{
-          fontSize: '.68rem', color: 'rgba(255,255,255,0.45)',
+          fontSize: '.65rem', color: 'rgba(255,255,255,0.38)',
           fontFamily: 'var(--font-dm-mono)', flex: 1,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{recipeSubtitle(r)}</div>
-        <button
-          onClick={() => onLoad?.(r)}
-          style={{
-            flexShrink: 0, padding: '.2rem .55rem',
-            borderRadius: '6px', border: '1px solid rgba(196,82,42,0.5)',
-            background: 'rgba(196,82,42,0.15)', color: '#E8785A',
-            fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
-            fontWeight: 600, cursor: 'pointer', letterSpacing: '.04em',
-          }}>
-          Load
-        </button>
+        <button onClick={() => onLoad?.(r)} style={{
+          flexShrink: 0, padding: '.18rem .5rem',
+          borderRadius: '5px', border: '1px solid rgba(196,82,42,0.5)',
+          background: 'rgba(196,82,42,0.15)', color: '#E8785A',
+          fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+          fontWeight: 600, cursor: 'pointer', letterSpacing: '.04em',
+        }}>Load</button>
       </div>
 
-      {/* Name field */}
-      <input
-        type="text"
-        defaultValue={r.recipe_name ?? ''}
-        placeholder="Add a name…"
-        onBlur={e => onUpdate(r.id, 'recipe_name', e.target.value)}
-        style={{
-          width: '100%', boxSizing: 'border-box',
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '6px', padding: '5px 8px',
-          color: 'var(--cream)', fontSize: '.78rem',
-          fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
-          outline: 'none', marginBottom: '6px',
-        }}
-      />
+      {/* Row 2: name — read-only or editing */}
+      {editingName ? (
+        <input
+          autoFocus
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onBlur={saveName}
+          onKeyDown={e => e.key === 'Enter' && saveName()}
+          placeholder="Recipe name…"
+          style={{
+            display: 'block', width: '100%', boxSizing: 'border-box',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.22)',
+            borderRadius: '5px', padding: '4px 7px',
+            color: 'var(--cream)', fontSize: '.78rem',
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+            outline: 'none', marginBottom: '4px',
+          }}
+        />
+      ) : (
+        <div style={{
+          display: 'flex', alignItems: 'center', marginBottom: notes || editingNotes ? '3px' : 0,
+        }}>
+          <span style={{
+            fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)',
+            fontWeight: name ? 600 : 400,
+            color: name ? 'var(--cream)' : 'rgba(255,255,255,0.22)',
+            flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{name || 'Untitled recipe'}</span>
+          {pencil(() => setEditingName(true))}
+        </div>
+      )}
 
-      {/* Notes field */}
-      <textarea
-        defaultValue={r.notes ?? ''}
-        placeholder="Add notes…"
-        rows={2}
-        onBlur={e => onUpdate(r.id, 'notes', e.target.value)}
-        style={{
-          width: '100%', boxSizing: 'border-box',
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '6px', padding: '5px 8px',
-          color: 'var(--cream)', fontSize: '.75rem',
-          fontFamily: 'var(--font-dm-sans)',
-          outline: 'none', resize: 'vertical',
-          lineHeight: 1.5,
-        }}
-      />
+      {/* Row 3: notes — only shown if set, or if editing */}
+      {editingNotes ? (
+        <textarea
+          autoFocus
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          onBlur={saveNotes}
+          rows={2}
+          placeholder="Add notes…"
+          style={{
+            display: 'block', width: '100%', boxSizing: 'border-box',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.22)',
+            borderRadius: '5px', padding: '4px 7px',
+            color: 'rgba(255,255,255,0.7)', fontSize: '.72rem',
+            fontFamily: 'var(--font-dm-sans)',
+            outline: 'none', resize: 'none', lineHeight: 1.5,
+          }}
+        />
+      ) : notes ? (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: '2px',
+        }}>
+          <span style={{
+            fontSize: '.72rem', color: 'rgba(255,255,255,0.42)',
+            fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
+            flex: 1,
+            overflow: 'hidden', display: '-webkit-box',
+            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+          }}>{notes}</span>
+          {pencil(() => setEditingNotes(true))}
+        </div>
+      ) : (
+        <button onClick={() => setEditingNotes(true)} style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: 'rgba(255,255,255,0.2)', fontSize: '.68rem',
+          fontFamily: 'var(--font-dm-sans)', padding: 0,
+        }}>+ add notes</button>
+      )}
     </div>
   );
 }
