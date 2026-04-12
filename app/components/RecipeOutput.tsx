@@ -576,7 +576,7 @@ export default function RecipeOutput({
               const totalSalt  = salt;
               const totalYeast = pf.prefYeastGrams;
               return (
-                <div style={{ marginTop: '.6rem', display: 'flex', flexDirection: 'column', gap: '.45rem' }}>
+                <div style={{ marginTop: '.6rem' }}>
                   {[
                     { label: 'Flour', pct: '100%', value: `${Math.round(totalFlour).toLocaleString()}g` },
                     { label: 'Water', pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: `${Math.round(totalWater).toLocaleString()}g` },
@@ -584,14 +584,17 @@ export default function RecipeOutput({
                     ...(totalYeast > 0 ? [{ label: 'Yeast (IDY)', pct: `${Math.round(totalYeast / totalFlour * 1000) / 10}%`, value: `${totalYeast}g` }] : []),
                   ].map((row, i) => (
                     <div key={i} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem',
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto auto',
+                      gap: '0 1.5rem',
+                      alignItems: 'center',
+                      padding: '.6rem .1rem',
+                      borderBottom: `1px solid ${D.line}`,
                       fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
-                      color: 'rgba(245,240,232,0.65)',
-                      padding: '.12rem 0',
                     }}>
-                      <span style={{ flex: 1 }}>{row.label}</span>
-                      <span style={{ color: 'rgba(245,240,232,0.9)', fontWeight: 600, minWidth: '3.5rem', textAlign: 'right' }}>{row.value}</span>
-                      <span style={{ color: 'rgba(245,240,232,0.38)', fontSize: '.65rem', minWidth: '3rem', textAlign: 'right' }}>{row.pct}</span>
+                      <span style={{ color: D.muted }}>{row.label}</span>
+                      <span style={{ color: D.sub, fontSize: '.65rem', textAlign: 'right' }}>{row.pct}</span>
+                      <span style={{ color: 'rgba(245,240,232,0.9)', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap' }}>{row.value}</span>
                     </div>
                   ))}
                 </div>
@@ -714,7 +717,7 @@ export default function RecipeOutput({
                   const totalSalt  = salt;
                   const totalYeast = pf.prefYeastGrams;
                   return (
-                    <div style={{ marginTop: '.6rem', display: 'flex', flexDirection: 'column', gap: '.45rem' }}>
+                    <div style={{ marginTop: '.6rem' }}>
                       {[
                         { label: 'Flour', pct: '100%', value: `${Math.round(totalFlour).toLocaleString('en')}g` },
                         { label: 'Water', pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: `${Math.round(totalWater).toLocaleString('en')}g` },
@@ -722,13 +725,17 @@ export default function RecipeOutput({
                         ...(totalYeast > 0 ? [{ label: 'Yeast (IDY)', pct: `${Math.round(totalYeast / totalFlour * 1000) / 10}%`, value: `${totalYeast}g` }] : []),
                       ].map((row, i) => (
                         <div key={i} style={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem',
+                          display: 'grid',
+                          gridTemplateColumns: '1fr auto auto',
+                          gap: '0 1.5rem',
+                          alignItems: 'center',
+                          padding: '.6rem .1rem',
+                          borderBottom: `1px solid ${D.line}`,
                           fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
-                          color: 'rgba(245,240,232,0.65)', padding: '.12rem 0',
                         }}>
-                          <span style={{ flex: 1 }}>{row.label}</span>
-                          <span style={{ color: 'rgba(245,240,232,0.38)', fontSize: '.65rem' }}>{row.pct}</span>
-                          <span style={{ color: 'rgba(245,240,232,0.9)', fontWeight: 600, minWidth: '3.5rem', textAlign: 'right' }}>{row.value}</span>
+                          <span style={{ color: D.muted }}>{row.label}</span>
+                          <span style={{ color: D.sub, fontSize: '.65rem', textAlign: 'right' }}>{row.pct}</span>
+                          <span style={{ color: 'rgba(245,240,232,0.9)', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap' }}>{row.value}</span>
                         </div>
                       ))}
                     </div>
