@@ -361,9 +361,11 @@ export default function Home() {
   // Set protocolStale when config changes after recipe generated.
   // Skip the first mount invocation — initial state is not a user change.
   const configMountedRef = useRef(false);
+  const justGeneratedRef = useRef(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!configMountedRef.current) { configMountedRef.current = true; return; }
+    if (justGeneratedRef.current) { justGeneratedRef.current = false; return; }
     if (recipeGenerated) {
       setProtocolStale(true);
     }
@@ -528,6 +530,7 @@ export default function Home() {
       const timeDefault = prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20;
       setPrefermentFlourPct(timeDefault);
     }
+    justGeneratedRef.current = true;
     setRecipeGenerated(true);
     setProtocolStale(false);
     setShowResults(true);
