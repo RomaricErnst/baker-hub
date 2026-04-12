@@ -448,12 +448,32 @@ function findOptimalPosition(
       if (bestPrefOffset >= prefZoneMin) {
         // If we landed further back than optimal (e.g. 22h when 18h is optimal),
         // try to find the most recent valid position at or before bestPrefOffset.
-        // This prefers a comfortable early-evening slot over a late-night one.
         if (bestPrefOffset > prefOptH) {
           for (let p = prefOptH; p <= bestPrefOffset; p += STEP) {
             if (p >= prefZoneMin && p <= hardMax && !isInBlocker(candidate + p)) {
               bestPrefOffset = p;
               break;
+            }
+          }
+        }
+        // Comfort check: if poolish start lands after 20:00 or before 06:00,
+        // scan from prefZoneMin upward for a slot in the 17:00–20:00 window.
+        // hardMax already prevents any position that would be in the past.
+        // If no comfortable slot exists (e.g. planning same evening),
+        // keep the original bestPrefOffset — do not override with a past time.
+        if (prefermentType === 'poolish' && prefGoesInFridge) {
+          const prefAbsMs = ms - (candidate + bestPrefOffset) * 3600000;
+          const prefHour = new Date(prefAbsMs).getHours();
+          if (prefHour >= 20 || prefHour < 6) {
+            for (let p = prefZoneMin; p < bestPrefOffset; p += STEP) {
+              if (p > hardMax) break; // past guard — never suggest a time before now
+              if (isInBlocker(candidate + p)) continue;
+              const absMs = ms - (candidate + p) * 3600000;
+              const h = new Date(absMs).getHours();
+              if (h >= 17 && h < 20) {
+                bestPrefOffset = p;
+                break;
+              }
             }
           }
         }
