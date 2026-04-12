@@ -1586,10 +1586,12 @@ export default function Home() {
               activeStep={advancedStep}
               summary={(() => {
                 if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
-                  return computeBlendProfile(flourBlend).displayName;
+                  // brandProduct holds the actual selected flour name (e.g. "Auchan Farine T55")
+                  // fall back to generic tile name only when no specific flour was selected
+                  return flourBlend.brandProduct ?? computeBlendProfile(flourBlend).displayName;
                 }
                 const ratio2 = 100 - flourBlend.ratio1;
-                const flour1Name = computeBlendProfile({ ...flourBlend, flour2: null, ratio1: 100 }).displayName;
+                const flour1Name = flourBlend.brandProduct ?? computeBlendProfile({ ...flourBlend, flour2: null, ratio1: 100 }).displayName;
                 const flour2Name = flourBlend.customFlour2Name ?? computeBlendProfile(flourBlend).displayName.split('+')[1]?.trim() ?? '';
                 return `${flourBlend.ratio1}% ${flour1Name} · ${ratio2}% ${flour2Name}`;
               })()}

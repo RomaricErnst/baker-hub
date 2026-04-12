@@ -621,10 +621,11 @@ export default function RecipeOutput({
                 highlight
                 sub={mode === 'custom' && flourBlend ? (() => {
                   const f1 = FLOUR_DATA[flourBlend.flour1];
+                  const f1DisplayName = flourBlend.brandProduct ?? f1.name;
                   if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
-                    return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>{f1.name}</span>;
+                    return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>{f1DisplayName}</span>;
                   }
-                  return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>Use your primary flour ({f1.name})</span>;
+                  return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>Use your primary flour ({f1DisplayName})</span>;
                 })() : undefined}
               />
               <IngRow label="Water" grams={wStr(pf.prefWater)} noPct
@@ -672,7 +673,7 @@ export default function RecipeOutput({
               })() : (
                 <IngRow
                   label={mode === 'custom' && flourBlend && (!flourBlend.flour2 || flourBlend.ratio1 >= 100)
-                    ? FLOUR_DATA[flourBlend.flour1].name
+                    ? (flourBlend.brandProduct ?? FLOUR_DATA[flourBlend.flour1].name)
                     : 'Remaining flour'}
                   grams={wStr(pf.finalFlour)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
@@ -763,15 +764,16 @@ export default function RecipeOutput({
             advancedPct={mode === 'custom' ? '100%' : undefined}
             sub={mode === 'custom' && flourBlend ? (() => {
               const f1 = FLOUR_DATA[flourBlend.flour1];
+              const f1DisplayName = flourBlend.brandProduct ?? f1.name;
               const f1Weight = Math.round(flour * flourBlend.ratio1 / 100);
               if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
-                return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>{f1.name}</span>;
+                return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>{f1DisplayName}</span>;
               }
               const f2 = FLOUR_DATA[flourBlend.flour2];
               const f2Weight = flour - f1Weight;
               return (
                 <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>
-                  {flourBlend.ratio1}% {f1.name} ({f1Weight.toLocaleString('en')}g)
+                  {flourBlend.ratio1}% {f1DisplayName} ({f1Weight.toLocaleString('en')}g)
                   {' · '}
                   {100 - flourBlend.ratio1}% {flourBlend.customFlour2Name ?? f2.name} ({f2Weight.toLocaleString('en')}g)
                 </span>
