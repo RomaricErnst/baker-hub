@@ -35,6 +35,7 @@
   },
   "modeCards": {
     "simple": {
+      "title": "Simple",
       "bullet1": "Idéal pour commencer",
       "bullet2": "Réglages intelligents",
       "bullet3": "Planning visuel couleur",
@@ -42,6 +43,7 @@
       "collapsed": "Réglages intelligents · planning couleur · guide"
     },
     "custom": {
+      "title": "Avancé",
       "bullet1": "Votre mélange de farines",
       "bullet2": "Contrôle du pré-ferment",
       "bullet3": "Graphe de fermentation",

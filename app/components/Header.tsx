@@ -25,6 +25,9 @@ export default function Header({
   const [menuOpen, setMenuOpen] = useState(false);
   const [recipes, setRecipes] = useState<SavedRecipe[]>([]);
   const [loadingRecipes, setLoadingRecipes] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Auth state
@@ -71,6 +74,20 @@ export default function Header({
     await supabase.auth.signOut();
     setUser(null);
     setMenuOpen(false);
+  }
+
+  async function signInWithEmail() {
+    if (!emailInput.trim()) return;
+    const redirectTo = typeof window !== 'undefined'
+      ? window.location.hostname === 'localhost'
+        ? 'http://localhost:3000/auth/callback'
+        : 'https://www.bakerhub.app/auth/callback'
+      : 'https://www.bakerhub.app/auth/callback';
+    await supabase.auth.signInWithOtp({
+      email: emailInput.trim(),
+      options: { emailRedirectTo: redirectTo },
+    });
+    setEmailSent(true);
   }
 
   function handleFieldBlur(id: string, field: 'recipe_name' | 'notes', value: string) {
@@ -206,14 +223,60 @@ export default function Header({
                     fontFamily: 'var(--font-dm-sans)',
                   }}>Sign out</button>
                 </div>
+              ) : emailSent ? (
+                <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', textAlign: 'center', padding: '.25rem 0' }}>
+                  Check your inbox — link sent ✓
+                </div>
               ) : (
-                <button onClick={signInWithGoogle} style={{
-                  width: '100%', padding: '.55rem', borderRadius: '9px',
-                  border: '1.5px solid rgba(255,255,255,0.15)',
-                  background: 'rgba(255,255,255,0.06)', color: 'var(--cream)',
-                  fontSize: '.82rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
-                  fontWeight: 500, textAlign: 'center',
-                }}>Sign in with Google</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {/* Google */}
+                  <button onClick={signInWithGoogle} style={{
+                    width: '100%', padding: '.5rem', borderRadius: '8px',
+                    border: '1.5px solid rgba(255,255,255,0.15)',
+                    background: 'rgba(255,255,255,0.06)', color: 'var(--cream)',
+                    fontSize: '.8rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                    fontWeight: 500, textAlign: 'center',
+                  }}>Sign in with Google</button>
+                  {/* Email divider */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                    <span style={{ fontSize: '.65rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-mono)' }}>or</span>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                  </div>
+                  {/* Email magic link */}
+                  {showEmailForm ? (
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <input
+                        type="email"
+                        placeholder="your@email.com"
+                        value={emailInput}
+                        onChange={e => setEmailInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && signInWithEmail()}
+                        style={{
+                          flex: 1, padding: '.45rem .6rem', borderRadius: '7px',
+                          border: '1px solid rgba(255,255,255,0.18)',
+                          background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
+                          fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)',
+                          outline: 'none',
+                        }}
+                      />
+                      <button onClick={signInWithEmail} style={{
+                        padding: '.45rem .7rem', borderRadius: '7px', flexShrink: 0,
+                        background: 'var(--terra)', border: 'none',
+                        color: '#fff', fontSize: '.78rem', cursor: 'pointer',
+                        fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
+                      }}>Send</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setShowEmailForm(true)} style={{
+                      width: '100%', padding: '.5rem', borderRadius: '8px',
+                      border: '1.5px solid rgba(255,255,255,0.15)',
+                      background: 'transparent', color: 'rgba(255,255,255,0.55)',
+                      fontSize: '.8rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                      textAlign: 'center',
+                    }}>Sign in with email</button>
+                  )}
+                </div>
               )}
             </div>
 

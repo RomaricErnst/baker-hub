@@ -35,6 +35,7 @@
   },
   "modeCards": {
     "simple": {
+      "title": "Simple",
       "bullet1": "Great to start with",
       "bullet2": "Smart defaults",
       "bullet3": "Colour bar schedule",
@@ -42,6 +43,7 @@
       "collapsed": "Smart defaults · colour bar · guide"
     },
     "custom": {
+      "title": "Custom",
       "bullet1": "Your flour blend",
       "bullet2": "Preferment control",
       "bullet3": "Fermentation graph",

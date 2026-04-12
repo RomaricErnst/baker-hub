@@ -671,7 +671,7 @@ export default function Home() {
               }}
             >
               <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--char)', marginBottom: modeChosen ? '3px' : '10px', transition: 'margin-bottom 0.25s' }}>
-                Simple
+                {t('modeCards.simple.title')}
               </div>
               {/* Bullets collapse smoothly when mode is chosen */}
               <div style={{ overflow: 'hidden', maxHeight: modeChosen ? '0' : '160px', transition: 'max-height 0.3s ease', display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -725,7 +725,7 @@ export default function Home() {
               }}
             >
               <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--char)', marginBottom: modeChosen ? '3px' : '10px', transition: 'margin-bottom 0.25s' }}>
-                Custom
+                {t('modeCards.custom.title')}
               </div>
               <div style={{ overflow: 'hidden', maxHeight: modeChosen ? '0' : '160px', transition: 'max-height 0.3s ease', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 {[
