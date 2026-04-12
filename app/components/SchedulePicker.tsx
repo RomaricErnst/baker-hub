@@ -456,25 +456,30 @@ function findOptimalPosition(
             }
           }
         }
-        // Comfort check: if poolish start lands after 20:00 or before 06:00,
-        // scan from prefZoneMin upward for a slot in the 17:00–20:00 window.
-        // hardMax already prevents any position that would be in the past.
-        // If no comfortable slot exists (e.g. planning same evening),
-        // keep the original bestPrefOffset — do not override with a past time.
+        // Comfort window: if poolish start lands outside 18:00–21:00,
+        // scan ALL valid offsets (prefZoneMin..hardMax) looking for the
+        // EARLIEST slot whose clock time falls in 18:00–21:00 (6pm–9pm).
+        // We never scan toward the afternoon — only toward the evening.
+        // If no such slot exists, keep the original bestPrefOffset.
+        // hardMax guards against past positions. isInBlocker skips blocked slots.
         if (prefermentType === 'poolish' && prefGoesInFridge) {
           const prefAbsMs = ms - (candidate + bestPrefOffset) * 3600000;
           const prefHour = new Date(prefAbsMs).getHours();
-          if (prefHour >= 20 || prefHour < 6) {
-            for (let p = prefZoneMin; p < bestPrefOffset; p += STEP) {
-              if (p > hardMax) break; // past guard — never suggest a time before now
+          if (prefHour < 18 || prefHour >= 21) {
+            // Scan all valid offsets from min to max, find first that lands 18-21h
+            // "first" = smallest offset = most recent = earliest evening slot
+            let comfortOffset: number | null = null;
+            for (let p = prefZoneMin; p <= hardMax; p += STEP) {
               if (isInBlocker(candidate + p)) continue;
               const absMs = ms - (candidate + p) * 3600000;
               const h = new Date(absMs).getHours();
-              if (h >= 17 && h < 20) {
-                bestPrefOffset = p;
+              if (h >= 18 && h < 21) {
+                // Take the first hit — closest to now within 18-21h window
+                comfortOffset = p;
                 break;
               }
             }
+            if (comfortOffset !== null) bestPrefOffset = comfortOffset;
           }
         }
         const prefInZone = bestPrefOffset >= prefZoneMin && bestPrefOffset <= prefZoneMax;
