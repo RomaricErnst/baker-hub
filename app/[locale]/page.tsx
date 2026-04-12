@@ -17,6 +17,7 @@ import FlourPicker from '../components/FlourPicker';
 import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import { saveRecipe } from '../lib/supabase/saveRecipe';
+import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { type UnitSystem } from '../utils/units';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
@@ -549,12 +550,13 @@ export default function Home() {
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
   }
 
-  async function handleSaveRecipe(mode: 'simple' | 'custom') {
+  async function handleSaveRecipe(recipeMode: 'simple' | 'custom') {
     if (!styleKey || !schedule || !ovenType || !mixerType || !yeastType) return;
-    const activeRecipe = mode === 'custom' ? (advancedDisplayRecipe ?? advancedRecipe) : (displayRecipe ?? recipe);
+    const activeRecipe = recipeMode === 'custom' ? (advancedDisplayRecipe ?? advancedRecipe) : (displayRecipe ?? recipe);
     if (!activeRecipe) return;
     setSaveStatus('saving');
     const result = await saveRecipe({
+      mode: recipeMode,
       styleKey,
       bakeType: bakeType ?? 'pizza',
       numItems,
@@ -574,9 +576,79 @@ export default function Home() {
       hydration: activeRecipe.hydration,
       totalColdHours: schedule.totalColdHours,
       totalRTHours: schedule.totalRTHours,
+      prefermentType: prefermentType !== 'none' ? prefermentType : undefined,
+      prefermentFlourPct: prefermentFlourPct,
+      manualOil: manualOil,
+      manualSugar: manualSugar,
+      manualSalt: manualSalt,
+      flourBlend: flourBlend,
+      targetDoughTemp: targetDoughTemp,
+      wastePct: wastePct,
     });
     setSaveStatus(result.success ? 'saved' : 'error');
     if (result.success) setTimeout(() => setSaveStatus('idle'), 3000);
+  }
+
+  function loadRecipe(r: SavedRecipe) {
+    const isCustom = r.mode === 'custom';
+
+    // Core setup
+    setBakeType(r.bake_type as BakeType);
+    setStyleKey(r.style_key as StyleKey);
+    setNumItems(r.num_items);
+    setItemWeight(r.item_weight);
+    setOvenType(r.oven_type as AnyOvenType);
+    setMixerType((r.mixer_type ?? 'hand') as MixerType);
+    setYeastType((r.yeast_type ?? 'instant') as YeastType);
+    setKitchenTemp(r.kitchen_temp);
+    setHumidity(r.humidity ?? 'normal');
+    setFridgeTemp(r.fridge_temp ?? 4);
+
+    // Custom mode fields
+    if (isCustom) {
+      setManualHydration(r.hydration);
+      setManualOil(r.manual_oil ?? undefined);
+      setManualSugar(r.manual_sugar ?? undefined);
+      setManualSalt(r.manual_salt ?? undefined);
+      setPrefermentType((r.preferment_type ?? 'none') as PrefermentType);
+      setPrefermentFlourPct(r.preferment_flour_pct ?? undefined);
+      setTargetDoughTemp(r.target_dough_temp ?? undefined);
+      setWastePct(r.waste_pct ?? undefined);
+      if (r.flour_blend) {
+        try { setFlourBlend(JSON.parse(r.flour_blend)); } catch { /* keep default */ }
+      }
+    } else {
+      // Reset custom fields when loading a simple recipe
+      setManualHydration(undefined);
+      setManualOil(undefined);
+      setManualSugar(undefined);
+      setManualSalt(undefined);
+      setPrefermentType('none');
+      setPrefermentFlourPct(undefined);
+    }
+
+    // Set mode and advance to scheduler step
+    setTab(isCustom ? 'custom' : 'simple');
+    setModeChosen(true);
+    setRecipeGenerated(false);
+    setShowResults(false);
+    setProtocolStale(false);
+    setActiveTab('setup');
+
+    // Advance to scheduler step (step 8 simple, step 10 custom)
+    // All prior steps are marked completed
+    if (isCustom) {
+      setAdvancedStep(10);
+    } else {
+      setActiveStep(8);
+    }
+
+    // Scroll to scheduler step after state settles
+    setTimeout(() => {
+      const stepId = isCustom ? 'adv-step-10' : 'step-8';
+      const el = document.getElementById(stepId);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
   }
 
   // ── Computed: Generate button / progress ──
@@ -620,7 +692,7 @@ export default function Home() {
   // ── Render ────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)' }}>
-      <Header units={units} onUnitsChange={setUnitsAndPersist} />
+      <Header units={units} onUnitsChange={setUnitsAndPersist} onLoadRecipe={loadRecipe} />
 
       {/* ── Main content ───────────────────── */}
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem)' }}>

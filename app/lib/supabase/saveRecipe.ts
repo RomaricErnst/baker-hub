@@ -1,7 +1,8 @@
 import { createClient } from '@/app/lib/supabase/client';
-import type { StyleKey, OvenType, MixerType, YeastType } from '@/app/data';
+import type { StyleKey, OvenType, MixerType, YeastType, FlourBlend } from '@/app/data';
 
 export interface RecipeToSave {
+  mode: 'simple' | 'custom';
   styleKey: StyleKey;
   bakeType: string;
   numItems: number;
@@ -21,6 +22,15 @@ export interface RecipeToSave {
   hydration: number;
   totalColdHours: number;
   totalRTHours: number;
+  // Custom mode fields
+  prefermentType?: string;
+  prefermentFlourPct?: number;
+  manualOil?: number;
+  manualSugar?: number;
+  manualSalt?: number;
+  flourBlend?: FlourBlend;
+  targetDoughTemp?: number;
+  wastePct?: number;
 }
 
 export async function saveRecipe(recipe: RecipeToSave): Promise<{ success: boolean; error?: string }> {
@@ -30,6 +40,7 @@ export async function saveRecipe(recipe: RecipeToSave): Promise<{ success: boole
 
   const { error } = await supabase.from('recipes').insert({
     user_id: user.id,
+    mode: recipe.mode,
     style_key: recipe.styleKey,
     bake_type: recipe.bakeType,
     num_items: recipe.numItems,
@@ -49,6 +60,14 @@ export async function saveRecipe(recipe: RecipeToSave): Promise<{ success: boole
     hydration: recipe.hydration,
     total_cold_hours: recipe.totalColdHours,
     total_rt_hours: recipe.totalRTHours,
+    preferment_type: recipe.prefermentType ?? null,
+    preferment_flour_pct: recipe.prefermentFlourPct ?? null,
+    manual_oil: recipe.manualOil ?? null,
+    manual_sugar: recipe.manualSugar ?? null,
+    manual_salt: recipe.manualSalt ?? null,
+    flour_blend: recipe.flourBlend ? JSON.stringify(recipe.flourBlend) : null,
+    target_dough_temp: recipe.targetDoughTemp ?? null,
+    waste_pct: recipe.wastePct ?? null,
     recipe_name: null,
     notes: null,
   });

@@ -8,12 +8,85 @@ import { updateRecipe } from '@/app/lib/supabase/saveRecipe';
 import type { User } from '@supabase/supabase-js';
 import { type UnitSystem } from '../utils/units';
 
+function RecipeCard({ r, onUpdate, onLoad }: {
+  r: SavedRecipe;
+  onUpdate: (id: string, field: 'recipe_name' | 'notes', value: string) => void;
+  onLoad?: (r: SavedRecipe) => void;
+}) {
+  return (
+    <div style={{
+      padding: '10px 12px', borderRadius: '10px',
+      background: 'rgba(255,255,255,0.05)',
+      border: '1px solid rgba(255,255,255,0.08)',
+    }}>
+      {/* Subtitle + Load button */}
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', marginBottom: '8px', gap: '8px',
+      }}>
+        <div style={{
+          fontSize: '.68rem', color: 'rgba(255,255,255,0.45)',
+          fontFamily: 'var(--font-dm-mono)', flex: 1,
+        }}>{recipeSubtitle(r)}</div>
+        <button
+          onClick={() => onLoad?.(r)}
+          style={{
+            flexShrink: 0, padding: '.2rem .55rem',
+            borderRadius: '6px', border: '1px solid rgba(196,82,42,0.5)',
+            background: 'rgba(196,82,42,0.15)', color: '#E8785A',
+            fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
+            fontWeight: 600, cursor: 'pointer', letterSpacing: '.04em',
+          }}>
+          Load
+        </button>
+      </div>
+
+      {/* Name field */}
+      <input
+        type="text"
+        defaultValue={r.recipe_name ?? ''}
+        placeholder="Add a name…"
+        onBlur={e => onUpdate(r.id, 'recipe_name', e.target.value)}
+        style={{
+          width: '100%', boxSizing: 'border-box',
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '6px', padding: '5px 8px',
+          color: 'var(--cream)', fontSize: '.78rem',
+          fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
+          outline: 'none', marginBottom: '6px',
+        }}
+      />
+
+      {/* Notes field */}
+      <textarea
+        defaultValue={r.notes ?? ''}
+        placeholder="Add notes…"
+        rows={2}
+        onBlur={e => onUpdate(r.id, 'notes', e.target.value)}
+        style={{
+          width: '100%', boxSizing: 'border-box',
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '6px', padding: '5px 8px',
+          color: 'var(--cream)', fontSize: '.75rem',
+          fontFamily: 'var(--font-dm-sans)',
+          outline: 'none', resize: 'vertical',
+          lineHeight: 1.5,
+        }}
+      />
+    </div>
+  );
+}
+
 export default function Header({
   units = 'metric',
   onUnitsChange,
+  onLoadRecipe,
 }: {
   units?: UnitSystem;
   onUnitsChange?: (u: UnitSystem) => void;
+  onLoadRecipe?: (r: SavedRecipe) => void;
 }) {
   const t = useTranslations('header');
   const locale = useLocale();
@@ -308,52 +381,12 @@ export default function Header({
                   maxHeight: '320px', overflowY: 'auto',
                 }}>
                   {recipes.map(r => (
-                    <div key={r.id} style={{
-                      padding: '10px 12px', borderRadius: '10px',
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                    }}>
-                      {/* Subtitle: style · quantity · hydration · date */}
-                      <div style={{
-                        fontSize: '.68rem', color: 'rgba(255,255,255,0.45)',
-                        fontFamily: 'var(--font-dm-mono)', marginBottom: '8px',
-                      }}>{recipeSubtitle(r)}</div>
-
-                      {/* Name field */}
-                      <input
-                        type="text"
-                        defaultValue={r.recipe_name ?? ''}
-                        placeholder="Add a name…"
-                        onBlur={e => handleFieldBlur(r.id, 'recipe_name', e.target.value)}
-                        style={{
-                          width: '100%', boxSizing: 'border-box',
-                          background: 'rgba(255,255,255,0.06)',
-                          border: '1px solid rgba(255,255,255,0.12)',
-                          borderRadius: '6px', padding: '5px 8px',
-                          color: 'var(--cream)', fontSize: '.78rem',
-                          fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
-                          outline: 'none', marginBottom: '6px',
-                        }}
-                      />
-
-                      {/* Notes field */}
-                      <textarea
-                        defaultValue={r.notes ?? ''}
-                        placeholder="Add notes…"
-                        rows={2}
-                        onBlur={e => handleFieldBlur(r.id, 'notes', e.target.value)}
-                        style={{
-                          width: '100%', boxSizing: 'border-box',
-                          background: 'rgba(255,255,255,0.06)',
-                          border: '1px solid rgba(255,255,255,0.12)',
-                          borderRadius: '6px', padding: '5px 8px',
-                          color: 'var(--cream)', fontSize: '.75rem',
-                          fontFamily: 'var(--font-dm-sans)',
-                          outline: 'none', resize: 'vertical',
-                          lineHeight: 1.5,
-                        }}
-                      />
-                    </div>
+                    <RecipeCard
+                      key={r.id}
+                      r={r}
+                      onUpdate={handleFieldBlur}
+                      onLoad={r2 => { onLoadRecipe?.(r2); setMenuOpen(false); }}
+                    />
                   ))}
                 </div>
               )}
