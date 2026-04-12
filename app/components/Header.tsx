@@ -14,8 +14,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   onLoad?: (r: SavedRecipe) => void;
   onDelete?: (id: string) => void;
 }) {
-  const [editingName, setEditingName]     = useState(false);
-  const [editingNotes, setEditingNotes]   = useState(false);
+  const [editing, setEditing]             = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [name, setName]   = useState(r.recipe_name ?? '');
   const [notes, setNotes] = useState(r.notes ?? '');
@@ -23,24 +22,13 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   useEffect(() => { setName(r.recipe_name ?? ''); },  [r.recipe_name]);
   useEffect(() => { setNotes(r.notes ?? ''); }, [r.notes]);
 
-  function saveName() {
-    setEditingName(false);
+  function saveAll() {
+    setEditing(false);
     onUpdate(r.id, 'recipe_name', name);
-  }
-  function saveNotes() {
-    setEditingNotes(false);
     onUpdate(r.id, 'notes', notes);
   }
 
-  const pencil = (onClick: () => void) => (
-    <button onClick={onClick} style={{
-      background: 'none', border: 'none', cursor: 'pointer',
-      padding: '0 0 0 4px', color: 'rgba(255,255,255,0.55)',
-      fontSize: '.62rem', lineHeight: 1, flexShrink: 0,
-    }}>✏</button>
-  );
-
-  // Confirm-delete state: card turns red, shows Yes/Cancel
+  // Confirm-delete state
   if (confirmDelete) {
     return (
       <div style={{
@@ -77,13 +65,66 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
     );
   }
 
+  // Edit mode — both fields open
+  if (editing) {
+    return (
+      <div style={{
+        padding: '9px 12px', borderRadius: '10px',
+        background: 'rgba(255,255,255,0.07)',
+        border: '1px solid rgba(255,255,255,0.2)',
+      }}>
+        <input
+          autoFocus
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="Recipe name…"
+          style={{
+            display: 'block', width: '100%', boxSizing: 'border-box',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: '5px', padding: '5px 8px',
+            color: 'var(--cream)', fontSize: '.78rem',
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+            outline: 'none', marginBottom: '6px',
+          }}
+        />
+        <textarea
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          placeholder="Notes…"
+          rows={2}
+          style={{
+            display: 'block', width: '100%', boxSizing: 'border-box',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: '5px', padding: '5px 8px',
+            color: 'rgba(255,255,255,0.7)', fontSize: '.72rem',
+            fontFamily: 'var(--font-dm-sans)',
+            outline: 'none', resize: 'none', lineHeight: 1.5,
+            marginBottom: '8px',
+          }}
+        />
+        <button
+          onClick={saveAll}
+          style={{
+            width: '100%', padding: '.35rem', borderRadius: '6px',
+            background: 'var(--terra)', border: 'none',
+            color: '#fff', fontSize: '.72rem', cursor: 'pointer',
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+          }}>Save</button>
+      </div>
+    );
+  }
+
+  // Read-only state
   return (
     <div style={{
       padding: '9px 12px', borderRadius: '10px',
       background: 'rgba(255,255,255,0.05)',
       border: '1px solid rgba(255,255,255,0.08)',
     }}>
-      {/* Row 1: subtitle + Load + Delete */}
+      {/* Row 1: subtitle + bin + edit + Load */}
       <div style={{
         display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', gap: '6px', marginBottom: '6px',
@@ -98,6 +139,11 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
           cursor: 'pointer', color: 'rgba(255,255,255,0.5)',
           fontSize: '.72rem', padding: '0 2px', lineHeight: 1,
         }}>🗑</button>
+        <button onClick={() => setEditing(true)} style={{
+          flexShrink: 0, background: 'none', border: 'none',
+          cursor: 'pointer', color: 'rgba(255,255,255,0.55)',
+          fontSize: '.65rem', padding: '0 2px', lineHeight: 1,
+        }}>✏</button>
         <button onClick={() => onLoad?.(r)} style={{
           flexShrink: 0, padding: '.18rem .5rem',
           borderRadius: '5px', border: '1px solid rgba(196,82,42,0.5)',
@@ -107,77 +153,23 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
         }}>Load</button>
       </div>
 
-      {/* Row 2: name */}
-      {editingName ? (
-        <input
-          autoFocus
-          type="text"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          onBlur={saveName}
-          onKeyDown={e => e.key === 'Enter' && saveName()}
-          placeholder="Recipe name…"
-          style={{
-            display: 'block', width: '100%', boxSizing: 'border-box',
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.22)',
-            borderRadius: '5px', padding: '4px 7px',
-            color: 'var(--cream)', fontSize: '.78rem',
-            fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-            outline: 'none', marginBottom: '4px',
-          }}
-        />
-      ) : (
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          marginBottom: notes || editingNotes ? '3px' : 0,
-        }}>
-          <span style={{
-            fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)',
-            fontWeight: name ? 600 : 400,
-            color: name ? 'var(--cream)' : 'rgba(255,255,255,0.22)',
-            flex: 1, overflow: 'hidden',
-            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{name || 'Untitled recipe'}</span>
-          {pencil(() => setEditingName(true))}
-        </div>
-      )}
+      {/* Name */}
+      <div style={{
+        fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)',
+        fontWeight: name ? 600 : 400,
+        color: name ? 'var(--cream)' : 'rgba(255,255,255,0.22)',
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        marginBottom: notes ? '3px' : 0,
+      }}>{name || 'Untitled recipe'}</div>
 
-      {/* Row 3: notes */}
-      {editingNotes ? (
-        <textarea
-          autoFocus
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          onBlur={saveNotes}
-          rows={2}
-          placeholder="Add notes…"
-          style={{
-            display: 'block', width: '100%', boxSizing: 'border-box',
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.22)',
-            borderRadius: '5px', padding: '4px 7px',
-            color: 'rgba(255,255,255,0.7)', fontSize: '.72rem',
-            fontFamily: 'var(--font-dm-sans)',
-            outline: 'none', resize: 'none', lineHeight: 1.5,
-          }}
-        />
-      ) : notes ? (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '2px' }}>
-          <span style={{
-            fontSize: '.72rem', color: 'rgba(255,255,255,0.42)',
-            fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45, flex: 1,
-            overflow: 'hidden', display: '-webkit-box',
-            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-          } as React.CSSProperties}>{notes}</span>
-          {pencil(() => setEditingNotes(true))}
-        </div>
-      ) : (
-        <button onClick={() => setEditingNotes(true)} style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: 'rgba(255,255,255,0.2)', fontSize: '.68rem',
-          fontFamily: 'var(--font-dm-sans)', padding: 0,
-        }}>+ add notes</button>
+      {/* Notes */}
+      {notes && (
+        <div style={{
+          fontSize: '.72rem', color: 'rgba(255,255,255,0.42)',
+          fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
+          overflow: 'hidden', display: '-webkit-box',
+          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+        } as React.CSSProperties}>{notes}</div>
       )}
     </div>
   );
