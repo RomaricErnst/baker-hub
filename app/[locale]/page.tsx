@@ -1317,6 +1317,7 @@ export default function Home() {
                   prefermentType={prefermentType}
                   oil={recipe.oil}
                   hydration={recipe.hydration}
+                  ovenType={ovenType ?? undefined}
                   prefStartTime={prefStartTime}
                   feedTime={feedTime}
                 />
@@ -2305,6 +2306,7 @@ export default function Home() {
                   prefermentType={prefermentType}
                   oil={advancedRecipe.oil}
                   hydration={advancedRecipe.hydration}
+                  ovenType={ovenType ?? undefined}
                   prefStartTime={prefStartTime}
                   feedTime={feedTime}
                 />

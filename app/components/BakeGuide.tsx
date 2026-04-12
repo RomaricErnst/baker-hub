@@ -14,6 +14,7 @@ interface BakeGuideProps {
   prefermentType?: string;
   oil: number;
   hydration: number;
+  ovenType?: string;
   prefStartTime?: Date | null;
   feedTime?: Date | null;
 }
@@ -212,7 +213,7 @@ function ExtLink({ href, label }: { href: string; label: string }) {
 // ── Main component ───────────────────────────────────
 export default function BakeGuide({
   schedule, mixerType, styleKey, kitchenTemp, numItems,
-  prefermentType, oil, hydration, prefStartTime, feedTime,
+  prefermentType, oil, hydration, ovenType, prefStartTime, feedTime,
 }: BakeGuideProps) {
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
 
@@ -657,22 +658,98 @@ export default function BakeGuide({
         </div>
 
         <Section icon="🥄" title="What to do">
-          <Steps items={[
-            { bold: 'Set oven to maximum temperature', note: isBread ? '230-250°C with fan' : 'as hot as it goes — 300°C+ for pizza' },
-            ...(!isBread ? [
-              { bold: 'Place baking stone or steel on top rack', note: 'must be fully saturated with heat — full preheat time is non-negotiable' },
+          {isBread ? (
+            <Steps items={ovenType === 'dutch_oven' ? [
+              { bold: 'Place Dutch oven (with lid) inside your oven', note: 'both pot and lid must be scorching hot' },
+              { bold: 'Set oven to 240–250°C with fan', note: 'full preheat — 45 min minimum' },
+              { bold: 'Do not open the oven during preheat', note: 'every opening loses 20–30°C' },
+            ] : ovenType === 'home_oven_stone_bread' ? [
+              { bold: 'Place baking stone or steel on middle rack', note: 'stone needs 45–60 min to fully absorb heat' },
+              { bold: 'Place an empty metal tray on the rack below', note: 'for steam — you will add ice cubes at load time' },
+              { bold: 'Set oven to 240–250°C with fan', note: 'as hot as your oven allows' },
+              { bold: 'Do not open the oven during preheat', note: 'every opening loses 20–30°C' },
+            ] : ovenType === 'steam_oven' ? [
+              { bold: 'Set steam oven to 240°C with 100% steam', note: 'steam programme for first phase' },
+              { bold: 'Allow full preheat — 20–30 min', note: 'cavity must be fully saturated with steam' },
+            ] : ovenType === 'wood_fired' ? [
+              { bold: 'Build fire and let it burn to embers', note: 'aim for 280–320°C floor temperature' },
+              { bold: 'Push embers to one side — test floor temp with a hand', note: '3 seconds before pulling away = ready' },
+              { bold: 'Let temperature stabilise before loading', note: 'even heat is more important than peak heat' },
             ] : [
-              { bold: 'Place Dutch oven or baking stone inside', note: 'must be scorching hot when bread goes in' },
-              { bold: 'If using Dutch oven: place lid on too', note: 'traps steam — creates ear and open crumb' },
-            ]),
-            { bold: 'Do not open the oven during preheat', note: 'every opening loses 20-30°C' },
-          ]} />
+              // standard_bread fallback
+              { bold: 'Set oven to 220–230°C with fan', note: 'max your oven allows' },
+              { bold: 'Place an empty metal tray on the rack below', note: 'for steam — add ice cubes or boiling water at load time' },
+              { bold: 'Do not open during preheat', note: 'every opening loses 20–30°C' },
+            ]} />
+          ) : ovenType === 'pizza_oven' ? (
+            <Steps items={[
+              { bold: 'Light the fire and build to a high flame', note: 'target 450–500°C floor temperature' },
+              { bold: 'Push fire to back or side — let floor recover', note: 'floor temp drops when loading — give it time' },
+              { bold: 'Check floor with infrared thermometer', note: 'never guess — launch only when floor is at temp' },
+              { bold: 'Allow full 45 min — flame active throughout', note: 'stone must be saturated, not just surface-hot' },
+            ]} />
+          ) : ovenType === 'electric_pizza' ? (
+            <Steps items={[
+              { bold: 'Set both top and bottom elements to maximum', note: 'target 400°C+ — most models reach this in 20–25 min' },
+              { bold: 'Do not open lid during preheat', note: 'electric ovens lose heat fast — keep closed until ready' },
+              { bold: 'Check stone temp with infrared thermometer', note: 'stone should read 380°C+ before launching' },
+            ]} />
+          ) : ovenType === 'home_oven_steel' ? (
+            <Steps items={[
+              { bold: 'Place stone or steel on the top rack', note: 'close to the top element — top heat drives leoparding' },
+              { bold: 'Set oven to maximum temperature with fan', note: 'typically 250–280°C — full 60 min preheat' },
+              { bold: 'Switch to grill/broil for the last 10 min', note: 'supercharges the top element for better char' },
+              { bold: 'Do not open during preheat', note: 'every opening loses 20–30°C' },
+            ]} />
+          ) : ovenType === 'home_oven_standard' ? (
+            <Steps items={[
+              { bold: 'Set oven to maximum temperature', note: 'typically 240–260°C — standard ovens lose heat quickly' },
+              { bold: 'Preheat pizza tray or heavy baking sheet', note: 'place directly on middle rack — must be hot' },
+              { bold: 'Allow 30 min minimum', note: 'thin trays heat fast but lose heat fast too — longer is better' },
+            ]} />
+          ) : (
+            <Steps items={[
+              { bold: 'Set oven to maximum temperature', note: 'as hot as it goes' },
+              { bold: 'Preheat your baking surface fully', note: 'full preheat time is non-negotiable' },
+              { bold: 'Do not open the oven during preheat', note: 'every opening loses 20–30°C' },
+            ]} />
+          )}
         </Section>
 
         <Section icon="⚠️" title="Pitfalls">
-          <Bullets items={[
-            'Cutting preheat short — a baking stone needs 45-60 min to fully absorb heat, not just the air temperature indicator',
-            isBread ? 'Skipping the Dutch oven lid: steam is what creates the ear and glossy crust' : 'Stone too low in the oven — top heat is important for leoparding',
+          <Bullets items={isBread ? (
+            ovenType === 'dutch_oven' ? [
+              'Skipping the lid: steam is what creates the ear and glossy crust — lid on for first 20 min is non-negotiable',
+              'Cold Dutch oven: pot must be scorching hot or the bottom will not colour properly',
+            ] : ovenType === 'home_oven_stone_bread' ? [
+              'Cutting preheat short: stone needs 45–60 min of heat to absorb enough thermal mass',
+              'Forgetting the steam tray: without steam the crust sets before oven spring finishes',
+            ] : ovenType === 'steam_oven' ? [
+              'Under-saturating the cavity: run full preheat with steam before loading',
+              'Switching off steam too early: keep steam on for the full first 20 min',
+            ] : ovenType === 'wood_fired' ? [
+              'Loading on a hot floor: let it recover after clearing embers, or the bottom burns',
+              'Uneven heat: rotate the loaf halfway through for even crust colour',
+            ] : [
+              'Forgetting steam: without it the crust sets too early — no ear, pale and tough',
+              'Too low a temperature: standard ovens struggle — always use max',
+            ]
+          ) : ovenType === 'pizza_oven' ? [
+            'Launching on a cold floor: always check with a thermometer — looks hot does not mean it is hot',
+            'Flame too high at launch: push back the fire before loading or the top burns before the base is cooked',
+            'Forgetting to rotate: wood-fired ovens have a hot side — turn the pizza every 20–30 seconds',
+          ] : ovenType === 'electric_pizza' ? [
+            'Not preheating long enough: stone needs 20–25 min even if the display says ready',
+            'Opening lid mid-bake: electric ovens have a small cavity — every opening drops temp significantly',
+            'Over-baking: at 400°C+ things move fast — stay close and watch the cornicione',
+          ] : ovenType === 'home_oven_steel' ? [
+            'Stone too low in the oven: top heat is what drives leoparding — use the top rack',
+            'Skipping the pre-grill phase: 10 min on grill/broil before launch supercharges the top element',
+            'Cutting preheat short: steel needs 45–60 min to absorb enough heat',
+          ] : [
+            'Thin baking tray: loses heat instantly at load — use the heaviest tray you have',
+            'Not preheating the tray: cold tray = white soggy bottom',
+            'Over-topping: heavy toppings prevent the base from cooking through',
           ]} />
         </Section>
       </StepCard>
@@ -682,27 +759,85 @@ export default function BakeGuide({
 
         <Section icon="🥄" title="What to do">
           {isBread ? (
+            ovenType === 'dutch_oven' ? (
+              <Steps items={[
+                { bold: 'Score the dough — single slash or cross', note: 'sharp lame or razor at 30–45° angle — confident single motion' },
+                { bold: 'Lower dough into Dutch oven using parchment', note: 'work quickly — every second counts' },
+                { bold: 'Bake covered at 240°C — 20 min', note: 'steam trapped inside creates the ear and oven spring' },
+                { bold: 'Remove lid — bake 20–25 min more', note: 'crust browns and crisps — internal temp 95–98°C' },
+                { bold: 'Cool on a wire rack — minimum 30 min', note: 'crumb is still cooking from residual heat — cutting hot makes it gummy' },
+              ]} />
+            ) : ovenType === 'home_oven_stone_bread' ? (
+              <Steps items={[
+                { bold: 'Score the dough', note: 'sharp lame, 30–45° angle, confident motion' },
+                { bold: 'Add ice cubes to steam tray immediately', note: 'do this just before or just after loading — not before' },
+                { bold: 'Load onto hot stone — close oven fast', note: 'confident single motion with a peel or parchment' },
+                { bold: 'Bake 20 min with steam', note: 'do not open the door — steam must stay in' },
+                { bold: 'Remove steam tray — bake 20–25 min more', note: 'crust browns and crisps — internal temp 95–98°C' },
+                { bold: 'Cool on a wire rack — minimum 30 min', note: 'cutting hot makes the crumb gummy' },
+              ]} />
+            ) : ovenType === 'steam_oven' ? (
+              <Steps items={[
+                { bold: 'Score the dough', note: 'sharp lame, 30–45° angle' },
+                { bold: 'Load into steam oven — 240°C, 100% steam', note: 'bake 20 min — steam does the work of a Dutch oven' },
+                { bold: 'Switch to dry heat — 220°C', note: 'bake 20–25 min more until deep brown and hollow-sounding' },
+                { bold: 'Cool on a wire rack — minimum 30 min', note: 'cutting hot makes the crumb gummy' },
+              ]} />
+            ) : ovenType === 'wood_fired' ? (
+              <Steps items={[
+                { bold: 'Score the dough', note: 'sharp lame, 30–45° angle' },
+                { bold: 'Load using a long-handled peel', note: 'confident single forward motion — slide, do not push' },
+                { bold: 'Close oven door or damper for first 15 min', note: 'retain steam from the dough — creates ear' },
+                { bold: 'Rotate loaf halfway — bake until deep brown', note: 'total 40–50 min at 220–250°C — internal temp 95–98°C' },
+                { bold: 'Cool on a wire rack — minimum 30 min', note: 'cutting hot makes the crumb gummy' },
+              ]} />
+            ) : (
+              <Steps items={[
+                { bold: 'Score the dough', note: 'sharp lame or razor, 30–45° angle' },
+                { bold: 'Add boiling water or ice to steam tray, load quickly', note: 'close oven door immediately to keep steam in' },
+                { bold: 'Bake 20 min — do not open door', note: 'steam keeps crust extensible for oven spring' },
+                { bold: 'Remove steam tray — bake 20–25 min more', note: 'internal temp 95–98°C — deep brown crust' },
+                { bold: 'Cool on a wire rack — minimum 30 min', note: 'cutting hot makes the crumb gummy' },
+              ]} />
+            )
+          ) : ovenType === 'pizza_oven' ? (
             <Steps items={[
-              { bold: 'Score the dough — single slash or cross', note: 'use a sharp lame or razor at 30-45° angle — confident single motion' },
-              { bold: 'Load into Dutch oven or onto stone', note: 'work quickly — don\'t let heat escape' },
-              { bold: isBread ? 'Bake covered 20 min (Dutch oven)' : 'Bake with steam for first 15 min', note: 'steam keeps crust soft for oven spring' },
-              { bold: 'Remove lid — bake 20-25 min more', note: 'crust browns and crisps — internal temp 95-98°C' },
-              { bold: 'Cool on a wire rack — minimum 30 min', note: 'crumb is still cooking from residual heat — cutting too early makes it gummy' },
+              { bold: 'Stretch dough to target size', note: 'no rolling pin — knuckles and gravity only' },
+              { bold: 'Top quickly — sauce, cheese, minimal toppings', note: 'work fast — wet toppings stick the base to the peel' },
+              { bold: 'Check floor temp one last time', note: 'launch only above 400°C floor — ideally 450–480°C' },
+              { bold: 'Launch with a confident forward motion', note: 'hesitation causes sticking — one smooth push' },
+              { bold: 'Rotate every 20–30 sec with a turning peel', note: 'wood fire has a hot side — constant rotation is key' },
+              { bold: 'Total bake: 60–90 sec', note: 'leoparding on cornicione + slight char on base = done' },
             ]} />
-          ) : isNeapolitan ? (
+          ) : ovenType === 'electric_pizza' ? (
             <Steps items={[
-              { bold: 'Stretch dough to 30-32cm', note: 'no rolling pin — use knuckles, let gravity do the work' },
-              { bold: 'Top quickly — sauce + cheese only', note: 'heavy toppings sink a Neapolitan — less is more' },
-              { bold: 'Launch onto hot stone', note: 'confident single motion — hesitation causes sticking' },
-              { bold: 'Bake 60-90 sec at 450°C+ (pizza oven)', note: 'or 5-7 min at oven max — watch for leoparding on cornicione' },
-              { bold: 'Rotate halfway for even char', note: 'use a turning peel or tongs' },
+              { bold: 'Stretch dough to target size', note: 'no rolling pin — electric ovens are forgiving but thin bases still benefit from hand stretching' },
+              { bold: 'Top and launch onto hot stone', note: 'flour or fine semolina on peel — work quickly' },
+              { bold: 'Close lid immediately', note: 'electric ovens have small cavities — heat escapes fast' },
+              { bold: 'Bake 3–5 min at 400°C+', note: 'watch the cornicione — colour goes from pale to brown fast' },
+              { bold: 'Rotate halfway for even colour', note: 'electric elements can have hot spots near the edges' },
+            ]} />
+          ) : ovenType === 'home_oven_steel' ? (
+            <Steps items={[
+              { bold: 'Stretch dough on a floured peel', note: 'semolina or flour — not too much or the base will be dusty' },
+              { bold: 'Top quickly and launch onto hot stone', note: 'confident single forward motion — hesitation causes sticking' },
+              { bold: 'Switch to grill/broil immediately after launch', note: 'top heat is what drives leoparding in a home oven' },
+              { bold: 'Bake 5–7 min', note: 'watch the cheese and cornicione — grill moves fast' },
+              { bold: 'Check base with a palette knife or spatula', note: 'should be golden with some colour, not white' },
+            ]} />
+          ) : ovenType === 'home_oven_standard' ? (
+            <Steps items={[
+              { bold: 'Stretch dough on a floured surface', note: 'thicker styles work best here — Detroit, pan, Roman' },
+              { bold: 'Top generously — standard ovens suit loaded styles', note: 'toppings help retain moisture and colour evenly' },
+              { bold: 'Place on preheated tray — bake at max temperature', note: '8–15 min depending on thickness' },
+              { bold: 'Rotate halfway through', note: 'all home ovens have hot spots near the element' },
+              { bold: 'Check base: lift edge with a spatula', note: 'base should be golden and set, not white or soft' },
             ]} />
           ) : (
             <Steps items={[
-              { bold: 'Stretch or roll dough to target size', note: 'use your preferred method' },
-              { bold: 'Top and launch onto stone', note: 'flour or semolina on peel prevents sticking' },
-              { bold: 'Bake until crust is golden and cheese is bubbling', note: '8-15 min depending on oven temperature' },
-              { bold: 'Rotate halfway through for even bake', note: 'all home ovens have hot spots' },
+              { bold: 'Stretch or shape dough', note: 'use your preferred method' },
+              { bold: 'Top and bake at maximum temperature', note: 'time depends on oven and thickness' },
+              { bold: 'Rotate halfway for even bake', note: 'all ovens have hot spots' },
             ]} />
           )}
         </Section>
@@ -711,29 +846,63 @@ export default function BakeGuide({
           {isBread ? (
             <Bullets items={[
               'Oven spring: bread grows noticeably in first 10 min — this is the yeast\'s last burst',
-              'Ear: the scoring line opens up and creates a defined ridge — sign of good fermentation',
-              'Colour: deep mahogany brown — pale bread is under-baked',
+              'Ear: the scoring line opens up and creates a defined ridge — sign of good fermentation and steam',
+              'Colour: deep mahogany brown — pale bread is under-baked regardless of time',
               'Hollow sound: tap the bottom — should sound hollow when fully baked',
+            ]} />
+          ) : ovenType === 'pizza_oven' ? (
+            <Bullets items={[
+              'Leoparding: dark spots on the cornicione — sign of proper fermentation and high heat',
+              'Puffing: dough bubbles up in the centre — normal and desirable for Neapolitan',
+              'Base colour: golden with some dark spots — check with turning peel',
+              'Cheese: melted and slightly golden at edges — not bubbling brown',
+            ]} />
+          ) : ovenType === 'electric_pizza' ? (
+            <Bullets items={[
+              'Cornicione: starts pale, then yellows, then browns — pull when it starts showing spots',
+              'Base: check by lifting edge — should be golden brown with some colour',
+              'Speed: at 400°C things move fast — do not walk away',
+            ]} />
+          ) : ovenType === 'home_oven_steel' ? (
+            <Bullets items={[
+              'Top colour from the grill: cornicione should show dark spots within 5–7 min',
+              'Base: lift with a spatula — golden and firm, not pale or soft',
+              'Cheese: bubbling and golden — if cheese is done but cornicione is pale, flash it under grill',
             ]} />
           ) : (
             <Bullets items={[
-              'Leoparding: dark spots on the cornicione (edge) — sign of proper fermentation and high heat',
-              'Bubbling: dough puffs up in spots — perfectly normal for Neapolitan',
-              'Cheese: melted and slightly golden at edges',
-              'Bottom: check with a turning peel — should be golden, not white',
+              'Base: lift edge with a spatula — should be golden and set',
+              'Cheese: melted and beginning to colour at edges',
+              'Crust: golden and puffed at the rim — pale crust means more time or higher heat needed',
             ]} />
           )}
         </Section>
 
         <Section icon="⚠️" title="Pitfalls">
           <Bullets items={isBread ? [
-            'Scoring too shallow: <0.5cm — won\'t open properly, creates blowouts on the side',
-            'Opening oven door in first 15 min: steam escapes, crust sets too early, no ear',
-            'Cutting bread hot: steam still inside, crumb will be gummy',
+            'Scoring too shallow: less than 0.5cm — won\'t open properly, creates side blowouts',
+            ovenType === 'dutch_oven'
+              ? 'Removing lid too early: steam needs the full 20 min to form the ear — patience'
+              : ovenType === 'home_oven_stone_bread' || ovenType === 'standard_bread'
+              ? 'Opening the oven in the first 20 min: steam escapes, crust sets too early, no ear'
+              : 'Not managing steam in the first phase: ear and oven spring both depend on it',
+            'Cutting bread hot: steam still inside — crumb will be gummy and dense',
+          ] : ovenType === 'pizza_oven' ? [
+            'Cold floor at launch: always check with a thermometer — looks hot is not enough',
+            'Flame too close: push fire back before launching or the top burns before the base is done',
+            'Not rotating: wood-fired ovens have a hot side — rotate every 20–30 sec or expect uneven char',
+          ] : ovenType === 'electric_pizza' ? [
+            'Opening lid mid-bake: small cavity loses heat very quickly',
+            'Under-preheating: stone needs 20–25 min — do not trust the oven\'s ready indicator alone',
+            'Thick bases: electric pizza ovens suit thin Neapolitan and NY — thicker styles may under-bake the base',
+          ] : ovenType === 'home_oven_steel' ? [
+            'Skipping the grill/broil phase: top heat is what drives leoparding — without it the pizza looks pale',
+            'Stone too low: must be on the top rack to get close to the top element',
+            'Cutting preheat short: steel needs 45–60 min to absorb enough thermal mass',
           ] : [
-            'Over-topping: too many toppings = soggy centre, can\'t get proper char',
-            'Pizza sticking to peel: use enough flour/semolina, work quickly after topping',
-            'Pale bottom: stone wasn\'t hot enough — longer preheat next time',
+            'Cold tray: must be preheated or the base will be pale and soft',
+            'Over-topping: too many wet toppings prevent the base from cooking through',
+            'Low temperature: always use the highest temperature your oven reaches',
           ]} />
         </Section>
 
