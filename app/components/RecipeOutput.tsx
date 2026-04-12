@@ -593,8 +593,8 @@ export default function RecipeOutput({
                       fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
                     }}>
                       <span style={{ color: D.muted }}>{row.label}</span>
-                      <span style={{ color: D.sub, fontSize: '.65rem', textAlign: 'right' }}>{row.pct}</span>
                       <span style={{ color: 'rgba(245,240,232,0.9)', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap' }}>{row.value}</span>
+                      <span style={{ color: 'var(--gold)', fontSize: '.72rem', textAlign: 'right', minWidth: '4rem', whiteSpace: 'nowrap' }}>{row.pct}</span>
                     </div>
                   ))}
                 </div>
@@ -734,8 +734,8 @@ export default function RecipeOutput({
                           fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
                         }}>
                           <span style={{ color: D.muted }}>{row.label}</span>
-                          <span style={{ color: D.sub, fontSize: '.65rem', textAlign: 'right' }}>{row.pct}</span>
                           <span style={{ color: 'rgba(245,240,232,0.9)', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap' }}>{row.value}</span>
+                          <span style={{ color: 'var(--gold)', fontSize: '.72rem', textAlign: 'right', minWidth: '4rem', whiteSpace: 'nowrap' }}>{row.pct}</span>
                         </div>
                       ))}
                     </div>
