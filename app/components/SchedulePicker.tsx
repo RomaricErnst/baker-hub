@@ -532,6 +532,7 @@ function SimpleColourBar({
   yellowTo?: number;
   nowHBF?: number;
 }) {
+  const tRoot = useTranslations();
   const _barWindowH = nowHBF ?? 0;
   // Scale window to the sweet zone: show ~2× sweetFrom so baker sees
   // equal context either side of the green zone.
@@ -831,7 +832,7 @@ function SimpleColourBar({
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
             <div style={{ width: 8, height: 8, background: '#1A1612', transform: 'rotate(45deg)', flexShrink: 0 }} />
             <div style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-              Start Dough
+              {tRoot('schedulePicker.startDough')}
             </div>
           </div>
           <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
@@ -866,6 +867,7 @@ function SimpleColourBar({
 // ── Component ─────────────────────────────────
 export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, mode = 'custom', onReady }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
+  const tRoot = useTranslations();
   const tCommon = useTranslations('common');
   const alreadySet = eatTime !== null && eatTime > new Date();
   // Skip phase 1 if a future bake time is already set (return-to-edit case)
@@ -943,10 +945,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [adjustOpen, setAdjustOpen] = useState(false);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
 
-  const prefLabel = prefermentType === 'poolish' ? 'Make Poolish'
-    : prefermentType === 'biga' ? 'Make Biga'
-    : (prefermentType === 'levain' || isSourdough) ? 'Feed Starter'
-    : 'Make Preferment';
+  const prefLabel = prefermentType === 'poolish' ? tRoot('preferment.makePoolish')
+    : prefermentType === 'biga' ? tRoot('preferment.makeBiga')
+    : (prefermentType === 'levain' || isSourdough) ? tRoot('preferment.feedStarter')
+    : tRoot('preferment.makePreferment');
 
   function applyTimePick(date: string, hour: number, minute: number) {
     const hh = String(hour).padStart(2, '0');
@@ -982,7 +984,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     // Guard: bake time in the past
     if (totalWindowH <= 0) {
-      setGuardNote('This bake time has passed — try picking a later date.');
+      setGuardNote(tRoot('schedulePicker.guardPast'));
       return;
     }
 
@@ -1044,7 +1046,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const sweetTo     = Math.min(sweetToRaw,     sweetFrom - 0.5);
 
     if (!hasColdLocal && totalWindowH < sweetToRaw) {
-      setGuardNote('Working with a short window — same-day dough can still be wonderful.');
+      setGuardNote(tRoot('schedulePicker.guardShort'));
     } else {
       setGuardNote(null);
     }
@@ -1348,7 +1350,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 const wd = dt.toLocaleDateString('en-US', { weekday: 'short' });
                 const mo = dt.toLocaleDateString('en-US', { month: 'short' });
                 return `${wd} ${d} ${mo}`;
-              })() : 'Pick a date'}
+              })() : tRoot('schedulePicker.pickDate')}
             </div>
             <input
               ref={dateInputRef}
@@ -1378,7 +1380,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             disabled={!pickerDate}
             style={{ ...INPUT_STYLE, flex: 1, width: undefined, appearance: 'none' as React.CSSProperties['appearance'], opacity: pickerDate ? 1 : 0.45, cursor: pickerDate ? 'pointer' : 'not-allowed' }}
           >
-            {!pickerDate && <option value="" disabled>Select date first</option>}
+            {!pickerDate && <option value="" disabled>{tRoot('schedulePicker.selectDateFirst')}</option>}
             {Array.from({ length: 96 }, (_, i) => {
               const h = Math.floor(i / 4);
               const m = (i % 4) * 15;
@@ -1688,7 +1690,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Fermentation chart */}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
         <div style={{ fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem' }}>
-          Fermentation guide · drag to adjust
+          {tRoot('schedulePicker.fermentationGuide')}
         </div>
         {startComputed ? (
           mode === 'simple' ? (
@@ -1721,8 +1723,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 const fmtBulkDur = (h: number) => h === 0.5 ? '30min' : h === 0.75 ? '45min' : '1h30';
                 const fmtBulkTime = (hbf: number) => new Date(bakeMs - hbf * 3600000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
                 setBlockerNote(
-                  inB ? "Start Dough falls in one of your busy windows — that's fine if it works for you."
-                  : bulkEndInB ? `Your dough needs ~${fmtBulkDur(typicalBulkH)} to rise — be free by ${fmtBulkTime(bulkEndHBF)} to put it in the fridge, or start a bit earlier.`
+                  inB ? tRoot('schedulePicker.blockerNote')
+                  : bulkEndInB ? tRoot('schedulePicker.bulkNote', { dur: fmtBulkDur(typicalBulkH), time: fmtBulkTime(bulkEndHBF) })
                   : null
                 );
                 onChange(newStart, pendingEatTime, blocks);
@@ -1775,8 +1777,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 const fmtBulkDur = (h: number) => h === 0.5 ? '30min' : h === 0.75 ? '45min' : '1h30';
                 const fmtBulkTime = (hbf: number) => new Date(bakeMs - hbf * 3600000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
                 setBlockerNote(
-                  inB ? "Start Dough falls in one of your busy windows — that's fine if it works for you."
-                  : bulkEndInB ? `Your dough needs ~${fmtBulkDur(typicalBulkH)} to rise — be free by ${fmtBulkTime(bulkEndHBF)} to put it in the fridge, or start a bit earlier.`
+                  inB ? tRoot('schedulePicker.blockerNote')
+                  : bulkEndInB ? tRoot('schedulePicker.bulkNote', { dur: fmtBulkDur(typicalBulkH), time: fmtBulkTime(bulkEndHBF) })
                   : null
                 );
                 onChange(newStart, pendingEatTime, blocks);
@@ -1907,8 +1909,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   marginBottom: '8px',
                 }}
               >
-                <div>Start just before or after my busy time</div>
-                <div style={{ fontSize: '.74rem', marginTop: '2px', opacity: 0.8 }}>Dough will still be great.</div>
+                <div>{tRoot('schedulePicker.fallbackBtn1')}</div>
+                <div style={{ fontSize: '.74rem', marginTop: '2px', opacity: 0.8 }}>{tRoot('schedulePicker.fallbackBtn1Sub')}</div>
               </button>
             )}
             {fallbackOptions.inBlocker && (
@@ -1942,8 +1944,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   marginBottom: '12px',
                 }}
               >
-                <div>Mix during my busy time — I&apos;ll make it work</div>
-                <div style={{ fontSize: '.74rem', marginTop: '2px', opacity: 0.8 }}>Still within the ideal window — dough will be great.</div>
+                <div>{tRoot('schedulePicker.fallbackBtn2')}</div>
+                <div style={{ fontSize: '.74rem', marginTop: '2px', opacity: 0.8 }}>{tRoot('schedulePicker.fallbackBtn2Sub')}</div>
               </button>
             )}
             <button
@@ -2030,7 +2032,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   fontSize: '.78rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
                 }}
               >
-                {earlierIsReasonable && earlierStart ? 'Keep as is' : 'Got it, I\'ll make it work'}
+                {earlierIsReasonable && earlierStart ? tRoot('schedulePicker.keepAsIs') : tRoot('schedulePicker.gotIt')}
               </button>
             </div>
           </div>
@@ -2133,7 +2135,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 <div style={{
                   fontSize: '13px', color: 'var(--smoke)',
                   fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
-                }}>Start Dough</div>
+                }}>{tRoot('schedulePicker.startDough')}</div>
               </div>
               <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
                 {fmtCardDT(pendingStart)}
