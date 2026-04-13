@@ -147,7 +147,8 @@
       "from": "De",
       "to": "À",
       "addBlock": "Ajouter"
-    }
+    },
+    "adjustLabel": "Fenêtres de fermentation · ajuster le timing"
   },
   "dialIn": {
     "title": "Affinez votre pâte",

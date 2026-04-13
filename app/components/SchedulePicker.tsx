@@ -1850,7 +1850,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           }}
         >
           <span style={{ fontSize: '.8rem', fontWeight: 500, color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
-            Adjust
+            {t('adjustLabel')}
           </span>
           <span style={{ fontSize: '12px', color: '#8A7F78' }}>{adjustOpen ? '▾' : '›'}</span>
         </div>

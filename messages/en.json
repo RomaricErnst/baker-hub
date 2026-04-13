@@ -147,7 +147,8 @@
       "from": "From",
       "to": "To",
       "addBlock": "Add block"
-    }
+    },
+    "adjustLabel": "Fermentation windows · adjust timing"
   },
   "dialIn": {
     "title": "Dial in your dough",
