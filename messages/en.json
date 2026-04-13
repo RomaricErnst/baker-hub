@@ -39,16 +39,16 @@
       "bullet1": "Great to start with",
       "bullet2": "Smart defaults",
       "bullet3": "Colour bar schedule",
-      "bullet4": "Step-by-step bake guide",
-      "collapsed": "Smart defaults · colour bar · guide"
+      "bullet4": "",
+      "collapsed": "Smart defaults · colour bar"
     },
     "custom": {
       "title": "Custom",
       "bullet1": "Your flour blend",
-      "bullet2": "Preferment control",
+      "bullet2": "Preferment · Sourdough",
       "bullet3": "Fermentation graph",
-      "bullet4": "Step-by-step bake guide",
-      "collapsed": "Flour blend · preferment · graph · guide"
+      "bullet4": "",
+      "collapsed": "Flour blend · preferment · sourdough · graph"
     }
   },
   "steps": {

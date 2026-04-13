@@ -762,7 +762,7 @@ export default function Home() {
                   t('modeCards.simple.bullet2'),
                   t('modeCards.simple.bullet3'),
                   t('modeCards.simple.bullet4'),
-                ].map((b, i) => (
+                ].filter(Boolean).map((b, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
                     <span style={{ fontSize: '11px', color: 'var(--sage)', flexShrink: 0, marginTop: '1px' }}>✓</span>
                     <span style={{ fontSize: '11px', color: 'var(--ash)', lineHeight: 1.3 }}>{b}</span>
@@ -815,7 +815,7 @@ export default function Home() {
                   t('modeCards.custom.bullet2'),
                   t('modeCards.custom.bullet3'),
                   t('modeCards.custom.bullet4'),
-                ].map((b, i) => (
+                ].filter(Boolean).map((b, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
                     <span style={{ fontSize: '11px', color: 'var(--sage)', flexShrink: 0, marginTop: '1px' }}>✓</span>
                     <span style={{ fontSize: '11px', color: 'var(--ash)', lineHeight: 1.3 }}>{b}</span>

@@ -39,16 +39,16 @@
       "bullet1": "Idéal pour commencer",
       "bullet2": "Réglages intelligents",
       "bullet3": "Planning visuel couleur",
-      "bullet4": "Guide de cuisson étape par étape",
-      "collapsed": "Réglages intelligents · planning couleur · guide"
+      "bullet4": "",
+      "collapsed": "Réglages intelligents · planning couleur"
     },
     "custom": {
       "title": "Avancé",
       "bullet1": "Votre mélange de farines",
-      "bullet2": "Contrôle du pré-ferment",
+      "bullet2": "Poolish · Levain · Sourdough",
       "bullet3": "Graphe de fermentation",
-      "bullet4": "Guide de cuisson étape par étape",
-      "collapsed": "Farines · pré-ferment · graphe · guide"
+      "bullet4": "",
+      "collapsed": "Farines · pré-ferment · sourdough · graphe"
     }
   },
   "steps": {
