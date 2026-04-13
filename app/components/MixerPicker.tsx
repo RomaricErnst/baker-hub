@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useLocale } from 'next-intl';
 import { MIXER_TYPES, type MixerType } from '../data';
 
 interface MixerPickerProps {
@@ -16,6 +17,8 @@ const NO_KNEAD_WARNING: Partial<Record<string, string>> = {
 };
 
 export default function MixerPicker({ selected, onSelect, styleKey, bakeType, kitchenTemp }: MixerPickerProps) {
+  const locale = useLocale();
+  const isFr = locale === 'fr';
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   return (
@@ -56,10 +59,10 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
               <span style={{ fontSize: '2rem', marginBottom: '.6rem' }}>{mixer.emoji}</span>
             )}
             <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.25rem', color: 'var(--char)' }}>
-              {mixer.name}
+              {isFr && (mixer as { nameFr?: string }).nameFr ? (mixer as { nameFr: string }).nameFr : mixer.name}
             </div>
             <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.5rem' }}>
-              {mixer.desc}
+              {isFr && (mixer as { descFr?: string }).descFr ? (mixer as { descFr: string }).descFr : mixer.desc}
             </div>
             <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'center' }}>
               <span style={{

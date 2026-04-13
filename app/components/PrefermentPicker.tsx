@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { PREFERMENT_TYPES, type PrefermentType } from '../data';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 interface PrefermentPickerProps {
   selected: PrefermentType;
@@ -20,6 +20,7 @@ export default function PrefermentPicker({
 }: PrefermentPickerProps) {
   const locale = useLocale();
   const isFr = locale === 'fr';
+  const t = useTranslations();
   const [hovered, setHovered] = useState<PrefermentType | null>(null);
 
   const types = (Object.entries(PREFERMENT_TYPES) as [PrefermentType, typeof PREFERMENT_TYPES[PrefermentType]][])
@@ -120,7 +121,7 @@ export default function PrefermentPicker({
                     borderRadius: '20px', padding: '.1rem .45rem',
                     border: '1px solid var(--border)',
                   }}>
-                    {pData.hydration}% hydration
+                    {pData.hydration}% {t('preferment.hydration')}
                   </span>
                 )}
                 {pData.cold && (
@@ -130,7 +131,7 @@ export default function PrefermentPicker({
                     borderRadius: '20px', padding: '.1rem .45rem',
                     border: '1px solid rgba(107,122,90,0.25)',
                   }}>
-                    ❄ Cold ferment
+                    {t('preferment.coldFerment')}
                   </span>
                 )}
               </div>

@@ -1032,7 +1032,7 @@ export default function Home() {
 
                       {/* Weight tile */}
                       <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 10px', overflow: 'hidden' }}>
-                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>⚖ {isBread ? 'Weight / loaf' : 'Weight / ball'}</div>
+                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>⚖ {isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                           <button onClick={() => { const w = Math.max(150, itemWeight - 5); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: '64px', justifyContent: 'center' }}>
@@ -1144,7 +1144,7 @@ export default function Home() {
             <StepCard
               num={7} title={t('steps.7.title')}
               activeStep={activeStep}
-              summary={yeastType ? YEAST_TYPES[yeastType].name : undefined}
+              summary={yeastType ? (locale === 'fr' && (YEAST_TYPES[yeastType] as { nameFr?: string }).nameFr ? (YEAST_TYPES[yeastType] as { nameFr: string }).nameFr : YEAST_TYPES[yeastType].name) : undefined}
               onEdit={() => setActiveStep(7)}
             >
               <div>
@@ -1179,7 +1179,7 @@ export default function Home() {
                         )}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--char)', marginBottom: '.2rem' }}>
-                            {y.name}
+                            {locale === 'fr' && (y as { nameFr?: string }).nameFr ? (y as { nameFr: string }).nameFr : y.name}
                           </div>
                           <span style={{
                             fontSize: '.65rem', fontFamily: 'var(--font-dm-sans)',
@@ -1202,7 +1202,7 @@ export default function Home() {
                     color: 'var(--smoke)', fontSize: '.75rem', cursor: 'pointer',
                   }}
                 >
-                  🤔 Not sure?
+                  {t('common.notSure')}
                 </button>
               </div>
             </StepCard>
@@ -1410,7 +1410,7 @@ export default function Home() {
               {!recipeGenerated ? (
                 <div style={{ textAlign: 'center', padding: '48px 24px' }}>
                   <div style={{ fontSize: '24px', marginBottom: '12px' }}>⏳</div>
-                  <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>Generate your recipe first</div>
+                  <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>{t('common.generateFirst')}</div>
                 </div>
               ) : schedule && recipe && mixerType && (
                 <BakeGuide
@@ -1557,7 +1557,7 @@ export default function Home() {
                       )}
 
                       <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 10px', overflow: 'hidden' }}>
-                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>⚖ {isBread ? 'Weight / loaf' : 'Weight / ball'}</div>
+                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>⚖ {isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
                           <button onClick={() => { const w = Math.max(150, itemWeight - 5); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: '64px', justifyContent: 'center' }}>
@@ -1706,7 +1706,7 @@ export default function Home() {
                     cursor: 'pointer', boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
                   }}
                 >
-                  Continue →
+                  {t('common.continueBtn')}
                 </button>
               </div>
             </StepCard>
@@ -1716,7 +1716,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={8} title={t('steps.7.title')}
               activeStep={advancedStep}
-              summary={yeastType ? <>{YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{YEAST_TYPES[yeastType].shortName}</span></> : undefined}
+              summary={yeastType ? <>{locale === 'fr' && (YEAST_TYPES[yeastType] as { nameFr?: string }).nameFr ? (YEAST_TYPES[yeastType] as { nameFr: string }).nameFr : YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{locale === 'fr' && (YEAST_TYPES[yeastType] as { shortNameFr?: string }).shortNameFr ? (YEAST_TYPES[yeastType] as { shortNameFr: string }).shortNameFr : YEAST_TYPES[yeastType].shortName}</span></> : undefined}
               onEdit={() => setAdvancedStep(8)}
             >
               <div>
@@ -1768,7 +1768,7 @@ export default function Home() {
                         )}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--char)', marginBottom: '.2rem' }}>
-                            {y.name}
+                            {locale === 'fr' && (y as { nameFr?: string }).nameFr ? (y as { nameFr: string }).nameFr : y.name}
                           </div>
                           <span style={{
                             fontSize: '.65rem', fontFamily: 'var(--font-dm-sans)',
@@ -1787,7 +1787,7 @@ export default function Home() {
                   className="btn"
                   style={{ padding: '.38rem .75rem', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '.75rem', cursor: 'pointer' }}
                 >
-                  🤔 Not sure?
+                  {t('common.notSure')}
                 </button>
               </div>
             </StepCard>
@@ -2066,7 +2066,7 @@ export default function Home() {
                     return (
                       <div style={{ flex: 1, minWidth: '80px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
-                          <FieldLabel>Salt %</FieldLabel>
+                          <FieldLabel>{t('dialIn.saltPct')}</FieldLabel>
                           {!isDefault && (
                             <button
                               onClick={() => setManualSalt(undefined)}
@@ -2102,7 +2102,7 @@ export default function Home() {
                     const STEP = 0.5;
                     return (
                       <div style={{ flex: 1 }}>
-                        <FieldLabel>Oil %</FieldLabel>
+                        <FieldLabel>{t('dialIn.oilPct')}</FieldLabel>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
                           <button
                             onClick={() => setManualOil(Math.max(0, Math.round((v - STEP) * 10) / 10))}
@@ -2129,7 +2129,7 @@ export default function Home() {
                     const STEP = 0.5;
                     return (
                       <div style={{ flex: 1 }}>
-                        <FieldLabel>Sugar %</FieldLabel>
+                        <FieldLabel>{t('dialIn.sugarPct')}</FieldLabel>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
                           <button
                             onClick={() => setManualSugar(Math.max(0, Math.round((v - STEP) * 10) / 10))}
@@ -2405,7 +2405,7 @@ export default function Home() {
               {!recipeGenerated ? (
                 <div style={{ textAlign: 'center', padding: '48px 24px' }}>
                   <div style={{ fontSize: '24px', marginBottom: '12px' }}>⏳</div>
-                  <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>Generate your recipe first</div>
+                  <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>{t('common.generateFirst')}</div>
                 </div>
               ) : schedule && advancedRecipe && mixerType && (
                 <BakeGuide

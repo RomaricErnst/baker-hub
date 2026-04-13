@@ -344,9 +344,11 @@ export const BREAD_OVEN_TYPES = {
 export const MIXER_TYPES = {
   stand: {
     name: 'Stand Mixer',
+    nameFr: 'Robot pâtissier',
     emoji: '⚙️',
     image: '/mixer_stand.png',
     desc: 'KitchenAid, Kenwood, Bosch',
+    descFr: 'KitchenAid, Kenwood, Bosch',
     maxHydration: 72,
     kneadMin: 8,
     folds: 2,
@@ -356,9 +358,11 @@ export const MIXER_TYPES = {
   },
   hand: {
     name: 'By Hand',
+    nameFr: 'À la main',
     emoji: '🤲',
     image: '/mixer_hand.png',
     desc: 'Classic technique',
+    descFr: 'Technique classique',
     maxHydration: 70,
     kneadMin: 10,
     folds: 4,
@@ -368,9 +372,11 @@ export const MIXER_TYPES = {
   },
   no_knead: {
     name: 'No-Knead',
+    nameFr: 'Sans pétrissage',
     emoji: '⏰',
     image: '/mixer_noknead.png',
     desc: 'Time does the work',
+    descFr: 'Le temps fait le travail',
     maxHydration: 100,
     kneadMin: 0,
     folds: 4,
@@ -380,9 +386,11 @@ export const MIXER_TYPES = {
   },
   spiral: {
     name: 'Spiral Mixer',
+    nameFr: 'Pétrin spirale',
     emoji: '🌀',
     image: '/mixer_spiral.png',
     desc: 'Ooni Halo, Famag, Sunmix',
+    descFr: 'Ooni Halo, Famag, Sunmix',
     maxHydration: 100,
     kneadMin: 14,
     folds: 1,
@@ -396,7 +404,9 @@ export const MIXER_TYPES = {
 export const YEAST_TYPES = {
   instant: {
     name: 'Instant Dry',
+    nameFr: 'Levure Sèche Instantanée',
     shortName: 'IDY',
+    shortNameFr: 'LSI',
     emoji: '🟡',
     image: '/yeast_instant.png',
     also: 'Rapid rise, Fast action, Easy bake',
@@ -409,7 +419,9 @@ export const YEAST_TYPES = {
   },
   active_dry: {
     name: 'Active Dry',
+    nameFr: 'Levure Sèche Active',
     shortName: 'ADY',
+    shortNameFr: 'LSA',
     emoji: '🟤',
     image: '/yeast_active.png',
     also: 'Traditional yeast, Dry yeast',
@@ -422,7 +434,9 @@ export const YEAST_TYPES = {
   },
   fresh: {
     name: 'Fresh Yeast',
+    nameFr: 'Levure Fraîche',
     shortName: 'Fresh',
+    shortNameFr: 'Fraîche',
     emoji: '🧱',
     image: '/yeast_fresh.png',
     also: 'Cake yeast, Compressed yeast',
@@ -435,7 +449,9 @@ export const YEAST_TYPES = {
   },
   sourdough: {
     name: 'Sourdough Starter',
+    nameFr: 'Levain',
     shortName: 'Starter',
+    shortNameFr: 'Levain',
     emoji: '🫙',
     image: '/yeast_sourdough.png',
     also: 'Levain, Wild yeast',

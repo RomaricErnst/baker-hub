@@ -15,7 +15,9 @@
     "saveRecipe": "💾 Save recipe",
     "pickDate": "Pick a date",
     "selectDateFirst": "Select date first",
-    "direct": "Direct"
+    "direct": "Direct",
+    "continueBtn": "Continue →",
+    "generateFirst": "Generate your recipe first"
   },
   "tabs": {
     "guided": "🧭 Simple",
@@ -81,6 +83,8 @@
     "loaves": "loaves",
     "weightPerBall": "Weight per ball",
     "weightPerLoaf": "Weight per loaf",
+    "weightPerBallLabel": "Weight / ball",
+    "weightPerLoafLabel": "Weight / loaf",
     "largeBatchNote": "Large batch — consider splitting into two sessions",
     "howMany": "How many?",
     "corniceLabel": "Crust edge",
@@ -150,6 +154,9 @@
     "doughTemp": "Dough temp",
     "flourInFridge": "Flour in fridge",
     "mixingLoss": "Mixing loss",
+    "saltPct": "Salt %",
+    "oilPct": "Oil %",
+    "sugarPct": "Sugar %",
     "hydration": {
       "belowClassic": "Below classic range",
       "classic": "✓ Classic range",
@@ -192,7 +199,9 @@
     "makePoolish": "Make Poolish",
     "makeBiga": "Make Biga",
     "feedStarter": "Feed Starter",
-    "makePreferment": "Make Preferment"
+    "makePreferment": "Make Preferment",
+    "hydration": "hydration",
+    "coldFerment": "❄ Cold ferment"
   },
   "yeastDesc": {
     "simple": {

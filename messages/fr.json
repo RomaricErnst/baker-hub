@@ -15,7 +15,9 @@
     "saveRecipe": "💾 Sauvegarder la recette",
     "pickDate": "Choisir une date",
     "selectDateFirst": "Sélectionnez d'abord une date",
-    "direct": "Direct"
+    "direct": "Direct",
+    "continueBtn": "Continuer →",
+    "generateFirst": "Générez d'abord votre recette"
   },
   "tabs": {
     "guided": "🧭 Simple",
@@ -81,6 +83,8 @@
     "loaves": "pains",
     "weightPerBall": "Poids par pâton",
     "weightPerLoaf": "Poids par pain",
+    "weightPerBallLabel": "Poids / pâton",
+    "weightPerLoafLabel": "Poids / pain",
     "largeBatchNote": "Grande fournée — pensez à diviser en deux sessions",
     "howMany": "Quantité",
     "corniceLabel": "Épaisseur des bords",
@@ -150,6 +154,9 @@
     "doughTemp": "Temp. pâte",
     "flourInFridge": "Farine au frigo",
     "mixingLoss": "Déchet de pétrissage",
+    "saltPct": "Sel %",
+    "oilPct": "Huile %",
+    "sugarPct": "Sucre %",
     "hydration": {
       "belowClassic": "En dessous de la plage classique",
       "classic": "✓ Plage classique",
@@ -192,7 +199,9 @@
     "makePoolish": "Préparer le Poolish",
     "makeBiga": "Préparer la Biga",
     "feedStarter": "Nourrir le levain",
-    "makePreferment": "Préparer le pré-ferment"
+    "makePreferment": "Préparer le pré-ferment",
+    "hydration": "hydratation",
+    "coldFerment": "❄ Fermentation froide"
   },
   "yeastDesc": {
     "simple": {
