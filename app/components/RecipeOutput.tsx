@@ -65,15 +65,14 @@ function YeastTooltip() {
       >i</span>
       {open && (
         <span style={{
-          position: 'absolute', bottom: '120%', left: '50%',
-          transform: 'translateX(-50%)',
+          position: 'absolute', bottom: '120%', right: 0,
           background: 'var(--ash)', color: 'var(--cream)',
           fontSize: '.72rem', fontFamily: 'var(--font-dm-sans)',
-          lineHeight: 1.5,
-          padding: '.5rem .7rem', borderRadius: '8px',
-          width: '180px', zIndex: 10,
+          padding: '.4rem .65rem', borderRadius: '8px',
+          width: '220px', zIndex: 10,
           boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
           pointerEvents: 'none',
+          lineHeight: 1.5,
         }}>
           Less yeast, more time — longer fermentation builds deeper flavour.
         </span>
@@ -104,8 +103,7 @@ function FlourTooltip({ bakeType }: { bakeType?: string }) {
       >i</span>
       {open && (
         <span style={{
-          position: 'absolute', bottom: '120%', left: '50%',
-          transform: 'translateX(-50%)',
+          position: 'absolute', bottom: '120%', right: 0,
           background: 'var(--ash)', color: 'var(--cream)',
           fontSize: '.72rem', fontFamily: 'var(--font-dm-sans)',
           lineHeight: 1.5,
