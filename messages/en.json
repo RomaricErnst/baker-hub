@@ -103,7 +103,8 @@
   },
   "scheduler": {
     "schedulerTitle": {
-      "withPref": "Your fermentation plan",
+      "recommended": "Recommended fermentation plan",
+      "yours": "Your fermentation plan",
       "noPref": "Your dough start window"
     },
     "bakeTimeLabelPizza": "When does it go in the oven?",
@@ -370,7 +371,7 @@
     "fallbackBtn2Sub": "Still within the ideal window — dough will be excellent.",
     "keepAsIs": "Keep as is",
     "gotIt": "Got it, I'll make it work",
-    "fermentationGuide": "Fermentation guide · drag to adjust"
+    "fermentationGuide": "Fermentation guide"
   },
   "recipe": {
     "ingredients": "Ingredients",
@@ -394,5 +395,555 @@
     "yeastReassurance": "Yes, that's intentional — less yeast, more time = deeper flavour. Trust the process. 🍕",
     "iceProtocol": "Ice water protocol",
     "precisionScale": "Precision scale recommended — this is a very small amount of yeast."
+  },
+  "bakeGuide": {
+    "stepTitles": {
+      "makePoolish": "Make your Poolish",
+      "makeBiga": "Make your Biga",
+      "feedStarter": "Feed your starter",
+      "mixDough": "Mix your dough",
+      "bulkFerm": "Bulk Fermentation",
+      "coldRetardWhole": "Cold Retard — Whole Dough",
+      "coldRetard": "Cold Retard",
+      "divideShape": "Divide & Shape",
+      "divideBall": "Divide & Ball",
+      "coldProof": "Cold Proof",
+      "coldRetardBalls": "Cold Retard — Balls",
+      "finalProof": "Final Proof",
+      "preheatOven": "Preheat Oven",
+      "bakeEat": "Bake & Eat!"
+    },
+    "sectionTitles": {
+      "whatToDo": "What to do",
+      "watchFor": "Watch for",
+      "watchForReady": "Watch for — it's ready when",
+      "watchForBall": "Watch for — a good ball",
+      "pitfalls": "Pitfalls",
+      "readyWhen": "Ready when",
+      "mixingOrder": "Mixing order",
+      "waterTemp": "Water temperature",
+      "pokeTest": "Poke test — the three responses",
+      "learnMore": "Learn more",
+      "whatToExpect": "What to expect"
+    },
+    "preheatNote": "Start preheating while dough finishes its final proof — they should be ready at the same time.",
+    "poolish": {
+      "stepsFridge": [
+        { "bold": "Weigh equal parts flour and water", "note": "see recipe for exact amounts — 100% hydration" },
+        { "bold": "Add a pinch of IDY", "note": "very small amount — poolish ferments slowly" },
+        { "bold": "Stir vigorously until no dry flour remains", "note": "~2 min — smooth, thick batter consistency" },
+        { "bold": "Cover tightly with cling film", "note": "press it to the surface to prevent skin" },
+        { "bold": "Place in fridge", "note": "poolish ferments cold — slow and controlled" }
+      ],
+      "stepsRT": [
+        { "bold": "Weigh equal parts flour and water", "note": "see recipe for exact amounts — 100% hydration" },
+        { "bold": "Add a pinch of IDY", "note": "very small amount — poolish ferments slowly" },
+        { "bold": "Stir vigorously until no dry flour remains", "note": "~2 min — smooth, thick batter consistency" },
+        { "bold": "Cover tightly with cling film", "note": "press it to the surface to prevent skin" },
+        { "bold": "Leave at room temperature", "note": "poolish ferments at room temp for this schedule" }
+      ],
+      "readyWhen": [
+        "Surface is domed and bubbly — looks like a lava lamp slowly bubbling",
+        "Slightly pulling away from the sides of the container",
+        "Just starting to flatten (use it now — don't wait for full collapse)"
+      ],
+      "pitfalls": [
+        "Over-fermented: strong alcohol smell, flat surface, watery — discard and start again",
+        "Fully collapsed poolish loses strength — check before the centre drops",
+        "Using warm water — use room temp or cold water for slow controlled fermentation"
+      ]
+    },
+    "biga": {
+      "steps": [
+        { "bold": "Weigh flour and water", "note": "see recipe — biga is ~50-60% hydration, stiffer than poolish" },
+        { "bold": "Add a tiny amount of IDY", "note": "0.1-0.2% of flour — biga ferments very slowly" },
+        { "bold": "Mix roughly until just combined", "note": "biga is intentionally shaggy — do not over-mix" },
+        { "bold": "Cover loosely", "note": "biga needs some air exchange unlike poolish" },
+        { "bold": "Place in fridge", "note": "biga always ferments cold — never at room temp" }
+      ],
+      "readyWhen": [
+        "Surface has small cracks and bubbles — smells yeasty and slightly alcoholic",
+        "Slightly pulling away from the sides of the container",
+        "Has increased in volume by 50-70%"
+      ],
+      "pitfalls": [
+        "Over-fermented: strong alcohol smell, flat surface, watery — discard and start again",
+        "Biga that smells like acetone is over-fermented and unusable",
+        "Using warm water — always use cold water for biga"
+      ]
+    },
+    "starter": {
+      "steps": [
+        { "bold": "Discard all but 50g of starter", "note": "fresh ratio ferments faster and more predictably" },
+        { "bold": "Add 50g flour + 50g water (1:1:1)", "note": "adjust ratio for your target peak time" },
+        { "bold": "Stir vigorously until smooth", "note": "no lumps" },
+        { "bold": "Mark the jar with a rubber band", "note": "tracks rise visually" },
+        { "bold": "Leave uncovered or lightly covered", "note": "starter needs air" }
+      ],
+      "readyWhen": [
+        "Domed top with visible bubbles on surface and sides",
+        "Float test: drop a small piece in water — if it floats, it's ready",
+        "Smells tangy and yeasty — not alcoholic"
+      ],
+      "pitfalls": [
+        "Using starter past peak — it will have less strength and your dough will rise slowly",
+        "Hooch (dark liquid on top) means starter was hungry — pour it off, feed, wait for full rise before using"
+      ]
+    },
+    "mix": {
+      "waterTempBullets": [
+        "Use the water temperature from your recipe — Baker Hub calculated this accounting for your kitchen and mixer",
+        "Check FDT with a thermometer right after mixing — dough should feel cool to the touch"
+      ],
+      "watchForSmooth": "Smooth, elastic ball — slightly tacky but not sticky",
+      "watchForPumpkin": "Pumpkin shape: dough wraps around the breaker bar, pulls cleanly from bowl walls",
+      "watchForAll": [
+        "Windowpane test: stretch a small piece until light shows through without tearing",
+        "Skin looks smooth and slightly shiny"
+      ],
+      "pitfalls": [
+        "Adding salt and yeast at the same time — salt kills yeast on contact, always add separately",
+        "Over-kneading by hand is nearly impossible — but over-mixing in a stand mixer is not, stop when windowpane passes",
+        "Adding oil before gluten develops — oil coats proteins and blocks gluten formation"
+      ]
+    },
+    "bulk": {
+      "stepsBase": [
+        { "bold": "Transfer dough to a lightly oiled container with a lid", "note": "clear container lets you monitor rise" },
+        { "bold": "Mark the level with a rubber band", "note": "tracks 50-75% rise target" }
+      ],
+      "set1": { "bold": "Set 1 — after 30 min: stretch & fold", "note": "wet hand, grab one side, stretch up then fold over centre. Repeat 4 sides" },
+      "set2": { "bold": "Set 2 — after 1h: stretch & fold", "note": "dough should feel more cohesive and resist tearing" },
+      "set3": { "bold": "Set 3 — after 1h30: stretch & fold", "note": "dough will feel smooth and strong" },
+      "set4": { "bold": "Set 4 — after 2h: final fold", "note": "then leave undisturbed until bulk is done" },
+      "setShort": { "bold": "After 15 min: one set of stretch & folds", "note": "then cover and rest — short bulk goes straight to cold" },
+      "setVeryShort": { "bold": "Cover immediately and place in fridge", "note": "bulk is very short — dough goes cold right away" },
+      "watchFor": [
+        "Dough has grown 50-75% (not doubled — pizza dough bulk is shorter than bread)",
+        "Slightly domed, bubbly surface",
+        "Jiggles like jelly when you shake the container",
+        "Feels airy and lighter than when you started"
+      ],
+      "pitfallsBase": [
+        "Over-bulk: more than 75% rise means gluten has started to break down — dough will be slack and tear during shaping",
+        "Under-bulk: less than 30% rise — not enough gas development, dough will be dense",
+        "Skipping stretch & folds — they build gluten strength that makes shaping much easier"
+      ]
+    },
+    "coldRetard": {
+      "steps": [
+        { "bold": "Cover container tightly with cling film", "note": "press to the surface — dough skin is the enemy" },
+        { "bold": "Place on a middle shelf at the back of the fridge", "note": "back of fridge is coldest and most consistent" },
+        { "bold": "No need to check the dough", "note": "cold fermentation is slow and forgiving" }
+      ],
+      "watchFor": [
+        "Dough will grow slowly — 20-30% rise during cold retard is normal",
+        "Surface may look slightly domed and have small bubbles — this is perfect",
+        "Cold dough is stiff straight from the fridge — this is correct, it makes divide & ball easier"
+      ],
+      "pitfalls": [
+        "Leaving uncovered: dough skin forms, tears during shaping and creates uneven balls",
+        "Rushing the cold phase: minimum cold time is important for flavour and gluten relaxation"
+      ]
+    },
+    "divide": {
+      "fougasse": {
+        "steps": [
+          { "bold": "Divide into equal pieces", "note": "use a scale for even pieces" },
+          { "bold": "Flatten each piece gently with your hands", "note": "aim for roughly oval, 1.5–2cm thick" },
+          { "bold": "Cut the leaf pattern with a sharp knife or dough cutter", "note": "one central slash, 4–5 angled cuts each side" },
+          { "bold": "Open the cuts slightly with your fingers", "note": "spread them apart so they do not close during baking" },
+          { "bold": "Transfer to a lined baking tray", "note": "dust with flour — fougasse does not go in the fridge" },
+          { "bold": "Cover and leave at room temperature for final proof", "note": "20–40 min at room temperature" }
+        ],
+        "watchFor": [
+          "Cuts stay open — if they close, reopen with your fingers",
+          "Even thickness — thick spots will be dense, thin spots will burn",
+          "Surface dusted with flour — prevents sticking to tray"
+        ],
+        "pitfalls": [
+          "Cuts closing back up — open them wider and dust with more flour",
+          "Over-handling: fougasse is a flatbread, not a structured loaf — gentle is better",
+          "Too thin at the edges — they will burn before the centre is cooked"
+        ]
+      },
+      "baguette": {
+        "steps": [
+          { "bold": "Divide into equal pieces", "note": "use a scale — equal pieces" },
+          { "bold": "Pre-shape: fold to a loose rectangle", "note": "do not degas — just gently fold sides in" },
+          { "bold": "Cover and bench rest 20 min", "note": "gluten relaxes, makes final shaping easier" },
+          { "bold": "Final shape: roll gently into a baguette", "note": "use your fingertips, not your palm — length ~30–40cm" },
+          { "bold": "Place in a floured couche or baguette tray", "note": "seam side up in couche, seam side down in tray" }
+        ],
+        "watchFor": [
+          "Even cylinder, tapered ends — uniform diameter bakes evenly",
+          "Tight seam — open seam bursts uncontrollably in the oven",
+          "Dough springs back slowly when poked — ready to score and bake"
+        ],
+        "pitfalls": [
+          "Over-flouring: reduces surface tension, baguette spreads instead of holding shape",
+          "Pressing too hard: degasses the dough — work gently to keep the bubbles",
+          "Skipping the bench rest: gluten tears during final shaping"
+        ]
+      },
+      "loafTin": {
+        "steps": [
+          { "bold": "Divide into equal pieces", "note": "use a scale for even loaves" },
+          { "bold": "Shape each piece into a log", "note": "flatten slightly, roll from top to bottom, seal the seam" },
+          { "bold": "Place seam-side down in a greased loaf tin", "note": "tin should be about two-thirds full" }
+        ],
+        "watchFor": [
+          "Smooth top, no tears — tight skin is important for oven spring",
+          "Dough fills about 2/3 of the tin after shaping",
+          "Before baking: dough should dome just above the tin rim"
+        ],
+        "pitfalls": [
+          "Greasing the tin: use butter or spray oil — without it the loaf sticks",
+          "Over-proofing in the tin: dough should dome slightly, not overflow",
+          "Uneven shaping: log should be the same width as the tin"
+        ]
+      },
+      "boule": {
+        "steps": [
+          { "bold": "Divide into equal pieces", "note": "use a scale — equal pieces" },
+          { "bold": "Pre-shape: fold to a rough round", "note": "fold edges to centre, flip seam-side down, rest 15–20 min" },
+          { "bold": "Final shape: build surface tension", "note": "cup hands around the dough, drag toward you on unfloured surface" },
+          { "bold": "Place in a floured banneton, seam side up", "note": "dust generously with rice flour to prevent sticking" }
+        ],
+        "watchFor": [
+          "Smooth, taut surface — no tears or wrinkles",
+          "Holds its round shape without spreading",
+          "If the dough tears easily, gluten is still warm — rest 5 min and try again"
+        ],
+        "pitfalls": [
+          "Flouring the bench: reduces friction, ball won't develop surface tension — use bare, slightly damp surface",
+          "Skipping the bench rest: gluten tears when it's too tight",
+          "Under-tensioning: a slack ball spreads flat and won't hold shape in the oven"
+        ]
+      },
+      "pizza": {
+        "steps": [
+          { "bold": "Weigh dough and divide into equal pieces", "note": "use a scale — eyeballing leads to uneven baking" },
+          { "bold": "Pre-shape each piece into a rough round", "note": "fold edges to centre, flip seam-side down" },
+          { "bold": "Tuck and drag: cup your hand over the ball", "note": "drag it toward you on an unfloured surface — creates tension" },
+          { "bold": "Place in individual dough boxes or bowls", "note": "seam side down, well-spaced" }
+        ],
+        "watchFor": [
+          "Smooth, taut skin with no tears or folds visible on top",
+          "Holds its round shape — doesn't immediately spread flat (if it does, gluten is weak)"
+        ],
+        "pitfalls": [
+          "Flouring the surface: reduces friction, ball won't get surface tension — use bare, slightly damp surface",
+          "Tearing the skin during shaping — pre-shape roughly first, rest 5 min, then final ball"
+        ]
+      },
+      "coverRT": { "bold": "Cover and leave at room temperature", "note": "final proof begins now" },
+      "coverCold": { "bold": "Cover and refrigerate", "note": "develops flavour overnight" }
+    },
+    "coldBalls": {
+      "steps": [
+        { "bold": "Cover each dough box tightly", "note": "balls must not dry out during cold retard" },
+        { "bold": "Stack in the fridge — back shelf", "note": "temperature consistency is critical" }
+      ],
+      "watchFor": [
+        "Balls will grow slightly in the fridge — 20-40% rise is normal",
+        "Cold balls are firm and easy to handle — this is exactly what you want",
+        "After 24h+ the balls will have relaxed gluten and will be extremely extensible when warm"
+      ],
+      "pitfalls": [
+        "Over-retarding: balls that have risen more than 100% in the fridge are over-fermented — bake immediately when removed",
+        "Cold balls that tear on stretching: need more warmup time — never stretch cold dough"
+      ]
+    },
+    "finalProof": {
+      "removeFridge": { "bold": "Remove balls from fridge", "note": "keep covered — do not stretch yet, gluten is cold and tight" },
+      "alreadyShaped": { "bold": "Balls are already shaped", "note": "just monitor proofing" },
+      "shapeBalls": { "bold": "Shape dough balls", "note": "tuck and drag — taut skin" },
+      "keepCovered": { "bold": "Keep covered at room temperature", "note": "no heat source needed" },
+      "pokeTest": { "bold": "Start poke test after warmup — every 15–20 min", "note": "do not go by time — go by feel" },
+      "pokeResponses": [
+        "Springs back immediately, feels tight — needs more time",
+        "Springs back slowly and partially — ready to bake",
+        "Does not spring back, feels slack — over-proofed, bake immediately"
+      ],
+      "pitfalls": [
+        "Stretching cold dough — wait for warmup, cold gluten tears",
+        "Going by time instead of feel — always use the poke test",
+        "Over-proofed balls collapse in the oven and lose oven spring"
+      ]
+    },
+    "preheat": {
+      "dutch": {
+        "steps": [
+          { "bold": "Place Dutch oven (with lid) inside your oven", "note": "both pot and lid must be scorching hot" },
+          { "bold": "Set oven to max with fan", "note": "full preheat — 45 min minimum" },
+          { "bold": "Do not open the oven during preheat", "note": "every opening loses 20–30°C" }
+        ],
+        "pitfalls": [
+          "Skipping the lid: steam is what creates the ear and glossy crust — lid on for first 20 min is non-negotiable",
+          "Cold Dutch oven: pot must be scorching hot or the bottom will not colour properly"
+        ]
+      },
+      "stoneBread": {
+        "steps": [
+          { "bold": "Place baking stone or steel on middle rack", "note": "stone needs 45–60 min to fully absorb heat" },
+          { "bold": "Place an empty metal tray on the rack below", "note": "for steam — you will add ice cubes at load time" },
+          { "bold": "Set oven to max with fan", "note": "as hot as your oven allows" },
+          { "bold": "Do not open the oven during preheat", "note": "every opening loses 20–30°C" }
+        ],
+        "pitfalls": [
+          "Cutting preheat short: stone needs 45–60 min of heat to absorb enough thermal mass",
+          "Forgetting the steam tray: without steam the crust sets before oven spring finishes"
+        ]
+      },
+      "steam": {
+        "steps": [
+          { "bold": "Set steam oven with 100% steam", "note": "steam programme for first phase" },
+          { "bold": "Allow full preheat — 20–30 min", "note": "cavity must be fully saturated with steam" }
+        ],
+        "pitfalls": [
+          "Under-saturating the cavity: run full preheat with steam before loading",
+          "Switching off steam too early: keep steam on for the full first 20 min"
+        ]
+      },
+      "woodBread": {
+        "steps": [
+          { "bold": "Build fire and let it burn to embers", "note": "aim for 280–320°C floor temperature" },
+          { "bold": "Push embers to one side — test floor temp with a hand", "note": "3 seconds before pulling away = ready" },
+          { "bold": "Let temperature stabilise before loading", "note": "even heat is more important than peak heat" }
+        ],
+        "pitfalls": [
+          "Loading on a hot floor: let it recover after clearing embers, or the bottom burns",
+          "Uneven heat: rotate the loaf halfway through for even crust colour"
+        ]
+      },
+      "standardBread": {
+        "steps": [
+          { "bold": "Set oven to max with fan", "note": "as hot as your oven allows" },
+          { "bold": "Place an empty metal tray on the rack below", "note": "for steam — add ice cubes or boiling water at load time" },
+          { "bold": "Do not open during preheat", "note": "every opening loses 20–30°C" }
+        ],
+        "pitfalls": [
+          "Forgetting steam: without it the crust sets too early — no ear, pale and tough",
+          "Too low a temperature: standard ovens struggle — always use max"
+        ]
+      },
+      "pizzaOven": {
+        "steps": [
+          { "bold": "Light the fire and build to a high flame", "note": "target 450–500°C floor temperature" },
+          { "bold": "Push fire to back or side — let floor recover", "note": "floor temp drops when loading — give it time" },
+          { "bold": "Check floor with infrared thermometer", "note": "never guess — launch only when floor is at temp" },
+          { "bold": "Allow full 45 min — flame active throughout", "note": "stone must be saturated, not just surface-hot" }
+        ],
+        "pitfalls": [
+          "Launching on a cold floor: always check with a thermometer — looks hot does not mean it is hot",
+          "Flame too high at launch: push back the fire before loading or the top burns before the base is cooked",
+          "Forgetting to rotate: wood-fired ovens have a hot side — turn the pizza every 20–30 seconds"
+        ]
+      },
+      "electricPizza": {
+        "steps": [
+          { "bold": "Set both top and bottom elements to maximum", "note": "most models reach temp in 15–20 min" },
+          { "bold": "Do not open lid during preheat", "note": "electric ovens lose heat fast — keep closed until ready" },
+          { "bold": "Check stone temp with infrared thermometer", "note": "stone should read 380°C+ before launching" }
+        ],
+        "pitfalls": [
+          "Opening lid mid-bake: electric ovens have a small cavity — every opening drops temp significantly",
+          "Under-preheating: stone needs 20–25 min — do not trust the oven's ready indicator alone"
+        ]
+      },
+      "homeSteel": {
+        "steps": [
+          { "bold": "Place stone or steel on the top rack", "note": "close to the top element — top heat drives leoparding" },
+          { "bold": "Set oven to maximum temperature with fan", "note": "full 60 min preheat" },
+          { "bold": "Switch to grill/broil for the last 10 min", "note": "supercharges the top element for better char" },
+          { "bold": "Do not open during preheat", "note": "every opening loses 20–30°C" }
+        ],
+        "pitfalls": [
+          "Stone too low in the oven: top heat is what drives leoparding — use the top rack",
+          "Skipping the pre-grill phase: 10 min on grill/broil before launch supercharges the top element",
+          "Cutting preheat short: steel needs 45–60 min to absorb enough heat"
+        ]
+      },
+      "homeStandard": {
+        "steps": [
+          { "bold": "Set oven to maximum temperature", "note": "as hot as it goes" },
+          { "bold": "Preheat pizza tray or heavy baking sheet", "note": "place directly on middle rack — must be hot" },
+          { "bold": "Allow 30 min minimum", "note": "thin trays heat fast but lose heat fast too — longer is better" }
+        ],
+        "pitfalls": [
+          "Thin baking tray: loses heat instantly at load — use the heaviest tray you have",
+          "Not preheating the tray: cold tray = white soggy bottom",
+          "Over-topping: heavy toppings prevent the base from cooking through"
+        ]
+      }
+    },
+    "bake": {
+      "dutch": {
+        "steps": [
+          { "bold": "Score the dough — single slash or cross", "note": "sharp lame or razor at 30–45° angle — confident single motion" },
+          { "bold": "Lower dough into Dutch oven using parchment", "note": "work quickly — every second counts" },
+          { "bold": "Bake covered at 240°C — 20 min", "note": "steam trapped inside creates the ear and oven spring" },
+          { "bold": "Remove lid — bake 20–25 min more", "note": "crust browns and crisps — internal temp 95–98°C" },
+          { "bold": "Cool on a wire rack — minimum 30 min", "note": "crumb is still cooking from residual heat — cutting hot makes it gummy" }
+        ],
+        "watchFor": [
+          "Oven spring: bread grows noticeably in first 10 min — this is the yeast's last burst",
+          "Ear: the scoring line opens up and creates a defined ridge — sign of good fermentation and steam",
+          "Colour: deep mahogany brown — pale bread is under-baked regardless of time",
+          "Hollow sound: tap the bottom — should sound hollow when fully baked"
+        ],
+        "pitfalls": [
+          "Scoring too shallow: less than 0.5cm — won't open properly, creates side blowouts",
+          "Removing lid too early: steam needs the full 20 min to form the ear — patience",
+          "Cutting bread hot: steam still inside — crumb will be gummy and dense"
+        ]
+      },
+      "stoneBread": {
+        "steps": [
+          { "bold": "Score the dough", "note": "sharp lame, 30–45° angle, confident motion" },
+          { "bold": "Add ice cubes to steam tray immediately", "note": "do this just before or just after loading — not before" },
+          { "bold": "Load onto hot stone — close oven fast", "note": "confident single motion with a peel or parchment" },
+          { "bold": "Bake 20 min with steam", "note": "do not open the door — steam must stay in" },
+          { "bold": "Remove steam tray — bake 20–25 min more", "note": "crust browns and crisps — internal temp 95–98°C" },
+          { "bold": "Cool on a wire rack — minimum 30 min", "note": "cutting hot makes the crumb gummy" }
+        ],
+        "watchFor": [
+          "Oven spring: bread grows noticeably in first 10 min",
+          "Ear: scoring line opens into a defined ridge",
+          "Colour: deep mahogany brown",
+          "Hollow sound when tapped on the bottom"
+        ],
+        "pitfalls": [
+          "Scoring too shallow: less than 0.5cm",
+          "Opening the oven in the first 20 min: steam escapes, crust sets too early, no ear",
+          "Cutting bread hot: steam still inside — crumb will be gummy and dense"
+        ]
+      },
+      "steam": {
+        "steps": [
+          { "bold": "Score the dough", "note": "sharp lame, 30–45° angle" },
+          { "bold": "Load into steam oven — 240°C, 100% steam", "note": "bake 20 min — steam does the work of a Dutch oven" },
+          { "bold": "Switch to dry heat — 220°C", "note": "bake 20–25 min more until deep brown and hollow-sounding" },
+          { "bold": "Cool on a wire rack — minimum 30 min", "note": "cutting hot makes the crumb gummy" }
+        ],
+        "pitfalls": [
+          "Not managing steam in the first phase: ear and oven spring both depend on it",
+          "Cutting bread hot: steam still inside — crumb will be gummy and dense"
+        ]
+      },
+      "woodBread": {
+        "steps": [
+          { "bold": "Score the dough", "note": "sharp lame, 30–45° angle" },
+          { "bold": "Load using a long-handled peel", "note": "confident single forward motion — slide, do not push" },
+          { "bold": "Close oven door or damper for first 15 min", "note": "retain steam from the dough — creates ear" },
+          { "bold": "Rotate loaf halfway — bake until deep brown", "note": "total 40–50 min — hollow sound at base = done" },
+          { "bold": "Cool on a wire rack — minimum 30 min", "note": "cutting hot makes the crumb gummy" }
+        ],
+        "pitfalls": [
+          "Scoring too shallow: less than 0.5cm",
+          "Cold floor at launch: always check with a thermometer",
+          "Not rotating: wood-fired ovens have a hot side — rotate halfway for even crust colour"
+        ]
+      },
+      "standardBread": {
+        "steps": [
+          { "bold": "Score the dough", "note": "sharp lame or razor, 30–45° angle" },
+          { "bold": "Add boiling water or ice to steam tray, load quickly", "note": "close oven door immediately to keep steam in" },
+          { "bold": "Bake 20 min — do not open door", "note": "steam keeps crust extensible for oven spring" },
+          { "bold": "Remove steam tray — bake 20–25 min more", "note": "internal temp 95–98°C — deep brown and hollow-sounding" },
+          { "bold": "Cool on a wire rack — minimum 30 min", "note": "cutting hot makes the crumb gummy" }
+        ],
+        "pitfalls": [
+          "Scoring too shallow: less than 0.5cm",
+          "Opening the oven in the first 20 min: steam escapes, crust sets too early",
+          "Cutting bread hot: steam still inside — crumb will be gummy and dense"
+        ]
+      },
+      "pizzaOven": {
+        "steps": [
+          { "bold": "Stretch dough to target size", "note": "no rolling pin — knuckles and gravity only" },
+          { "bold": "Top quickly — sauce, cheese, minimal toppings", "note": "work fast — wet toppings stick the base to the peel" },
+          { "bold": "Check floor temp one last time", "note": "launch only above 400°C floor" },
+          { "bold": "Launch with a confident forward motion", "note": "hesitation causes sticking — one smooth push" },
+          { "bold": "Rotate every 20–30 sec with a turning peel", "note": "wood fire has a hot side — constant rotation is key" },
+          { "bold": "Total bake: 60–90 sec", "note": "leoparding on cornicione + slight char on base = done" }
+        ],
+        "watchFor": [
+          "Leoparding: dark spots on the cornicione — sign of proper fermentation and high heat",
+          "Puffing: dough bubbles up in the centre — normal and desirable for Neapolitan",
+          "Base colour: golden with some dark spots — check with turning peel",
+          "Cheese: melted and slightly golden at edges — not bubbling brown"
+        ],
+        "pitfalls": [
+          "Cold floor at launch: always check with a thermometer — looks hot does not mean it is hot",
+          "Flame too close: push fire back before launching or the top burns before the base is done",
+          "Not rotating: wood-fired ovens have a hot side — rotate every 20–30 sec or expect uneven char"
+        ]
+      },
+      "electricPizza": {
+        "steps": [
+          { "bold": "Stretch dough to target size", "note": "no rolling pin — electric ovens are forgiving but thin bases still bake best" },
+          { "bold": "Top and launch onto hot stone", "note": "flour or fine semolina on peel — work quickly" },
+          { "bold": "Close lid immediately", "note": "electric ovens have small cavities — heat escapes fast" },
+          { "bold": "Rotate halfway for even colour", "note": "electric elements can have hot spots near the edges" }
+        ],
+        "watchFor": [
+          "Cornicione: starts pale, then yellows, then browns — pull when it starts showing spots",
+          "Base: check by lifting edge — should be golden brown with some colour"
+        ],
+        "pitfalls": [
+          "Opening lid mid-bake: small cavity loses heat very quickly",
+          "Under-preheating: stone needs 20–25 min — do not trust the oven's ready indicator alone",
+          "Thick bases: electric pizza ovens suit thin Neapolitan and NY — thicker styles may under-bake the base"
+        ]
+      },
+      "homeSteel": {
+        "steps": [
+          { "bold": "Stretch dough on a floured peel", "note": "semolina or flour — not too much or the base will be dusty" },
+          { "bold": "Top quickly and launch onto hot stone", "note": "confident single forward motion — hesitation causes sticking" },
+          { "bold": "Switch to grill/broil immediately after launch", "note": "top heat is what drives leoparding in a home oven" },
+          { "bold": "Bake 5–7 min", "note": "watch the cheese and cornicione — grill moves fast" },
+          { "bold": "Check base with a palette knife or spatula", "note": "should be golden with some colour, not white" }
+        ],
+        "watchFor": [
+          "Top colour from the grill: cornicione should show dark spots within 5–7 min",
+          "Base: lift with a spatula — golden and firm, not pale or soft",
+          "Cheese: bubbling and golden — if cheese is done but cornicione is pale, flash it under grill"
+        ],
+        "pitfalls": [
+          "Skipping the grill/broil phase: top heat is what drives leoparding — without it the pizza looks pale",
+          "Stone too low: must be on the top rack to get close to the top element",
+          "Cutting preheat short: steel needs 45–60 min to absorb enough thermal mass"
+        ]
+      },
+      "homeStandard": {
+        "steps": [
+          { "bold": "Stretch dough on a floured surface", "note": "thicker styles work best here — Detroit, pan, Roman" },
+          { "bold": "Top generously — standard ovens suit loaded styles", "note": "toppings help retain moisture and colour evenly" },
+          { "bold": "Place on preheated tray — bake at max temperature", "note": "8–15 min depending on thickness" },
+          { "bold": "Rotate halfway through", "note": "all home ovens have hot spots near the element" },
+          { "bold": "Check base: lift edge with a spatula", "note": "base should be golden and set, not white or soft" }
+        ],
+        "watchFor": [
+          "Base: lift edge with a spatula — should be golden and set",
+          "Cheese: melted and beginning to colour at edges",
+          "Crust: golden and puffed at the rim — pale crust means more time or higher heat needed"
+        ],
+        "pitfalls": [
+          "Cold tray: must be preheated or the base will be pale and soft",
+          "Over-topping: too many wet toppings prevent the base from cooking through",
+          "Low temperature: always use the highest temperature your oven reaches"
+        ]
+      },
+      "default": {
+        "steps": [
+          { "bold": "Stretch or shape dough", "note": "use your preferred method" },
+          { "bold": "Top and bake at maximum temperature", "note": "time depends on oven and thickness" },
+          { "bold": "Rotate halfway for even bake", "note": "all ovens have hot spots" }
+        ]
+      },
+      "learnMoreScoring": "Scoring technique guide"
+    }
   }
 }

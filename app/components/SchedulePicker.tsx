@@ -581,17 +581,19 @@ function SimpleColourBar({
     { from: goldR2_HBF, to: 0,          fill: 'rgba(196,82,42,0.2)',   label: 'Too late'  },
   ];
 
-  // Ticks at every 6h boundary — label only at 6am/noon/6pm/midnight
+  // Adaptive ticks: 3h for short windows, 12h for medium, 24h for long
+  const tickIntervalH = barWin <= 18 ? 3 : barWin <= 72 ? 12 : 24;
   const ticks: { x: number; label: string }[] = [];
-  for (let h = 1; h < barWin; h++) {
-    const t  = new Date(bakeMs - h * 3600000);
-    if (t.getMinutes() !== 0 || t.getHours() % 6 !== 0) continue;
-    const hr = t.getHours();
-    const wd = t.toLocaleDateString('en-US', { weekday: 'short' });
-    const timeLabel = hr === 0 ? 'midnight'
+  for (let h = tickIntervalH; h < barWin; h += tickIntervalH) {
+    const tick = new Date(bakeMs - h * 3600000);
+    if (tick.getMinutes() !== 0) continue;
+    const hr = tick.getHours();
+    const wd = tick.toLocaleDateString('en-US', { weekday: 'short' });
+    const timeLabel = hr === 0  ? 'midnight'
       : hr === 6  ? '6am'
       : hr === 12 ? 'noon'
-      : '6pm';
+      : hr === 18 ? '6pm'
+      : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
     ticks.push({ x: barHToX(h, W, barWin), label: `${wd} ${timeLabel}` });
   }
 
@@ -778,7 +780,8 @@ function SimpleColourBar({
           const visible: typeof ticks = [];
           for (const t of ticks) {
             const prev = visible[visible.length - 1];
-            if (!prev || t.x - prev.x > 45) visible.push(t);
+            if (visible.length >= 5) break;
+            if (!prev || Math.abs(t.x - prev.x) >= 32) visible.push(t);
           }
           return visible.map((tk, i) => (
             <g key={i}>
@@ -842,21 +845,7 @@ function SimpleColourBar({
             {status}
           </div>
         </div>
-        <div style={{
-          flex: 1, minWidth: '100px', background: 'var(--cream)',
-          border: '1.5px solid var(--border)', borderRadius: '10px', padding: '.45rem .7rem',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
-            <div style={{ width: 8, height: 8, background: '#C4522A', transform: 'rotate(45deg)', flexShrink: 0 }} />
-            <div style={{ fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-              Bake
-            </div>
-          </div>
-          <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-            {fmtDT(eatTime)}
-          </div>
-          <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: 'var(--smoke)' }}>Fixed</div>
-        </div>
+        {/* Bake time shown on bar axis — no separate card needed */}
       </div>
 
 
@@ -940,6 +929,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     inBlocker:   { mixHBF: number; overlapMin: number } | null;
   } | null>(null);
   const hasManuallyDragged = useRef(false);
+  const [hasDragged, setHasDragged] = useState(false);
   const suppressStartReset = useRef(false);
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
@@ -1232,6 +1222,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setPendingEatTime(et);
     setEatTimeSet(true);
     hasManuallyDragged.current = false;
+    setHasDragged(false);
     setDismissedConflict(false);
     setShowFallbackPopup(false);
     setPhase('start_confirm');
@@ -1689,8 +1680,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       {/* Fermentation chart */}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
-        <div style={{ fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem' }}>
-          {tRoot('schedulePicker.fermentationGuide')}
+        <div style={{ fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.4rem' }}>
+          {hasDragged ? t('schedulerTitle.yours') : t('schedulerTitle.recommended')}
         </div>
         {startComputed ? (
           mode === 'simple' ? (
@@ -1757,6 +1748,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               nowHBF={(pendingEatTime.getTime() - Date.now()) / 3600000}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
+                setHasDragged(true);
                 setRecommendedHBF(null);
                 const newStart = new Date(pendingEatTime.getTime() - h * 3600000);
                 if (isSourdough) setMixOverride(true);
@@ -1863,6 +1855,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             <button
               onClick={() => {
                 hasManuallyDragged.current = false;
+                setHasDragged(false);
                 computeAndApplyRecommendation(blocks, pendingEatTime);
               }}
               style={{
@@ -1952,6 +1945,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               onClick={() => {
                 setShowFallbackPopup(false);
                 hasManuallyDragged.current = true;
+                setHasDragged(true);
               }}
               style={{
                 background: 'transparent', color: 'var(--smoke)',

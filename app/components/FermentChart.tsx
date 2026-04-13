@@ -285,13 +285,18 @@ export default function FermentChart({
     });
   }
 
-  // ── Axis ticks every 12h ─────────────────────────────────
+  // Adaptive ticks: 3h short / 12h medium / 24h long — same as SimpleColourBar
+  const tickIntervalH = WH <= 18 ? 3 : WH <= 72 ? 12 : 24;
   const ticks: { x: number; label: string }[] = [];
-  for (let h = 12; h < WH; h += 12) {
-    const t  = new Date(bakeMs - h * 3600000);
-    const wd = t.toLocaleDateString('en-US', { weekday: 'short' });
-    const hr = t.getHours();
-    const timeLabel = hr === 0 ? 'midnight' : hr === 12 ? 'noon'
+  for (let h = tickIntervalH; h < WH; h += tickIntervalH) {
+    const tick = new Date(bakeMs - h * 3600000);
+    if (tick.getMinutes() !== 0) continue;
+    const wd = tick.toLocaleDateString('en-US', { weekday: 'short' });
+    const hr = tick.getHours();
+    const timeLabel = hr === 0  ? 'midnight'
+      : hr === 6  ? '6am'
+      : hr === 12 ? 'noon'
+      : hr === 18 ? '6pm'
       : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
     ticks.push({ x: hToX(h, W, WH), label: `${wd} ${timeLabel}` });
   }
@@ -646,8 +651,16 @@ export default function FermentChart({
         <line x1={PAD} y1={AXIS_Y} x2={W - PAD} y2={AXIS_Y}
           stroke="var(--border)" strokeWidth={1} />
 
-        {/* ── Ticks ── */}
-        {ticks.map((tk, i) => (
+        {/* ── Ticks — max 5, min 32px apart ── */}
+        {(() => {
+          const visible: typeof ticks = [];
+          for (const tk of ticks) {
+            if (visible.length >= 5) break;
+            const prev = visible[visible.length - 1];
+            if (!prev || Math.abs(tk.x - prev.x) >= 32) visible.push(tk);
+          }
+          return visible;
+        })().map((tk, i) => (
           <g key={i}>
             <line x1={tk.x} y1={AXIS_Y} x2={tk.x} y2={AXIS_Y + 3}
               stroke="var(--border)" strokeWidth={1} />
