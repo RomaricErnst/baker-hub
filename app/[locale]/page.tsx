@@ -480,6 +480,16 @@ export default function Home() {
     setManualHydration(undefined);
     setManualOil(oilDefault(sk));
     setManualSugar(sugarDefault(sk));
+    // Smart oven default for bread styles
+    if (bakeType === 'bread') {
+      if (['brioche','pain_mie','pain_viennois','pain_seigle'].includes(sk)) {
+        setOvenType('standard_bread');
+      } else if (['baguette','fougasse'].includes(sk)) {
+        setOvenType('home_oven_stone_bread');
+      } else {
+        setOvenType('dutch_oven');
+      }
+    }
     setNumItems(STYLE_BALL_DEFAULTS[sk] ?? (bakeType === 'bread' ? 1 : tab === 'custom' ? 8 : 4));
     if (STYLE_HAS_DIAMETER.includes(sk)) {
       const defaultD = STYLE_DEFAULT_DIAMETER[sk] ?? 30;
@@ -1085,6 +1095,7 @@ export default function Home() {
             >
               <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
+                styleKey={styleKey}
                 selected={ovenType}
                 onSelect={ot => { setOvenType(ot); advance(4); }}
               />
@@ -1611,6 +1622,7 @@ export default function Home() {
             >
               <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
+                styleKey={styleKey}
                 selected={ovenType}
                 onSelect={ot => { setOvenType(ot); advanceAdv(4); }}
               />
