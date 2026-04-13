@@ -83,6 +83,7 @@
     "weightPerLoaf": "Poids par pain",
     "largeBatchNote": "Grande fournée — pensez à diviser en deux sessions",
     "howMany": "Combien ?",
+    "corniceLabel": "Épaisseur des bords",
     "corniceThin": "Fine",
     "corniceClassic": "Classique",
     "corniceGenerous": "Généreuse"

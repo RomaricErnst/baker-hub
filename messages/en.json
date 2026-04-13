@@ -83,6 +83,7 @@
     "weightPerLoaf": "Weight per loaf",
     "largeBatchNote": "Large batch — consider splitting into two sessions",
     "howMany": "How many?",
+    "corniceLabel": "Crust edge",
     "corniceThin": "Thin",
     "corniceClassic": "Classic",
     "corniceGenerous": "Generous"

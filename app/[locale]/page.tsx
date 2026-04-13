@@ -1049,12 +1049,12 @@ export default function Home() {
                     {/* ── ROW 3: Cornicione — compact, secondary ── */}
                     {showDiam && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', flexShrink: 0 }}>Cornicione</span>
+                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', flexShrink: 0 }}>{t('quantity.corniceLabel')}</span>
                         <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
                           {([
-                            { value: 0, label: locale === 'fr' ? 'Fine'      : 'Thin'      },
-                            { value: 1, label: locale === 'fr' ? 'Classique' : 'Classic'   },
-                            { value: 2, label: locale === 'fr' ? 'Généreuse' : 'Generous'  },
+                            { value: 0, label: t('quantity.corniceThin')      },
+                            { value: 1, label: t('quantity.corniceClassic')   },
+                            { value: 2, label: t('quantity.corniceGenerous')  },
                           ] as { value: number; label: string }[]).map(opt => (
                             <button
                               key={opt.value}
@@ -1574,12 +1574,12 @@ export default function Home() {
                     {/* ROW 3: Cornicione */}
                     {showDiam && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', flexShrink: 0 }}>Cornicione</span>
+                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', flexShrink: 0 }}>{t('quantity.corniceLabel')}</span>
                         <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
                           {([
-                            { value: 0, label: locale === 'fr' ? 'Fine'      : 'Thin'      },
-                            { value: 1, label: locale === 'fr' ? 'Classique' : 'Classic'   },
-                            { value: 2, label: locale === 'fr' ? 'Généreuse' : 'Generous'  },
+                            { value: 0, label: t('quantity.corniceThin')      },
+                            { value: 1, label: t('quantity.corniceClassic')   },
+                            { value: 2, label: t('quantity.corniceGenerous')  },
                           ] as { value: number; label: string }[]).map(opt => (
                             <button
                               key={opt.value}
