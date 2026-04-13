@@ -478,6 +478,13 @@ export default function BakeGuide({
 
         <Section icon="⚠️" title="Pitfalls">
           <Bullets items={[
+            ...(hydration >= 70 ? [
+              oil > 0
+                ? `Enriched dough at ${hydration}%: use lightly oiled hands for stretch & folds — fat in the dough means oil is a better barrier than water`
+                : hydration >= 75
+                ? `At ${hydration}% hydration, sticky is expected — keep a bowl of water nearby and wet your hands before every fold. Never add flour to the bench. Quick, confident movements stick less than slow hesitant ones.`
+                : `Wet hands for stretch & folds — dip your hands in water before each set. Avoids sticking without altering hydration like bench flour would.`,
+            ] : []),
             `Bulk in a warm spot above ${tempC(26, u)} — dough ferments too fast, less flavour`,
             'Over-bulk: more than 75% rise means gluten has started to break down — dough will be slack and tear during shaping',
             'Under-bulk: less than 30% rise — not enough gas development, dough will be dense',
@@ -613,6 +620,13 @@ export default function BakeGuide({
               'Over-proofing in the tin: dough should dome slightly, not overflow',
               'Uneven shaping: log should be the same width as the tin',
             ] : isBread ? [
+              ...(hydration >= 70 ? [
+                oil > 0
+                  ? `Enriched dough at ${hydration}%: use lightly oiled hands for shaping — fat in the dough means oil is a better barrier than water`
+                  : hydration >= 75
+                  ? `At ${hydration}% hydration, sticky is normal. Keep a bowl of water nearby and wet your hands before handling — never use bench flour. Use a bench scraper to lift pieces. Move quickly and with confidence.`
+                  : `Wet hands prevent sticking at this hydration. Keep a small bowl of water nearby and dip your hands before each touch. Avoid bench flour — it hydrates instantly and makes things worse.`,
+              ] : []),
               'Flouring the bench: reduces friction, ball won\'t develop surface tension — use bare, slightly damp surface',
               'Skipping the bench rest: gluten tears when it\'s too tight',
               'Under-tensioning: a slack ball spreads flat and won\'t hold shape in the oven',

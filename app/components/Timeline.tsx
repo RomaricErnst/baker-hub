@@ -81,6 +81,8 @@ function buildItems(
   prefermentType?: string,
   prefGoesInFridge?: boolean,
   prefRemoveFromFridgeTime?: Date | null,
+  hydration?: number,
+  oil?: number,
 ): TimelineStep[] {
   const items: TimelineStep[] = [];
 
@@ -185,6 +187,17 @@ function buildItems(
     }
     if (schedule.kitchenTemp >= 30 && schedule.coldRetard1Start) {
       tip += ' ⚠️ Your kitchen is warm — get balls back in the fridge within 20 minutes.';
+    }
+    const h = hydration ?? 0;
+    const o = oil ?? 0;
+    if (h >= 70) {
+      if (o > 0) {
+        tip += ' — Lightly oiled hands work best for this enriched dough. Coat your hands and the proofing container with neutral oil — never flour, which hydrates instantly and makes things stickier.';
+      } else if (h >= 75) {
+        tip += ` — At ${h}% hydration, sticky is normal. Keep a bowl of water nearby and wet your hands before handling — never use bench flour. Use a bench scraper to lift pieces. Move quickly and with confidence.`;
+      } else {
+        tip += ` — Wet hands prevent sticking at this hydration. Keep a small bowl of water nearby and dip your hands before each touch. Avoid bench flour — it hydrates instantly and makes things worse.`;
+      }
     }
     return tip;
   }
@@ -429,7 +442,7 @@ export default function Timeline({
 
   const isSourdough = styleKey === 'sourdough' || styleKey === 'pain_levain';
 
-  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime);
+  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil);
   const phases = buildPhases(schedule, preheatMin);
 
   const lastStepId = items[items.length - 1]?.id;
