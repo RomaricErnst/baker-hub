@@ -12,7 +12,10 @@
     "saving": "Enregistrement…",
     "saved": "✓ Enregistré !",
     "saveFailed": "Échec de l'enregistrement",
-    "saveRecipe": "💾 Sauvegarder la recette"
+    "saveRecipe": "💾 Sauvegarder la recette",
+    "pickDate": "Choisir une date",
+    "selectDateFirst": "Sélectionnez d'abord une date",
+    "direct": "Direct"
   },
   "tabs": {
     "guided": "🧭 Simple",
@@ -78,7 +81,11 @@
     "loaves": "pains",
     "weightPerBall": "Poids par pâton",
     "weightPerLoaf": "Poids par pain",
-    "largeBatchNote": "Grande fournée — pensez à diviser en deux sessions"
+    "largeBatchNote": "Grande fournée — pensez à diviser en deux sessions",
+    "howMany": "Combien ?",
+    "corniceThin": "Fine",
+    "corniceClassic": "Classique",
+    "corniceGenerous": "Généreuse"
   },
   "results": {
     "ready": "Votre recette est prête 🎯",
@@ -136,6 +143,75 @@
       "addBlock": "Ajouter"
     }
   },
+  "dialIn": {
+    "title": "Affinez votre pâte",
+    "doughTemp": "Temp. pâte",
+    "flourInFridge": "Farine au frigo",
+    "mixingLoss": "Perte au pétrissage",
+    "hydration": {
+      "belowClassic": "En dessous de la plage classique",
+      "classic": "✓ Plage classique",
+      "extended": "◆ Plage étendue",
+      "advanced": "⚡ Technique avancée",
+      "noteStiff": "La pâte sera assez ferme — un peu plus d'eau peut aider à l'étirer.",
+      "noteBelowClassic": "En dessous de la plage classique pour {name}. La pâte sera plus ferme et un peu plus dense.",
+      "noteClassic": "Plage authentique pour {name}. Bonne maniabilité et texture traditionnelle.",
+      "noteExtended": "Mie plus ouverte et aérée. Nécessite une technique de façonnage assurée.",
+      "noteExtreme": "Hydratation extrême. Pâte très collante — mains mouillées et coupe-pâte indispensables.",
+      "noteHigh": "Territoire haute hydratation. Excellente mie ouverte mais difficile à manipuler."
+    },
+    "salt": {
+      "veryLow": "Très faible — peut manquer de goût.",
+      "breadRange": "Plage pain — doux.",
+      "classicPizza": "Plage classique pizza.",
+      "fullFlavour": "Bien relevé.",
+      "high": "Élevé — ralentit légèrement la levure."
+    },
+    "oil": {
+      "traditionalHighTemp": "Traditionnel — sans huile. Parfait à haute température (450°C+).",
+      "traditionalHome": "Classique {style} sans huile. Garde la pâte extensible et légère.",
+      "highTempNote": "Pour un four à haute température, 0% d'huile est idéal — l'huile peut brûler à très haute température.",
+      "home1": "Aide le brunissement et la tendreté à basse température. Choix classique pour four domestique.",
+      "home2": "Plage pizza pan — base croustillante, presque frite. Idéal pour Detroit et styles pan.",
+      "high": "Territoire pâte enrichie — l'huile affaiblit le gluten. Levure osmotolérante (SAF Gold) recommandée."
+    },
+    "sugar": {
+      "traditionalHighTemp": "Traditionnel — sans sucre. Parfait à haute température.",
+      "traditionalHome": "Classique. Ajoutez 0,5% pour favoriser la caramélisation dans un four domestique.",
+      "subtle": "Légère coloration. Bon pour la cuisson domestique en dessous de 280°C.",
+      "noticeable": "Douceur perceptible et bonne coloration. Adapté aux styles enrichis.",
+      "osmotic": "Au-delà de 2%, le sucre crée un stress osmotique sur la levure — ajoutez 10% de levure en plus.",
+      "high": "Taux élevé (niveau brioche) — la levure standard peut peiner. SAF Gold recommandée."
+    }
+  },
+  "preferment": {
+    "stepTitle": "Méthode de pré-fermentation",
+    "direct": "Direct",
+    "makePoolish": "Préparer le Poolish",
+    "makeBiga": "Préparer la Biga",
+    "feedStarter": "Nourrir le levain",
+    "makePreferment": "Préparer le pré-ferment"
+  },
+  "yeastDesc": {
+    "simple": {
+      "instant": "Sachet de poudre fine. Plus fiable, longue conservation.",
+      "active_dry": "Granulés bruns. Très disponible. Dissoudre dans de l'eau tiède.",
+      "fresh": "Bloc beige souple. Saveur légèrement plus riche. À utiliser dans les 2 semaines.",
+      "sourdough": "Fermentation sauvage. Saveur plus profonde, meilleure digestibilité. Nécessite un levain actif."
+    },
+    "custom": {
+      "instant": "Poudre fine · ×1.0 référence · plus précis",
+      "active_dry": "Granulés bruns · ×1,33 vs LSI · dissoudre à 38°C",
+      "fresh": "Bloc souple · ×3,0 vs LSI · conserver au frigo",
+      "sourdough": "Levure sauvage · remplace la formule · levain actif au pic requis"
+    }
+  },
+  "avpn": {
+    "atLimit": "À la limite AVPN",
+    "limitDesc": "280g max par pâton — le standard de l'Associazione Verace Pizza Napoletana pour la pizza napolitaine authentique.",
+    "learnMore": "En savoir plus",
+    "body": "L'AVPN définit le standard officiel de la pizza napolitaine authentique. Poids maximum par pâton : 280g. Diamètre : 22–35cm. Cela garantit le rapport idéal entre la garniture et la pâte, et le cornicione léger et aéré caractéristique."
+  },
   "climate": {
     "getConditions": "Obtenir les conditions extérieures",
     "cityPlaceholder": "Ville — ex. Naples, Tokyo, Chicago",
@@ -144,6 +220,10 @@
     "cityNotFound": "Ville introuvable. Essayez une autre orthographe ou une ville proche.",
     "kitchenTemp": "Température de la cuisine",
     "humidity": "Humidité de la cuisine",
+    "humidityDry": "Sec",
+    "humidityNormal": "Normal",
+    "humidityHumid": "Humide",
+    "humidityVeryHumid": "Très humide",
     "fridgeTemp": "Température du frigo",
     "warmNudge": "Dans un climat chaud, les températures de l'après-midi peuvent dépasser 28°C. Si votre cuisine se réchauffe en journée, entrez plutôt la température maximale attendue.",
     "fridgeWarning": "Frigo à {temp}°C — plus chaud que les 4°C standard. La levure sera plus active pendant la pousse au froid.",

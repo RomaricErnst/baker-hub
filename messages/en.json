@@ -12,7 +12,10 @@
     "saving": "Saving…",
     "saved": "✓ Saved!",
     "saveFailed": "Save failed",
-    "saveRecipe": "💾 Save recipe"
+    "saveRecipe": "💾 Save recipe",
+    "pickDate": "Pick a date",
+    "selectDateFirst": "Select date first",
+    "direct": "Direct"
   },
   "tabs": {
     "guided": "🧭 Simple",
@@ -78,7 +81,11 @@
     "loaves": "loaves",
     "weightPerBall": "Weight per ball",
     "weightPerLoaf": "Weight per loaf",
-    "largeBatchNote": "Large batch — consider splitting into two sessions"
+    "largeBatchNote": "Large batch — consider splitting into two sessions",
+    "howMany": "How many?",
+    "corniceThin": "Thin",
+    "corniceClassic": "Classic",
+    "corniceGenerous": "Generous"
   },
   "results": {
     "ready": "Your recipe is ready 🎯",
@@ -136,6 +143,75 @@
       "addBlock": "Add block"
     }
   },
+  "dialIn": {
+    "title": "Dial in your dough",
+    "doughTemp": "Dough temp",
+    "flourInFridge": "Flour in fridge",
+    "mixingLoss": "Mixing loss",
+    "hydration": {
+      "belowClassic": "Below classic range",
+      "classic": "✓ Classic range",
+      "extended": "◆ Extended range",
+      "advanced": "⚡ Advanced technique",
+      "noteStiff": "Dough will be quite stiff — a little more water may help with stretching.",
+      "noteBelowClassic": "Below the {name} classic range. Dough will be firmer and a bit denser.",
+      "noteClassic": "Authentic {name} range. Great handling and traditional texture.",
+      "noteExtended": "More open crumb and airiness. Requires confident shaping technique.",
+      "noteExtreme": "Extreme hydration. Expect very sticky dough — wet hands, bench scraper essential.",
+      "noteHigh": "High hydration territory. Excellent open crumb but challenging to handle."
+    },
+    "salt": {
+      "veryLow": "Very low — may taste flat.",
+      "breadRange": "Bread range — mild.",
+      "classicPizza": "Classic pizza range.",
+      "fullFlavour": "Full-flavoured.",
+      "high": "High — slows yeast slightly."
+    },
+    "oil": {
+      "traditionalHighTemp": "Traditional — no oil. Works beautifully at high-temp (450°C+).",
+      "traditionalHome": "Classic {style} uses no oil. Keeps the dough extensible and light.",
+      "highTempNote": "For best results in a high-temp oven, keeping oil at 0% works beautifully — oil can cause burning at very high temps.",
+      "home1": "Helps browning and tenderness at home oven temps. Classic choice for home baking.",
+      "home2": "Pan pizza range — creates a crispy, almost-fried base. Right at home in Detroit and pan styles.",
+      "high": "Entering enriched dough territory — high oil softens gluten development. An osmotolerant yeast (SAF Gold) helps."
+    },
+    "sugar": {
+      "traditionalHighTemp": "Traditional — no sugar. Works beautifully at high-temp.",
+      "traditionalHome": "Classic. Add 0.5% to help caramelisation in a home oven below 280°C.",
+      "subtle": "Subtle colour boost. Good for home oven baking below 280°C.",
+      "noticeable": "Noticeable sweetness and good browning. Works well for enriched styles.",
+      "osmotic": "Above 2%, sugar adds osmotic stress on yeast — fermentation slows. Add extra 10% yeast.",
+      "high": "High sugar territory (brioche level) — standard yeast may struggle. SAF Gold recommended."
+    }
+  },
+  "preferment": {
+    "stepTitle": "Preferment method",
+    "direct": "Direct",
+    "makePoolish": "Make Poolish",
+    "makeBiga": "Make Biga",
+    "feedStarter": "Feed Starter",
+    "makePreferment": "Make Preferment"
+  },
+  "yeastDesc": {
+    "simple": {
+      "instant": "Fine powder sachet. Most reliable, longest shelf life.",
+      "active_dry": "Brown granules. Widely available. Dissolve in warm water first.",
+      "fresh": "Soft beige block. Slightly richer flavour. Use within 2 weeks.",
+      "sourdough": "Wild fermentation. Deeper flavour, better digestibility. Needs an active starter."
+    },
+    "custom": {
+      "instant": "Fine powder · ×1.0 reference · most precise",
+      "active_dry": "Brown granules · ×1.33 vs IDY · proof in 38°C water",
+      "fresh": "Soft block · ×3.0 vs IDY · keep refrigerated",
+      "sourdough": "Wild yeast · replaces formula · needs active starter at peak"
+    }
+  },
+  "avpn": {
+    "atLimit": "At the AVPN limit",
+    "limitDesc": "280g max per ball — the Associazione Verace Pizza Napoletana standard for authentic Neapolitan pizza.",
+    "learnMore": "Learn more",
+    "body": "The AVPN defines the official standard for authentic Neapolitan pizza. Maximum ball weight: 280g. Diameter: 22–35cm. This ensures the proper ratio of crust to topping and the characteristic light, airy cornicione."
+  },
   "climate": {
     "getConditions": "Get outdoor conditions",
     "cityPlaceholder": "City — e.g. Naples, Tokyo, Chicago",
@@ -144,6 +220,10 @@
     "cityNotFound": "City not found. Try a different spelling or nearby city.",
     "kitchenTemp": "Kitchen temperature",
     "humidity": "Kitchen humidity",
+    "humidityDry": "Dry",
+    "humidityNormal": "Normal",
+    "humidityHumid": "Humid",
+    "humidityVeryHumid": "Very Humid",
     "fridgeTemp": "Fridge temperature",
     "warmNudge": "In a warm climate, afternoon temps can push above 28°C. If your kitchen heats up during the day, consider entering your expected peak temperature instead.",
     "fridgeWarning": "Fridge at {temp}°C is warmer than the standard 4°C — yeast will be more active during cold retard.",

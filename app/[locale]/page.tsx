@@ -30,9 +30,6 @@ import {
 } from '../utils';
 
 // ── Constants ────────────────────────────────
-const HUMIDITY_LABEL: Record<string, string> = {
-  dry: 'Dry', normal: 'Normal', humid: 'Humid', 'very-humid': 'Very Humid',
-};
 
 const PIZZA_WEIGHT_TABLE: Record<string, [number, number, number, number][]> = {
   neapolitan: [
@@ -216,26 +213,29 @@ function sugarDefault(sk: string): number {
 }
 
 // ── Oil guidance ──────────────────────────────
-function oilGuidance(oil: number, ovenType: string, styleKey: string): string {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function oilGuidance(oil: number, ovenType: string, styleKey: string, tFn: (k: string, v?: any) => string): string {
   const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
-  if (oil === 0 && isHighTemp) return 'Traditional — no oil. Works beautifully at high-temp (450°C+).';
-  if (oil === 0 && !isHighTemp) return `Classic ${styleKey === 'neapolitan' ? 'Neapolitan' : 'style'} uses no oil, but 1–2% can help browning in a home oven below 300°C.`;
-  if (oil > 0 && isHighTemp) return 'For best results in a high-temp oven, keeping oil at 0% works beautifully — oil can char at 450°C+.';
-  if (oil > 0 && oil <= 2) return 'Helps browning and tenderness at home oven temps. Classic choice for home bakers.';
-  if (oil > 2 && oil <= 5) return 'Pan pizza range — creates a crispy, almost-fried base. Right at home in Detroit and focaccia.';
-  if (oil > 5) return 'Entering enriched dough territory — high oil softens gluten development. An osmotolerant yeast like SAF Gold works well here.';
+  const styleName = styleKey === 'neapolitan' ? 'Neapolitan' : 'style';
+  if (oil === 0 && isHighTemp) return tFn('dialIn.oil.traditionalHighTemp');
+  if (oil === 0 && !isHighTemp) return tFn('dialIn.oil.traditionalHome', { style: styleName });
+  if (oil > 0 && isHighTemp) return tFn('dialIn.oil.highTempNote');
+  if (oil > 0 && oil <= 2) return tFn('dialIn.oil.home1');
+  if (oil > 2 && oil <= 5) return tFn('dialIn.oil.home2');
+  if (oil > 5) return tFn('dialIn.oil.high');
   return '';
 }
 
 // ── Sugar guidance ────────────────────────────
-function sugarGuidance(sugar: number, ovenType: string): { note: string; warn: boolean } {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function sugarGuidance(sugar: number, ovenType: string, tFn: (k: string, v?: any) => string): { note: string; warn: boolean } {
   const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
-  if (sugar === 0 && isHighTemp) return { note: 'Traditional — no sugar. Works beautifully at high-temp.', warn: false };
-  if (sugar === 0 && !isHighTemp) return { note: 'Classic. Add 0.5% to help caramelisation in a home oven below 280°C.', warn: false };
-  if (sugar > 0 && sugar <= 1) return { note: 'Subtle colour boost. Good for home oven baking below 280°C.', warn: false };
-  if (sugar > 1 && sugar <= 2) return { note: 'Noticeable sweetness and good browning. Works well for enriched styles.', warn: false };
-  if (sugar > 2 && sugar <= 4) return { note: 'Above 2%, sugar adds osmotic stress on yeast — fermentation slows a little. An osmotolerant yeast like SAF Gold works well here.', warn: true };
-  if (sugar > 4) return { note: 'High sugar territory (brioche level) — standard yeast may struggle. SAF Gold or fresh yeast is a great choice here.', warn: true };
+  if (sugar === 0 && isHighTemp) return { note: tFn('dialIn.sugar.traditionalHighTemp'), warn: false };
+  if (sugar === 0 && !isHighTemp) return { note: tFn('dialIn.sugar.traditionalHome'), warn: false };
+  if (sugar > 0 && sugar <= 1) return { note: tFn('dialIn.sugar.subtle'), warn: false };
+  if (sugar > 1 && sugar <= 2) return { note: tFn('dialIn.sugar.noticeable'), warn: false };
+  if (sugar > 2 && sugar <= 4) return { note: tFn('dialIn.sugar.osmotic'), warn: true };
+  if (sugar > 4) return { note: tFn('dialIn.sugar.high'), warn: true };
   return { note: '', warn: false };
 }
 
@@ -245,6 +245,12 @@ function sugarGuidance(sugar: number, ovenType: string): { note: string; warn: b
 export default function Home() {
   const t = useTranslations();
   const locale = useLocale();
+  const HUMIDITY_LABEL: Record<string, string> = {
+    dry:          t('climate.humidityDry'),
+    normal:       t('climate.humidityNormal'),
+    humid:        t('climate.humidityHumid'),
+    'very-humid': t('climate.humidityVeryHumid'),
+  };
   const [tab, setTab] = useState<'simple' | 'custom'>('simple');
   const [activeStep, setActiveStep] = useState(1);
   const [advancedStep, setAdvancedStep] = useState(1);
@@ -995,7 +1001,7 @@ export default function Home() {
                     {/* ── ROW 1: Quantity — centred, large, primary ── */}
                     <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                       <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '10px' }}>
-                        {isBread ? 'Loaves' : 'How many?'}
+                        {isBread ? t('quantity.loaves') : t('quantity.howMany')}
                       </div>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '16px' }}>
                         <button onClick={() => setNumItems(n => Math.max(1, n - 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
@@ -1071,13 +1077,13 @@ export default function Home() {
                     {/* AVPN note */}
                     {isAtMax && (
                       <div style={{ marginTop: '10px', padding: '7px 10px', background: '#FEF9F0', borderRadius: '8px', border: '0.5px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                        <span style={{ fontSize: '11px', color: '#7A5A10', lineHeight: 1.4, flex: 1 }}><strong>At the AVPN limit</strong> — 280g max for Neapolitan.</span>
-                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem .5rem', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '.72rem', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>🤔 What is AVPN?</button>
+                        <span style={{ fontSize: '11px', color: '#7A5A10', lineHeight: 1.4, flex: 1 }}><strong>{t('avpn.atLimit')}</strong> — {t('avpn.limitDesc')}</span>
+                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem .5rem', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '.72rem', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>🤔 {t('avpn.learnMore')}</button>
                       </div>
                     )}
                     {isAtMax && avpnOpen && (
                       <div style={{ marginTop: '6px', padding: '8px 10px', background: 'var(--cream)', borderRadius: '8px', fontSize: '11px', color: 'var(--ash)', lineHeight: 1.5 }}>
-                        <strong>Associazione Verace Pizza Napoletana</strong> — the official body that defines authentic Neapolitan pizza standards since 1984. They specify dough balls between 200g and 280g for a pizza 22–35 cm in diameter.
+                        {t('avpn.body')}
                       </div>
                     )}
                   </div>
@@ -1147,10 +1153,10 @@ export default function Home() {
                     const active = yeastType === yt;
                     const yImg = (y as { image?: string }).image;
                     const guidedDesc: Record<string, string> = {
-                      instant: 'Fine powder sachet. Most reliable, longest shelf life.',
-                      active_dry: 'Brown granules. Widely available. Dissolve in warm water first.',
-                      fresh: 'Soft beige block. Slightly richer flavour. Use within 2 weeks.',
-                      sourdough: 'Wild fermentation. Deeper flavour, better digestibility. Needs an active starter.',
+                      instant:    t('yeastDesc.simple.instant'),
+                      active_dry: t('yeastDesc.simple.active_dry'),
+                      fresh:      t('yeastDesc.simple.fresh'),
+                      sourdough:  t('yeastDesc.simple.sourdough'),
                     };
                     return (
                       <div
@@ -1522,7 +1528,7 @@ export default function Home() {
                     {/* ROW 1: Quantity — centred, large, primary */}
                     <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                       <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '10px' }}>
-                        {isBread ? 'Loaves' : 'How many?'}
+                        {isBread ? t('quantity.loaves') : t('quantity.howMany')}
                       </div>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '16px' }}>
                         <button onClick={() => setNumItems(n => Math.max(1, n - 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
@@ -1597,13 +1603,13 @@ export default function Home() {
                     {/* AVPN note */}
                     {isAtMax && (
                       <div style={{ marginTop: '10px', padding: '7px 10px', background: '#FEF9F0', borderRadius: '8px', border: '0.5px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                        <span style={{ fontSize: '11px', color: '#7A5A10', lineHeight: 1.4, flex: 1 }}><strong>At the AVPN limit</strong> — 280g max for Neapolitan.</span>
-                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem .5rem', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '.72rem', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>🤌 What is AVPN?</button>
+                        <span style={{ fontSize: '11px', color: '#7A5A10', lineHeight: 1.4, flex: 1 }}><strong>{t('avpn.atLimit')}</strong> — {t('avpn.limitDesc')}</span>
+                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem .5rem', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '.72rem', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>🤌 {t('avpn.learnMore')}</button>
                       </div>
                     )}
                     {isAtMax && avpnOpen && (
                       <div style={{ marginTop: '6px', padding: '8px 10px', background: 'var(--cream)', borderRadius: '8px', fontSize: '11px', color: 'var(--ash)', lineHeight: 1.5 }}>
-                        <strong>Associazione Verace Pizza Napoletana</strong> — the official body that defines authentic Neapolitan pizza standards since 1984. They specify dough balls between 200g and 280g for a pizza 22–35 cm in diameter.
+                        {t('avpn.body')}
                       </div>
                     )}
                   </div>
@@ -1719,10 +1725,10 @@ export default function Home() {
                     const active = yeastType === yt;
                     const yImg = (y as { image?: string }).image;
                     const advDesc: Record<string, string> = {
-                      instant: 'Fine powder · ×1.0 reference · most precise',
-                      active_dry: 'Brown granules · ×1.33 vs IDY · proof in 38°C water',
-                      fresh: 'Soft block · ×3.0 vs IDY · keep refrigerated',
-                      sourdough: 'Wild yeast · replaces formula · needs active starter at peak',
+                      instant:    t('yeastDesc.custom.instant'),
+                      active_dry: t('yeastDesc.custom.active_dry'),
+                      fresh:      t('yeastDesc.custom.fresh'),
+                      sourdough:  t('yeastDesc.custom.sourdough'),
                     };
                     return (
                       <div
@@ -1790,9 +1796,9 @@ export default function Home() {
             {yeastType !== 'sourdough' && (
               <StepCard
                 idPrefix="adv-step"
-                num={9} title="Preferment method"
+                num={9} title={t('preferment.stepTitle')}
                 activeStep={advancedStep}
-                summary={prefermentType !== 'none' ? PREFERMENT_TYPES[prefermentType].name : 'Direct'}
+                summary={prefermentType !== 'none' ? PREFERMENT_TYPES[prefermentType].name : t('preferment.direct')}
                 onEdit={() => setAdvancedStep(9)}
               >
                 <PrefermentPicker
@@ -1841,7 +1847,7 @@ export default function Home() {
             <StepCard
               idPrefix="adv-step"
               num={11}
-              title="Dial in your dough"
+              title={t('dialIn.title')}
               activeStep={advancedStep}
               summary={manualHydration !== undefined ? `${manualHydration}% hydration` : styleKey ? `${ALL_STYLES[styleKey].hydration}% hydration` : undefined}
               onEdit={() => setAdvancedStep(11)}
@@ -1955,28 +1961,28 @@ export default function Home() {
 
                   function hydrationZoneLabel(h: number): { label: string; color: string; note: string } {
                     if (h < zone.classicMin) return {
-                      label: 'Below classic range',
+                      label: t('dialIn.hydration.belowClassic'),
                       color: '#5A7A98',
                       note: h < zone.min + 3
-                        ? 'Dough will be quite stiff — a little more water may help with stretching.'
-                        : `Below the ${zone.name} classic range. Dough will be firmer and a bit denser.`,
+                        ? t('dialIn.hydration.noteStiff')
+                        : t('dialIn.hydration.noteBelowClassic', { name: zone.name }),
                     };
                     if (h <= zone.classicMax) return {
-                      label: '✓ Classic range',
+                      label: t('dialIn.hydration.classic'),
                       color: 'var(--sage)',
-                      note: `Authentic ${zone.name} range. Great handling and traditional texture.`,
+                      note: t('dialIn.hydration.noteClassic', { name: zone.name }),
                     };
                     if (h <= zone.advancedMax) return {
-                      label: '✦ Extended range',
+                      label: t('dialIn.hydration.extended'),
                       color: 'var(--gold)',
-                      note: 'More open crumb and airiness. Requires confident shaping technique.',
+                      note: t('dialIn.hydration.noteExtended'),
                     };
                     return {
-                      label: '⚡ Advanced technique',
+                      label: t('dialIn.hydration.advanced'),
                       color: '#C4624A',
                       note: h >= zone.max - 2
-                        ? 'Extreme hydration. Expect very sticky dough — wet hands, bench scraper essential.'
-                        : 'High hydration territory. Excellent open crumb but challenging to handle.',
+                        ? t('dialIn.hydration.noteExtreme')
+                        : t('dialIn.hydration.noteHigh'),
                     };
                   }
 
@@ -2080,11 +2086,11 @@ export default function Home() {
                           >+</button>
                         </div>
                         <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
-                          {v < 2 ? 'Very low — may taste flat.' :
-                           v <= 2.5 ? 'Bread range — mild.' :
-                           v <= 3 ? 'Classic pizza range.' :
-                           v <= 3.2 ? 'Full-flavoured.' :
-                           'High — slows yeast slightly.'}
+                          {v < 2 ? t('dialIn.salt.veryLow') :
+                           v <= 2.5 ? t('dialIn.salt.breadRange') :
+                           v <= 3 ? t('dialIn.salt.classicPizza') :
+                           v <= 3.2 ? t('dialIn.salt.fullFlavour') :
+                           t('dialIn.salt.high')}
                         </div>
                       </div>
                     );
@@ -2111,7 +2117,7 @@ export default function Home() {
                           >+</button>
                         </div>
                         <div style={{ fontSize: '.72rem', color: v > 0 && isHighTemp ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
-                          {oilGuidance(v, ovenType ?? '', styleKey ?? '')}
+                          {oilGuidance(v, ovenType ?? '', styleKey ?? '', t)}
                         </div>
                       </div>
                     );
@@ -2119,7 +2125,7 @@ export default function Home() {
                   {/* Sugar stepper */}
                   {(() => {
                     const v = manualSugar ?? 0;
-                    const sg = sugarGuidance(v, ovenType ?? '');
+                    const sg = sugarGuidance(v, ovenType ?? '', t);
                     const STEP = 0.5;
                     return (
                       <div style={{ flex: 1 }}>
@@ -2160,7 +2166,7 @@ export default function Home() {
                       return (
                         <div style={{ flex: 1, minWidth: '120px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
-                            <FieldLabel>Dough temp</FieldLabel>
+                            <FieldLabel>{t('dialIn.doughTemp')}</FieldLabel>
                             {!isDefaultDDT && (
                               <button onClick={() => setTargetDoughTemp(undefined)}
                                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.65rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', padding: 0 }}>
@@ -2178,7 +2184,7 @@ export default function Home() {
                           <label style={{ display: 'flex', alignItems: 'center', gap: '.4rem', cursor: 'pointer', marginBottom: '.3rem' }}>
                             <input type="checkbox" checked={flourInFridge} onChange={e => setFlourInFridge(e.target.checked)}
                               style={{ width: '13px', height: '13px', cursor: 'pointer', accentColor: 'var(--terra)', flexShrink: 0 }} />
-                            <span style={{ fontSize: '.72rem', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>Flour in fridge</span>
+                            <span style={{ fontSize: '.72rem', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>{t('dialIn.flourInFridge')}</span>
                           </label>
                           <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4 }}>
                             +{mixerFriction}°C from {mixerType === 'spiral' ? 'spiral' : mixerType === 'stand' ? 'stand' : 'hand'} mixer.
@@ -2193,7 +2199,7 @@ export default function Home() {
                       return (
                         <div style={{ flex: 1, minWidth: '120px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
-                            <FieldLabel>Mixing loss</FieldLabel>
+                            <FieldLabel>{t('dialIn.mixingLoss')}</FieldLabel>
                             {wastePct !== undefined && wastePct !== 1.5 && (
                               <button onClick={() => setWastePct(undefined)}
                                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.65rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', padding: 0 }}>
