@@ -533,9 +533,11 @@ function SimpleColourBar({
   nowHBF?: number;
 }) {
   const _barWindowH = nowHBF ?? 0;
-  const barWin = _barWindowH > 0
-    ? Math.min(72, Math.max(_barWindowH + 4, 24))
-    : (hasColdRetard ? 72 : 48);
+  // Scale window to the sweet zone: show ~2× sweetFrom so baker sees
+  // equal context either side of the green zone.
+  // sweetFrom is the left (early/furthest) edge of the green zone in HBF.
+  const sweetLeft = sweetFrom ?? (_barWindowH > 0 ? _barWindowH : (hasColdRetard ? 48 : 12));
+  const barWin = Math.min(72, Math.max(Math.round(sweetLeft * 2), 12));
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef       = useRef<SVGSVGElement>(null);
   const lastHBFRef   = useRef<number>(0);
@@ -578,14 +580,17 @@ function SimpleColourBar({
     { from: goldR2_HBF, to: 0,          fill: 'rgba(196,82,42,0.2)',   label: 'Too late'  },
   ];
 
-  // Axis ticks every 12h
+  // Ticks at every 6h boundary — label only at 6am/noon/6pm/midnight
   const ticks: { x: number; label: string }[] = [];
-  for (let h = 12; h < barWin; h += 12) {
+  for (let h = 1; h < barWin; h++) {
     const t  = new Date(bakeMs - h * 3600000);
-    const wd = t.toLocaleDateString('en-US', { weekday: 'short' });
+    if (t.getMinutes() !== 0 || t.getHours() % 6 !== 0) continue;
     const hr = t.getHours();
-    const timeLabel = hr === 0 ? 'midnight' : hr === 12 ? 'noon'
-      : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
+    const wd = t.toLocaleDateString('en-US', { weekday: 'short' });
+    const timeLabel = hr === 0 ? 'midnight'
+      : hr === 6  ? '6am'
+      : hr === 12 ? 'noon'
+      : '6pm';
     ticks.push({ x: barHToX(h, W, barWin), label: `${wd} ${timeLabel}` });
   }
 
