@@ -978,7 +978,7 @@ export default function Home() {
             >
               {(() => {
                 const showDiam = bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '');
-                const isAtMax = itemWeight >= 278;
+                const isAtMax = styleKey === 'neapolitan' && itemWeight >= 278;
                 return (
                   <div style={{ padding: '0 .1rem' }}>
 
@@ -1504,7 +1504,7 @@ export default function Home() {
             >
               {(() => {
                 const showDiam = bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '');
-                const isAtMax = itemWeight >= 278;
+                const isAtMax = styleKey === 'neapolitan' && itemWeight >= 278;
                 return (
                   <div style={{ padding: '0 .1rem' }}>
 
