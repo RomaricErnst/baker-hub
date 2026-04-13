@@ -1143,7 +1143,7 @@ export default function Home() {
             >
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem', marginBottom: '.65rem' }}>
-                  {(Object.entries(YEAST_TYPES) as [YeastType, typeof YEAST_TYPES[YeastType]][]).map(([yt, y]) => {
+                  {(Object.entries(YEAST_TYPES) as [YeastType, typeof YEAST_TYPES[YeastType]][]).filter(([yt]) => yt !== 'sourdough').map(([yt, y]) => {
                     const active = yeastType === yt;
                     const yImg = (y as { image?: string }).image;
                     const guidedDesc: Record<string, string> = {
