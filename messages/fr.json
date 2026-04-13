@@ -82,7 +82,7 @@
     "weightPerBall": "Poids par pâton",
     "weightPerLoaf": "Poids par pain",
     "largeBatchNote": "Grande fournée — pensez à diviser en deux sessions",
-    "howMany": "Combien ?",
+    "howMany": "Quantité",
     "corniceLabel": "Épaisseur des bords",
     "corniceThin": "Fine",
     "corniceClassic": "Classique",
@@ -148,7 +148,7 @@
     "title": "Affinez votre pâte",
     "doughTemp": "Temp. pâte",
     "flourInFridge": "Farine au frigo",
-    "mixingLoss": "Perte au pétrissage",
+    "mixingLoss": "Déchet de pétrissage",
     "hydration": {
       "belowClassic": "En dessous de la plage classique",
       "classic": "✓ Plage classique",
@@ -251,7 +251,7 @@
     }
   },
   "recipeOutput": {
-    "totalIngredients": "Ingrédients totaux",
+    "totalIngredients": "Total des ingrédients",
     "remainingFlour": "Farine restante",
     "remainingWater": "Eau restante",
     "atRoomTemp": "À température ambiante",
@@ -296,7 +296,7 @@
     }
   },
   "schedulePicker": {
-    "startDough": "Démarrer la pâte",
+    "startDough": "Commencer la pâte",
     "pickDate": "Choisir une date",
     "selectDateFirst": "Sélectionnez d'abord une date",
     "guardPast": "Cette heure de cuisson est déjà passée — choisissez une date ultérieure.",
