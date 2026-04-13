@@ -65,7 +65,7 @@ function YeastTooltip() {
       >i</span>
       {open && (
         <span style={{
-          position: 'absolute', bottom: '120%', right: 0,
+          position: 'absolute', bottom: '120%', left: 0,
           background: 'var(--ash)', color: 'var(--cream)',
           fontSize: '.72rem', fontFamily: 'var(--font-dm-sans)',
           padding: '.4rem .65rem', borderRadius: '8px',
@@ -103,7 +103,7 @@ function FlourTooltip({ bakeType }: { bakeType?: string }) {
       >i</span>
       {open && (
         <span style={{
-          position: 'absolute', bottom: '120%', right: 0,
+          position: 'absolute', bottom: '120%', left: 0,
           background: 'var(--ash)', color: 'var(--cream)',
           fontSize: '.72rem', fontFamily: 'var(--font-dm-sans)',
           lineHeight: 1.5,
