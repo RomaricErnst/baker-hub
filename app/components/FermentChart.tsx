@@ -1,6 +1,6 @@
 'use client';
 import { useRef, useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock } from '../utils';
 
 export interface FermentChartProps {
@@ -149,17 +149,19 @@ function formatHours(h: number): string {
   return `${h.toFixed(1)}h`;
 }
 
-function fmtHM(d: Date): string {
+function fmtHM(d: Date, isFr = false): string {
   const h = d.getHours();
   const m = d.getMinutes();
+  if (isFr) return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
   const ap = h < 12 ? 'am' : 'pm';
   const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return m === 0 ? `${h12}${ap}` : `${h12}:${String(m).padStart(2, '0')}${ap}`;
 }
 
-function fmtDT(d: Date): string {
-  const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
-  return `${wd} ${d.getDate()} · ${fmtHM(d)}`;
+function fmtDT(d: Date, isFr = false): string {
+  const loc = isFr ? 'fr-FR' : 'en-US';
+  const wd = d.toLocaleDateString(loc, { weekday: 'short' });
+  return `${wd} ${d.getDate()} · ${fmtHM(d, isFr)}`;
 }
 
 // ── Component ─────────────────────────────────────────────────
@@ -176,6 +178,8 @@ export default function FermentChart({
   const svgRef        = useRef<SVGSVGElement>(null);
   const [W, setW]     = useState(320);
   const t = useTranslations('fermentChart');
+  const locale = useLocale();
+  const isFr = locale === 'fr';
   const [dragging, setDragging] = useState<'mix' | 'pref' | null>(null);
   // Local drag HBF for free visual movement during mix drag — no onMixChange until pointer up
   const [localMixHBF, setLocalMixHBF] = useState<number | null>(null);
@@ -293,12 +297,14 @@ export default function FermentChart({
   for (let h = tickIntervalH; h < WH; h += tickIntervalH) {
     const tick = new Date(bakeMs - h * 3600000);
     if (tick.getMinutes() !== 0) continue;
-    const wd = tick.toLocaleDateString('en-US', { weekday: 'short' });
+    const wd = tick.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' });
     const hr = tick.getHours();
     const timeLabel = hr === 0  ? t('tickLabels.midnight')
       : hr === 6  ? t('tickLabels.6am')
       : hr === 12 ? t('tickLabels.noon')
       : hr === 18 ? t('tickLabels.6pm')
+      : isFr
+      ? `${hr}h`
       : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
     ticks.push({ x: hToX(h, W, WH), label: `${wd} ${timeLabel}` });
   }

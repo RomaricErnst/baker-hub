@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
 import FermentChart, { getPrefOptH, getPrefPeakH_RT, getPrefRTWarmupH } from './FermentChart';
 
@@ -26,24 +26,27 @@ type PickerPhase = 'bake_time' | 'start_confirm';
 type Scenario = 'plenty' | 'tight' | 'too_short';
 
 // ── Card date+time formatter ─────────────────
-// "Fri 28 Mar · 9pm"
-function fmtCardHM(d: Date): string {
+// "Fri 28 Mar · 9pm" / "ven. 28 mars · 21h"
+function fmtCardHM(d: Date, isFr = false): string {
   const h = d.getHours(), m = d.getMinutes();
+  if (isFr) return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
   const ap = h < 12 ? 'am' : 'pm';
   const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return m === 0 ? `${h12}${ap}` : `${h12}:${String(m).padStart(2, '0')}${ap}`;
 }
-function fmtCardDT(d: Date): string {
-  const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
-  const mo = d.toLocaleDateString('en-US', { month: 'short' });
-  return `${wd} ${d.getDate()} ${mo} · ${fmtCardHM(d)}`;
+function fmtCardDT(d: Date, isFr = false): string {
+  const loc = isFr ? 'fr-FR' : 'en-US';
+  const wd = d.toLocaleDateString(loc, { weekday: 'short' });
+  const mo = d.toLocaleDateString(loc, { month: 'short' });
+  return `${wd} ${d.getDate()} ${mo} · ${fmtCardHM(d, isFr)}`;
 }
 
 // ── Time formatter ────────────────────────────
 // "4pm" / "4:30pm" — minutes omitted when zero
-function formatTimeShort(d: Date): string {
+function formatTimeShort(d: Date, isFr = false): string {
   const h = d.getHours();
   const m = d.getMinutes();
+  if (isFr) return m === 0 ? `${h}h` : `${h}h${m.toString().padStart(2, '0')}`;
   const ampm = h < 12 ? 'am' : 'pm';
   const h12  = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return m === 0 ? `${h12}${ampm}` : `${h12}:${m.toString().padStart(2, '0')}${ampm}`;
@@ -51,26 +54,28 @@ function formatTimeShort(d: Date): string {
 
 // ── Day+time formatter ────────────────────────
 // "Sat 25 Mar at 4pm" / "tonight at 9pm" / "tomorrow at 9am"
-function formatDayShort(d: Date): string {
+function formatDayShort(d: Date, isFr = false): string {
   const now = new Date();
   const todayStart    = new Date(now); todayStart.setHours(0, 0, 0, 0);
   const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(todayStart.getDate() + 1);
   const dStart = new Date(d); dStart.setHours(0, 0, 0, 0);
 
-  const timeStr = formatTimeShort(d);
+  const timeStr = formatTimeShort(d, isFr);
   if (dStart.getTime() === todayStart.getTime())    return `tonight at ${timeStr}`;
   if (dStart.getTime() === tomorrowStart.getTime()) return `tomorrow at ${timeStr}`;
-  const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
-  const month   = d.toLocaleDateString('en-US', { month: 'short' });
+  const loc = isFr ? 'fr-FR' : 'en-US';
+  const weekday = d.toLocaleDateString(loc, { weekday: 'short' });
+  const month   = d.toLocaleDateString(loc, { month: 'short' });
   return `${weekday} ${d.getDate()} ${month} at ${timeStr}`;
 }
 
 // ── Slider display formatter ──────────────────
 // "Thu 26 Mar · 6pm"
-function formatSliderDisplay(d: Date): string {
-  const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
-  const mo = d.toLocaleDateString('en-US', { month: 'short' });
-  return `${wd} ${d.getDate()} ${mo} · ${formatTimeShort(d)}`;
+function formatSliderDisplay(d: Date, isFr = false): string {
+  const loc = isFr ? 'fr-FR' : 'en-US';
+  const wd = d.toLocaleDateString(loc, { weekday: 'short' });
+  const mo = d.toLocaleDateString(loc, { month: 'short' });
+  return `${wd} ${d.getDate()} ${mo} · ${formatTimeShort(d, isFr)}`;
 }
 
 // ── Hour-rounded formatters ───────────────────
@@ -87,8 +92,9 @@ function formatDayHour(d: Date): string {
 }
 
 // ── Hour select label ─────────────────────────
-// "12am", "1am", ..., "11am", "12pm", "1pm", ..., "11pm"
-function hourLabel(h: number): string {
+// "12am", "1am", ..., "11am", "12pm", "1pm", ..., "11pm" (EN) / "0h", "1h", ..., "23h" (FR)
+function hourLabel(h: number, isFr = false): string {
+  if (isFr) return `${h}h`;
   if (h === 0) return '12am';
   if (h < 12) return `${h}am`;
   if (h === 12) return '12pm';
@@ -533,6 +539,8 @@ function SimpleColourBar({
   nowHBF?: number;
 }) {
   const tRoot = useTranslations();
+  const locale = useLocale();
+  const isFr = locale === 'fr';
   const _barWindowH = nowHBF ?? 0;
   // Scale window to the sweet zone: show ~2× sweetFrom so baker sees
   // equal context either side of the green zone.
@@ -588,11 +596,13 @@ function SimpleColourBar({
     const tick = new Date(bakeMs - h * 3600000);
     if (tick.getMinutes() !== 0) continue;
     const hr = tick.getHours();
-    const wd = tick.toLocaleDateString('en-US', { weekday: 'short' });
+    const wd = tick.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' });
     const timeLabel = hr === 0  ? tRoot('schedulePicker.tickLabels.midnight')
       : hr === 6  ? tRoot('schedulePicker.tickLabels.6am')
       : hr === 12 ? tRoot('schedulePicker.tickLabels.noon')
       : hr === 18 ? tRoot('schedulePicker.tickLabels.6pm')
+      : isFr
+      ? `${hr}h`
       : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
     ticks.push({ x: barHToX(h, W, barWin), label: `${wd} ${timeLabel}` });
   }
@@ -639,15 +649,16 @@ function SimpleColourBar({
     setDragging(false);
   }
 
-  // Formatters
+  // Formatters (locale-aware)
   function fmtHM(d: Date): string {
     const h = d.getHours(), m = d.getMinutes();
+    if (isFr) return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
     const ap = h < 12 ? 'am' : 'pm';
     const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
     return m === 0 ? `${h12}${ap}` : `${h12}:${String(m).padStart(2, '0')}${ap}`;
   }
   function fmtDT(d: Date): string {
-    const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const wd = d.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' });
     return `${wd} ${d.getDate()} · ${fmtHM(d)}`;
   }
 
@@ -674,7 +685,7 @@ function SimpleColourBar({
     >
       {/* Hint */}
       <div style={{ fontSize: '13px', color: 'var(--smoke)', textAlign: 'center', marginBottom: '8px' }}>
-        Drag the diamond to set your mixing time
+        {tRoot('schedulePicker.dragHint')}
       </div>
       <svg
         ref={svgRef}
@@ -827,10 +838,11 @@ function SimpleColourBar({
       </svg>
 
       {/* Info cards */}
-      <div style={{ display: 'flex', gap: '6px', marginTop: '.6rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '6px', marginTop: '.6rem', justifyContent: 'center' }}>
         <div style={{
-          flex: 1, minWidth: '120px', background: 'var(--cream)',
+          background: 'var(--cream)',
           border: '1.5px solid var(--border)', borderRadius: '10px', padding: '.45rem .7rem',
+          textAlign: 'center',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
             <div style={{ width: 8, height: 8, background: '#1A1612', transform: 'rotate(45deg)', flexShrink: 0 }} />
@@ -858,6 +870,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
+  const locale = useLocale();
+  const isFr = locale === 'fr';
   const alreadySet = eatTime !== null && eatTime > new Date();
   // Skip phase 1 if a future bake time is already set (return-to-edit case)
   const [phase, setPhase] = useState<PickerPhase>(() => alreadySet ? 'start_confirm' : 'bake_time');
@@ -1338,8 +1352,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               {pickerDate ? (() => {
                 const [y, m, d] = pickerDate.split('-').map(Number);
                 const dt = new Date(y, m - 1, d);
-                const wd = dt.toLocaleDateString('en-US', { weekday: 'short' });
-                const mo = dt.toLocaleDateString('en-US', { month: 'short' });
+                const loc = isFr ? 'fr-FR' : 'en-US';
+                const wd = dt.toLocaleDateString(loc, { weekday: 'short' });
+                const mo = dt.toLocaleDateString(loc, { month: 'short' });
                 return `${wd} ${d} ${mo}`;
               })() : tRoot('schedulePicker.pickDate')}
             </div>
@@ -1375,9 +1390,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             {Array.from({ length: 96 }, (_, i) => {
               const h = Math.floor(i / 4);
               const m = (i % 4) * 15;
-              const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-              const ap = h < 12 ? 'am' : 'pm';
-              const label = `${h12}:${String(m).padStart(2,'0')} ${ap}`;
+              const label = isFr
+                ? `${h}h${String(m).padStart(2, '0')}`
+                : `${h === 0 ? 12 : h > 12 ? h - 12 : h}:${String(m).padStart(2,'0')} ${h < 12 ? 'am' : 'pm'}`;
               return (
                 <option key={i} value={`${h}:${String(m).padStart(2,'0')}`}>
                   {label}
@@ -1634,7 +1649,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     marginLeft: '.5rem', fontSize: '.72rem',
                     color: 'var(--terra)', opacity: .75, fontFamily: 'var(--font-dm-mono)',
                   }}>
-                    {formatTimeShort(block.from)} → {formatTimeShort(block.to)}
+                    {formatTimeShort(block.from, isFr)} → {formatTimeShort(block.to, isFr)}
                   </span>
                   <span style={{
                     marginLeft: '.35rem', fontSize: '.7rem',
@@ -1988,7 +2003,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   Your bulk fermentation begins during a busy window.
                 </div>
                 <div style={{ fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '.65rem' }}>
-                  Start dough at {formatSliderDisplay(earlierStart)} so you can kick off bulk fermentation while you&apos;re free.
+                  Start dough at {formatSliderDisplay(earlierStart, isFr)} so you can kick off bulk fermentation while you&apos;re free.
                 </div>
               </>
             ) : (
@@ -2015,7 +2030,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     fontFamily: 'var(--font-dm-sans)',
                   }}
                 >
-                  Start at {formatSliderDisplay(earlierStart)} →
+                  Start at {formatSliderDisplay(earlierStart, isFr)} →
                 </button>
               )}
               <button
@@ -2080,7 +2095,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   }}>{prefLabel}</div>
                 </div>
                 <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-                  {fmtCardDT(cardPrefTime)}
+                  {fmtCardDT(cardPrefTime, isFr)}
                 </div>
                 {cardPrefInZone ? (
                   <div style={{
@@ -2110,7 +2125,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   const delayMin = Math.round(((inBlock.to.getTime() - removeMs) / 3600000) * 60 / 15) * 15;
                   return (
                     <div style={{ fontSize: '11px', color: '#7A5A10', marginTop: '5px', lineHeight: 1.5 }}>
-                      Remove from fridge at {formatTimeShort(removeDate)} — falls in your busy window.
+                      Remove from fridge at {formatTimeShort(removeDate, isFr)} — falls in your busy window.
                       {delayMin > 0 && ` Moving Start Dough ${delayMin} min later would clear it.`}
                     </div>
                   );
@@ -2132,7 +2147,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 }}>{tRoot('schedulePicker.startDough')}</div>
               </div>
               <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-                {fmtCardDT(pendingStart)}
+                {fmtCardDT(pendingStart, isFr)}
               </div>
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: '.3rem',
