@@ -1,5 +1,5 @@
 {
-  "header": { "tagline": "votre pâte, planifiée autour de votre vie" },
+  "header": { "tagline": "planifiée autour de votre vie." },
   "auth": { "signIn": "🔑 Se connecter", "signOut": "Se déconnecter" },
   "common": {
     "continue": "Continuer →",
@@ -35,8 +35,8 @@
     "confirmOverwrite": "Ceci écrasera votre recette sauvegardée. Continuer ?"
   },
   "hero": {
-    "headline": "Préparez votre pâte",
-    "headlineEm": "avec confiance."
+    "headline": "Façonnez votre pâte",
+    "headlineEm": "avec précision."
   },
   "modeCards": {
     "simple": {
