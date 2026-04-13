@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
 import { MIXER_TYPES, type MixerType } from '../data';
 import LearnModal from './LearnModal';
@@ -200,6 +201,7 @@ export default function BakeGuide({
 }: BakeGuideProps) {
   const u = units ?? 'metric';
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
+  const t = useTranslations('bakeGuide');
 
   const isSourdough   = styleKey === 'sourdough' || styleKey === 'pain_levain';
   const isBread       = ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois','sourdough'].includes(styleKey);
@@ -239,83 +241,50 @@ export default function BakeGuide({
       {/* ── STEP: Make Poolish / Biga ───────────────── */}
       {hasPref && prefStartTime && (
         <StepCard number={n()} icon={<IconPreferment />}
-          title={isPoolish ? 'Make your Poolish' : 'Make your Biga'}
+          title={isPoolish ? t('stepTitles.makePoolish') : t('stepTitles.makeBiga')}
           time={prefStartTime} accent={D.gold}>
 
-          <Section icon="🥄" title="What to do">
+          <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
             {isPoolish ? (
-              <Steps items={[
-                { bold: 'Weigh equal parts flour and water', note: 'see recipe for exact amounts — 100% hydration' },
-                { bold: 'Add a pinch of IDY', note: 'very small amount — poolish ferments slowly' },
-                { bold: 'Stir vigorously until no dry flour remains', note: '~2 min — smooth, thick batter consistency' },
-                { bold: 'Cover tightly with cling film', note: 'press it to the surface to prevent skin' },
-                { bold: kitchenTemp >= 26 ? `Place in fridge (${tempC(4, u)})` : 'Leave at room temperature', note: kitchenTemp >= 26 ? 'tropical kitchen — fridge prevents over-fermentation' : `${displayTemp(kitchenTemp, u)} is ideal for a slow room temp poolish` },
-              ]} />
+              <Steps items={t.raw(kitchenTemp >= 26 ? 'poolish.stepsFridge' : 'poolish.stepsRT') as { bold: string; note: string }[]} />
             ) : (
-              <Steps items={[
-                { bold: 'Weigh flour and water', note: 'see recipe — biga is ~50-60% hydration, stiffer than poolish' },
-                { bold: 'Add a tiny amount of IDY', note: '0.1-0.2% of flour — biga ferments very slowly' },
-                { bold: 'Mix roughly until just combined', note: 'biga is intentionally shaggy — do not over-mix' },
-                { bold: 'Cover loosely', note: 'biga needs some air exchange unlike poolish' },
-                { bold: `Place in fridge (${tempC(4, u)})`, note: 'biga always ferments cold — never at room temp' },
-              ]} />
+              <Steps items={t.raw('biga.steps') as { bold: string; note: string }[]} />
             )}
           </Section>
 
-          <Section icon="👁️" title="Watch for — it's ready when">
-            <Bullets items={[
-              isPoolish
-                ? 'Surface is domed and bubbly — looks like a lava lamp slowly bubbling'
-                : 'Surface has small cracks and bubbles — smells yeasty and slightly alcoholic',
-              'Slightly pulling away from the sides of the container',
-              isPoolish ? 'Just starting to flatten (use it now — don\'t wait for full collapse)' : 'Has increased in volume by roughly 50%',
-            ]} />
+          <Section icon="👁️" title={t('sectionTitles.watchForReady')}>
+            <Bullets items={t.raw(isPoolish ? 'poolish.readyWhen' : 'biga.readyWhen') as string[]} />
           </Section>
 
-          <Section icon="⚠️" title="Pitfalls">
-            <Bullets items={[
-              'Over-fermented: strong alcohol smell, flat surface, watery — discard and start again',
-              isPoolish ? 'Fully collapsed poolish loses strength — check before the centre drops' : 'Biga that smells like acetone is over-fermented',
-              'Using warm water — use room temp or cold water for slow controlled fermentation',
-            ]} />
+          <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+            <Bullets items={t.raw(isPoolish ? 'poolish.pitfalls' : 'biga.pitfalls') as string[]} />
           </Section>
         </StepCard>
       )}
 
       {/* ── STEP: Feed Starter (sourdough) ──────────── */}
       {isSourdough && feedTime && (
-        <StepCard number={n()} icon={<IconStarter />} title="Feed your starter" time={feedTime} accent="#6A7FA8">
-          <Section icon="🥄" title="What to do">
-            <Steps items={[
-              { bold: 'Discard all but 50g of starter', note: 'fresh ratio ferments faster and more predictably' },
-              { bold: 'Add 50g flour + 50g water (1:1:1)', note: 'adjust ratio for your target peak time' },
-              { bold: 'Stir vigorously until smooth', note: 'no lumps' },
-              { bold: 'Mark the jar with a rubber band', note: 'tracks rise visually' },
-              { bold: 'Leave uncovered or lightly covered', note: 'starter needs air' },
-            ]} />
+        <StepCard number={n()} icon={<IconStarter />} title={t('stepTitles.feedStarter')} time={feedTime} accent="#6A7FA8">
+          <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
+            <Steps items={t.raw('starter.steps') as { bold: string; note: string }[]} />
           </Section>
-          <Section icon="👁️" title="Ready when">
+          <Section icon="👁️" title={t('sectionTitles.readyWhen')}>
             <Bullets items={[
               `Doubled in size — at ${displayTemp(kitchenTemp, u)} expect ${kitchenTemp >= 28 ? '3-5h' : kitchenTemp >= 24 ? '4-7h' : '6-10h'}`,
-              'Domed top with visible bubbles on surface and sides',
-              'Float test: drop a small piece in water — if it floats, it\'s ready',
-              'Smells tangy and yeasty — not alcoholic',
+              ...(t.raw('starter.readyWhen') as string[]),
             ]} />
           </Section>
-          <Section icon="⚠️" title="Pitfalls">
-            <Bullets items={[
-              'Using starter past peak — it will have less strength and your dough will rise slowly',
-              'Hooch (dark liquid on top) means starter was hungry — pour it off, feed, wait for full rise before using',
-            ]} />
+          <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+            <Bullets items={t.raw('starter.pitfalls') as string[]} />
           </Section>
         </StepCard>
       )}
 
       {/* ── STEP: Mix Dough ─────────────────────────── */}
-      <StepCard number={n()} icon={<IconMix />} title="Mix your dough"
+      <StepCard number={n()} icon={<IconMix />} title={t('stepTitles.mixDough')}
         time={schedule.bulkFermStart} duration={schedule.mixingDurationH} accent={D.ash}>
 
-        <Section icon="🥄" title="Mixing order">
+        <Section icon="🥄" title={t('sectionTitles.mixingOrder')}>
           {mixerType === 'hand' && !isSourdough && (
             <Steps items={hydration > 70 ? [
               // >70%: autolyse, then yeast+salt, brief knead, then bassinage, then full knead
@@ -403,11 +372,10 @@ export default function BakeGuide({
           )}
         </Section>
 
-        <Section icon="🌡️" title="Water temperature">
+        <Section icon="🌡️" title={t('sectionTitles.waterTemp')}>
           <Bullets items={[
             `Target Final Dough Temperature (FDT): ${isNeapolitan ? tempC(23, u) : tempC(24, u)}`,
-            'Use the water temperature from your recipe — Baker Hub calculated this accounting for your kitchen and mixer',
-            'Check FDT with a thermometer right after mixing — dough should feel cool to the touch',
+            ...(t.raw('mix.waterTempBullets') as string[]),
             `FDT above ${tempC(28, u)}: refrigerate dough for 15 min before bulk fermentation`,
           ]} />
           <div style={{ marginTop: '.5rem' }}>
@@ -415,13 +383,12 @@ export default function BakeGuide({
           </div>
         </Section>
 
-        <Section icon="👁️" title="Watch for">
+        <Section icon="👁️" title={t('sectionTitles.watchFor')}>
           <Bullets items={[
             mixerType === 'spiral'
-              ? 'Pumpkin shape: dough wraps around the breaker bar, pulls cleanly from bowl walls'
-              : 'Smooth, elastic ball — slightly tacky but not sticky',
-            'Windowpane test: stretch a small piece until light shows through without tearing',
-            'Skin looks smooth and slightly shiny',
+              ? t('mix.watchForPumpkin')
+              : t('mix.watchForSmooth'),
+            ...(t.raw('mix.watchForAll') as string[]),
           ]} />
           <div style={{ marginTop: '.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
             <LearnLink term="windowpane" label="Windowpane test" onOpen={setLearnTerm} />
@@ -431,52 +398,45 @@ export default function BakeGuide({
           </div>
         </Section>
 
-        <Section icon="⚠️" title="Pitfalls">
+        <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
           <Bullets items={[
-            'Adding salt and yeast at the same time — salt kills yeast on contact, always add separately',
-            'Over-kneading by hand is nearly impossible — but over-mixing in a stand mixer is not, stop when windowpane passes',
+            ...(t.raw('mix.pitfalls') as string[]).slice(0, 2),
             isSpiral ? `Ignoring FDT — spiral mixers generate heat, dough can exceed ${tempC(28, u)} without noticing` : '',
-            'Adding oil before gluten develops — oil coats proteins and blocks gluten formation',
+            (t.raw('mix.pitfalls') as string[])[2],
           ].filter(Boolean)} />
         </Section>
       </StepCard>
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
-      <StepCard number={n()} icon={<IconBulk />} title="Bulk Fermentation"
+      <StepCard number={n()} icon={<IconBulk />} title={t('stepTitles.bulkFerm')}
         time={schedule.bulkFermStart} duration={schedule.bulkFermHours} accent={D.terra}>
 
-        <Section icon="🥄" title="What to do">
+        <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
           <Steps items={[
-            { bold: 'Transfer dough to a lightly oiled container with a lid', note: 'clear container lets you monitor rise' },
-            { bold: 'Mark the level with a rubber band', note: 'tracks 50-75% rise target' },
+            ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]),
             ...(schedule.bulkFermHours >= 1.5 ? [
-              { bold: 'Set 1 — after 30 min: stretch & fold', note: 'wet hand, grab one side, stretch up then fold over centre. Rotate 90° and repeat x4' },
-              { bold: 'Set 2 — after 1h: stretch & fold', note: 'dough should feel more cohesive and resist tearing' },
+              t.raw('bulk.set1') as { bold: string; note: string },
+              t.raw('bulk.set2') as { bold: string; note: string },
               ...(schedule.bulkFermHours >= 2 ? [
-                { bold: 'Set 3 — after 1h30: stretch & fold', note: 'dough will feel smooth and strong' },
-                { bold: 'Set 4 — after 2h: final fold', note: 'then leave undisturbed until bulk is done' },
+                t.raw('bulk.set3') as { bold: string; note: string },
+                t.raw('bulk.set4') as { bold: string; note: string },
               ] : []),
             ] : schedule.bulkFermHours >= 0.5 ? [
-              { bold: 'After 15 min: one set of stretch & folds', note: 'then cover and rest — short bulk goes straight to cold' },
+              t.raw('bulk.setShort') as { bold: string; note: string },
             ] : [
-              { bold: 'Cover immediately and place in fridge', note: 'bulk is very short — dough goes cold right away' },
+              t.raw('bulk.setVeryShort') as { bold: string; note: string },
             ]),
           ]} />
         </Section>
 
         <Section icon="👁️" title="Watch for — bulk is done when">
-          <Bullets items={[
-            'Dough has grown 50-75% (not doubled — pizza dough bulk is shorter than bread)',
-            'Slightly domed, bubbly surface',
-            'Jiggles like jelly when you shake the container',
-            'Feels airy and lighter than when you started',
-          ]} />
+          <Bullets items={t.raw('bulk.watchFor') as string[]} />
           <div style={{ marginTop: '.5rem' }}>
             <LearnLink term="bulk_fermentation" label="Bulk fermentation guide" onOpen={setLearnTerm} />
           </div>
         </Section>
 
-        <Section icon="⚠️" title="Pitfalls">
+        <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
           <Bullets items={[
             ...(hydration >= 70 ? [
               oil > 0
@@ -486,9 +446,7 @@ export default function BakeGuide({
                 : `Wet hands for stretch & folds — dip your hands in water before each set. Avoids sticking without altering hydration like bench flour would.`,
             ] : []),
             `Bulk in a warm spot above ${tempC(26, u)} — dough ferments too fast, less flavour`,
-            'Over-bulk: more than 75% rise means gluten has started to break down — dough will be slack and tear during shaping',
-            'Under-bulk: less than 30% rise — not enough gas development, dough will be dense',
-            'Skipping stretch & folds — they build gluten strength that makes shaping much easier',
+            ...(t.raw('bulk.pitfallsBase') as string[]),
           ]} />
         </Section>
       </StepCard>
@@ -496,33 +454,28 @@ export default function BakeGuide({
       {/* ── STEP: Cold Retard 1 ──────────────────────── */}
       {hasCold && schedule.coldRetard1Start && schedule.coldRetard1End && (
         <StepCard number={n()} icon={<IconCold />}
-          title={isTwoPhase ? 'Cold Retard — Whole Dough' : 'Cold Retard'}
+          title={isTwoPhase ? t('stepTitles.coldRetardWhole') : t('stepTitles.coldRetard')}
           time={schedule.coldRetard1Start}
           duration={(schedule.coldRetard1End.getTime() - schedule.coldRetard1Start.getTime()) / 3600000}
           accent="#6A7FA8">
 
-          <Section icon="🥄" title="What to do">
+          <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
-              { bold: 'Cover container tightly with cling film', note: 'press to the surface — dough skin is the enemy' },
-              { bold: 'Place on a middle shelf at the back of the fridge', note: 'back of fridge is coldest and most consistent — avoid the door' },
+              ...(t.raw('coldRetard.steps') as { bold: string; note: string }[]).slice(0, 2),
               { bold: 'Set your alarm for Divide & Ball time', note: formatTime(schedule.divideBallTime ?? schedule.coldRetard1End) },
-              { bold: 'No need to check the dough', note: 'cold fermentation is slow and forgiving' },
+              (t.raw('coldRetard.steps') as { bold: string; note: string }[])[2],
             ]} />
           </Section>
 
-          <Section icon="👁️" title="What to expect">
-            <Bullets items={[
-              'Dough will grow slowly — 20-30% rise during cold retard is normal',
-              'Surface may look slightly domed and have small bubbles — this is perfect',
-              'Cold dough is stiff straight from the fridge — this is correct, it makes divide & ball easier',
-            ]} />
+          <Section icon="👁️" title={t('sectionTitles.whatToExpect')}>
+            <Bullets items={t.raw('coldRetard.watchFor') as string[]} />
           </Section>
 
-          <Section icon="⚠️" title="Pitfalls">
+          <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
             <Bullets items={[
-              'Leaving uncovered: dough skin forms, tears during shaping and creates uneven balls',
+              (t.raw('coldRetard.pitfalls') as string[])[0],
               `Fridge temperature above ${tempC(8, u)}: dough over-ferments during retard — check your fridge`,
-              'Rushing the cold phase: minimum cold time is important for flavour and gluten relaxation',
+              (t.raw('coldRetard.pitfalls') as string[])[1],
             ]} />
           </Section>
         </StepCard>
@@ -531,110 +484,74 @@ export default function BakeGuide({
       {/* ── STEP: Divide & Shape (bread) / Divide & Ball (pizza) ── */}
       {schedule.divideBallTime && (
         <StepCard number={n()} icon={<IconDivide />}
-          title={isBread ? 'Divide & Shape' : 'Divide & Ball'}
+          title={isBread ? t('stepTitles.divideShape') : t('stepTitles.divideBall')}
           time={schedule.divideBallTime} duration={divideMin / 60} accent="#8A6A4A">
 
-          <Section icon="🥄" title="What to do">
+          <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
             {isBread ? (
               <Steps items={isFougasse ? [
-                { bold: `Divide into ${numItems} equal ${breadPiecePlural}`, note: 'use a scale for even pieces' },
-                { bold: 'Flatten each piece gently with your hands', note: 'aim for roughly oval, 1.5–2cm thick' },
-                { bold: 'Cut the leaf pattern with a sharp knife or dough cutter', note: 'one central slash, 4–5 angled cuts each side — like a leaf vein' },
-                { bold: 'Open the cuts slightly with your fingers', note: 'spread them apart so they do not close during baking' },
-                { bold: 'Transfer to a lined baking tray', note: 'dust with flour — fougasse does not go in the fridge' },
-                { bold: 'Cover and leave at room temperature for final proof', note: '20–40 min at room temperature' },
+                { bold: `Divide into ${numItems} equal ${breadPiecePlural}`, note: (t.raw('divide.fougasse.steps') as { bold: string; note: string }[])[0].note },
+                ...(t.raw('divide.fougasse.steps') as { bold: string; note: string }[]).slice(1),
               ] : isBaguette ? [
-                { bold: `Divide into ${numItems} equal pieces`, note: `use a scale — equal pieces` },
-                { bold: 'Pre-shape: fold to a loose rectangle', note: 'do not degas — just gently fold sides in' },
-                { bold: 'Cover and bench rest 20 min', note: 'gluten relaxes, makes final shaping easier' },
-                { bold: 'Final shape: roll gently into a baguette', note: 'use your fingertips, not your palm — length ~30–40cm' },
-                { bold: 'Place in a floured couche or baguette tray', note: 'seam side up in couche, seam side down in tray' },
-                ...(isTwoPhase ? [{ bold: 'Cover and refrigerate for cold proof', note: 'retards fermentation — develops flavour and crust' }] : [
-                  { bold: 'Cover and leave at room temperature', note: 'final proof begins now' },
-                ]),
+                { bold: `Divide into ${numItems} equal pieces`, note: (t.raw('divide.baguette.steps') as { bold: string; note: string }[])[0].note },
+                ...(t.raw('divide.baguette.steps') as { bold: string; note: string }[]).slice(1),
+                ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
               ] : isLoafTin ? [
-                { bold: `Divide into ${numItems} equal pieces`, note: 'use a scale for even loaves' },
-                { bold: 'Shape each piece into a log', note: 'flatten slightly, roll from top to bottom, seal the seam' },
-                { bold: 'Place seam-side down in a greased loaf tin', note: 'tin should be about two-thirds full' },
-                ...(isTwoPhase ? [{ bold: 'Cover and refrigerate for cold retard', note: 'develops flavour overnight' }] : [
-                  { bold: 'Cover and leave at room temperature', note: 'final proof begins now — dough should dome above the tin' },
-                ]),
+                { bold: `Divide into ${numItems} equal pieces`, note: (t.raw('divide.loafTin.steps') as { bold: string; note: string }[])[0].note },
+                ...(t.raw('divide.loafTin.steps') as { bold: string; note: string }[]).slice(1),
+                ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
               ] : [
                 // Boule / pain campagne / pain levain / sourdough
-                { bold: `Divide into ${numItems} equal pieces`, note: `use a scale — equal pieces` },
-                { bold: 'Pre-shape: fold to a rough round', note: 'fold edges to centre, flip seam-side down, rest 15–20 min' },
-                { bold: 'Final shape: build surface tension', note: 'cup hands around the dough, drag toward you on unfloured surface' },
-                { bold: 'Place in a floured banneton, seam side up', note: 'dust generously with rice flour to prevent sticking' },
-                ...(isTwoPhase ? [{ bold: 'Cover and refrigerate overnight', note: 'cold proof develops flavour and makes scoring easier' }] : [
-                  { bold: 'Cover and leave at room temperature', note: 'final proof begins now' },
-                ]),
+                { bold: `Divide into ${numItems} equal pieces`, note: (t.raw('divide.boule.steps') as { bold: string; note: string }[])[0].note },
+                ...(t.raw('divide.boule.steps') as { bold: string; note: string }[]).slice(1),
+                ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
               ]} />
             ) : (
               <Steps items={[
-                { bold: `Weigh dough and divide into ${numItems} equal pieces`, note: 'use a scale — eyeballing leads to uneven baking' },
-                { bold: 'Pre-shape each piece into a rough round', note: 'fold edges to centre, flip seam-side down' },
-                { bold: 'Tuck and drag: cup your hand over the ball', note: 'drag it toward you on an unfloured surface — creates surface tension' },
-                { bold: 'Place in individual dough boxes or bowls', note: 'seam side down, well-spaced' },
-                ...(isTwoPhase ? [{ bold: 'Cover and return to fridge immediately', note: 'balls go back cold for phase 2' }] : [
-                  { bold: 'Cover and leave at room temperature', note: 'final proof begins now' },
-                ]),
+                { bold: `Weigh dough and divide into ${numItems} equal pieces`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
+                ...(t.raw('divide.pizza.steps') as { bold: string; note: string }[]).slice(1),
+                ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
               ]} />
             )}
           </Section>
 
-          <Section icon="👁️" title={isBread ? 'Watch for' : 'Watch for — a good ball'}>
-            <Bullets items={isFougasse ? [
-              'Cuts stay open — if they close, reopen with your fingers',
-              'Even thickness — thick spots will be dense, thin spots will burn',
-              'Surface dusted with flour — prevents sticking to tray',
-            ] : isBaguette ? [
-              'Even cylinder, tapered ends — uniform diameter bakes evenly',
-              'Tight seam — open seam bursts uncontrollably in the oven',
-              'Dough springs back slowly when poked — ready to score and bake',
-            ] : isLoafTin ? [
-              'Smooth top, no tears — tight skin is important for oven spring',
-              'Dough fills about 2/3 of the tin after shaping',
-              'Before baking: dough should dome just above the tin rim',
-            ] : isBread ? [
-              'Smooth, taut surface — no tears or wrinkles',
-              'Holds its round shape without spreading',
-              'If the dough tears easily, gluten is still warm — rest 5 min and try again',
-            ] : [
-              'Smooth, taut skin with no tears or folds visible on top',
-              'Holds its round shape — doesn\'t immediately spread flat (if it does, gluten is weak)',
-              `At ${displayTemp(kitchenTemp, u)}, work within ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} — warm kitchens make balls proof quickly`,
-            ]} />
+          <Section icon="👁️" title={isBread ? t('sectionTitles.watchFor') : t('sectionTitles.watchForBall')}>
+            <Bullets items={isFougasse
+              ? (t.raw('divide.fougasse.watchFor') as string[])
+              : isBaguette
+              ? (t.raw('divide.baguette.watchFor') as string[])
+              : isLoafTin
+              ? (t.raw('divide.loafTin.watchFor') as string[])
+              : isBread
+              ? (t.raw('divide.boule.watchFor') as string[])
+              : [
+                ...(t.raw('divide.pizza.watchFor') as string[]),
+                `At ${displayTemp(kitchenTemp, u)}, work within ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} — warm kitchens make balls proof quickly`,
+              ]
+            } />
           </Section>
 
-          <Section icon="⚠️" title="Pitfalls">
-            <Bullets items={isFougasse ? [
-              'Cuts closing back up — open them wider and dust with more flour',
-              'Over-handling: fougasse is a flatbread, not a structured loaf — gentle is better',
-              'Too thin at the edges — they will burn before the centre is cooked',
-            ] : isBaguette ? [
-              'Over-flouring: reduces surface tension, baguette spreads instead of holding shape',
-              'Pressing too hard: degasses the dough — work gently to keep the bubbles',
-              'Skipping the bench rest: gluten tears during final shaping',
-            ] : isLoafTin ? [
-              'Greasing the tin: use butter or spray oil — without it the loaf sticks',
-              'Over-proofing in the tin: dough should dome slightly, not overflow',
-              'Uneven shaping: log should be the same width as the tin',
-            ] : isBread ? [
-              ...(hydration >= 70 ? [
-                oil > 0
-                  ? `Enriched dough at ${hydration}%: use lightly oiled hands for shaping — fat in the dough means oil is a better barrier than water`
-                  : hydration >= 75
-                  ? `At ${hydration}% hydration, sticky is normal. Keep a bowl of water nearby and wet your hands before handling — never use bench flour. Use a bench scraper to lift pieces. Move quickly and with confidence.`
-                  : `Wet hands prevent sticking at this hydration. Keep a small bowl of water nearby and dip your hands before each touch. Avoid bench flour — it hydrates instantly and makes things worse.`,
-              ] : []),
-              'Flouring the bench: reduces friction, ball won\'t develop surface tension — use bare, slightly damp surface',
-              'Skipping the bench rest: gluten tears when it\'s too tight',
-              'Under-tensioning: a slack ball spreads flat and won\'t hold shape in the oven',
-            ] : [
-              'Flouring the surface: reduces friction, ball won\'t get surface tension — use bare, slightly damp surface',
-              'Tearing the skin during shaping — pre-shape roughly first, rest 5 min, then final ball',
-              `Hot kitchen (${kitchenTemp >= 30 ? 'like yours at ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}): get balls into their boxes fast — they proof very quickly at warm temps`,
-            ]} />
+          <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+            <Bullets items={isFougasse
+              ? (t.raw('divide.fougasse.pitfalls') as string[])
+              : isBaguette
+              ? (t.raw('divide.baguette.pitfalls') as string[])
+              : isLoafTin
+              ? (t.raw('divide.loafTin.pitfalls') as string[])
+              : isBread ? [
+                ...(hydration >= 70 ? [
+                  oil > 0
+                    ? `Enriched dough at ${hydration}%: use lightly oiled hands for shaping — fat in the dough means oil is a better barrier than water`
+                    : hydration >= 75
+                    ? `At ${hydration}% hydration, sticky is normal. Keep a bowl of water nearby and wet your hands before handling — never use bench flour. Use a bench scraper to lift pieces. Move quickly and with confidence.`
+                    : `Wet hands prevent sticking at this hydration. Keep a small bowl of water nearby and dip your hands before each touch. Avoid bench flour — it hydrates instantly and makes things worse.`,
+                ] : []),
+                ...(t.raw('divide.boule.pitfalls') as string[]),
+              ] : [
+                ...(t.raw('divide.pizza.pitfalls') as string[]),
+                `Hot kitchen (${kitchenTemp >= 30 ? 'like yours at ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}): get balls into their boxes fast — they proof very quickly at warm temps`,
+              ]
+            } />
           </Section>
         </StepCard>
       )}
@@ -643,39 +560,31 @@ export default function BakeGuide({
       {isTwoPhase && schedule.coldRetard2Start && schedule.coldRetard2End &&
         (schedule.coldRetard2End.getTime() - schedule.coldRetard2Start.getTime()) > 0 && (
         <StepCard number={n()} icon={<IconCold />}
-          title={isBread ? 'Cold Proof' : 'Cold Retard — Balls'}
+          title={isBread ? t('stepTitles.coldProof') : t('stepTitles.coldRetardBalls')}
           time={schedule.coldRetard2Start}
           duration={(schedule.coldRetard2End.getTime() - schedule.coldRetard2Start.getTime()) / 3600000}
           accent="#6A7FA8">
 
-          <Section icon="🥄" title="What to do">
+          <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
-              { bold: 'Cover each dough box tightly', note: 'balls must not dry out during cold retard' },
-              { bold: 'Stack in the fridge — back shelf', note: 'temperature consistency is critical' },
+              ...(t.raw('coldBalls.steps') as { bold: string; note: string }[]),
               { bold: 'Set your alarm for warmup time', note: schedule.rtWarmupStart ? formatTime(schedule.rtWarmupStart) : 'see schedule' },
             ]} />
           </Section>
 
-          <Section icon="👁️" title="What to expect">
-            <Bullets items={[
-              'Balls will grow slightly in the fridge — 20-40% rise is normal',
-              'Cold balls are firm and easy to handle — this is exactly what you want',
-              'After 24h+ the balls will have relaxed gluten and will be extremely extensible when warm',
-            ]} />
+          <Section icon="👁️" title={t('sectionTitles.whatToExpect')}>
+            <Bullets items={t.raw('coldBalls.watchFor') as string[]} />
           </Section>
 
-          <Section icon="⚠️" title="Pitfalls">
-            <Bullets items={[
-              'Over-retarding: balls that have risen more than 100% in the fridge are over-fermented — bake immediately when removed',
-              'Cold balls that tear on stretching: need more warmup time — never stretch cold dough',
-            ]} />
+          <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+            <Bullets items={t.raw('coldBalls.pitfalls') as string[]} />
           </Section>
         </StepCard>
       )}
 
       {/* ── STEP: Final Proof (merged warmup + proof for cold-retard styles) */}
       {(schedule.finalProofHours > 0 || schedule.restRtHours > 0 || schedule.rtWarmupStart) && (
-        <StepCard number={n()} icon={<IconProof />} title="Final Proof"
+        <StepCard number={n()} icon={<IconProof />} title={t('stepTitles.finalProof')}
           time={schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart}
           duration={(() => {
             const proofEnd = schedule.bakeStart;
@@ -685,305 +594,148 @@ export default function BakeGuide({
           })()}
           accent="#7A8C6E">
 
-          <Section icon="🥄" title="What to do">
+          <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
               ...(hasCold ? [
-                { bold: 'Remove balls from fridge', note: 'keep covered — do not stretch yet, gluten is cold and tight' },
+                t.raw('finalProof.removeFridge') as { bold: string; note: string },
                 { bold: `Rest ${kitchenTemp >= 30 ? '20–30' : kitchenTemp >= 26 ? '30–45' : '45–60'} min at room temperature`, note: 'warmup only — proofing begins naturally as dough relaxes' },
               ] : [
-                ...(!isTwoPhase ? [{ bold: 'Shape dough balls', note: 'tuck and drag — taut skin' }] : [
-                  { bold: 'Balls are already shaped', note: 'just monitor proofing' },
+                ...(!isTwoPhase ? [t.raw('finalProof.shapeBalls') as { bold: string; note: string }] : [
+                  t.raw('finalProof.alreadyShaped') as { bold: string; note: string },
                 ]),
               ]),
-              { bold: 'Keep covered at room temperature', note: 'no heat source needed' },
-              { bold: 'Start poke test after warmup — every 15–20 min', note: 'do not go by time — go by feel' },
+              t.raw('finalProof.keepCovered') as { bold: string; note: string },
+              t.raw('finalProof.pokeTest') as { bold: string; note: string },
               { bold: `Start preheating your oven ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} before bake time`, note: 'oven heats while dough finishes proofing — they finish together' },
             ]} />
           </Section>
 
-          <Section icon="👁️" title="Poke test — the three responses">
-            <Bullets items={[
-              'Springs back immediately, feels tight — needs more time',
-              'Springs back slowly and partially — ready to bake',
-              'Does not spring back, feels slack — over-proofed, bake immediately',
-            ]} />
+          <Section icon="👁️" title={t('sectionTitles.pokeTest')}>
+            <Bullets items={t.raw('finalProof.pokeResponses') as string[]} />
             <div style={{ marginTop: '.5rem' }}>
               <LearnLink term="poke_test" label="Full poke test guide" onOpen={setLearnTerm} />
             </div>
           </Section>
 
-          <Section icon="⚠️" title="Pitfalls">
+          <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
             <Bullets items={[
-              'Stretching cold dough — wait for warmup, cold gluten tears',
-              'Going by time instead of feel — always use the poke test',
+              (t.raw('finalProof.pitfalls') as string[])[0],
+              (t.raw('finalProof.pitfalls') as string[])[1],
               `Warm kitchen (${displayTemp(kitchenTemp, u)}): proof can complete in ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} after warmup — check early`,
-              'Over-proofed balls collapse in the oven and lose oven spring',
+              (t.raw('finalProof.pitfalls') as string[])[2],
             ]} />
           </Section>
         </StepCard>
       )}
 
       {/* ── STEP: Preheat Oven ───────────────────────── */}
-      <StepCard number={n()} icon={<IconPreheat />} title="Preheat Oven"
+      <StepCard number={n()} icon={<IconPreheat />} title={t('stepTitles.preheatOven')}
         time={schedule.preheatStart} accent={D.gold}>
 
         <div style={{ fontSize: '.75rem', color: D.smoke, fontStyle: 'italic',
           fontFamily: 'var(--font-dm-sans)', padding: '.75rem 0 0' }}>
-          Start preheating while dough finishes its final proof — they should be ready at the same time.
+          {t('preheatNote')}
         </div>
 
-        <Section icon="🥄" title="What to do">
+        <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
           {isBread ? (
-            <Steps items={ovenType === 'dutch_oven' ? [
-              { bold: 'Place Dutch oven (with lid) inside your oven', note: 'both pot and lid must be scorching hot' },
-              { bold: `Set oven to ${tempRange(240, 250, u)} with fan`, note: 'full preheat — 45 min minimum' },
-              { bold: 'Do not open the oven during preheat', note: `every opening loses ${u === 'imperial' ? '36–54°F' : '20–30°C'} of heat` },
-            ] : ovenType === 'home_oven_stone_bread' ? [
-              { bold: 'Place baking stone or steel on middle rack', note: 'stone needs 45–60 min to fully absorb heat' },
-              { bold: 'Place an empty metal tray on the rack below', note: 'for steam — you will add ice cubes at load time' },
-              { bold: `Set oven to ${tempRange(240, 250, u)} with fan`, note: 'as hot as your oven allows' },
-              { bold: 'Do not open the oven during preheat', note: `every opening loses ${u === 'imperial' ? '36–54°F' : '20–30°C'} of heat` },
-            ] : ovenType === 'steam_oven' ? [
-              { bold: `Set steam oven to ${tempC(240, u)} with 100% steam`, note: 'steam programme for first phase' },
-              { bold: 'Allow full preheat — 20–30 min', note: 'cavity must be fully saturated with steam' },
-            ] : ovenType === 'wood_fired' ? [
-              { bold: 'Build fire and let it burn to embers', note: `aim for ${tempRange(280, 320, u)} floor temperature` },
-              { bold: 'Push embers to one side — test floor temp with a hand', note: '3 seconds before pulling away = ready' },
-              { bold: 'Let temperature stabilise before loading', note: 'even heat is more important than peak heat' },
-            ] : [
-              // standard_bread fallback
-              { bold: `Set oven to ${tempRange(220, 230, u)} with fan`, note: 'max your oven allows' },
-              { bold: 'Place an empty metal tray on the rack below', note: 'for steam — add ice cubes or boiling water at load time' },
-              { bold: 'Do not open during preheat', note: `every opening loses ${u === 'imperial' ? '36–54°F' : '20–30°C'} of heat` },
-            ]} />
+            <Steps items={(t.raw(
+              ovenType === 'dutch_oven' ? 'preheat.dutch.steps' :
+              ovenType === 'home_oven_stone_bread' ? 'preheat.stoneBread.steps' :
+              ovenType === 'steam_oven' ? 'preheat.steam.steps' :
+              ovenType === 'wood_fired' ? 'preheat.woodBread.steps' :
+              'preheat.standardBread.steps'
+            ) as { bold: string; note: string }[])} />
           ) : ovenType === 'pizza_oven' ? (
-            <Steps items={[
-              { bold: 'Light the fire and build to a high flame', note: `target ${tempRange(450, 500, u)} floor temperature` },
-              { bold: 'Push fire to back or side — let floor recover', note: 'floor temp drops when loading — give it time' },
-              { bold: 'Check floor with infrared thermometer', note: 'never guess — launch only when floor is at temp' },
-              { bold: 'Allow full 45 min — flame active throughout', note: 'stone must be saturated, not just surface-hot' },
-            ]} />
+            <Steps items={t.raw('preheat.pizzaOven.steps') as { bold: string; note: string }[]} />
           ) : ovenType === 'electric_pizza' ? (
-            <Steps items={[
-              { bold: 'Set both top and bottom elements to maximum', note: `target ${tempC(400, u)}+ — most models reach this in 20–25 min` },
-              { bold: 'Do not open lid during preheat', note: 'electric ovens lose heat fast — keep closed until ready' },
-              { bold: 'Check stone temp with infrared thermometer', note: `stone should read ${tempC(380, u)}+ before launching` },
-            ]} />
+            <Steps items={t.raw('preheat.electricPizza.steps') as { bold: string; note: string }[]} />
           ) : ovenType === 'home_oven_steel' ? (
-            <Steps items={[
-              { bold: 'Place stone or steel on the top rack', note: 'close to the top element — top heat drives leoparding' },
-              { bold: 'Set oven to maximum temperature with fan', note: `typically ${tempRange(250, 280, u)} — full 60 min preheat` },
-              { bold: 'Switch to grill/broil for the last 10 min', note: 'supercharges the top element for better char' },
-              { bold: 'Do not open during preheat', note: `every opening loses ${u === 'imperial' ? '36–54°F' : '20–30°C'} of heat` },
-            ]} />
-          ) : ovenType === 'home_oven_standard' ? (
-            <Steps items={[
-              { bold: 'Set oven to maximum temperature', note: `typically ${tempRange(240, 260, u)} — standard ovens lose heat quickly` },
-              { bold: 'Preheat pizza tray or heavy baking sheet', note: 'place directly on middle rack — must be hot' },
-              { bold: 'Allow 30 min minimum', note: 'thin trays heat fast but lose heat fast too — longer is better' },
-            ]} />
+            <Steps items={t.raw('preheat.homeSteel.steps') as { bold: string; note: string }[]} />
           ) : (
-            <Steps items={[
-              { bold: 'Set oven to maximum temperature', note: 'as hot as it goes' },
-              { bold: 'Preheat your baking surface fully', note: 'full preheat time is non-negotiable' },
-              { bold: 'Do not open the oven during preheat', note: `every opening loses ${u === 'imperial' ? '36–54°F' : '20–30°C'} of heat` },
-            ]} />
+            <Steps items={t.raw('preheat.homeStandard.steps') as { bold: string; note: string }[]} />
           )}
         </Section>
 
-        <Section icon="⚠️" title="Pitfalls">
-          <Bullets items={isBread ? (
-            ovenType === 'dutch_oven' ? [
-              'Skipping the lid: steam is what creates the ear and glossy crust — lid on for first 20 min is non-negotiable',
-              'Cold Dutch oven: pot must be scorching hot or the bottom will not colour properly',
-            ] : ovenType === 'home_oven_stone_bread' ? [
-              'Cutting preheat short: stone needs 45–60 min of heat to absorb enough thermal mass',
-              'Forgetting the steam tray: without steam the crust sets before oven spring finishes',
-            ] : ovenType === 'steam_oven' ? [
-              'Under-saturating the cavity: run full preheat with steam before loading',
-              'Switching off steam too early: keep steam on for the full first 20 min',
-            ] : ovenType === 'wood_fired' ? [
-              'Loading on a hot floor: let it recover after clearing embers, or the bottom burns',
-              'Uneven heat: rotate the loaf halfway through for even crust colour',
-            ] : [
-              'Forgetting steam: without it the crust sets too early — no ear, pale and tough',
-              'Too low a temperature: standard ovens struggle — always use max',
-            ]
-          ) : ovenType === 'pizza_oven' ? [
-            'Launching on a cold floor: always check with a thermometer — looks hot does not mean it is hot',
-            'Flame too high at launch: push back the fire before loading or the top burns before the base is cooked',
-            'Forgetting to rotate: wood-fired ovens have a hot side — turn the pizza every 20–30 seconds',
-          ] : ovenType === 'electric_pizza' ? [
-            'Not preheating long enough: stone needs 20–25 min even if the display says ready',
-            'Opening lid mid-bake: electric ovens have a small cavity — every opening drops temp significantly',
-            `Over-baking: at ${tempC(400, u)}+ things move fast — stay close and watch the cornicione`,
-          ] : ovenType === 'home_oven_steel' ? [
-            'Stone too low in the oven: top heat is what drives leoparding — use the top rack',
-            'Skipping the pre-grill phase: 10 min on grill/broil before launch supercharges the top element',
-            'Cutting preheat short: steel needs 45–60 min to absorb enough heat',
-          ] : [
-            'Thin baking tray: loses heat instantly at load — use the heaviest tray you have',
-            'Not preheating the tray: cold tray = white soggy bottom',
-            'Over-topping: heavy toppings prevent the base from cooking through',
-          ]} />
+        <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+          <Bullets items={isBread
+            ? (t.raw(
+                ovenType === 'dutch_oven' ? 'preheat.dutch.pitfalls' :
+                ovenType === 'home_oven_stone_bread' ? 'preheat.stoneBread.pitfalls' :
+                ovenType === 'steam_oven' ? 'preheat.steam.pitfalls' :
+                ovenType === 'wood_fired' ? 'preheat.woodBread.pitfalls' :
+                'preheat.standardBread.pitfalls'
+              ) as string[])
+            : (t.raw(
+                ovenType === 'pizza_oven' ? 'preheat.pizzaOven.pitfalls' :
+                ovenType === 'electric_pizza' ? 'preheat.electricPizza.pitfalls' :
+                ovenType === 'home_oven_steel' ? 'preheat.homeSteel.pitfalls' :
+                'preheat.homeStandard.pitfalls'
+              ) as string[])
+          } />
         </Section>
       </StepCard>
 
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
-      <StepCard number={n()} icon={<IconBake />} title="Bake & Eat!" time={schedule.bakeStart} accent="#5A9A50">
+      <StepCard number={n()} icon={<IconBake />} title={t('stepTitles.bakeEat')} time={schedule.bakeStart} accent="#5A9A50">
 
-        <Section icon="🥄" title="What to do">
+        <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
           {isBread ? (
-            ovenType === 'dutch_oven' ? (
-              <Steps items={[
-                { bold: 'Score the dough — single slash or cross', note: 'sharp lame or razor at 30–45° angle — confident single motion' },
-                { bold: 'Lower dough into Dutch oven using parchment', note: 'work quickly — every second counts' },
-                { bold: `Bake covered at ${tempC(240, u)} — 20 min`, note: 'steam trapped inside creates the ear and oven spring' },
-                { bold: 'Remove lid — bake 20–25 min more', note: `crust browns and crisps — internal temp ${tempRange(95, 98, u)}` },
-                { bold: 'Cool on a wire rack — minimum 30 min', note: 'crumb is still cooking from residual heat — cutting hot makes it gummy' },
-              ]} />
-            ) : ovenType === 'home_oven_stone_bread' ? (
-              <Steps items={[
-                { bold: 'Score the dough', note: 'sharp lame, 30–45° angle, confident motion' },
-                { bold: 'Add ice cubes to steam tray immediately', note: 'do this just before or just after loading — not before' },
-                { bold: 'Load onto hot stone — close oven fast', note: 'confident single motion with a peel or parchment' },
-                { bold: 'Bake 20 min with steam', note: 'do not open the door — steam must stay in' },
-                { bold: 'Remove steam tray — bake 20–25 min more', note: `crust browns and crisps — internal temp ${tempRange(95, 98, u)}` },
-                { bold: 'Cool on a wire rack — minimum 30 min', note: 'cutting hot makes the crumb gummy' },
-              ]} />
-            ) : ovenType === 'steam_oven' ? (
-              <Steps items={[
-                { bold: 'Score the dough', note: 'sharp lame, 30–45° angle' },
-                { bold: `Load into steam oven — ${tempC(240, u)}, 100% steam`, note: 'bake 20 min — steam does the work of a Dutch oven' },
-                { bold: `Switch to dry heat — ${tempC(220, u)}`, note: 'bake 20–25 min more until deep brown and hollow-sounding' },
-                { bold: 'Cool on a wire rack — minimum 30 min', note: 'cutting hot makes the crumb gummy' },
-              ]} />
-            ) : ovenType === 'wood_fired' ? (
-              <Steps items={[
-                { bold: 'Score the dough', note: 'sharp lame, 30–45° angle' },
-                { bold: 'Load using a long-handled peel', note: 'confident single forward motion — slide, do not push' },
-                { bold: 'Close oven door or damper for first 15 min', note: 'retain steam from the dough — creates ear' },
-                { bold: 'Rotate loaf halfway — bake until deep brown', note: `total 40–50 min at ${tempRange(220, 250, u)} — internal temp ${tempRange(95, 98, u)}` },
-                { bold: 'Cool on a wire rack — minimum 30 min', note: 'cutting hot makes the crumb gummy' },
-              ]} />
-            ) : (
-              <Steps items={[
-                { bold: 'Score the dough', note: 'sharp lame or razor, 30–45° angle' },
-                { bold: 'Add boiling water or ice to steam tray, load quickly', note: 'close oven door immediately to keep steam in' },
-                { bold: 'Bake 20 min — do not open door', note: 'steam keeps crust extensible for oven spring' },
-                { bold: 'Remove steam tray — bake 20–25 min more', note: `internal temp ${tempRange(95, 98, u)} — deep brown crust` },
-                { bold: 'Cool on a wire rack — minimum 30 min', note: 'cutting hot makes the crumb gummy' },
-              ]} />
-            )
+            <Steps items={(t.raw(
+              ovenType === 'dutch_oven' ? 'bake.dutch.steps' :
+              ovenType === 'home_oven_stone_bread' ? 'bake.stoneBread.steps' :
+              ovenType === 'steam_oven' ? 'bake.steam.steps' :
+              ovenType === 'wood_fired' ? 'bake.woodBread.steps' :
+              'bake.standardBread.steps'
+            ) as { bold: string; note: string }[])} />
           ) : ovenType === 'pizza_oven' ? (
-            <Steps items={[
-              { bold: 'Stretch dough to target size', note: 'no rolling pin — knuckles and gravity only' },
-              { bold: 'Top quickly — sauce, cheese, minimal toppings', note: 'work fast — wet toppings stick the base to the peel' },
-              { bold: 'Check floor temp one last time', note: `launch only above ${tempC(400, u)} floor — ideally ${tempRange(450, 480, u)}` },
-              { bold: 'Launch with a confident forward motion', note: 'hesitation causes sticking — one smooth push' },
-              { bold: 'Rotate every 20–30 sec with a turning peel', note: 'wood fire has a hot side — constant rotation is key' },
-              { bold: 'Total bake: 60–90 sec', note: 'leoparding on cornicione + slight char on base = done' },
-            ]} />
+            <Steps items={t.raw('bake.pizzaOven.steps') as { bold: string; note: string }[]} />
           ) : ovenType === 'electric_pizza' ? (
-            <Steps items={[
-              { bold: 'Stretch dough to target size', note: 'no rolling pin — electric ovens are forgiving but thin bases still benefit from hand stretching' },
-              { bold: 'Top and launch onto hot stone', note: 'flour or fine semolina on peel — work quickly' },
-              { bold: 'Close lid immediately', note: 'electric ovens have small cavities — heat escapes fast' },
-              { bold: `Bake 3–5 min at ${tempC(400, u)}+`, note: 'watch the cornicione — colour goes from pale to brown fast' },
-              { bold: 'Rotate halfway for even colour', note: 'electric elements can have hot spots near the edges' },
-            ]} />
+            <Steps items={t.raw('bake.electricPizza.steps') as { bold: string; note: string }[]} />
           ) : ovenType === 'home_oven_steel' ? (
-            <Steps items={[
-              { bold: 'Stretch dough on a floured peel', note: 'semolina or flour — not too much or the base will be dusty' },
-              { bold: 'Top quickly and launch onto hot stone', note: 'confident single forward motion — hesitation causes sticking' },
-              { bold: 'Switch to grill/broil immediately after launch', note: 'top heat is what drives leoparding in a home oven' },
-              { bold: 'Bake 5–7 min', note: 'watch the cheese and cornicione — grill moves fast' },
-              { bold: 'Check base with a palette knife or spatula', note: 'should be golden with some colour, not white' },
-            ]} />
+            <Steps items={t.raw('bake.homeSteel.steps') as { bold: string; note: string }[]} />
           ) : ovenType === 'home_oven_standard' ? (
-            <Steps items={[
-              { bold: 'Stretch dough on a floured surface', note: 'thicker styles work best here — Detroit, pan, Roman' },
-              { bold: 'Top generously — standard ovens suit loaded styles', note: 'toppings help retain moisture and colour evenly' },
-              { bold: 'Place on preheated tray — bake at max temperature', note: '8–15 min depending on thickness' },
-              { bold: 'Rotate halfway through', note: 'all home ovens have hot spots near the element' },
-              { bold: 'Check base: lift edge with a spatula', note: 'base should be golden and set, not white or soft' },
-            ]} />
+            <Steps items={t.raw('bake.homeStandard.steps') as { bold: string; note: string }[]} />
           ) : (
-            <Steps items={[
-              { bold: 'Stretch or shape dough', note: 'use your preferred method' },
-              { bold: 'Top and bake at maximum temperature', note: 'time depends on oven and thickness' },
-              { bold: 'Rotate halfway for even bake', note: 'all ovens have hot spots' },
-            ]} />
+            <Steps items={t.raw('bake.default.steps') as { bold: string; note: string }[]} />
           )}
         </Section>
 
-        <Section icon="👁️" title="Watch for">
+        <Section icon="👁️" title={t('sectionTitles.watchFor')}>
           {isBread ? (
-            <Bullets items={[
-              'Oven spring: bread grows noticeably in first 10 min — this is the yeast\'s last burst',
-              'Ear: the scoring line opens up and creates a defined ridge — sign of good fermentation and steam',
-              'Colour: deep mahogany brown — pale bread is under-baked regardless of time',
-              'Hollow sound: tap the bottom — should sound hollow when fully baked',
-            ]} />
+            <Bullets items={t.raw('bake.dutch.watchFor') as string[]} />
           ) : ovenType === 'pizza_oven' ? (
-            <Bullets items={[
-              'Leoparding: dark spots on the cornicione — sign of proper fermentation and high heat',
-              'Puffing: dough bubbles up in the centre — normal and desirable for Neapolitan',
-              'Base colour: golden with some dark spots — check with turning peel',
-              'Cheese: melted and slightly golden at edges — not bubbling brown',
-            ]} />
+            <Bullets items={t.raw('bake.pizzaOven.watchFor') as string[]} />
           ) : ovenType === 'electric_pizza' ? (
-            <Bullets items={[
-              'Cornicione: starts pale, then yellows, then browns — pull when it starts showing spots',
-              'Base: check by lifting edge — should be golden brown with some colour',
-              `Speed: at ${tempC(400, u)} things move fast — do not walk away`,
-            ]} />
+            <Bullets items={t.raw('bake.electricPizza.watchFor') as string[]} />
           ) : ovenType === 'home_oven_steel' ? (
-            <Bullets items={[
-              'Top colour from the grill: cornicione should show dark spots within 5–7 min',
-              'Base: lift with a spatula — golden and firm, not pale or soft',
-              'Cheese: bubbling and golden — if cheese is done but cornicione is pale, flash it under grill',
-            ]} />
+            <Bullets items={t.raw('bake.homeSteel.watchFor') as string[]} />
           ) : (
-            <Bullets items={[
-              'Base: lift edge with a spatula — should be golden and set',
-              'Cheese: melted and beginning to colour at edges',
-              'Crust: golden and puffed at the rim — pale crust means more time or higher heat needed',
-            ]} />
+            <Bullets items={t.raw('bake.homeStandard.watchFor') as string[]} />
           )}
         </Section>
 
-        <Section icon="⚠️" title="Pitfalls">
-          <Bullets items={isBread ? [
-            'Scoring too shallow: less than 0.5cm — won\'t open properly, creates side blowouts',
-            ovenType === 'dutch_oven'
-              ? 'Removing lid too early: steam needs the full 20 min to form the ear — patience'
-              : ovenType === 'home_oven_stone_bread' || ovenType === 'standard_bread'
-              ? 'Opening the oven in the first 20 min: steam escapes, crust sets too early, no ear'
-              : 'Not managing steam in the first phase: ear and oven spring both depend on it',
-            'Cutting bread hot: steam still inside — crumb will be gummy and dense',
-          ] : ovenType === 'pizza_oven' ? [
-            'Cold floor at launch: always check with a thermometer — looks hot is not enough',
-            'Flame too close: push fire back before launching or the top burns before the base is done',
-            'Not rotating: wood-fired ovens have a hot side — rotate every 20–30 sec or expect uneven char',
-          ] : ovenType === 'electric_pizza' ? [
-            'Opening lid mid-bake: small cavity loses heat very quickly',
-            'Under-preheating: stone needs 20–25 min — do not trust the oven\'s ready indicator alone',
-            'Thick bases: electric pizza ovens suit thin Neapolitan and NY — thicker styles may under-bake the base',
-          ] : ovenType === 'home_oven_steel' ? [
-            'Skipping the grill/broil phase: top heat is what drives leoparding — without it the pizza looks pale',
-            'Stone too low: must be on the top rack to get close to the top element',
-            'Cutting preheat short: steel needs 45–60 min to absorb enough thermal mass',
-          ] : [
-            'Cold tray: must be preheated or the base will be pale and soft',
-            'Over-topping: too many wet toppings prevent the base from cooking through',
-            'Low temperature: always use the highest temperature your oven reaches',
-          ]} />
+        <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+          <Bullets items={isBread
+            ? (t.raw(
+                ovenType === 'dutch_oven' ? 'bake.dutch.pitfalls' :
+                ovenType === 'home_oven_stone_bread' ? 'bake.stoneBread.pitfalls' :
+                ovenType === 'steam_oven' ? 'bake.steam.pitfalls' :
+                ovenType === 'wood_fired' ? 'bake.woodBread.pitfalls' :
+                'bake.standardBread.pitfalls'
+              ) as string[])
+            : (t.raw(
+                ovenType === 'pizza_oven' ? 'bake.pizzaOven.pitfalls' :
+                ovenType === 'electric_pizza' ? 'bake.electricPizza.pitfalls' :
+                ovenType === 'home_oven_steel' ? 'bake.homeSteel.pitfalls' :
+                'bake.homeStandard.pitfalls'
+              ) as string[])
+          } />
         </Section>
 
         {isBread && (
-          <Section icon="🎓" title="Learn more">
-            <ExtLink href="https://www.theperfectloaf.com/guides/how-to-score-bread-dough/" label="Scoring technique guide" />
+          <Section icon="🎓" title={t('sectionTitles.learnMore')}>
+            <ExtLink href="https://www.theperfectloaf.com/guides/how-to-score-bread-dough/" label={t('bake.learnMoreScoring')} />
           </Section>
         )}
       </StepCard>
