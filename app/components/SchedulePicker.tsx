@@ -1688,7 +1688,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Fermentation chart */}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
         <div style={{ fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem' }}>
-          {hasManuallyDragged.current ? 'Your fermentation plan' : 'Recommended fermentation plan'}
+          Fermentation guide · drag to adjust
         </div>
         {startComputed ? (
           mode === 'simple' ? (
