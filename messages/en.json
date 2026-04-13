@@ -248,7 +248,68 @@
       "finalProof": "Final Proof",
       "preheat": "Preheat Oven",
       "eat": "Bake & Eat!"
-    }
+    },
+    "prefSteps": {
+      "makePoolish": "Make your Poolish",
+      "makeBiga": "Make your Biga",
+      "removePoolish": "Remove Poolish from fridge",
+      "removeBiga": "Remove Biga from fridge",
+      "feedStarter": "Feed your starter",
+      "tipPoolishFridge": "Mix equal weight flour and water (100% hydration) with a pinch of yeast. Stir until combined. Cover tightly and place in the fridge.",
+      "tipPoolishRT": "Mix equal weight flour and water (100% hydration) with a pinch of yeast. Stir until no dry flour remains. Leave at room temperature.",
+      "tipBiga": "Combine flour, water and a tiny amount of yeast (0.1–0.2%). Mix roughly — biga is intentionally shaggy, not smooth. Cover and refrigerate.",
+      "tipRemoveBiga": "Take your biga out of the fridge — no warmup needed, biga goes straight into the mix cold.",
+      "tipRemovePoolishShort": "Take your poolish out of the fridge now — time is short before mixing. Watch for peak rather than the clock.",
+      "tipFeedHot": "Feed equal weights starter + flour + water. At {temp} your starter peaks in 3–5h — watch for dome + bubbles.",
+      "tipFeedWarm": "Feed equal weights starter + flour + water. Peaks in 4–6h at {temp}.",
+      "tipFeedRT": "Feed equal weights starter + flour + water. Peaks in 6–10h at room temperature."
+    },
+    "mixTips": {
+      "sourdough": "Combine flour and water, then add your starter. Add salt with the remaining water. Mix until fully absorbed.",
+      "hand": "Flour + 90% water first — cover and rest 20 min (autolyse). Then yeast, salt, remaining water, and knead 8–12 min.",
+      "spiral": "Flour + water + yeast at Speed 1. Add salt, then Speed 2 until pumpkin shape forms and the windowpane test passes.",
+      "noKnead": "Combine all ingredients and mix until no dry flour remains — time and stretch & folds do the rest.",
+      "stand": "Flour + water at Speed 1. Add yeast, then salt, then remaining water. Speed 2 until dough clears the bowl and passes the windowpane test."
+    },
+    "bulkTips": {
+      "long": "Cover tightly and place in a warm spot away from drafts. Perform 4 sets of stretch & folds in the first 2 hours.",
+      "medium": "Cover tightly. Perform 2–3 sets of stretch & folds every 20–30 minutes.",
+      "short": "Cover tightly. Perform one set of stretch & folds after 15 minutes, then cover and rest.",
+      "veryShort": "Cover tightly and rest — dough goes straight to the fridge after this short window."
+    },
+    "coldTips": {
+      "bulk": "Whole dough mass goes into the fridge. Cold bulk fermentation slows yeast activity and develops flavour. No action needed.",
+      "balls": "Individual dough balls rest in the fridge. This firms them up and makes final proofing more controlled.",
+      "single": "Dough rests in the fridge. Cold fermentation builds flavour slowly — no action needed, time works for you."
+    },
+    "divideTip": "Weigh and divide dough into {n} ball{plural}. Pinch the bottom tight for surface tension.",
+    "divideTipCold": " Cold dough is easier to ball — work quickly before it warms up.",
+    "divideTipWarm": " ⚠️ Your kitchen is warm — get balls back in the fridge within 20 minutes.",
+    "finalProofTips": {
+      "withCold": "Remove balls from fridge and rest until slightly soft, then proof covered at room temperature. Start preheating your oven during the final proof.",
+      "withoutCold": "Shape dough balls and proof covered at room temperature. Start preheating your oven during the final proof."
+    },
+    "preheatTips": {
+      "long": "Start now — while dough finishes its final proof. Give it the full {min} min to fully saturate your baking surface.",
+      "short": "Start now — while dough finishes its final proof. Set oven to maximum temperature for {min} minutes."
+    },
+    "eatTip": "Your dough is perfectly fermented. Score, load, and bake. Buon appetito!",
+    "phaseLabels": {
+      "mixing": "Mixing",
+      "bulkFerm": "Bulk Fermentation",
+      "coldRetard": "Cold Retard",
+      "finalProof": "Final Proof"
+    },
+    "blockLabels": {
+      "bulkFerm": "Bulk fermentation · {dur}",
+      "finalProof": "Final proof window · {dur}",
+      "roomTemp": "Room temperature · {dur}",
+      "warmup": "Warmup · {dur}",
+      "rtWarmup": "Room temperature warmup · {dur}"
+    },
+    "restRtTip": "Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch — wait until slightly soft.",
+    "finalProofCovered": "Balls are already shaped — cover and leave at room temperature until the poke test.",
+    "finalProofShape": "Shape your balls if not done. Cover and leave at room temperature until the poke test."
   },
   "recipeOutput": {
     "totalIngredients": "Total ingredients",

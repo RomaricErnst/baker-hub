@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   type AvailabilityBlock,
   type ScheduleResult,
@@ -83,6 +84,7 @@ function buildItems(
   prefRemoveFromFridgeTime?: Date | null,
   hydration?: number,
   oil?: number,
+  t: (key: string, params?: Record<string, string | number>) => string = (k) => k,
 ): TimelineStep[] {
   const items: TimelineStep[] = [];
 
@@ -92,13 +94,13 @@ function buildItems(
     items.push({
       kind: 'step', id: 'make_preferment', stepKind: 'make_preferment',
       time: prefStartTime,
-      label: isPoolish ? 'Make your Poolish' : 'Make your Biga',
+      label: isPoolish ? t('timeline.prefSteps.makePoolish') : t('timeline.prefSteps.makeBiga'),
       iconKey: 'preferment',
       tip: isPoolish
         ? (prefGoesInFridge
-            ? 'Mix equal weight flour and water (100% hydration) with a pinch of yeast. Stir until combined. Cover tightly and place in the fridge immediately — remove from fridge at the time shown in the next step.'
-            : 'Mix equal weight flour and water (100% hydration) with a pinch of yeast. Stir until no dry flour remains. Leave at room temperature — it peaks when domed and bubbly. Mix your dough immediately at peak.')
-        : 'Combine flour, water and a tiny amount of yeast (0.1–0.2%). Mix roughly — biga is intentionally shaggy, not smooth. Cover and place in the fridge until the removal step.',
+            ? t('timeline.prefSteps.tipPoolishFridge')
+            : t('timeline.prefSteps.tipPoolishRT'))
+        : t('timeline.prefSteps.tipBiga'),
       durationH: null,
     });
   }
@@ -129,13 +131,13 @@ function buildItems(
     items.push({
       kind: 'step', id: 'remove_pref_fridge', stepKind: 'mixing',
       time: removeTime,
-      label: prefermentType === 'biga' ? 'Remove Biga from fridge' : 'Remove Poolish from fridge',
+      label: prefermentType === 'biga' ? t('timeline.prefSteps.removeBiga') : t('timeline.prefSteps.removePoolish'),
       iconKey: 'preferment',
       tip: prefermentType === 'biga'
-        ? `Take your biga out of the fridge — no warmup needed, biga goes straight into the mix cold. Break it into small chunks and soak briefly in the recipe water before adding remaining ingredients. It should smell yeasty and slightly tangy.`
+        ? t('timeline.prefSteps.tipRemoveBiga')
         : warmupShort
-        ? `Take your poolish out of the fridge now — time is short before mixing. Watch for peak rather than the clock: surface domes upward, bubbles visible through the container sides, smells yeasty and slightly tangy. If it has not peaked by mix time, delay mixing by 30–60 min rather than using an under-peaked poolish.`
-        : `Take your poolish out of the fridge. At ${temp}°C it will be ready in ~${warmupH.toFixed(1)}h. Peak signs: surface domes upward, bubbles visible through the container sides or on top, smells yeasty and slightly tangy. Mix immediately at peak — do not let it collapse.`,
+        ? t('timeline.prefSteps.tipRemovePoolishShort')
+        : `${t('timeline.prefSteps.removePoolish')} — ${warmupH.toFixed(1)}h à ${temp}°C.`,
       durationH: warmupH > 0 ? warmupH : null,
     });
   }
@@ -144,14 +146,14 @@ function buildItems(
   if (feedTime && isSourdough) {
     const temp = kitchenTemp ?? 20;
     const tip = temp >= 28
-      ? `Feed equal weights starter + flour + water. At ${temp}°C your starter peaks in 3-5h — watch for dome + bubbles.`
+      ? t('timeline.prefSteps.tipFeedHot', { temp: `${temp}°C` })
       : temp >= 24
-      ? `Feed equal weights starter + flour + water. Peaks in 4-6h at ${temp}°C.`
-      : 'Feed equal weights starter + flour + water. Peaks in 6-10h at room temperature.';
+      ? t('timeline.prefSteps.tipFeedWarm', { temp: `${temp}°C` })
+      : t('timeline.prefSteps.tipFeedRT');
     items.push({
       kind: 'step', id: 'feed_starter', stepKind: 'feed_starter',
       time: feedTime,
-      label: 'Feed your starter',
+      label: t('timeline.prefSteps.feedStarter'),
       icon: '🫙',
       iconKey: 'starter',
       tip,
@@ -168,25 +170,20 @@ function buildItems(
 
   // Bulk ferm tip — dynamic based on bulkFermHours
   function bulkFermTip(bulkH: number): string {
-    if (bulkH >= 2) {
-      return 'Cover tightly and place in a warm spot away from drafts. Perform 4 sets of stretch & folds in the first 2 hours, every 30 minutes.';
-    } else if (bulkH >= 1) {
-      return 'Cover tightly. Perform 2–3 sets of stretch & folds every 20–30 minutes.';
-    } else if (bulkH >= 0.5) {
-      return 'Cover tightly. Perform one set of stretch & folds after 15 minutes, then cover and rest.';
-    } else {
-      return 'Cover tightly and rest — dough goes straight to the fridge after this short window.';
-    }
+    if (bulkH >= 2) return t('timeline.bulkTips.long');
+    if (bulkH >= 1) return t('timeline.bulkTips.medium');
+    if (bulkH >= 0.5) return t('timeline.bulkTips.short');
+    return t('timeline.bulkTips.veryShort');
   }
 
   // Divide & ball tip
   function divideBallTip(): string {
-    let tip = `Weigh and divide dough into ${numItems} ball${numItems !== 1 ? 's' : ''}. Pinch the bottom tight for a smooth, taut skin.`;
+    let tip = t('timeline.divideTip', { n: numItems, plural: numItems !== 1 ? 's' : '' });
     if (schedule.coldRetard1Start) {
-      tip += ' Cold dough is easier to ball — work quickly before it warms up.';
+      tip += t('timeline.divideTipCold');
     }
     if (schedule.kitchenTemp >= 30 && schedule.coldRetard1Start) {
-      tip += ' ⚠️ Your kitchen is warm — get balls back in the fridge within 20 minutes.';
+      tip += t('timeline.divideTipWarm');
     }
     const h = hydration ?? 0;
     const o = oil ?? 0;
@@ -206,18 +203,18 @@ function buildItems(
   items.push({
     kind: 'step', id: 'mixing', stepKind: 'mixing',
     time: startTime,
-    label: 'Mix & Knead',
+    label: t('timeline.steps.mixing'),
     icon: '🤌',
     iconKey: 'mix',
     tip: isSourdough
-      ? 'Combine flour and water, then add your starter. Add salt with the remaining water. Mix until fully absorbed.'
+      ? t('timeline.mixTips.sourdough')
       : mixerType === 'hand'
-      ? 'Flour + 90% water first — cover and rest 20 min (autolyse). Then yeast, salt, remaining water, and knead 8–12 min until the windowpane test passes.'
+      ? t('timeline.mixTips.hand')
       : mixerType === 'spiral'
-      ? 'Flour + water + yeast at Speed 1. Add salt, then Speed 2 until pumpkin shape forms and the windowpane test passes.'
+      ? t('timeline.mixTips.spiral')
       : mixerType === 'no_knead'
-      ? 'Combine all ingredients and mix until no dry flour remains — time and stretch & folds do the rest.'
-      : 'Flour + water at Speed 1. Add yeast, then salt, then remaining water. Speed 2 until dough clears the bowl and passes the windowpane test.',
+      ? t('timeline.mixTips.noKnead')
+      : t('timeline.mixTips.stand'),
     durationH: kneadMin > 0 ? kneadMin / 60 : null,
   });
 
@@ -226,7 +223,7 @@ function buildItems(
     items.push({
       kind: 'step', id: 'bulk_ferm', stepKind: 'bulk_ferm',
       time: schedule.bulkFermStart,
-      label: 'Bulk Fermentation',
+      label: t('timeline.steps.bulkFerm'),
       icon: '🌡️',
       iconKey: 'bulk',
       tip: bulkFermTip(schedule.bulkFermHours),
@@ -248,10 +245,10 @@ function buildItems(
       items.push({
         kind: 'step', id: 'cold_1', stepKind: 'cold',
         time: schedule.coldRetard1Start,
-        label: 'Cold Retard — Bulk',
+        label: t('timeline.steps.coldBulk'),
         icon: '❄️',
         iconKey: 'cold',
-        tip: 'Whole dough mass goes into the fridge. Cold bulk fermentation slows yeast activity and develops flavour. No action needed.',
+        tip: t('timeline.coldTips.bulk'),
         durationH: cold1DurationH,
         coldBlocks: coldBlocks1,
       });
@@ -261,7 +258,7 @@ function buildItems(
     items.push({
       kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
       time: schedule.divideBallTime,
-      label: 'Divide & Ball',
+      label: t('timeline.steps.divideBall'),
       icon: '⚖️',
       iconKey: 'divide',
       tip: divideBallTip(),
@@ -279,10 +276,10 @@ function buildItems(
       items.push({
         kind: 'step', id: 'cold_2', stepKind: 'cold',
         time: schedule.coldRetard2Start,
-        label: 'Cold Retard — Balls',
+        label: t('timeline.steps.coldBalls'),
         icon: '❄️',
         iconKey: 'cold',
-        tip: 'Individual dough balls rest in the fridge. This firms them up and makes final proofing more controlled.',
+        tip: t('timeline.coldTips.balls'),
         durationH: cold2DurationH,
         coldBlocks: coldBlocks2,
       });
@@ -304,10 +301,10 @@ function buildItems(
       items.push({
         kind: 'step', id: 'cold', stepKind: 'cold',
         time: schedule.coldRetard1Start,
-        label: 'Cold Retard',
+        label: t('timeline.steps.coldBulk'),
         icon: '❄️',
         iconKey: 'cold',
-        tip: 'Dough rests in the fridge. Cold fermentation builds flavour slowly — no action needed, time works for you.',
+        tip: t('timeline.coldTips.single'),
         durationH: coldDurationH,
         coldBlocks,
       });
@@ -319,7 +316,7 @@ function buildItems(
     items.push({
       kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
       time: schedule.divideBallTime,
-      label: 'Divide & Ball',
+      label: t('timeline.steps.divideBall'),
       icon: '⚖️',
       iconKey: 'divide',
       tip: divideBallTip(),
@@ -342,12 +339,12 @@ function buildItems(
     items.push({
       kind: 'step', id: 'final_proof', stepKind: 'final_proof',
       time: finalProofStepStart ?? schedule.finalProofStart,
-      label: 'Final Proof',
+      label: t('timeline.steps.finalProof'),
       icon: '⏰',
       iconKey: 'proof',
       tip: schedule.coldRetardStart
-        ? 'Remove balls from fridge and rest until slightly soft, then proof covered at room temperature. Start preheating your oven during the final proof — poke test tells you when to bake.'
-        : 'Shape dough balls and proof covered at room temperature. Start preheating your oven during the final proof — poke test tells you when to bake.',
+        ? t('timeline.finalProofTips.withCold')
+        : t('timeline.finalProofTips.withoutCold'),
       durationH: finalProofStepDuration,
     });
   }
@@ -356,12 +353,12 @@ function buildItems(
   items.push({
     kind: 'step', id: 'preheat', stepKind: 'preheat',
     time: schedule.preheatStart,
-    label: 'Preheat Oven',
+    label: t('timeline.steps.preheat'),
     icon: '🔥',
     iconKey: 'preheat',
     tip: preheatMin >= 45
-      ? `Start now — while dough finishes its final proof. Give it the full ${preheatMin} min to fully saturate your baking surface.`
-      : `Start now — while dough finishes its final proof. Set oven to maximum temperature for ${preheatMin} minutes.`,
+      ? t('timeline.preheatTips.long', { min: preheatMin })
+      : t('timeline.preheatTips.short', { min: preheatMin }),
     durationH: preheatMin / 60,
   });
 
@@ -369,10 +366,10 @@ function buildItems(
   items.push({
     kind: 'step', id: 'eat', stepKind: 'eat',
     time: schedule.bakeStart,
-    label: 'Bake & Eat!',
+    label: t('timeline.steps.eat'),
     icon: '🎉',
     iconKey: 'bake',
-    tip: 'Your dough is perfectly fermented. Score, load, and bake. Buon appetito!',
+    tip: t('timeline.eatTip'),
     durationH: null,
   });
 
@@ -388,17 +385,17 @@ interface Phase {
   stepKind: StepKind;
 }
 
-function buildPhases(schedule: ScheduleResult, preheatMin: number): Phase[] {
+function buildPhases(schedule: ScheduleResult, preheatMin: number, t: (key: string, params?: Record<string, string | number>) => string = (k) => k): Phase[] {
   const phases: Phase[] = [
-    { label: 'Mixing', icon: '🤌', iconKey: 'mix', durationH: schedule.mixingDurationH || 5 / 60, stepKind: 'mixing' },
+    { label: t('timeline.phaseLabels.mixing'), icon: '🤌', iconKey: 'mix', durationH: schedule.mixingDurationH || 5 / 60, stepKind: 'mixing' },
   ];
 
   if (schedule.bulkFermHours > 0) {
-    phases.push({ label: 'Bulk Fermentation', icon: '🌡️', iconKey: 'bulk', durationH: schedule.bulkFermHours, stepKind: 'bulk_ferm' });
+    phases.push({ label: t('timeline.phaseLabels.bulkFerm'), icon: '🌡️', iconKey: 'bulk', durationH: schedule.bulkFermHours, stepKind: 'bulk_ferm' });
   }
 
   if (schedule.coldRetardHours > 0) {
-    phases.push({ label: 'Cold Retard', icon: '❄️', iconKey: 'cold', durationH: schedule.coldRetardHours, stepKind: 'cold' });
+    phases.push({ label: t('timeline.phaseLabels.coldRetard'), icon: '❄️', iconKey: 'cold', durationH: schedule.coldRetardHours, stepKind: 'cold' });
   }
 
   // Final Proof phase includes warmup. Preheat overlaps — not shown as a separate phase.
@@ -407,7 +404,7 @@ function buildPhases(schedule: ScheduleResult, preheatMin: number): Phase[] {
     : (schedule.restRtHours ?? 0);
   const totalProofPhaseH = warmupH + schedule.finalProofHours;
   if (totalProofPhaseH > 0) {
-    phases.push({ label: 'Final Proof', icon: '⏰', iconKey: 'proof', durationH: totalProofPhaseH, stepKind: 'final_proof' });
+    phases.push({ label: t('timeline.phaseLabels.finalProof'), icon: '⏰', iconKey: 'proof', durationH: totalProofPhaseH, stepKind: 'final_proof' });
   }
 
   return phases;
@@ -439,11 +436,12 @@ export default function Timeline({
   schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, oil, hydration, numItems, feedTime, kitchenTemp, onStartBaking, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime,
 }: TimelineProps) {
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
+  const t = useTranslations();
 
   const isSourdough = styleKey === 'sourdough' || styleKey === 'pain_levain';
 
-  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil);
-  const phases = buildPhases(schedule, preheatMin);
+  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t);
+  const phases = buildPhases(schedule, preheatMin, t);
 
   const lastStepId = items[items.length - 1]?.id;
 
@@ -615,11 +613,11 @@ export default function Timeline({
                   {item.id === 'remove_pref_fridge'
                     ? item.tip
                     : item.stepKind === 'rest_rt'
-                    ? <>Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch and will tear. The poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> will be unreliable until the dough has warmed through.</>
+                    ? <>{t('timeline.restRtTip')}</>
                     : item.stepKind === 'final_proof'
                     ? schedule.coldRetard2Start !== null
-                      ? <>Balls are already shaped — cover and leave at room temperature until the poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> confirms ready.</>
-                      : <>Shape your balls if not done. Cover and leave at room temperature until the poke test<InfoBadge term="poke_test" onOpen={setLearnTerm} /> confirms ready.</>
+                      ? <>{t('timeline.finalProofCovered')}<InfoBadge term="poke_test" onOpen={setLearnTerm} /></>
+                      : <>{t('timeline.finalProofShape')}<InfoBadge term="poke_test" onOpen={setLearnTerm} /></>
                     : item.stepKind === 'divide_ball'
                     ? <>{item.tip}</>
                     : item.tip}
@@ -786,11 +784,11 @@ export default function Timeline({
                       background: th.dot, flexShrink: 0,
                     }} />
                     {item.stepKind === 'cold' && `${formatTime(item.time)} → ends at ${formatTime(new Date(item.time.getTime() + (item.durationH ?? 0) * 3600000))}`}
-                    {item.stepKind === 'bulk_ferm' && `Bulk fermentation · ${hoursLabel(item.durationH ?? 0)}`}
-                    {item.stepKind === 'final_proof' && `Final proof window · ${hoursLabel(schedule.finalProofHours)}`}
-                    {item.stepKind === 'rest_rt' && item.id !== 'remove_pref_fridge' && `Room temperature · ${hoursLabel(item.durationH ?? 0)}`}
-                    {item.id === 'remove_pref_fridge' && item.durationH && item.durationH > 0 && `Warmup · ${hoursLabel(item.durationH)}`}
-                    {item.stepKind === 'rt_warmup' && `Room temperature warmup · ${hoursLabel(item.durationH ?? 0)}`}
+                    {item.stepKind === 'bulk_ferm' && t('timeline.blockLabels.bulkFerm', { dur: hoursLabel(item.durationH ?? 0) })}
+                    {item.stepKind === 'final_proof' && t('timeline.blockLabels.finalProof', { dur: hoursLabel(schedule.finalProofHours) })}
+                    {item.stepKind === 'rest_rt' && item.id !== 'remove_pref_fridge' && t('timeline.blockLabels.roomTemp', { dur: hoursLabel(item.durationH ?? 0) })}
+                    {item.id === 'remove_pref_fridge' && item.durationH && item.durationH > 0 && t('timeline.blockLabels.warmup', { dur: hoursLabel(item.durationH ?? 0) })}
+                    {item.stepKind === 'rt_warmup' && t('timeline.blockLabels.rtWarmup', { dur: hoursLabel(item.durationH ?? 0) })}
                   </div>
                 )}
               </div>

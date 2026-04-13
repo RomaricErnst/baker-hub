@@ -248,7 +248,68 @@
       "finalProof": "Apprêt",
       "preheat": "Préchauffage du four",
       "eat": "Cuisson & Dégustation !"
-    }
+    },
+    "prefSteps": {
+      "makePoolish": "Préparer le Poolish",
+      "makeBiga": "Préparer la Biga",
+      "removePoolish": "Sortir le Poolish du frigo",
+      "removeBiga": "Sortir la Biga du frigo",
+      "feedStarter": "Nourrir le levain",
+      "tipPoolishFridge": "Mélangez farine et eau à parts égales (100% hydratation) avec une pincée de levure. Mélangez jusqu'à homogénéité. Couvrez bien et placez au frigo.",
+      "tipPoolishRT": "Mélangez farine et eau à parts égales (100% hydratation) avec une pincée de levure. Mélangez jusqu'à ce qu'il n'y ait plus de farine sèche. Laissez à température ambiante.",
+      "tipBiga": "Mélangez farine, eau et une infime quantité de levure (0,1–0,2%). Mélangez grossièrement — la biga est volontairement grumeleuse. Couvrez et réfrigérez.",
+      "tipRemoveBiga": "Sortez la biga du frigo — pas besoin de réchauffage, la biga va directement dans le pétrin froide.",
+      "tipRemovePoolishShort": "Sortez le poolish du frigo maintenant — le temps est court avant le pétrissage. Observez le pic plutôt que l'horloge.",
+      "tipFeedHot": "Nourrissez le levain avec farine et eau à parts égales. À {temp} il atteint son pic en 3–5h — surveillez le dôme + les bulles.",
+      "tipFeedWarm": "Nourrissez le levain avec farine et eau à parts égales. Pic en 4–6h à {temp}.",
+      "tipFeedRT": "Nourrissez le levain avec farine et eau à parts égales. Pic en 6–10h à température ambiante."
+    },
+    "mixTips": {
+      "sourdough": "Mélangez farine et eau, puis ajoutez votre levain. Ajoutez le sel avec les 10% d'eau restants. Mélangez jusqu'à complète absorption.",
+      "hand": "Farine + 90% de l'eau — couvrez et reposez 20 min (autolyse). Puis levure, sel, eau restante, et pétrissez 8–12 min.",
+      "spiral": "Farine + eau + levure Vitesse 1. Sel, puis Vitesse 2 jusqu'à la forme de citrouille et le test de la vitre.",
+      "noKnead": "Mélangez tous les ingrédients jusqu'à ce qu'il n'y ait plus de farine sèche — le temps et les stretch & fold font le reste.",
+      "stand": "Farine + eau Vitesse 1. Levure, puis sel, puis eau restante. Vitesse 2 jusqu'à ce que la pâte se décolle du bol et passe le test de la vitre."
+    },
+    "bulkTips": {
+      "long": "Couvrez bien et placez dans un endroit chaud à l'abri des courants d'air. Effectuez 4 séries de stretch & fold dans les 2 premières heures.",
+      "medium": "Couvrez bien. Effectuez 2–3 séries de stretch & fold toutes les 20–30 minutes.",
+      "short": "Couvrez bien. Effectuez une série de stretch & fold après 15 minutes, puis couvrez et reposez.",
+      "veryShort": "Couvrez bien et reposez — la pâte va directement au frigo après cette courte fenêtre."
+    },
+    "coldTips": {
+      "bulk": "La masse de pâte entière va au frigo. La fermentation froide ralentit la levure et développe les arômes. Aucune action nécessaire.",
+      "balls": "Les pâtons reposent au frigo. Cela les raffermit et rend l'apprêt final plus maîtrisé.",
+      "single": "La pâte repose au frigo. La fermentation froide développe les arômes lentement — aucune action, le temps travaille pour vous."
+    },
+    "divideTip": "Pesez et divisez la pâte en {n} pâton{plural}. Pincez le dessous pour créer une tension de surface.",
+    "divideTipCold": " La pâte froide est plus facile à bouler — travaillez vite avant qu'elle se réchauffe.",
+    "divideTipWarm": " ⚠️ Votre cuisine est chaude — remettez les pâtons au frigo dans les 20 minutes.",
+    "finalProofTips": {
+      "withCold": "Sortez les pâtons du frigo et reposez jusqu'à ce qu'ils soient légèrement souples, puis faites l'apprêt couverts à température ambiante. Préchauffez votre four pendant l'apprêt.",
+      "withoutCold": "Boulez les pâtons et faites l'apprêt couverts à température ambiante. Préchauffez votre four pendant l'apprêt."
+    },
+    "preheatTips": {
+      "long": "Commencez maintenant — pendant que la pâte finit son apprêt. Donnez-lui les {min} min complètes pour saturer votre surface de cuisson.",
+      "short": "Commencez maintenant — pendant que la pâte finit son apprêt. Mettez le four à température maximale pendant {min} minutes."
+    },
+    "eatTip": "Votre pâte est parfaitement fermentée. Grignez, enfournez et cuisez. Buon appetito !",
+    "phaseLabels": {
+      "mixing": "Frasage",
+      "bulkFerm": "Pointage",
+      "coldRetard": "Pousse au froid",
+      "finalProof": "Apprêt"
+    },
+    "blockLabels": {
+      "bulkFerm": "Pointage · {dur}",
+      "finalProof": "Fenêtre d'apprêt · {dur}",
+      "roomTemp": "Température ambiante · {dur}",
+      "warmup": "Réchauffage · {dur}",
+      "rtWarmup": "Réchauffage ambiant · {dur}"
+    },
+    "restRtTip": "Sortez les pâtons du frigo et laissez-les couverts à température ambiante. La pâte froide est trop rigide pour être étirée — attendez qu'elle soit légèrement souple.",
+    "finalProofCovered": "Les pâtons sont déjà façonnés — couvrez et laissez à température ambiante jusqu'au test du creux.",
+    "finalProofShape": "Façonnez vos pâtons si ce n'est pas fait. Couvrez et laissez à température ambiante jusqu'au test du creux."
   },
   "recipeOutput": {
     "totalIngredients": "Total des ingrédients",
