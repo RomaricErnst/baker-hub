@@ -815,7 +815,7 @@ function SimpleColourBar({
                 fill="#C4522A" />
               <text x={bx} y={BAR_AXIS_Y + 12} fontSize={9} fill="#C4522A"
                 fontFamily="DM Mono, monospace" textAnchor="middle">
-                Bake
+                {tRoot('schedulePicker.bakeLabel')}
               </text>
             </>
           );
@@ -1517,9 +1517,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 whiteSpace: 'nowrap', flexShrink: 0,
               }}
             >
-              🌙 Nights
+              {t('blockers.nights')}
               <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.7rem', opacity: .65 }}>
-                · 10pm → 7am
+                {t('blockers.nightHoursLabel')}
               </span>
               {active && <span style={{ opacity: .7 }}>✓</span>}
             </button>
@@ -2057,11 +2057,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const cardPrefTooShort = (hasPrefActive || isSourdough) && prefOffsetH < 3;
         const cardPrefStatus = cardPrefInZone
           ? (prefGoesInFridge
-              ? '🧊 In fridge — ready at Start Dough'
-              : '🟢 Ready when dough starts')
+              ? tRoot('schedulePicker.prefInFridgeReady')
+              : tRoot('schedulePicker.prefReadyWhenDoughStarts'))
           : cardPrefTooShort
-          ? '🟡 Poolish not yet at peak at mix time'
-          : '🟡 Poolish will be past its peak at this time';
+          ? tRoot('schedulePicker.simpleStatus.tooEarly')
+          : tRoot('schedulePicker.simpleStatus.tooLate');
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
           : isSourdough && feedTime ? feedTime : null;
@@ -2069,9 +2069,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const doughZoneTo   = renderSweetTo;
         const mixInZone   = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
         const mixTooEarly = mixOffsetH > doughZoneFrom;
-        const mixStatus = mixInZone ? '🟢 Dough ready at bake'
-          : mixTooEarly ? '🟡 Dough peaks before bake'
-          : '🟡 Dough peaks just after bake';
+        const mixStatus = mixInZone ? tRoot('schedulePicker.doughReadyAtBake')
+          : mixTooEarly ? tRoot('schedulePicker.doughPeaksBefore')
+          : tRoot('schedulePicker.doughPeaksAfter');
         const bakeMs = pendingEatTime.getTime();
         const mixInBlocker = !mixInZone && mixOffsetH > 0 && blocks.some(b => {
           const s2 = (bakeMs - b.from.getTime()) / 3600000;
@@ -2079,7 +2079,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           return mixOffsetH >= Math.min(s2, e2) && mixOffsetH <= Math.max(s2, e2);
         });
         return (
-          <div style={{ display: 'flex', gap: '6px', marginTop: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '6px', marginTop: '1rem', flexWrap: 'wrap', justifyContent: cardPrefTime ? 'flex-start' : 'center' }}>
             {/* Pref card */}
             {cardPrefTime && (
               <div style={{
@@ -2109,7 +2109,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     color: '#4A7A3A',
                     fontFamily: 'var(--font-dm-mono)',
                   }}>
-                    🟢 Ready at Start Dough
+                    {tRoot('schedulePicker.prefReadyAtStartDough')}
                   </div>
                 ) : (
                   <div style={{ fontSize: '12px', marginTop: '.1rem', color: '#C49A28' }}>
@@ -2135,9 +2135,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
             {/* Mix card */}
             <div style={{
-              flex: 1, minWidth: '120px',
               background: 'var(--cream)', border: '1.5px solid var(--border)',
               borderRadius: '10px', padding: '14px 16px',
+              ...(cardPrefTime ? { flex: 1, minWidth: '120px' } : { minWidth: '160px', maxWidth: '260px' }),
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
                 <div style={{ width: 8, height: 8, background: '#3D5A30', transform: 'rotate(45deg)', flexShrink: 0 }} />

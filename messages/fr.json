@@ -146,7 +146,9 @@
       "customLabelPlaceholder": "Libellé — ex. Week-end en déplacement",
       "from": "De",
       "to": "À",
-      "addBlock": "Ajouter"
+      "addBlock": "Ajouter",
+      "nights": "🌙 Nuits",
+      "nightHoursLabel": "· 22h → 7h"
     },
     "adjustLabel": "Fenêtres de fermentation · ajuster le timing"
   },
@@ -400,7 +402,14 @@
       "slightlyOut": "🟡 Légèrement hors de la plage idéale",
       "tooEarly": "🔴 Trop tôt — risque de sur-fermentation",
       "tooLate": "🔴 Trop tard — risque de sous-fermentation"
-    }
+    },
+    "bakeLabel": "Cuisson",
+    "doughReadyAtBake": "🟢 Pâte prête à la cuisson",
+    "doughPeaksBefore": "🟡 Pic de pâte avant la cuisson",
+    "doughPeaksAfter": "🟡 Pic de pâte juste après la cuisson",
+    "prefReadyAtStartDough": "🟢 Prêt au démarrage de la pâte",
+    "prefInFridgeReady": "🧊 Au frigo → prêt au démarrage",
+    "prefReadyWhenDoughStarts": "🟢 Prêt au démarrage de la pâte"
   },
   "recipe": {
     "ingredients": "Ingrédients",
@@ -1003,7 +1012,8 @@
       "makePoolish": "Préparer le Poolish",
       "makeBiga": "Préparer la Biga",
       "feedStarter": "Nourrir le levain"
-    }
+    },
+    "bakeLabel": "Cuisson"
   },
   "prefermentSlider": {
     "longAhead": "16h+ à l'avance",

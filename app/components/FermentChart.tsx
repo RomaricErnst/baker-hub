@@ -685,7 +685,7 @@ export default function FermentChart({
           fill={TERRA}
         />
         <text x={bakeX} y={AXIS_Y + 20} fontSize={14} fontWeight="600" fill={TERRA}
-          fontFamily="DM Mono, monospace" textAnchor="middle">Bake</text>
+          fontFamily="DM Mono, monospace" textAnchor="middle">{t('bakeLabel')}</text>
 
         {/* ── Pref diamond ── */}
         {hasPref && renderDiamond(

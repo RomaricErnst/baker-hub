@@ -146,7 +146,9 @@
       "customLabelPlaceholder": "Label — e.g. Weekend away",
       "from": "From",
       "to": "To",
-      "addBlock": "Add block"
+      "addBlock": "Add block",
+      "nights": "🌙 Nights",
+      "nightHoursLabel": "· 10pm → 7am"
     },
     "adjustLabel": "Fermentation windows · adjust timing"
   },
@@ -400,7 +402,14 @@
       "slightlyOut": "🟡 Slightly outside the sweet spot",
       "tooEarly": "🔴 Too early — risk of over-fermentation",
       "tooLate": "🔴 Too late — risk of under-fermentation"
-    }
+    },
+    "bakeLabel": "Bake",
+    "doughReadyAtBake": "🟢 Dough ready at bake",
+    "doughPeaksBefore": "🟡 Dough peaks before bake",
+    "doughPeaksAfter": "🟡 Dough peaks just after bake",
+    "prefReadyAtStartDough": "🟢 Ready at Start Dough",
+    "prefInFridgeReady": "🧊 In fridge → ready at Start Dough",
+    "prefReadyWhenDoughStarts": "🟢 Ready when dough starts"
   },
   "recipe": {
     "ingredients": "Ingredients",
@@ -1003,7 +1012,8 @@
       "makePoolish": "Make Poolish",
       "makeBiga": "Make Biga",
       "feedStarter": "Feed Starter"
-    }
+    },
+    "bakeLabel": "Bake"
   },
   "prefermentSlider": {
     "longAhead": "16h+ ahead",
