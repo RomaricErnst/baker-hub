@@ -371,7 +371,26 @@
     "fallbackBtn2Sub": "Still within the ideal window — dough will be excellent.",
     "keepAsIs": "Keep as is",
     "gotIt": "Got it, I'll make it work",
-    "fermentationGuide": "Fermentation guide"
+    "fermentationGuide": "Fermentation guide",
+    "zoneLabels": {
+      "tooEarly": "Too early",
+      "stillOk": "Still ok",
+      "startDough": "Start Dough",
+      "tooLate": "Too late"
+    },
+    "tickLabels": {
+      "midnight": "midnight",
+      "noon": "noon",
+      "6am": "6am",
+      "6pm": "6pm"
+    },
+    "simpleStatus": {
+      "ready": "🟢 Dough ready at bake",
+      "earlyOk": "🟡 A little early — dough will be great",
+      "slightlyOut": "🟡 Slightly outside the sweet spot",
+      "tooEarly": "🔴 Too early — risk of over-fermentation",
+      "tooLate": "🔴 Too late — risk of under-fermentation"
+    }
   },
   "recipe": {
     "ingredients": "Ingredients",
@@ -945,5 +964,40 @@
       },
       "learnMoreScoring": "Scoring technique guide"
     }
+  },
+  "fermentChart": {
+    "tickLabels": {
+      "midnight": "midnight",
+      "noon": "noon",
+      "6am": "6am",
+      "6pm": "6pm"
+    },
+    "mixStatus": {
+      "ready": "🟢 Dough ready at bake",
+      "peaksBefore": "🟡 Dough peaks before bake",
+      "peaksAfter": "🟡 Dough peaks just after bake"
+    },
+    "prefStatus": {
+      "inFridge": "🧊 In fridge — ready at Start Dough",
+      "readyAtMix": "🟢 Ready when dough starts",
+      "notYetPeak": "🟡 Poolish not yet at peak at mix time",
+      "pastPeak": "🟡 Poolish will be past its peak at this time"
+    },
+    "zoneLabels": {
+      "startDoughWindow": "Start Dough window",
+      "makePoolishWindow": "Make Poolish window",
+      "makeBigaWindow": "Make Biga window",
+      "feedStarterWindow": "Feed Starter window"
+    },
+    "cardLabels": {
+      "makePoolish": "Make Poolish",
+      "makeBiga": "Make Biga",
+      "feedStarter": "Feed Starter"
+    }
+  },
+  "prefermentSlider": {
+    "longAhead": "16h+ ahead",
+    "nightBefore": "Night before",
+    "sameDay": "Same day"
   }
 }

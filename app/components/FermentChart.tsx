@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { type AvailabilityBlock } from '../utils';
 
 export interface FermentChartProps {
@@ -174,6 +175,7 @@ export default function FermentChart({
   const containerRef  = useRef<HTMLDivElement>(null);
   const svgRef        = useRef<SVGSVGElement>(null);
   const [W, setW]     = useState(320);
+  const t = useTranslations('fermentChart');
   const [dragging, setDragging] = useState<'mix' | 'pref' | null>(null);
   // Local drag HBF for free visual movement during mix drag — no onMixChange until pointer up
   const [localMixHBF, setLocalMixHBF] = useState<number | null>(null);
@@ -293,10 +295,10 @@ export default function FermentChart({
     if (tick.getMinutes() !== 0) continue;
     const wd = tick.toLocaleDateString('en-US', { weekday: 'short' });
     const hr = tick.getHours();
-    const timeLabel = hr === 0  ? 'midnight'
-      : hr === 6  ? '6am'
-      : hr === 12 ? 'noon'
-      : hr === 18 ? '6pm'
+    const timeLabel = hr === 0  ? t('tickLabels.midnight')
+      : hr === 6  ? t('tickLabels.6am')
+      : hr === 12 ? t('tickLabels.noon')
+      : hr === 18 ? t('tickLabels.6pm')
       : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
     ticks.push({ x: hToX(h, W, WH), label: `${wd} ${timeLabel}` });
   }
@@ -354,26 +356,26 @@ export default function FermentChart({
   // ── Status logic ─────────────────────────────────────────
   const mixInZone   = effectiveMixHBF >= doughZoneTo   && effectiveMixHBF <= doughZoneFrom;
   const mixTooEarly = false;
-  const mixStatus = mixInZone   ? '🟢 Dough ready at bake'
-    : mixTooEarly ? '🟡 Dough peaks before bake'
-    : '🟡 Dough peaks just after bake';
+  const mixStatus = mixInZone   ? t('mixStatus.ready')
+    : mixTooEarly ? t('mixStatus.peaksBefore')
+    : t('mixStatus.peaksAfter');
 
   const prefInZone   = hasPref && prefOffsetH >= 3 && prefOffsetH <= 72;
   const prefTooShort = hasPref && prefOffsetH < 3;
   const prefStatus = prefInZone
-    ? (prefNeedsFridge ? '🧊 In fridge — ready at Start Dough' : '🟢 Ready when dough starts')
+    ? (prefNeedsFridge ? t('prefStatus.inFridge') : t('prefStatus.readyAtMix'))
     : prefTooShort
-    ? '🟡 Poolish not yet at peak at mix time'
-    : '🟡 Poolish will be past its peak at this time';
+    ? t('prefStatus.notYetPeak')
+    : t('prefStatus.pastPeak');
 
   // ── Info card data ───────────────────────────────────────
   const mixTime  = new Date(bakeMs - effectiveMixHBF * 3600000);
   const prefTime = hasPref ? new Date(bakeMs - prefStartAbsHBF * 3600000) : null;
 
   const prefLabel = prefermentType === 'sourdough' || prefermentType === 'levain'
-    ? 'Feed Starter'
-    : prefermentType === 'biga'    ? 'Make Biga'
-    : prefermentType === 'poolish' ? 'Make Poolish'
+    ? t('cardLabels.feedStarter')
+    : prefermentType === 'biga'    ? t('cardLabels.makeBiga')
+    : prefermentType === 'poolish' ? t('cardLabels.makePoolish')
     : prefermentType;
 
   const prefTypeName = prefermentType === 'sourdough' || prefermentType === 'levain'
@@ -569,13 +571,13 @@ export default function FermentChart({
         {/* ── Sweet-spot zones ── */}
         {showZoneLabels && (() => {
           const prefWindowLabel =
-            prefermentType === 'biga'      ? 'Make Biga window'    :
-            prefermentType === 'levain'    ? 'Feed Starter window' :
-            prefermentType === 'sourdough' ? 'Feed Starter window' :
-            'Make Poolish window';
+            prefermentType === 'biga'      ? t('zoneLabels.makeBigaWindow')    :
+            prefermentType === 'levain'    ? t('zoneLabels.feedStarterWindow') :
+            prefermentType === 'sourdough' ? t('zoneLabels.feedStarterWindow') :
+            t('zoneLabels.makePoolishWindow');
           return (
             <>
-              {renderZone(doughZoneFrom, doughZoneTo, SAGE, 'Start Dough window', 12, 'sage')}
+              {renderZone(doughZoneFrom, doughZoneTo, SAGE, t('zoneLabels.startDoughWindow'), 12, 'sage')}
               {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, prefWindowLabel, 38, 'pref')}
             </>
           );
@@ -697,10 +699,10 @@ export default function FermentChart({
             textAnchor="middle"
             fontWeight="600"
           >
-            {prefermentType === 'biga'      ? 'Make Biga'    :
-             prefermentType === 'levain'    ? 'Feed Starter' :
-             prefermentType === 'sourdough' ? 'Feed Starter' :
-             'Make Poolish'}
+            {prefermentType === 'biga'      ? t('cardLabels.makeBiga')    :
+             prefermentType === 'levain'    ? t('cardLabels.feedStarter') :
+             prefermentType === 'sourdough' ? t('cardLabels.feedStarter') :
+             t('cardLabels.makePoolish')}
           </text>
         )}
 

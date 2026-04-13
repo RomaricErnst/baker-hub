@@ -574,11 +574,11 @@ function SimpleColourBar({
 
   // Colour zones: [fromHBF (left), toHBF (right), fill, label]
   const zones = [
-    { from: barWin,     to: goldL_HBF,  fill: 'rgba(196,82,42,0.2)',   label: 'Too early' },
-    { from: goldL_HBF,  to: sweetL_HBF, fill: 'rgba(212,168,83,0.35)', label: 'Still ok'  },
-    { from: sweetL_HBF, to: sweetR_HBF, fill: 'rgba(107,122,90,0.5)',  label: 'Start Dough' },
-    { from: sweetR_HBF, to: goldR2_HBF, fill: 'rgba(212,168,83,0.35)', label: 'Still ok'  },
-    { from: goldR2_HBF, to: 0,          fill: 'rgba(196,82,42,0.2)',   label: 'Too late'  },
+    { from: barWin,     to: goldL_HBF,  fill: 'rgba(196,82,42,0.2)',   label: tRoot('schedulePicker.zoneLabels.tooEarly') },
+    { from: goldL_HBF,  to: sweetL_HBF, fill: 'rgba(212,168,83,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
+    { from: sweetL_HBF, to: sweetR_HBF, fill: 'rgba(107,122,90,0.5)',  label: tRoot('schedulePicker.zoneLabels.startDough') },
+    { from: sweetR_HBF, to: goldR2_HBF, fill: 'rgba(212,168,83,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
+    { from: goldR2_HBF, to: 0,          fill: 'rgba(196,82,42,0.2)',   label: tRoot('schedulePicker.zoneLabels.tooLate')  },
   ];
 
   // Adaptive ticks: 3h for short windows, 12h for medium, 24h for long
@@ -589,10 +589,10 @@ function SimpleColourBar({
     if (tick.getMinutes() !== 0) continue;
     const hr = tick.getHours();
     const wd = tick.toLocaleDateString('en-US', { weekday: 'short' });
-    const timeLabel = hr === 0  ? 'midnight'
-      : hr === 6  ? '6am'
-      : hr === 12 ? 'noon'
-      : hr === 18 ? '6pm'
+    const timeLabel = hr === 0  ? tRoot('schedulePicker.tickLabels.midnight')
+      : hr === 6  ? tRoot('schedulePicker.tickLabels.6am')
+      : hr === 12 ? tRoot('schedulePicker.tickLabels.noon')
+      : hr === 18 ? tRoot('schedulePicker.tickLabels.6pm')
       : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
     ticks.push({ x: barHToX(h, W, barWin), label: `${wd} ${timeLabel}` });
   }
@@ -604,11 +604,11 @@ function SimpleColourBar({
   const nearEarly = false; // earlier = more cold retard = never bad within window
   const nearLate  = !inZone && mixOffsetH < sweetR_HBF && !tooLate;
   const status    = inZone
-    ? '🟢 Dough ready at bake'
-    : nearEarly ? '🟡 A little early — dough will be great'
-    : nearLate  ? '🟡 Slightly outside the sweet spot'
-    : tooEarly  ? '🔴 Too early — risk of over-fermentation'
-    : '🔴 Too late — risk of under-fermentation';
+    ? tRoot('schedulePicker.simpleStatus.ready')
+    : nearEarly ? tRoot('schedulePicker.simpleStatus.earlyOk')
+    : nearLate  ? tRoot('schedulePicker.simpleStatus.slightlyOut')
+    : tooEarly  ? tRoot('schedulePicker.simpleStatus.tooEarly')
+    : tRoot('schedulePicker.simpleStatus.tooLate');
 
   // Pointer handling
   function getSvgX(e: React.PointerEvent): number {
