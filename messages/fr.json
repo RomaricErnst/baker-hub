@@ -150,7 +150,9 @@
       "nights": "🌙 Nuits",
       "nightHoursLabel": "· 22h → 7h"
     },
-    "adjustLabel": "Fenêtres de fermentation · ajuster le timing"
+    "adjustLabel": "Fenêtres de fermentation · ajuster le timing",
+    "adjustDoughVerb": "glissez le losange vert — la courbe doit être proche de son pic à la cuisson",
+    "adjustPrefVerb": "glissez le losange doré — la courbe doit être proche de son pic au démarrage"
   },
   "dialIn": {
     "title": "Affinez votre pâte",

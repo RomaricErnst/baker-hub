@@ -1859,11 +1859,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           <div style={{ paddingTop: '4px', paddingBottom: '6px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '6px' }}>
               <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
-                <span style={{ color: '#3D5A30', fontWeight: 600 }}>◆ Dough:</span> drag the green diamond — green curve should peak at Bake
+                <span style={{ color: '#3D5A30', fontWeight: 600 }}>◆ Dough:</span> {t('adjustDoughVerb')}
               </div>
               {hasPrefActive && (
                 <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
-                  <span style={{ color: '#C4A030', fontWeight: 600 }}>◇ {prefLabel}:</span> drag the gold diamond — gold curve should peak at Start Dough
+                  <span style={{ color: '#C4A030', fontWeight: 600 }}>◇ {prefLabel}:</span> {t('adjustPrefVerb')}
                 </div>
               )}
             </div>
