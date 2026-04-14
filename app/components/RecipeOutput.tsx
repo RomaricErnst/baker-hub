@@ -288,6 +288,7 @@ function StarterPrepCard({ sourdough }: { sourdough: { starterGramsMin: number; 
   const M = { fontSize: '.82rem', fontFamily: 'var(--font-dm-mono)', color: 'var(--terra)', fontWeight: 600 };
 
   const t = useTranslations();
+  const locale = useLocale();
   const readyChecks = [
     t('recipeOutput.starterReady.doubled'),
     t('recipeOutput.starterReady.domed'),
@@ -310,9 +311,9 @@ function StarterPrepCard({ sourdough }: { sourdough: { starterGramsMin: number; 
       {/* Section A — How much to prepare */}
       <div style={{ marginBottom: '.75rem' }}>
         {[
-          <>Keep <span style={M}>{discardKeep}g</span> of your current starter</>,
-          <>Add <span style={M}>{feedFlour}g</span> flour + <span style={M}>{feedWater}g</span> water</>,
-          <>You&apos;ll have ~<span style={M}>{targetGrams}g</span> ready to use</>,
+          <>{locale === 'fr' ? 'Gardez ' : 'Keep '}<span style={M}>{discardKeep}g</span>{locale === 'fr' ? ' de votre levain actuel' : ' of your current starter'}</>,
+          <>{locale === 'fr' ? 'Ajoutez ' : 'Add '}<span style={M}>{feedFlour}g</span>{' '}{locale === 'fr' ? 'farine + ' : 'flour + '}<span style={M}>{feedWater}g</span>{' '}{locale === 'fr' ? 'eau' : 'water'}</>,
+          <>{locale === 'fr' ? 'Vous aurez ~' : "You'll have ~"}<span style={M}>{targetGrams}g</span>{' '}{locale === 'fr' ? 'prêt à utiliser' : 'ready to use'}</>,
         ].map((line, i) => (
           <div key={i} style={{ fontSize: '.78rem', color: 'var(--ash)', lineHeight: 1.7 }}>{line}</div>
         ))}
@@ -328,15 +329,15 @@ function StarterPrepCard({ sourdough }: { sourdough: { starterGramsMin: number; 
             display: 'flex', alignItems: 'center', gap: '.25rem',
           }}
         >
-          What to do with the discard? {discardOpen ? '▴' : '▾'}
+          {t('recipeOutput.discardQuestion')} {discardOpen ? '▴' : '▾'}
         </button>
         {discardOpen && (
           <div style={{ marginTop: '.45rem', display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
             <div style={{ fontSize: '.76rem', color: 'var(--ash)', lineHeight: 1.55 }}>
-              Discard the rest before feeding — or use it for pancakes, crackers or flatbread 🥞
+              {t('recipeOutput.discardNote1')}
             </div>
             <div style={{ fontSize: '.76rem', color: 'var(--ash)', lineHeight: 1.55 }}>
-              Never throw all your starter away — always keep at least 20–30g.
+              {t('recipeOutput.discardNote2')}
             </div>
           </div>
         )}
@@ -348,7 +349,7 @@ function StarterPrepCard({ sourdough }: { sourdough: { starterGramsMin: number; 
         paddingTop: '.6rem',
       }}>
         <div style={{ fontSize: '.72rem', fontWeight: 600, color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.45rem' }}>
-          Your starter is ready when:
+          {t('recipeOutput.starterReadyWhen')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
           {readyChecks.map((cue, i) => (
@@ -442,13 +443,13 @@ export default function RecipeOutput({
     if (info.iceGrams >= 50) {
       return (
         <>
-          {'Target: '}
+          {t('recipeOutput.waterTarget') + ' '}
           <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', color: 'var(--terra)' }}>{displayTemp(info.targetTemp, u)}</span>
           {' · '}
           <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.iceGrams}g</span>
-          {' ice + '}
+          {' ' + (locale === 'fr' ? 'glaçons + ' : 'ice + ')}
           <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)' }}>{info.tapGrams}g</span>
-          {' cold water'}
+          {' ' + (locale === 'fr' ? 'eau froide' : 'cold water')}
         </>
       );
     }
@@ -456,12 +457,12 @@ export default function RecipeOutput({
     const tempColor = tempDiff >= 14 ? 'var(--terra)' : tempDiff >= 8 ? 'var(--gold)' : undefined;
     return (
       <>
-        {'Use at '}
+        {t('recipeOutput.waterUseAt') + ' '}
         <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', fontSize: '.9rem', color: tempColor }}>{displayTemp(info.targetTemp, u)}</span>
         {` · ${info.tempGuidance}`}
         {tempDiff >= 8 && (
           <span style={{ display: 'block', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '.1rem' }}>
-            Keeps dough at target temperature despite mixer friction
+            {t('recipeOutput.waterKeeperNote')}
           </span>
         )}
       </>
@@ -519,7 +520,7 @@ export default function RecipeOutput({
             fontFamily: 'var(--font-playfair)', fontSize: '1.3rem',
             fontWeight: 700, color: 'var(--char)', marginBottom: '.2rem',
           }}>
-            Your recipe is ready
+            {t('recipeOutput.recipeReady')}
           </div>
           <div style={{
             fontSize: '.78rem', color: 'var(--smoke)',
@@ -532,12 +533,12 @@ export default function RecipeOutput({
             </span>
             {' · '}
             <span style={{ color: 'var(--ash)', fontWeight: 600 }}>
-              {hydration}% hydration
+              {hydration}% {t('recipeOutput.hydrationLabel')}
             </span>
           </div>
           {wastePct !== undefined && wastePct > 0 && (
             <div style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.2rem' }}>
-              Includes {wastePct}% mixing buffer
+              {t('recipeOutput.mixingBuffer', { pct: wastePct })}
             </div>
           )}
         </div>
@@ -554,7 +555,7 @@ export default function RecipeOutput({
               fontFamily: 'var(--font-dm-mono)',
             }}
           >
-            {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved ✓' : saveStatus === 'error' ? 'Error' : 'Save recipe'}
+            {saveStatus === 'saving' ? t('recipeOutput.savingRecipe') : saveStatus === 'saved' ? t('recipeOutput.savedRecipe') : saveStatus === 'error' ? t('recipeOutput.saveError') : t('recipeOutput.saveRecipe')}
           </button>
         )}
         {/* Total ingredients accordion now lives in the Final Dough card */}
@@ -621,7 +622,7 @@ export default function RecipeOutput({
                 Make your {pd.name}
               </div>
               <IngRow
-                label="Flour"
+                label={t('recipeOutput.ingredientFlour')}
                 grams={wStr(pf.prefFlour)}
                 noPct
                 highlight
@@ -634,12 +635,12 @@ export default function RecipeOutput({
                   return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>Use your primary flour ({f1DisplayName})</span>;
                 })() : undefined}
               />
-              <IngRow label="Water" grams={wStr(pf.prefWater)} noPct
+              <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(pf.prefWater)} noPct
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefWater / pf.prefFlour * 1000) / 10) : undefined}
                 sub={t('recipeOutput.atRoomTemp')} />
               {pf.prefYeastGrams > 0 && (
                 <IngRow
-                  label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem' }}>Yeast (IDY)<YeastTooltip /></span>}
+                  label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem' }}>{t('recipeOutput.ingredientYeast', { type: 'IDY' })}<YeastTooltip /></span>}
                   grams={wStr(pf.prefYeastGrams)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
@@ -686,10 +687,10 @@ export default function RecipeOutput({
               )}
               <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={finalDoughWaterSubNode}
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
-              <IngRow label="Salt" grams={wStr(salt)} noPct
+              <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} noPct
                 advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
-              {oil > 0 && <IngRow label="Olive Oil" grams={wStr(oil)} noPct />}
-              {sugar > 0 && <IngRow label="Sugar" grams={wStr(sugar)} noPct />}
+              {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} noPct />}
+              {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} noPct />}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
                 <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
                   {t('recipeOutput.totalDough')}
@@ -765,8 +766,8 @@ export default function RecipeOutput({
 
           <IngRow
             label={mode === 'simple'
-              ? <span style={{ display: 'inline-flex', alignItems: 'center' }}>Flour<FlourTooltip bakeType={bakeType} /></span>
-              : 'Flour'
+              ? <span style={{ display: 'inline-flex', alignItems: 'center' }}>{t('recipeOutput.ingredientFlour')}<FlourTooltip bakeType={bakeType} /></span>
+              : t('recipeOutput.ingredientFlour')
             }
             grams={wStr(flour)}
             pct="100%"
@@ -790,8 +791,8 @@ export default function RecipeOutput({
               );
             })() : undefined}
           />
-          <IngRow label="Water" grams={wStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
-          <IngRow label="Salt"  grams={wStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
+          <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
+          <IngRow label={t('recipeOutput.ingredientSalt')}  grams={wStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
 
           {yeastInfo && (
             <IngRow
@@ -810,8 +811,8 @@ export default function RecipeOutput({
 
           {yeastInfo && (() => {
             const priorityLabel = ({
-              'flavor': { emoji: '🐢', text: 'Flavour-first yeast — you have plenty of time', color: 'var(--sage)' },
-              'speed':  { emoji: '⚡', text: 'Speed-adjusted yeast — your window is tight',   color: 'var(--gold)' },
+              'flavor': { emoji: '🐢', text: t('recipeOutput.priorityFlavourNote'), color: 'var(--sage)' },
+              'speed':  { emoji: '⚡', text: t('recipeOutput.prioritySpeedNote'),   color: 'var(--gold)' },
             } as Record<string, { emoji: string; text: string; color: string }>)[result.autoPriority ?? ''] ?? { emoji: '⚖️', text: 'Balanced yeast for your schedule', color: 'var(--smoke)' };
             return (
               <>
@@ -902,11 +903,11 @@ export default function RecipeOutput({
           )}
 
           {oil > 0 && (
-            <IngRow label="Olive Oil" grams={wStr(oil)} pct={pctStr(oilPct)} advancedPct={mode === 'custom' ? pctStr(oilPct) : undefined} />
+            <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} pct={pctStr(oilPct)} advancedPct={mode === 'custom' ? pctStr(oilPct) : undefined} />
           )}
 
           {sugar > 0 && (
-            <IngRow label="Sugar" grams={wStr(sugar)} pct={pctStr(sugarPct)} advancedPct={mode === 'custom' ? pctStr(sugarPct) : undefined} />
+            <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} pct={pctStr(sugarPct)} advancedPct={mode === 'custom' ? pctStr(sugarPct) : undefined} />
           )}
 
           {/* TOTAL DOUGH row */}
@@ -992,7 +993,7 @@ export default function RecipeOutput({
             </div>
             {[
               ...(poolishPerBatch !== null ? [{
-                label: prefermentType === 'biga' ? 'Biga' : 'Poolish',
+                label: prefermentType === 'biga' ? t('recipeOutput.ingredientBiga') : t('recipeOutput.ingredientPoolish'),
                 value: `${poolishPerBatch}g`,
                 highlight: false,
                 isTotal: false,
@@ -1044,7 +1045,7 @@ export default function RecipeOutput({
             }}>
               <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
                 <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#7A5A10' }}>
-                  Precision scale recommended — this is a very small amount of yeast.
+                  {t('recipeOutput.precisionScaleMin')}
                 </span>
               </div>
             </div>
@@ -1130,7 +1131,7 @@ export default function RecipeOutput({
               </span>
             </div>
             <div style={{ fontSize: '.75rem', color: D.sub, marginTop: '.4rem', lineHeight: 1.5 }}>
-              Feed your starter 4–12h before mixing. Use it at peak activity — doubled in size, domed on top.
+              {t('recipeOutput.starterFeedNote')}
             </div>
           </div>
 
@@ -1147,7 +1148,7 @@ export default function RecipeOutput({
               textTransform: 'uppercase', letterSpacing: '.06em',
               fontFamily: 'var(--font-dm-mono)', marginBottom: '.7rem',
             }}>
-              Bulk fermentation is ready when…
+              {t('recipeOutput.bulkReadyWhen')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '.45rem' }}>
               {sourdough.bulkCues.map((cue, i) => (
