@@ -410,7 +410,7 @@ export const FLOUR_DB: FlourEntry[] = [
   },
   {
     id: 'francine_pizza',
-    brand: 'Francine', name: 'Farine à Pizza',
+    brand: 'Francine', name: 'Ma Farine à Pizza',
     type: 'T45', country: 'fr',
     w: 200, wPublished: false, protein: 9.3, hydration: [58, 64],
     bestFor: ['newyork', 'pan', 'roman'], crowdFavourite: [],

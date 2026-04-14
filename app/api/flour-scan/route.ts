@@ -14,8 +14,8 @@ export async function POST(request: Request) {
   }
 
   const dbSummary = FLOUR_DB
-    .filter(f => f.wPublished)
-    .map(f => `${f.brand} ${f.name}: W${f.w}, ${f.protein}% protein`)
+    .filter(f => f.brand.length > 0)
+    .map(f => `${f.brand} ${f.name}: W${f.w}, ${f.protein}% protein${f.wPublished ? '' : ' (W estimated)'}`)
     .join('\n');
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
