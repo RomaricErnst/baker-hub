@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: process.env.ANTHROPIC_VISION_MODEL ?? 'claude-haiku-4-5',
       max_tokens: 1000,
       messages: [{
         role: 'user',
@@ -37,27 +37,32 @@ export async function POST(request: Request) {
           },
           {
             type: 'text',
-            text: `You are analyzing a flour bag image for a pizza dough calculator app.
-Extract the following information from the flour bag:
-1. Flour name/brand and product name
-2. W value (strength rating) — look for "W" followed by a number, or "forza" value
-3. Protein percentage — look for "proteine" or "protein" in the nutritional table (per 100g)
+            text: `You are analyzing a flour bag image for a pizza/bread dough calculator.
 
-KNOWN FLOUR DATABASE (authoritative — always use these values if brand matches):
+Your job: extract flour name, W value, and protein percentage.
+
+READABILITY ASSESSMENT — set "readability" based on what you can see:
+- "clear": bag is clearly visible, brand/name readable, at least one of W or protein visible
+- "partial": bag visible but some info is unclear or missing — use estimates for missing values
+- "unreadable": image is too blurry, dark, not a flour bag, or no useful information visible
+
+KNOWN FLOUR DATABASE (use these exact values when brand matches):
 ${dbSummary}
 
-If the bag matches any entry above, return those exact values with confidence "high" and source "database".
-If not found in database, estimate from flour type with confidence "medium" and source "estimated".
-Never return an error — always return your best estimate.
+ESTIMATION RULES when values are not visible:
+- W value by flour type: Italian 00 strong=280, Italian 00 standard=220, French T45 forte=260,
+  French T55/AP=180, French T65/bread=200, T80=170, T110 wholemeal=150, rye=130, Manitoba=350
+- Protein: W280→13%, W220→11.5%, W180→10.5%, W200→11%, W350→14.5%
 
-Respond ONLY with a JSON object, no other text:
+RESPONSE FORMAT — always return this exact JSON, no other text:
 {
-  "name": "brand and product name",
-  "w": number,
-  "protein": number,
+  "name": "brand and product name as shown on bag, or best guess",
+  "w": <positive number, never null or 0>,
+  "protein": <number between 8 and 16>,
   "confidence": "high" | "medium" | "low",
+  "readability": "clear" | "partial" | "unreadable",
   "source": "database" | "estimated",
-  "note": "brief note if W was estimated"
+  "note": "what you could and could not read from the image"
 }`,
           },
         ],

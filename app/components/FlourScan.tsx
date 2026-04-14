@@ -11,10 +11,14 @@ type ScanState = 'upload' | 'analyzing' | 'result' | 'error';
 export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
   const [scanState, setScanState] = useState<ScanState>('upload');
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [extractedResult, setExtractedResult] = useState<{ w: number; protein: number; name: string } | null>(null);
+  const [extractedResult, setExtractedResult] = useState<{
+    w: number; protein: number; name: string;
+    readability: string; confidence: string; note: string;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function analyzeImage(base64: string, mediaType: string) {
+    let text = '';
     try {
       const response = await fetch('/api/flour-scan', {
         method: 'POST',
@@ -26,7 +30,7 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
       if (!response.ok) throw new Error(data.error ?? 'API error');
 
       // Extract text from Anthropic response
-      const text = (data.content?.[0]?.text ?? '').trim();
+      text = (data.content?.[0]?.text ?? '').trim();
 
       // Aggressive cleaning — strip any markdown, backticks, extra text
       // Find JSON object using regex in case there's surrounding text
@@ -36,32 +40,62 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
       const parsed = JSON.parse(jsonMatch[0]);
 
       // Validate — w and name required, protein optional (default to 12)
-      if (parsed.w && parsed.name) {
+      if (parsed.w != null && Number(parsed.w) > 0 && parsed.name) {
         setExtractedResult({
           w: Number(parsed.w),
           protein: Number(parsed.protein ?? 12),
           name: String(parsed.name),
+          readability: String(parsed.readability ?? 'partial'),
+          confidence: String(parsed.confidence ?? 'medium'),
+          note: String(parsed.note ?? ''),
         });
         setScanState('result');
       } else {
-        throw new Error('Missing required fields');
+        throw new Error('Missing required fields in response');
       }
     } catch (err) {
-      console.error('FlourScan error:', err);
+      console.error('FlourScan error:', err, '| Raw API text:', text);
       setScanState('error');
     }
   }
 
   async function handleFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const dataUrl = e.target?.result as string;
-      const base64 = dataUrl.split(',')[1];
-      setImagePreviewUrl(dataUrl);
-      setScanState('analyzing');
-      await analyzeImage(base64, file.type);
-    };
-    reader.readAsDataURL(file);
+    // Convert any image format to JPEG via canvas
+    // This handles HEIC/HEIF from iPhone, AVIF, WebP, etc.
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    // Use canvas to normalise to JPEG
+    const jpeg = await new Promise<string>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize if too large (max 1600px on longest side — enough for text recognition)
+        const MAX = 1600;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+          else { width = Math.round(width * MAX / height); height = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas not available')); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
+      };
+      img.onerror = reject;
+      img.src = dataUrl;
+    });
+
+    const base64 = jpeg.split(',')[1];
+    setImagePreviewUrl(jpeg);
+    setScanState('analyzing');
+    await analyzeImage(base64, 'image/jpeg');
   }
 
   function reset() {
@@ -177,6 +211,34 @@ style={{ display: 'none' }}
             <div style={{ fontWeight: 600, fontSize: '.95rem', color: 'var(--char)', marginBottom: '.5rem', lineHeight: 1.3 }}>
               {extractedResult.name}
             </div>
+            {extractedResult.readability === 'unreadable' && (
+              <div style={{
+                marginTop: '.5rem',
+                padding: '.45rem .7rem',
+                background: '#FEF4EF',
+                border: '1px solid #F5C4B0',
+                borderRadius: '8px',
+                fontSize: '.72rem',
+                color: 'var(--terra)',
+                lineHeight: 1.4,
+              }}>
+                ⚠️ Image unclear — values are estimated. Try a clearer photo of the front of the bag.
+              </div>
+            )}
+            {extractedResult.readability === 'partial' && (
+              <div style={{
+                marginTop: '.5rem',
+                padding: '.45rem .7rem',
+                background: '#FFF8E8',
+                border: '1px solid #E8D080',
+                borderRadius: '8px',
+                fontSize: '.72rem',
+                color: '#7A5A10',
+                lineHeight: 1.4,
+              }}>
+                🔍 Some values estimated — check W and protein match your bag.
+              </div>
+            )}
             <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginBottom: '.5rem' }}>
               <span style={{
                 fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
