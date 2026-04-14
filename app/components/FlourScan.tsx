@@ -11,6 +11,7 @@ type ScanState = 'upload' | 'analyzing' | 'result' | 'error';
 export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
   const [scanState, setScanState] = useState<ScanState>('upload');
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<'image' | 'service'>('image');
   const [extractedResult, setExtractedResult] = useState<{
     w: number; protein: number; name: string;
     readability: string; confidence: string; note: string;
@@ -27,7 +28,10 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? 'API error');
+      if (!response.ok) {
+        const errMsg = data.error ?? 'API error';
+        throw new Error(errMsg);
+      }
 
       // Extract text from Anthropic response
       text = (data.content?.[0]?.text ?? '').trim();
@@ -54,6 +58,9 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
         throw new Error('Missing required fields in response');
       }
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isBilling = msg.includes('credit') || msg.includes('billing') || msg.includes('balance');
+      setScanError(isBilling ? 'service' : 'image');
       console.error('FlourScan error:', err, '| Raw API text:', text);
       setScanState('error');
     }
@@ -300,7 +307,9 @@ style={{ display: 'none' }}
       textAlign: 'center',
     }}>
       <div style={{ fontSize: '.88rem', fontWeight: 600, color: 'var(--terra)', marginBottom: '.4rem' }}>
-        Couldn&apos;t read the bag clearly
+        {scanError === 'service'
+          ? 'Scan temporarily unavailable — enter your flour manually.'
+          : 'Couldn\'t read the bag clearly'}
       </div>
       <div style={{ fontSize: '.8rem', color: 'var(--smoke)', marginBottom: '1rem', lineHeight: 1.5 }}>
         Try a clearer photo with good lighting, showing the front of the bag.
