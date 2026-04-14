@@ -12,9 +12,12 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
   const [scanState, setScanState] = useState<ScanState>('upload');
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [scanError, setScanError] = useState<'image' | 'service'>('image');
+  const [adjusting, setAdjusting] = useState(false);
+  const [adjustedW, setAdjustedW] = useState<number | null>(null);
+  const [adjustedProtein, setAdjustedProtein] = useState<number | null>(null);
   const [extractedResult, setExtractedResult] = useState<{
     w: number; protein: number; name: string;
-    readability: string; confidence: string; note: string;
+    readability: string; confidence: string; source: string; note: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,6 +54,7 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
           name: String(parsed.name),
           readability: String(parsed.readability ?? 'partial'),
           confidence: String(parsed.confidence ?? 'medium'),
+          source: String(parsed.source ?? 'estimated'),
           note: String(parsed.note ?? ''),
         });
         setScanState('result');
@@ -202,8 +206,13 @@ style={{ display: 'none' }}
     );
   }
 
-  // ── STATE 3: Result ──────────────────────────
+  // ── STATE 3: Result ─────────────────────────
   if (scanState === 'result' && extractedResult) {
+    const isDatabase = extractedResult.confidence === 'high' && extractedResult.source === 'database';
+    const isEstimated = !isDatabase;
+    const displayW = adjustedW ?? extractedResult.w;
+    const displayProtein = adjustedProtein ?? extractedResult.protein;
+
     return (
       <div>
         <div style={{ display: 'flex', gap: '.75rem', marginBottom: '1rem', alignItems: 'flex-start' }}>
@@ -215,64 +224,121 @@ style={{ display: 'none' }}
             />
           )}
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: '.95rem', color: 'var(--char)', marginBottom: '.5rem', lineHeight: 1.3 }}>
+            {/* Flour name */}
+            <div style={{ fontWeight: 600, fontSize: '.95rem', color: 'var(--char)', marginBottom: '.4rem', lineHeight: 1.3 }}>
               {extractedResult.name}
             </div>
-            {extractedResult.readability === 'unreadable' && (
+
+            {/* Status banner */}
+            {isDatabase ? (
               <div style={{
-                marginTop: '.5rem',
-                padding: '.45rem .7rem',
-                background: '#FEF4EF',
-                border: '1px solid #F5C4B0',
-                borderRadius: '8px',
-                fontSize: '.72rem',
-                color: 'var(--terra)',
-                lineHeight: 1.4,
+                marginBottom: '.5rem', padding: '.35rem .65rem',
+                background: 'rgba(107,122,90,0.1)', border: '1px solid rgba(107,122,90,0.25)',
+                borderRadius: '8px', fontSize: '.72rem', color: '#4A7A3A', lineHeight: 1.4,
               }}>
-                ⚠️ Image unclear — values are estimated. Try a clearer photo of the front of the bag.
+                ✓ Matched in our flour database
+              </div>
+            ) : (
+              <div style={{
+                marginBottom: '.5rem', padding: '.35rem .65rem',
+                background: '#FDFBF2', border: '1px solid #E8D890',
+                borderRadius: '8px', fontSize: '.72rem', color: '#6A5A10', lineHeight: 1.4,
+              }}>
+                🔍 Values estimated from bag type — looks right for most {extractedResult.name.includes('pizza') ? 'pizza' : ''} flours. Adjust below if your bag shows different numbers.
               </div>
             )}
-            {extractedResult.readability === 'partial' && (
-              <div style={{
-                marginTop: '.5rem',
-                padding: '.45rem .7rem',
-                background: '#FFF8E8',
-                border: '1px solid #E8D080',
-                borderRadius: '8px',
-                fontSize: '.72rem',
-                color: '#7A5A10',
-                lineHeight: 1.4,
-              }}>
-                🔍 Some values estimated — check W and protein match your bag.
+
+            {/* W and protein — tappable when estimated */}
+            {!adjusting ? (
+              <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
+                  color: 'var(--terra)', background: '#FEF4EF',
+                  borderRadius: '20px', padding: '.2rem .6rem',
+                  border: '1px solid rgba(196,82,42,0.2)',
+                }}>
+                  W {displayW}
+                </span>
+                <span style={{
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
+                  color: 'var(--sage)', background: 'rgba(107,122,90,0.1)',
+                  borderRadius: '20px', padding: '.2rem .6rem',
+                  border: '1px solid rgba(107,122,90,0.25)',
+                }}>
+                  {displayProtein}% protein
+                </span>
+                {isEstimated && (
+                  <button
+                    onClick={() => setAdjusting(true)}
+                    style={{
+                      background: 'none', border: 'none', padding: 0,
+                      fontSize: '.7rem', color: 'var(--smoke)',
+                      fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                      textDecoration: 'underline', textUnderlineOffset: '2px',
+                    }}
+                  >
+                    Adjust
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+                <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+                  <label style={{ fontSize: '.72rem', color: 'var(--smoke)', width: '60px', fontFamily: 'var(--font-dm-mono)' }}>
+                    W value
+                  </label>
+                  <input
+                    type="number"
+                    value={adjustedW ?? extractedResult.w}
+                    onChange={e => setAdjustedW(Number(e.target.value))}
+                    style={{
+                      width: '80px', padding: '.3rem .5rem', borderRadius: '8px',
+                      border: '1.5px solid var(--border)', fontFamily: 'var(--font-dm-mono)',
+                      fontSize: '.82rem', color: 'var(--char)', background: 'var(--warm)',
+                    }}
+                  />
+                  <span style={{ fontSize: '.65rem', color: 'var(--smoke)' }}>
+                    (on bag? usually 180–380)
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+                  <label style={{ fontSize: '.72rem', color: 'var(--smoke)', width: '60px', fontFamily: 'var(--font-dm-mono)' }}>
+                    Protein
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={adjustedProtein ?? extractedResult.protein}
+                    onChange={e => setAdjustedProtein(Number(e.target.value))}
+                    style={{
+                      width: '80px', padding: '.3rem .5rem', borderRadius: '8px',
+                      border: '1.5px solid var(--border)', fontFamily: 'var(--font-dm-mono)',
+                      fontSize: '.82rem', color: 'var(--char)', background: 'var(--warm)',
+                    }}
+                  />
+                  <span style={{ fontSize: '.65rem', color: 'var(--smoke)' }}>
+                    % (check nutritional table)
+                  </span>
+                </div>
+                <button
+                  onClick={() => setAdjusting(false)}
+                  style={{
+                    alignSelf: 'flex-start', padding: '.25rem .65rem',
+                    background: 'var(--terra)', border: 'none', borderRadius: '8px',
+                    color: '#fff', fontSize: '.72rem', cursor: 'pointer',
+                    fontFamily: 'var(--font-dm-sans)',
+                  }}
+                >
+                  Done
+                </button>
               </div>
             )}
-            <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginBottom: '.5rem' }}>
-              <span style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
-                color: 'var(--terra)', background: '#FEF4EF',
-                borderRadius: '20px', padding: '.2rem .6rem',
-                border: '1px solid rgba(196,82,42,0.2)',
-              }}>
-                W {extractedResult.w}
-              </span>
-              <span style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
-                color: 'var(--sage)', background: 'rgba(107,122,90,0.1)',
-                borderRadius: '20px', padding: '.2rem .6rem',
-                border: '1px solid rgba(107,122,90,0.25)',
-              }}>
-                {extractedResult.protein}% protein
-              </span>
-            </div>
-            <div style={{ fontSize: '.78rem', color: 'var(--smoke)', fontStyle: 'italic' }}>
-              Tap to adjust if needed
-            </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
           <button
-            onClick={() => onResult(extractedResult)}
+            onClick={() => onResult({ ...extractedResult, w: displayW, protein: displayProtein })}
             style={{
               flex: 2, padding: '.75rem 1rem', border: 'none',
               borderRadius: '12px', background: 'var(--terra)', color: '#fff',
