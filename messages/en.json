@@ -152,7 +152,9 @@
     },
     "adjustLabel": "Fermentation windows · adjust timing",
     "adjustDoughVerb": "drag the green diamond — curve should be near its peak at Bake",
-    "adjustPrefVerb": "drag the gold diamond — curve should be near its peak at Start Dough"
+    "adjustPrefVerb": "drag the gold diamond — curve should be near its peak at Start Dough",
+    "summaryFridgeBlock": "fridge block",
+    "summaryFridgeBlocks": "fridge blocks"
   },
   "dialIn": {
     "title": "Dial in your dough",
@@ -162,6 +164,7 @@
     "saltPct": "Salt %",
     "oilPct": "Oil %",
     "sugarPct": "Sugar %",
+    "hydrationSuffix": "hydration",
     "hydration": {
       "belowClassic": "Below classic range",
       "classic": "✓ Classic range",

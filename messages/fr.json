@@ -152,7 +152,9 @@
     },
     "adjustLabel": "Fenêtres de fermentation · ajuster le timing",
     "adjustDoughVerb": "glissez le losange vert — la courbe doit être proche de son pic à la cuisson",
-    "adjustPrefVerb": "glissez le losange doré — la courbe doit être proche de son pic au démarrage"
+    "adjustPrefVerb": "glissez le losange doré — la courbe doit être proche de son pic au démarrage",
+    "summaryFridgeBlock": "créneau frigo",
+    "summaryFridgeBlocks": "créneaux frigo"
   },
   "dialIn": {
     "title": "Affinez votre pâte",
@@ -162,6 +164,7 @@
     "saltPct": "Sel %",
     "oilPct": "Huile %",
     "sugarPct": "Sucre %",
+    "hydrationSuffix": "hydratation",
     "hydration": {
       "belowClassic": "En dessous de la plage classique",
       "classic": "✓ Plage classique",

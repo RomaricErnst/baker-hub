@@ -934,7 +934,7 @@ export default function Home() {
             <StepCard
               num={1} title={t('steps.1.title')}
               activeStep={activeStep}
-              summary={bakeType === 'pizza' ? 'Pizza' : bakeType === 'bread' ? 'Bread' : undefined}
+              summary={bakeType === 'pizza' ? t('bakeType.pizza.label') : bakeType === 'bread' ? t('bakeType.bread.label') : undefined}
               onEdit={() => setActiveStep(1)}
             >
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -977,7 +977,7 @@ export default function Home() {
             <StepCard
               num={2} title={t('steps.2.title')}
               activeStep={activeStep}
-              summary={styleKey ? ALL_STYLES[styleKey].name : undefined}
+              summary={styleKey ? (locale === 'fr' && (ALL_STYLES[styleKey] as { nameFr?: string }).nameFr ? (ALL_STYLES[styleKey] as { nameFr: string }).nameFr : ALL_STYLES[styleKey].name) : undefined}
               onEdit={() => setActiveStep(2)}
             >
               {bakeType && (
@@ -1096,7 +1096,7 @@ export default function Home() {
             <StepCard
               num={4} title={t('steps.4.title')}
               activeStep={activeStep}
-              summary={ovenData ? ovenData.name : ''}
+              summary={ovenData ? (locale === 'fr' && (ovenData as { nameFr?: string }).nameFr ? (ovenData as { nameFr: string }).nameFr : ovenData.name) : ''}
               onEdit={() => setActiveStep(4)}
             >
               <OvenPicker
@@ -1128,7 +1128,7 @@ export default function Home() {
             <StepCard
               num={6} title={t('steps.6.title')}
               activeStep={activeStep}
-              summary={mixerType ? MIXER_TYPES[mixerType].name : undefined}
+              summary={mixerType ? (locale === 'fr' && (MIXER_TYPES[mixerType] as { nameFr?: string }).nameFr ? (MIXER_TYPES[mixerType] as { nameFr: string }).nameFr : MIXER_TYPES[mixerType].name) : undefined}
               onEdit={() => setActiveStep(6)}
             >
               <MixerPicker
@@ -1211,7 +1211,7 @@ export default function Home() {
             <StepCard
               num={8} title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
               activeStep={activeStep}
-              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
+              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : undefined}
               onEdit={() => setActiveStep(8)}
             >
               <SchedulePicker
@@ -1445,7 +1445,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={1} title={t('steps.1.title')}
               activeStep={advancedStep}
-              summary={bakeType === 'pizza' ? 'Pizza' : bakeType === 'bread' ? 'Bread' : undefined}
+              summary={bakeType === 'pizza' ? t('bakeType.pizza.label') : bakeType === 'bread' ? t('bakeType.bread.label') : undefined}
               onEdit={() => setAdvancedStep(1)}
             >
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -1484,7 +1484,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={2} title={t('steps.2.title')}
               activeStep={advancedStep}
-              summary={styleKey ? ALL_STYLES[styleKey].name : undefined}
+              summary={styleKey ? (locale === 'fr' && (ALL_STYLES[styleKey] as { nameFr?: string }).nameFr ? (ALL_STYLES[styleKey] as { nameFr: string }).nameFr : ALL_STYLES[styleKey].name) : undefined}
               onEdit={() => setAdvancedStep(2)}
             >
               {bakeType && (
@@ -1623,7 +1623,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={4} title={t('steps.4.title')}
               activeStep={advancedStep}
-              summary={ovenData ? ovenData.name : ''}
+              summary={ovenData ? (locale === 'fr' && (ovenData as { nameFr?: string }).nameFr ? (ovenData as { nameFr: string }).nameFr : ovenData.name) : ''}
               onEdit={() => setAdvancedStep(4)}
             >
               <OvenPicker
@@ -1657,7 +1657,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={6} title={t('steps.6.title')}
               activeStep={advancedStep}
-              summary={mixerType ? MIXER_TYPES[mixerType].name : undefined}
+              summary={mixerType ? (locale === 'fr' && (MIXER_TYPES[mixerType] as { nameFr?: string }).nameFr ? (MIXER_TYPES[mixerType] as { nameFr: string }).nameFr : MIXER_TYPES[mixerType].name) : undefined}
               onEdit={() => setAdvancedStep(6)}
             >
               <MixerPicker
@@ -1798,7 +1798,7 @@ export default function Home() {
                 idPrefix="adv-step"
                 num={9} title={t('preferment.stepTitle')}
                 activeStep={advancedStep}
-                summary={prefermentType !== 'none' ? PREFERMENT_TYPES[prefermentType].name : t('preferment.direct')}
+                summary={prefermentType !== 'none' ? (locale === 'fr' && (PREFERMENT_TYPES[prefermentType] as { nameFr?: string }).nameFr ? (PREFERMENT_TYPES[prefermentType] as { nameFr: string }).nameFr : PREFERMENT_TYPES[prefermentType].name) : t('preferment.direct')}
                 onEdit={() => setAdvancedStep(9)}
               >
                 <PrefermentPicker
@@ -1822,7 +1822,7 @@ export default function Home() {
               num={10}
               title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
               activeStep={advancedStep}
-              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} fridge ${blocks.length === 1 ? 'block' : 'blocks'}` : undefined}
+              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : undefined}
               onEdit={() => setAdvancedStep(10)}
             >
               <SchedulePicker
@@ -1849,7 +1849,7 @@ export default function Home() {
               num={11}
               title={t('dialIn.title')}
               activeStep={advancedStep}
-              summary={manualHydration !== undefined ? `${manualHydration}% hydration` : styleKey ? `${ALL_STYLES[styleKey].hydration}% hydration` : undefined}
+              summary={manualHydration !== undefined ? `${manualHydration}% ${t('dialIn.hydrationSuffix')}` : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : undefined}
               onEdit={() => setAdvancedStep(11)}
             >
               <div>
