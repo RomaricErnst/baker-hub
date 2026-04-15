@@ -38,7 +38,14 @@
   },
   "pizzaNight": {
     "checkboxTitle": "Soirée Pizza",
-    "checkboxSub": "Garnitures, guide de préparation & liste de courses"
+    "checkboxSub": "Garnitures, guide de préparation & liste de courses",
+    "tabTitle": "Soirée Pizza",
+    "pizza": "pizza",
+    "pizzas": "pizzas",
+    "bakeAt": "cuisson à",
+    "chooseToppings": "Choisissez vos garnitures...",
+    "select": "Choisir",
+    "comingSoon": "Sélecteur de garnitures et liste de courses bientôt disponibles. Votre plan de pâte est prêt dans l'onglet Recette."
   },
   "hero": {
     "headline": "Façonnez votre pâte",

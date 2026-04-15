@@ -822,7 +822,7 @@ export default function Home() {
               {/* Pizza Night checkbox — pizza only */}
               {bakeType === 'pizza' && (
                 <div
-                  onClick={() => setPizzaNightEnabled(v => !v)}
+                  onClick={() => { setPizzaNightEnabled(v => !v); if (!pizzaNightEnabled) setActiveTab('pizzanight'); else setActiveTab('setup'); }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -1349,6 +1349,88 @@ export default function Home() {
                 />
               )}
             </div>{/* end guide tab */}
+
+            {/* ── Pizza Night tab content ── */}
+            {pizzaNightEnabled && (
+              <div style={{ display: activeTab === 'pizzanight' ? 'block' : 'none' }}>
+                <div style={{
+                  background: 'white',
+                  borderRadius: '16px',
+                  border: '1px solid #E0D8CF',
+                  overflow: 'hidden',
+                  marginBottom: '1rem',
+                }}>
+                  {/* Header */}
+                  <div style={{
+                    background: '#1A1612',
+                    padding: '20px 20px 16px',
+                    borderBottom: '2px solid #D4A853',
+                  }}>
+                    <div style={{
+                      fontFamily: 'var(--font-playfair)',
+                      fontSize: '20px',
+                      fontWeight: 700,
+                      color: '#D4A853',
+                      marginBottom: '4px',
+                    }}>
+                      {t('pizzaNight.tabTitle')}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#8A7F78' }}>
+                      {numItems} {numItems === 1 ? t('pizzaNight.pizza') : t('pizzaNight.pizzas')} · {styleKey ? (ALL_STYLES[styleKey]?.name ?? '') : ''} · {t('pizzaNight.bakeAt')} {eatTime ? formatTime(eatTime) : '--'}
+                    </div>
+                  </div>
+
+                  {/* Pizza slots */}
+                  <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {Array.from({ length: numItems }).map((_, i) => (
+                      <div key={i} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '12px 14px',
+                        borderRadius: '10px',
+                        border: '1px solid #E8E0D5',
+                        background: '#FDFBF7',
+                      }}>
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '50%',
+                          background: '#D4A85318', border: '1px solid #D4A85340',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: '#B8903A', flexShrink: 0,
+                        }}>
+                          {i + 1}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', color: '#8A7F78', fontStyle: 'italic' }}>
+                            {t('pizzaNight.chooseToppings')}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontSize: '12px', color: '#C4522A', fontWeight: 500, cursor: 'pointer',
+                        }}>
+                          {t('pizzaNight.select')} →
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Coming soon notice */}
+                  <div style={{
+                    margin: '0 16px 16px',
+                    padding: '12px 14px',
+                    borderRadius: '10px',
+                    background: '#F5F0E8',
+                    border: '1px dashed #D4A853',
+                    fontSize: '12px',
+                    color: '#8A7F78',
+                    textAlign: 'center',
+                    lineHeight: 1.5,
+                  }}>
+                    {t('pizzaNight.comingSoon')}
+                  </div>
+                </div>
+              </div>
+            )}
 
           </div>
         )}
@@ -2305,6 +2387,88 @@ export default function Home() {
                 />
               )}
             </div>{/* end guide tab */}
+
+            {/* ── Pizza Night tab content ── */}
+            {pizzaNightEnabled && (
+              <div style={{ display: activeTab === 'pizzanight' ? 'block' : 'none' }}>
+                <div style={{
+                  background: 'white',
+                  borderRadius: '16px',
+                  border: '1px solid #E0D8CF',
+                  overflow: 'hidden',
+                  marginBottom: '1rem',
+                }}>
+                  {/* Header */}
+                  <div style={{
+                    background: '#1A1612',
+                    padding: '20px 20px 16px',
+                    borderBottom: '2px solid #D4A853',
+                  }}>
+                    <div style={{
+                      fontFamily: 'var(--font-playfair)',
+                      fontSize: '20px',
+                      fontWeight: 700,
+                      color: '#D4A853',
+                      marginBottom: '4px',
+                    }}>
+                      {t('pizzaNight.tabTitle')}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#8A7F78' }}>
+                      {numItems} {numItems === 1 ? t('pizzaNight.pizza') : t('pizzaNight.pizzas')} · {styleKey ? (ALL_STYLES[styleKey]?.name ?? '') : ''} · {t('pizzaNight.bakeAt')} {eatTime ? formatTime(eatTime) : '--'}
+                    </div>
+                  </div>
+
+                  {/* Pizza slots */}
+                  <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {Array.from({ length: numItems }).map((_, i) => (
+                      <div key={i} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '12px 14px',
+                        borderRadius: '10px',
+                        border: '1px solid #E8E0D5',
+                        background: '#FDFBF7',
+                      }}>
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '50%',
+                          background: '#D4A85318', border: '1px solid #D4A85340',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: '#B8903A', flexShrink: 0,
+                        }}>
+                          {i + 1}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', color: '#8A7F78', fontStyle: 'italic' }}>
+                            {t('pizzaNight.chooseToppings')}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontSize: '12px', color: '#C4522A', fontWeight: 500, cursor: 'pointer',
+                        }}>
+                          {t('pizzaNight.select')} →
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Coming soon notice */}
+                  <div style={{
+                    margin: '0 16px 16px',
+                    padding: '12px 14px',
+                    borderRadius: '10px',
+                    background: '#F5F0E8',
+                    border: '1px dashed #D4A853',
+                    fontSize: '12px',
+                    color: '#8A7F78',
+                    textAlign: 'center',
+                    lineHeight: 1.5,
+                  }}>
+                    {t('pizzaNight.comingSoon')}
+                  </div>
+                </div>
+              </div>
+            )}
 
           </div>
         )}
