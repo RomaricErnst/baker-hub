@@ -29,11 +29,16 @@
   },
   "generate": {
     "generateBtn": "Generate my bake plan →",
+    "generateBtnPizzaNight": "Plan my pizza night →",
     "editSetup": "← Edit dough setup",
     "staleBanner": "⚠️ Settings changed — regenerate to update your bake plan",
     "regenerate": "Regenerate",
     "emptyBakePlan": "Complete your dough setup to generate your bake plan",
     "confirmOverwrite": "This will overwrite your saved bake plan. Continue?"
+  },
+  "pizzaNight": {
+    "checkboxTitle": "Pizza Night",
+    "checkboxSub": "Toppings, prep guide & shopping list"
   },
   "hero": {
     "headline": "Craft your dough",

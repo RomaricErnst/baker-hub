@@ -29,11 +29,16 @@
   },
   "generate": {
     "generateBtn": "Générer mon planning →",
+    "generateBtnPizzaNight": "Planifier ma soirée pizza →",
     "editSetup": "← Modifier les paramètres",
     "staleBanner": "⚠️ Réglages modifiés — régénérez pour mettre à jour",
     "regenerate": "Régénérer",
     "emptyBakePlan": "Complétez vos paramètres pour générer votre recette",
     "confirmOverwrite": "Ceci écrasera votre recette sauvegardée. Continuer ?"
+  },
+  "pizzaNight": {
+    "checkboxTitle": "Soirée Pizza",
+    "checkboxSub": "Garnitures, guide de préparation & liste de courses"
   },
   "hero": {
     "headline": "Façonnez votre pâte",

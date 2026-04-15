@@ -479,7 +479,7 @@ export default function Home() {
     setBakeType(bt);
     setStyleKey(null);
     setOvenType(bt === 'bread' ? 'dutch_oven' : 'home_oven_steel');
-    setActiveStep(2);
+    setActiveStep(1);
   }
 
   function selectStyle(sk: StyleKey) {
@@ -655,14 +655,14 @@ export default function Home() {
     // Advance to scheduler step (step 8 simple, step 10 custom)
     // All prior steps are marked completed
     if (isCustom) {
-      setAdvancedStep(10);
+      setAdvancedStep(9);
     } else {
-      setActiveStep(8);
+      setActiveStep(7);
     }
 
     // Scroll to scheduler step after state settles
     setTimeout(() => {
-      const stepId = isCustom ? 'adv-step-10' : 'step-8';
+      const stepId = isCustom ? 'adv-step-9' : 'step-7';
       const el = document.getElementById(stepId);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 150);
@@ -674,7 +674,6 @@ export default function Home() {
   const canGenerate = tab === 'simple' ? simpleRequiredDone : customRequiredDone;
 
   const simpleStepsCompleted = [
-    !!bakeType,
     !!styleKey,
     !!(numItems && itemWeight),
     !!ovenType,
@@ -683,9 +682,8 @@ export default function Home() {
     !!yeastType,
     !!eatTime,
   ].filter(Boolean).length;
-  const simpleStepsTotal = 8;
+  const simpleStepsTotal = 7;
   const customStepsCompleted = [
-    !!bakeType,
     !!styleKey,
     !!(numItems && itemWeight),
     !!ovenType,
@@ -697,7 +695,7 @@ export default function Home() {
     (manualHydration ?? 0) > 0,
     !!eatTime,
   ].filter(Boolean).length;
-  const customStepsTotal = 11;
+  const customStepsTotal = 10;
   const progressFraction = tab === 'simple'
     ? (simpleRequiredDone ? 1 : (activeStep - 1) / simpleStepsTotal)
     : (customRequiredDone ? 1 : (advancedStep - 1) / customStepsTotal);
@@ -714,127 +712,153 @@ export default function Home() {
       {/* ── Main content ───────────────────── */}
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) 80px' }}>
 
-        {/* ── Mode selector ──────────────────────── */}
-        <div ref={modeSelectorRef}>
+        {/* ── Hero + bake type picker ── */}
+        <div ref={modeSelectorRef} style={{ textAlign: 'center', marginBottom: '16px', padding: '0 8px' }}>
+          <h1 style={{
+            fontFamily: 'var(--font-playfair)',
+            fontSize: 'clamp(1.4rem, 5vw, 2rem)',
+            fontWeight: 700,
+            color: 'var(--char)',
+            lineHeight: 1.2,
+            margin: '0 0 20px',
+          }}>
+            {t('hero.headline')}{' '}
+            <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>
+              {t('hero.headlineEm')}
+            </em>
+          </h1>
 
-          {/* Hero headline — always visible */}
-          <div style={{ textAlign: 'center', marginBottom: '16px', padding: '0 8px' }}>
-            <h1 style={{
-              fontFamily: 'var(--font-playfair)',
-              fontSize: 'clamp(1.4rem, 5vw, 2rem)',
-              fontWeight: 700,
-              color: 'var(--char)',
-              lineHeight: 1.2,
-              margin: 0,
-            }}>
-              {t('hero.headline')}{' '}
-              <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>
-                {t('hero.headlineEm')}
-              </em>
-            </h1>
+          {/* Pizza / Bread picker */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', maxWidth: '480px', margin: '0 auto 16px' }}>
+            {([
+              { type: 'pizza' as BakeType, image: '/bake_pizza.png', label: t('bakeType.pizza.label'), desc: t('bakeType.pizza.desc'), activeBorder: 'var(--terra)', activeBg: '#FFF8F3' },
+              { type: 'bread' as BakeType, image: '/bake_bread.png', label: t('bakeType.bread.label'), desc: t('bakeType.bread.desc'), activeBorder: 'var(--bread)', activeBg: 'var(--bread-l)' },
+            ]).map(opt => (
+              <div
+                key={opt.type}
+                onClick={() => {
+                  selectBakeType(opt.type);
+                  if (opt.type === 'bread') setPizzaNightEnabled(false);
+                }}
+                onMouseEnter={() => setHoveredBakeType(opt.type)}
+                onMouseLeave={() => setHoveredBakeType(null)}
+                style={{
+                  padding: '1.5rem 1rem 1.25rem',
+                  textAlign: 'center',
+                  borderRadius: '18px',
+                  cursor: 'pointer',
+                  border: `2px solid ${bakeType === opt.type ? opt.activeBorder : 'var(--border)'}`,
+                  background: bakeType === opt.type ? opt.activeBg : 'var(--card)',
+                  boxShadow: hoveredBakeType === opt.type
+                    ? 'var(--card-shadow-hover)'
+                    : bakeType === opt.type
+                      ? `0 0 0 4px ${opt.type === 'bread' ? 'rgba(139,105,20,.1)' : 'rgba(196,82,42,.1)'}`
+                      : 'var(--card-shadow)',
+                  transform: hoveredBakeType === opt.type ? 'translateY(-3px)' : 'none',
+                  transition: 'all .2s',
+                }}
+              >
+                <img src={opt.image} alt={opt.label} style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '12px', marginBottom: '.75rem' }} />
+                <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '.25rem' }}>{opt.label}</div>
+                <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.5 }}>{opt.desc}</div>
+              </div>
+            ))}
           </div>
 
-          {/* Mode cards — always rendered, shrink in place when mode chosen */}
-          <div style={{ display: 'flex', gap: '10px', maxWidth: '480px', margin: '0 auto 12px' }}>
+          {/* Mode + Pizza Night card — only shown after bakeType selected */}
+          {bakeType && (
+            <div style={{ maxWidth: '480px', margin: '0 auto', background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '14px', padding: '12px' }}>
 
-            {/* Simple card */}
-            <div
-              onClick={() => {
-                if (tab === 'custom') {
-                  customOnlyStateRef.current = { flourBlend, hydration: manualHydration, oil: manualOil, sugar: manualSugar, prefermentType, prefermentFlourPct };
-                  setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
-                }
-                setTab('simple'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
-                suppressNextScrollRef.current = true;
-              }}
-              style={{
-                flex: 1,
-                minWidth: '160px',
-                maxWidth: '220px',
-                border: tab === 'simple' ? '2px solid var(--terra)' : '0.5px solid var(--border)',
-                borderRadius: '14px',
-                padding: modeChosen ? '10px 12px' : '14px 12px',
-                background: tab === 'simple' ? 'white' : 'var(--warm)',
-                cursor: 'pointer',
-                transition: 'padding 0.25s',
-              }}
-            >
-              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--char)', marginBottom: modeChosen ? '3px' : '10px', transition: 'margin-bottom 0.25s' }}>
-                {t('modeCards.simple.title')}
-              </div>
-              {/* Bullets collapse smoothly when mode is chosen */}
-              <div style={{ overflow: 'hidden', maxHeight: modeChosen ? '0' : '160px', transition: 'max-height 0.3s ease', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                {[
-                  t('modeCards.simple.bullet1'),
-                  t('modeCards.simple.bullet2'),
-                  t('modeCards.simple.bullet3'),
-                  t('modeCards.simple.bullet4'),
-                ].filter(Boolean).map((b, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--sage)', flexShrink: 0, marginTop: '1px' }}>✓</span>
-                    <span style={{ fontSize: '11px', color: 'var(--ash)', lineHeight: 1.3 }}>{b}</span>
+              {/* Simple / Custom toggle */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: bakeType === 'pizza' ? '12px' : '0' }}>
+                {([
+                  { key: 'simple' as const, title: t('modeCards.simple.title'), collapsed: t('modeCards.simple.collapsed') },
+                  { key: 'custom' as const, title: t('modeCards.custom.title'), collapsed: t('modeCards.custom.collapsed') },
+                ]).map(m => (
+                  <div
+                    key={m.key}
+                    onClick={() => {
+                      if (m.key === 'simple' && tab === 'custom') {
+                        customOnlyStateRef.current = { flourBlend, hydration: manualHydration, oil: manualOil, sugar: manualSugar, prefermentType, prefermentFlourPct };
+                        setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
+                      }
+                      if (m.key === 'custom' && tab !== 'custom') {
+                        if (customOnlyStateRef.current) {
+                          setFlourBlend(customOnlyStateRef.current.flourBlend);
+                          setManualHydration(customOnlyStateRef.current.hydration);
+                          setManualOil(customOnlyStateRef.current.oil);
+                          setManualSugar(customOnlyStateRef.current.sugar);
+                          setPrefermentType(customOnlyStateRef.current.prefermentType);
+                          setPrefermentFlourPct(customOnlyStateRef.current.prefermentFlourPct);
+                        } else if (styleKey) {
+                          const s = ALL_STYLES[styleKey];
+                          setManualHydration(s.hydration); setManualOil(s.oil); setManualSugar(s.sugar);
+                        }
+                      }
+                      setTab(m.key); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
+                      suppressNextScrollRef.current = true;
+                    }}
+                    style={{
+                      flex: 1,
+                      border: tab === m.key ? '2px solid var(--terra)' : '0.5px solid var(--border)',
+                      borderRadius: '10px',
+                      padding: '10px 12px',
+                      background: tab === m.key ? 'white' : 'transparent',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 700, color: 'var(--char)', marginBottom: '2px' }}>
+                      {m.title}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--smoke)' }}>
+                      {m.collapsed}
+                    </div>
                   </div>
                 ))}
               </div>
-              {/* Subtitle appears when collapsed */}
-              <div style={{ overflow: 'hidden', maxHeight: modeChosen ? '40px' : '0', transition: 'max-height 0.3s ease', fontSize: '11px', color: 'var(--smoke)' }}>
-                {t('modeCards.simple.collapsed')}
-              </div>
-            </div>
 
-            {/* Custom card */}
-            <div
-              onClick={() => {
-                if (tab !== 'custom') {
-                  if (customOnlyStateRef.current) {
-                    setFlourBlend(customOnlyStateRef.current.flourBlend);
-                    setManualHydration(customOnlyStateRef.current.hydration);
-                    setManualOil(customOnlyStateRef.current.oil);
-                    setManualSugar(customOnlyStateRef.current.sugar);
-                    setPrefermentType(customOnlyStateRef.current.prefermentType);
-                    setPrefermentFlourPct(customOnlyStateRef.current.prefermentFlourPct);
-                  } else if (styleKey) {
-                    const s = ALL_STYLES[styleKey];
-                    setManualHydration(s.hydration); setManualOil(s.oil); setManualSugar(s.sugar);
-                  }
-                }
-                setTab('custom'); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
-                suppressNextScrollRef.current = true;
-              }}
-              style={{
-                flex: 1,
-                minWidth: '160px',
-                maxWidth: '220px',
-                border: tab === 'custom' ? '2px solid var(--terra)' : '0.5px solid var(--border)',
-                borderRadius: '14px',
-                padding: modeChosen ? '10px 12px' : '14px 12px',
-                background: tab === 'custom' ? 'white' : 'var(--warm)',
-                cursor: 'pointer',
-                transition: 'padding 0.25s',
-              }}
-            >
-              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--char)', marginBottom: modeChosen ? '3px' : '10px', transition: 'margin-bottom 0.25s' }}>
-                {t('modeCards.custom.title')}
-              </div>
-              <div style={{ overflow: 'hidden', maxHeight: modeChosen ? '0' : '160px', transition: 'max-height 0.3s ease', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                {[
-                  t('modeCards.custom.bullet1'),
-                  t('modeCards.custom.bullet2'),
-                  t('modeCards.custom.bullet3'),
-                  t('modeCards.custom.bullet4'),
-                ].filter(Boolean).map((b, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--sage)', flexShrink: 0, marginTop: '1px' }}>✓</span>
-                    <span style={{ fontSize: '11px', color: 'var(--ash)', lineHeight: 1.3 }}>{b}</span>
+              {/* Pizza Night checkbox — pizza only */}
+              {bakeType === 'pizza' && (
+                <div
+                  onClick={() => setPizzaNightEnabled(v => !v)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    border: pizzaNightEnabled ? '1.5px solid #D4A853' : '1px dashed #D4A853',
+                    background: pizzaNightEnabled ? '#FFF9EE' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <div style={{
+                    width: '18px', height: '18px', borderRadius: '5px', flexShrink: 0,
+                    border: pizzaNightEnabled ? 'none' : '1.5px solid #D4A853',
+                    background: pizzaNightEnabled ? '#D4A853' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {pizzaNightEnabled && (
+                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                        <path d="M2 5.5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
                   </div>
-                ))}
-              </div>
-              <div style={{ overflow: 'hidden', maxHeight: modeChosen ? '40px' : '0', transition: 'max-height 0.3s ease', fontSize: '11px', color: 'var(--smoke)' }}>
-                {t('modeCards.custom.collapsed')}
-              </div>
+                  <div style={{ flex: 1, textAlign: 'left' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 500, color: '#1A1612', marginBottom: '1px' }}>
+                      {t('pizzaNight.checkboxTitle')}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#8A7F78' }}>
+                      {t('pizzaNight.checkboxSub')}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-
-          </div>
+          )}
         </div>
 
         {/* ── Progress bar ── */}
@@ -869,55 +893,12 @@ export default function Home() {
             {/* ── Setup tab content ── */}
             <div style={{ display: activeTab === 'setup' ? 'flex' : 'none', flexDirection: 'column', gap: '1rem' }}>
 
-            {/* ─── STEP 1: Bake type ───────────────── */}
+            {/* ─── STEP 1: Style picker ────────────── */}
             <StepCard
-              num={1} title={t('steps.1.title')}
-              activeStep={activeStep}
-              summary={bakeType === 'pizza' ? t('bakeType.pizza.label') : bakeType === 'bread' ? t('bakeType.bread.label') : undefined}
-              onEdit={() => setActiveStep(1)}
-            >
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                {([
-                  { type: 'pizza' as BakeType, emoji: '🍕', image: '/bake_pizza.png', label: t('bakeType.pizza.label'),
-                    desc: t('bakeType.pizza.desc'),
-                    active_bg: '#FFF8F3', active_border: 'var(--terra)' },
-                  { type: 'bread' as BakeType, emoji: '🍞', image: '/bake_bread.png', label: t('bakeType.bread.label'),
-                    desc: t('bakeType.bread.desc'),
-                    active_bg: 'var(--bread-l)', active_border: 'var(--bread)' },
-                ]).map(opt => (
-                  <div
-                    key={opt.type}
-                    onClick={() => selectBakeType(opt.type)}
-                    onMouseEnter={() => setHoveredBakeType(opt.type)}
-                    onMouseLeave={() => setHoveredBakeType(null)}
-                    style={{
-                      padding: '2rem 1rem 1.75rem',
-                      textAlign: 'center', borderRadius: '18px', cursor: 'pointer',
-                      border: `2px solid ${bakeType === opt.type ? opt.active_border : 'var(--border)'}`,
-                      background: bakeType === opt.type ? opt.active_bg : 'var(--card)',
-                      boxShadow: hoveredBakeType === opt.type
-                        ? 'var(--card-shadow-hover)'
-                        : bakeType === opt.type
-                          ? `0 0 0 4px ${opt.type === 'bread' ? 'rgba(139,105,20,.1)' : 'rgba(196,82,42,.1)'}`
-                          : 'var(--card-shadow)',
-                      transform: hoveredBakeType === opt.type ? 'translateY(-3px)' : 'none',
-                      transition: 'all .2s',
-                    }}
-                  >
-                    <img src={opt.image} alt={opt.label} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '12px', marginBottom: '.75rem' }} />
-                    <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '.3rem' }}>{opt.label}</div>
-                    <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.5 }}>{opt.desc}</div>
-                  </div>
-                ))}
-              </div>
-            </StepCard>
-
-            {/* ─── STEP 2: Style picker ────────────── */}
-            <StepCard
-              num={2} title={t('steps.2.title')}
+              num={1} title={t('steps.2.title')}
               activeStep={activeStep}
               summary={styleKey ? (locale === 'fr' && (ALL_STYLES[styleKey] as { nameFr?: string }).nameFr ? (ALL_STYLES[styleKey] as { nameFr: string }).nameFr : ALL_STYLES[styleKey].name) : undefined}
-              onEdit={() => setActiveStep(2)}
+              onEdit={() => setActiveStep(1)}
             >
               {bakeType && (
                 <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
@@ -926,10 +907,10 @@ export default function Home() {
 
             {/* ─── STEP 3: Quantity ────────────────── */}
             <StepCard
-              num={3} title={t('steps.3.title')}
+              num={2} title={t('steps.3.title')}
               activeStep={activeStep}
               summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
-              onEdit={() => setActiveStep(3)}
+              onEdit={() => setActiveStep(2)}
             >
               {(() => {
                 const showDiam = bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '');
@@ -1028,30 +1009,30 @@ export default function Home() {
                   </div>
                 );
               })()}
-              <ContinueBtn onClick={() => advance(3)} />
+              <ContinueBtn onClick={() => advance(2)} />
             </StepCard>
 
             {/* ─── STEP 4: Oven ────────────────────── */}
             <StepCard
-              num={4} title={t('steps.4.title')}
+              num={3} title={t('steps.4.title')}
               activeStep={activeStep}
               summary={ovenData ? (locale === 'fr' && (ovenData as { nameFr?: string }).nameFr ? (ovenData as { nameFr: string }).nameFr : ovenData.name) : ''}
-              onEdit={() => setActiveStep(4)}
+              onEdit={() => setActiveStep(3)}
             >
               <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
                 styleKey={styleKey}
                 selected={ovenType}
-                onSelect={ot => { setOvenType(ot); advance(4); }}
+                onSelect={ot => { setOvenType(ot); advance(3); }}
               />
             </StepCard>
 
             {/* ─── STEP 5: Climate ─────────────────── */}
             <StepCard
-              num={5} title={t('steps.5.title')}
+              num={4} title={t('steps.5.title')}
               activeStep={activeStep}
               summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
-              onEdit={() => setActiveStep(5)}
+              onEdit={() => setActiveStep(4)}
             >
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
@@ -1060,19 +1041,19 @@ export default function Home() {
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
 
-              <ContinueBtn onClick={() => advance(5)} />
+              <ContinueBtn onClick={() => advance(4)} />
             </StepCard>
 
             {/* ─── STEP 6: Mixer ───────────────────── */}
             <StepCard
-              num={6} title={t('steps.6.title')}
+              num={5} title={t('steps.6.title')}
               activeStep={activeStep}
               summary={mixerType ? (locale === 'fr' && (MIXER_TYPES[mixerType] as { nameFr?: string }).nameFr ? (MIXER_TYPES[mixerType] as { nameFr: string }).nameFr : MIXER_TYPES[mixerType].name) : undefined}
-              onEdit={() => setActiveStep(6)}
+              onEdit={() => setActiveStep(5)}
             >
               <MixerPicker
                 selected={mixerType}
-                onSelect={mt => { setMixerType(mt); advance(6); }}
+                onSelect={mt => { setMixerType(mt); advance(5); }}
                 styleKey={styleKey ?? undefined}
                 bakeType={bakeType ?? undefined}
                 kitchenTemp={kitchenTemp}
@@ -1081,10 +1062,10 @@ export default function Home() {
 
             {/* ─── STEP 7: Yeast type ──────────────── */}
             <StepCard
-              num={7} title={t('steps.7.title')}
+              num={6} title={t('steps.7.title')}
               activeStep={activeStep}
               summary={yeastType ? (locale === 'fr' && (YEAST_TYPES[yeastType] as { nameFr?: string }).nameFr ? (YEAST_TYPES[yeastType] as { nameFr: string }).nameFr : YEAST_TYPES[yeastType].name) : undefined}
-              onEdit={() => setActiveStep(7)}
+              onEdit={() => setActiveStep(6)}
             >
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem', marginBottom: '.65rem' }}>
@@ -1100,7 +1081,7 @@ export default function Home() {
                     return (
                       <div
                         key={yt}
-                        onClick={() => { setYeastType(yt); advance(7); }}
+                        onClick={() => { setYeastType(yt); advance(6); }}
                         style={{
                           border: `2px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
                           borderRadius: '14px', padding: '.75rem .75rem',
@@ -1148,10 +1129,10 @@ export default function Home() {
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
             <StepCard
-              num={8} title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
+              num={7} title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
               activeStep={activeStep}
               summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : undefined}
-              onEdit={() => setActiveStep(8)}
+              onEdit={() => setActiveStep(7)}
             >
               <SchedulePicker
                 mode="simple"
@@ -1188,7 +1169,7 @@ export default function Home() {
                     boxShadow: '0 4px 16px rgba(196,82,42,0.3)',
                   }}
                 >
-                  {t('generate.generateBtn')}
+                  {pizzaNightEnabled ? t('generate.generateBtnPizzaNight') : t('generate.generateBtn')}
                 </button>
               </div>
             )}
@@ -1379,52 +1360,13 @@ export default function Home() {
             {/* ── Setup tab content ── */}
             <div style={{ display: activeTab === 'setup' ? 'flex' : 'none', flexDirection: 'column', gap: '1rem' }}>
 
-            {/* ─── ADV STEP 1: Bake type ───────────── */}
+            {/* ─── ADV STEP 1: Style picker ────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={1} title={t('steps.1.title')}
-              activeStep={advancedStep}
-              summary={bakeType === 'pizza' ? t('bakeType.pizza.label') : bakeType === 'bread' ? t('bakeType.bread.label') : undefined}
-              onEdit={() => setAdvancedStep(1)}
-            >
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                {([
-                  { type: 'pizza' as BakeType, emoji: '🍕', image: '/bake_pizza.png', label: t('bakeType.pizza.label'),
-                    desc: t('bakeType.pizza.desc'),
-                    active_bg: '#FFF8F3', active_border: 'var(--terra)' },
-                  { type: 'bread' as BakeType, emoji: '🍞', image: '/bake_bread.png', label: t('bakeType.bread.label'),
-                    desc: t('bakeType.bread.desc'),
-                    active_bg: 'var(--bread-l)', active_border: 'var(--bread)' },
-                ]).map(opt => (
-                  <div
-                    key={opt.type}
-                    onClick={() => { setBakeType(opt.type); setStyleKey(null); setAdvancedStep(2); }}
-                    style={{
-                      padding: '2rem 1rem 1.75rem',
-                      textAlign: 'center', borderRadius: '18px', cursor: 'pointer',
-                      border: `2px solid ${bakeType === opt.type ? opt.active_border : 'var(--border)'}`,
-                      background: bakeType === opt.type ? opt.active_bg : 'var(--card)',
-                      boxShadow: bakeType === opt.type
-                        ? `0 0 0 4px ${opt.type === 'bread' ? 'rgba(139,105,20,.1)' : 'rgba(196,82,42,.1)'}`
-                        : 'var(--card-shadow)',
-                      transition: 'all .2s',
-                    }}
-                  >
-                    <img src={opt.image} alt={opt.label} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '12px', marginBottom: '.75rem' }} />
-                    <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '.3rem' }}>{opt.label}</div>
-                    <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.5 }}>{opt.desc}</div>
-                  </div>
-                ))}
-              </div>
-            </StepCard>
-
-            {/* ─── ADV STEP 2: Style picker ────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={2} title={t('steps.2.title')}
+              num={1} title={t('steps.2.title')}
               activeStep={advancedStep}
               summary={styleKey ? (locale === 'fr' && (ALL_STYLES[styleKey] as { nameFr?: string }).nameFr ? (ALL_STYLES[styleKey] as { nameFr: string }).nameFr : ALL_STYLES[styleKey].name) : undefined}
-              onEdit={() => setAdvancedStep(2)}
+              onEdit={() => setAdvancedStep(1)}
             >
               {bakeType && (
                 <StylePicker
@@ -1444,7 +1386,7 @@ export default function Home() {
                     } else {
                       setItemWeight(ALL_STYLES[sk].ballW);
                     }
-                    setAdvancedStep(3);
+                    setAdvancedStep(2);
                   }}
                 />
               )}
@@ -1453,10 +1395,10 @@ export default function Home() {
             {/* ─── ADV STEP 3: Quantity ────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={3} title={t('steps.3.title')}
+              num={2} title={t('steps.3.title')}
               activeStep={advancedStep}
               summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
-              onEdit={() => setAdvancedStep(3)}
+              onEdit={() => setAdvancedStep(2)}
             >
               {(() => {
                 const showDiam = bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '');
@@ -1554,33 +1496,33 @@ export default function Home() {
                   </div>
                 );
               })()}
-              <ContinueBtn onClick={() => advanceAdv(3)} />
+              <ContinueBtn onClick={() => advanceAdv(2)} />
             </StepCard>
 
             {/* ─── ADV STEP 4: Oven ────────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={4} title={t('steps.4.title')}
+              num={3} title={t('steps.4.title')}
               activeStep={advancedStep}
               summary={ovenData ? (locale === 'fr' && (ovenData as { nameFr?: string }).nameFr ? (ovenData as { nameFr: string }).nameFr : ovenData.name) : ''}
-              onEdit={() => setAdvancedStep(4)}
+              onEdit={() => setAdvancedStep(3)}
             >
               <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
                 styleKey={styleKey}
                 selected={ovenType}
-                onSelect={ot => { setOvenType(ot); advanceAdv(4); }}
+                onSelect={ot => { setOvenType(ot); advanceAdv(3); }}
               />
             </StepCard>
 
             {/* ─── ADV STEP 5: Climate ─────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={5}
+              num={4}
               title={t('steps.5.title')}
               activeStep={advancedStep}
               summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
-              onEdit={() => setAdvancedStep(5)}
+              onEdit={() => setAdvancedStep(4)}
             >
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
@@ -1588,20 +1530,20 @@ export default function Home() {
                 units={units}
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
-              <ContinueBtn onClick={() => advanceAdv(5)} />
+              <ContinueBtn onClick={() => advanceAdv(4)} />
             </StepCard>
 
             {/* ─── ADV STEP 6: Mixer ───────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={6} title={t('steps.6.title')}
+              num={5} title={t('steps.6.title')}
               activeStep={advancedStep}
               summary={mixerType ? (locale === 'fr' && (MIXER_TYPES[mixerType] as { nameFr?: string }).nameFr ? (MIXER_TYPES[mixerType] as { nameFr: string }).nameFr : MIXER_TYPES[mixerType].name) : undefined}
-              onEdit={() => setAdvancedStep(6)}
+              onEdit={() => setAdvancedStep(5)}
             >
               <MixerPicker
                 selected={mixerType}
-                onSelect={mt => { setMixerType(mt); advanceAdv(6); }}
+                onSelect={mt => { setMixerType(mt); advanceAdv(5); }}
                 styleKey={styleKey ?? undefined}
                 bakeType={bakeType ?? undefined}
                 kitchenTemp={kitchenTemp}
@@ -1611,7 +1553,7 @@ export default function Home() {
             {/* ─── ADV STEP 7: Flour ───────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={7} title={t('steps.flour.title')}
+              num={6} title={t('steps.flour.title')}
               activeStep={advancedStep}
               summary={(() => {
                 if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
@@ -1624,7 +1566,7 @@ export default function Home() {
                 const flour2Name = flourBlend.customFlour2Name ?? computeBlendProfile(flourBlend).displayName.split('+')[1]?.trim() ?? '';
                 return `${flourBlend.ratio1}% ${flour1Name} · ${ratio2}% ${flour2Name}`;
               })()}
-              onEdit={() => setAdvancedStep(7)}
+              onEdit={() => setAdvancedStep(6)}
             >
               <FlourPicker
                 blend={flourBlend}
@@ -1635,7 +1577,7 @@ export default function Home() {
               />
               <div style={{ marginTop: '.85rem' }}>
                 <button
-                  onClick={() => advanceAdv(7)}
+                  onClick={() => advanceAdv(6)}
                   className="btn"
                   style={{
                     width: '100%', padding: '.9rem 1.25rem',
@@ -1653,10 +1595,10 @@ export default function Home() {
             {/* ─── ADV STEP 8: Yeast ───────────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={8} title={t('steps.7.title')}
+              num={7} title={t('steps.7.title')}
               activeStep={advancedStep}
               summary={yeastType ? <>{locale === 'fr' && (YEAST_TYPES[yeastType] as { nameFr?: string }).nameFr ? (YEAST_TYPES[yeastType] as { nameFr: string }).nameFr : YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{locale === 'fr' && (YEAST_TYPES[yeastType] as { shortNameFr?: string }).shortNameFr ? (YEAST_TYPES[yeastType] as { shortNameFr: string }).shortNameFr : YEAST_TYPES[yeastType].shortName}</span></> : undefined}
-              onEdit={() => setAdvancedStep(8)}
+              onEdit={() => setAdvancedStep(7)}
             >
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem', marginBottom: '.65rem' }}>
@@ -1676,9 +1618,9 @@ export default function Home() {
                           setYeastType(yt);
                           if (yt === 'sourdough') {
                             setPrefermentType('levain');
-                            setAdvancedStep(10);
+                            setAdvancedStep(9);
                             setTimeout(() => {
-                              const el = document.getElementById('adv-step-10');
+                              const el = document.getElementById('adv-step-9');
                               if (el) {
                                 const top = el.getBoundingClientRect().top + window.scrollY - 70;
                                 window.scrollTo({ top, behavior: 'smooth' });
@@ -1687,7 +1629,7 @@ export default function Home() {
                           } else {
                             // switching away from sourdough: reset levain preferment
                             if (prefermentType === 'levain') setPrefermentType('none');
-                            advanceAdv(8);
+                            advanceAdv(7);
                           }
                         }}
                         style={{
@@ -1735,16 +1677,16 @@ export default function Home() {
             {yeastType !== 'sourdough' && (
               <StepCard
                 idPrefix="adv-step"
-                num={9} title={t('preferment.stepTitle')}
+                num={8} title={t('preferment.stepTitle')}
                 activeStep={advancedStep}
                 summary={prefermentType !== 'none' ? (locale === 'fr' && (PREFERMENT_TYPES[prefermentType] as { nameFr?: string }).nameFr ? (PREFERMENT_TYPES[prefermentType] as { nameFr: string }).nameFr : PREFERMENT_TYPES[prefermentType].name) : t('preferment.direct')}
-                onEdit={() => setAdvancedStep(9)}
+                onEdit={() => setAdvancedStep(8)}
               >
                 <PrefermentPicker
                   selected={prefermentType}
                   onSelect={pt => {
                     setPrefermentType(pt);
-                    advanceAdv(9);
+                    advanceAdv(8);
                   }}
                   flourPct={prefermentFlourPct}
                   onFlourPctChange={setPrefermentFlourPct}
@@ -1758,11 +1700,11 @@ export default function Home() {
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
             <StepCard
               idPrefix="adv-step"
-              num={10}
+              num={9}
               title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
               activeStep={advancedStep}
               summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : undefined}
-              onEdit={() => setAdvancedStep(10)}
+              onEdit={() => setAdvancedStep(9)}
             >
               <SchedulePicker
                 mode="custom"
@@ -1779,17 +1721,17 @@ export default function Home() {
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onReady={() => {}}
               />
-              {eatTime && <ContinueBtn onClick={() => { setPrefermentFlourPct(undefined); advanceAdv(10); }} />}
+              {eatTime && <ContinueBtn onClick={() => { setPrefermentFlourPct(undefined); advanceAdv(9); }} />}
             </StepCard>
 
             {/* ─── ADV STEP 11: Dial your dough ────── */}
             <StepCard
               idPrefix="adv-step"
-              num={11}
+              num={10}
               title={t('dialIn.title')}
               activeStep={advancedStep}
               summary={manualHydration !== undefined ? `${manualHydration}% ${t('dialIn.hydrationSuffix')}` : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : undefined}
-              onEdit={() => setAdvancedStep(11)}
+              onEdit={() => setAdvancedStep(10)}
             >
               <div>
                 <div style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '1rem', lineHeight: 1.5 }}>
@@ -2169,7 +2111,7 @@ export default function Home() {
             {/* Precision section removed — merged into StepCard below */}
 
             {/* ── Generate button (setup tab) ── */}
-            {canGenerate && eatTime && advancedStep > 10 && (
+            {canGenerate && eatTime && advancedStep > 9 && (
               <div style={{ marginTop: '1rem' }}>
                 <button
                   onClick={handleGenerate}
@@ -2187,7 +2129,7 @@ export default function Home() {
                     boxShadow: '0 4px 16px rgba(196,82,42,0.3)',
                   }}
                 >
-                  {t('generate.generateBtn')}
+                  {pizzaNightEnabled ? t('generate.generateBtnPizzaNight') : t('generate.generateBtn')}
                 </button>
               </div>
             )}
@@ -2513,7 +2455,7 @@ export default function Home() {
       {/* ── Yeast Helper modal ──────────────── */}
       {showYeastHelper && (
         <YeastHelper
-          onSelect={yt => { setYeastType(yt); setShowYeastHelper(false); advance(7); }}
+          onSelect={yt => { setYeastType(yt); setShowYeastHelper(false); advance(6); }}
           onClose={() => setShowYeastHelper(false)}
         />
       )}
