@@ -480,6 +480,7 @@ export default function Home() {
     setStyleKey(null);
     setOvenType(bt === 'bread' ? 'dutch_oven' : 'home_oven_steel');
     setActiveStep(1);
+    setModeChosen(true);
   }
 
   function selectStyle(sk: StyleKey) {
@@ -713,7 +714,8 @@ export default function Home() {
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) 80px' }}>
 
         {/* ── Hero + bake type picker ── */}
-        <div ref={modeSelectorRef} style={{ textAlign: 'center', marginBottom: '16px', padding: '0 8px' }}>
+        {activeTab === 'setup' && (
+        <div ref={modeSelectorRef} style={{ textAlign: 'center', marginBottom: '16px' }}>
           <h1 style={{
             fontFamily: 'var(--font-playfair)',
             fontSize: 'clamp(1.4rem, 5vw, 2rem)',
@@ -729,7 +731,7 @@ export default function Home() {
           </h1>
 
           {/* Pizza / Bread picker */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', maxWidth: '480px', margin: '0 auto 16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', margin: '0 0 16px' }}>
             {([
               { type: 'pizza' as BakeType, image: '/bake_pizza.png', label: t('bakeType.pizza.label'), desc: t('bakeType.pizza.desc'), activeBorder: 'var(--terra)', activeBg: '#FFF8F3' },
               { type: 'bread' as BakeType, image: '/bake_bread.png', label: t('bakeType.bread.label'), desc: t('bakeType.bread.desc'), activeBorder: 'var(--bread)', activeBg: 'var(--bread-l)' },
@@ -767,7 +769,7 @@ export default function Home() {
 
           {/* Mode + Pizza Night card — only shown after bakeType selected */}
           {bakeType && (
-            <div style={{ maxWidth: '480px', margin: '0 auto', background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '14px', padding: '12px' }}>
+            <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '14px', padding: '12px' }}>
 
               {/* Simple / Custom toggle */}
               <div style={{ display: 'flex', gap: '8px', marginBottom: bakeType === 'pizza' ? '12px' : '0' }}>
@@ -822,7 +824,7 @@ export default function Home() {
               {/* Pizza Night checkbox — pizza only */}
               {bakeType === 'pizza' && (
                 <div
-                  onClick={() => { setPizzaNightEnabled(v => !v); if (!pizzaNightEnabled) setActiveTab('pizzanight'); else setActiveTab('setup'); }}
+                  onClick={() => { setPizzaNightEnabled(v => !v); }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -860,6 +862,7 @@ export default function Home() {
             </div>
           )}
         </div>
+        )}
 
         {/* ── Progress bar ── */}
         <div style={{
@@ -891,7 +894,7 @@ export default function Home() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
             {/* ── Setup tab content ── */}
-            <div style={{ display: activeTab === 'setup' ? 'flex' : 'none', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: activeTab === 'setup' && !!bakeType && modeChosen ? 'flex' : 'none', flexDirection: 'column', gap: '1rem' }}>
 
             {/* ─── STEP 1: Style picker ────────────── */}
             <StepCard
@@ -1440,7 +1443,7 @@ export default function Home() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
             {/* ── Setup tab content ── */}
-            <div style={{ display: activeTab === 'setup' ? 'flex' : 'none', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: activeTab === 'setup' && !!bakeType && modeChosen ? 'flex' : 'none', flexDirection: 'column', gap: '1rem' }}>
 
             {/* ─── ADV STEP 1: Style picker ────────── */}
             <StepCard
