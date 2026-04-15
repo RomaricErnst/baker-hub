@@ -54,19 +54,19 @@
   "modeCards": {
     "simple": {
       "title": "Simple",
-      "bullet1": "Idéal pour commencer",
-      "bullet2": "Réglages intelligents",
-      "bullet3": "Planning visuel couleur",
+      "bullet1": "",
+      "bullet2": "",
+      "bullet3": "",
       "bullet4": "",
-      "collapsed": "Réglages intelligents · planning couleur"
+      "collapsed": "Idéal pour commencer · réglages automatiques"
     },
     "custom": {
       "title": "Avancé",
-      "bullet1": "Votre mélange de farines",
-      "bullet2": "Poolish · Levain · Sourdough",
-      "bullet3": "Graphe de fermentation",
+      "bullet1": "",
+      "bullet2": "",
+      "bullet3": "",
       "bullet4": "",
-      "collapsed": "Farines · pré-ferment · sourdough · graphe"
+      "collapsed": "Votre farine · poolish/biga · graphe de fermentation"
     }
   },
   "steps": {

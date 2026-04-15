@@ -54,19 +54,19 @@
   "modeCards": {
     "simple": {
       "title": "Simple",
-      "bullet1": "Great to start with",
-      "bullet2": "Smart defaults",
-      "bullet3": "Colour bar schedule",
+      "bullet1": "",
+      "bullet2": "",
+      "bullet3": "",
       "bullet4": "",
-      "collapsed": "Smart defaults · colour bar"
+      "collapsed": "Great to start with · smart defaults"
     },
     "custom": {
       "title": "Custom",
-      "bullet1": "Your flour blend",
-      "bullet2": "Preferment · Sourdough",
-      "bullet3": "Fermentation graph",
+      "bullet1": "",
+      "bullet2": "",
+      "bullet3": "",
       "bullet4": "",
-      "collapsed": "Flour blend · preferment · sourdough · graph"
+      "collapsed": "Your flour blend · preferment · fermentation graph"
     }
   },
   "steps": {
