@@ -22,9 +22,10 @@
   "tabs": {
     "guided": "🧭 Simple",
     "advanced": "🎛️ Custom",
-    "setup": "Dough setup",
-    "plan": "Bake plan",
-    "guide": "Bake guide"
+    "setup": "My Dough",
+    "plan": "Bake Plan",
+    "guide": "Guide",
+    "pizzanight": "Pizza Night"
   },
   "generate": {
     "generateBtn": "Generate my bake plan →",

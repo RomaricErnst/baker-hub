@@ -22,9 +22,10 @@
   "tabs": {
     "guided": "🧭 Simple",
     "advanced": "🎛️ Personnalisé",
-    "setup": "Paramètres",
+    "setup": "Ma Pâte",
     "plan": "Recette",
-    "guide": "Guide"
+    "guide": "Guide",
+    "pizzanight": "Soirée Pizza"
   },
   "generate": {
     "generateBtn": "Générer mon planning →",

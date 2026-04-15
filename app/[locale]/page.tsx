@@ -346,7 +346,8 @@ export default function Home() {
   const [recipeGenerated, setRecipeGenerated] = useState(false);
 
   // P6 — Active tab in two-tab layout
-  const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide'>('setup');
+  const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide' | 'pizzanight'>('setup');
+  const [pizzaNightEnabled, setPizzaNightEnabled] = useState(false);
 
   // M2 — Mode chosen: false on page load, true after baker selects a mode
   const [modeChosen, setModeChosen] = useState(false);
@@ -711,7 +712,7 @@ export default function Home() {
       <Header units={units} onUnitsChange={setUnitsAndPersist} onLoadRecipe={loadRecipe} />
 
       {/* ── Main content ───────────────────── */}
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
+      <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) 80px' }}>
 
         {/* ── Mode selector ──────────────────────── */}
         <div ref={modeSelectorRef}>
@@ -834,68 +835,6 @@ export default function Home() {
             </div>
 
           </div>
-        </div>
-
-        {/* ── Segmented control (Dough setup / Bake plan / Bake guide) ── */}
-        <div style={{
-          background: '#F5F0E8',
-          borderRadius: '12px',
-          padding: '3px',
-          display: 'flex',
-          marginBottom: '12px',
-          border: '1.5px solid #E8E0D5',
-        }}>
-          {([
-            { key: 'setup' as const, label: t('tabs.setup'), locked: false },
-            { key: 'plan'  as const, label: t('tabs.plan'),  locked: !recipeGenerated },
-            { key: 'guide' as const, label: t('tabs.guide'), locked: !recipeGenerated },
-          ]).map(({ key: segKey, label, locked: isLocked }) => {
-            const isActive = activeTab === segKey;
-            return (
-              <button
-                key={segKey}
-                onClick={() => !isLocked && setActiveTab(segKey)}
-                style={isLocked ? {
-                  background: 'transparent',
-                  color: '#C8C0B8',
-                  borderRadius: '10px',
-                  border: 'none',
-                  flex: 1,
-                  padding: '8px 0',
-                  fontSize: '13px',
-                  fontFamily: 'DM Sans, sans-serif',
-                  cursor: 'default',
-                  pointerEvents: 'none',
-                } : isActive ? {
-                  background: 'white',
-                  color: '#1A1612',
-                  boxShadow: '0 1px 4px rgba(26,22,18,0.10)',
-                  borderRadius: '10px',
-                  border: 'none',
-                  flex: 1,
-                  padding: '8px 0',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  fontFamily: 'DM Sans, sans-serif',
-                  cursor: 'pointer',
-                  transition: 'background 0.15s',
-                } : {
-                  background: 'transparent',
-                  color: '#8A7F78',
-                  borderRadius: '10px',
-                  border: 'none',
-                  flex: 1,
-                  padding: '8px 0',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  fontFamily: 'DM Sans, sans-serif',
-                  cursor: 'pointer',
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
         </div>
 
         {/* ── Progress bar ── */}
@@ -2427,6 +2366,148 @@ export default function Home() {
 
           </div>
         )}
+
+        {/* ── Bottom nav ── */}
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: '#FDFBF7',
+          borderTop: '1px solid #E0D8CF',
+          display: 'flex',
+          zIndex: 100,
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}>
+          {([
+            {
+              key: 'setup' as const,
+              label: t('tabs.setup'),
+              icon: (color: string) => (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <line x1="2" y1="5" x2="18" y2="5" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
+                  <circle cx="7" cy="5" r="2" fill="#FDFBF7" stroke={color} strokeWidth="1.4"/>
+                  <line x1="2" y1="10" x2="18" y2="10" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
+                  <circle cx="13" cy="10" r="2" fill="#FDFBF7" stroke={color} strokeWidth="1.4"/>
+                  <line x1="2" y1="15" x2="18" y2="15" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
+                  <circle cx="9" cy="15" r="2" fill="#FDFBF7" stroke={color} strokeWidth="1.4"/>
+                </svg>
+              ),
+              locked: false,
+              done: recipeGenerated && activeTab !== 'setup',
+            },
+            {
+              key: 'plan' as const,
+              label: t('tabs.plan'),
+              icon: (color: string) => (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="4" y="2" width="12" height="16" rx="2" stroke={color} strokeWidth="1.4"/>
+                  <line x1="7" y1="7" x2="13" y2="7" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
+                  <line x1="7" y1="10" x2="13" y2="10" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
+                  <line x1="7" y1="13" x2="11" y2="13" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+              ),
+              locked: !recipeGenerated,
+              done: recipeGenerated && activeTab !== 'plan' && activeTab !== 'setup',
+            },
+            {
+              key: 'guide' as const,
+              label: t('tabs.guide'),
+              icon: (color: string) => (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 17V7" stroke={color} strokeWidth="1.4"/>
+                  <path d="M4 5.5c2-.7 4-.7 6 1 2-1.7 4-1.7 6-1v11c-2-.7-4-.7-6 1-2-1.7-4-1.7-6-1V5.5z" stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
+                </svg>
+              ),
+              locked: !recipeGenerated,
+              done: false,
+            },
+            ...(pizzaNightEnabled ? [{
+              key: 'pizzanight' as const,
+              label: t('tabs.pizzanight'),
+              icon: (color: string) => (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 2.5L3 17.5h14L10 2.5z" stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
+                  <path d="M4.5 17Q10 13.5 15.5 17" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
+                  <circle cx="10" cy="11" r="1" fill={color}/>
+                  <circle cx="7.5" cy="14" r="0.8" fill={color}/>
+                  <circle cx="12.5" cy="14" r="0.8" fill={color}/>
+                </svg>
+              ),
+              locked: false,
+              done: false,
+            }] : []),
+          ]).map(({ key: tabKey, label, icon, locked, done }) => {
+            const isActive = activeTab === tabKey;
+            const isPizza = tabKey === 'pizzanight';
+            const activeColor = isPizza ? '#B8903A' : '#C4522A';
+            const doneColor = '#6B7A5A';
+            const lockedColor = '#C8C0B8';
+            const color = locked ? lockedColor : isActive ? activeColor : done ? doneColor : '#8A7F78';
+
+            return (
+              <button
+                key={tabKey}
+                onClick={() => !locked && setActiveTab(tabKey)}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '10px 4px 12px',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: locked ? 'default' : 'pointer',
+                }}
+              >
+                <div style={{
+                  width: '40px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  background: isActive
+                    ? isPizza ? '#D4A85320' : '#C4522A1A'
+                    : done ? '#6B7A5A14'
+                    : 'transparent',
+                }}>
+                  {icon(color)}
+                  {done && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '1px',
+                      right: '1px',
+                      width: '11px',
+                      height: '11px',
+                      borderRadius: '50%',
+                      background: '#6B7A5A',
+                      border: '1.5px solid #FDFBF7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+                        <path d="M1.5 3.5l1.5 1.5 2.5-2.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <span style={{
+                  fontSize: '10px',
+                  lineHeight: 1,
+                  color,
+                  fontWeight: isActive ? 600 : 400,
+                  fontFamily: 'DM Sans, sans-serif',
+                }}>
+                  {label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Yeast Helper modal ──────────────── */}
