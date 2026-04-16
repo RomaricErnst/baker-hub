@@ -348,8 +348,19 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
                     </div>
                   )}
                   {ing.goodEnough && (
-                    <div style={{ fontSize: '10px', color: '#6B7A5A', marginTop: '1px' }}>
-                      → {ing.goodEnough.name[l] ?? ing.goodEnough.name.en}
+                    <div style={{ fontSize: '10px', color: '#6B7A5A', marginTop: '2px' }}>
+                      <span style={{ color: '#8A7F78', fontWeight: 500 }}>
+                        {l === 'fr' ? 'Très proche :' : 'Also great:'}
+                      </span>{' '}
+                      {ing.goodEnough.name[l] ?? ing.goodEnough.name.en}
+                    </div>
+                  )}
+                  {ing.compromise && (
+                    <div style={{ fontSize: '10px', color: '#8A7F78', marginTop: '2px' }}>
+                      <span style={{ color: '#8A7F78', fontWeight: 500 }}>
+                        {l === 'fr' ? 'À défaut :' : 'If not available:'}
+                      </span>{' '}
+                      {ing.compromise.name[l] ?? ing.compromise.name.en}
                     </div>
                   )}
                 </div>
@@ -377,8 +388,19 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
                     </div>
                   )}
                   {ing.goodEnough && (
-                    <div style={{ fontSize: '10px', color: '#6B7A5A', marginTop: '1px' }}>
-                      → {ing.goodEnough.name[l] ?? ing.goodEnough.name.en}
+                    <div style={{ fontSize: '10px', color: '#6B7A5A', marginTop: '2px' }}>
+                      <span style={{ color: '#8A7F78', fontWeight: 500 }}>
+                        {l === 'fr' ? 'Très proche :' : 'Also great:'}
+                      </span>{' '}
+                      {ing.goodEnough.name[l] ?? ing.goodEnough.name.en}
+                    </div>
+                  )}
+                  {ing.compromise && (
+                    <div style={{ fontSize: '10px', color: '#8A7F78', marginTop: '2px' }}>
+                      <span style={{ color: '#8A7F78', fontWeight: 500 }}>
+                        {l === 'fr' ? 'À défaut :' : 'If not available:'}
+                      </span>{' '}
+                      {ing.compromise.name[l] ?? ing.compromise.name.en}
                     </div>
                   )}
                 </div>
