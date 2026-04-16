@@ -228,6 +228,17 @@ export const COMPLEXITY_LABELS: Record<ComplexityTier, Locale> = {
   3: { en: 'Cooked',     fr: 'Cuisiné' },
 }
 
+export const INGREDIENT_CATEGORY_LABELS: Record<IngredientCategory, Locale> = {
+  sauce:   { en: 'Sauce',   fr: 'Sauce' },
+  cheese:  { en: 'Cheese',  fr: 'Fromage' },
+  meat:    { en: 'Meat',    fr: 'Viande' },
+  seafood: { en: 'Seafood', fr: 'Poisson' },
+  veg:     { en: 'Veg',     fr: 'Légume' },
+  finish:  { en: 'Finish',  fr: 'Finition' },
+  base:    { en: 'Base',    fr: 'Base' },
+  spice:   { en: 'Spice',   fr: 'Épice' },
+}
+
 export const CATEGORY_LABELS: Record<Category, Locale> = {
   classic_italian: { en: 'Classic Italian',  fr: 'Classique italien' },
   meat:            { en: 'Meat',             fr: 'Viande' },

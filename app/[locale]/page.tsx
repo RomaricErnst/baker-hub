@@ -13,6 +13,7 @@ import Timeline from '../components/Timeline';
 import BakeGuide from '../components/BakeGuide';
 import { getPrefPeakH_RT, getPrefRTWarmupH } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
+import ToppingSelector from '../components/ToppingSelector';
 import FlourPicker from '../components/FlourPicker';
 import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
@@ -348,6 +349,7 @@ export default function Home() {
   // P6 — Active tab in two-tab layout
   const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide' | 'pizzaparty'>('setup');
   const [pizzaPartyEnabled, setPizzaPartyEnabled] = useState(false);
+  const [pizzaPartyPill, setPizzaPartyPill] = useState<'pizzas' | 'shopping' | 'party'>('pizzas');
 
   // M2 — Mode chosen: false on page load, true after baker selects a mode
   const [modeChosen, setModeChosen] = useState(false);
@@ -1353,85 +1355,16 @@ export default function Home() {
               )}
             </div>{/* end guide tab */}
 
-            {/* ── Pizza Night tab content ── */}
+            {/* ── Pizza Party tab content ── */}
             {pizzaPartyEnabled && (
-              <div style={{ display: activeTab === 'pizzaparty' ? 'block' : 'none' }}>
-                <div style={{
-                  background: 'white',
-                  borderRadius: '16px',
-                  border: '1px solid #E0D8CF',
-                  overflow: 'hidden',
-                  marginBottom: '1rem',
-                }}>
-                  {/* Header */}
-                  <div style={{
-                    background: '#1A1612',
-                    padding: '20px 20px 16px',
-                    borderBottom: '2px solid #D4A853',
-                  }}>
-                    <div style={{
-                      fontFamily: 'var(--font-playfair)',
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      color: '#D4A853',
-                      marginBottom: '4px',
-                    }}>
-                      {t('pizzaParty.tabTitle')}
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#8A7F78' }}>
-                      {numItems} {numItems === 1 ? t('pizzaParty.pizza') : t('pizzaParty.pizzas')} · {styleKey ? (ALL_STYLES[styleKey]?.name ?? '') : ''} · {t('pizzaParty.bakeAt')} {eatTime ? formatTime(eatTime) : '--'}
-                    </div>
-                  </div>
-
-                  {/* Pizza slots */}
-                  <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {Array.from({ length: numItems }).map((_, i) => (
-                      <div key={i} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '12px 14px',
-                        borderRadius: '10px',
-                        border: '1px solid #E8E0D5',
-                        background: '#FDFBF7',
-                      }}>
-                        <div style={{
-                          width: '32px', height: '32px', borderRadius: '50%',
-                          background: '#D4A85318', border: '1px solid #D4A85340',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: '#B8903A', flexShrink: 0,
-                        }}>
-                          {i + 1}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '13px', color: '#8A7F78', fontStyle: 'italic' }}>
-                            {t('pizzaParty.chooseToppings')}
-                          </div>
-                        </div>
-                        <div style={{
-                          fontSize: '12px', color: '#C4522A', fontWeight: 500, cursor: 'pointer',
-                        }}>
-                          {t('pizzaParty.select')} →
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Coming soon notice */}
-                  <div style={{
-                    margin: '0 16px 16px',
-                    padding: '12px 14px',
-                    borderRadius: '10px',
-                    background: '#F5F0E8',
-                    border: '1px dashed #D4A853',
-                    fontSize: '12px',
-                    color: '#8A7F78',
-                    textAlign: 'center',
-                    lineHeight: 1.5,
-                  }}>
-                    {t('pizzaParty.comingSoon')}
-                  </div>
-                </div>
+              <div style={{ display: activeTab === 'pizzaparty' ? 'flex' : 'none', flexDirection: 'column', height: 'calc(100vh - 140px)' }}>
+                <ToppingSelector
+                  locale={locale}
+                  numItems={numItems}
+                  activePill={pizzaPartyPill}
+                  onPillChange={setPizzaPartyPill}
+                  t={t}
+                />
               </div>
             )}
 
@@ -2391,85 +2324,16 @@ export default function Home() {
               )}
             </div>{/* end guide tab */}
 
-            {/* ── Pizza Night tab content ── */}
+            {/* ── Pizza Party tab content ── */}
             {pizzaPartyEnabled && (
-              <div style={{ display: activeTab === 'pizzaparty' ? 'block' : 'none' }}>
-                <div style={{
-                  background: 'white',
-                  borderRadius: '16px',
-                  border: '1px solid #E0D8CF',
-                  overflow: 'hidden',
-                  marginBottom: '1rem',
-                }}>
-                  {/* Header */}
-                  <div style={{
-                    background: '#1A1612',
-                    padding: '20px 20px 16px',
-                    borderBottom: '2px solid #D4A853',
-                  }}>
-                    <div style={{
-                      fontFamily: 'var(--font-playfair)',
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      color: '#D4A853',
-                      marginBottom: '4px',
-                    }}>
-                      {t('pizzaParty.tabTitle')}
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#8A7F78' }}>
-                      {numItems} {numItems === 1 ? t('pizzaParty.pizza') : t('pizzaParty.pizzas')} · {styleKey ? (ALL_STYLES[styleKey]?.name ?? '') : ''} · {t('pizzaParty.bakeAt')} {eatTime ? formatTime(eatTime) : '--'}
-                    </div>
-                  </div>
-
-                  {/* Pizza slots */}
-                  <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {Array.from({ length: numItems }).map((_, i) => (
-                      <div key={i} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '12px 14px',
-                        borderRadius: '10px',
-                        border: '1px solid #E8E0D5',
-                        background: '#FDFBF7',
-                      }}>
-                        <div style={{
-                          width: '32px', height: '32px', borderRadius: '50%',
-                          background: '#D4A85318', border: '1px solid #D4A85340',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: '#B8903A', flexShrink: 0,
-                        }}>
-                          {i + 1}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '13px', color: '#8A7F78', fontStyle: 'italic' }}>
-                            {t('pizzaParty.chooseToppings')}
-                          </div>
-                        </div>
-                        <div style={{
-                          fontSize: '12px', color: '#C4522A', fontWeight: 500, cursor: 'pointer',
-                        }}>
-                          {t('pizzaParty.select')} →
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Coming soon notice */}
-                  <div style={{
-                    margin: '0 16px 16px',
-                    padding: '12px 14px',
-                    borderRadius: '10px',
-                    background: '#F5F0E8',
-                    border: '1px dashed #D4A853',
-                    fontSize: '12px',
-                    color: '#8A7F78',
-                    textAlign: 'center',
-                    lineHeight: 1.5,
-                  }}>
-                    {t('pizzaParty.comingSoon')}
-                  </div>
-                </div>
+              <div style={{ display: activeTab === 'pizzaparty' ? 'flex' : 'none', flexDirection: 'column', height: 'calc(100vh - 140px)' }}>
+                <ToppingSelector
+                  locale={locale}
+                  numItems={numItems}
+                  activePill={pizzaPartyPill}
+                  onPillChange={setPizzaPartyPill}
+                  t={t}
+                />
               </div>
             )}
 

@@ -6,11 +6,18 @@
 import type { Pizza, Ingredient } from './toppingTypes'
 
 export type { Pizza, Ingredient }
+export type {
+  Locale, Season, BaseType, Category, RegionTag, OccasionTag, DietaryTag,
+  BudgetTier, ComplexityTier, OvenTempTag, ShoppingContext, WineCategory,
+  IngredientCategory, BakeOrder, IngredientSubstitution,
+  PizzaSlot, PizzaPartySession, FilterState,
+} from './toppingTypes'
 export {
   BASE_LABELS, OCCASION_LABELS, SEASON_LABELS,
   WINE_CATEGORY_LABELS, WINE_EXAMPLES,
   BUDGET_LABELS, COMPLEXITY_LABELS,
   CATEGORY_LABELS, REGION_LABELS,
+  INGREDIENT_CATEGORY_LABELS,
   getCurrentSeason, filterPizzas, getFilterCounts, DEFAULT_FILTER,
 } from './toppingTypes'
 
