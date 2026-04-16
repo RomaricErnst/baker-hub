@@ -303,6 +303,10 @@ export function filterPizzas(pizzas: Pizza[], f: FilterState): Pizza[] {
         )
       if (!match) return false
     }
+    if (f.flavour.richness && (p.flavour.richness < f.flavour.richness[0] || p.flavour.richness > f.flavour.richness[1])) return false
+    if (f.flavour.boldness && (p.flavour.boldness < f.flavour.boldness[0] || p.flavour.boldness > f.flavour.boldness[1])) return false
+    if (f.flavour.creative && (p.flavour.creative < f.flavour.creative[0] || p.flavour.creative > f.flavour.creative[1])) return false
+    if (f.flavour.refined  && (p.flavour.refined  < f.flavour.refined[0]  || p.flavour.refined  > f.flavour.refined[1]))  return false
     return true
   })
 }

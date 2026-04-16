@@ -718,9 +718,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               open={open.flavour} onToggle={() => togOpen('flavour')}
             >
               <div style={S.subSec}>
-                <span style={S.subLbl}>
-                  {l === 'fr' ? 'Milieu = tous · glisser pour filtrer' : 'Middle = any · drag to filter'}
-                </span>
                 <FlavorSlider
                   leftLabel={l === 'fr' ? 'Léger' : 'Light'}
                   rightLabel={l === 'fr' ? 'Riche' : 'Rich'}
