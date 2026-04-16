@@ -140,9 +140,9 @@ const S = {
     overflow: 'hidden', cursor: 'pointer', transition: 'all 0.12s',
   }),
   cardEmoji: {
-    fontSize: '24px', flexShrink: 0, width: '40px', height: '40px',
+    fontSize: '17px', flexShrink: 0, width: '32px', height: '32px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: '#F0EBE3', borderRadius: '8px',
+    background: '#F0EBE3', borderRadius: '7px',
   } as React.CSSProperties,
   tag: (type: 'default' | 'spicy' | 'season' | 'special'): React.CSSProperties => ({
     fontSize: '9px', padding: '2px 6px', borderRadius: '10px',
@@ -230,9 +230,8 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap }: {
   onTap: () => void;
 }) {
   const l = locale as 'en' | 'fr';
-  const name  = pizza.name[l]   ?? pizza.name.en;
-  const story = pizza.story?.[l] ?? pizza.story?.en ?? '';
-  const tags  = pizza.occasion.slice(0, 2).map(o =>
+  const name = pizza.name[l] ?? pizza.name.en;
+  const tags = pizza.occasion.slice(0, 2).map(o =>
     OCCASION_LABELS[o]?.[l] ?? o
   );
   const seasonEmoji =
@@ -240,32 +239,36 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap }: {
     pizza.season.includes('autumn') && !pizza.season.includes('all') ? '🍂' :
     pizza.season.includes('spring') && !pizza.season.includes('all') ? '🌸' :
     pizza.season.includes('summer') && !pizza.season.includes('all') ? '☀️' : null;
+  const budget = '€'.repeat(pizza.budget);
 
   return (
     <div style={S.card(qty > 0)} onClick={onTap}>
-      <div style={{ display: 'flex', gap: '10px', padding: '9px 10px 6px', alignItems: 'flex-start' }}>
+      {/* Row 1: emoji · name · budget */}
+      <div style={{ display: 'flex', gap: '8px', padding: '6px 10px 4px', alignItems: 'center' }}>
         <div style={S.cardEmoji}>
-          <span style={{ fontSize: '24px' }}>{pizzaEmoji(pizza.id)}</span>
+          <span style={{ fontSize: '17px' }}>{pizzaEmoji(pizza.id)}</span>
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '13px', fontWeight: 500, color: '#1A1612', marginBottom: '1px' }}>{name}</div>
-          <div style={{ fontSize: '10px', color: '#8A7F78', lineHeight: 1.4, marginBottom: '4px' }}>{story}</div>
-          <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
-            {seasonEmoji && <span style={S.tag('season')}>{seasonEmoji}</span>}
-            {tags.map((tag, i) => <span key={i} style={S.tag('default')}>{tag}</span>)}
-            {pizza.budget === 3 && <span style={S.tag('special')}>€€€</span>}
-          </div>
-        </div>
-      </div>
-      <div style={{ padding: '0 10px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '10px', color: '#8A7F78' }}>
-          {pizza.prepMinutes} min · {'€'.repeat(pizza.budget)}
+        <span style={{ fontSize: '13px', fontWeight: 500, color: '#1A1612', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {name}
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <span style={{ fontSize: '11px', color: '#8A7F78', flexShrink: 0 }}>
+          {budget}
+        </span>
+      </div>
+      {/* Row 2: time · tags · qty/add */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0 10px 6px', flexWrap: 'nowrap' }}>
+        <span style={{ fontSize: '10px', color: '#8A7F78', flexShrink: 0 }}>
+          {pizza.prepMinutes} min
+        </span>
+        <div style={{ display: 'flex', gap: '3px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          {seasonEmoji && <span style={S.tag('season')}>{seasonEmoji}</span>}
+          {tags.map((tag, i) => <span key={i} style={S.tag('default')}>{tag}</span>)}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
           {qty > 0 && (
             <>
               <button style={S.qtyBtn} onClick={e => onQtyChange(-1, e)}>−</button>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: '#C4522A', minWidth: '16px', textAlign: 'center' }}>{qty}</span>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#C4522A', minWidth: '14px', textAlign: 'center' }}>{qty}</span>
             </>
           )}
           {qty > 0 ? (
@@ -816,7 +819,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
 
               {/* Pizza cards */}
-              <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 {filtered.map(pizza => (
                   <PizzaCard
                     key={pizza.id}
