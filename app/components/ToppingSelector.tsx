@@ -158,6 +158,14 @@ const S = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     color: '#1A1612', fontWeight: 500, flexShrink: 0,
   } as React.CSSProperties,
+  addBtn: {
+    height: '26px', padding: '0 12px', borderRadius: '13px',
+    border: 'none', background: '#C4522A',
+    fontSize: '11px', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: 'white', fontWeight: 500, flexShrink: 0, whiteSpace: 'nowrap' as const,
+    letterSpacing: '0.02em',
+  } as React.CSSProperties,
   ingBadge: {
     fontSize: '9px', padding: '1px 6px', borderRadius: '8px',
     background: '#F0EBE3', color: '#8A7F78',
@@ -260,9 +268,13 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap }: {
               <span style={{ fontSize: '12px', fontWeight: 600, color: '#C4522A', minWidth: '16px', textAlign: 'center' }}>{qty}</span>
             </>
           )}
-          <button style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>
-            {qty > 0 ? '+' : (l === 'fr' ? 'Ajouter' : 'Add')}
-          </button>
+          {qty > 0 ? (
+            <button style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
+          ) : (
+            <button style={S.addBtn} onClick={e => onQtyChange(1, e)}>
+              {l === 'fr' ? '+ Ajouter' : '+ Add'}
+            </button>
+          )}
         </div>
       </div>
     </div>
