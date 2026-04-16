@@ -346,8 +346,8 @@ export default function Home() {
   const [recipeGenerated, setRecipeGenerated] = useState(false);
 
   // P6 — Active tab in two-tab layout
-  const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide' | 'pizzanight'>('setup');
-  const [pizzaNightEnabled, setPizzaNightEnabled] = useState(false);
+  const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide' | 'pizzaparty'>('setup');
+  const [pizzaPartyEnabled, setPizzaPartyEnabled] = useState(false);
 
   // M2 — Mode chosen: false on page load, true after baker selects a mode
   const [modeChosen, setModeChosen] = useState(false);
@@ -740,7 +740,7 @@ export default function Home() {
                 key={opt.type}
                 onClick={() => {
                   selectBakeType(opt.type);
-                  if (opt.type === 'bread') setPizzaNightEnabled(false);
+                  if (opt.type === 'bread') setPizzaPartyEnabled(false);
                 }}
                 onMouseEnter={() => setHoveredBakeType(opt.type)}
                 onMouseLeave={() => setHoveredBakeType(null)}
@@ -824,26 +824,26 @@ export default function Home() {
               {/* Pizza Night checkbox — pizza only */}
               {bakeType === 'pizza' && (
                 <div
-                  onClick={() => { setPizzaNightEnabled(v => !v); }}
+                  onClick={() => { setPizzaPartyEnabled(v => !v); }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px',
                     padding: '10px 12px',
                     borderRadius: '10px',
-                    border: pizzaNightEnabled ? '1.5px solid #D4A853' : '1px dashed #D4A853',
-                    background: pizzaNightEnabled ? '#FFF9EE' : 'transparent',
+                    border: pizzaPartyEnabled ? '1.5px solid #D4A853' : '1px dashed #D4A853',
+                    background: pizzaPartyEnabled ? '#FFF9EE' : 'transparent',
                     cursor: 'pointer',
                     transition: 'all 0.15s',
                   }}
                 >
                   <div style={{
                     width: '18px', height: '18px', borderRadius: '5px', flexShrink: 0,
-                    border: pizzaNightEnabled ? 'none' : '1.5px solid #D4A853',
-                    background: pizzaNightEnabled ? '#D4A853' : 'transparent',
+                    border: pizzaPartyEnabled ? 'none' : '1.5px solid #D4A853',
+                    background: pizzaPartyEnabled ? '#D4A853' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    {pizzaNightEnabled && (
+                    {pizzaPartyEnabled && (
                       <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
                         <path d="M2 5.5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
@@ -851,10 +851,10 @@ export default function Home() {
                   </div>
                   <div style={{ flex: 1, textAlign: 'left' }}>
                     <div style={{ fontSize: '13px', fontWeight: 500, color: '#1A1612', marginBottom: '1px' }}>
-                      {t('pizzaNight.checkboxTitle')}
+                      {t('pizzaParty.checkboxTitle')}
                     </div>
                     <div style={{ fontSize: '11px', color: '#8A7F78' }}>
-                      {t('pizzaNight.checkboxSub')}
+                      {t('pizzaParty.checkboxSub')}
                     </div>
                   </div>
                 </div>
@@ -1172,7 +1172,7 @@ export default function Home() {
                     boxShadow: '0 4px 16px rgba(196,82,42,0.3)',
                   }}
                 >
-                  {pizzaNightEnabled ? t('generate.generateBtnPizzaNight') : t('generate.generateBtn')}
+                  {pizzaPartyEnabled ? t('pizzaParty.generateBtn') : t('generate.generateBtn')}
                 </button>
               </div>
             )}
@@ -1354,8 +1354,8 @@ export default function Home() {
             </div>{/* end guide tab */}
 
             {/* ── Pizza Night tab content ── */}
-            {pizzaNightEnabled && (
-              <div style={{ display: activeTab === 'pizzanight' ? 'block' : 'none' }}>
+            {pizzaPartyEnabled && (
+              <div style={{ display: activeTab === 'pizzaparty' ? 'block' : 'none' }}>
                 <div style={{
                   background: 'white',
                   borderRadius: '16px',
@@ -1376,10 +1376,10 @@ export default function Home() {
                       color: '#D4A853',
                       marginBottom: '4px',
                     }}>
-                      {t('pizzaNight.tabTitle')}
+                      {t('pizzaParty.tabTitle')}
                     </div>
                     <div style={{ fontSize: '13px', color: '#8A7F78' }}>
-                      {numItems} {numItems === 1 ? t('pizzaNight.pizza') : t('pizzaNight.pizzas')} · {styleKey ? (ALL_STYLES[styleKey]?.name ?? '') : ''} · {t('pizzaNight.bakeAt')} {eatTime ? formatTime(eatTime) : '--'}
+                      {numItems} {numItems === 1 ? t('pizzaParty.pizza') : t('pizzaParty.pizzas')} · {styleKey ? (ALL_STYLES[styleKey]?.name ?? '') : ''} · {t('pizzaParty.bakeAt')} {eatTime ? formatTime(eatTime) : '--'}
                     </div>
                   </div>
 
@@ -1405,13 +1405,13 @@ export default function Home() {
                         </div>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '13px', color: '#8A7F78', fontStyle: 'italic' }}>
-                            {t('pizzaNight.chooseToppings')}
+                            {t('pizzaParty.chooseToppings')}
                           </div>
                         </div>
                         <div style={{
                           fontSize: '12px', color: '#C4522A', fontWeight: 500, cursor: 'pointer',
                         }}>
-                          {t('pizzaNight.select')} →
+                          {t('pizzaParty.select')} →
                         </div>
                       </div>
                     ))}
@@ -1429,7 +1429,7 @@ export default function Home() {
                     textAlign: 'center',
                     lineHeight: 1.5,
                   }}>
-                    {t('pizzaNight.comingSoon')}
+                    {t('pizzaParty.comingSoon')}
                   </div>
                 </div>
               </div>
@@ -2214,7 +2214,7 @@ export default function Home() {
                     boxShadow: '0 4px 16px rgba(196,82,42,0.3)',
                   }}
                 >
-                  {pizzaNightEnabled ? t('generate.generateBtnPizzaNight') : t('generate.generateBtn')}
+                  {pizzaPartyEnabled ? t('pizzaParty.generateBtn') : t('generate.generateBtn')}
                 </button>
               </div>
             )}
@@ -2392,8 +2392,8 @@ export default function Home() {
             </div>{/* end guide tab */}
 
             {/* ── Pizza Night tab content ── */}
-            {pizzaNightEnabled && (
-              <div style={{ display: activeTab === 'pizzanight' ? 'block' : 'none' }}>
+            {pizzaPartyEnabled && (
+              <div style={{ display: activeTab === 'pizzaparty' ? 'block' : 'none' }}>
                 <div style={{
                   background: 'white',
                   borderRadius: '16px',
@@ -2414,10 +2414,10 @@ export default function Home() {
                       color: '#D4A853',
                       marginBottom: '4px',
                     }}>
-                      {t('pizzaNight.tabTitle')}
+                      {t('pizzaParty.tabTitle')}
                     </div>
                     <div style={{ fontSize: '13px', color: '#8A7F78' }}>
-                      {numItems} {numItems === 1 ? t('pizzaNight.pizza') : t('pizzaNight.pizzas')} · {styleKey ? (ALL_STYLES[styleKey]?.name ?? '') : ''} · {t('pizzaNight.bakeAt')} {eatTime ? formatTime(eatTime) : '--'}
+                      {numItems} {numItems === 1 ? t('pizzaParty.pizza') : t('pizzaParty.pizzas')} · {styleKey ? (ALL_STYLES[styleKey]?.name ?? '') : ''} · {t('pizzaParty.bakeAt')} {eatTime ? formatTime(eatTime) : '--'}
                     </div>
                   </div>
 
@@ -2443,13 +2443,13 @@ export default function Home() {
                         </div>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '13px', color: '#8A7F78', fontStyle: 'italic' }}>
-                            {t('pizzaNight.chooseToppings')}
+                            {t('pizzaParty.chooseToppings')}
                           </div>
                         </div>
                         <div style={{
                           fontSize: '12px', color: '#C4522A', fontWeight: 500, cursor: 'pointer',
                         }}>
-                          {t('pizzaNight.select')} →
+                          {t('pizzaParty.select')} →
                         </div>
                       </div>
                     ))}
@@ -2467,7 +2467,7 @@ export default function Home() {
                     textAlign: 'center',
                     lineHeight: 1.5,
                   }}>
-                    {t('pizzaNight.comingSoon')}
+                    {t('pizzaParty.comingSoon')}
                   </div>
                 </div>
               </div>
@@ -2531,9 +2531,9 @@ export default function Home() {
               locked: !recipeGenerated,
               done: false,
             },
-            ...(pizzaNightEnabled ? [{
-              key: 'pizzanight' as const,
-              label: t('tabs.pizzanight'),
+            ...(pizzaPartyEnabled ? [{
+              key: 'pizzaparty' as const,
+              label: t('tabs.pizzaparty'),
               icon: (color: string) => (
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <path d="M10 2.5L3 17.5h14L10 2.5z" stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
@@ -2548,7 +2548,7 @@ export default function Home() {
             }] : []),
           ]).map(({ key: tabKey, label, icon, locked, done }) => {
             const isActive = activeTab === tabKey;
-            const isPizza = tabKey === 'pizzanight';
+            const isPizza = tabKey === 'pizzaparty';
             const activeColor = isPizza ? '#B8903A' : '#C4522A';
             const doneColor = '#6B7A5A';
             const lockedColor = '#C8C0B8';

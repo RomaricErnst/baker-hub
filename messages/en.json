@@ -25,7 +25,7 @@
     "setup": "My Dough",
     "plan": "Bake Plan",
     "guide": "Guide",
-    "pizzanight": "Pizza Night"
+    "pizzaparty": "Pizza Night"
   },
   "generate": {
     "generateBtn": "Generate my bake plan →",
@@ -36,16 +36,22 @@
     "emptyBakePlan": "Complete your dough setup to generate your bake plan",
     "confirmOverwrite": "This will overwrite your saved bake plan. Continue?"
   },
-  "pizzaNight": {
-    "checkboxTitle": "Pizza Night",
-    "checkboxSub": "Toppings, prep guide & shopping list",
-    "tabTitle": "Pizza Night",
+  "pizzaParty": {
+    "checkboxTitle": "Pizza Party",
+    "checkboxSub": "Toppings, prep & shopping list",
+    "tabTitle": "Pizza Party",
+    "pill": {
+      "pizzas": "Pizzas",
+      "shopping": "Shopping",
+      "partyTime": "Let's cook"
+    },
     "pizza": "pizza",
     "pizzas": "pizzas",
     "bakeAt": "bake at",
     "chooseToppings": "Choose your toppings...",
     "select": "Select",
-    "comingSoon": "Topping selector and shopping list coming soon. Your dough plan is ready in the Bake Plan tab."
+    "comingSoon": "Topping selector and shopping list coming soon. Your dough plan is ready in the Bake Plan tab.",
+    "generateBtn": "Plan my pizza party →"
   },
   "hero": {
     "headline": "Craft your dough",

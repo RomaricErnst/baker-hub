@@ -25,7 +25,7 @@
     "setup": "Ma Pâte",
     "plan": "Recette",
     "guide": "Guide",
-    "pizzanight": "Soirée Pizza"
+    "pizzaparty": "Soirée Pizza"
   },
   "generate": {
     "generateBtn": "Générer mon planning →",
@@ -36,16 +36,22 @@
     "emptyBakePlan": "Complétez vos paramètres pour générer votre recette",
     "confirmOverwrite": "Ceci écrasera votre recette sauvegardée. Continuer ?"
   },
-  "pizzaNight": {
-    "checkboxTitle": "Soirée Pizza",
-    "checkboxSub": "Garnitures, guide de préparation & liste de courses",
-    "tabTitle": "Soirée Pizza",
+  "pizzaParty": {
+    "checkboxTitle": "Pizza Party",
+    "checkboxSub": "Garnitures, préparation & courses",
+    "tabTitle": "Pizza Party",
+    "pill": {
+      "pizzas": "Pizzas",
+      "shopping": "Courses",
+      "partyTime": "Au four !"
+    },
     "pizza": "pizza",
     "pizzas": "pizzas",
     "bakeAt": "cuisson à",
     "chooseToppings": "Choisissez vos garnitures...",
     "select": "Choisir",
-    "comingSoon": "Sélecteur de garnitures et liste de courses bientôt disponibles. Votre plan de pâte est prêt dans l'onglet Recette."
+    "comingSoon": "Sélecteur de garnitures et liste de courses bientôt disponibles. Votre plan de pâte est prêt dans l'onglet Recette.",
+    "generateBtn": "Planifier ma pizza party →"
   },
   "hero": {
     "headline": "Façonnez votre pâte",
