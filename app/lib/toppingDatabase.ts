@@ -10,7 +10,7 @@ export type {
   Locale, Season, BaseType, Category, RegionTag, OccasionTag, DietaryTag,
   BudgetTier, ComplexityTier, OvenTempTag, ShoppingContext, WineCategory,
   IngredientCategory, BakeOrder, IngredientSubstitution,
-  PizzaSlot, PizzaPartySession, FilterState,
+  PizzaSlot, PizzaPartySession, FilterState, StyleKey,
 } from './toppingTypes'
 export {
   BASE_LABELS, OCCASION_LABELS, SEASON_LABELS,
@@ -795,6 +795,305 @@ const ING: Record<string, Ingredient> = {
     name: { en: 'Egg (cracked on top)', fr: 'Œuf (cassé sur la pizza)' },
     prepNote: { en: 'Crack directly onto pizza halfway through baking — yolk stays runny', fr: 'Casser directement sur la pizza à mi-cuisson — jaune reste coulant' },
     qtyPerPizza: { amount: 1, unit: 'pcs', noteEN: 'per pizza', noteFR: 'par pizza' },
+  },
+
+  // ── New ingredients for pizza expansion ──────────────────
+
+  guanciale: {
+    id: 'guanciale', category: 'meat', bakeOrder: 'before',
+    name: { en: 'Guanciale (cured pork cheek)', fr: 'Guanciale (joue de porc séchée)' },
+    prepNote: { en: 'Slice thin — renders and crisps beautifully', fr: 'Trancher finement — fond et croustille parfaitement' },
+    qtyPerPizza: { amount: 60, unit: 'g' },
+    hardToFind: true,
+    goodEnough: { name: { en: 'Pancetta or smoked bacon', fr: 'Pancetta ou bacon fumé' } },
+    compromise: { name: { en: 'Smoked lardons', fr: 'Lardons fumés' } },
+  },
+
+  pecorinoRomano: {
+    id: 'pecorino_romano', category: 'cheese', bakeOrder: 'before',
+    name: { en: 'Pecorino Romano (grated)', fr: 'Pecorino Romano (râpé)' },
+    prepNote: { en: 'Grate finely — saltier than parmesan, use sparingly', fr: 'Râper finement — plus salé que le parmesan, utiliser avec parcimonie' },
+    qtyPerPizza: { amount: 30, unit: 'g' },
+    goodEnough: { name: { en: 'Aged Pecorino or Parmigiano Reggiano', fr: 'Pecorino affiné ou Parmigiano Reggiano' } },
+  },
+
+  smokedProvola: {
+    id: 'smoked_provola', category: 'cheese', bakeOrder: 'before',
+    name: { en: 'Provola affumicata (smoked)', fr: 'Provola affumicata (fumée)' },
+    prepNote: { en: 'Slice thin — melts and adds deep smoky flavour', fr: 'Trancher finement — fond en apportant une profonde saveur fumée' },
+    qtyPerPizza: { amount: 80, unit: 'g' },
+    hardToFind: true,
+    goodEnough: { name: { en: 'Scamorza affumicata', fr: 'Scamorza affumicata' } },
+    compromise: { name: { en: 'Smoked mozzarella or smoked cheddar', fr: 'Mozzarella fumée ou cheddar fumé' } },
+  },
+
+  salsiccia: {
+    id: 'salsiccia', category: 'meat', bakeOrder: 'before',
+    name: { en: 'Italian sausage (salsiccia)', fr: 'Saucisse italienne (salsiccia)' },
+    prepNote: { en: 'Remove casing, crumble over pizza before baking', fr: 'Retirer le boyau, émietter sur la pizza avant cuisson' },
+    qtyPerPizza: { amount: 80, unit: 'g' },
+    goodEnough: { name: { en: 'Any good pork sausage, casing removed', fr: 'Toute bonne saucisse de porc, sans boyau' } },
+  },
+
+  friarielli: {
+    id: 'friarielli', category: 'veg', bakeOrder: 'before',
+    name: { en: 'Friarielli (Neapolitan broccoli)', fr: 'Friarielli (brocoli napolitain)' },
+    prepNote: { en: "Sauté with garlic and olive oil before adding — do not use raw", fr: "Faire revenir avec ail et huile d'olive avant d'ajouter — ne pas utiliser cru" },
+    qtyPerPizza: { amount: 80, unit: 'g' },
+    hardToFind: true,
+    goodEnough: { name: { en: 'Cime di rapa (rapini/broccoli rabe)', fr: 'Cime di rapa (brocoli rave)' } },
+    compromise: { name: { en: 'Tenderstem broccoli sautéed with chilli and garlic', fr: 'Broccolini sauté avec piment et ail' } },
+    localSwap: {
+      singapore: { name: { en: "Kai lan (Chinese broccoli) sautéed with garlic", fr: "Kai lan sauté à l'ail — Cold Storage ou wet markets" } },
+    },
+  },
+
+  stracciatella: {
+    id: 'stracciatella', category: 'cheese', bakeOrder: 'after',
+    name: { en: 'Stracciatella', fr: 'Stracciatella' },
+    prepNote: { en: 'Always add after baking — heat destroys its creamy texture', fr: 'Toujours ajouter après cuisson — la chaleur détruit sa texture crémeuse' },
+    qtyPerPizza: { amount: 80, unit: 'g' },
+    hardToFind: true,
+    goodEnough: { name: { en: 'Burrata cream pulled apart', fr: 'Crème de burrata défaite' } },
+    compromise: { name: { en: 'Fresh mozzarella torn and drizzled with cream', fr: 'Mozzarella fraîche déchirée avec un filet de crème' } },
+  },
+
+  mortadella: {
+    id: 'mortadella', category: 'meat', bakeOrder: 'after',
+    name: { en: 'Mortadella (sliced)', fr: 'Mortadelle (tranchée)' },
+    prepNote: { en: 'Add after baking — drape loosely so it just warms through', fr: 'Ajouter après cuisson — disposer librement pour elle se réchauffe doucement' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: '4–5 thin slices', noteFR: '4–5 tranches fines' },
+    goodEnough: { name: { en: 'Any quality cooked ham, sliced thin', fr: 'Tout jambon cuit de qualité, tranché fin' } },
+  },
+
+  pistachiosPesto: {
+    id: 'pistachios_pesto', category: 'base', bakeOrder: 'before',
+    name: { en: 'Pistachio pesto', fr: 'Pesto de pistaches' },
+    prepNote: { en: 'Blend pistachios, garlic, olive oil, parmesan — thick consistency', fr: "Mixer pistaches, ail, huile d'olive, parmesan — consistance épaisse" },
+    qtyPerPizza: { amount: 40, unit: 'g' },
+    goodEnough: { name: { en: 'Basil pesto with crushed pistachios added', fr: 'Pesto basilic avec pistaches concassées' } },
+  },
+
+  pistachiosTopped: {
+    id: 'pistachios_topped', category: 'finish', bakeOrder: 'after',
+    name: { en: 'Crushed pistachios', fr: 'Pistaches concassées' },
+    prepNote: { en: 'Add after baking for crunch', fr: 'Ajouter après cuisson pour le croquant' },
+    qtyPerPizza: { amount: 20, unit: 'g' },
+  },
+
+  brickCheese: {
+    id: 'brick_cheese', category: 'cheese', bakeOrder: 'before',
+    name: { en: 'Wisconsin brick cheese', fr: 'Fromage brick du Wisconsin' },
+    prepNote: { en: 'Spread to edges — caramelises against the pan for the frico crust', fr: "Étaler jusqu'aux bords — caramélise contre le moule pour le frico croustillant" },
+    qtyPerPizza: { amount: 150, unit: 'g' },
+    hardToFind: true,
+    goodEnough: { name: { en: 'Low-moisture mozzarella + mild cheddar 50/50', fr: 'Mozzarella faible humidité + cheddar doux 50/50' } },
+    compromise: { name: { en: 'Low-moisture mozzarella alone', fr: 'Mozzarella faible humidité seule' } },
+  },
+
+  hotHoney: {
+    id: 'hot_honey', category: 'finish', bakeOrder: 'after',
+    name: { en: 'Hot honey', fr: 'Miel pimenté' },
+    prepNote: { en: 'Drizzle after baking', fr: 'Verser en filet après cuisson' },
+    qtyPerPizza: { amount: 1, unit: 'tbsp' },
+    goodEnough: { name: { en: 'Regular honey + pinch of chilli flakes', fr: 'Miel ordinaire + pincée de flocons de piment' } },
+  },
+
+  harissaBase: {
+    id: 'harissa_base', category: 'sauce', bakeOrder: 'before',
+    name: { en: 'Harissa (base)', fr: 'Harissa (base)' },
+    prepNote: { en: 'Spread thin — very concentrated, a little goes a long way', fr: 'Étaler finement — très concentré, un peu suffit largement' },
+    qtyPerPizza: { amount: 2, unit: 'tbsp' },
+    goodEnough: { name: { en: 'Rose harissa for milder heat', fr: 'Harissa rose pour une chaleur plus douce' } },
+  },
+
+  labneh: {
+    id: 'labneh', category: 'cheese', bakeOrder: 'after',
+    name: { en: 'Labneh (strained yogurt)', fr: 'Labneh (yaourt égoutté)' },
+    prepNote: { en: 'Dollop after baking — never cook it', fr: 'Déposer en petites boules après cuisson — ne jamais cuire' },
+    qtyPerPizza: { amount: 80, unit: 'g' },
+    goodEnough: { name: { en: 'Thick Greek yogurt 10%+ fat', fr: 'Yaourt grec épais 10%+ MG' } },
+  },
+
+  zaatarMix: {
+    id: 'zaatar_mix', category: 'spice', bakeOrder: 'before',
+    name: { en: "Za'atar spice blend", fr: "Mélange za'atar" },
+    prepNote: { en: 'Mix with olive oil before spreading', fr: "Mélanger avec de l'huile d'olive avant d'étaler" },
+    qtyPerPizza: { amount: 2, unit: 'tbsp' },
+    hardToFind: false,
+    goodEnough: { name: { en: 'Dried thyme + sesame + sumac + salt', fr: 'Thym séché + sésame + sumac + sel' } },
+    localSwap: {
+      singapore: { name: { en: "Za'atar readily available at Mustafa Centre or Jamal Kazura", fr: "Za'atar disponible chez Mustafa Centre ou Jamal Kazura" } },
+    },
+  },
+
+  jamon: {
+    id: 'jamon', category: 'meat', bakeOrder: 'after',
+    name: { en: 'Jamón Ibérico', fr: 'Jamón Ibérico' },
+    prepNote: { en: 'Always add after baking — heat destroys the fat and flavour', fr: 'Toujours ajouter après cuisson — la chaleur détruit le gras et la saveur' },
+    qtyPerPizza: { amount: 50, unit: 'g', noteEN: '4–5 slices', noteFR: '4–5 tranches' },
+    hardToFind: true,
+    goodEnough: { name: { en: 'Jamón Serrano', fr: 'Jamón Serrano' } },
+    compromise: { name: { en: 'Good Prosciutto di Parma', fr: 'Bon Prosciutto di Parma' } },
+  },
+
+  sobrasada: {
+    id: 'sobrasada', category: 'meat', bakeOrder: 'before',
+    name: { en: 'Sobrasada (Mallorcan sausage)', fr: 'Sobrasada (saucisse majorquine)' },
+    prepNote: { en: 'Crumble or spread in small pieces — it melts into the dough', fr: 'Émietter ou déposer en petits morceaux — elle fond dans la pâte' },
+    qtyPerPizza: { amount: 50, unit: 'g' },
+    hardToFind: true,
+    goodEnough: { name: { en: 'Nduja — similar spreadable spicy format', fr: 'Nduja — format tartinable épicé similaire' } },
+    compromise: { name: { en: 'Chorizo paste crumbled', fr: 'Pâte de chorizo émiettée' } },
+  },
+
+  misoPaste: {
+    id: 'miso_paste', category: 'sauce', bakeOrder: 'before',
+    name: { en: 'White miso paste (base)', fr: 'Pâte miso blanc (base)' },
+    prepNote: { en: 'Mix with a little cream or olive oil to thin before spreading', fr: "Diluer avec un peu de crème ou huile d'olive avant d'étaler" },
+    qtyPerPizza: { amount: 2, unit: 'tbsp' },
+    hardToFind: false,
+    localSwap: {
+      singapore: { name: { en: 'Shiro miso at Meidi-Ya, Don Don Donki or any Japanese supermarket', fr: 'Miso blanc chez Meidi-Ya, Don Don Donki ou tout supermarché japonais' } },
+    },
+  },
+
+  mentaiko: {
+    id: 'mentaiko', category: 'sauce', bakeOrder: 'before',
+    name: { en: 'Mentaiko (spicy pollock roe)', fr: 'Mentaiko (œufs de lieu épicés)' },
+    prepNote: { en: 'Mix with cream or mayo — spread as base or drizzle after baking', fr: 'Mélanger avec crème ou mayo — étaler en base ou verser après cuisson' },
+    qtyPerPizza: { amount: 40, unit: 'g' },
+    hardToFind: true,
+    goodEnough: { name: { en: 'Ikura (salmon roe) added after baking', fr: 'Ikura (œufs de saumon) ajouté après cuisson' } },
+    localSwap: {
+      singapore: { name: { en: 'Mentaiko at Don Don Donki, Meidi-Ya or Isetan supermarket', fr: 'Mentaiko chez Don Don Donki, Meidi-Ya ou Isetan' } },
+    },
+  },
+
+  vodkaCream: {
+    id: 'vodka_cream', category: 'sauce', bakeOrder: 'before',
+    name: { en: 'Vodka tomato cream sauce', fr: 'Sauce tomate crémée à la vodka' },
+    prepNote: { en: "Simmer tomato + cream + splash vodka until thickened — sauce should coat a spoon", fr: "Mijoter tomate + crème + trait de vodka jusqu'à épaississement — la sauce doit napper une cuillère" },
+    qtyPerPizza: { amount: 80, unit: 'g' },
+    goodEnough: { name: { en: 'Cooked tomato sauce + tablespoon of cream', fr: 'Sauce tomate cuite + cuillère à soupe de crème' } },
+  },
+
+  lardo: {
+    id: 'lardo', category: 'meat', bakeOrder: 'after',
+    name: { en: 'Lardo di Colonnata', fr: 'Lardo di Colonnata' },
+    prepNote: { en: 'Add immediately after baking — it melts on the hot pizza', fr: 'Ajouter immédiatement après cuisson — il fond sur la pizza chaude' },
+    qtyPerPizza: { amount: 40, unit: 'g', noteEN: '4–6 thin slices', noteFR: '4–6 tranches fines' },
+    hardToFind: true,
+    goodEnough: { name: { en: 'Any quality lard or fatback, sliced paper-thin', fr: 'Lard de qualité tranché très finement' } },
+  },
+
+  stracchino: {
+    id: 'stracchino', category: 'cheese', bakeOrder: 'before',
+    name: { en: 'Stracchino (crescenza)', fr: 'Stracchino (crescenza)' },
+    prepNote: { en: 'Dollop cold over pizza before the last 2 minutes of baking', fr: 'Déposer froid sur la pizza pendant les 2 dernières minutes de cuisson' },
+    qtyPerPizza: { amount: 80, unit: 'g' },
+    hardToFind: true,
+    goodEnough: { name: { en: 'Taleggio — similar soft melting character', fr: 'Taleggio — même caractère fondant doux' } },
+    compromise: { name: { en: 'Brie centre without rind + squeeze of lemon', fr: 'Intérieur de brie sans croûte + trait de citron' } },
+  },
+
+  bresaola: {
+    id: 'bresaola', category: 'meat', bakeOrder: 'after',
+    name: { en: 'Bresaola (cured beef)', fr: 'Bresaola (bœuf séché)' },
+    prepNote: { en: 'Always add after baking — drape over warm pizza', fr: 'Toujours ajouter après cuisson — disposer sur la pizza chaude' },
+    qtyPerPizza: { amount: 50, unit: 'g', noteEN: '5–6 slices', noteFR: '5–6 tranches' },
+    hardToFind: true,
+    goodEnough: { name: { en: 'Thinly sliced roast beef', fr: 'Bœuf rôti tranché finement' } },
+  },
+
+  octopus: {
+    id: 'octopus', category: 'seafood', bakeOrder: 'before',
+    name: { en: 'Octopus (cooked, sliced)', fr: 'Poulpe (cuit, tranché)' },
+    prepNote: { en: 'Must be pre-cooked tender before adding — raw octopus will not cook through on pizza', fr: "Doit être précuit et tendre avant d'ajouter — le poulpe cru ne cuira pas assez sur la pizza" },
+    qtyPerPizza: { amount: 80, unit: 'g' },
+    hardToFind: false,
+    goodEnough: { name: { en: 'Calamari rings (pre-cooked)', fr: 'Rondelles de calamar (précuites)' } },
+  },
+
+  smokedPaprika: {
+    id: 'smoked_paprika', category: 'spice', bakeOrder: 'before',
+    name: { en: 'Smoked paprika', fr: 'Paprika fumé' },
+    prepNote: { en: 'Sprinkle before baking', fr: 'Saupoudrer avant cuisson' },
+    qtyPerPizza: { amount: 1, unit: 'tbsp' },
+    isCommonPantry: true,
+  },
+
+  springOnion: {
+    id: 'spring_onion', category: 'veg', bakeOrder: 'after',
+    name: { en: 'Spring onion (sliced)', fr: 'Ciboule (émincée)' },
+    prepNote: { en: 'Add after baking for freshness', fr: 'Ajouter après cuisson pour la fraîcheur' },
+    qtyPerPizza: { amount: 2, unit: 'tbsp' },
+    isCommonPantry: true,
+  },
+
+  teriyakiSauce: {
+    id: 'teriyaki_sauce', category: 'sauce', bakeOrder: 'before',
+    name: { en: 'Teriyaki sauce', fr: 'Sauce teriyaki' },
+    prepNote: { en: 'Spread thin — sweet, reduces quickly in the oven', fr: 'Étaler finement — sucré, réduit rapidement au four' },
+    qtyPerPizza: { amount: 3, unit: 'tbsp' },
+    isCommonPantry: false,
+  },
+
+  kimchi: {
+    id: 'kimchi', category: 'veg', bakeOrder: 'after',
+    name: { en: 'Kimchi', fr: 'Kimchi' },
+    prepNote: { en: 'Add after baking — cooking kimchi loses its probiotic character and becomes too sour', fr: 'Ajouter après cuisson — cuire le kimchi perd son caractère probiotique et devient trop acide' },
+    qtyPerPizza: { amount: 60, unit: 'g' },
+    localSwap: {
+      singapore: { name: { en: 'Korean kimchi widely available at NTUC FairPrice, Don Don Donki', fr: 'Kimchi coréen disponible chez NTUC FairPrice, Don Don Donki' } },
+    },
+  },
+
+  bulgogi: {
+    id: 'bulgogi', category: 'meat', bakeOrder: 'before',
+    name: { en: 'Bulgogi (Korean BBQ beef)', fr: 'Bulgogi (bœuf BBQ coréen)' },
+    prepNote: { en: "Pre-marinate and cook beef before adding — it won't cook through on pizza", fr: "Pré-mariner et cuire le bœuf avant d'ajouter — il ne cuira pas assez sur la pizza" },
+    qtyPerPizza: { amount: 80, unit: 'g' },
+    goodEnough: { name: { en: 'Thinly sliced beef with soy-sesame marinade', fr: 'Bœuf tranché finement avec marinade soja-sésame' } },
+  },
+
+  sesameOil: {
+    id: 'sesame_oil', category: 'finish', bakeOrder: 'after',
+    name: { en: 'Sesame oil (drizzle)', fr: 'Huile de sésame (filet)' },
+    prepNote: { en: 'A few drops after baking — use toasted sesame oil only', fr: "Quelques gouttes après cuisson — utiliser uniquement de l'huile de sésame grillée" },
+    qtyPerPizza: { amount: 1, unit: 'tbsp' },
+  },
+
+  nori: {
+    id: 'nori', category: 'finish', bakeOrder: 'after',
+    name: { en: 'Nori (toasted seaweed)', fr: 'Nori (algue grillée)' },
+    prepNote: { en: 'Crumble or cut in strips — add after baking', fr: 'Émietter ou couper en lanières — ajouter après cuisson' },
+    qtyPerPizza: { amount: 1, unit: 'tbsp' },
+  },
+
+  wasabiCream: {
+    id: 'wasabi_cream', category: 'sauce', bakeOrder: 'before',
+    name: { en: 'Wasabi cream base', fr: 'Base crème wasabi' },
+    prepNote: { en: 'Mix crème fraîche 30%+ + wasabi paste to taste — spread thin', fr: 'Mélanger crème fraîche 30%+ + pâte wasabi — étaler finement' },
+    qtyPerPizza: { amount: 60, unit: 'g' },
+  },
+
+  duckConfit: {
+    id: 'duck_confit', category: 'meat', bakeOrder: 'before',
+    name: { en: 'Duck confit (shredded)', fr: 'Confit de canard (effiloché)' },
+    prepNote: { en: "Shred and remove excess fat before adding", fr: "Effilocher et retirer l'excès de gras avant d'ajouter" },
+    qtyPerPizza: { amount: 80, unit: 'g' },
+    hardToFind: false,
+    compromise: { name: { en: 'Slow-cooked duck leg, shredded', fr: 'Cuisse de canard mijotée, effilochée' } },
+  },
+
+  foieGras: {
+    id: 'foie_gras', category: 'meat', bakeOrder: 'after',
+    name: { en: 'Foie gras (sliced)', fr: 'Foie gras (tranché)' },
+    prepNote: { en: 'Add immediately after baking — it just needs to warm through', fr: 'Ajouter immédiatement après cuisson — il a juste besoin de se réchauffer' },
+    qtyPerPizza: { amount: 40, unit: 'g' },
+    hardToFind: true,
+    compromise: { name: { en: 'Good duck liver pâté', fr: 'Bonne terrine de foie de canard' } },
   },
 
 }

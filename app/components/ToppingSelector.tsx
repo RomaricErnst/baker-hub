@@ -18,6 +18,7 @@ type Qty = Record<string, number>;
 
 interface Props {
   locale: string;
+  styleKey?: string;
   numItems: number;
   activePill: 'pizzas' | 'shopping' | 'party';
   onPillChange: (pill: 'pizzas' | 'shopping' | 'party') => void;
@@ -44,9 +45,14 @@ const REGION_NAMES: Record<RegionTag, { en: string; fr: string }> = {
   basque:     { en: 'Basque',   fr: 'Pays Basque' },
   lyonnais:   { en: 'Lyon',     fr: 'Lyonnais' },
   nord:       { en: 'Nord',     fr: 'Nord' },
-  american:   { en: 'American', fr: 'Américaine' },
-  asian:      { en: 'Asian',    fr: 'Asiatique' },
-  fusion:     { en: 'Fusion',   fr: 'Fusion' },
+  american:         { en: 'American',       fr: 'Américaine' },
+  asian:            { en: 'Asian',          fr: 'Asiatique' },
+  fusion:           { en: 'Fusion',         fr: 'Fusion' },
+  spanish:          { en: 'Spanish',        fr: 'Espagnole' },
+  middle_eastern:   { en: 'Middle Eastern', fr: 'Moyen-Orient' },
+  north_african:    { en: 'North African',  fr: 'Afrique du Nord' },
+  japanese:         { en: 'Japanese',       fr: 'Japonaise' },
+  northern_italian: { en: 'Northern Italy', fr: 'Italie du Nord' },
 };
 
 // ─── Emoji map ────────────────────────────────────────────────
@@ -431,11 +437,14 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey }: Props) {
   const l = locale as 'en' | 'fr';
 
   // Filter state
-  const [filter, setFilter] = useState<FilterState>({ ...DEFAULT_FILTER });
+  const [filter, setFilter] = useState<FilterState>({
+    ...DEFAULT_FILTER,
+    styleKey: styleKey as import('../lib/toppingTypes').StyleKey | undefined,
+  });
 
   // Section open/closed — Occasion open by default, all others closed
   const [open, setOpen] = useState<Record<string, boolean>>({
@@ -473,7 +482,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   const [flavourUI, setFlavourUI] = useState({ richness: 3, boldness: 3, creative: 3, refined: 3 });
 
   // Filtered pizzas
-  const filtered = useMemo(() => filterPizzas(PIZZAS, filter), [filter]);
+  const filtered = useMemo(() => filterPizzas(PIZZAS, filter), [filter, styleKey]);
 
   // Current season for auto-detect label
   const currentSeason = getCurrentSeason();

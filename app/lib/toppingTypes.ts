@@ -19,6 +19,10 @@ export type BaseType =
   | 'nduja'
   | 'truffle_cream'
   | 'bbq'
+  | 'miso'
+  | 'harissa'
+  | 'zaatar'
+  | 'vodka_cream'
   | 'other'
 
 export type Category =
@@ -40,6 +44,8 @@ export type RegionTag =
   | 'provence'   | 'basque'   | 'lyonnais'
   | 'nord'       | 'normandie'
   | 'american'   | 'asian'    | 'fusion'
+  | 'spanish'    | 'middle_eastern' | 'north_african'
+  | 'japanese'   | 'northern_italian'
 
 export type OccasionTag =
   | 'classic' | 'spicy' | 'kids'
@@ -54,6 +60,10 @@ export type DietaryTag =
 export type BudgetTier     = 1 | 2 | 3
 export type ComplexityTier = 1 | 2 | 3
 export type OvenTempTag    = 'high' | 'mid' | 'low'
+
+export type StyleKey =
+  | 'neapolitan' | 'sourdough' | 'pizza_romana'
+  | 'roman'      | 'newyork'   | 'pan'
 
 export type ShoppingContext =
   | 'singapore' | 'france' | 'uk'
@@ -76,6 +86,23 @@ export type BakeOrder = 'before' | 'after'
 // before = goes on before baking
 // after  = added after baking — shown separately in Party Time tab
 
+export type IngredientUnit =
+  | 'g'      // grams
+  | 'ml'     // millilitres
+  | 'pcs'    // whole pieces (burrata, eggs, figs)
+  | 'slices' // charcuterie slices
+  | 'leaves' // herb leaves (basil)
+  | 'sprigs' // herb sprigs (thyme, rosemary)
+  | 'tbsp'   // tablespoons (capers, honey, oil)
+  | 'pinch'  // pinch (oregano, pepper, salt)
+
+export type IngredientQty = {
+  amount: number
+  unit: IngredientUnit
+  noteEN?: string
+  noteFR?: string
+}
+
 export type IngredientSubstitution = {
   name: Locale
   note?: Locale
@@ -89,10 +116,13 @@ export type Ingredient = {
   category: IngredientCategory
   bakeOrder: BakeOrder
   prepNote?: Locale
-  goodEnough?: IngredientSubstitution
+  goodEnough?: IngredientSubstitution   // close alternative — "Also great:"
+  compromise?: IngredientSubstitution   // works but noticeably different — "If not available:"
   localSwap?: Partial<Record<ShoppingContext, IngredientSubstitution>>
   confusingNote?: Locale    // triggers ⓘ badge in UI
   isCommonPantry?: boolean  // pre-ticked in shopping list
+  qtyPerPizza?: IngredientQty  // quantity for one 30cm pizza
+  hardToFind?: boolean         // true = show substitution proactively in shopping list
 }
 
 export type Pizza = {
@@ -122,6 +152,9 @@ export type Pizza = {
     creative: 1 | 2 | 3 | 4 | 5   // 1=classic  5=creative
     refined:  1 | 2 | 3 | 4 | 5   // 1=comfort  5=refined
   }
+  // Style compatibility — drives filtering in Pizza Party when baker selects a style
+  // If omitted, pizza shows for ALL styles
+  compatibleStyles?: StyleKey[]
   // V3 fields — optional, not rendered in V2 UI
   wineNote?: Locale
   photoUrl?: string
@@ -160,6 +193,7 @@ export type FilterState = {
     refined:  [number, number] | null
   }
   ingredientSearch: string    // matches pizza name + all ingredient names (EN+FR)
+  styleKey?: StyleKey
 }
 
 // ─── Label maps — bilingual ───────────────────────────────────
@@ -175,6 +209,10 @@ export const BASE_LABELS: Record<BaseType, Locale> = {
   nduja:              { en: 'Nduja',           fr: 'Nduja' },
   truffle_cream:      { en: 'Truffle',         fr: 'Truffe' },
   bbq:                { en: 'BBQ',             fr: 'BBQ' },
+  miso:               { en: 'Miso',            fr: 'Miso' },
+  harissa:            { en: 'Harissa',         fr: 'Harissa' },
+  zaatar:             { en: "Za'atar",         fr: "Za'atar" },
+  vodka_cream:        { en: 'Vodka cream',     fr: 'Crème vodka' },
   other:              { en: 'Other',           fr: 'Autre' },
 }
 
@@ -267,9 +305,14 @@ export const REGION_LABELS: Record<RegionTag, Locale> = {
   lyonnais:   { en: 'Lyon',     fr: 'Lyonnais' },
   nord:       { en: 'Nord',     fr: 'Nord' },
   normandie:  { en: 'Normandy', fr: 'Normandie' },
-  american:   { en: 'American', fr: 'Américaine' },
-  asian:      { en: 'Asian',    fr: 'Asiatique' },
-  fusion:     { en: 'Fusion',   fr: 'Fusion' },
+  american:         { en: 'American',        fr: 'Américaine' },
+  asian:            { en: 'Asian',           fr: 'Asiatique' },
+  fusion:           { en: 'Fusion',          fr: 'Fusion' },
+  spanish:          { en: 'Spanish',         fr: 'Espagnole' },
+  middle_eastern:   { en: 'Middle Eastern',  fr: 'Moyen-Orient' },
+  north_african:    { en: 'North African',   fr: 'Afrique du Nord' },
+  japanese:         { en: 'Japanese',        fr: 'Japonaise' },
+  northern_italian: { en: 'Northern Italy',  fr: 'Italie du Nord' },
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -284,6 +327,8 @@ export function getCurrentSeason(): Season {
 
 export function filterPizzas(pizzas: Pizza[], f: FilterState): Pizza[] {
   return pizzas.filter(p => {
+    if (f.styleKey && p.compatibleStyles && p.compatibleStyles.length > 0 &&
+        !p.compatibleStyles.includes(f.styleKey)) return false
     if (f.base && p.base !== f.base) return false
     if (f.region && p.region !== f.region) return false
     if (f.occasion.length && !f.occasion.some(o => p.occasion.includes(o))) return false

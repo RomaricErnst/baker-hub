@@ -1426,6 +1426,7 @@ export default function Home() {
                   activePill={pizzaPartyPill}
                   onPillChange={setPizzaPartyPill}
                   t={t}
+                  styleKey={styleKey ?? undefined}
                 />
               </div>
             )}
@@ -2395,6 +2396,7 @@ export default function Home() {
                   activePill={pizzaPartyPill}
                   onPillChange={setPizzaPartyPill}
                   t={t}
+                  styleKey={styleKey ?? undefined}
                 />
               </div>
             )}
