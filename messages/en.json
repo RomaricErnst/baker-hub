@@ -90,7 +90,7 @@
   "bakeType": {
     "pizza": {
       "label": "Pizza",
-      "desc": "Neapolitan, New York, Roman, Detroit & Sourdough"
+      "desc": "Neapolitan, New York, Pizza Romana, Roman Teglia, Detroit & Sourdough"
     },
     "bread": {
       "label": "Bread",

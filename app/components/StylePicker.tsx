@@ -35,6 +35,24 @@ const STYLE_ART: Record<string, { bg: string; svg: string }> = {
       <circle cx="150" cy="66" r="7" fill="#8B2515" opacity=".85"/>
       <text x="120" y="104" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">New York</text>`,
   },
+  pizza_romana: {
+    bg: 'radial-gradient(ellipse at 50% 110%,#6B3A1F,#2C1800 50%,#140C00)',
+    svg: `<circle cx="120" cy="72" r="65" fill="#C4522A" opacity=".75"/>
+      <circle cx="120" cy="72" r="60" fill="#D4906A" opacity=".55"/>
+      <circle cx="120" cy="72" r="55" fill="#E8C89A" opacity=".35"/>
+      <ellipse cx="98" cy="66" rx="11" ry="8" fill="#F5F0E8" opacity=".85"/>
+      <ellipse cx="132" cy="60" rx="9" ry="7" fill="#F5F0E8" opacity=".80"/>
+      <ellipse cx="118" cy="74" rx="8" ry="6" fill="#F5F0E8" opacity=".78"/>
+      <circle cx="60" cy="74" r="6" fill="#150500" opacity=".80"/>
+      <circle cx="180" cy="70" r="5" fill="#150500" opacity=".75"/>
+      <circle cx="120" cy="30" r="4" fill="#150500" opacity=".65"/>
+      <circle cx="120" cy="114" r="4" fill="#150500" opacity=".65"/>
+      <ellipse cx="100" cy="61" rx="4" ry="2" fill="#4A7A2A" opacity=".85" transform="rotate(-15 100 61)"/>
+      <ellipse cx="128" cy="58" rx="3" ry="2" fill="#4A7A2A" opacity=".80" transform="rotate(10 128 58)"/>
+      <circle cx="120" cy="72" r="65" fill="none" stroke="#E8C89A" stroke-width="6" opacity=".55"/>
+      <circle cx="120" cy="72" r="65" fill="none" stroke="#8B4A1A" stroke-width="2" opacity=".60"/>
+      <text x="120" y="138" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#D4A853" font-style="italic">Pizza Romana</text>`,
+  },
   roman: {
     bg: 'linear-gradient(180deg,#18180E,#2A2010)',
     svg: `<rect x="22" y="33" width="196" height="50" rx="4" fill="#C4A855" opacity=".9"/>

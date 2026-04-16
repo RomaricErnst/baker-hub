@@ -117,6 +117,7 @@ const STYLE_FERM_DEFAULTS: Record<string, {
   // minTotalFermH = absolute minimum total fermentation
   neapolitan:    { coldH: 24, rtH: 2, preferredColdH: 48, minColdH: 12, minTotalFermH: 8  },
   newyork:       { coldH: 24, rtH: 2, preferredColdH: 48, minColdH: 12, minTotalFermH: 8  },
+  pizza_romana:  { coldH: 24, rtH: 2, preferredColdH: 48, minColdH: 12, minTotalFermH: 6  },
   roman:         { coldH: 0,  rtH: 6, minColdH: 0,        minTotalFermH: 4  },
   pan:           { coldH: 0,  rtH: 5, minColdH: 0,        minTotalFermH: 3  },
   sourdough:     { coldH: 24, rtH: 4, preferredColdH: 48, minColdH: 12, minTotalFermH: 12 },

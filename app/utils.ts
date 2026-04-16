@@ -357,6 +357,7 @@ const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHReq
   // Pizza — sweet spot = coldH + rtH (where dough peaks at bake)
   neapolitan:    { coldH: 24, rtH: 2 },                          // sweet: 26h
   newyork:       { coldH: 24, rtH: 2 },                          // sweet: 26h
+  pizza_romana:  { coldH: 24, rtH: 2 },                          // sweet: 26h — same window as neapolitan
   roman:         { coldH: 0,  rtH: 6 },                          // RT only: sweet 6h
   pan:           { coldH: 0,  rtH: 5 },                          // RT only: sweet 5h
   sourdough:     { coldH: 24, rtH: 4 },                          // sweet: 28h

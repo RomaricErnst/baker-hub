@@ -47,11 +47,19 @@ const PIZZA_WEIGHT_TABLE: Record<string, [number, number, number, number][]> = {
     [28, 240, 252, 264], [30, 255, 265, 278], [33, 268, 278, 288],
     [35, 278, 288, 295],
   ],
+  pizza_romana: [
+    [24, 175, 185, 195],
+    [26, 185, 195, 205],
+    [28, 195, 205, 215],
+    [30, 205, 215, 225],
+    [32, 215, 223, 231],
+    [35, 225, 233, 240],
+  ],
 };
-const STYLE_HAS_DIAMETER = ['neapolitan', 'newyork', 'sourdough'];
-const STYLE_DEFAULT_DIAMETER: Record<string, number> = { neapolitan: 30, newyork: 35, sourdough: 30 };
+const STYLE_HAS_DIAMETER = ['neapolitan', 'newyork', 'sourdough', 'pizza_romana'];
+const STYLE_DEFAULT_DIAMETER: Record<string, number> = { neapolitan: 30, newyork: 35, sourdough: 30, pizza_romana: 30 };
 const STYLE_BALL_DEFAULTS: Record<string, number> = {
-  neapolitan: 4, newyork: 4, roman: 2, pan: 2, sourdough: 4,
+  neapolitan: 4, newyork: 4, pizza_romana: 4, roman: 2, pan: 2, sourdough: 4,
   pain_campagne: 1, pain_levain: 1, baguette: 4, pain_complet: 1,
   pain_seigle: 1, fougasse: 2, brioche: 6, pain_mie: 1, pain_viennois: 8,
 };
