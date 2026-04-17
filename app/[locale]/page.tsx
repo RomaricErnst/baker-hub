@@ -517,7 +517,7 @@ export default function Home() {
     } else {
       setItemWeight(ALL_STYLES[sk].ballW);
     }
-    advance(2);
+    advance(1);
   }
 
   function advance(from: number) {
@@ -1076,7 +1076,7 @@ export default function Home() {
                   </div>
                 );
               })()}
-              <ContinueBtn onClick={() => advance(2)} />
+              <ContinueBtn onClick={() => advance(1)} />
             </StepCard>
 
             {/* ─── STEP 4: Oven ────────────────────── */}
