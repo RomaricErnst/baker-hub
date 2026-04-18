@@ -171,6 +171,7 @@
       "nightHoursLabel": "· 10pm → 7am"
     },
     "adjustLabel": "Fermentation windows · adjust timing",
+    "adjustDoughLabel": "Dough:",
     "adjustDoughVerb": "drag the green diamond — curve should be near its peak at Bake",
     "adjustPrefVerb": "drag the gold diamond — curve should be near its peak at Start Dough",
     "summaryFridgeBlock": "fridge block",

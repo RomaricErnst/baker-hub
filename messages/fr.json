@@ -171,6 +171,7 @@
       "nightHoursLabel": "· 22h → 7h"
     },
     "adjustLabel": "Fenêtres de fermentation · ajuster le timing",
+    "adjustDoughLabel": "Pâte :",
     "adjustDoughVerb": "glissez le losange vert — la courbe doit être proche de son pic à la cuisson",
     "adjustPrefVerb": "glissez le losange doré — la courbe doit être proche de son pic au démarrage",
     "summaryFridgeBlock": "créneau frigo",

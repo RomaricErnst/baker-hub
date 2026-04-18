@@ -948,6 +948,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const suppressStartReset = useRef(false);
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
+  const [zonesOpen, setZonesOpen] = useState(false);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
 
   const prefLabel = prefermentType === 'poolish' ? tRoot('preferment.makePoolish')
@@ -1755,7 +1756,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               scheduleNote={schedule?.scheduleNote ?? null}
               blocks={blocks}
               recommendedMixHBF={recommendedHBF}
-              showZoneLabels={adjustOpen}
+              showZoneLabels={zonesOpen}
+              hasDragged={hasDragged}
               onDragStart={() => setIsDragging(true)}
               onDragEnd={() => setIsDragging(false)}
               sweetCenterH={renderSweetCenter}
@@ -1839,35 +1841,55 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         )}
       </div>
 
-      {/* Adjust schedule — custom mode only */}
-      {mode !== 'simple' && <div style={{ marginTop: '.5rem', marginBottom: '.75rem' }}>
-        <div
-          onClick={() => setAdjustOpen(o => !o)}
-          style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            cursor: 'pointer', padding: '.4rem 0',
-            borderTop: '1px solid var(--border)',
-            borderBottom: adjustOpen ? 'none' : '1px solid var(--border)',
-          }}
-        >
-          <span style={{ fontSize: '.8rem', fontWeight: 500, color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
-            {t('adjustLabel')}
-          </span>
-          <span style={{ fontSize: '12px', color: '#8A7F78' }}>{adjustOpen ? '▾' : '›'}</span>
-        </div>
+      {eatTimeSet && (
+        <div style={{ marginTop: '6px', marginBottom: '.75rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
-        {adjustOpen && (
-          <div style={{ paddingTop: '4px', paddingBottom: '6px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '6px' }}>
+          {/* Drag hint — always visible, disappears after first drag */}
+          {!hasDragged && (
+            <div style={{
+              textAlign: 'center', fontSize: '11px',
+              color: '#8A7F78', fontFamily: 'DM Sans, sans-serif',
+              fontStyle: 'italic',
+            }}>
+              {locale === 'fr'
+                ? '← Glissez les losanges pour ajuster vos horaires →'
+                : '← Drag the diamonds to adjust your schedule →'}
+            </div>
+          )}
+
+          {/* Show timing guide checkbox */}
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            cursor: 'pointer', fontSize: '12px',
+            color: '#8A7F78', fontFamily: 'DM Sans, sans-serif',
+          }}>
+            <input
+              type="checkbox"
+              checked={zonesOpen}
+              onChange={e => setZonesOpen(e.target.checked)}
+              style={{ width: '14px', height: '14px', accentColor: 'var(--terra)', cursor: 'pointer' }}
+            />
+            {locale === 'fr' ? 'Afficher le guide' : 'Show timing guide'}
+          </label>
+
+          {/* Instructions — only shown when zonesOpen */}
+          {zonesOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '22px' }}>
               <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
-                <span style={{ color: '#3D5A30', fontWeight: 600 }}>◆ Dough:</span> {t('adjustDoughVerb')}
+                <span style={{ color: '#3D5A30', fontWeight: 600 }}>◆ {t('adjustDoughLabel')}</span>{' '}
+                {t('adjustDoughVerb')}
               </div>
               {hasPrefActive && (
                 <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
-                  <span style={{ color: '#C4A030', fontWeight: 600 }}>◇ {prefLabel}:</span> {t('adjustPrefVerb')}
+                  <span style={{ color: '#C4A030', fontWeight: 600 }}>◇ {prefLabel}:</span>{' '}
+                  {t('adjustPrefVerb')}
                 </div>
               )}
             </div>
+          )}
+
+          {/* Reset link — always visible */}
+          {hasDragged && (
             <button
               onClick={() => {
                 hasManuallyDragged.current = false;
@@ -1878,14 +1900,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: 'var(--smoke)', fontSize: '.72rem',
                 fontFamily: 'var(--font-dm-mono)',
-                textDecoration: 'underline', textUnderlineOffset: '2px', padding: 0,
+                textDecoration: 'underline', textUnderlineOffset: '2px',
+                padding: 0, textAlign: 'left',
               }}
             >
-              Reset to recommendation →
+              {locale === 'fr' ? 'Revenir à la recommandation →' : 'Reset to recommendation →'}
             </button>
-          </div>
-        )}
-      </div>}
+          )}
+
+        </div>
+      )}
 
       {/* ── Message cards: State 1 (fallback), State 2 (blocker note), State 3 (bulk conflict) ── */}
       {showFallbackPopup && fallbackOptions && (

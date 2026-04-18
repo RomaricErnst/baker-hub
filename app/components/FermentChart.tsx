@@ -30,6 +30,7 @@ export interface FermentChartProps {
   scheduleNote?: string | null;
   recommendedMixHBF?: number | null;
   showZoneLabels?: boolean;
+  hasDragged?: boolean;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -45,7 +46,7 @@ const AXIS_Y    = 175;  // axis line = same as baseline BL
 // based on hasColdRetard — see derived physics section
 
 // Diamond half-size
-const S = 10;
+const S = 13;
 
 // ── Sigma / optimal-hours functions ──────────────────────────
 // ── Poolish RT peak time (hours from start to peak at room temp) ─────
@@ -171,7 +172,7 @@ export default function FermentChart({
   blocks, onMixChange, onPrefChange, onDragStart, onDragEnd,
   windowH, prefInFridge, hasColdRetard, sweetCenterH, sweetFromH, sweetToH,
   nowHBF = 999, phases, scheduleNote,
-  recommendedMixHBF, showZoneLabels,
+  recommendedMixHBF, showZoneLabels, hasDragged,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -459,6 +460,7 @@ export default function FermentChart({
           className={shouldGlow ? 'fc-diamond-glow' : undefined}
           points={`${cx},${BL - S} ${cx + S},${BL} ${cx},${BL + S} ${cx - S},${BL}`}
           fill={fill} stroke={stroke} strokeWidth={1.5}
+          style={{ animation: hasDragged ? 'none' : 'diamondPulse 1.8s ease-out 0.5s 2' }}
         />
         {warn && (
           <>
@@ -526,6 +528,13 @@ export default function FermentChart({
       >
         {/* ── Clip paths for blockers ── */}
         <defs>
+          <style>{`
+            @keyframes diamondPulse {
+              0%   { filter: drop-shadow(0 0 0px rgba(61,90,48,0)); }
+              40%  { filter: drop-shadow(0 0 6px rgba(61,90,48,0.7)); }
+              100% { filter: drop-shadow(0 0 0px rgba(61,90,48,0)); }
+            }
+          `}</style>
           {blocks.map((b, i) => {
             const { hbfStart, hbfEnd } = blockerHBF(b);
             const x1 = hToX(hbfStart, W, WH);
