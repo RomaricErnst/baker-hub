@@ -64,15 +64,16 @@
       "bullet2": "",
       "bullet3": "",
       "bullet4": "",
-      "collapsed": "Idéal pour commencer · réglages automatiques"
+      "collapsed": "· Idéal pour débuter | · Paramètres intelligents pour toute cuisine | · Votre recette en quelques minutes"
     },
     "custom": {
       "title": "Avancé",
+      "badge": "Pour les passionnés",
       "bullet1": "",
       "bullet2": "",
       "bullet3": "",
       "bullet4": "",
-      "collapsed": "Votre farine · poolish/biga · graphe de fermentation"
+      "collapsed": "· Votre farine & hydratation | · Préferment & levain | · Graphique de fermentation"
     }
   },
   "steps": {

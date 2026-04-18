@@ -742,7 +742,7 @@ export default function Home() {
 
           {/* Pizza / Bread picker — full cards before selection, compact toggle after */}
           {!bakeType ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', margin: '0 0 16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', margin: '0 0 16px' }}>
             {([
               { type: 'pizza' as BakeType, image: '/bake_pizza.png', label: t('bakeType.pizza.label'), desc: t('bakeType.pizza.desc'), activeBorder: 'var(--terra)', activeBg: '#FFF8F3' },
               { type: 'bread' as BakeType, image: '/bake_bread.png', label: t('bakeType.bread.label'), desc: t('bakeType.bread.desc'), activeBorder: 'var(--bread)', activeBg: 'var(--bread-l)' },
@@ -771,7 +771,7 @@ export default function Home() {
                   transition: 'all .2s',
                 }}
               >
-                <img src={opt.image} alt={opt.label} style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '12px', marginBottom: '.75rem' }} />
+                <img src={opt.image} alt={opt.label} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '12px', marginBottom: '.75rem' }} />
                 <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '.25rem' }}>{opt.label}</div>
                 <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.5 }}>{opt.desc}</div>
               </div>
@@ -875,11 +875,24 @@ export default function Home() {
                       transition: 'all 0.15s',
                     }}
                   >
-                    <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 700, color: 'var(--char)', marginBottom: '2px' }}>
-                      {m.title}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                      <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 700, color: 'var(--char)' }}>
+                        {m.title}
+                      </span>
+                      {m.key === 'custom' && (
+                        <span style={{
+                          fontSize: '9px', fontWeight: 600, color: 'var(--terra)',
+                          background: 'rgba(196,82,42,0.1)', borderRadius: '8px',
+                          padding: '1px 6px', letterSpacing: '0.03em', whiteSpace: 'nowrap',
+                        }}>
+                          {t('modeCards.custom.badge')}
+                        </span>
+                      )}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--smoke)' }}>
-                      {m.collapsed}
+                    <div style={{ fontSize: '11px', color: 'var(--smoke)', lineHeight: 1.7 }}>
+                      {m.collapsed.split('|').map((line, i) => (
+                        <div key={i}>{line.trim()}</div>
+                      ))}
                     </div>
                   </div>
                 ))}
