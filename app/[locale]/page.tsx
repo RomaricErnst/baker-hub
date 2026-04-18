@@ -741,7 +741,7 @@ export default function Home() {
           </h1>
 
           {/* Pizza / Bread picker — full cards before selection, compact toggle after */}
-          {!bakeType ? (
+          {!bakeType && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', margin: '0 0 16px' }}>
             {([
               { type: 'pizza' as BakeType, image: '/bake_pizza.png', label: t('bakeType.pizza.label'), desc: t('bakeType.pizza.desc'), activeBorder: 'var(--terra)', activeBg: '#FFF8F3' },
@@ -774,58 +774,6 @@ export default function Home() {
                 <img src={opt.image} alt={opt.label} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '12px', marginBottom: '.75rem' }} />
                 <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '.25rem' }}>{opt.label}</div>
                 <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.5 }}>{opt.desc}</div>
-              </div>
-            ))}
-          </div>
-          ) : (
-          <div style={{ display: 'flex', gap: '8px', margin: '0 0 12px' }}>
-            {([
-              { type: 'pizza' as BakeType, image: '/bake_pizza.png', label: t('bakeType.pizza.label') },
-              { type: 'bread' as BakeType, image: '/bake_bread.png', label: t('bakeType.bread.label') },
-            ]).map(opt => (
-              <div
-                key={opt.type}
-                onClick={() => {
-                  selectBakeType(opt.type);
-                  if (opt.type === 'bread') setPizzaPartyEnabled(false);
-                }}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 12px',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  border: `2px solid ${bakeType === opt.type
-                    ? (opt.type === 'pizza' ? 'var(--terra)' : 'var(--bread)')
-                    : 'var(--border)'}`,
-                  background: bakeType === opt.type
-                    ? (opt.type === 'pizza' ? '#FFF8F3' : 'var(--bread-l)')
-                    : 'var(--card)',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <img
-                  src={opt.image}
-                  alt={opt.label}
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    objectFit: 'cover',
-                    borderRadius: '6px',
-                    flexShrink: 0,
-                  }}
-                />
-                <span style={{
-                  fontSize: '13px',
-                  fontWeight: bakeType === opt.type ? 600 : 400,
-                  color: bakeType === opt.type
-                    ? (opt.type === 'pizza' ? 'var(--terra)' : 'var(--bread)')
-                    : 'var(--smoke)',
-                }}>
-                  {opt.label}
-                </span>
               </div>
             ))}
           </div>
