@@ -136,7 +136,7 @@ export default function ClimatePicker({
       setWeather({ city: name, country, temp, humidityPct, weatherCode });
 
       // Auto-populate the manual controls
-      const clampedTemp = Math.max(15, Math.min(38, temp));
+      const clampedTemp = Math.max(18, Math.min(38, temp));
       onChange(clampedTemp, humidityCategory(humidityPct), fridgeTemp);
 
     } catch (e) {
@@ -148,6 +148,54 @@ export default function ClimatePicker({
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') fetchClimate();
+  }
+
+  if (mode === 'simple') {
+    const SIMPLE_OPTIONS = [
+      { label: 'Cool',    labelFr: 'Fraîche',   desc: 'Under 20°C', descFr: 'Moins de 20°C', temp: 18, color: '#6A7FA8', bg: '#EEF2FA', border: '#C4CDE0' },
+      { label: 'Normal',  labelFr: 'Normale',   desc: '20–26°C',    descFr: '20–26°C',        temp: 23, color: 'var(--sage)', bg: '#F0F4EE', border: '#BDD0BB' },
+      { label: 'Warm',    labelFr: 'Chaude',    desc: '26°C+',      descFr: '26°C+',          temp: 29, color: 'var(--terra)', bg: '#FFF4EF', border: '#F5C4B0' },
+    ];
+    const selected = kitchenTemp <= 20 ? 18 : kitchenTemp <= 26 ? 23 : 29;
+    return (
+      <div style={{ display: 'flex', gap: '8px' }}>
+        {SIMPLE_OPTIONS.map(opt => {
+          const isSelected = selected === opt.temp;
+          return (
+            <div
+              key={opt.temp}
+              onClick={() => onChange(opt.temp, opt.temp >= 26 ? 'humid' : 'normal', fridgeTemp)}
+              style={{
+                flex: 1,
+                border: `2px solid ${isSelected ? opt.border : 'var(--border)'}`,
+                borderRadius: '12px',
+                padding: '12px 8px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                background: isSelected ? opt.bg : 'var(--warm)',
+                transition: 'all .15s',
+              }}
+            >
+              <div style={{
+                fontSize: '13px', fontWeight: 600,
+                color: isSelected ? opt.color : 'var(--char)',
+                marginBottom: '2px',
+                fontFamily: 'var(--font-dm-sans)',
+              }}>
+                {u === 'metric' ? opt.label : opt.label}
+              </div>
+              <div style={{
+                fontSize: '11px',
+                color: 'var(--smoke)',
+                fontFamily: 'var(--font-dm-mono)',
+              }}>
+                {opt.desc}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   }
 
   return (
