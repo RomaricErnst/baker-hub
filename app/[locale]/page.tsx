@@ -1050,7 +1050,7 @@ export default function Home() {
                   </div>
                 );
               })()}
-              <ContinueBtn onClick={() => advance(1)} />
+              <ContinueBtn onClick={() => advance(2)} />
             </StepCard>
 
             {/* ─── STEP 4: Oven ────────────────────── */}
