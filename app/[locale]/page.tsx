@@ -995,8 +995,8 @@ export default function Home() {
                       <div style={{
                         fontSize: '11px', color: '#8A7F78',
                         fontFamily: 'DM Sans, sans-serif',
-                        textAlign: 'center',
-                        marginBottom: '10px', marginTop: '-4px',
+                        textAlign: 'left',
+                        marginBottom: '8px', marginTop: '10px',
                         fontStyle: 'italic',
                       }}>
                         {locale === 'fr'
@@ -1510,8 +1510,8 @@ export default function Home() {
                       <div style={{
                         fontSize: '11px', color: '#8A7F78',
                         fontFamily: 'DM Sans, sans-serif',
-                        textAlign: 'center',
-                        marginBottom: '10px', marginTop: '-4px',
+                        textAlign: 'left',
+                        marginBottom: '8px', marginTop: '10px',
                         fontStyle: 'italic',
                       }}>
                         {locale === 'fr'
