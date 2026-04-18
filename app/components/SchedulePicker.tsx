@@ -1162,6 +1162,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const _sfDef = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
   const _minTotalRT = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0 + (preheatMin / 60);
   const _nowHBF = (pendingEatTime.getTime() - Date.now()) / 3600000;
+  // Bake time in blocker detection
+  const bakeTimeInBlocker = useMemo(() => {
+    const bakeMs = pendingEatTime.getTime();
+    return blocks.some(b => bakeMs > b.from.getTime() && bakeMs < b.to.getTime());
+  }, [pendingEatTime, blocks]);
   const _tropFactor = kitchenTemp >= 33 ? 1.25 : kitchenTemp >= 30 ? 1.15 : 1.0;
   const _prefColdH = _sfDef.preferredColdH ?? _sfDef.coldH;
   // Green zone: always shows full style window — NOT clipped to nowHBF.
@@ -1211,8 +1216,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Also ensure zone arrows are visible — use whichever is larger
     const zoneH = renderSweetFrom + 8;
     const computed = Math.min(144, Math.max(36, Math.ceil(Math.max(diamondH, zoneH) / 12) * 12));
-    windowHRef.current = computed;
-    return computed;
+    // Clip left edge: never show more than 1h of past
+    const nowHBF = (pendingEatTime.getTime() - Date.now()) / 3600000;
+    const clipped = Math.min(computed, Math.max(mixOffH + 4, nowHBF + 1));
+    windowHRef.current = clipped;
+    return clipped;
   }, [isDragging, pendingEatTime, pendingStart, prefOffsetH, hasPrefActive]);
 
   // Fixed window start — always covers 5 days before bake regardless of diamond position
@@ -1911,7 +1919,25 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
-      {/* ── Message cards: State 1 (fallback), State 2 (blocker note), State 3 (bulk conflict) ── */}
+      {/* ── Message cards: State 0 (bake in blocker), State 1 (fallback), State 2 (blocker note), State 3 (bulk conflict) ── */}
+
+      {/* State 0 — bake time falls in a blocker */}
+      {bakeTimeInBlocker && eatTimeSet && (
+        <div style={{
+          background: 'var(--cream)',
+          borderLeft: '4px solid var(--gold)',
+          borderRadius: '10px',
+          padding: '.65rem 1rem',
+          marginBottom: '.75rem',
+          fontFamily: 'var(--font-dm-sans)',
+          fontSize: '.82rem',
+          color: 'var(--ash)',
+        }}>
+          {locale === 'fr'
+            ? "Votre heure de cuisson tombe dans une plage occupée — visiblement, le four passe avant tout."
+            : "Your bake time falls in one of your busy windows — looks like the oven wins."}
+        </div>
+      )}
       {showFallbackPopup && fallbackOptions && (
         <div style={{
           background: 'var(--cream)', borderLeft: '4px solid var(--terra)',
