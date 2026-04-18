@@ -633,9 +633,9 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             <div style={{ marginTop: '12px', borderTop: '1px solid #E8E0D5', paddingTop: '10px' }}>
               <div
                 onClick={() => { setTypeWOpen(o => !o); if (typeWOpen) setQuickSub(null); }}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '13px', color: '#3D3530', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', fontWeight: 500, background: '#F5F0E8', borderRadius: '8px', padding: '8px 10px' }}
               >
-                <span>Don&apos;t see your flour? Enter type or W</span>
+                <span>Don&apos;t see your flour? Enter type or W →</span>
                 <span style={{ fontSize: '11px', color: '#8A7F78' }}>{typeWOpen ? '▾' : '▸'}</span>
               </div>
 
