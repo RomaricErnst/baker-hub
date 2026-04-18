@@ -547,7 +547,12 @@ function SimpleColourBar({
   // equal context either side of the green zone.
   // sweetFrom is the left (early/furthest) edge of the green zone in HBF.
   const sweetLeft = sweetFrom ?? (_barWindowH > 0 ? _barWindowH : (hasColdRetard ? 48 : 12));
-  const barWin = Math.min(72, Math.max(Math.round(sweetLeft * 2), 12));
+  const rawBarWin = Math.min(72, Math.max(Math.round(sweetLeft * 2), 12));
+  // Clip left edge: never show more than 1h of past
+  const _earlyMixOffH = (eatTime.getTime() - pendingStart.getTime()) / 3600000;
+  const barWin = _barWindowH > 0
+    ? Math.min(rawBarWin, Math.max(_earlyMixOffH + 4, _barWindowH + 1))
+    : rawBarWin;
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef       = useRef<SVGSVGElement>(null);
   const lastHBFRef   = useRef<number>(0);
