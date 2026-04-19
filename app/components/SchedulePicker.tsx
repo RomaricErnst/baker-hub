@@ -1954,7 +1954,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 padding: 0, textAlign: 'left',
               }}
             >
-              {locale === 'fr' ? 'Revenir à la recommandation →' : 'Reset to recommendation →'}
+              {locale === 'fr' ? '↺ Revenir à la recommandation' : '↺ Reset to recommendation'}
             </button>
           )}
 
