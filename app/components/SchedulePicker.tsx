@@ -431,13 +431,11 @@ function findOptimalPosition(
           fallback: !inSweet(candidate), mixInBlocker: false, prefInBlocker: false,
         };
       }
-      // Zone max is type-aware: poolish liquid 24h max, biga stiff 72h max.
-      // Search strategy: expand OUTWARD from optH (closest to optimal first).
-      // This ensures the recommendation is as close as possible to the ideal time,
-      // not the earliest possible (which risks over-fermentation for poolish).
-      const prefZoneMax = prefermentType === 'biga' ? 72 : 24;
-      const prefZoneMin = prefermentType === 'biga' ? 12 : 3;
-      const prefOptH = prefOffsetH; // passed in as optimalPrefOffset from computeAndApplyRecommendation
+      // Science-aligned boundaries — match card status and graph zone exactly.
+      // prefOffsetH passed in IS getPrefOptH() from computeAndApplyRecommendation.
+      const prefZoneMax = prefermentType === 'biga' ? 72 : prefGoesInFridge ? 24 : prefOffsetH * 1.5;
+      const prefZoneMin = prefermentType === 'biga' ? 12 : prefGoesInFridge ? 3 : 1;
+      const prefOptH = prefOffsetH;
       const hardMax = Math.min(prefZoneMax, nowHBF - candidate - 0.25);
       let bestPrefOffset = 0;
       // Scan outward from optH in both directions, prefer closer positions
@@ -2145,9 +2143,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {startComputed && mode !== 'simple' && (() => {
         const isLevainType = prefermentType === 'levain' || isSourdough;
         const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
-        // Pref 5-state zones (hours before mix = prefOffsetH)
-        // optH = ideal ferment time, maxH = max before over-ferment
-        const prefOptHCard  = prefermentType === 'biga' ? 48 : prefGoesInFridge ? 18 : prefRTPeakH;
+        // Single source of truth — same functions used by graph zone and recommendation
+        const prefOptHCard  = getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridge, styleKey ?? 'neapolitan');
         const prefMaxHCard  = prefermentType === 'biga' ? 72 : prefGoesInFridge ? 24 : prefRTPeakH * 1.5;
         const prefMinHCard  = 3;
         const cardPrefInZone    = (hasPrefActive || isSourdough) && prefOffsetH >= prefMinHCard && prefOffsetH <= prefOptHCard;
