@@ -685,14 +685,14 @@ export default function FermentChart({
           <>
             <path
               d={prefNeedsFridge
-                ? makePlateauBellPath(prefPeakHBF, prefSig, plateauHalfW, W, WH)
+                ? makePlateauBellPath(prefPeakHBF, prefSig, plateauHalfW, W, WH, prefStartAbsHBF)
                 : makeBellPath(prefPeakHBF, prefSig, W, WH, prefStartAbsHBF)}
               fill={`${prefColor}2E`} stroke={`${prefColor}A5`} strokeWidth={1.5}
-              clipPath={prefNeedsFridge ? 'url(#pref-bell-clip)' : 'url(#chart-area-clip)'}
+              clipPath="url(#chart-area-clip)"
             />
             <line
               x1={hToX(prefStartAbsHBF, W, WH)}
-              y1={AXIS_Y}
+              y1={BL}
               x2={hToX(prefStartAbsHBF, W, WH)}
               y2={BL}
               stroke={`${prefColor}A5`} strokeWidth={1.5}
