@@ -468,9 +468,9 @@
     "doughPeaksAfter": "🟡 Dough peaks just after bake",
     "prefReadyAtStartDough": "🟢 Ready at Start Dough",
     "prefReadyAtMix": "🟢 Ready at Start Dough",
-    "prefEarlyOk": "🟡 Just past peak — still usable",
+    "prefEarlyOk": "🟡 Just past peak — use it, it'll be fine",
     "prefTooEarly": "🔴 Past its peak — over-fermentation risk",
-    "prefLateOk": "🟡 Still developing — nearly ready",
+    "prefLateOk": "🟡 Still developing — use it, it'll be fine",
     "prefTooLate": "🔴 Not ready — under-fermentation risk",
     "prefInFridgeReady": "🧊 In fridge → ready at Start Dough",
     "prefReadyWhenDoughStarts": "🟢 Ready when dough starts"
