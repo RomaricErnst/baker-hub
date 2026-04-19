@@ -2151,18 +2151,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const prefMinHCard  = 3;
         // Plateau half-width: poolish fridge ±3h, biga ±10h, RT ±0
         const cardPrefPlateauH  = prefGoesInFridge ? (prefermentType === 'biga' ? 10 : 3) : 0;
-        // Fridge: green = 3h → optH + plateau (full quality window)
-        // RT: green = optH ±20% (at or near peak only — developing phase is yellow)
+        // Climate-aware RT zones — absolute hour offsets, not percentages.
+        // rtPeakH is already climate-sensitive (4h at 30°C, 11h at 18°C).
+        // Green: at or just past peak (±1.5h window)
+        // Developing: 3h → peak (still rising — valid but not optimal)
+        // EarlyOk: peak+1.5h → maxH (just past peak — still usable)
+        const RT_PEAK_TOLERANCE = 1.5; // hours either side of peak = green
         const cardPrefInZone = prefGoesInFridge
           ? (hasPrefActive || isSourdough) && prefOffsetH >= prefMinHCard && prefOffsetH <= prefOptHCard + cardPrefPlateauH
-          : (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard * 0.8 && prefOffsetH <= prefOptHCard * 1.2;
+          : (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard && prefOffsetH <= prefOptHCard + RT_PEAK_TOLERANCE;
         const cardPrefEarlyOk = prefGoesInFridge
           ? (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + cardPrefPlateauH && prefOffsetH <= prefMaxHCard
-          : (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard * 1.2 && prefOffsetH <= prefMaxHCard;
-        // RT: developing phase (below peak) = lateOk
+          : (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + RT_PEAK_TOLERANCE && prefOffsetH <= prefMaxHCard;
+        // RT: developing = 3h → rtPeakH (still rising, not yet at peak)
         const cardPrefDeveloping = !prefGoesInFridge
           && (hasPrefActive || isSourdough)
-          && prefOffsetH >= prefMinHCard && prefOffsetH < prefOptHCard * 0.8;
+          && prefOffsetH >= prefMinHCard && prefOffsetH < prefOptHCard;
         const cardPrefTooEarly  = (hasPrefActive || isSourdough) && prefOffsetH > prefMaxHCard;
         const cardPrefLateOk    = (hasPrefActive || isSourdough) && prefOffsetH >= 1 && prefOffsetH < prefMinHCard;
         // For RT: use cardPrefDeveloping instead of cardPrefLateOk for 3h→peak*0.8 range
