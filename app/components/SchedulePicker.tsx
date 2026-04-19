@@ -598,7 +598,7 @@ function SimpleColourBar({
   // Colour zones: 6 symmetrical zones
   // LEFT: past(grey) · too early(terra) · early ok(gold) | GREEN | late ok(gold) · too late(terra) :RIGHT
   const zones = [
-    { from: barWin,      to: goldL_HBF,   fill: 'rgba(180,170,160,0.2)',  label: '' },
+    { from: barWin,      to: goldL_HBF,   fill: 'rgba(120,115,110,0.45)', label: '' },
     { from: goldL_HBF,   to: tooEarlyHBF, fill: 'rgba(196,82,42,0.25)',   label: tRoot('schedulePicker.zoneLabels.tooEarly') },
     { from: tooEarlyHBF, to: sweetL_HBF,  fill: 'rgba(212,168,83,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
     { from: sweetL_HBF,  to: sweetR_HBF,  fill: 'rgba(107,122,90,0.5)',  label: tRoot('schedulePicker.zoneLabels.startDough') },
@@ -1162,6 +1162,29 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setShowFallbackPopup(false);
     setDismissedConflict(false);
     setGuardNote(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingEatTime]);
+
+  // Auto-regenerate preset blocks when bake date changes
+  useEffect(() => {
+    if (!eatTimeSet) return;
+    const wasWorkActive = blocks.some(b => b.label.startsWith('Work · '));
+    const wasNightActive = blocks.some(b => b.label.startsWith('Night · '));
+    if (!wasWorkActive && !wasNightActive) return;
+
+    const freshWorkdays = getWorkdaysInWindow(windowStart, pendingEatTime);
+    const freshNights   = getNightsInWindow(windowStart, pendingEatTime);
+
+    // Keep any custom blocks (non-preset), then re-add active presets
+    const customBlocks = blocks.filter(
+      b => !b.label.startsWith('Work · ') && !b.label.startsWith('Night · ')
+    );
+    const newBlocks = [
+      ...customBlocks,
+      ...(wasWorkActive  ? freshWorkdays.map(d => ({ from: d.blockStart, to: d.blockEnd, label: d.label })) : []),
+      ...(wasNightActive ? freshNights.map(n => ({ from: n.blockStart, to: n.blockEnd, label: n.label })) : []),
+    ];
+    applyAndUpdate(newBlocks);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
 
@@ -1870,19 +1893,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <div style={{ marginTop: '6px', marginBottom: '.75rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
           {/* Drag hint — always visible, disappears after first drag */}
-          {!hasDragged && (
+          {!hasDragged && mode !== 'simple' && (
             <div style={{
               textAlign: 'center', fontSize: '11px',
               color: '#8A7F78', fontFamily: 'DM Sans, sans-serif',
               fontStyle: 'italic',
             }}>
-              {mode === 'simple'
-                ? (locale === 'fr'
-                  ? '← Glissez le losange pour ajuster vos horaires →'
-                  : '← Drag the diamond to set your start time →')
-                : (locale === 'fr'
-                  ? '← Glissez les losanges pour ajuster vos horaires →'
-                  : '← Drag the diamonds to adjust your schedule →')}
+              {locale === 'fr'
+                ? '← Glissez les losanges pour ajuster vos horaires →'
+                : '← Drag the diamonds to adjust your schedule →'}
             </div>
           )}
 
