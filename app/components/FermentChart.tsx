@@ -150,7 +150,7 @@ function makePlateauBellPath(
   sigma: number,
   plateauHalfW: number,
   W: number, wh: number,
-  startHBF: number,
+  startHBF?: number,
 ): string {
   function pbell(h: number): number {
     const dist = Math.abs(h - peakHBF);
@@ -158,17 +158,18 @@ function makePlateauBellPath(
     return Math.exp(-0.5 * ((dist - plateauHalfW) / sigma) ** 2);
   }
   const N = 320;
-  const floor = pbell(startHBF);
+  const left = startHBF ?? wh;
+  const floor = startHBF !== undefined ? pbell(startHBF) : 0;
   const range = Math.max(0.01, 1 - floor);
   const pts: string[] = [];
   for (let i = 0; i <= N; i++) {
-    const hbf = (i / N) * startHBF;
+    const hbf = (i / N) * left;
     const x = hToX(hbf, W, wh);
     const y = BL - ((pbell(hbf) - floor) / range) * MAXH;
     pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
   }
-  pts.push(`L ${hToX(startHBF, W, wh).toFixed(1)} ${BL}`);
-  pts.push(`L ${hToX(0, W, wh).toFixed(1)} ${BL}`);
+  pts.push(`L ${hToX(left, W, wh).toFixed(1)} ${BL}`);
+  pts.push(`L ${hToX(0,   W, wh).toFixed(1)} ${BL}`);
   pts.push('Z');
   return pts.join(' ');
 }
@@ -684,14 +685,19 @@ export default function FermentChart({
           <>
             <path
               d={prefNeedsFridge
-                ? makePlateauBellPath(prefPeakHBF, prefSig, plateauHalfW, W, WH, prefStartAbsHBF)
+                ? makePlateauBellPath(prefPeakHBF, prefSig, plateauHalfW, W, WH)
                 : makeBellPath(prefPeakHBF, prefSig, W, WH, prefStartAbsHBF)}
               fill={`${prefColor}2E`} stroke={`${prefColor}A5`} strokeWidth={1.5}
-              clipPath="url(#chart-area-clip)"
+              clipPath={prefNeedsFridge ? 'url(#pref-bell-clip)' : 'url(#chart-area-clip)'}
             />
             <line
               x1={hToX(prefStartAbsHBF, W, WH)}
-              y1={BL - bell(prefStartAbsHBF, prefPeakHBF, prefSig) * MAXH}
+              y1={BL - (() => {
+                const dist = Math.abs(prefStartAbsHBF - prefPeakHBF);
+                if (!prefNeedsFridge) return bell(prefStartAbsHBF, prefPeakHBF, prefSig);
+                return dist <= plateauHalfW ? 1.0
+                  : Math.exp(-0.5 * ((dist - plateauHalfW) / prefSig) ** 2);
+              })() * MAXH}
               x2={hToX(prefStartAbsHBF, W, WH)}
               y2={BL}
               stroke={`${prefColor}A5`} strokeWidth={1.5}
