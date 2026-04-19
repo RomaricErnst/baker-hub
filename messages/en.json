@@ -464,7 +464,7 @@
     "doughReadyAtBake": "🟢 Dough ready at bake",
     "doughEarlyOk": "🟡 Peaks just before bake — should be fine",
     "doughLateOk": "🟡 Still rising at bake — should be fine",
-    "doughPeaksBefore": "🟡 Dough peaks before bake",
+    "doughPeaksBefore": "🔴 Dough peaks before bake — over-fermentation risk",
     "doughPeaksAfter": "🟡 Dough peaks just after bake",
     "prefReadyAtStartDough": "🟢 Ready at Start Dough",
     "prefReadyAtMix": "🟢 Ready at Start Dough",

@@ -1842,6 +1842,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 onChange(newStart, pendingEatTime, blocks);
               }}
               onPrefChange={(offsetH) => {
+                hasManuallyDragged.current = true;
+                setHasDragged(true);
                 if (isSourdough) {
                   const newFeed = new Date(pendingStart.getTime() - offsetH * 3600000);
                   setFeedTime(newFeed);

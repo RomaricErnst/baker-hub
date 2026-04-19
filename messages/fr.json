@@ -464,7 +464,7 @@
     "doughReadyAtBake": "🟢 Pâte prête à la cuisson",
     "doughEarlyOk": "🟡 Pic légèrement avant — devrait bien aller",
     "doughLateOk": "🟡 Encore en pousse — devrait bien aller",
-    "doughPeaksBefore": "🟡 Pic de pâte avant la cuisson",
+    "doughPeaksBefore": "🔴 Pic avant la cuisson — risque de surfermentation",
     "doughPeaksAfter": "🟡 Pic de pâte juste après la cuisson",
     "prefReadyAtStartDough": "🟢 Prêt au démarrage de la pâte",
     "prefReadyAtMix": "🟢 Prêt au démarrage de la pâte",

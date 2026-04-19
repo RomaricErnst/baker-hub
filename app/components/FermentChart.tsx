@@ -271,7 +271,12 @@ export default function FermentChart({
   // If RT only: peak = after mix naturally (curve still rising at mix = honest)
   const rtPeakH = hasPref ? getPrefPeakH_RT(prefermentType, kitchenTemp) : 0;
   const prefNeedsFridge = hasPref && (prefermentType === 'biga' || prefOffsetH > rtPeakH);
-  const prefSig = hasPref ? getPrefSig(prefermentType, kitchenTemp, prefNeedsFridge, prefOffsetH) : 1;
+  // Fridge: fix sigma at optimal duration so curve shape is stable during drag
+  // RT: use actual prefOffsetH (small sigma, negligible effect)
+  const prefSigInput = prefNeedsFridge
+    ? getPrefOptH(prefermentType, kitchenTemp, true)
+    : prefOffsetH;
+  const prefSig = hasPref ? getPrefSig(prefermentType, kitchenTemp, prefNeedsFridge, prefSigInput) : 1;
 
   // Plateau width = science-based peak window at cold retard temps:
   // Poolish fridge: ±3h (narrow — peaks and holds ~6h total then declines fast)
@@ -281,9 +286,6 @@ export default function FermentChart({
     ? (prefermentType === 'biga' ? 10 : 3)
     : 0;
 
-  // Over-fermentation: peak drifts left of mix when past threshold
-  const prefOverFermentH = prefermentType === 'biga' ? 72 : 48;
-
   // During drag, use local position for all mix-derived values
   const effectiveMixHBF = localMixHBF !== null ? localMixHBF : mixOffsetH;
 
@@ -292,13 +294,12 @@ export default function FermentChart({
     nowHBF - 0.25
   );
   const doughPeakHBF = effectiveMixHBF - DOUGH_SWEET_CENTER;
-  // Fridge protocol: RT warmup guarantees peak exactly at mix
-  // Full RT: peak happens naturally at rtPeakH after poolish start
+  // Fridge: peak shifts proportionally around mix time based on deviation from optimal.
+  // At optimal prefOffsetH → peak = mix. Too long → peak before mix. Too short → peak after mix.
+  const prefOptHFridge = getPrefOptH(prefermentType, kitchenTemp, true);
   const prefPeakHBF = prefNeedsFridge
-    ? prefOffsetH > prefOverFermentH
-      ? effectiveMixHBF + (prefOffsetH - prefOverFermentH) * 0.5  // drifts left – over-fermented
-      : effectiveMixHBF                         // peaks AT mix – fridge protocol
-    : prefStartAbsHBF - rtPeakH;               // peaks naturally (RT)
+    ? effectiveMixHBF + (prefOptHFridge - prefOffsetH)
+    : prefStartAbsHBF - rtPeakH;
 
   // Sweet-spot zones — driven by style+timing aware props
   // Zone: left = max useful start (min of now and preferredCold+rtH)
