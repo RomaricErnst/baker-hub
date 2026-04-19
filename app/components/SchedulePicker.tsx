@@ -2157,16 +2157,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // Developing: 3h → peak (still rising — valid but not optimal)
         // EarlyOk: peak+1.5h → maxH (just past peak — still usable)
         const RT_PEAK_TOLERANCE = 1.5; // hours either side of peak = green
+        // Green zone = plateau only: optH-plateauH → optH+plateauH (fridge) or optH → optH+1.5h (RT)
+        // Developing zone = viable but not yet at peak: 3h → plateau start
         const cardPrefInZone = prefGoesInFridge
-          ? (hasPrefActive || isSourdough) && prefOffsetH >= prefMinHCard && prefOffsetH <= prefOptHCard + cardPrefPlateauH
+          ? (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard - cardPrefPlateauH && prefOffsetH <= prefOptHCard + cardPrefPlateauH
           : (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard && prefOffsetH <= prefOptHCard + RT_PEAK_TOLERANCE;
         const cardPrefEarlyOk = prefGoesInFridge
           ? (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + cardPrefPlateauH && prefOffsetH <= prefMaxHCard
           : (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + RT_PEAK_TOLERANCE && prefOffsetH <= prefMaxHCard;
-        // RT: developing = 3h → rtPeakH (still rising, not yet at peak)
-        const cardPrefDeveloping = !prefGoesInFridge
-          && (hasPrefActive || isSourdough)
-          && prefOffsetH >= prefMinHCard && prefOffsetH < prefOptHCard;
+        // Developing = viable but not yet at peak (both fridge and RT)
+        const cardPrefDeveloping = (hasPrefActive || isSourdough)
+          && prefOffsetH >= prefMinHCard
+          && (prefGoesInFridge
+            ? prefOffsetH < prefOptHCard - cardPrefPlateauH
+            : prefOffsetH < prefOptHCard);
         const cardPrefTooEarly  = (hasPrefActive || isSourdough) && prefOffsetH > prefMaxHCard;
         const cardPrefLateOk    = (hasPrefActive || isSourdough) && prefOffsetH >= 1 && prefOffsetH < prefMinHCard;
         // For RT: use cardPrefDeveloping instead of cardPrefLateOk for 3h→peak*0.8 range
