@@ -2151,17 +2151,28 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const prefMinHCard  = 3;
         // Plateau half-width: poolish fridge ±3h, biga ±10h, RT ±0
         const cardPrefPlateauH  = prefGoesInFridge ? (prefermentType === 'biga' ? 10 : 3) : 0;
-        const cardPrefInZone    = (hasPrefActive || isSourdough) && prefOffsetH >= prefMinHCard && prefOffsetH <= prefOptHCard + cardPrefPlateauH;
-        const cardPrefEarlyOk   = (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard && prefOffsetH <= prefMaxHCard;
+        // Fridge: green = 3h → optH + plateau (full quality window)
+        // RT: green = optH ±20% (at or near peak only — developing phase is yellow)
+        const cardPrefInZone = prefGoesInFridge
+          ? (hasPrefActive || isSourdough) && prefOffsetH >= prefMinHCard && prefOffsetH <= prefOptHCard + cardPrefPlateauH
+          : (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard * 0.8 && prefOffsetH <= prefOptHCard * 1.2;
+        const cardPrefEarlyOk = prefGoesInFridge
+          ? (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + cardPrefPlateauH && prefOffsetH <= prefMaxHCard
+          : (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard * 1.2 && prefOffsetH <= prefMaxHCard;
+        // RT: developing phase (below peak) = lateOk
+        const cardPrefDeveloping = !prefGoesInFridge
+          && (hasPrefActive || isSourdough)
+          && prefOffsetH >= prefMinHCard && prefOffsetH < prefOptHCard * 0.8;
         const cardPrefTooEarly  = (hasPrefActive || isSourdough) && prefOffsetH > prefMaxHCard;
         const cardPrefLateOk    = (hasPrefActive || isSourdough) && prefOffsetH >= 1 && prefOffsetH < prefMinHCard;
+        // For RT: use cardPrefDeveloping instead of cardPrefLateOk for 3h→peak*0.8 range
         const cardPrefTooShort  = (hasPrefActive || isSourdough) && prefOffsetH < 1;
         // Protocol already shown via ❄/🌡 indicator below diamond — not repeated in pill
-        const cardPrefStatus = cardPrefInZone   ? tRoot('schedulePicker.prefReadyAtMix')
-          : cardPrefEarlyOk                     ? tRoot('schedulePicker.prefEarlyOk')
-          : cardPrefLateOk                      ? tRoot('schedulePicker.prefLateOk')
-          : cardPrefTooShort                    ? tRoot('schedulePicker.prefTooLate')
-          :                                       tRoot('schedulePicker.prefTooEarly');
+        const cardPrefStatus = cardPrefInZone      ? tRoot('schedulePicker.prefReadyAtMix')
+          : cardPrefEarlyOk                        ? tRoot('schedulePicker.prefEarlyOk')
+          : cardPrefDeveloping                     ? tRoot('schedulePicker.prefLateOk')
+          : cardPrefLateOk                         ? tRoot('schedulePicker.prefTooLate')
+          :                                          tRoot('schedulePicker.prefTooEarly');
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
           : isSourdough && feedTime ? feedTime : null;
