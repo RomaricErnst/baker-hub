@@ -455,9 +455,9 @@
     },
     "simpleStatus": {
       "ready": "🟢 Dough ready at bake",
-      "earlyOk": "🟡 A little early — dough will be great",
-      "slightlyOut": "🟡 Slightly outside the sweet spot",
+      "earlyOk": "🟡 A little early — should still turn out well",
       "tooEarly": "🔴 Too early — risk of over-fermentation",
+      "lateOk": "🟡 Slightly late — dough will be fine",
       "tooLate": "🔴 Too late — risk of under-fermentation"
     },
     "bakeLabel": "Bake",

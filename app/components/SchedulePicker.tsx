@@ -586,13 +586,24 @@ function SimpleColourBar({
   const goldL_HBF  = _nowHBFBar;
   const goldR2_HBF = yellowTo ?? Math.max(0.5, sweetR_HBF - 2);
 
-  // Colour zones: [fromHBF (left), toHBF (right), fill, label]
+  // Early tolerance: cold retard styles are more forgiving on the early side
+  // because extra time = more cold retard (slow). RT-only styles are tighter
+  // because extra time = active room-temp fermentation (fast).
+  const greenWidth = sweetL_HBF - sweetR_HBF;
+  const earlyToleranceH = hasColdRetard
+    ? Math.max(4, greenWidth * 0.4)
+    : Math.max(1, greenWidth * 0.3);
+  const tooEarlyHBF = Math.min(goldL_HBF, sweetL_HBF + earlyToleranceH);
+
+  // Colour zones: 6 symmetrical zones
+  // LEFT: past(grey) · too early(terra) · early ok(gold) | GREEN | late ok(gold) · too late(terra) :RIGHT
   const zones = [
-    { from: barWin,     to: goldL_HBF,  fill: 'rgba(196,82,42,0.2)',   label: tRoot('schedulePicker.zoneLabels.tooEarly') },
-    { from: goldL_HBF,  to: sweetL_HBF, fill: 'rgba(212,168,83,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
-    { from: sweetL_HBF, to: sweetR_HBF, fill: 'rgba(107,122,90,0.5)',  label: tRoot('schedulePicker.zoneLabels.startDough') },
-    { from: sweetR_HBF, to: goldR2_HBF, fill: 'rgba(212,168,83,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
-    { from: goldR2_HBF, to: 0,          fill: 'rgba(196,82,42,0.2)',   label: tRoot('schedulePicker.zoneLabels.tooLate')  },
+    { from: barWin,      to: goldL_HBF,   fill: 'rgba(180,170,160,0.2)',  label: '' },
+    { from: goldL_HBF,   to: tooEarlyHBF, fill: 'rgba(196,82,42,0.25)',   label: tRoot('schedulePicker.zoneLabels.tooEarly') },
+    { from: tooEarlyHBF, to: sweetL_HBF,  fill: 'rgba(212,168,83,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
+    { from: sweetL_HBF,  to: sweetR_HBF,  fill: 'rgba(107,122,90,0.5)',  label: tRoot('schedulePicker.zoneLabels.startDough') },
+    { from: sweetR_HBF,  to: goldR2_HBF,  fill: 'rgba(212,168,83,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
+    { from: goldR2_HBF,  to: 0,           fill: 'rgba(196,82,42,0.25)',  label: tRoot('schedulePicker.zoneLabels.tooLate')  },
   ];
 
   // Adaptive ticks: 3h for short windows, 12h for medium, 24h for long
@@ -613,17 +624,16 @@ function SimpleColourBar({
     ticks.push({ x: barHToX(h, W, barWin), label: `${wd} ${timeLabel}` });
   }
 
-  // Status — uses dynamic zone boundaries
-  const inZone    = mixOffsetH >= sweetR_HBF && mixOffsetH <= sweetL_HBF;
-  const tooEarly  = mixOffsetH > _nowHBFBar; // started before now = impossible
-  const tooLate   = mixOffsetH < goldR2_HBF;
-  const nearEarly = false; // earlier = more cold retard = never bad within window
-  const nearLate  = !inZone && mixOffsetH < sweetR_HBF && !tooLate;
-  const status    = inZone
-    ? tRoot('schedulePicker.simpleStatus.ready')
-    : nearEarly ? tRoot('schedulePicker.simpleStatus.earlyOk')
-    : nearLate  ? tRoot('schedulePicker.simpleStatus.slightlyOut')
-    : tooEarly  ? tRoot('schedulePicker.simpleStatus.tooEarly')
+  // Status – derived from 6-zone boundaries
+  const inZone   = mixOffsetH >= sweetR_HBF && mixOffsetH <= sweetL_HBF;
+  const earlyOk  = !inZone && mixOffsetH > sweetL_HBF && mixOffsetH <= tooEarlyHBF;
+  const tooEarly = !inZone && mixOffsetH > tooEarlyHBF; // drag clamp prevents past
+  const nearLate = !inZone && mixOffsetH < sweetR_HBF && mixOffsetH >= goldR2_HBF;
+  const tooLate  = mixOffsetH < goldR2_HBF;
+  const status   = inZone   ? tRoot('schedulePicker.simpleStatus.ready')
+    : earlyOk    ? tRoot('schedulePicker.simpleStatus.earlyOk')
+    : tooEarly   ? tRoot('schedulePicker.simpleStatus.tooEarly')
+    : nearLate   ? tRoot('schedulePicker.simpleStatus.lateOk')
     : tRoot('schedulePicker.simpleStatus.tooLate');
 
   // Pointer handling
@@ -691,7 +701,9 @@ function SimpleColourBar({
     >
       {/* Hint */}
       <div style={{ fontSize: '13px', color: 'var(--smoke)', textAlign: 'center', marginBottom: '8px' }}>
-        {tRoot('schedulePicker.dragHint')}
+        {locale === 'fr'
+          ? '← Glissez le losange pour ajuster vos horaires →'
+          : '← Drag the diamond to set your start time →'}
       </div>
       <svg
         ref={svgRef}
@@ -817,7 +829,7 @@ function SimpleColourBar({
           const bx = barHToX(0, W, barWin);
           return (
             <>
-              <polygon points={`${bx - 6},${BAR_AXIS_Y} ${bx},${BAR_AXIS_Y - 10} ${bx + 6},${BAR_AXIS_Y}`}
+              <polygon points={`${bx - 8},${BAR_AXIS_Y} ${bx},${BAR_AXIS_Y - 14} ${bx + 8},${BAR_AXIS_Y}`}
                 fill="#C4522A" />
               <text x={bx} y={BAR_AXIS_Y + 12} fontSize={9} fill="#C4522A"
                 fontFamily="DM Mono, monospace" textAnchor="middle">
@@ -859,7 +871,7 @@ function SimpleColourBar({
           <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
             {fmtDT(pendingStart)}
           </div>
-          <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: inZone ? '#4A7A3A' : (nearEarly || nearLate) ? '#C49A28' : '#C4522A' }}>
+          <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: inZone ? '#4A7A3A' : (earlyOk || nearLate) ? '#C49A28' : '#C4522A' }}>
             {status}
           </div>
         </div>
@@ -1870,8 +1882,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </div>
           )}
 
-          {/* Show timing guide checkbox */}
-          <label style={{
+          {/* Show timing guide checkbox — Custom mode only */}
+          {mode !== 'simple' && <label style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             cursor: 'pointer', fontSize: '12px',
             color: '#8A7F78', fontFamily: 'DM Sans, sans-serif',
@@ -1883,7 +1895,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               style={{ width: '14px', height: '14px', accentColor: 'var(--terra)', cursor: 'pointer' }}
             />
             {locale === 'fr' ? 'Afficher le guide' : 'Show timing guide'}
-          </label>
+          </label>}
 
           {/* Instructions — only shown when zonesOpen */}
           {zonesOpen && (

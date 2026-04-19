@@ -455,9 +455,9 @@
     },
     "simpleStatus": {
       "ready": "🟢 Pâte prête à la cuisson",
-      "earlyOk": "🟡 Un peu tôt — la pâte sera excellente",
-      "slightlyOut": "🟡 Légèrement hors de la plage idéale",
-      "tooEarly": "🔴 Trop tôt — risque de sur-fermentation",
+      "earlyOk": "🟡 Un peu tôt — ça devrait quand même bien se passer",
+      "tooEarly": "🔴 Trop tôt — risque de surfermentation",
+      "lateOk": "🟡 Un peu tard — ça devrait aller",
       "tooLate": "🔴 Trop tard — risque de sous-fermentation"
     },
     "bakeLabel": "Cuisson",
