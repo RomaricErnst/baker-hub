@@ -1670,10 +1670,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       )}
 
       {/* Active block chips — custom blocks only */}
-      {blocks.some(b => !nights.some(n => n.label === b.label) && !b.label.startsWith('Work · ')) && (
+      {blocks.some(b => !b.label.startsWith('Night · ') && !b.label.startsWith('Work · ')) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem', marginBottom: '.5rem' }}>
           {blocks.filter((block) => {
-            const isNightBlock = nights.some(n => n.label === block.label);
+            const isNightBlock = block.label.startsWith('Night · ');
             const isWorkBlock = block.label.startsWith('Work · ');
             return !isNightBlock && !isWorkBlock;
           }).map((block, i) => {
