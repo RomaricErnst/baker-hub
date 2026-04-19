@@ -295,11 +295,11 @@ export default function FermentChart({
     nowHBF - 0.25
   );
   const doughPeakHBF = effectiveMixHBF - DOUGH_SWEET_CENTER;
-  // Fridge: peak shifts proportionally around mix time based on deviation from optimal.
-  // At optimal prefOffsetH → peak = mix. Too long → peak before mix. Too short → peak after mix.
+  // Both fridge and RT: peak relative to prefStartAbsHBF so curve slides with diamond.
+  // Fridge: peak is optH hours after start (at optimal → peaks at mix, earlier/later → shifts).
   const prefOptHFridge = getPrefOptH(prefermentType, kitchenTemp, true);
   const prefPeakHBF = prefNeedsFridge
-    ? effectiveMixHBF + (prefOptHFridge - prefOffsetH)
+    ? prefStartAbsHBF - prefOptHFridge
     : prefStartAbsHBF - rtPeakH;
 
   // Sweet-spot zones — driven by style+timing aware props
