@@ -1876,9 +1876,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               color: '#8A7F78', fontFamily: 'DM Sans, sans-serif',
               fontStyle: 'italic',
             }}>
-              {locale === 'fr'
-                ? '← Glissez les losanges pour ajuster vos horaires →'
-                : '← Drag the diamonds to adjust your schedule →'}
+              {mode === 'simple'
+                ? (locale === 'fr'
+                  ? '← Glissez le losange pour ajuster vos horaires →'
+                  : '← Drag the diamond to set your start time →')
+                : (locale === 'fr'
+                  ? '← Glissez les losanges pour ajuster vos horaires →'
+                  : '← Drag the diamonds to adjust your schedule →')}
             </div>
           )}
 
