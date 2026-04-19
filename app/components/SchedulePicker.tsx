@@ -966,6 +966,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [zonesOpen, setZonesOpen] = useState(false);
+  const [editingMix, setEditingMix]   = useState(false);
+  const [editingPref, setEditingPref] = useState(false);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
 
   const prefLabel = prefermentType === 'poolish' ? tRoot('preferment.makePoolish')
@@ -2143,25 +2145,41 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {startComputed && mode !== 'simple' && (() => {
         const isLevainType = prefermentType === 'levain' || isSourdough;
         const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
-        const prefZoneMaxCard = prefermentType === 'biga' ? 72 : 24;
-        const cardPrefInZone  = (hasPrefActive || isSourdough) && prefOffsetH >= 3 && prefOffsetH <= prefZoneMaxCard;
-        const cardPrefTooShort = (hasPrefActive || isSourdough) && prefOffsetH < 3;
-        const cardPrefStatus = cardPrefInZone
-          ? (prefGoesInFridge
-              ? tRoot('schedulePicker.prefInFridgeReady')
-              : tRoot('schedulePicker.prefReadyWhenDoughStarts'))
-          : cardPrefTooShort
-          ? tRoot('schedulePicker.simpleStatus.tooEarly')
-          : tRoot('schedulePicker.simpleStatus.tooLate');
+        // Pref 5-state zones (hours before mix = prefOffsetH)
+        // optH = ideal ferment time, maxH = max before over-ferment
+        const prefOptHCard  = prefermentType === 'biga' ? 48 : prefGoesInFridge ? 18 : prefRTPeakH;
+        const prefMaxHCard  = prefermentType === 'biga' ? 72 : prefGoesInFridge ? 24 : prefRTPeakH * 1.5;
+        const prefMinHCard  = 3;
+        const cardPrefInZone    = (hasPrefActive || isSourdough) && prefOffsetH >= prefMinHCard && prefOffsetH <= prefOptHCard;
+        const cardPrefEarlyOk   = (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard && prefOffsetH <= prefMaxHCard;
+        const cardPrefTooEarly  = (hasPrefActive || isSourdough) && prefOffsetH > prefMaxHCard;
+        const cardPrefLateOk    = (hasPrefActive || isSourdough) && prefOffsetH >= 1 && prefOffsetH < prefMinHCard;
+        const cardPrefTooShort  = (hasPrefActive || isSourdough) && prefOffsetH < 1;
+        const cardPrefStatus =
+          cardPrefInZone   ? (prefGoesInFridge ? tRoot('schedulePicker.prefInFridgeReady') : tRoot('schedulePicker.prefReadyAtMix'))
+          : cardPrefEarlyOk  ? tRoot('schedulePicker.prefEarlyOk')
+          : cardPrefTooEarly ? tRoot('schedulePicker.prefTooEarly')
+          : cardPrefLateOk   ? tRoot('schedulePicker.prefLateOk')
+          : tRoot('schedulePicker.prefTooLate');
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
           : isSourdough && feedTime ? feedTime : null;
         const doughZoneFrom = renderSweetFrom;
         const doughZoneTo   = renderSweetTo;
-        const mixInZone   = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
-        const mixTooEarly = mixOffsetH > doughZoneFrom;
-        const mixStatus = mixInZone ? tRoot('schedulePicker.doughReadyAtBake')
+        const mixInZone    = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
+        // Gold zones: use yellowTo (already computed) for right edge,
+        // mirror symmetrically for left gold
+        const doughGoldRightTo  = renderYellowTo;
+        const doughGoldLeftFrom = doughZoneFrom + (doughZoneFrom - doughZoneTo) * 0.2;
+        const mixEarlyOk  = !mixInZone && mixOffsetH > doughZoneFrom && mixOffsetH <= doughGoldLeftFrom;
+        const mixTooEarly = !mixInZone && mixOffsetH > doughGoldLeftFrom;
+        const mixLateOk   = !mixInZone && mixOffsetH < doughZoneTo && mixOffsetH >= doughGoldRightTo;
+        const mixTooLate  = mixOffsetH < doughGoldRightTo;
+        const mixStatus =
+          mixInZone   ? tRoot('schedulePicker.doughReadyAtBake')
+          : mixEarlyOk  ? tRoot('schedulePicker.doughEarlyOk')
           : mixTooEarly ? tRoot('schedulePicker.doughPeaksBefore')
+          : mixLateOk   ? tRoot('schedulePicker.doughLateOk')
           : tRoot('schedulePicker.doughPeaksAfter');
         const bakeMs = pendingEatTime.getTime();
         const mixInBlocker = !mixInZone && mixOffsetH > 0 && blocks.some(b => {
@@ -2185,28 +2203,53 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
                   }}>{prefLabel}</div>
                 </div>
-                <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-                  {fmtCardDT(cardPrefTime, isFr)}
-                </div>
-                {cardPrefInZone ? (
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '.3rem',
-                    marginTop: '.3rem',
-                    background: 'rgba(74,122,58,0.1)',
-                    border: '1px solid rgba(74,122,58,0.3)',
-                    borderRadius: '20px',
-                    padding: '.15rem .55rem',
-                    fontSize: '11px',
-                    color: '#4A7A3A',
-                    fontFamily: 'var(--font-dm-mono)',
-                  }}>
-                    {tRoot('schedulePicker.prefReadyAtStartDough')}
-                  </div>
+                {editingPref ? (
+                  <input
+                    type="datetime-local"
+                    defaultValue={cardPrefTime.toISOString().slice(0,16)}
+                    autoFocus
+                    onBlur={() => setEditingPref(false)}
+                    onChange={e => {
+                      const t = new Date(e.target.value);
+                      if (isNaN(t.getTime())) return;
+                      const newPrefOffsetH = (pendingStart.getTime() - t.getTime()) / 3600000;
+                      if (newPrefOffsetH >= 0) onPrefOffsetChange?.(newPrefOffsetH);
+                      setEditingPref(false);
+                    }}
+                    style={{
+                      fontSize: '13px', padding: '4px 6px', borderRadius: '6px',
+                      border: '1.5px solid var(--terra)', background: 'var(--warm)',
+                      color: 'var(--char)', fontFamily: 'var(--font-dm-mono)',
+                      width: '100%', outline: 'none',
+                    }}
+                  />
                 ) : (
-                  <div style={{ fontSize: '12px', marginTop: '.1rem', color: '#C49A28' }}>
-                    {cardPrefStatus}
+                  <div
+                    onClick={() => setEditingPref(true)}
+                    style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', cursor: 'text' }}
+                  >
+                    {fmtCardDT(cardPrefTime, isFr)}
                   </div>
                 )}
+                {(() => {
+                  const isGreen  = cardPrefInZone;
+                  const isGold   = cardPrefEarlyOk || cardPrefLateOk;
+                  const isRed    = cardPrefTooEarly || cardPrefTooShort;
+                  const bg     = isGreen ? 'rgba(74,122,58,0.1)'   : isGold ? 'rgba(212,168,83,0.15)' : 'rgba(196,82,42,0.1)';
+                  const border = isGreen ? 'rgba(74,122,58,0.3)'   : isGold ? 'rgba(212,168,83,0.4)'  : 'rgba(196,82,42,0.3)';
+                  const color  = isGreen ? '#4A7A3A'               : isGold ? '#9A7010'               : '#C4522A';
+                  return (
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+                      marginTop: '.3rem',
+                      background: bg, border: `1px solid ${border}`,
+                      borderRadius: '20px', padding: '.15rem .55rem',
+                      fontSize: '11px', color, fontFamily: 'var(--font-dm-mono)',
+                    }}>
+                      {cardPrefStatus}
+                    </div>
+                  );
+                })()}
                 {(() => {
                   if (!prefGoesInFridge || prefermentType !== 'poolish' || prefRTWarmupH <= 0) return null;
                   const removeMs = pendingEatTime.getTime() - (mixOffsetH + prefRTWarmupH) * 3600000;
@@ -2237,18 +2280,47 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
                 }}>{tRoot('schedulePicker.startDough')}</div>
               </div>
-              <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-                {fmtCardDT(pendingStart, isFr)}
-              </div>
+              {editingMix ? (
+                <input
+                  type="datetime-local"
+                  defaultValue={pendingStart.toISOString().slice(0,16)}
+                  autoFocus
+                  onBlur={() => setEditingMix(false)}
+                  onChange={e => {
+                    const t = new Date(e.target.value);
+                    if (isNaN(t.getTime())) return;
+                    const newMixOffsetH = (pendingEatTime.getTime() - t.getTime()) / 3600000;
+                    if (newMixOffsetH >= 0.5) {
+                      const newStart = new Date(t);
+                      setPendingStart(newStart);
+                      onChange(newStart, pendingEatTime, blocks);
+                    }
+                    setEditingMix(false);
+                  }}
+                  style={{
+                    fontSize: '13px', padding: '4px 6px', borderRadius: '6px',
+                    border: '1.5px solid var(--terra)', background: 'var(--warm)',
+                    color: 'var(--char)', fontFamily: 'var(--font-dm-mono)',
+                    width: '100%', outline: 'none',
+                  }}
+                />
+              ) : (
+                <div
+                  onClick={() => setEditingMix(true)}
+                  style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', cursor: 'text' }}
+                >
+                  {fmtCardDT(pendingStart, isFr)}
+                </div>
+              )}
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: '.3rem',
                 marginTop: '.3rem',
-                background: mixInZone ? 'rgba(74,122,58,0.1)' : 'rgba(196,82,42,0.1)',
-                border: `1px solid ${mixInZone ? 'rgba(74,122,58,0.3)' : 'rgba(196,82,42,0.3)'}`,
+                background: mixInZone ? 'rgba(74,122,58,0.1)' : (mixEarlyOk || mixLateOk) ? 'rgba(212,168,83,0.15)' : 'rgba(196,82,42,0.1)',
+                border: `1px solid ${mixInZone ? 'rgba(74,122,58,0.3)' : (mixEarlyOk || mixLateOk) ? 'rgba(212,168,83,0.4)' : 'rgba(196,82,42,0.3)'}`,
                 borderRadius: '20px',
                 padding: '.15rem .55rem',
                 fontSize: '11px',
-                color: mixInZone ? '#4A7A3A' : '#C4522A',
+                color: mixInZone ? '#4A7A3A' : (mixEarlyOk || mixLateOk) ? '#9A7010' : '#C4522A',
                 fontFamily: 'var(--font-dm-mono)',
               }}>
                 {mixStatus}

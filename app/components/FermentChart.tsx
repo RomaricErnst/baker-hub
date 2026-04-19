@@ -143,6 +143,36 @@ function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_D
   return pts.join(' ');
 }
 
+// ── Plateau bell path (for fridge poolish/biga) ────────────
+// Flat-top bell: plateau centred on peakHBF, tapered sides
+function makePlateauBellPath(
+  peakHBF: number,
+  sigma: number,
+  plateauHalfW: number,
+  W: number, wh: number,
+  startHBF: number,
+): string {
+  function pbell(h: number): number {
+    const dist = Math.abs(h - peakHBF);
+    if (dist <= plateauHalfW) return 1.0;
+    return Math.exp(-0.5 * ((dist - plateauHalfW) / sigma) ** 2);
+  }
+  const N = 320;
+  const floor = pbell(startHBF);
+  const range = Math.max(0.01, 1 - floor);
+  const pts: string[] = [];
+  for (let i = 0; i <= N; i++) {
+    const hbf = (i / N) * startHBF;
+    const x = hToX(hbf, W, wh);
+    const y = BL - ((pbell(hbf) - floor) / range) * MAXH;
+    pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
+  }
+  pts.push(`L ${hToX(startHBF, W, wh).toFixed(1)} ${BL}`);
+  pts.push(`L ${hToX(0, W, wh).toFixed(1)} ${BL}`);
+  pts.push('Z');
+  return pts.join(' ');
+}
+
 // ── Formatting ───────────────────────────────────────────────
 function formatHours(h: number): string {
   if (h < 1) return `${Math.round(h * 60)}m`;
@@ -243,6 +273,16 @@ export default function FermentChart({
   const prefNeedsFridge = hasPref && (prefermentType === 'biga' || prefOffsetH > rtPeakH);
   const prefSig = hasPref ? getPrefSig(prefermentType, kitchenTemp, prefNeedsFridge, prefOffsetH) : 1;
 
+  // Plateau: grows from 0 at optH, capped per type. Climate-aware via optH.
+  const prefOptHVal = hasPref ? getPrefOptH(prefermentType, kitchenTemp, prefNeedsFridge) : 0;
+  const prefMaxPlateau = prefermentType === 'biga' ? 20 : 12;
+  const plateauHalfW = prefNeedsFridge
+    ? Math.min(prefMaxPlateau, Math.max(0, (prefOffsetH - prefOptHVal) * 0.35))
+    : 0;
+
+  // Over-fermentation: peak drifts left of mix when past threshold
+  const prefOverFermentH = prefermentType === 'biga' ? 72 : 48;
+
   // During drag, use local position for all mix-derived values
   const effectiveMixHBF = localMixHBF !== null ? localMixHBF : mixOffsetH;
 
@@ -254,8 +294,10 @@ export default function FermentChart({
   // Fridge protocol: RT warmup guarantees peak exactly at mix
   // Full RT: peak happens naturally at rtPeakH after poolish start
   const prefPeakHBF = prefNeedsFridge
-    ? effectiveMixHBF                           // peaks AT mix — protocol guarantees it
-    : prefStartAbsHBF - rtPeakH;               // peaks naturally (may be after mix)
+    ? prefOffsetH > prefOverFermentH
+      ? effectiveMixHBF + (prefOffsetH - prefOverFermentH) * 0.5  // drifts left – over-fermented
+      : effectiveMixHBF                         // peaks AT mix – fridge protocol
+    : prefStartAbsHBF - rtPeakH;               // peaks naturally (RT)
 
   // Sweet-spot zones — driven by style+timing aware props
   // Zone: left = max useful start (min of now and preferredCold+rtH)
@@ -630,7 +672,9 @@ export default function FermentChart({
         {hasPref && (
           <>
             <path
-              d={makeBellPath(prefPeakHBF, prefSig, W, WH, prefStartAbsHBF)}
+              d={prefNeedsFridge
+                ? makePlateauBellPath(prefPeakHBF, prefSig, plateauHalfW, W, WH, prefStartAbsHBF)
+                : makeBellPath(prefPeakHBF, prefSig, W, WH, prefStartAbsHBF)}
               fill={`${prefColor}2E`} stroke={`${prefColor}A5`} strokeWidth={1.5}
               clipPath="url(#chart-area-clip)"
             />
