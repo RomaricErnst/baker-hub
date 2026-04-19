@@ -2149,7 +2149,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const prefOptHCard  = getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridge, styleKey ?? 'neapolitan');
         const prefMaxHCard  = prefermentType === 'biga' ? 72 : prefGoesInFridge ? 24 : prefRTPeakH * 1.5;
         const prefMinHCard  = 3;
-        const cardPrefInZone    = (hasPrefActive || isSourdough) && prefOffsetH >= prefMinHCard && prefOffsetH <= prefOptHCard;
+        // Plateau half-width: poolish fridge ±3h, biga ±10h, RT ±0
+        const cardPrefPlateauH  = prefGoesInFridge ? (prefermentType === 'biga' ? 10 : 3) : 0;
+        const cardPrefInZone    = (hasPrefActive || isSourdough) && prefOffsetH >= prefMinHCard && prefOffsetH <= prefOptHCard + cardPrefPlateauH;
         const cardPrefEarlyOk   = (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard && prefOffsetH <= prefMaxHCard;
         const cardPrefTooEarly  = (hasPrefActive || isSourdough) && prefOffsetH > prefMaxHCard;
         const cardPrefLateOk    = (hasPrefActive || isSourdough) && prefOffsetH >= 1 && prefOffsetH < prefMinHCard;

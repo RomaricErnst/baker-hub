@@ -692,12 +692,7 @@ export default function FermentChart({
             />
             <line
               x1={hToX(prefStartAbsHBF, W, WH)}
-              y1={BL - (() => {
-                const dist = Math.abs(prefStartAbsHBF - prefPeakHBF);
-                if (!prefNeedsFridge) return bell(prefStartAbsHBF, prefPeakHBF, prefSig);
-                return dist <= plateauHalfW ? 1.0
-                  : Math.exp(-0.5 * ((dist - plateauHalfW) / prefSig) ** 2);
-              })() * MAXH}
+              y1={AXIS_Y}
               x2={hToX(prefStartAbsHBF, W, WH)}
               y2={BL}
               stroke={`${prefColor}A5`} strokeWidth={1.5}
