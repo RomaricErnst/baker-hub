@@ -273,11 +273,12 @@ export default function FermentChart({
   const prefNeedsFridge = hasPref && (prefermentType === 'biga' || prefOffsetH > rtPeakH);
   const prefSig = hasPref ? getPrefSig(prefermentType, kitchenTemp, prefNeedsFridge, prefOffsetH) : 1;
 
-  // Plateau shape reflects protocol, not duration:
-  // Fridge = broad plateau (slow biology, wide peak window) — fixed ratio of sigma
-  // RT    = steep bell (fast biology, narrow peak) — no plateau
+  // Plateau width = science-based peak window at cold retard temps:
+  // Poolish fridge: ±3h (narrow — peaks and holds ~6h total then declines fast)
+  // Biga fridge:   ±10h (broad — much more forgiving, ~20h quality window)
+  // RT: no plateau — sharp bell (fast biology, narrow peak)
   const plateauHalfW = prefNeedsFridge
-    ? prefSig * 0.5   // always proportional to bell width — centred, fixed shape
+    ? (prefermentType === 'biga' ? 10 : 3)
     : 0;
 
   // Over-fermentation: peak drifts left of mix when past threshold
@@ -304,8 +305,13 @@ export default function FermentChart({
   // Zone: right = minTotalFermH boundary — unified cold/RT
   const doughZoneFrom = sweetFromH ?? (hasColdRetard ? 52 : 26);
   const doughZoneTo   = sweetToH   ?? (hasColdRetard ? 8  : 8 );
-  // Unified zone: 3h min to 72h max for all poolish/biga
-  const prefZoneMax = hasPref ? 72 : 0;
+  // Zone max aligned with science-based over-ferment threshold per type:
+  // Poolish fridge: 24h max · Biga: 72h max · RT poolish: rtPeakH * 1.5
+  const prefZoneMax = hasPref
+    ? prefermentType === 'biga' ? 72
+    : prefNeedsFridge           ? 24
+    : rtPeakH * 1.5
+    : 0;
   const prefZoneFrom  = hasPref ? effectiveMixHBF + prefZoneMax : 0;
   const prefZoneTo    = hasPref ? effectiveMixHBF + 3 : 0;
 
@@ -409,13 +415,17 @@ export default function FermentChart({
     : mixTooEarly ? t('mixStatus.peaksBefore')
     : t('mixStatus.peaksAfter');
 
-  const prefInZone   = hasPref && prefOffsetH >= 3 && prefOffsetH <= 72;
-  const prefTooShort = hasPref && prefOffsetH < 3;
-  const prefStatus = prefInZone
-    ? (prefNeedsFridge ? t('prefStatus.inFridge') : t('prefStatus.readyAtMix'))
-    : prefTooShort
-    ? t('prefStatus.notYetPeak')
-    : t('prefStatus.pastPeak');
+  // 5-state — same boundaries as zone and plateau
+  // Protocol indicator already shown below diamond — no need to repeat in pill
+  const prefOptHChart  = prefermentType === 'biga' ? 48 : prefNeedsFridge ? 18 : rtPeakH;
+  const prefMaxHChart  = prefermentType === 'biga' ? 72 : prefNeedsFridge ? 24 : rtPeakH * 1.5;
+  const prefInZone     = hasPref && prefOffsetH >= 3 && prefOffsetH <= prefOptHChart;
+  const prefEarlyOk    = hasPref && prefOffsetH > prefOptHChart && prefOffsetH <= prefMaxHChart;
+  const prefTooShort   = hasPref && prefOffsetH < 3;
+  const prefStatus = prefInZone   ? t('prefStatus.readyAtMix')
+    : prefEarlyOk                 ? t('prefStatus.earlyOk')
+    : prefTooShort                ? t('prefStatus.notYetPeak')
+    :                               t('prefStatus.pastPeak');
 
   // ── Info card data ───────────────────────────────────────
   const mixTime  = new Date(bakeMs - effectiveMixHBF * 3600000);
@@ -691,13 +701,28 @@ export default function FermentChart({
 
         {/* ── Dough bell (drawn on top) ── */}
         <path
-          d={makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF)}
+          d={(() => {
+            const doughPlateauHalfW = hasColdRetard
+              ? Math.min(8, Math.max(2, (sweetFromH ?? 26) * 0.14))
+              : 0;
+            return doughPlateauHalfW > 0
+              ? makePlateauBellPath(doughPeakHBF, DOUGH_SIG, doughPlateauHalfW, W, WH, effectiveMixHBF)
+              : makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF);
+          })()}
           fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
           clipPath="url(#chart-area-clip)"
         />
         <line
           x1={hToX(effectiveMixHBF, W, WH)}
-          y1={BL - bell(effectiveMixHBF, doughPeakHBF, DOUGH_SIG) * MAXH}
+          y1={BL - (() => {
+            const doughPlateauHalfW = hasColdRetard
+              ? Math.min(8, Math.max(2, (sweetFromH ?? 26) * 0.14))
+              : 0;
+            if (doughPlateauHalfW === 0) return bell(effectiveMixHBF, doughPeakHBF, DOUGH_SIG);
+            const dist = Math.abs(effectiveMixHBF - doughPeakHBF);
+            return dist <= doughPlateauHalfW ? 1.0
+              : Math.exp(-0.5 * ((dist - doughPlateauHalfW) / DOUGH_SIG) ** 2);
+          })() * MAXH}
           x2={hToX(effectiveMixHBF, W, WH)}
           y2={BL}
           stroke={`${SAGE}A5`} strokeWidth={1.5}

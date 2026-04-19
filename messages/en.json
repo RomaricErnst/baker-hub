@@ -1062,9 +1062,10 @@
     },
     "prefStatus": {
       "inFridge": "🧊 In fridge — ready at Start Dough",
-      "readyAtMix": "🟢 Ready when dough starts",
-      "notYetPeak": "🟡 Poolish not yet at peak at mix time",
-      "pastPeak": "🟡 Poolish will be past its peak at this time"
+      "readyAtMix": "🟢 Ready at Start Dough",
+      "earlyOk": "🟡 Just past peak — still usable",
+      "notYetPeak": "🟡 Not yet at peak — still developing",
+      "pastPeak": "🔴 Past its peak — over-fermentation risk"
     },
     "zoneLabels": {
       "startDoughWindow": "Start Dough window",

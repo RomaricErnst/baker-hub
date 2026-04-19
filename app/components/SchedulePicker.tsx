@@ -2155,12 +2155,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const cardPrefTooEarly  = (hasPrefActive || isSourdough) && prefOffsetH > prefMaxHCard;
         const cardPrefLateOk    = (hasPrefActive || isSourdough) && prefOffsetH >= 1 && prefOffsetH < prefMinHCard;
         const cardPrefTooShort  = (hasPrefActive || isSourdough) && prefOffsetH < 1;
-        const cardPrefStatus =
-          cardPrefInZone   ? (prefGoesInFridge ? tRoot('schedulePicker.prefInFridgeReady') : tRoot('schedulePicker.prefReadyAtMix'))
-          : cardPrefEarlyOk  ? tRoot('schedulePicker.prefEarlyOk')
-          : cardPrefTooEarly ? tRoot('schedulePicker.prefTooEarly')
-          : cardPrefLateOk   ? tRoot('schedulePicker.prefLateOk')
-          : tRoot('schedulePicker.prefTooLate');
+        // Protocol already shown via ❄/🌡 indicator below diamond — not repeated in pill
+        const cardPrefStatus = cardPrefInZone   ? tRoot('schedulePicker.prefReadyAtMix')
+          : cardPrefEarlyOk                     ? tRoot('schedulePicker.prefEarlyOk')
+          : cardPrefLateOk                      ? tRoot('schedulePicker.prefLateOk')
+          : cardPrefTooShort                    ? tRoot('schedulePicker.prefTooLate')
+          :                                       tRoot('schedulePicker.prefTooEarly');
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
           : isSourdough && feedTime ? feedTime : null;
@@ -2208,14 +2208,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     type="datetime-local"
                     defaultValue={cardPrefTime.toISOString().slice(0,16)}
                     autoFocus
-                    onBlur={() => setEditingPref(false)}
-                    onChange={e => {
+                    onBlur={e => {
                       const t = new Date(e.target.value);
-                      if (isNaN(t.getTime())) return;
-                      const newPrefOffsetH = (pendingStart.getTime() - t.getTime()) / 3600000;
-                      if (newPrefOffsetH >= 0) onPrefOffsetChange?.(newPrefOffsetH);
+                      if (!isNaN(t.getTime())) {
+                        const newPrefOffsetH = (pendingStart.getTime() - t.getTime()) / 3600000;
+                        if (newPrefOffsetH >= 0) onPrefOffsetChange?.(newPrefOffsetH);
+                      }
                       setEditingPref(false);
                     }}
+                    onKeyDown={e => { if (e.key === 'Escape') setEditingPref(false); }}
                     style={{
                       fontSize: '13px', padding: '4px 6px', borderRadius: '6px',
                       border: '1.5px solid var(--terra)', background: 'var(--warm)',
@@ -2285,18 +2286,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   type="datetime-local"
                   defaultValue={pendingStart.toISOString().slice(0,16)}
                   autoFocus
-                  onBlur={() => setEditingMix(false)}
-                  onChange={e => {
+                  onBlur={e => {
                     const t = new Date(e.target.value);
-                    if (isNaN(t.getTime())) return;
-                    const newMixOffsetH = (pendingEatTime.getTime() - t.getTime()) / 3600000;
-                    if (newMixOffsetH >= 0.5) {
-                      const newStart = new Date(t);
-                      setPendingStart(newStart);
-                      onChange(newStart, pendingEatTime, blocks);
+                    if (!isNaN(t.getTime())) {
+                      const newMixOffsetH = (pendingEatTime.getTime() - t.getTime()) / 3600000;
+                      if (newMixOffsetH >= 0.5) {
+                        const newStart = new Date(t);
+                        setPendingStart(newStart);
+                        onChange(newStart, pendingEatTime, blocks);
+                      }
                     }
                     setEditingMix(false);
                   }}
+                  onKeyDown={e => { if (e.key === 'Escape') setEditingMix(false); }}
                   style={{
                     fontSize: '13px', padding: '4px 6px', borderRadius: '6px',
                     border: '1.5px solid var(--terra)', background: 'var(--warm)',

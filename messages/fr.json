@@ -1061,10 +1061,11 @@
       "peaksAfter": "🟡 La pâte atteint son pic juste après la cuisson"
     },
     "prefStatus": {
-      "inFridge": "🧊 Au frigo — prêt au démarrage de la pâte",
-      "readyAtMix": "🟢 Prêt au pétrissage",
-      "notYetPeak": "🟡 Poolish pas encore à son pic au moment du pétrissage",
-      "pastPeak": "🟡 Le poolish sera passé son pic à ce moment"
+      "inFridge": "🧊 Au frigo — prêt au démarrage",
+      "readyAtMix": "🟢 Prêt au démarrage de la pâte",
+      "earlyOk": "🟡 Légèrement passé son pic — encore utilisable",
+      "notYetPeak": "🟡 Pas encore au pic — en développement",
+      "pastPeak": "🔴 Passé son pic — risque de surfermentation"
     },
     "zoneLabels": {
       "startDoughWindow": "Fenêtre de démarrage",
