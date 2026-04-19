@@ -684,33 +684,6 @@ export default function Home() {
   const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend);
   const canGenerate = tab === 'simple' ? simpleRequiredDone : customRequiredDone;
 
-  const simpleStepsCompleted = [
-    !!styleKey,
-    !!(numItems && itemWeight),
-    !!ovenType,
-    kitchenTemp > 0,
-    !!mixerType,
-    !!yeastType,
-    !!eatTime,
-  ].filter(Boolean).length;
-  const simpleStepsTotal = 7;
-  const customStepsCompleted = [
-    !!styleKey,
-    !!(numItems && itemWeight),
-    !!ovenType,
-    kitchenTemp > 0,
-    !!mixerType,
-    !!(flourBlend?.flour1),
-    !!yeastType,
-    true,
-    (manualHydration ?? 0) > 0,
-    !!eatTime,
-  ].filter(Boolean).length;
-  const customStepsTotal = 10;
-  const progressFraction = tab === 'simple'
-    ? (simpleRequiredDone ? 1 : (activeStep - 1) / simpleStepsTotal)
-    : (customRequiredDone ? 1 : (advancedStep - 1) / customStepsTotal);
-
   // ── Styles ────────────────────────────────
   const isBread = bakeType === 'bread';
   const accentColor = isBread ? 'var(--bread)' : 'var(--terra)';
@@ -888,31 +861,6 @@ export default function Home() {
           )}
         </div>
         )}
-
-        {/* ── Progress bar ── */}
-        <div style={{
-          position: 'sticky',
-          top: '62px',
-          zIndex: 10,
-          background: 'var(--warm)',
-          paddingBottom: '8px',
-          marginBottom: '4px',
-        }}>
-          <div style={{
-            height: '2px',
-            background: '#E8E0D5',
-            borderRadius: '1px',
-            margin: '8px 0 0',
-          }}>
-            <div style={{
-              height: '2px',
-              background: '#C4522A',
-              borderRadius: '1px',
-              width: `${progressFraction * 100}%`,
-              transition: 'width 0.3s',
-            }} />
-          </div>
-        </div>
 
         {/* ════════════ GUIDED ════════════ */}
         {tab === 'simple' && (
