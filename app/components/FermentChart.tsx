@@ -273,11 +273,11 @@ export default function FermentChart({
   const prefNeedsFridge = hasPref && (prefermentType === 'biga' || prefOffsetH > rtPeakH);
   const prefSig = hasPref ? getPrefSig(prefermentType, kitchenTemp, prefNeedsFridge, prefOffsetH) : 1;
 
-  // Plateau: grows from 0 at optH, capped per type. Climate-aware via optH.
-  const prefOptHVal = hasPref ? getPrefOptH(prefermentType, kitchenTemp, prefNeedsFridge) : 0;
-  const prefMaxPlateau = prefermentType === 'biga' ? 20 : 12;
+  // Plateau shape reflects protocol, not duration:
+  // Fridge = broad plateau (slow biology, wide peak window) — fixed ratio of sigma
+  // RT    = steep bell (fast biology, narrow peak) — no plateau
   const plateauHalfW = prefNeedsFridge
-    ? Math.min(prefMaxPlateau, Math.max(0, (prefOffsetH - prefOptHVal) * 0.35))
+    ? prefSig * 0.5   // always proportional to bell width — centred, fixed shape
     : 0;
 
   // Over-fermentation: peak drifts left of mix when past threshold
@@ -749,20 +749,36 @@ export default function FermentChart({
           'pref',
         )}
         {hasPref && (
-          <text
-            x={prefX}
-            y={labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
-            fontSize={12}
-            fill={prefColor}
-            fontFamily="DM Mono, monospace"
-            textAnchor="middle"
-            fontWeight="600"
-          >
-            {prefermentType === 'biga'      ? t('cardLabels.makeBiga')    :
-             prefermentType === 'levain'    ? t('cardLabels.feedStarter') :
-             prefermentType === 'sourdough' ? t('cardLabels.feedStarter') :
-             t('cardLabels.makePoolish')}
-          </text>
+          <>
+            <text
+              x={prefX}
+              y={labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
+              fontSize={12}
+              fill={prefColor}
+              fontFamily="DM Mono, monospace"
+              textAnchor="middle"
+              fontWeight="600"
+            >
+              {prefermentType === 'biga'      ? t('cardLabels.makeBiga')    :
+               prefermentType === 'levain'    ? t('cardLabels.feedStarter') :
+               prefermentType === 'sourdough' ? t('cardLabels.feedStarter') :
+               t('cardLabels.makePoolish')}
+            </text>
+            {/* Protocol indicator — ❄ Fridge or 🌡 RT */}
+            <text
+              x={prefX}
+              y={labelsClose ? AXIS_Y + 64 : AXIS_Y + 50}
+              fontSize={10}
+              fill={prefNeedsFridge ? '#6A8FAF' : '#C4A030'}
+              fontFamily="DM Mono, monospace"
+              textAnchor="middle"
+              opacity={0.85}
+            >
+              {prefNeedsFridge
+                ? (isFr ? '❄ Frigo' : '❄ Fridge')
+                : (isFr ? '🌡 TA' : '🌡 RT')}
+            </text>
+          </>
         )}
 
         {/* ── Mix diamond ── */}
