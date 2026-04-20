@@ -1109,7 +1109,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'margherita',
     name: { en: 'Margherita', fr: 'Margherita' },
-    story: { en: 'Naples\' most iconic pizza — born 1889', fr: 'La pizza la plus emblématique de Naples — née en 1889' },
+    story: { en: 'Tomato, fior di latte, fresh basil — Naples\' most iconic pizza, born 1889', fr: 'Tomate, fior di latte, basilic frais — la pizza la plus emblématique de Naples, née en 1889' },
     category: 'classic_italian', region: 'neapolitan',
     base: 'tomato_raw', season: ['all'],
     occasion: ['classic', 'kids', 'quick', 'party'],
@@ -1139,7 +1139,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'diavola',
     name: { en: 'Diavola', fr: 'Diavola' },
-    story: { en: 'The devil\'s pizza — spicy Calabrian heat', fr: 'La pizza du diable — piment calabrais épicé' },
+    story: { en: 'Spicy salami, mozzarella, chilli oil — the devil\'s pizza with Calabrian heat', fr: 'Salami épicé, mozzarella, huile pimentée — la pizza du diable à la chaleur calabraise' },
     category: 'classic_italian', region: 'calabrian',
     base: 'tomato_raw', season: ['all'],
     occasion: ['classic', 'spicy', 'party'],
@@ -1169,7 +1169,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'capricciosa',
     name: { en: 'Capricciosa', fr: 'Capricciosa' },
-    story: { en: 'The capricious one — loaded with Italian classics', fr: 'La capricieuse — garnie de classiques italiens' },
+    story: { en: 'Ham, mushrooms, artichoke, olives — loaded with Italian classics', fr: 'Jambon, champignons, artichaut, olives — garnie de classiques italiens' },
     category: 'classic_italian', region: 'roman',
     base: 'tomato_cooked', season: ['all'],
     occasion: ['classic', 'party'],
@@ -1201,7 +1201,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'pepperoni',
     name: { en: 'Pepperoni', fr: 'Pepperoni' },
-    story: { en: 'America\'s favourite — crispy-edged and irresistible', fr: 'La préférée des Américains — bords croustillants et irrésistible' },
+    story: { en: 'Pepperoni, mozzarella — America\'s favourite, crispy-cupped and irresistible', fr: 'Pepperoni, mozzarella — la préférée des Américains, croustillante et irrésistible' },
     category: 'fusion', region: 'american',
     base: 'tomato_cooked', season: ['all'],
     occasion: ['kids', 'party', 'quick'],
@@ -1216,7 +1216,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'nduja_mozzarella',
     name: { en: 'Nduja e Mozzarella', fr: 'Nduja & Mozzarella' },
-    story: { en: 'Calabria\'s fiery spreadable salami meets fresh mozzarella', fr: 'Le salami calabrais épicé rencontre la mozzarella fraîche' },
+    story: { en: '\'Nduja (fiery spreadable Calabrian salami), mozzarella — fire and cream on tomato', fr: '\'Nduja (salami calabrais épicé tartinable), mozzarella — feu et crème sur tomate' },
     category: 'meat', region: 'calabrian',
     base: 'tomato_raw', season: ['all'],
     occasion: ['spicy', 'impress'],
@@ -1265,7 +1265,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'ortolana',
     name: { en: 'Ortolana', fr: 'Ortolana' },
-    story: { en: 'The gardener\'s pizza — seasonal vegetables simply prepared', fr: 'La pizza du jardinier — légumes de saison simplement préparés' },
+    story: { en: 'Grilled courgette, aubergine, peppers, tomato — the gardener\'s seasonal pizza', fr: 'Courgette grillée, aubergine, poivrons, tomate — la pizza du jardinier de saison' },
     category: 'veg',
     base: 'tomato_cooked', season: ['all'],
     occasion: ['classic', 'quick'],
@@ -1297,7 +1297,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'patate_rosmarino',
     name: { en: 'Patate e Rosmarino', fr: 'Pommes de terre & Romarin' },
-    story: { en: 'Roman street food at its most satisfying', fr: 'La street food romaine dans toute sa générosité' },
+    story: { en: 'Thin potato slices, rosemary, olive oil — Roman street food at its most satisfying', fr: 'Fines tranches de pomme de terre, romarin, huile d\'olive — la street food romaine dans toute sa générosité' },
     category: 'white', region: 'roman',
     base: 'bianca_oil', season: ['all'],
     occasion: ['classic', 'kids'],
@@ -1359,7 +1359,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'burrata_prosciutto',
     name: { en: 'Burrata e Prosciutto', fr: 'Burrata & Prosciutto' },
-    story: { en: 'Two Italian masterpieces on one pizza', fr: 'Deux chefs-d\'œuvre italiens sur une pizza' },
+    story: { en: 'Burrata, prosciutto crudo, tomato — two Italian masterpieces on one pizza', fr: 'Burrata, prosciutto crudo, tomate — deux chefs-d\'œuvre italiens sur une pizza' },
     category: 'modern',
     base: 'tomato_raw', season: ['all'],
     occasion: ['impress'],
@@ -1389,7 +1389,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'pear_walnut_gorgonzola',
     name: { en: 'Pear, Walnut & Gorgonzola', fr: 'Poire, Noix & Gorgonzola' },
-    story: { en: 'A classic bistro combination reimagined on pizza dough', fr: 'Un classique bistrot réinventé sur pâte à pizza' },
+    story: { en: 'Pear, walnut, gorgonzola (blue cheese), honey — a classic bistro combination on pizza', fr: 'Poire, noix, gorgonzola (fromage bleu), miel — un classique bistrot réinventé sur pizza' },
     category: 'modern', region: 'lyonnais',
     base: 'bianca_oil', season: ['autumn', 'winter'],
     occasion: ['impress'],
@@ -1406,7 +1406,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'bbq_chicken',
     name: { en: 'BBQ Chicken', fr: 'Poulet BBQ' },
-    story: { en: 'American crowd-pleaser — smoky, sweet, satisfying', fr: 'Plaisir américain — fumé, sucré, généreux' },
+    story: { en: 'BBQ chicken, red onion, mozzarella, BBQ sauce — smoky, sweet, crowd-pleasing', fr: 'Poulet BBQ, oignon rouge, mozzarella, sauce BBQ — fumé, sucré, apprécié de tous' },
     category: 'fusion', region: 'american',
     base: 'bbq', season: ['all'],
     occasion: ['kids', 'party'],
@@ -1440,7 +1440,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'tarte_flambee',
     name: { en: 'Tarte Flambée', fr: 'Tarte Flambée' },
-    story: { en: 'Alsace\'s iconic flatbread — crisp, delicate, perfect', fr: 'Le monument alsacien — croustillant, délicat, parfait' },
+    story: { en: 'Crème fraîche, smoked lardons, onion — Alsace\'s answer to pizza on thin crispy dough', fr: 'Crème fraîche, lardons fumés, oignon — le monument alsacien sur pâte fine et croustillante' },
     category: 'french_regional', region: 'alsace',
     base: 'bianca_cream', season: ['all'],
     occasion: ['classic', 'quick'],
@@ -1455,7 +1455,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'raclette_pommes',
     name: { en: 'Raclette & Pommes de Terre', fr: 'Raclette & Pommes de Terre' },
-    story: { en: 'Savoie mountain pizza — pure winter comfort', fr: 'La pizza savoyarde — pur réconfort hivernal' },
+    story: { en: 'Raclette (melted mountain cheese), potato, smoked lardons — pure Savoie winter comfort', fr: 'Raclette (fromage de montagne fondu), pomme de terre, lardons fumés — pur réconfort savoyard' },
     category: 'french_regional', region: 'savoie',
     base: 'bianca_cream', season: ['autumn', 'winter'],
     occasion: ['impress', 'party'],
@@ -1485,7 +1485,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'andouille_moutarde',
     name: { en: 'Andouille & Moutarde', fr: 'Andouille & Moutarde' },
-    story: { en: 'Brittany on a pizza — bold, smoky, unmistakably French', fr: 'La Bretagne sur une pizza — puissant, fumé, inimitable' },
+    story: { en: 'Andouille (smoked pork sausage), mustard, crème fraîche — bold and unmistakably Breton', fr: 'Andouille (saucisse de porc fumée), moutarde, crème fraîche — puissant et inimitable de Bretagne' },
     category: 'french_regional', region: 'bretagne',
     base: 'other', season: ['all'],
     occasion: ['classic', 'impress'],
@@ -1500,7 +1500,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'maroilles_oignons',
     name: { en: 'Maroilles & Caramelised Onion', fr: 'Maroilles & Oignons Caramélisés' },
-    story: { en: 'Nord\'s famous washed-rind cheese — bold and deeply satisfying', fr: 'Le fromage à croûte lavée du Nord — puissant et généreux' },
+    story: { en: 'Maroilles (strong washed-rind cheese), caramelised onion, crème fraîche — bold northern France', fr: 'Maroilles (fromage à croûte lavée puissant), oignon caramélisé, crème fraîche — généreux du Nord' },
     category: 'french_regional', region: 'nord',
     base: 'bianca_oil', season: ['autumn', 'winter'],
     occasion: ['impress'],
@@ -1530,7 +1530,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'camembert_pommes',
     name: { en: 'Camembert & Apple', fr: 'Camembert & Pommes' },
-    story: { en: 'Normandy in one pizza — cider country\'s finest ingredients', fr: 'La Normandie en une pizza — les meilleurs ingrédients du pays du cidre' },
+    story: { en: 'Camembert, apple, smoked lardons, cider reduction — Normandy\'s finest on pizza', fr: 'Camembert, pomme, lardons fumés, réduction de cidre — le meilleur de Normandie sur pizza' },
     category: 'french_regional', region: 'normandie',
     base: 'bianca_oil', season: ['autumn', 'winter'],
     occasion: ['impress'],
@@ -1545,7 +1545,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'tartiflette_pizza',
     name: { en: 'Tartiflette Pizza', fr: 'Pizza Tartiflette' },
-    story: { en: 'Savoie\'s most indulgent dish — reimagined on pizza dough', fr: 'Le plat le plus gourmand de Savoie — réinventé sur pâte à pizza' },
+    story: { en: 'Reblochon (soft mountain cheese), potato, smoked lardons, onion — Savoie\'s most indulgent dish on pizza', fr: 'Reblochon, pomme de terre, lardons fumés, oignon — le plat le plus gourmand de Savoie sur pizza' },
     category: 'french_regional', region: 'savoie',
     base: 'bianca_cream', season: ['autumn', 'winter'],
     occasion: ['impress', 'party'],
@@ -1620,7 +1620,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'margherita_sbagliata',
     name: { en: 'Margherita Sbagliata', fr: 'Margherita Sbagliata' },
-    story: { en: "Franco Pepe's iconic inversion — cheese on the base, tomato on top", fr: "L'inversion iconique de Franco Pepe — fromage à la base, tomate au-dessus" },
+    story: { en: 'Fior di latte on base, fresh tomato added after baking — Franco Pepe\'s iconic inversion of the Margherita', fr: 'Fior di latte à la base, tomate fraîche ajoutée après cuisson — l\'inversion iconique de Franco Pepe' },
     category: 'classic_italian', region: 'neapolitan',
     base: 'bianca_oil', season: ['all'],
     occasion: ['classic', 'impress'],
@@ -1648,7 +1648,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'salsiccia_friarielli',
     name: { en: 'Salsiccia e Friarielli', fr: 'Saucisse et Friarielli' },
-    story: { en: "Naples' most loved pizza after Margherita — bitter greens and sweet sausage", fr: 'La pizza napolitaine la plus aimée après la Margherita — légumes amers et saucisse douce' },
+    story: { en: 'Italian pork sausage, friarielli (broccoli rabe), fior di latte — Naples\' most loved pizza after Margherita', fr: 'Saucisse de porc italienne, friarielli (brocoli-rave), fior di latte — la pizza napolitaine la plus aimée après la Margherita' },
     category: 'classic_italian', region: 'neapolitan',
     base: 'bianca_oil', season: ['all'],
     occasion: ['classic', 'impress'],
@@ -1690,7 +1690,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'melanzane_parmigiana',
     name: { en: 'Melanzane alla Parmigiana', fr: 'Aubergine à la Parmigiana' },
-    story: { en: 'The beloved Southern Italian comfort dish — reimagined on pizza', fr: "Le plat réconfortant d'Italie du Sud bien-aimé — réinterprété sur pizza" },
+    story: { en: 'Aubergine, tomato, parmesan, basil — the beloved Southern Italian comfort dish on pizza', fr: 'Aubergine, tomate, parmesan, basilic — le grand classique du Sud de l\'Italie réinterprété en pizza' },
     category: 'veg', region: 'sicilian',
     base: 'tomato_cooked', season: ['all'],
     occasion: ['classic', 'impress'],
@@ -1746,7 +1746,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'pugliese',
     name: { en: 'Pugliese', fr: 'Pouilles' },
-    story: { en: "From the heel of Italy's boot — olives, capers and red onion on tomato", fr: 'Du talon de la botte italienne — olives, câpres et oignon rouge sur tomate' },
+    story: { en: 'Olives, capers, red onion, tomato — from the heel of Italy\'s boot', fr: 'Olives, câpres, oignon rouge, tomate — du talon de la botte italienne' },
     category: 'classic_italian', region: 'sicilian',
     base: 'tomato_raw', season: ['all'],
     occasion: ['classic'],
@@ -1903,7 +1903,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'pistadella',
     name: { en: 'Pistadella', fr: 'Pistadella' },
-    story: { en: "Diego Vitagliano's global signature — mortadella, pistachio pesto, fior di latte", fr: 'La signature mondiale de Diego Vitagliano — mortadelle, pesto de pistaches, fior di latte' },
+    story: { en: 'Mortadella (Italian cold cut), pistachio pesto, fior di latte — Diego Vitagliano\'s global signature pizza', fr: 'Mortadelle (charcuterie italienne), pesto de pistaches, fior di latte — la signature mondiale de Diego Vitagliano' },
     category: 'gourmet', region: 'neapolitan',
     base: 'bianca_oil', season: ['all'],
     occasion: ['impress', 'party'],
@@ -1931,7 +1931,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'nduja_burrata',
     name: { en: "'Nduja e Burrata", fr: "'Nduja et Burrata" },
-    story: { en: "Fiery Calabrian 'nduja meets cold creamy burrata — the ultimate hot-cold contrast", fr: "La 'nduja calabraise ardente rencontre la burrata froide et crémeuse — le contraste chaud-froid ultime" },
+    story: { en: '\'Nduja (fiery spreadable salami), burrata (creamy fresh cheese) — the ultimate hot-cold contrast', fr: '\'Nduja (salami tartinable ardent), burrata (fromage frais crémeux) — l\'ultime contraste chaud-froid' },
     category: 'gourmet', region: 'calabrian',
     base: 'nduja', season: ['all'],
     occasion: ['impress', 'spicy'],
@@ -2015,7 +2015,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'guanciale_pecorino',
     name: { en: 'Guanciale e Pecorino', fr: 'Guanciale et Pecorino' },
-    story: { en: "Inspired by pasta all'Amatriciana — guanciale and pecorino on tomato", fr: "Inspiré des pâtes all'Amatriciana — guanciale et pecorino sur tomate" },
+    story: { en: 'Guanciale (cured pork cheek), pecorino (aged sheep cheese), tomato — inspired by pasta all\'Amatriciana', fr: 'Guanciale (joue de porc séchée), pecorino (fromage de brebis affiné), tomate — inspiré des pâtes all\'Amatriciana' },
     category: 'gourmet', region: 'roman',
     base: 'tomato_cooked', season: ['all'],
     occasion: ['impress', 'classic'],
@@ -2099,7 +2099,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'norma',
     name: { en: 'Norma', fr: 'Norma' },
-    story: { en: "Catania's greatest export after Mount Etna — aubergine, ricotta salata, basil", fr: "La plus grande exportation de Catane après l'Etna — aubergine, ricotta salata, basilic" },
+    story: { en: 'Aubergine, ricotta salata (salted dried ricotta), tomato, basil — Catania\'s greatest pizza export', fr: 'Aubergine, ricotta salata (ricotta séchée salée), tomate, basilic — la plus grande exportation pizza de Catane' },
     category: 'veg', region: 'sicilian',
     base: 'tomato_cooked', season: ['summer', 'autumn'],
     occasion: ['classic', 'impress'],
@@ -2116,7 +2116,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'carciofi_romana',
     name: { en: 'Carciofi alla Romana', fr: 'Artichauts à la Romaine' },
-    story: { en: "Rome's iconic artichoke on a crispy tonda base — Roman street food elevated", fr: "L'artichaut iconique de Rome sur une base tonda croustillante — la street food romaine élevée" },
+    story: { en: 'Artichoke, olive oil, garlic, mint — Rome\'s iconic vegetable on a crispy white base', fr: 'Artichaut, huile d\'olive, ail, menthe — le légume iconique de Rome sur base blanche croustillante' },
     category: 'veg', region: 'roman',
     base: 'bianca_oil', season: ['spring'],
     occasion: ['classic', 'impress'],
@@ -2130,7 +2130,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'fiori_zucca_alici',
     name: { en: 'Fiori di Zucca e Alici', fr: 'Fleurs de Courgette et Anchois' },
-    story: { en: "Rome's most beloved pizza topping — courgette flowers, anchovies, mozzarella", fr: 'La garniture préférée des pizzas romaines — fleurs de courgette, anchois, mozzarella' },
+    story: { en: 'Courgette flowers, anchovies, mozzarella — Rome\'s most beloved seasonal pizza topping', fr: 'Fleurs de courgette, anchois, mozzarella — la garniture printanière préférée des pizzas romaines' },
     category: 'seafood', region: 'roman',
     base: 'bianca_oil', season: ['spring', 'summer'],
     occasion: ['impress', 'classic'],
@@ -2144,7 +2144,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'amatriciana_pizza',
     name: { en: 'Amatriciana', fr: 'Amatriciana' },
-    story: { en: "Rome's greatest pasta reborn as pizza — guanciale, tomato, pecorino", fr: 'Les plus grandes pâtes de Rome réinterprétées en pizza — guanciale, tomate, pecorino' },
+    story: { en: 'Guanciale (cured pork cheek), tomato, pecorino — Rome\'s greatest pasta reborn as pizza', fr: 'Guanciale (joue de porc séchée), tomate, pecorino — les grandes pâtes de Rome réinterprétées en pizza' },
     category: 'classic_italian', region: 'roman',
     base: 'tomato_cooked', season: ['all'],
     occasion: ['classic', 'impress'],
@@ -2158,7 +2158,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'carbonara_pizza',
     name: { en: 'Carbonara', fr: 'Carbonara' },
-    story: { en: "Rome's most debated pasta as pizza — guanciale, egg cream, pecorino", fr: "Les pâtes les plus débattues de Rome en pizza — guanciale, crème d'œuf, pecorino" },
+    story: { en: 'Guanciale (cured pork cheek), egg cream, pecorino — Rome\'s most debated pasta reinvented as pizza', fr: 'Guanciale (joue de porc séchée), crème d\'œuf, pecorino — les pâtes les plus débattues de Rome en pizza' },
     category: 'gourmet', region: 'roman',
     base: 'bianca_cream', season: ['all'],
     occasion: ['impress', 'classic'],
@@ -2186,7 +2186,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'gricia_pizza',
     name: { en: 'Gricia', fr: 'Gricia' },
-    story: { en: "Amatriciana's ancestor — guanciale and pecorino without the tomato", fr: "L'ancêtre de l'Amatriciana — guanciale et pecorino sans la tomate" },
+    story: { en: 'Guanciale (cured pork cheek), pecorino, black pepper — Amatriciana\'s ancestor without the tomato', fr: 'Guanciale (joue de porc séchée), pecorino, poivre noir — l\'ancêtre de l\'Amatriciana sans la tomate' },
     category: 'white', region: 'roman',
     base: 'bianca_oil', season: ['all'],
     occasion: ['classic', 'impress'],
@@ -2441,7 +2441,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'teglia_verdure',
     name: { en: 'Teglia Verdure', fr: 'Teglia Légumes' },
-    story: { en: 'Roman bakery vegetable medley — colourful, seasonal, always satisfying', fr: 'Médley de légumes de la boulangerie romaine — coloré, saisonnier, toujours satisfaisant' },
+    story: { en: 'Grilled peppers, courgette, aubergine, tomato — colourful Roman bakery vegetable medley on thick base', fr: 'Poivrons grillés, courgette, aubergine, tomate — médley de légumes colorés de la boulangerie romaine' },
     category: 'veg', region: 'roman',
     base: 'tomato_cooked', season: ['all'],
     occasion: ['classic', 'kids'],
@@ -2500,7 +2500,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'white_clam_apizza',
     name: { en: 'White Clam Apizza', fr: 'Clam Pizza Blanche' },
-    story: { en: "Frank Pepe's New Haven 1960s invention — clams, garlic, olive oil, no mozzarella", fr: 'Invention de Frank Pepe à New Haven dans les années 1960 — palourdes, ail, huile, sans mozzarella' },
+    story: { en: 'Clams, garlic, olive oil, no mozzarella — Frank Pepe\'s legendary New Haven invention from the 1960s', fr: 'Palourdes, ail, huile d\'olive, sans mozzarella — l\'invention légendaire de Frank Pepe à New Haven' },
     category: 'seafood', region: 'american',
     base: 'bianca_oil', season: ['all'],
     occasion: ['impress', 'classic'],
@@ -2570,7 +2570,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'california_bbq_chicken',
     name: { en: 'California BBQ Chicken', fr: 'Poulet BBQ Californien' },
-    story: { en: "Wolfgang Puck's Spago original — BBQ chicken, red onion, fresh coriander", fr: "L'original Spago de Wolfgang Puck — poulet BBQ, oignon rouge, coriandre fraîche" },
+    story: { en: 'BBQ chicken, red onion, fresh coriander, mozzarella — Wolfgang Puck\'s Spago original from 1980s LA', fr: 'Poulet BBQ, oignon rouge, coriandre fraîche, mozzarella — l\'original Spago de Wolfgang Puck, LA années 80' },
     category: 'fusion', region: 'american',
     base: 'bbq', season: ['all'],
     occasion: ['classic', 'party', 'kids'],
@@ -2612,7 +2612,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'ny_margherita_bufala',
     name: { en: 'NY Margherita Bufala', fr: 'Margherita Bufala NY' },
-    story: { en: "New York's Italian tribute — san marzano, buffalo mozzarella on NY-style base", fr: 'Hommage italien de New York — san marzano, mozzarella de bufala sur base NY' },
+    story: { en: 'San Marzano tomato, buffalo mozzarella, fresh basil — New York\'s Italian tribute on a crispy NY base', fr: 'Tomate San Marzano, mozzarella de bufala, basilic frais — hommage italien de New York sur base croustillante' },
     category: 'classic_italian', region: 'american',
     base: 'tomato_raw', season: ['all'],
     occasion: ['classic', 'impress', 'quick'],
@@ -2643,7 +2643,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'detroit_red_top',
     name: { en: 'Detroit Red Top', fr: 'Detroit Red Top' },
-    story: { en: "Buddy's Pizza 1946 original — brick cheese to the edges, pepperoni, sauce stripes on top", fr: "L'original Buddy's Pizza 1946 — fromage brick jusqu'aux bords, pepperoni, rayures de sauce" },
+    story: { en: 'Brick cheese caramelised to the edges, pepperoni, tomato sauce on top — Buddy\'s Pizza 1946 original', fr: 'Fromage brick caramélisé jusqu\'aux bords, pepperoni, sauce tomate sur le dessus — l\'original Buddy\'s Pizza 1946' },
     category: 'classic_italian', region: 'american',
     base: 'tomato_cooked', season: ['all'],
     occasion: ['classic', 'kids', 'party'],
@@ -2713,7 +2713,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'pan_margherita',
     name: { en: 'Pan Margherita', fr: 'Margherita Pan' },
-    story: { en: 'The classic on a thick pan base — airy, crispy-bottomed Margherita for a crowd', fr: 'Le classique sur une épaisse base pan — Margherita aérée à fond croustillant pour tous' },
+    story: { en: 'Tomato, mozzarella, fresh basil on a thick airy pan base — the crowd-pleasing Margherita', fr: 'Tomate, mozzarella, basilic frais sur épaisse base pan aérée — la Margherita pour régaler tout le monde' },
     category: 'classic_italian', region: 'american',
     base: 'tomato_cooked', season: ['all'],
     occasion: ['classic', 'kids', 'party', 'quick'],
@@ -2755,7 +2755,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'pan_nduja_burrata',
     name: { en: "Pan 'Nduja e Burrata", fr: "Pan 'Nduja et Burrata" },
-    story: { en: "Spicy Calabrian on thick pan — 'nduja heat absorbed by airy crust, cooled by burrata", fr: "Calabraise épicée sur épaisse base pan — chaleur de la 'nduja absorbée par la croûte, refroidie par la burrata" },
+    story: { en: '\'Nduja (fiery spreadable salami), burrata, mozzarella on thick pan — spicy Calabrian heat cooled by creamy burrata', fr: '\'Nduja (salami tartinable ardent), burrata, mozzarella sur base pan — chaleur calabraise refroidie par la burrata crémeuse' },
     category: 'gourmet', region: 'american',
     base: 'nduja', season: ['all'],
     occasion: ['impress', 'spicy'],
@@ -2870,7 +2870,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'zaatar_labneh',
     name: { en: "Za'atar & Labneh", fr: "Za'atar et Labneh" },
-    story: { en: "Lebanese flatbread inspired — za'atar olive oil base with cool labneh after", fr: "Inspiré du pain plat libanais — base za'atar à l'huile d'olive avec labneh frais après" },
+    story: { en: 'Za\'atar (wild thyme herb blend), olive oil, white base — inspired by Lebanese flatbread', fr: 'Za\'atar (mélange d\'herbes au thym sauvage), huile d\'olive, base blanche — inspiré du pain plat libanais' },
     category: 'veg', region: 'middle_eastern',
     base: 'zaatar', season: ['all'],
     occasion: ['impress', 'quick'],
@@ -3086,7 +3086,7 @@ export const PIZZAS: Pizza[] = [
   {
     id: 'normandie_camembert',
     name: { en: 'Normande au Camembert', fr: 'Normande au Camembert' },
-    story: { en: "Normandy's finest — camembert, smoked lardons and cider reduction", fr: 'Le meilleur de Normandie — camembert, lardons fumés et réduction de cidre' },
+    story: { en: 'Camembert, smoked lardons, cider reduction, crème fraîche — the best of Normandy on pizza', fr: 'Camembert, lardons fumés, réduction de cidre, crème fraîche — le meilleur de Normandie sur pizza' },
     category: 'french_regional', region: 'normandie',
     base: 'bianca_cream', season: ['all'],
     occasion: ['impress', 'classic'],
@@ -3107,7 +3107,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
   {
     id: 'nutella_fraises',
     name: { en: 'Nutella & Fraises', fr: 'Nutella & Fraises' },
-    story: { en: 'Always asked for — always loved', fr: 'Toujours demandée — toujours adorée' },
+    story: { en: 'Nutella, fresh strawberries — always asked for, always loved', fr: 'Nutella, fraises fraîches — toujours demandée, toujours adorée' },
     category: 'dessert', season: ['spring', 'summer'],
     base: 'other', occasion: ['kids', 'party', 'quick'], dietary: ['veg'],
     budget: 1, complexity: 1, prepMinutes: 5, ovenTemp: 'mid',
@@ -3184,7 +3184,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
   {
     id: 'creme_brulee_pizza',
     name: { en: 'Crème Brûlée Pizza', fr: 'Pizza Crème Brûlée' },
-    story: { en: 'The showstopper dessert — caramelised sugar crust at the table', fr: 'Le dessert spectaculaire — sucre caramélisé à table' },
+    story: { en: 'Vanilla cream, caramelised sugar crust torched at the table — the showstopper dessert pizza', fr: 'Crème vanille, sucre caramélisé au chalumeau à table — le dessert pizza spectaculaire' },
     category: 'dessert', season: ['all'],
     base: 'bianca_cream', occasion: ['impress'], dietary: ['veg'],
     budget: 2, complexity: 3, prepMinutes: 20, ovenTemp: 'mid',
@@ -3201,7 +3201,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
   {
     id: 'crisommola',
     name: { en: 'Crisommola', fr: 'Crisommola' },
-    story: { en: "Franco Pepe's iconic dessert pizza — Vesuvian apricots and creamy ricotta", fr: 'La pizza dessert iconique de Franco Pepe — abricots du Vésuve et ricotta crémeuse' },
+    story: { en: 'Vesuvian apricots, creamy ricotta, honey — Franco Pepe\'s iconic dessert pizza from Caiazzo', fr: 'Abricots du Vésuve, ricotta crémeuse, miel — la pizza dessert iconique de Franco Pepe de Caiazzo' },
     category: 'dessert', region: 'neapolitan',
     base: 'bianca_ricotta', season: ['summer'],
     occasion: ['impress', 'party'],
