@@ -887,7 +887,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           {/* ── Cards + dessert + summary ── */}
           <div>
 
-            <div style={{ overflowY: 'auto', maxHeight: '680px' }}>
+            <div style={{ overflowY: 'auto', maxHeight: '576px' }}>
 
               {/* Pizza cards */}
               <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -943,33 +943,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               </div>
             )}
 
-            {/* ── Summary bar ── */}
-            <div style={{ background: '#1A1612', borderTop: '1px solid #C4522A', position: 'sticky', bottom: 0, zIndex: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 5px' }}>
-                <span style={{ fontSize: '11px', color: '#8A7F78' }}>
-                  {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
-                </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ display: 'flex', gap: '3px' }}>
-                    {Array.from({ length: Math.min(numItems, 10) }, (_, i) => (
-                      <div key={i} style={{
-                        width: '10px', height: '10px', borderRadius: '50%',
-                        background: i < totalQty
-                          ? (totalQty >= numItems ? '#6B7A5A' : '#C4522A')
-                          : '#3D3530',
-                      }} />
-                    ))}
-                    {numItems > 10 && (
-                      <span style={{ fontSize: '9px', color: '#8A7F78', marginLeft: '2px' }}>+{numItems - 10}</span>
-                    )}
-                  </div>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: totalQty >= numItems ? '#6B7A5A' : 'white' }}>
-                    {totalQty} / {numItems}
-                  </span>
-                </div>
-              </div>
-            </div>
-
             {/* ── Sheet overlay ── */}
             {sheetPizza && (
               <PizzaSheet
@@ -1001,6 +974,33 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           {l === 'fr' ? 'Au four ! — bientôt disponible' : 'Let\'s cook — coming soon'}
         </div>
       )}
+
+      {/* ── Summary bar ── */}
+      <div style={{ background: '#1A1612', borderTop: '1px solid #C4522A', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 5px' }}>
+          <span style={{ fontSize: '11px', color: '#8A7F78' }}>
+            {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '3px' }}>
+              {Array.from({ length: Math.min(numItems, 10) }, (_, i) => (
+                <div key={i} style={{
+                  width: '10px', height: '10px', borderRadius: '50%',
+                  background: i < totalQty
+                    ? (totalQty >= numItems ? '#6B7A5A' : '#C4522A')
+                    : '#3D3530',
+                }} />
+              ))}
+              {numItems > 10 && (
+                <span style={{ fontSize: '9px', color: '#8A7F78', marginLeft: '2px' }}>+{numItems - 10}</span>
+              )}
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: totalQty >= numItems ? '#6B7A5A' : 'white' }}>
+              {totalQty} / {numItems}
+            </span>
+          </div>
+        </div>
+      </div>
 
     </div>
   );
