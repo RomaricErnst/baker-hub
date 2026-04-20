@@ -747,7 +747,7 @@ export default function Home() {
                 <img
                   src={opt.image}
                   alt={opt.label}
-                  style={{ width: '100%', height: '260px', objectFit: 'cover', display: 'block' }}
+                  style={{ width: '100%', height: '38vh', objectFit: 'cover', display: 'block' }}
                 />
                 {/* Gradient overlay with text */}
                 <div style={{
