@@ -700,7 +700,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // ── Render ──────────────────────────────────────────────────
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', paddingBottom: '60px' }}>
 
       {/* ── 3 navigation pills ── */}
       <div style={{ display: 'flex', gap: '6px', padding: '8px 12px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
@@ -1177,40 +1177,21 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         {totalQty > 0 && (
           <div style={{ background: '#F5F0E8' }}>
             {/* Summary header — plain, ref triggers IntersectionObserver */}
-            <div
-              style={{
-                background: '#1A1612',
-                borderTop: '1px solid #C4522A',
-                display: 'flex', alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '9px 16px',
-              }}
-            >
+            <div style={{
+              display: 'flex', alignItems: 'center',
+              gap: '6px', padding: '4px 0 10px',
+            }}>
               <span style={{
-                fontSize: '11px', color: '#8A7F78',
-                fontFamily: 'DM Sans, sans-serif',
+                width: '5px', height: '5px', borderRadius: '50%',
+                background: '#C4522A', display: 'inline-block', flexShrink: 0,
+              }} />
+              <span style={{
+                fontSize: '10px', fontWeight: 700, color: '#1A1612',
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+                fontFamily: 'DM Mono, monospace',
               }}>
-                {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
+                {l === 'fr' ? 'Votre sélection' : 'Your selection'}
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ display: 'flex', gap: '3px' }}>
-                  {Array.from({ length: Math.min(numItems, 10) }, (_, i) => (
-                    <div key={i} style={{
-                      width: '8px', height: '8px', borderRadius: '50%',
-                      background: i < totalQty
-                        ? (totalQty >= numItems ? '#6B7A5A' : '#C4522A')
-                        : '#3D3530',
-                    }} />
-                  ))}
-                </div>
-                <span style={{
-                  fontSize: '11px',
-                  color: totalQty >= numItems ? '#6B7A5A' : '#C4522A',
-                  fontFamily: 'DM Mono, monospace', fontWeight: 600,
-                }}>
-                  {totalQty}/{numItems}
-                </span>
-              </div>
             </div>
             {/* Summary rows */}
             <div style={{ padding: '8px 12px 12px' }}>
@@ -1271,8 +1252,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
       {/* ── Party bar — sticky at bottom of component ── */}
       <div style={{
-        position: 'sticky',
-        bottom: 0,
+        position: 'fixed',
+        bottom: '64px',
+        left: 0, right: 0,
         zIndex: 30,
         background: '#1A1612',
         borderTop: '1px solid #C4522A',
