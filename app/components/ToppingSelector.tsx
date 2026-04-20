@@ -887,7 +887,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           {/* ── Cards + dessert + summary ── */}
           <div>
 
-            <div style={{ overflowY: 'auto', maxHeight: '576px' }}>
+            <div style={{ overflowY: 'auto', maxHeight: '560px' }}>
 
               {/* Pizza cards */}
               <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -976,7 +976,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       )}
 
       {/* ── Summary bar ── */}
-      <div style={{ background: '#1A1612', borderTop: '1px solid #C4522A', flexShrink: 0 }}>
+      <div style={{ background: '#1A1612', borderTop: '1px solid #C4522A', flexShrink: 0, marginTop: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 5px' }}>
           <span style={{ fontSize: '11px', color: '#8A7F78' }}>
             {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
