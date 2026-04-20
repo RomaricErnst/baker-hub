@@ -1190,11 +1190,10 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       <div>
         {totalQty > 0 && (
           <div style={{ background: '#F5F0E8' }}>
-            {/* Summary header — sticky, identical to fixed bar, ref for observer */}
+            {/* Summary header — plain, ref triggers IntersectionObserver */}
             <div
               ref={summaryRef}
               style={{
-                position: 'sticky', top: 0, zIndex: 20,
                 background: '#1A1612',
                 borderTop: '1px solid #C4522A',
                 display: 'flex', alignItems: 'center',
@@ -1293,7 +1292,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           background: '#1A1612', borderTop: '1px solid #C4522A',
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '8px 12px 5px',
+          padding: '9px 16px',
         }}>
           <span style={{ fontSize: '11px', color: '#8A7F78' }}>
             {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
