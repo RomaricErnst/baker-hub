@@ -684,6 +684,31 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {/* ══════════════════════════════════════
           PIZZAS pill
       ══════════════════════════════════════ */}
+      {/* Style awareness banner */}
+      {styleKey && (
+        <div style={{
+          padding: '6px 12px',
+          background: '#F5F0E8',
+          borderBottom: '1px solid #E0D8CF',
+          fontSize: '11px',
+          color: '#6B7A5A',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+        }}>
+          <svg viewBox="0 0 20 20" width={12} height={12} fill="none" stroke="#6B7A5A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="10" cy="10" r="7" />
+            <path d="M10 9v5" />
+            <circle cx="10" cy="7" r=".5" fill="#6B7A5A" stroke="none" />
+          </svg>
+          <span>
+            {locale === 'fr'
+              ? `Pizzas adaptées à votre ${styleKey === 'neapolitan' ? 'pâte Napolitaine' : styleKey === 'newyork' ? 'pâte New York' : styleKey === 'roman' ? 'pâte Romaine' : styleKey === 'pan' ? 'pâte Pan' : styleKey === 'pizza_romana' ? 'pâte Romaine' : 'style'}`
+              : `Showing pizzas suited for ${styleKey === 'neapolitan' ? 'Neapolitan' : styleKey === 'newyork' ? 'New York' : styleKey === 'roman' ? 'Roman' : styleKey === 'pan' ? 'Pan' : styleKey === 'pizza_romana' ? 'Roman' : styleKey} dough`}
+          </span>
+        </div>
+      )}
+
       {activePill === 'pizzas' && (
         <>
           {/* ── Filter panel ── */}

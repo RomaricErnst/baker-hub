@@ -2431,7 +2431,7 @@ export default function Home() {
                   <circle cx="12.5" cy="14" r="0.8" fill={color}/>
                 </svg>
               ),
-              locked: false,
+              locked: !styleKey,
               done: false,
             }] : []),
           ]).map(({ key: tabKey, label, icon, locked, done }) => {
