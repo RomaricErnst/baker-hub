@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import {
   PIZZAS, DESSERT_PIZZAS, getPizzaById,
   BASE_LABELS, OCCASION_LABELS, SEASON_LABELS,
@@ -626,20 +626,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // Summary open
   const [sumOpen, setSumOpen] = useState(false);
 
-  // Summary visibility (for fixed bar)
-  const summaryRef = useRef<HTMLDivElement>(null);
-  const [summaryVisible, setSummaryVisible] = useState(false);
-  useEffect(() => {
-    const el = summaryRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => setSummaryVisible(entry.isIntersecting),
-      { threshold: 0.1 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
   // Sheet
   const [sheetId, setSheetId] = useState<string | null>(null);
   const sheetPizza = sheetId ? (getPizzaById(sheetId) ?? null) : null;
@@ -1192,7 +1178,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           <div style={{ background: '#F5F0E8' }}>
             {/* Summary header — plain, ref triggers IntersectionObserver */}
             <div
-              ref={summaryRef}
               style={{
                 background: '#1A1612',
                 borderTop: '1px solid #C4522A',
@@ -1284,39 +1269,40 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         )}
       </div>
 
-      {/* ── Fixed bottom party bar — hidden when full summary is visible ── */}
-      {!summaryVisible && (
-        <div style={{
-          position: 'fixed', bottom: '64px', left: 0, right: 0,
-          zIndex: 50,
-          background: '#1A1612', borderTop: '1px solid #C4522A',
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '9px 16px',
-        }}>
-          <span style={{ fontSize: '11px', color: '#8A7F78' }}>
-            {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '3px' }}>
-              {Array.from({ length: Math.min(numItems, 10) }, (_, i) => (
-                <div key={i} style={{
-                  width: '10px', height: '10px', borderRadius: '50%',
-                  background: i < totalQty
-                    ? (totalQty >= numItems ? '#6B7A5A' : '#C4522A')
-                    : '#3D3530',
-                }} />
-              ))}
-              {numItems > 10 && (
-                <span style={{ fontSize: '9px', color: '#8A7F78', marginLeft: '2px' }}>+{numItems - 10}</span>
-              )}
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: totalQty >= numItems ? '#6B7A5A' : 'white' }}>
-              {totalQty} / {numItems}
-            </span>
+      {/* ── Party bar — sticky at bottom of component ── */}
+      <div style={{
+        position: 'sticky',
+        bottom: 0,
+        zIndex: 30,
+        background: '#1A1612',
+        borderTop: '1px solid #C4522A',
+        display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '9px 16px',
+      }}>
+        <span style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
+          {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '3px' }}>
+            {Array.from({ length: Math.min(numItems, 10) }, (_, i) => (
+              <div key={i} style={{
+                width: '8px', height: '8px', borderRadius: '50%',
+                background: i < totalQty
+                  ? (totalQty >= numItems ? '#6B7A5A' : '#C4522A')
+                  : '#3D3530',
+              }} />
+            ))}
           </div>
+          <span style={{
+            fontSize: '11px',
+            color: totalQty >= numItems ? '#6B7A5A' : '#C4522A',
+            fontFamily: 'DM Mono, monospace', fontWeight: 600,
+          }}>
+            {totalQty}/{numItems}
+          </span>
         </div>
-      )}
+      </div>
 
     </div>
   );
