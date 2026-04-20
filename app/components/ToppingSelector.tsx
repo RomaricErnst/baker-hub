@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   PIZZAS, DESSERT_PIZZAS, getPizzaById,
   BASE_LABELS, OCCASION_LABELS, SEASON_LABELS,
@@ -582,6 +582,19 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
     styleKey: styleKey as import('../lib/toppingTypes').StyleKey | undefined,
   });
 
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const [summaryVisible, setSummaryVisible] = useState(false);
+  useEffect(() => {
+    const el = summaryRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setSummaryVisible(entry.isIntersecting),
+      { threshold: 0.8 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   // Section open/closed — Occasion open by default, all others closed
   const [open, setOpen] = useState<Record<string, boolean>>({
     occasion: false, base: false, region: false, season: false,
@@ -1078,7 +1091,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             </div>
 
             {/* Grey spacer between pizza list and dessert */}
-            <div style={{ height: '10px', background: '#F0EBE3' }} />
+            <div style={{ height: '10px', background: '#F5F0E8' }} />
 
             {/* Dessert toggle */}
             <div
@@ -1173,25 +1186,39 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       )}
 
       {/* ── Full selection summary — always rendered for IntersectionObserver ── */}
-      <div>
+      <div ref={summaryRef}>
         {totalQty > 0 && (
           <div style={{ background: '#F5F0E8' }}>
-            {/* Summary header — plain, ref triggers IntersectionObserver */}
+            {/* Summary header — identical style to fixed bar */}
             <div style={{
+              background: '#1A1612',
+              borderTop: '1px solid #C4522A',
               display: 'flex', alignItems: 'center',
-              gap: '6px', padding: '4px 0 10px',
+              justifyContent: 'space-between',
+              padding: '9px 16px',
             }}>
-              <span style={{
-                width: '5px', height: '5px', borderRadius: '50%',
-                background: '#C4522A', display: 'inline-block', flexShrink: 0,
-              }} />
-              <span style={{
-                fontSize: '10px', fontWeight: 700, color: '#1A1612',
-                textTransform: 'uppercase', letterSpacing: '0.1em',
-                fontFamily: 'DM Mono, monospace',
-              }}>
-                {l === 'fr' ? 'Votre sélection' : 'Your selection'}
+              <span style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
+                {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
               </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '3px' }}>
+                  {Array.from({ length: Math.min(numItems, 10) }, (_, i) => (
+                    <div key={i} style={{
+                      width: '8px', height: '8px', borderRadius: '50%',
+                      background: i < totalQty
+                        ? (totalQty >= numItems ? '#6B7A5A' : '#C4522A')
+                        : '#3D3530',
+                    }} />
+                  ))}
+                </div>
+                <span style={{
+                  fontSize: '11px',
+                  color: totalQty >= numItems ? '#6B7A5A' : '#C4522A',
+                  fontFamily: 'DM Mono, monospace', fontWeight: 600,
+                }}>
+                  {totalQty}/{numItems}
+                </span>
+              </div>
             </div>
             {/* Summary rows */}
             <div style={{ padding: '8px 12px 12px' }}>
@@ -1250,7 +1277,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         )}
       </div>
 
-      {/* ── Party bar — sticky at bottom of component ── */}
+      {/* ── Party bar — fixed at bottom, hides when summary visible ── */}
+      {!summaryVisible && (
       <div style={{
         position: 'fixed',
         bottom: '64px',
@@ -1285,6 +1313,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           </span>
         </div>
       </div>
+      )}
 
     </div>
   );
