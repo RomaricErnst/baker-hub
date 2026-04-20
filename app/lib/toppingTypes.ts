@@ -193,7 +193,7 @@ export type FilterState = {
     refined:  [number, number] | null
   }
   ingredientSearch: string    // free text — matches pizza name + all ingredient names
-  ingredientChips: string[]   // selected quick-chips — OR logic
+  ingredientChips?: string[]  // selected quick-chips — OR logic
   styleKey?: StyleKey
 }
 
@@ -349,17 +349,15 @@ export function filterPizzas(pizzas: Pizza[], f: FilterState): Pizza[] {
         )
       if (!match) return false
     }
-    if (f.ingredientChips && f.ingredientChips.length > 0) {
+    const activeChips = f.ingredientChips ?? [];
+    if (activeChips.length > 0) {
       const allText = [
         p.name.en, p.name.fr ?? '',
         ...(p.ingredients ?? []).flatMap((ing: { name?: { en?: string; fr?: string } }) =>
           [ing.name?.en ?? '', ing.name?.fr ?? '']
         ),
       ].join(' ').toLowerCase();
-      const matches = f.ingredientChips.some(chip =>
-        allText.includes(chip.toLowerCase())
-      );
-      if (!matches) return false;
+      if (!activeChips.some(chip => allText.includes(chip.toLowerCase()))) return false;
     }
     if (f.flavour.richness && (p.flavour.richness < f.flavour.richness[0] || p.flavour.richness > f.flavour.richness[1])) return false
     if (f.flavour.boldness && (p.flavour.boldness < f.flavour.boldness[0] || p.flavour.boldness > f.flavour.boldness[1])) return false
