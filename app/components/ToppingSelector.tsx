@@ -275,8 +275,8 @@ function FilterGroup({ label, items }: {
         }} />
         {label}
       </div>
-      {/* 3-column header row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
+      {/* Header row — 3 columns or full width if single item */}
+      <div style={{ display: 'grid', gridTemplateColumns: items.length === 1 ? '1fr' : '1fr 1fr 1fr' }}>
         {items.map(item => (
           <div
             key={item.key}
@@ -585,13 +585,15 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // Section open/closed — Occasion open by default, all others closed
   const [open, setOpen] = useState<Record<string, boolean>>({
     occasion: false, base: false, region: false, season: false,
-    diet: false, wine: false, budget: false, budget_complexity: false, flavour: false,
+    diet: false, wine: false, budget: false, budget_complexity: false,
+    flavour: false, ingredient: false,
   });
 
   const FILTER_GROUPS: Record<string, string[]> = {
-    basics:  ['occasion', 'base', 'region'],
-    refine:  ['season', 'diet', 'wine'],
-    deeper:  ['budget', 'budget_complexity', 'flavour'],
+    basics:     ['occasion', 'base', 'region'],
+    refine:     ['season', 'diet', 'wine'],
+    deeper:     ['budget', 'budget_complexity', 'flavour'],
+    ingredient: ['ingredient'],
   };
 
   function togOpen(key: string) {
@@ -918,105 +920,121 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
           </div>{/* end filter panel */}
 
-          {/* ── Ingredient chips + search ── */}
-          <div style={{ background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', padding: '8px 0 10px' }}>
+          {/* ── By Ingredient ── */}
+          <FilterGroup
+            label={l === 'fr' ? 'Par ingrédient' : 'By Ingredient'}
+            items={[
+              {
+                key: 'ingredient',
+                title: l === 'fr' ? 'Ingrédient' : 'Ingredient',
+                badge: (filter.ingredientChips ?? []).length > 0 || filter.ingredientSearch
+                  ? String((filter.ingredientChips ?? []).length + (filter.ingredientSearch ? 1 : 0))
+                  : undefined,
+                open: open.ingredient,
+                onToggle: () => togOpen('ingredient'),
+                children: (
+                  <div>
+                    {/* 4×4 grid */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr 1fr 1fr',
+                      gap: '4px',
+                      marginBottom: '10px',
+                    }}>
+                      {/* Column headers */}
+                      {([
+                        { en: 'Cheese',     fr: 'Fromage',  color: '#D4A853' },
+                        { en: 'Meat',       fr: 'Viande',   color: '#C4522A' },
+                        { en: 'Vegetables', fr: 'Légumes',  color: '#6B7A5A' },
+                        { en: 'More',       fr: 'Autres',   color: '#8A7F78' },
+                      ]).map(col => (
+                        <div key={col.en} style={{ display: 'flex', alignItems: 'center', gap: '4px', paddingBottom: '4px' }}>
+                          <span style={{
+                            width: '4px', height: '4px', borderRadius: '50%',
+                            background: col.color, flexShrink: 0, display: 'inline-block',
+                          }} />
+                          <span style={{
+                            fontSize: '8px', fontWeight: 600, color: '#8A7F78',
+                            textTransform: 'uppercase', letterSpacing: '0.08em',
+                            fontFamily: 'DM Mono, monospace',
+                          }}>
+                            {l === 'fr' ? col.fr : col.en}
+                          </span>
+                        </div>
+                      ))}
+                      {/* 4 rows of ingredients — one per column */}
+                      {[0, 1, 2, 3].map(row => (
+                        INGREDIENT_CHIPS.map(group => {
+                          const item = group.items[row];
+                          if (!item) return <div key={group.category.en + row} />;
+                          const active = (filter.ingredientChips ?? []).includes(item.search);
+                          return (
+                            <span
+                              key={item.search}
+                              onClick={() => setFilter((prev: FilterState) => {
+                                const chips = prev.ingredientChips ?? [];
+                                return {
+                                  ...prev,
+                                  ingredientChips: active
+                                    ? chips.filter(c => c !== item.search)
+                                    : [...chips, item.search],
+                                };
+                              })}
+                              style={{
+                                fontSize: '11px', padding: '5px 6px',
+                                borderRadius: '6px', cursor: 'pointer',
+                                textAlign: 'center',
+                                border: active ? `1px solid ${group.color}` : '1px solid #E8E0D5',
+                                background: active ? group.color : '#F5F0E8',
+                                color: active ? 'white' : '#3D3530',
+                                fontFamily: 'DM Sans, sans-serif',
+                                transition: 'all 0.12s',
+                                userSelect: 'none' as React.CSSProperties['userSelect'],
+                                whiteSpace: 'nowrap' as React.CSSProperties['whiteSpace'],
+                                overflow: 'hidden', textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {item[l]}
+                            </span>
+                          );
+                        })
+                      ))}
+                    </div>
 
-            {INGREDIENT_CHIPS.map(group => (
-              <div key={group.category.en} style={{ marginBottom: '6px' }}>
-                {/* Category label with colour dot */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '5px',
-                  padding: '0 12px 3px',
-                }}>
-                  <span style={{
-                    width: '5px', height: '5px', borderRadius: '50%',
-                    background: group.color, flexShrink: 0,
-                    display: 'inline-block',
-                  }} />
-                  <span style={{
-                    fontSize: '9px', fontWeight: 600, color: '#3D3530',
-                    textTransform: 'uppercase', letterSpacing: '0.1em',
-                    fontFamily: 'DM Mono, monospace',
-                  }}>
-                    {group.category[l]}
-                  </span>
-                </div>
-                {/* Horizontally scrollable chips */}
-                <div style={{
-                  display: 'flex', gap: '6px',
-                  overflowX: 'auto', padding: '2px 12px',
-                  scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
-                  WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
-                }}>
-                  {group.items.map(item => {
-                    const active = (filter.ingredientChips ?? []).includes(item.search);
-                    return (
-                      <span
-                        key={item.search}
-                        onClick={() => setFilter((prev: FilterState) => {
-                          const chips = prev.ingredientChips ?? [];
-                          return {
-                            ...prev,
-                            ingredientChips: active
-                              ? chips.filter(c => c !== item.search)
-                              : [...chips, item.search],
-                          };
-                        })}
-                        style={{
-                          flexShrink: 0,
-                          fontSize: '12px', padding: '5px 12px',
-                          borderRadius: '20px', cursor: 'pointer',
-                          border: active
-                            ? `1px solid ${group.color}`
-                            : '1px solid #E0D8CF',
-                          background: active ? group.color : '#FDFBF7',
-                          color: active ? 'white' : '#3D3530',
-                          fontFamily: 'DM Sans, sans-serif',
-                          transition: 'all 0.12s',
-                          userSelect: 'none' as React.CSSProperties['userSelect'],
-                          whiteSpace: 'nowrap' as React.CSSProperties['whiteSpace'],
-                        }}
-                      >
-                        {item[l]}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+                    {/* Active count + clear chips */}
+                    {(filter.ingredientChips ?? []).length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '11px', color: '#C4522A', fontFamily: 'DM Sans' }}>
+                          {(filter.ingredientChips ?? []).length} {l === 'fr' ? 'sélectionné(s)' : 'selected'}
+                        </span>
+                        <button
+                          onClick={() => setFilter((p: FilterState) => ({ ...p, ingredientChips: [] }))}
+                          style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        >
+                          · {l === 'fr' ? 'effacer' : 'clear'}
+                        </button>
+                      </div>
+                    )}
 
-            {/* Active count + clear */}
-            {(filter.ingredientChips ?? []).length > 0 && (
-              <div style={{ padding: '2px 12px 4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '11px', color: '#C4522A', fontFamily: 'DM Sans' }}>
-                  {(filter.ingredientChips ?? []).length} {l === 'fr' ? 'sélectionné(s)' : 'selected'}
-                </span>
-                <button
-                  onClick={() => setFilter((p: FilterState) => ({ ...p, ingredientChips: [] }))}
-                  style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                >
-                  · {l === 'fr' ? 'effacer' : 'clear'}
-                </button>
-              </div>
-            )}
-
-            {/* Free text fallback */}
-            <div style={{ padding: '4px 12px 0' }}>
-              <input
-                type="text"
-                value={filter.ingredientSearch}
-                onChange={e => setFilter((p: FilterState) => ({ ...p, ingredientSearch: e.target.value }))}
-                placeholder={l === 'fr' ? 'Autre ingrédient...' : 'Other ingredient...'}
-                style={{
-                  width: '100%', fontSize: '12px', padding: '7px 10px',
-                  borderRadius: '8px', border: '0.5px solid #E0D8CF',
-                  background: '#F5F0E8', outline: 'none', color: '#1A1612',
-                  fontFamily: 'DM Sans, sans-serif',
-                  boxSizing: 'border-box' as React.CSSProperties['boxSizing'],
-                }}
-              />
-            </div>
-          </div>
+                    {/* Free text fallback */}
+                    <input
+                      type="text"
+                      value={filter.ingredientSearch}
+                      onChange={e => setFilter((p: FilterState) => ({ ...p, ingredientSearch: e.target.value }))}
+                      placeholder={l === 'fr' ? 'Autre ingrédient...' : 'Other ingredient...'}
+                      style={{
+                        width: '100%', fontSize: '12px', padding: '7px 10px',
+                        borderRadius: '8px', border: '0.5px solid #E0D8CF',
+                        background: '#F5F0E8', outline: 'none', color: '#1A1612',
+                        fontFamily: 'DM Sans, sans-serif',
+                        boxSizing: 'border-box' as React.CSSProperties['boxSizing'],
+                      }}
+                    />
+                  </div>
+                ),
+              },
+            ]}
+          />
 
           {/* ── Results strip ── */}
           <div style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F5F0E8', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
