@@ -963,7 +963,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         </div>
                       ))}
                       {/* 4 rows of ingredients — one per column */}
-                      {[0, 1, 2, 3].map(row => (
+                      {[0, 1, 2, 3].flatMap(row => (
                         INGREDIENT_CHIPS.map(group => {
                           const item = group.items[row];
                           if (!item) return <div key={group.category.en + row} />;
