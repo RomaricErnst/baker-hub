@@ -108,43 +108,46 @@ function Pill({ label, color }: { label: string; color?: string }) {
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, icon, title, time, duration, accent = D.terra, children,
+  number, icon, title, time, duration, accent = D.terra,
+  open, done, onToggle, onDone, children,
 }: {
   number: number; icon: React.ReactNode; title: string;
   time?: Date; duration?: number | null;
-  accent?: string; children: React.ReactNode;
+  accent?: string; open: boolean; done: boolean;
+  onToggle: () => void; onDone: () => void;
+  children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(true);
+  const ea = done ? D.sage : accent;
   return (
     <div style={{
       background: D.warm, borderRadius: '18px',
-      border: `1px solid ${D.border}`,
+      border: `1px solid ${done ? D.sage + '60' : D.border}`,
       overflow: 'hidden',
       boxShadow: '0 2px 12px rgba(26,22,18,0.06)',
     }}>
       {/* Card header */}
       <div
-        onClick={() => setOpen(v => !v)}
+        onClick={onToggle}
         style={{
           display: 'flex', alignItems: 'center', gap: '.75rem',
           padding: '1rem 1.25rem', cursor: 'pointer',
-          borderLeft: `4px solid ${accent}`,
+          borderLeft: `4px solid ${ea}`,
         }}
       >
         <span style={{
           width: '28px', height: '28px', borderRadius: '50%',
-          background: `${accent}18`, border: `1.5px solid ${accent}40`,
+          background: `${ea}18`, border: `1.5px solid ${ea}40`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
-          color: accent, fontWeight: 700, flexShrink: 0,
-        }}>{number}</span>
+          color: ea, fontWeight: 700, flexShrink: 0,
+        }}>{done ? '✓' : number}</span>
         <span style={{ width: '22px', height: '22px', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: accent }}>{icon}</span>
+          color: ea }}>{icon}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontFamily: 'var(--font-playfair)', fontSize: '1rem',
-            fontWeight: 700, color: D.char,
+            fontWeight: 700, color: done ? D.smoke : D.char,
           }}>{title}</div>
           {time && (
             <div style={{ fontSize: '.72rem', color: D.smoke, fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem' }}>
@@ -153,9 +156,24 @@ function StepCard({
             </div>
           )}
         </div>
-        <span style={{ color: D.smoke, fontSize: '.8rem', flexShrink: 0 }}>
-          {open ? '▲' : '▼'}
-        </span>
+        {done ? (
+          <span style={{ color: D.sage, fontSize: '.85rem', flexShrink: 0 }}>✓</span>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexShrink: 0 }}>
+            {open && (
+              <button
+                onClick={e => { e.stopPropagation(); onDone(); }}
+                style={{
+                  background: D.sage, color: '#fff', border: 'none',
+                  borderRadius: '20px', padding: '.25rem .75rem',
+                  fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
+                  cursor: 'pointer', fontWeight: 600,
+                }}
+              >Done ✓</button>
+            )}
+            <span style={{ color: D.smoke, fontSize: '.8rem' }}>{open ? '▲' : '▼'}</span>
+          </div>
+        )}
       </div>
       {/* Card body */}
       {open && (
@@ -201,6 +219,8 @@ export default function BakeGuide({
 }: BakeGuideProps) {
   const u = units ?? 'metric';
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
   const t = useTranslations('bakeGuide');
 
   const isSourdough   = styleKey === 'sourdough' || styleKey === 'pain_levain';
@@ -223,7 +243,17 @@ export default function BakeGuide({
   const divideMin     = 15 + 2 * extraBalls;
 
   let stepNum = 0;
-  const n = () => ++stepNum;
+  let lastStep = 0;
+  const n = () => { stepNum++; lastStep = stepNum; return stepNum; };
+  const sc = () => {
+    const s = lastStep;
+    return {
+      open: currentStep === s,
+      done: doneSteps.has(s),
+      onToggle: () => setCurrentStep(prev => prev === s ? 0 : s),
+      onDone: () => { setDoneSteps(prev => new Set(prev).add(s)); setCurrentStep(s + 1); },
+    };
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -240,7 +270,7 @@ export default function BakeGuide({
 
       {/* ── STEP: Make Poolish / Biga ───────────────── */}
       {hasPref && prefStartTime && (
-        <StepCard number={n()} icon={<IconPreferment />}
+        <StepCard number={n()} {...sc()} icon={<IconPreferment />}
           title={isPoolish ? t('stepTitles.makePoolish') : t('stepTitles.makeBiga')}
           time={prefStartTime} accent={D.gold}>
 
@@ -264,7 +294,7 @@ export default function BakeGuide({
 
       {/* ── STEP: Feed Starter (sourdough) ──────────── */}
       {isSourdough && feedTime && (
-        <StepCard number={n()} icon={<IconStarter />} title={t('stepTitles.feedStarter')} time={feedTime} accent="#6A7FA8">
+        <StepCard number={n()} {...sc()} icon={<IconStarter />} title={t('stepTitles.feedStarter')} time={feedTime} accent="#6A7FA8">
           <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
             <Steps items={t.raw('starter.steps') as { bold: string; note: string }[]} />
           </Section>
@@ -281,7 +311,7 @@ export default function BakeGuide({
       )}
 
       {/* ── STEP: Mix Dough ─────────────────────────── */}
-      <StepCard number={n()} icon={<IconMix />} title={t('stepTitles.mixDough')}
+      <StepCard number={n()} {...sc()} icon={<IconMix />} title={t('stepTitles.mixDough')}
         time={schedule.bulkFermStart} duration={schedule.mixingDurationH} accent={D.ash}>
 
         <Section icon="🥄" title={t('sectionTitles.mixingOrder')}>
@@ -408,7 +438,7 @@ export default function BakeGuide({
       </StepCard>
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
-      <StepCard number={n()} icon={<IconBulk />} title={t('stepTitles.bulkFerm')}
+      <StepCard number={n()} {...sc()} icon={<IconBulk />} title={t('stepTitles.bulkFerm')}
         time={schedule.bulkFermStart} duration={schedule.bulkFermHours} accent={D.terra}>
 
         <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
@@ -453,7 +483,7 @@ export default function BakeGuide({
 
       {/* ── STEP: Cold Retard 1 ──────────────────────── */}
       {hasCold && schedule.coldRetard1Start && schedule.coldRetard1End && (
-        <StepCard number={n()} icon={<IconCold />}
+        <StepCard number={n()} {...sc()} icon={<IconCold />}
           title={isTwoPhase ? t('stepTitles.coldRetardWhole') : t('stepTitles.coldRetard')}
           time={schedule.coldRetard1Start}
           duration={(schedule.coldRetard1End.getTime() - schedule.coldRetard1Start.getTime()) / 3600000}
@@ -483,7 +513,7 @@ export default function BakeGuide({
 
       {/* ── STEP: Divide & Shape (bread) / Divide & Ball (pizza) ── */}
       {schedule.divideBallTime && (
-        <StepCard number={n()} icon={<IconDivide />}
+        <StepCard number={n()} {...sc()} icon={<IconDivide />}
           title={isBread ? t('stepTitles.divideShape') : t('stepTitles.divideBall')}
           time={schedule.divideBallTime} duration={divideMin / 60} accent="#8A6A4A">
 
@@ -559,7 +589,7 @@ export default function BakeGuide({
       {/* ── STEP: Cold Retard 2 (two-phase) ─────────── */}
       {isTwoPhase && schedule.coldRetard2Start && schedule.coldRetard2End &&
         (schedule.coldRetard2End.getTime() - schedule.coldRetard2Start.getTime()) > 0 && (
-        <StepCard number={n()} icon={<IconCold />}
+        <StepCard number={n()} {...sc()} icon={<IconCold />}
           title={isBread ? t('stepTitles.coldProof') : t('stepTitles.coldRetardBalls')}
           time={schedule.coldRetard2Start}
           duration={(schedule.coldRetard2End.getTime() - schedule.coldRetard2Start.getTime()) / 3600000}
@@ -584,7 +614,7 @@ export default function BakeGuide({
 
       {/* ── STEP: Final Proof (merged warmup + proof for cold-retard styles) */}
       {(schedule.finalProofHours > 0 || schedule.restRtHours > 0 || schedule.rtWarmupStart) && (
-        <StepCard number={n()} icon={<IconProof />} title={t('stepTitles.finalProof')}
+        <StepCard number={n()} {...sc()} icon={<IconProof />} title={t('stepTitles.finalProof')}
           time={schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart}
           duration={(() => {
             const proofEnd = schedule.bakeStart;
@@ -629,7 +659,7 @@ export default function BakeGuide({
       )}
 
       {/* ── STEP: Preheat Oven ───────────────────────── */}
-      <StepCard number={n()} icon={<IconPreheat />} title={t('stepTitles.preheatOven')}
+      <StepCard number={n()} {...sc()} icon={<IconPreheat />} title={t('stepTitles.preheatOven')}
         time={schedule.preheatStart} accent={D.gold}>
 
         <div style={{ fontSize: '.75rem', color: D.smoke, fontStyle: 'italic',
@@ -677,7 +707,7 @@ export default function BakeGuide({
       </StepCard>
 
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
-      <StepCard number={n()} icon={<IconBake />} title={t('stepTitles.bakeEat')} time={schedule.bakeStart} accent="#5A9A50">
+      <StepCard number={n()} {...sc()} icon={<IconBake />} title={t('stepTitles.bakeEat')} time={schedule.bakeStart} accent="#5A9A50">
 
         <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
           {isBread ? (
