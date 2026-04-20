@@ -343,9 +343,9 @@ export function filterPizzas(pizzas: Pizza[], f: FilterState): Pizza[] {
       const match =
         p.name.en.toLowerCase().includes(q) ||
         p.name.fr.toLowerCase().includes(q) ||
-        p.ingredients.some(i =>
-          i.name.en.toLowerCase().includes(q) ||
-          i.name.fr.toLowerCase().includes(q)
+        p.ingredients.filter(i => !!i && !!i.name).some(i =>
+          i.name.en?.toLowerCase().includes(q) ||
+          i.name.fr?.toLowerCase().includes(q)
         )
       if (!match) return false
     }
@@ -353,9 +353,9 @@ export function filterPizzas(pizzas: Pizza[], f: FilterState): Pizza[] {
     if (activeChips.length > 0) {
       const allText = [
         p.name.en, p.name.fr ?? '',
-        ...(p.ingredients ?? []).flatMap((ing: { name?: { en?: string; fr?: string } }) =>
-          [ing.name?.en ?? '', ing.name?.fr ?? '']
-        ),
+        ...(p.ingredients ?? [])
+          .filter(ing => !!ing && !!ing.name && typeof ing.name.en === 'string')
+          .flatMap(ing => [ing.name.en, ing.name.fr ?? '']),
       ].join(' ').toLowerCase();
       if (!activeChips.some(chip => allText.includes(chip.toLowerCase()))) return false;
     }
