@@ -12,6 +12,55 @@ import {
   type ComplexityTier, type RegionTag,
 } from '../lib/toppingDatabase';
 
+// ─── Ingredient chips ─────────────────────────────────────────
+
+const INGREDIENT_CHIPS: {
+  category: { en: string; fr: string };
+  color: string;
+  items: { en: string; fr: string; search: string }[];
+}[] = [
+  {
+    category: { en: 'Cheese', fr: 'Fromage' },
+    color: '#D4A853',
+    items: [
+      { en: 'Mozzarella', fr: 'Mozzarella', search: 'mozzarella' },
+      { en: 'Burrata',    fr: 'Burrata',    search: 'burrata' },
+      { en: 'Gorgonzola', fr: 'Gorgonzola', search: 'gorgonzola' },
+      { en: 'Ricotta',    fr: 'Ricotta',    search: 'ricotta' },
+    ],
+  },
+  {
+    category: { en: 'Meat', fr: 'Viande' },
+    color: '#C4522A',
+    items: [
+      { en: 'Prosciutto', fr: 'Prosciutto', search: 'prosciutto' },
+      { en: 'Ham',        fr: 'Jambon',     search: 'ham' },
+      { en: 'Salmon',     fr: 'Saumon',     search: 'salmon' },
+      { en: 'Pepperoni',  fr: 'Pepperoni',  search: 'pepperoni' },
+    ],
+  },
+  {
+    category: { en: 'Vegetables', fr: 'Légumes' },
+    color: '#6B7A5A',
+    items: [
+      { en: 'Mushrooms',  fr: 'Champignons', search: 'mushroom' },
+      { en: 'Artichoke',  fr: 'Artichaut',   search: 'artichoke' },
+      { en: 'Courgette',  fr: 'Courgette',   search: 'courgette' },
+      { en: 'Aubergine',  fr: 'Aubergine',   search: 'aubergine' },
+    ],
+  },
+  {
+    category: { en: 'More', fr: 'Autres' },
+    color: '#8A7F78',
+    items: [
+      { en: 'Anchovy',  fr: 'Anchois', search: 'anchovy' },
+      { en: 'Truffle',  fr: 'Truffe',  search: 'truffle' },
+      { en: 'Egg',      fr: 'Oeuf',    search: 'egg' },
+      { en: 'Capers',   fr: 'Câpres',  search: 'caper' },
+    ],
+  },
+];
+
 // ─── Types ───────────────────────────────────────────────────
 
 type Qty = Record<string, number>;
@@ -869,20 +918,104 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
           </div>{/* end filter panel */}
 
-          {/* ── Ingredient search ── */}
-          <div style={{ padding: '8px 12px', background: '#FDFBF7', borderBottom: '0.5px solid #E0D8CF' }}>
-            <input
-              type="text"
-              value={filter.ingredientSearch}
-              onChange={e => setFilter((p: FilterState) => ({ ...p, ingredientSearch: e.target.value }))}
-              placeholder={l === 'fr' ? '🔍 Un ingrédient dans votre frigo...' : '🔍 An ingredient in your fridge...'}
-              style={{
-                width: '100%', fontSize: '12px', padding: '7px 10px',
-                borderRadius: '8px', border: '0.5px solid #E0D8CF',
-                background: '#F5F0E8', outline: 'none', color: '#1A1612',
-                fontFamily: 'DM Sans, sans-serif',
-              }}
-            />
+          {/* ── Ingredient chips + search ── */}
+          <div style={{ background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', padding: '8px 0 10px' }}>
+
+            {INGREDIENT_CHIPS.map(group => (
+              <div key={group.category.en} style={{ marginBottom: '6px' }}>
+                {/* Category label with colour dot */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  padding: '0 12px 3px',
+                }}>
+                  <span style={{
+                    width: '5px', height: '5px', borderRadius: '50%',
+                    background: group.color, flexShrink: 0,
+                    display: 'inline-block',
+                  }} />
+                  <span style={{
+                    fontSize: '9px', fontWeight: 600, color: '#3D3530',
+                    textTransform: 'uppercase', letterSpacing: '0.1em',
+                    fontFamily: 'DM Mono, monospace',
+                  }}>
+                    {group.category[l]}
+                  </span>
+                </div>
+                {/* Horizontally scrollable chips */}
+                <div style={{
+                  display: 'flex', gap: '6px',
+                  overflowX: 'auto', padding: '2px 12px',
+                  scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
+                  WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
+                }}>
+                  {group.items.map(item => {
+                    const active = (filter.ingredientChips ?? []).includes(item.search);
+                    return (
+                      <span
+                        key={item.search}
+                        onClick={() => setFilter((prev: FilterState) => {
+                          const chips = prev.ingredientChips ?? [];
+                          return {
+                            ...prev,
+                            ingredientChips: active
+                              ? chips.filter(c => c !== item.search)
+                              : [...chips, item.search],
+                          };
+                        })}
+                        style={{
+                          flexShrink: 0,
+                          fontSize: '12px', padding: '5px 12px',
+                          borderRadius: '20px', cursor: 'pointer',
+                          border: active
+                            ? `1px solid ${group.color}`
+                            : '1px solid #E0D8CF',
+                          background: active ? group.color : '#FDFBF7',
+                          color: active ? 'white' : '#3D3530',
+                          fontFamily: 'DM Sans, sans-serif',
+                          transition: 'all 0.12s',
+                          userSelect: 'none' as React.CSSProperties['userSelect'],
+                          whiteSpace: 'nowrap' as React.CSSProperties['whiteSpace'],
+                        }}
+                      >
+                        {item[l]}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* Active count + clear */}
+            {(filter.ingredientChips ?? []).length > 0 && (
+              <div style={{ padding: '2px 12px 4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '11px', color: '#C4522A', fontFamily: 'DM Sans' }}>
+                  {(filter.ingredientChips ?? []).length} {l === 'fr' ? 'sélectionné(s)' : 'selected'}
+                </span>
+                <button
+                  onClick={() => setFilter((p: FilterState) => ({ ...p, ingredientChips: [] }))}
+                  style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  · {l === 'fr' ? 'effacer' : 'clear'}
+                </button>
+              </div>
+            )}
+
+            {/* Free text fallback */}
+            <div style={{ padding: '4px 12px 0' }}>
+              <input
+                type="text"
+                value={filter.ingredientSearch}
+                onChange={e => setFilter((p: FilterState) => ({ ...p, ingredientSearch: e.target.value }))}
+                placeholder={l === 'fr' ? 'Autre ingrédient...' : 'Other ingredient...'}
+                style={{
+                  width: '100%', fontSize: '12px', padding: '7px 10px',
+                  borderRadius: '8px', border: '0.5px solid #E0D8CF',
+                  background: '#F5F0E8', outline: 'none', color: '#1A1612',
+                  fontFamily: 'DM Sans, sans-serif',
+                  boxSizing: 'border-box' as React.CSSProperties['boxSizing'],
+                }}
+              />
+            </div>
           </div>
 
           {/* ── Results strip ── */}

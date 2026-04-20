@@ -192,7 +192,8 @@ export type FilterState = {
     creative: [number, number] | null
     refined:  [number, number] | null
   }
-  ingredientSearch: string    // matches pizza name + all ingredient names (EN+FR)
+  ingredientSearch: string    // free text — matches pizza name + all ingredient names
+  ingredientChips: string[]   // selected quick-chips — OR logic
   styleKey?: StyleKey
 }
 
@@ -227,10 +228,10 @@ export const OCCASION_LABELS: Record<OccasionTag, Locale> = {
 
 export const SEASON_LABELS: Record<Season, Locale> = {
   all:    { en: 'All year',  fr: 'Toute l\'année' },
-  spring: { en: '🌸 Spring', fr: '🌸 Printemps' },
-  summer: { en: '☀️ Summer', fr: '☀️ Été' },
-  autumn: { en: '🍂 Autumn', fr: '🍂 Automne' },
-  winter: { en: '❄️ Winter', fr: '❄️ Hiver' },
+  spring: { en: 'Spring',    fr: 'Printemps' },
+  summer: { en: 'Summer',    fr: 'Été' },
+  autumn: { en: 'Autumn',    fr: 'Automne' },
+  winter: { en: 'Winter',    fr: 'Hiver' },
 }
 
 // Wine: selectable category pill (left) + read-only examples (right, informational only)
@@ -348,6 +349,18 @@ export function filterPizzas(pizzas: Pizza[], f: FilterState): Pizza[] {
         )
       if (!match) return false
     }
+    if (f.ingredientChips && f.ingredientChips.length > 0) {
+      const allText = [
+        p.name.en, p.name.fr ?? '',
+        ...(p.ingredients ?? []).flatMap((ing: { name?: { en?: string; fr?: string } }) =>
+          [ing.name?.en ?? '', ing.name?.fr ?? '']
+        ),
+      ].join(' ').toLowerCase();
+      const matches = f.ingredientChips.some(chip =>
+        allText.includes(chip.toLowerCase())
+      );
+      if (!matches) return false;
+    }
     if (f.flavour.richness && (p.flavour.richness < f.flavour.richness[0] || p.flavour.richness > f.flavour.richness[1])) return false
     if (f.flavour.boldness && (p.flavour.boldness < f.flavour.boldness[0] || p.flavour.boldness > f.flavour.boldness[1])) return false
     if (f.flavour.creative && (p.flavour.creative < f.flavour.creative[0] || p.flavour.creative > f.flavour.creative[1])) return false
@@ -377,4 +390,5 @@ export const DEFAULT_FILTER: FilterState = {
   complexity: null,
   flavour: { richness: null, boldness: null, creative: null, refined: null },
   ingredientSearch: '',
+  ingredientChips: [],
 }
