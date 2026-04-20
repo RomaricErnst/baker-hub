@@ -211,14 +211,19 @@ function FilterGroup({ label, items }: {
 }) {
   const openItem = items.find(i => i.open);
   return (
-    <div style={{ borderBottom: '1px solid #E0D8CF' }}>
+    <div style={{ borderBottom: '0.5px solid #F0EBE3', paddingBottom: '4px' }}>
       {/* Group subtitle */}
       <div style={{
-        fontSize: '9px', fontWeight: 600, color: '#8A7F78',
+        fontSize: '10px', fontWeight: 700, color: '#1A1612',
         textTransform: 'uppercase', letterSpacing: '0.1em',
-        padding: '8px 12px 2px',
+        padding: '10px 12px 3px',
         fontFamily: 'DM Mono, monospace',
+        display: 'flex', alignItems: 'center', gap: '6px',
       }}>
+        <span style={{
+          width: '5px', height: '5px', borderRadius: '50%',
+          background: '#C4522A', flexShrink: 0, display: 'inline-block',
+        }} />
         {label}
       </div>
       {/* 3-column header row */}
@@ -230,16 +235,24 @@ function FilterGroup({ label, items }: {
             style={{
               display: 'flex', alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '6px 10px 6px',
+              padding: '5px 8px',
+              margin: '3px 4px',
               cursor: 'pointer',
-              borderRight: '0.5px solid #F0EBE3',
-              background: item.open ? '#F0EBE3' : 'transparent',
+              borderRadius: '8px',
+              border: item.open
+                ? '1px solid rgba(196,82,42,0.3)'
+                : '1px solid rgba(26,22,18,0.07)',
+              background: item.open
+                ? 'rgba(196,82,42,0.07)'
+                : 'rgba(26,22,18,0.03)',
+              transition: 'all 0.12s',
             }}
           >
             <span style={{
-              fontSize: '10px', color: '#3D3530',
+              fontSize: '10px',
+              color: item.open ? '#C4522A' : '#3D3530',
               textTransform: 'uppercase', letterSpacing: '0.08em',
-              fontWeight: item.open ? 600 : 500,
+              fontWeight: item.open ? 700 : 500,
               fontFamily: 'DM Sans, sans-serif',
               display: 'flex', alignItems: 'center', gap: '4px',
             }}>
@@ -255,11 +268,12 @@ function FilterGroup({ label, items }: {
               )}
             </span>
             <span style={{
-              fontSize: '9px', color: '#8A7F78',
+              fontSize: '11px',
+              color: item.open ? '#C4522A' : '#8A7F78',
               transform: item.open ? 'rotate(180deg)' : 'none',
-              transition: 'transform 0.15s', display: 'inline-block',
+              transition: 'all 0.15s', display: 'inline-block',
               marginLeft: '3px', flexShrink: 0,
-            }}>⌾</span>
+            }}>⌄</span>
           </div>
         ))}
       </div>
