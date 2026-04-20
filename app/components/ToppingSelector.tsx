@@ -204,6 +204,79 @@ function FlavorSlider({ leftLabel, rightLabel, value, onChange }: {
   );
 }
 
+// ─── Filter group (3-column grid with subtitle) ───────────────
+function FilterGroup({ label, items }: {
+  label: string;
+  items: { key: string; title: string; badge?: string; open: boolean; onToggle: () => void; children: React.ReactNode }[];
+}) {
+  const openItem = items.find(i => i.open);
+  return (
+    <div style={{ borderBottom: '1px solid #E0D8CF' }}>
+      {/* Group subtitle */}
+      <div style={{
+        fontSize: '9px', fontWeight: 600, color: '#8A7F78',
+        textTransform: 'uppercase', letterSpacing: '0.1em',
+        padding: '8px 12px 2px',
+        fontFamily: 'DM Mono, monospace',
+      }}>
+        {label}
+      </div>
+      {/* 3-column header row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
+        {items.map(item => (
+          <div
+            key={item.key}
+            onClick={item.onToggle}
+            style={{
+              display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '6px 10px 6px',
+              cursor: 'pointer',
+              borderRight: '0.5px solid #F0EBE3',
+              background: item.open ? '#F0EBE3' : 'transparent',
+            }}
+          >
+            <span style={{
+              fontSize: '10px', color: '#3D3530',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+              fontWeight: item.open ? 600 : 500,
+              fontFamily: 'DM Sans, sans-serif',
+              display: 'flex', alignItems: 'center', gap: '4px',
+            }}>
+              {item.title}
+              {item.badge && (
+                <span style={{
+                  background: '#C4522A', color: 'white',
+                  borderRadius: '10px', fontSize: '8px',
+                  padding: '1px 5px', fontWeight: 600,
+                }}>
+                  {item.badge}
+                </span>
+              )}
+            </span>
+            <span style={{
+              fontSize: '9px', color: '#8A7F78',
+              transform: item.open ? 'rotate(180deg)' : 'none',
+              transition: 'transform 0.15s', display: 'inline-block',
+              marginLeft: '3px', flexShrink: 0,
+            }}>⌾</span>
+          </div>
+        ))}
+      </div>
+      {/* Full-width expanded content */}
+      {openItem && (
+        <div style={{
+          borderTop: '0.5px solid #F0EBE3',
+          background: '#FDFBF7',
+          padding: '10px 12px 12px',
+        }}>
+          {openItem.children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Filter section ───────────────────────────────────────────
 
 function FilterSection({ title, badge, open, onToggle, children }: {
@@ -448,10 +521,27 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
   // Section open/closed — Occasion open by default, all others closed
   const [open, setOpen] = useState<Record<string, boolean>>({
-    occasion: true, base: false, region: false, season: false,
-    diet: false, wine: false, budget: false, flavour: false,
+    occasion: false, base: false, region: false, season: false,
+    diet: false, wine: false, budget: false, budget_complexity: false, flavour: false,
   });
-  const togOpen = (k: string) => setOpen(p => ({ ...p, [k]: !p[k] }));
+
+  const FILTER_GROUPS: Record<string, string[]> = {
+    basics:  ['occasion', 'base', 'region'],
+    refine:  ['season', 'diet', 'wine'],
+    deeper:  ['budget', 'budget_complexity', 'flavour'],
+  };
+
+  function togOpen(key: string) {
+    setOpen(prev => {
+      const next = { ...prev };
+      const group = Object.values(FILTER_GROUPS).find(g => g.includes(key));
+      if (group) {
+        group.forEach(k => { next[k] = false; });
+      }
+      next[key] = !prev[key];
+      return next;
+    });
+  }
 
   // Region parent selection
   const [regionParent, setRegionParent] = useState<'all' | 'italy' | 'france' | 'fusion'>('all');
@@ -566,230 +656,202 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           {/* ── Filter panel ── */}
           <div style={{ background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
 
-            {/* Occasion — open by default */}
-            <FilterSection
-              title={l === 'fr' ? 'Occasion' : 'Occasion'}
-              open={open.occasion} onToggle={() => togOpen('occasion')}
-              badge={filter.occasion.length > 0 ? `${filter.occasion.length}` : undefined}
-            >
-              <div style={S.pillRow}>
-                {(['classic','spicy','kids','party','impress','quick'] as OccasionTag[]).map(o => (
-                  <span key={o} style={S.pill(filter.occasion.includes(o))} onClick={() => toggleOccasion(o)}>
-                    {OCCASION_LABELS[o][l]}
-                  </span>
-                ))}
-              </div>
-            </FilterSection>
-
-            {/* Base */}
-            <FilterSection
-              title={l === 'fr' ? 'Base' : 'Base'}
-              open={open.base} onToggle={() => togOpen('base')}
-            >
-              <div style={S.pillRow}>
-                <span style={S.pill(filter.base === null, 'terra')} onClick={() => setBase(null)}>
-                  {l === 'fr' ? 'Toutes' : 'All'}
-                </span>
-                {(['tomato_raw','tomato_cooked','bianca_cream','bianca_oil','bianca_ricotta','pesto','nduja','bbq'] as BaseType[]).map(b => (
-                  <span key={b} style={S.pill(filter.base === b, 'terra')}
-                    onClick={() => setBase(filter.base === b ? null : b)}>
-                    {BASE_LABELS[b][l]}
-                  </span>
-                ))}
-              </div>
-            </FilterSection>
-
-            {/* Region */}
-            <FilterSection
-              title={l === 'fr' ? 'Région' : 'Region'}
-              open={open.region} onToggle={() => togOpen('region')}
-              badge={regionParent !== 'all' ? (regionParent === 'italy' ? '🇮🇹' : regionParent === 'france' ? '🇫🇷' : '🌍') : undefined}
-            >
-              <div style={S.pillRow}>
-                {(['all','italy','france','fusion'] as const).map(r => (
-                  <span key={r} style={S.pill(regionParent === r, 'terra')}
-                    onClick={() => { setRegionParent(r); setRegion(null); }}>
-                    {r === 'all'    ? (l === 'fr' ? 'Toutes' : 'All')
-                      : r === 'italy'  ? '🇮🇹 ' + (l === 'fr' ? 'Italie' : 'Italy')
-                      : r === 'france' ? '🇫🇷 France'
-                      : '🌍 Fusion'}
-                  </span>
-                ))}
-              </div>
-              {regionParent !== 'all' && (
-                <div style={S.subSec}>
-                  <span style={S.subLbl}>
-                    {regionParent === 'italy'
-                      ? (l === 'fr' ? 'Régions italiennes' : 'Italian regions')
-                      : (l === 'fr' ? 'Régions françaises' : 'French regions')}
-                  </span>
-                  <div style={S.pillRow}>
-                    {(regionParent === 'italy' ? ITALY_REGIONS : FRANCE_REGIONS).map(r => (
-                      <span key={r} style={S.pill(filter.region === r)}
-                        onClick={() => setRegion(filter.region === r ? null : r)}>
-                        {REGION_NAMES[r][l]}
+            {/* ── Group 1: The Basics ── */}
+            <FilterGroup
+              label={l === 'fr' ? 'L\'essentiel' : 'The Basics'}
+              items={[
+                {
+                  key: 'occasion', title: l === 'fr' ? 'Occasion' : 'Occasion',
+                  badge: filter.occasion.length > 0 ? `${filter.occasion.length}` : undefined,
+                  open: open.occasion, onToggle: () => togOpen('occasion'),
+                  children: (
+                    <div style={S.pillRow}>
+                      {(['classic','spicy','kids','party','impress','quick'] as OccasionTag[]).map(o => (
+                        <span key={o} style={S.pill(filter.occasion.includes(o))} onClick={() => toggleOccasion(o)}>
+                          {OCCASION_LABELS[o][l]}
+                        </span>
+                      ))}
+                    </div>
+                  ),
+                },
+                {
+                  key: 'base', title: l === 'fr' ? 'Base' : 'Base',
+                  badge: filter.base !== null ? '1' : undefined,
+                  open: open.base, onToggle: () => togOpen('base'),
+                  children: (
+                    <div style={S.pillRow}>
+                      <span style={S.pill(filter.base === null, 'terra')} onClick={() => setBase(null)}>
+                        {l === 'fr' ? 'Toutes' : 'All'}
                       </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </FilterSection>
+                      {(['tomato_raw','tomato_cooked','bianca_cream','bianca_oil','bianca_ricotta','pesto','nduja','bbq'] as BaseType[]).map(b => (
+                        <span key={b} style={S.pill(filter.base === b, 'terra')}
+                          onClick={() => setBase(filter.base === b ? null : b)}>
+                          {BASE_LABELS[b][l]}
+                        </span>
+                      ))}
+                    </div>
+                  ),
+                },
+                {
+                  key: 'region', title: l === 'fr' ? 'Région' : 'Region',
+                  badge: regionParent !== 'all' ? (regionParent === 'italy' ? '🇮🇹' : regionParent === 'france' ? '🇫🇷' : '🌍') : undefined,
+                  open: open.region, onToggle: () => togOpen('region'),
+                  children: (
+                    <>
+                      <div style={S.pillRow}>
+                        {(['all','italy','france','fusion'] as const).map(r => (
+                          <span key={r} style={S.pill(regionParent === r, 'terra')}
+                            onClick={() => { setRegionParent(r); setRegion(null); }}>
+                            {r === 'all' ? (l === 'fr' ? 'Toutes' : 'All')
+                              : r === 'italy'  ? '🇮🇹 ' + (l === 'fr' ? 'Italie' : 'Italy')
+                              : r === 'france' ? '🇫🇷 France'
+                              : '🌍 Fusion'}
+                          </span>
+                        ))}
+                      </div>
+                      {regionParent !== 'all' && (
+                        <div style={S.subSec}>
+                          <span style={S.subLbl}>
+                            {regionParent === 'italy'
+                              ? (l === 'fr' ? 'Régions italiennes' : 'Italian regions')
+                              : (l === 'fr' ? 'Régions françaises' : 'French regions')}
+                          </span>
+                          <div style={S.pillRow}>
+                            {(regionParent === 'italy' ? ITALY_REGIONS : FRANCE_REGIONS).map(r => (
+                              <span key={r} style={S.pill(filter.region === r)}
+                                onClick={() => setRegion(filter.region === r ? null : r)}>
+                                {REGION_NAMES[r][l]}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ),
+                },
+              ]}
+            />
 
-            {/* Season */}
-            <FilterSection
-              title={l === 'fr' ? 'Saison' : 'Season'}
-              open={open.season} onToggle={() => togOpen('season')}
-              badge={filter.season !== 'all' ? SEASON_LABELS[filter.season][l] : undefined}
-            >
-              <div style={S.subSec}>
-                <span style={S.subLbl}>
-                  {l === 'fr' ? 'Par défaut : toute l\'année · toucher pour filtrer' : 'Default: all year · tap to filter'}
-                </span>
-                <div style={S.pillRow}>
-                  {(['all','spring','summer','autumn','winter'] as Season[]).map(s => (
-                    <span key={s}
-                      style={S.pill(filter.season === s, filter.season === s && s === 'all' ? 'terra' : 'sage')}
-                      onClick={() => setSeason(s)}>
-                      {SEASON_LABELS[s][l]}{s === currentSeason && s !== 'all'
-                        ? (l === 'fr' ? ' — maintenant' : ' — now') : ''}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </FilterSection>
+            {/* ── Group 2: Refine ── */}
+            <FilterGroup
+              label={l === 'fr' ? 'Affinez' : 'Refine'}
+              items={[
+                {
+                  key: 'season', title: l === 'fr' ? 'Saison' : 'Season',
+                  badge: filter.season !== 'all' ? SEASON_LABELS[filter.season][l] : undefined,
+                  open: open.season, onToggle: () => togOpen('season'),
+                  children: (
+                    <div style={S.pillRow}>
+                      {(['all','spring','summer','autumn','winter'] as Season[]).map(s => (
+                        <span key={s}
+                          style={S.pill(filter.season === s, filter.season === s && s === 'all' ? 'terra' : 'sage')}
+                          onClick={() => setSeason(s)}>
+                          {SEASON_LABELS[s][l]}{s === currentSeason && s !== 'all' ? (l === 'fr' ? ' · maintenant' : ' · now') : ''}
+                        </span>
+                      ))}
+                    </div>
+                  ),
+                },
+                {
+                  key: 'diet', title: l === 'fr' ? 'Régime' : 'Diet',
+                  badge: filter.dietary.length > 0 ? `${filter.dietary.length}` : undefined,
+                  open: open.diet, onToggle: () => togOpen('diet'),
+                  children: (
+                    <>
+                      <div style={S.subSec}>
+                        <span style={S.subLbl}>{l === 'fr' ? 'Préférence alimentaire' : 'Dietary preference'}</span>
+                        <div style={S.pillRow}>
+                          {([['veg', l === 'fr' ? 'Végétarien' : 'Vegetarian'],['vegan','Vegan'],['pescatarian', l === 'fr' ? 'Pescatarien' : 'Pescatarian']] as [DietaryTag,string][]).map(([d,label]) => (
+                            <span key={d} style={S.pill(filter.dietary.includes(d))} onClick={() => toggleDietary(d)}>{label}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div style={S.subSec}>
+                        <span style={S.subLbl}>{l === 'fr' ? 'Allergènes · exclure' : 'Allergens · exclude'}</span>
+                        <div style={S.pillRow}>
+                          {([['dairy_free', l === 'fr' ? 'Sans lactose' : 'No dairy'],['no_nuts', l === 'fr' ? 'Sans noix' : 'No nuts'],['no_fish', l === 'fr' ? 'Sans poisson' : 'No fish'],['no_pork', l === 'fr' ? 'Sans porc' : 'No pork'],['gluten_aware', l === 'fr' ? 'Sans gluten' : 'No gluten']] as [DietaryTag,string][]).map(([d,label]) => (
+                            <span key={d} style={S.pill(filter.dietary.includes(d))} onClick={() => toggleDietary(d)}>{label}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div style={S.subSec}>
+                        <span style={S.subLbl}>{l === 'fr' ? 'Restrictions religieuses' : 'Religious'}</span>
+                        <div style={S.pillRow}>
+                          {(['halal','kosher'] as DietaryTag[]).map(d => (
+                            <span key={d} style={S.pill(filter.dietary.includes(d))} onClick={() => toggleDietary(d)}>{d === 'halal' ? 'Halal' : 'Kosher'}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  ),
+                },
+                {
+                  key: 'wine', title: l === 'fr' ? 'Vins' : 'Wine',
+                  badge: filter.wine.length > 0 ? `${filter.wine.length}` : undefined,
+                  open: open.wine, onToggle: () => togOpen('wine'),
+                  children: (
+                    <div style={S.subSec}>
+                      <span style={S.subLbl}>{l === 'fr' ? 'Toucher une catégorie · exemples à droite' : 'Tap a category · examples on the right'}</span>
+                      {(['lr','fr','cw','rw','sp','ro'] as WineCategory[]).map(w => (
+                        <div key={w} style={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'baseline', gap: '8px', marginBottom: '6px' }}>
+                          <span style={S.winePill(filter.wine.includes(w))} onClick={() => toggleWine(w)}>{WINE_CATEGORY_LABELS[w][l]}</span>
+                          <span style={{ fontSize: '10px', color: '#8A7F78' }}>{WINE_EXAMPLES[w][l]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ),
+                },
+              ]}
+            />
 
-            {/* Diet & Allergies */}
-            <FilterSection
-              title={l === 'fr' ? 'Régime & Allergies' : 'Diet & Allergies'}
-              open={open.diet} onToggle={() => togOpen('diet')}
-              badge={filter.dietary.length > 0 ? `${filter.dietary.length}` : undefined}
-            >
-              <div style={S.subSec}>
-                <span style={S.subLbl}>{l === 'fr' ? 'Préférence alimentaire' : 'Dietary preference'}</span>
-                <div style={S.pillRow}>
-                  {([
-                    ['veg',        l === 'fr' ? 'Végétarien' : 'Vegetarian'],
-                    ['vegan',      'Vegan'],
-                    ['pescatarian', l === 'fr' ? 'Pescatarien' : 'Pescatarian'],
-                  ] as [DietaryTag, string][]).map(([d, label]) => (
-                    <span key={d} style={S.pill(filter.dietary.includes(d))} onClick={() => toggleDietary(d)}>
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div style={S.subSec}>
-                <span style={S.subLbl}>{l === 'fr' ? 'Allergènes — exclure' : 'Allergens — exclude'}</span>
-                <div style={S.pillRow}>
-                  {([
-                    ['dairy_free',   l === 'fr' ? 'Sans lactose'  : 'No dairy'],
-                    ['no_nuts',      l === 'fr' ? 'Sans noix'     : 'No nuts'],
-                    ['no_fish',      l === 'fr' ? 'Sans poisson'  : 'No fish'],
-                    ['no_pork',      l === 'fr' ? 'Sans porc'     : 'No pork'],
-                    ['gluten_aware', l === 'fr' ? 'Sans gluten'   : 'No gluten'],
-                  ] as [DietaryTag, string][]).map(([d, label]) => (
-                    <span key={d} style={S.pill(filter.dietary.includes(d))} onClick={() => toggleDietary(d)}>
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div style={S.subSec}>
-                <span style={S.subLbl}>{l === 'fr' ? 'Restrictions religieuses' : 'Religious'}</span>
-                <div style={S.pillRow}>
-                  {(['halal','kosher'] as DietaryTag[]).map(d => (
-                    <span key={d} style={S.pill(filter.dietary.includes(d))} onClick={() => toggleDietary(d)}>
-                      {d === 'halal' ? 'Halal' : 'Kosher'}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </FilterSection>
-
-            {/* Wine pairing */}
-            <FilterSection
-              title={l === 'fr' ? 'Accord vins' : 'Wine pairing'}
-              open={open.wine} onToggle={() => togOpen('wine')}
-              badge={filter.wine.length > 0 ? `${filter.wine.length}` : undefined}
-            >
-              <div style={S.subSec}>
-                <span style={S.subLbl}>
-                  {l === 'fr' ? 'Toucher une catégorie · exemples à droite' : 'Tap a category · examples on the right'}
-                </span>
-                {(['lr','fr','cw','rw','sp','ro'] as WineCategory[]).map(w => (
-                  <div key={w} style={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'baseline', gap: '8px', marginBottom: '6px' }}>
-                    <span style={S.winePill(filter.wine.includes(w))} onClick={() => toggleWine(w)}>
-                      {WINE_CATEGORY_LABELS[w][l]}
-                    </span>
-                    <span style={{ fontSize: '10px', color: '#8A7F78' }}>
-                      {WINE_EXAMPLES[w][l]}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </FilterSection>
-
-            {/* Budget & Complexity */}
-            <FilterSection
-              title={l === 'fr' ? 'Budget & Complexité' : 'Budget & Complexity'}
-              open={open.budget} onToggle={() => togOpen('budget')}
-            >
-              <div style={S.subSec}>
-                <span style={S.subLbl}>{l === 'fr' ? 'Budget par pizza' : 'Budget per pizza'}</span>
-                <div style={S.pillRow}>
-                  {([1,2,3] as BudgetTier[]).map(b => (
-                    <span key={b} style={S.pill(filter.budget === b)}
-                      onClick={() => setBudget(filter.budget === b ? null : b)}>
-                      {BUDGET_LABELS[b][l]}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div style={S.subSec}>
-                <span style={S.subLbl}>{l === 'fr' ? 'Complexité' : 'Prep complexity'}</span>
-                <div style={S.pillRow}>
-                  {([1,2,3] as ComplexityTier[]).map(c => (
-                    <span key={c} style={S.pill(filter.complexity === c)}
-                      onClick={() => setComplexity(filter.complexity === c ? null : c)}>
-                      {COMPLEXITY_LABELS[c][l]}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </FilterSection>
-
-            {/* Flavour profile */}
-            <FilterSection
-              title={l === 'fr' ? 'Profil de saveurs' : 'Flavour profile'}
-              open={open.flavour} onToggle={() => togOpen('flavour')}
-            >
-              <div style={S.subSec}>
-                <FlavorSlider
-                  leftLabel={l === 'fr' ? 'Léger' : 'Light'}
-                  rightLabel={l === 'fr' ? 'Riche' : 'Rich'}
-                  value={flavourUI.richness}
-                  onChange={v => updateFlavour('richness', v)}
-                />
-                <FlavorSlider
-                  leftLabel={l === 'fr' ? 'Délicat' : 'Delicate'}
-                  rightLabel={l === 'fr' ? 'Puissant' : 'Bold'}
-                  value={flavourUI.boldness}
-                  onChange={v => updateFlavour('boldness', v)}
-                />
-                <FlavorSlider
-                  leftLabel={l === 'fr' ? 'Classique' : 'Classic'}
-                  rightLabel={l === 'fr' ? 'Créatif' : 'Creative'}
-                  value={flavourUI.creative}
-                  onChange={v => updateFlavour('creative', v)}
-                />
-                <FlavorSlider
-                  leftLabel={l === 'fr' ? 'Réconfort' : 'Comfort'}
-                  rightLabel={l === 'fr' ? 'Raffiné' : 'Refined'}
-                  value={flavourUI.refined}
-                  onChange={v => updateFlavour('refined', v)}
-                />
-              </div>
-            </FilterSection>
+            {/* ── Group 3: Go Deeper ── */}
+            <FilterGroup
+              label={l === 'fr' ? 'Pour les curieux' : 'Go Deeper'}
+              items={[
+                {
+                  key: 'budget', title: l === 'fr' ? 'Budget' : 'Budget',
+                  badge: filter.budget !== null ? BUDGET_LABELS[filter.budget][l] : undefined,
+                  open: open.budget, onToggle: () => togOpen('budget'),
+                  children: (
+                    <div style={S.pillRow}>
+                      {([1,2,3] as BudgetTier[]).map(b => (
+                        <span key={b} style={S.pill(filter.budget === b)}
+                          onClick={() => setBudget(filter.budget === b ? null : b)}>
+                          {BUDGET_LABELS[b][l]}
+                        </span>
+                      ))}
+                    </div>
+                  ),
+                },
+                {
+                  key: 'budget_complexity', title: l === 'fr' ? 'Complexité' : 'Complexity',
+                  badge: filter.complexity !== null ? COMPLEXITY_LABELS[filter.complexity][l] : undefined,
+                  open: open.budget_complexity, onToggle: () => togOpen('budget_complexity'),
+                  children: (
+                    <div style={S.pillRow}>
+                      {([1,2,3] as ComplexityTier[]).map(c => (
+                        <span key={c} style={S.pill(filter.complexity === c)}
+                          onClick={() => setComplexity(filter.complexity === c ? null : c)}>
+                          {COMPLEXITY_LABELS[c][l]}
+                        </span>
+                      ))}
+                    </div>
+                  ),
+                },
+                {
+                  key: 'flavour', title: l === 'fr' ? 'Saveurs' : 'Flavour',
+                  open: open.flavour, onToggle: () => togOpen('flavour'),
+                  children: (
+                    <div style={S.subSec}>
+                      <FlavorSlider leftLabel={l === 'fr' ? 'Léger' : 'Light'} rightLabel={l === 'fr' ? 'Riche' : 'Rich'} value={flavourUI.richness} onChange={v => updateFlavour('richness', v)} />
+                      <FlavorSlider leftLabel={l === 'fr' ? 'Délicat' : 'Delicate'} rightLabel={l === 'fr' ? 'Puissant' : 'Bold'} value={flavourUI.boldness} onChange={v => updateFlavour('boldness', v)} />
+                      <FlavorSlider leftLabel={l === 'fr' ? 'Classique' : 'Classic'} rightLabel={l === 'fr' ? 'Créatif' : 'Creative'} value={flavourUI.creative} onChange={v => updateFlavour('creative', v)} />
+                      <FlavorSlider leftLabel={l === 'fr' ? 'Réconfort' : 'Comfort'} rightLabel={l === 'fr' ? 'Raffiné' : 'Refined'} value={flavourUI.refined} onChange={v => updateFlavour('refined', v)} />
+                    </div>
+                  ),
+                },
+              ]}
+            />
 
           </div>{/* end filter panel */}
 
