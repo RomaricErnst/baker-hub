@@ -385,41 +385,56 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap }: {
 
   return (
     <div style={S.card(qty > 0)} onClick={onTap}>
-      {/* Row 1: emoji · name · budget */}
-      <div style={{ display: 'flex', gap: '8px', padding: '6px 10px 4px', alignItems: 'center' }}>
-        <div style={S.cardEmoji}>
-          <span style={{ fontSize: '17px' }}>{pizzaEmoji(pizza.id)}</span>
+      <div style={{ display: 'flex', gap: '8px', padding: '6px 10px 4px' }}>
+        {/* Left: image spanning all rows */}
+        <div style={{ width: '52px', height: '52px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: '#1A1612' }}>
+          <img
+            src={`/pizzas/${pizza.id}.png`}
+            alt={name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
         </div>
-        <span style={{ fontSize: '13px', fontWeight: 500, color: '#1A1612', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {name}
-        </span>
-        <span style={{ fontSize: '11px', color: '#8A7F78', flexShrink: 0 }}>
-          {budget}
-        </span>
-      </div>
-      {/* Row 2: time · tags · qty/add */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0 10px 6px', flexWrap: 'nowrap' }}>
-        <span style={{ fontSize: '10px', color: '#8A7F78', flexShrink: 0 }}>
-          {pizza.prepMinutes} min
-        </span>
-        <div style={{ display: 'flex', gap: '3px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
-          {seasonEmoji && <span style={S.tag('season')}>{seasonEmoji}</span>}
-          {tags.map((tag, i) => <span key={i} style={S.tag('default')}>{tag}</span>)}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-          {qty > 0 && (
-            <>
-              <button style={S.qtyBtn} onClick={e => onQtyChange(-1, e)}>−</button>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: '#C4522A', minWidth: '14px', textAlign: 'center' }}>{qty}</span>
-            </>
+        {/* Right: 3 rows */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
+          {/* Row 1: name · budget */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#1A1612', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {name}
+            </span>
+            <span style={{ fontSize: '11px', color: '#8A7F78', flexShrink: 0 }}>{budget}</span>
+          </div>
+          {/* Row 2: story tagline */}
+          {pizza.story && (
+            <div style={{ fontSize: '11px', color: '#8A7F78', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3 }}>
+              {pizza.story[l] ?? pizza.story.en}
+            </div>
           )}
-          {qty > 0 ? (
-            <button style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
-          ) : (
-            <button style={S.addBtn} onClick={e => onQtyChange(1, e)}>
-              {l === 'fr' ? '+ Ajouter' : '+ Add'}
-            </button>
-          )}
+          {/* Row 3: time · tags · add button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ fontSize: '10px', color: '#8A7F78', flexShrink: 0 }}>
+              {pizza.prepMinutes} min
+            </span>
+            <div style={{ display: 'flex', gap: '3px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+              {seasonEmoji && <span style={S.tag('season')}>{seasonEmoji}</span>}
+              {tags.map((tag, i) => <span key={i} style={S.tag('default')}>{tag}</span>)}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+              {qty > 0 && (
+                <>
+                  <button style={S.qtyBtn} onClick={e => onQtyChange(-1, e)}>−</button>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#C4522A', minWidth: '14px', textAlign: 'center' }}>{qty}</span>
+                </>
+              )}
+              {qty > 0 ? (
+                <button style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
+              ) : (
+                <button style={S.addBtn} onClick={e => onQtyChange(1, e)}>
+                  {l === 'fr' ? '+ Ajouter' : '+ Add'}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -434,8 +449,7 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
   onClose: () => void;
 }) {
   const l = locale as 'en' | 'fr';
-  const beforeIngs = pizza.ingredients.filter(i => i.bakeOrder === 'before');
-  const afterIngs  = pizza.ingredients.filter(i => i.bakeOrder === 'after');
+  const allIngs = pizza.ingredients;
 
   return (
     <div
@@ -450,13 +464,39 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
         <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '0 auto 10px' }} />
         <button onClick={onClose} style={{ position: 'absolute', top: '12px', right: '14px', background: 'none', border: 'none', fontSize: '16px', color: '#8A7F78', cursor: 'pointer' }}>✕</button>
 
-        {/* Title + story */}
-        <div style={{ fontSize: '15px', fontWeight: 500, color: '#1A1612', marginBottom: '2px' }}>
-          {pizzaEmoji(pizza.id)} {pizza.name[l] ?? pizza.name.en}
+        {/* Big image */}
+        <div style={{ width: '100%', aspectRatio: '1 / 1', borderRadius: '10px', overflow: 'hidden', background: '#1A1612', marginBottom: '12px' }}>
+          <img
+            src={`/pizzas/${pizza.id}.png`}
+            alt={pizza.name[l] ?? pizza.name.en}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
         </div>
-        <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '8px', lineHeight: 1.5 }}>
-          {pizza.story?.[l] ?? pizza.story?.en}
+        {/* Title */}
+        <div style={{ fontSize: '16px', fontWeight: 600, color: '#1A1612', marginBottom: '4px' }}>
+          {pizza.name[l] ?? pizza.name.en}
         </div>
+        {/* Story */}
+        {pizza.story && (
+          <div style={{ fontSize: '12px', color: '#8A7F78', marginBottom: '10px', lineHeight: 1.5 }}>
+            {pizza.story[l] ?? pizza.story.en}
+          </div>
+        )}
+        {/* Ingredients as pills */}
+        {allIngs.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '12px' }}>
+            {allIngs.map(ing => (
+              <span key={ing.id} style={{
+                fontSize: '11px', color: '#3D3530',
+                background: '#F5F0E8', borderRadius: '20px',
+                padding: '3px 10px', border: '1px solid #E0D8CF',
+              }}>
+                {ing.name[l] ?? ing.name.en}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Wine note */}
         {pizza.wineNote && (
@@ -476,86 +516,6 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
             <button style={{ ...S.qtyBtn, width: '30px', height: '30px' }} onClick={() => onQtyChange(1)}>+</button>
           </div>
         </div>
-
-        {/* Before baking */}
-        {beforeIngs.length > 0 && (
-          <div style={{ marginBottom: '8px' }}>
-            <div style={{ fontSize: '10px', fontWeight: 500, padding: '5px 8px', borderRadius: '6px', marginBottom: '4px', background: '#FFF0EC', color: '#C4522A' }}>
-              🔥 {l === 'fr' ? 'Va sur la pizza avant cuisson' : 'Goes on before baking'}
-            </div>
-            {beforeIngs.map(ing => (
-              <div key={ing.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '5px 0', borderBottom: '0.5px solid #F0EBE3' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '12px', color: '#1A1612' }}>{ing.name[l] ?? ing.name.en}</div>
-                  {ing.prepNote && (
-                    <div style={{ fontSize: '10px', color: '#6B7A5A', marginTop: '1px' }}>
-                      {ing.prepNote[l] ?? ing.prepNote.en}
-                    </div>
-                  )}
-                  {ing.goodEnough && (
-                    <div style={{ fontSize: '10px', color: '#6B7A5A', marginTop: '2px' }}>
-                      <span style={{ color: '#8A7F78', fontWeight: 500 }}>
-                        {l === 'fr' ? 'Très proche :' : 'Also great:'}
-                      </span>{' '}
-                      {ing.goodEnough.name[l] ?? ing.goodEnough.name.en}
-                    </div>
-                  )}
-                  {ing.compromise && (
-                    <div style={{ fontSize: '10px', color: '#8A7F78', marginTop: '2px' }}>
-                      <span style={{ color: '#8A7F78', fontWeight: 500 }}>
-                        {l === 'fr' ? 'À défaut :' : 'If not available:'}
-                      </span>{' '}
-                      {ing.compromise.name[l] ?? ing.compromise.name.en}
-                    </div>
-                  )}
-                </div>
-                <span style={S.ingBadge}>
-                  {INGREDIENT_CATEGORY_LABELS[ing.category]?.[l] ?? ing.category}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* After baking */}
-        {afterIngs.length > 0 && (
-          <div style={{ marginBottom: '8px' }}>
-            <div style={{ fontSize: '10px', fontWeight: 500, padding: '5px 8px', borderRadius: '6px', marginBottom: '4px', background: '#EFF5E8', color: '#3B6D11' }}>
-              ✅ {l === 'fr' ? 'Ajouter après cuisson' : 'Added after baking'}
-            </div>
-            {afterIngs.map(ing => (
-              <div key={ing.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '5px 0', borderBottom: '0.5px solid #F0EBE3' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '12px', color: '#1A1612' }}>{ing.name[l] ?? ing.name.en}</div>
-                  {ing.prepNote && (
-                    <div style={{ fontSize: '10px', color: '#6B7A5A', marginTop: '1px' }}>
-                      {ing.prepNote[l] ?? ing.prepNote.en}
-                    </div>
-                  )}
-                  {ing.goodEnough && (
-                    <div style={{ fontSize: '10px', color: '#6B7A5A', marginTop: '2px' }}>
-                      <span style={{ color: '#8A7F78', fontWeight: 500 }}>
-                        {l === 'fr' ? 'Très proche :' : 'Also great:'}
-                      </span>{' '}
-                      {ing.goodEnough.name[l] ?? ing.goodEnough.name.en}
-                    </div>
-                  )}
-                  {ing.compromise && (
-                    <div style={{ fontSize: '10px', color: '#8A7F78', marginTop: '2px' }}>
-                      <span style={{ color: '#8A7F78', fontWeight: 500 }}>
-                        {l === 'fr' ? 'À défaut :' : 'If not available:'}
-                      </span>{' '}
-                      {ing.compromise.name[l] ?? ing.compromise.name.en}
-                    </div>
-                  )}
-                </div>
-                <span style={S.ingBadge}>
-                  {INGREDIENT_CATEGORY_LABELS[ing.category]?.[l] ?? ing.category}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Confirm button */}
         <button
