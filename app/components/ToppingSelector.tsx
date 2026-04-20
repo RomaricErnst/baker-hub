@@ -910,40 +910,41 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 )}
               </div>
 
-              {/* Dessert toggle */}
-              <div
-                onClick={() => setDessertOpen(v => !v)}
-                style={{ padding: '7px 12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#F5F0E8', borderTop: '1px solid #E0D8CF' }}
-              >
-                <div style={{ flex: 1, height: '1px', background: '#D8D0C7' }} />
-                <div style={{ fontSize: '11px', color: '#8A7F78', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span>{dessertOpen ? '▼' : '▶'}</span>
-                  {l === 'fr'
-                    ? `Une touche sucrée ? (${DESSERT_PIZZAS.length})`
-                    : `Something sweet? (${DESSERT_PIZZAS.length})`}
-                </div>
-                <div style={{ flex: 1, height: '1px', background: '#D8D0C7' }} />
-              </div>
-
-              {/* Dessert cards */}
-              {dessertOpen && (
-                <div style={{ padding: '0 12px 8px', display: 'flex', flexDirection: 'column', gap: '6px', background: '#F5F0E8' }}>
-                  {DESSERT_PIZZAS.map(pizza => (
-                    <PizzaCard
-                      key={pizza.id}
-                      pizza={pizza}
-                      qty={getQty(pizza.id)}
-                      locale={locale}
-                      onQtyChange={(delta, e) => { e.stopPropagation(); changeQty(pizza.id, delta); }}
-                      onTap={() => setSheetId(pizza.id)}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
 
+            {/* Dessert toggle */}
+            <div
+              onClick={() => setDessertOpen(v => !v)}
+              style={{ padding: '7px 12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#F5F0E8', borderTop: '1px solid #E0D8CF' }}
+            >
+              <div style={{ flex: 1, height: '1px', background: '#D8D0C7' }} />
+              <div style={{ fontSize: '11px', color: '#8A7F78', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>{dessertOpen ? '▼' : '▶'}</span>
+                {l === 'fr'
+                  ? `Une touche sucrée ? (${DESSERT_PIZZAS.length})`
+                  : `Something sweet? (${DESSERT_PIZZAS.length})`}
+              </div>
+              <div style={{ flex: 1, height: '1px', background: '#D8D0C7' }} />
+            </div>
+
+            {/* Dessert cards */}
+            {dessertOpen && (
+              <div style={{ padding: '0 12px 8px', display: 'flex', flexDirection: 'column', gap: '6px', background: '#F5F0E8' }}>
+                {DESSERT_PIZZAS.map(pizza => (
+                  <PizzaCard
+                    key={pizza.id}
+                    pizza={pizza}
+                    qty={getQty(pizza.id)}
+                    locale={locale}
+                    onQtyChange={(delta, e) => { e.stopPropagation(); changeQty(pizza.id, delta); }}
+                    onTap={() => setSheetId(pizza.id)}
+                  />
+                ))}
+              </div>
+            )}
+
             {/* ── Summary bar ── */}
-            <div style={{ background: '#1A1612', borderTop: '1px solid #C4522A' }}>
+            <div style={{ background: '#1A1612', borderTop: '1px solid #C4522A', position: 'sticky', bottom: 0, zIndex: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 5px' }}>
                 <span style={{ fontSize: '11px', color: '#8A7F78' }}>
                   {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
