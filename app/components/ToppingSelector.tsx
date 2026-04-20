@@ -589,7 +589,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
     if (!el) return;
     const obs = new IntersectionObserver(
       ([entry]) => setSummaryVisible(entry.isIntersecting),
-      { threshold: 0.8 }
+      { threshold: 0 }
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -1186,7 +1186,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       )}
 
       {/* ── Full selection summary — always rendered for IntersectionObserver ── */}
-      <div ref={summaryRef} style={{ margin: '0 -16px' }}>
+      <div ref={summaryRef} style={{ margin: '0 -16px', marginTop: totalQty === 0 ? '10px' : '0' }}>
           <div style={{ background: '#F5F0E8' }}>
             {/* Summary header — always shown */}
             <div style={{
