@@ -1186,10 +1186,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       )}
 
       {/* ── Full selection summary — always rendered for IntersectionObserver ── */}
-      <div ref={summaryRef}>
-        {totalQty > 0 && (
+      <div ref={summaryRef} style={{ margin: '0 -16px' }}>
           <div style={{ background: '#F5F0E8' }}>
-            {/* Summary header — identical style to fixed bar */}
+            {/* Summary header — always shown */}
             <div style={{
               background: '#1A1612',
               borderTop: '1px solid #C4522A',
@@ -1220,7 +1219,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 </span>
               </div>
             </div>
-            {/* Summary rows */}
+            {/* Summary rows — only when pizzas selected */}
+            {totalQty > 0 && (
             <div style={{ padding: '8px 12px 12px' }}>
           {Object.entries(qtys)
             .filter(([, qty]) => (qty as number) > 0)
@@ -1273,8 +1273,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               );
             })}
             </div>
+            )}
           </div>
-        )}
       </div>
 
       {/* ── Party bar — fixed at bottom, hides when summary visible ── */}
