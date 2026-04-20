@@ -447,7 +447,7 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
       onClick={onClose}
     >
       <div
-        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#FDFBF7', borderRadius: '14px 14px 0 0', maxHeight: '82%', display: 'flex', flexDirection: 'column' }}
+        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#FDFBF7', borderRadius: '14px 14px 0 0', height: '92%', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Scrollable content */}
@@ -459,8 +459,8 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
           <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '0 auto 10px' }} />
           <button onClick={onClose} style={{ position: 'absolute', top: '12px', right: '14px', background: 'none', border: 'none', fontSize: '16px', color: '#8A7F78', cursor: 'pointer' }}>✕</button>
 
-          {/* Big image */}
-          <div style={{ width: '100%', aspectRatio: '1 / 1', borderRadius: '10px', overflow: 'hidden', background: '#1A1612', marginBottom: '12px' }}>
+          {/* Big image — fixed height so full sheet fits on screen */}
+          <div style={{ width: '100%', height: '180px', borderRadius: '10px', overflow: 'hidden', background: '#1A1612', marginBottom: '12px', flexShrink: 0 }}>
             <img
               src={`/pizzas/${pizza.id}.png`}
               alt={pizza.name[l] ?? pizza.name.en}
