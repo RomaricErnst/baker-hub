@@ -729,12 +729,11 @@ export default function Home() {
                 onMouseEnter={() => setHoveredBakeType(opt.type)}
                 onMouseLeave={() => setHoveredBakeType(null)}
                 style={{
-                  padding: '1.5rem 1rem 1.25rem',
-                  textAlign: 'center',
+                  position: 'relative',
                   borderRadius: '18px',
                   cursor: 'pointer',
+                  overflow: 'hidden',
                   border: `2px solid ${bakeType === opt.type ? opt.activeBorder : 'var(--border)'}`,
-                  background: bakeType === opt.type ? opt.activeBg : 'var(--card)',
                   boxShadow: hoveredBakeType === opt.type
                     ? 'var(--card-shadow-hover)'
                     : bakeType === opt.type
@@ -744,9 +743,35 @@ export default function Home() {
                   transition: 'all .2s',
                 }}
               >
-                <img src={opt.image} alt={opt.label} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '12px', marginBottom: '.75rem' }} />
-                <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '.25rem' }}>{opt.label}</div>
-                <div style={{ fontSize: '.75rem', color: 'var(--smoke)', lineHeight: 1.5 }}>{opt.desc}</div>
+                {/* Full-bleed image */}
+                <img
+                  src={opt.image}
+                  alt={opt.label}
+                  style={{ width: '100%', height: '260px', objectFit: 'cover', display: 'block' }}
+                />
+                {/* Gradient overlay with text */}
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  padding: '2rem 1.25rem 1.25rem',
+                  background: 'linear-gradient(to top, rgba(26,22,18,0.82) 0%, rgba(26,22,18,0.0) 100%)',
+                }}>
+                  <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'white', marginBottom: '.3rem', fontFamily: 'var(--font-playfair)' }}>
+                    {opt.label}
+                  </div>
+                  <div style={{ fontSize: '.75rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+                    {opt.desc}
+                  </div>
+                </div>
+                {/* Selected checkmark */}
+                {bakeType === opt.type && (
+                  <div style={{
+                    position: 'absolute', top: '12px', right: '12px',
+                    width: '28px', height: '28px', borderRadius: '50%',
+                    background: opt.type === 'bread' ? 'var(--bread)' : 'var(--terra)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '14px', color: 'white', fontWeight: 700,
+                  }}>✓</div>
+                )}
               </div>
             ))}
           </div>
