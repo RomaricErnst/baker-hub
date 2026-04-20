@@ -79,7 +79,7 @@ function pizzaEmoji(id: string): string {
 
 const S = {
   pill: (active: boolean, variant: 'terra' | 'sage' | 'default' = 'default'): React.CSSProperties => ({
-    fontSize: '11px', padding: '4px 10px', borderRadius: '20px', cursor: 'pointer',
+    fontSize: '13px', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer',
     border: active
       ? (variant === 'terra' ? '1px solid #C4522A' : variant === 'sage' ? '1px solid #6B7A5A' : '1px solid #1A1612')
       : '1px solid #E0D8CF',
