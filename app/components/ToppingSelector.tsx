@@ -698,7 +698,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // ── Render ──────────────────────────────────────────────────
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
 
       {/* ── 3 navigation pills ── */}
       <div style={{ display: 'flex', gap: '6px', padding: '8px 12px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
@@ -1123,7 +1123,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       )}
 
       {/* ── Summary bar ── */}
-      <div style={{ background: '#1A1612', borderTop: '1px solid #C4522A', flexShrink: 0, marginTop: 'auto' }}>
+      <div style={{ background: '#1A1612', borderTop: '1px solid #C4522A' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 5px' }}>
           <span style={{ fontSize: '11px', color: '#8A7F78' }}>
             {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}

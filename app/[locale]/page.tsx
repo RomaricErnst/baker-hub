@@ -1366,7 +1366,7 @@ export default function Home() {
 
             {/* ── Pizza Party tab content ── */}
             {pizzaPartyEnabled && (
-              <div style={{ display: activeTab === 'pizzaparty' ? 'flex' : 'none', flexDirection: 'column', height: 'calc(100vh - 140px)' }}>
+              <div style={{ display: activeTab === 'pizzaparty' ? 'block' : 'none' }}>
                 <ToppingSelector
                   locale={locale}
                   numItems={numItems}
@@ -2349,7 +2349,7 @@ export default function Home() {
 
             {/* ── Pizza Party tab content ── */}
             {pizzaPartyEnabled && (
-              <div style={{ display: activeTab === 'pizzaparty' ? 'flex' : 'none', flexDirection: 'column', height: 'calc(100vh - 140px)' }}>
+              <div style={{ display: activeTab === 'pizzaparty' ? 'block' : 'none' }}>
                 <ToppingSelector
                   locale={locale}
                   numItems={numItems}
