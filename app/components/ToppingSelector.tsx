@@ -1063,44 +1063,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             </button>
           </div>
 
-          {/* ── Sticky party bar — appears when any pizza selected ── */}
-          {totalQty > 0 && (
-            <div style={{
-              position: 'sticky', top: 0, zIndex: 20,
-              background: '#1A1612',
-              borderBottom: '1px solid #C4522A',
-              display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '7px 12px',
-            }}>
-              <span style={{
-                fontSize: '11px', color: '#8A7F78',
-                fontFamily: 'DM Sans, sans-serif',
-              }}>
-                {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ display: 'flex', gap: '3px' }}>
-                  {Array.from({ length: Math.min(numItems, 10) }, (_, i) => (
-                    <div key={i} style={{
-                      width: '8px', height: '8px', borderRadius: '50%',
-                      background: i < totalQty
-                        ? (totalQty >= numItems ? '#6B7A5A' : '#C4522A')
-                        : '#3D3530',
-                    }} />
-                  ))}
-                </div>
-                <span style={{
-                  fontSize: '11px',
-                  color: totalQty >= numItems ? '#6B7A5A' : '#C4522A',
-                  fontFamily: 'DM Mono, monospace', fontWeight: 600,
-                }}>
-                  {totalQty}/{numItems}
-                </span>
-              </div>
-            </div>
-          )}
-
           {/* ── Cards + dessert + summary ── */}
           <div>
 
@@ -1219,6 +1181,11 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         </div>
       )}
 
+      {/* Grey spacer between dessert and summary */}
+      {totalQty > 0 && (
+        <div style={{ height: '10px', background: '#E8E0D5' }} />
+      )}
+
       {/* ── Full selection summary — always rendered for IntersectionObserver ── */}
       <div>
         {totalQty > 0 && (
@@ -1321,7 +1288,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {/* ── Fixed bottom party bar — hidden when full summary is visible ── */}
       {!summaryVisible && (
         <div style={{
-          position: 'fixed', bottom: '60px', left: 0, right: 0,
+          position: 'fixed', bottom: '64px', left: 0, right: 0,
           zIndex: 50,
           background: '#1A1612', borderTop: '1px solid #C4522A',
           display: 'flex', alignItems: 'center',
