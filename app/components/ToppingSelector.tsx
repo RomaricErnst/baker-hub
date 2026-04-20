@@ -564,7 +564,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {activePill === 'pizzas' && (
         <>
           {/* ── Filter panel ── */}
-          <div style={{ background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0, maxHeight: '290px', overflowY: 'auto' }}>
+          <div style={{ background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
 
             {/* Occasion — open by default */}
             <FilterSection
@@ -791,23 +791,23 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               </div>
             </FilterSection>
 
-            {/* Ingredient search */}
-            <div style={{ padding: '8px 12px', borderBottom: '0.5px solid #F0EBE3' }}>
-              <input
-                type="text"
-                value={filter.ingredientSearch}
-                onChange={e => setFilter((p: FilterState) => ({ ...p, ingredientSearch: e.target.value }))}
-                placeholder={l === 'fr' ? '🔍 Un ingrédient dans votre frigo...' : '🔍 An ingredient in your fridge...'}
-                style={{
-                  width: '100%', fontSize: '12px', padding: '7px 10px',
-                  borderRadius: '8px', border: '0.5px solid #E0D8CF',
-                  background: '#FDFBF7', outline: 'none', color: '#1A1612',
-                  fontFamily: 'DM Sans, sans-serif',
-                }}
-              />
-            </div>
-
           </div>{/* end filter panel */}
+
+          {/* ── Ingredient search ── */}
+          <div style={{ padding: '8px 12px', background: '#FDFBF7', borderBottom: '0.5px solid #E0D8CF' }}>
+            <input
+              type="text"
+              value={filter.ingredientSearch}
+              onChange={e => setFilter((p: FilterState) => ({ ...p, ingredientSearch: e.target.value }))}
+              placeholder={l === 'fr' ? '🔍 Un ingrédient dans votre frigo...' : '🔍 An ingredient in your fridge...'}
+              style={{
+                width: '100%', fontSize: '12px', padding: '7px 10px',
+                borderRadius: '8px', border: '0.5px solid #E0D8CF',
+                background: '#F5F0E8', outline: 'none', color: '#1A1612',
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+            />
+          </div>
 
           {/* ── Results strip ── */}
           <div style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F5F0E8', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
@@ -823,9 +823,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           </div>
 
           {/* ── Cards + dessert + summary ── */}
-          <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <div>
 
-            <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+            <div style={{ overflowY: 'auto', maxHeight: '680px' }}>
 
               {/* Pizza cards */}
               <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -881,11 +881,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             </div>
 
             {/* ── Summary bar ── */}
-            <div style={{ background: '#1A1612', flexShrink: 0, borderTop: '1px solid #C4522A' }}>
-              <div
-                onClick={() => setSumOpen(v => !v)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 5px', cursor: 'pointer' }}
-              >
+            <div style={{ background: '#1A1612', borderTop: '1px solid #C4522A' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 5px' }}>
                 <span style={{ fontSize: '11px', color: '#8A7F78' }}>
                   {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
                 </span>
@@ -906,40 +903,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   <span style={{ fontSize: '12px', fontWeight: 600, color: totalQty >= numItems ? '#6B7A5A' : 'white' }}>
                     {totalQty} / {numItems}
                   </span>
-                  <span style={{ fontSize: '10px', color: '#8A7F78', transform: sumOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', display: 'inline-block' }}>▾</span>
                 </div>
               </div>
-
-              {sumOpen && (
-                <div style={{ maxHeight: '130px', overflowY: 'auto', padding: '0 12px 8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  {Object.entries(qtys).filter(([, q]) => q > 0).length === 0 ? (
-                    <div style={{ fontSize: '11px', color: '#3D3530', fontStyle: 'italic', padding: '3px 2px' }}>
-                      {l === 'fr' ? 'Ajoutez des pizzas pour construire votre liste' : 'Add pizzas to build your list'}
-                    </div>
-                  ) : (
-                    Object.entries(qtys).filter(([, q]) => q > 0).map(([id, qty]) => {
-                      const p = getPizzaById(id);
-                      if (!p) return null;
-                      return (
-                        <div key={id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', background: '#2A2420', borderRadius: '8px' }}>
-                          <span style={{ fontSize: '12px', color: '#D8D0C7', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {p.name[l] ?? p.name.en}
-                          </span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
-                            <button
-                              style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1.5px solid #4D4540', background: '#3D3530', fontSize: '15px', cursor: 'pointer', color: '#D8D0C7', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                              onClick={() => changeQty(id, -1)}>−</button>
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#C4522A', minWidth: '18px', textAlign: 'center' }}>{qty}</span>
-                            <button
-                              style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1.5px solid #4D4540', background: '#3D3530', fontSize: '15px', cursor: 'pointer', color: '#D8D0C7', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                              onClick={() => changeQty(id, 1)}>+</button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              )}
             </div>
 
             {/* ── Sheet overlay ── */}
