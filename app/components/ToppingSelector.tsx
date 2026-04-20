@@ -700,7 +700,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // ── Render ──────────────────────────────────────────────────
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', paddingBottom: '60px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', paddingBottom: '56px' }}>
 
       {/* ── 3 navigation pills ── */}
       <div style={{ display: 'flex', gap: '6px', padding: '8px 12px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
@@ -1169,7 +1169,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
       {/* Grey spacer between dessert and summary */}
       {totalQty > 0 && (
-        <div style={{ height: '10px', background: '#E8E0D5' }} />
+        <div style={{ height: '10px', background: '#F5F0E8' }} />
       )}
 
       {/* ── Full selection summary — always rendered for IntersectionObserver ── */}
