@@ -385,7 +385,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap }: {
 
   return (
     <div style={S.card(qty > 0)} onClick={onTap}>
-      <div style={{ display: 'flex', gap: '8px', padding: '6px 10px 4px' }}>
+      <div style={{ display: 'flex', gap: '8px', padding: '6px 10px 6px' }}>
         {/* Left: image spanning all rows */}
         <div style={{ width: '52px', height: '52px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: '#1A1612' }}>
           <img
@@ -404,13 +404,13 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap }: {
             </span>
             <span style={{ fontSize: '11px', color: '#8A7F78', flexShrink: 0 }}>{budget}</span>
           </div>
-          {/* Row 2: story tagline */}
+          {/* Row 2: story tagline — 2 line max */}
           {pizza.story && (
-            <div style={{ fontSize: '11px', color: '#8A7F78', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3 }}>
+            <div style={{ fontSize: '11px', color: '#8A7F78', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
               {pizza.story[l] ?? pizza.story.en}
             </div>
           )}
-          {/* Row 3: time · tags · add button */}
+          {/* Row 3: time · tags · qty controls (always rendered, hidden when qty=0 to avoid layout jump) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <span style={{ fontSize: '10px', color: '#8A7F78', flexShrink: 0 }}>
               {pizza.prepMinutes} min
@@ -420,19 +420,9 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap }: {
               {tags.map((tag, i) => <span key={i} style={S.tag('default')}>{tag}</span>)}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-              {qty > 0 && (
-                <>
-                  <button style={S.qtyBtn} onClick={e => onQtyChange(-1, e)}>−</button>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#C4522A', minWidth: '14px', textAlign: 'center' }}>{qty}</span>
-                </>
-              )}
-              {qty > 0 ? (
-                <button style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
-              ) : (
-                <button style={S.addBtn} onClick={e => onQtyChange(1, e)}>
-                  {l === 'fr' ? '+ Ajouter' : '+ Add'}
-                </button>
-              )}
+              <button style={{ ...S.qtyBtn, visibility: qty > 0 ? 'visible' : 'hidden' }} onClick={e => onQtyChange(-1, e)}>−</button>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#C4522A', minWidth: '14px', textAlign: 'center', visibility: qty > 0 ? 'visible' : 'hidden' }}>{qty}</span>
+              <button style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
             </div>
           </div>
         </div>
@@ -457,6 +447,7 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
       onClick={onClose}
     >
       <div
+        ref={(el) => { if (el) el.scrollTop = 0; }}
         style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#FDFBF7', borderRadius: '14px 14px 0 0', padding: '12px 14px 14px', maxHeight: '80%', overflowY: 'auto' }}
         onClick={e => e.stopPropagation()}
       >
@@ -500,8 +491,15 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
 
         {/* Wine note */}
         {pizza.wineNote && (
-          <div style={{ fontSize: '11px', color: '#7A4A8A', background: '#F5EDF8', borderRadius: '8px', padding: '5px 8px', marginBottom: '8px' }}>
-            {pizza.wineNote[l] ?? pizza.wineNote.en}
+          <div style={{ fontSize: '11px', color: '#7A4A8A', background: '#F5EDF8', borderRadius: '8px', padding: '5px 8px', marginBottom: '8px', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+            <svg viewBox="0 0 20 20" width={14} height={14} fill="none" stroke="#7A4A8A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '1px' }}>
+              <path d="M8 2h4v3c0 1.5-.8 2.5-1.2 3.8V17a.5.5 0 01-.5.5h-1a.5.5 0 01-.5-.5V8.8C8.8 7.5 8 6.5 8 5V2z" />
+              <path d="M8 5.5h4" />
+              <path d="M9 2v2" />
+              <path d="M11 2v2" />
+              <path d="M9.5 10.5v4" />
+            </svg>
+            <span>{pizza.wineNote[l] ?? pizza.wineNote.en}</span>
           </div>
         )}
 
@@ -517,15 +515,11 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
           </div>
         </div>
 
-        {/* Confirm button */}
-        <button
-          onClick={onClose}
-          style={{ width: '100%', padding: '11px', background: '#C4522A', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', marginTop: '10px' }}
-        >
-          {qty > 0
-            ? (l === 'fr' ? `✓ ${qty} ajoutée${qty > 1 ? 's' : ''} — continuer` : `✓ ${qty} added — keep browsing`)
-            : (l === 'fr' ? 'Ajouter à ma pizza party →' : 'Add to my pizza party →')}
-        </button>
+        {qty > 0 && (
+          <div style={{ textAlign: 'center', padding: '12px 0 2px', fontSize: '12px', color: '#6B7A5A', fontWeight: 500 }}>
+            {l === 'fr' ? `✓ ${qty} ajoutée${qty > 1 ? 's' : ''} — continuez à parcourir` : `✓ ${qty} added — keep browsing`}
+          </div>
+        )}
       </div>
     </div>
   );
