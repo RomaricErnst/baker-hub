@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   PIZZAS, DESSERT_PIZZAS, getPizzaById,
   BASE_LABELS, OCCASION_LABELS, SEASON_LABELS,
@@ -626,6 +626,20 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // Summary open
   const [sumOpen, setSumOpen] = useState(false);
 
+  // Summary visibility (for fixed bar)
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const [summaryVisible, setSummaryVisible] = useState(false);
+  useEffect(() => {
+    const el = summaryRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setSummaryVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   // Sheet
   const [sheetId, setSheetId] = useState<string | null>(null);
   const sheetPizza = sheetId ? (getPizzaById(sheetId) ?? null) : null;
@@ -1090,7 +1104,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           {/* ── Cards + dessert + summary ── */}
           <div>
 
-            <div style={{ overflowY: 'auto', maxHeight: '560px' }}>
+            <div style={{ overflowY: 'auto', maxHeight: '462px', borderBottom: '1px solid #E0D8CF' }}>
 
               {/* Pizza cards */}
               <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -1153,7 +1167,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               <div style={{
                 background: '#F5F0E8',
                 overflowY: 'auto',
-                maxHeight: '380px',
+                maxHeight: '228px',
               }}>
                 <div style={{ padding: '6px 12px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {DESSERT_PIZZAS.map(pizza => (
@@ -1204,7 +1218,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
       {/* ── Full selection summary ── */}
       {totalQty > 0 && (
-        <div style={{
+        <div ref={summaryRef} style={{
           background: '#F5F0E8',
           borderTop: '1px solid #E0D8CF',
           padding: '12px',
@@ -1278,9 +1292,16 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         </div>
       )}
 
-      {/* ── Summary bar ── */}
-      <div style={{ background: '#1A1612', borderTop: '1px solid #C4522A' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 5px' }}>
+      {/* ── Fixed bottom party bar — hidden when full summary is visible ── */}
+      {totalQty > 0 && !summaryVisible && (
+        <div style={{
+          position: 'fixed', bottom: '60px', left: 0, right: 0,
+          zIndex: 50,
+          background: '#1A1612', borderTop: '1px solid #C4522A',
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 12px 5px',
+        }}>
           <span style={{ fontSize: '11px', color: '#8A7F78' }}>
             {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
           </span>
@@ -1303,7 +1324,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             </span>
           </div>
         </div>
-      </div>
+      )}
 
     </div>
   );
