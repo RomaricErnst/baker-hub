@@ -819,25 +819,31 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       <div style={S.subSec}>
                         <span style={S.subLbl}>{l === 'fr' ? 'Préférence alimentaire' : 'Dietary preference'}</span>
                         <div style={S.pillRow}>
-                          {([['veg', l === 'fr' ? 'Végétarien' : 'Vegetarian'],['vegan','Vegan'],['pescatarian', l === 'fr' ? 'Pescatarien' : 'Pescatarian']] as [DietaryTag,string][]).map(([d,label]) => (
-                            <span key={d} style={S.pill(filter.dietary.includes(d))} onClick={() => toggleDietary(d)}>{label}</span>
-                          ))}
+                          {([['veg', l === 'fr' ? 'Végétarien' : 'Vegetarian'],['vegan','Vegan'],['pescatarian', l === 'fr' ? 'Pescatarien' : 'Pescatarian']] as [DietaryTag,string][]).map(([d,label]) => {
+                            const count = filtered.filter(p => p.dietary.includes(d as DietaryTag)).length + DESSERT_PIZZAS.filter(p => p.dietary.includes(d as DietaryTag)).length;
+                            if (count === 0 && !filter.dietary.includes(d as DietaryTag)) return null;
+                            return <span key={d} style={S.pill(filter.dietary.includes(d as DietaryTag))} onClick={() => toggleDietary(d as DietaryTag)}>{label}</span>;
+                          })}
                         </div>
                       </div>
                       <div style={S.subSec}>
                         <span style={S.subLbl}>{l === 'fr' ? 'Allergènes · exclure' : 'Allergens · exclude'}</span>
                         <div style={S.pillRow}>
-                          {([['dairy_free', l === 'fr' ? 'Sans lactose' : 'No dairy'],['no_nuts', l === 'fr' ? 'Sans noix' : 'No nuts'],['no_fish', l === 'fr' ? 'Sans poisson' : 'No fish'],['no_pork', l === 'fr' ? 'Sans porc' : 'No pork'],['gluten_aware', l === 'fr' ? 'Sans gluten' : 'No gluten']] as [DietaryTag,string][]).map(([d,label]) => (
-                            <span key={d} style={S.pill(filter.dietary.includes(d))} onClick={() => toggleDietary(d)}>{label}</span>
-                          ))}
+                          {([['dairy_free', l === 'fr' ? 'Sans lactose' : 'No dairy'],['no_nuts', l === 'fr' ? 'Sans noix' : 'No nuts'],['no_fish', l === 'fr' ? 'Sans poisson' : 'No fish'],['no_pork', l === 'fr' ? 'Sans porc' : 'No pork']] as [DietaryTag,string][]).map(([d,label]) => {
+                            const count = filtered.filter(p => p.dietary.includes(d as DietaryTag)).length + DESSERT_PIZZAS.filter(p => p.dietary.includes(d as DietaryTag)).length;
+                            if (count === 0 && !filter.dietary.includes(d as DietaryTag)) return null;
+                            return <span key={d} style={S.pill(filter.dietary.includes(d as DietaryTag))} onClick={() => toggleDietary(d as DietaryTag)}>{label}</span>;
+                          })}
                         </div>
                       </div>
                       <div style={S.subSec}>
                         <span style={S.subLbl}>{l === 'fr' ? 'Restrictions religieuses' : 'Religious'}</span>
                         <div style={S.pillRow}>
-                          {(['halal','kosher'] as DietaryTag[]).map(d => (
-                            <span key={d} style={S.pill(filter.dietary.includes(d))} onClick={() => toggleDietary(d)}>{d === 'halal' ? 'Halal' : 'Kosher'}</span>
-                          ))}
+                          {(['halal','kosher'] as DietaryTag[]).map(d => {
+                            const count = filtered.filter(p => p.dietary.includes(d)).length + DESSERT_PIZZAS.filter(p => p.dietary.includes(d)).length;
+                            if (count === 0 && !filter.dietary.includes(d)) return null;
+                            return <span key={d} style={S.pill(filter.dietary.includes(d))} onClick={() => toggleDietary(d)}>{d === 'halal' ? 'Halal' : 'Kosher'}</span>;
+                          })}
                         </div>
                       </div>
                     </>
