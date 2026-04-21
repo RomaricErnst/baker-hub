@@ -544,39 +544,52 @@ const SECTION_LABELS: Record<IngredientCategory, Locale> = {
 
 function SectionIcon({ category }: { category: IngredientCategory }) {
   const s = { stroke: '#8A7F78', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
+
   if (category === 'veg') return (
     <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
-      <path d="M10 16V8" {...s}/>
-      <path d="M10 8C10 5 7 3 4 4c1 3 4 4 6 4z" {...s}/>
-      <path d="M10 8C10 5 13 3 16 4c-1 3-4 4-6 4z" {...s}/>
-      <path d="M7 16h6" {...s}/>
+      <path d="M10 17V8" {...s}/>
+      <path d="M10 8C9 5.5 6.5 4 4 4.5 4.5 7.5 7 9 10 8z" {...s}/>
+      <path d="M10 8C11 5.5 13.5 4 16 4.5 15.5 7.5 13 9 10 8z" {...s}/>
     </svg>
   );
+
   if (category === 'cheese' || category === 'base') return (
     <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
-      <path d="M3 12L10 4l7 8H3z" {...s}/>
-      <path d="M3 12h14v4H3z" {...s}/>
-      <circle cx="7" cy="14" r=".8" fill="#8A7F78" stroke="none"/>
+      <path d="M3 14h14v2.5H3z" {...s}/>
+      <path d="M3 14L8 5h4l5 9" {...s}/>
+      <circle cx="11" cy="11" r="1" fill="#8A7F78" stroke="none"/>
     </svg>
   );
+
   if (category === 'meat') return (
     <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
-      <path d="M6 14c-1.5-1.5-2-4 0-6s4.5-1.5 6 0l2-2 2 2-2 2c1.5 1.5 1.5 4 0 6s-4.5 1.5-6 0L6 14z" {...s}/>
+      <path d="M5 15l2-2" {...s}/>
+      <path d="M7 13c0-2 1.5-3.5 3.5-3.5S14 11 14 13s-1.5 3.5-3.5 3.5" {...s}/>
+      <path d="M14 13c1 0 2-.5 2.5-1.5S16 9 15 8" {...s}/>
+      <path d="M15 8c.5-1 .5-2-.5-3s-2.5-1-3.5 0" {...s}/>
     </svg>
   );
+
   if (category === 'seafood') return (
     <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
-      <path d="M3 10c2-4 8-5 12-2" {...s}/>
-      <path d="M3 10c2 4 8 5 12 2" {...s}/>
-      <path d="M15 8l2-2M15 12l2 2" {...s}/>
-      <circle cx="6" cy="10" r="1" fill="#8A7F78" stroke="none"/>
+      <path d="M3 10c1.5-3 5-4.5 8-4.5S15.5 7 17 10c-1.5 3-5 4.5-8 4.5S4.5 13 3 10z" {...s}/>
+      <path d="M17 10l1.5-2.5M17 10l1.5 2.5" {...s}/>
+      <circle cx="7.5" cy="10" r="1" fill="#8A7F78" stroke="none"/>
     </svg>
   );
+
+  if (category === 'finish' || category === 'sauce' || category === 'spice') return (
+    <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
+      <path d="M7.5 3.5h5l.5 1.5H7l.5-1.5z" {...s}/>
+      <path d="M7 5h6l.5 9a1.5 1.5 0 01-1.5 1.5h-4A1.5 1.5 0 016.5 14L7 5z" {...s}/>
+      <path d="M8.5 9.5h3" {...s}/>
+    </svg>
+  );
+
   return (
     <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
-      <path d="M7 3h6l1 2H6L7 3z" {...s}/>
-      <path d="M6 5h8l.5 8A1.5 1.5 0 0113 14.5H7A1.5 1.5 0 015.5 13L6 5z" {...s}/>
-      <path d="M9 9h2" {...s}/>
+      <circle cx="10" cy="10" r="6" {...s}/>
+      <path d="M10 7v3l2 1.5" {...s}/>
     </svg>
   );
 }
@@ -747,7 +760,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
     setShowLocationPicker(false);
   }
 
-  function handleShare() {
+  function buildShareText(): string {
     const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
     const pizzaLines = Object.entries(qtys)
       .filter(([, q]) => q > 0)
@@ -776,12 +789,20 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
       text += '\n';
     }
     text += `bakerhub.app`;
+    return text;
+  }
 
+  function handleShare() {
+    const text = buildShareText();
     if (navigator.share) {
       navigator.share({ text }).catch(() => {});
     } else {
       navigator.clipboard?.writeText(text);
     }
+  }
+
+  function handleCopy() {
+    navigator.clipboard?.writeText(buildShareText()).catch(() => {});
   }
 
   if (totalSelected === 0) {
@@ -800,17 +821,24 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
       <div style={{ padding: '10px 12px 8px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '12px', color: '#8A7F78' }}>
-            {totalSelected} {l === 'fr' ? (totalSelected > 1 ? 'pizzas' : 'pizza') : (totalSelected > 1 ? 'pizzas' : 'pizza')}
-            {' · '}
-            {sections.reduce((acc, s) => acc + s.items.filter(i => !ticked[i.id]).length, 0)}
-            {' '}{l === 'fr' ? 'à acheter' : 'to buy'}
+            {(() => {
+              const toBuy = sections.reduce((acc, s) => acc + s.items.filter(i => !ticked[i.id]).length, 0);
+              return l === 'fr'
+                ? `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} sélectionnée${totalSelected > 1 ? 's' : ''} · ${toBuy} ingrédient${toBuy > 1 ? 's' : ''} à acheter`
+                : `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} selected · ${toBuy} ingredient${toBuy > 1 ? 's' : ''} to buy`;
+            })()}
           </span>
-          <button
-            onClick={() => setShowLocationPicker(v => !v)}
-            style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '3px 8px', cursor: 'pointer' }}
-          >
-            {currentLocationLabel}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+            <button
+              onClick={() => setShowLocationPicker(v => !v)}
+              style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '3px 8px', cursor: 'pointer' }}
+            >
+              {currentLocationLabel}
+            </button>
+            <span style={{ fontSize: '10px', color: '#B0A89E', fontStyle: 'italic' }}>
+              {l === 'fr' ? 'alternatives locales' : 'local alternatives'}
+            </span>
+          </div>
         </div>
         {showLocationPicker && (
           <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
@@ -859,7 +887,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
                       style={{
                         width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
                         border: isTicked ? 'none' : '1.5px solid #C8C0B8',
-                        background: isTicked ? '#6B7A5A' : 'transparent',
+                        background: isTicked ? (item.isCommonPantry ? '#C8C0B8' : '#6B7A5A') : 'transparent',
                         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         marginTop: '1px',
                       }}
@@ -877,8 +905,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
                           onClick={() => hasSubInfo && toggleSub(item.id)}
                           style={{
                             fontSize: '13px',
-                            color: isTicked ? '#A09890' : '#1A1612',
-                            textDecoration: isTicked ? 'line-through' : 'none',
+                            color: (isTicked && !item.isCommonPantry) ? '#A09890' : '#1A1612',
+                            textDecoration: (isTicked && !item.isCommonPantry) ? 'line-through' : 'none',
                             cursor: hasSubInfo ? 'pointer' : 'default',
                             fontFamily: 'DM Sans, sans-serif',
                           }}
@@ -992,22 +1020,38 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
         )}
       </div>
 
-      {/* Share button */}
+      {/* Share + Copy buttons */}
       <div style={{ padding: '10px 12px 14px', borderTop: '1px solid #E0D8CF', background: '#FDFBF7' }}>
-        <button
-          onClick={handleShare}
-          style={{
-            width: '100%', padding: '11px', background: '#1A1612', color: '#F5F0E8',
-            border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 500,
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
-          }}
-        >
-          <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#F5F0E8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10 3v10M6 7l4-4 4 4"/>
-            <path d="M4 14v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
-          </svg>
-          {l === 'fr' ? 'Partager la liste' : 'Share list'}
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={handleShare}
+            style={{
+              flex: 1, padding: '11px', background: '#1A1612', color: '#F5F0E8',
+              border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 500,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+            }}
+          >
+            <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#F5F0E8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 3v10M6 7l4-4 4 4"/>
+              <path d="M4 14v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
+            </svg>
+            {l === 'fr' ? 'Partager' : 'Share'}
+          </button>
+          <button
+            onClick={handleCopy}
+            style={{
+              flex: 1, padding: '11px', background: 'transparent', color: '#1A1612',
+              border: '1.5px solid #E0D8CF', borderRadius: '10px', fontSize: '13px', fontWeight: 500,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+            }}
+          >
+            <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#1A1612" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="7" y="7" width="9" height="11" rx="1.5"/>
+              <path d="M4 13V4a1 1 0 011-1h9"/>
+            </svg>
+            {l === 'fr' ? 'Copier' : 'Copy'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1172,7 +1216,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           PIZZAS pill
       ══════════════════════════════════════ */}
       {/* Style awareness banner */}
-      {styleKey && (
+      {activePill === 'pizzas' && styleKey && (
         <div style={{
           padding: '6px 12px',
           background: '#F5F0E8',
@@ -1664,7 +1708,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {/* ── Full selection summary — always rendered for IntersectionObserver ── */}
       <div ref={summaryRef} style={{ margin: '0 -16px', marginTop: totalQty === 0 ? '10px' : '0' }}>
           <div style={{ background: '#F5F0E8' }}>
-            {/* Summary header — always shown */}
+            {/* Summary header — only shown on pizzas pill */}
+            {activePill === 'pizzas' && (
             <div style={{
               background: '#1A1612',
               borderTop: '1px solid #C4522A',
@@ -1693,8 +1738,17 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 }}>
                   {totalQty}/{numItems}
                 </span>
+                {totalQty > 0 && (
+                  <span
+                    onClick={() => onPillChange('shopping')}
+                    style={{ fontSize: '11px', color: '#C4522A', marginLeft: '10px', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'DM Sans, sans-serif' }}
+                  >
+                    {l === 'fr' ? 'Liste →' : 'Shopping →'}
+                  </span>
+                )}
               </div>
             </div>
+            )}
             {/* Summary rows — only when pizzas selected */}
             {totalQty > 0 && (
             <div style={{ padding: '8px 12px 12px' }}>
@@ -1754,7 +1808,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       </div>
 
       {/* ── Party bar — fixed at bottom, hides when summary visible ── */}
-      {!summaryVisible && (
+      {activePill === 'pizzas' && !summaryVisible && (
       <div style={{
         position: 'fixed',
         bottom: '64px',
@@ -1787,6 +1841,14 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           }}>
             {totalQty}/{numItems}
           </span>
+          {totalQty > 0 && (
+            <span
+              onClick={() => onPillChange('shopping')}
+              style={{ fontSize: '11px', color: '#C4522A', marginLeft: '10px', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'DM Sans, sans-serif' }}
+            >
+              {l === 'fr' ? 'Liste →' : 'Shopping →'}
+            </span>
+          )}
         </div>
       </div>
       )}

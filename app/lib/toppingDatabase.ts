@@ -416,6 +416,28 @@ const ING: Record<string, Ingredient> = {
     goodEnough: { name: { en: 'Any creamy blue cheese', fr: 'N\'importe quel fromage bleu crémeux' } },
   },
 
+  taleggio: {
+    id: 'taleggio', category: 'cheese', bakeOrder: 'before',
+    name: { en: 'Taleggio', fr: 'Taleggio' },
+    prepNote: { en: 'Slice thin — melts beautifully and evenly', fr: 'Trancher finement — fond parfaitement' },
+    qtyPerPizza: { amount: 30, unit: 'g' },
+    hardToFind: true,
+    goodEnough: { name: { en: 'Young Fontina — same washed-rind family, melts identically', fr: 'Fontina jeune — même famille à croûte lavée, fond pareil' } },
+    compromise: { name: { en: 'Brie (double cream) — different character but melts well', fr: 'Brie (double crème) — caractère différent mais fond bien' } },
+    localSwap: {
+      singapore: { name: { en: 'Ryan\'s Grocery or Culina — usually in stock', fr: 'Ryan\'s Grocery ou Culina — généralement en stock' } },
+    },
+  },
+
+  parmigiano: {
+    id: 'parmigiano', category: 'cheese', bakeOrder: 'before',
+    name: { en: 'Parmigiano Reggiano', fr: 'Parmesan Reggiano' },
+    prepNote: { en: 'Grate finely — melts into other cheeses', fr: 'Râper finement — se mélange aux autres fromages' },
+    qtyPerPizza: { amount: 30, unit: 'g' },
+    goodEnough: { name: { en: 'Grana Padano — slightly milder, works well', fr: 'Grana Padano — légèrement plus doux, fonctionne bien' } },
+    compromise: { name: { en: 'Any hard aged cheese, finely grated', fr: 'Tout fromage à pâte dure affiné, finement râpé' } },
+  },
+
   brie: {
     id: 'brie', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Brie', fr: 'Brie' },
@@ -1162,7 +1184,7 @@ export const PIZZAS: Pizza[] = [
     budget: 2, complexity: 1, prepMinutes: 8, ovenTemp: 'mid',
     wine: ['fr', 'rw'],
     flavour: { richness: 5, boldness: 3, creative: 1, refined: 4 },
-    ingredients: [ING.olioBase, ING.fourCheeses, ING.blackPepper],
+    ingredients: [ING.olioBase, ING.mozzarellaLM, ING.gorgonzola, ING.parmigiano, ING.taleggio, ING.blackPepper],
     wineNote: { en: 'Barolo or aged Chianti', fr: 'Barolo ou Chianti vieilli' },
   },
 
