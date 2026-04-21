@@ -542,57 +542,6 @@ const SECTION_LABELS: Record<IngredientCategory, Locale> = {
   spice:   { en: 'Sauce & Pantry',  fr: 'Sauces & Épicerie' },
 };
 
-function SectionIcon({ category }: { category: IngredientCategory }) {
-  const s = { stroke: '#8A7F78', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
-
-  if (category === 'veg') return (
-    <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
-      <path d="M10 17V8" {...s}/>
-      <path d="M10 8C9 5.5 6.5 4 4 4.5 4.5 7.5 7 9 10 8z" {...s}/>
-      <path d="M10 8C11 5.5 13.5 4 16 4.5 15.5 7.5 13 9 10 8z" {...s}/>
-    </svg>
-  );
-
-  if (category === 'cheese' || category === 'base') return (
-    <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
-      <path d="M3 14h14v2.5H3z" {...s}/>
-      <path d="M3 14L8 5h4l5 9" {...s}/>
-      <circle cx="11" cy="11" r="1" fill="#8A7F78" stroke="none"/>
-    </svg>
-  );
-
-  if (category === 'meat') return (
-    <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
-      <path d="M5 15l2-2" {...s}/>
-      <path d="M7 13c0-2 1.5-3.5 3.5-3.5S14 11 14 13s-1.5 3.5-3.5 3.5" {...s}/>
-      <path d="M14 13c1 0 2-.5 2.5-1.5S16 9 15 8" {...s}/>
-      <path d="M15 8c.5-1 .5-2-.5-3s-2.5-1-3.5 0" {...s}/>
-    </svg>
-  );
-
-  if (category === 'seafood') return (
-    <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
-      <path d="M3 10c1.5-3 5-4.5 8-4.5S15.5 7 17 10c-1.5 3-5 4.5-8 4.5S4.5 13 3 10z" {...s}/>
-      <path d="M17 10l1.5-2.5M17 10l1.5 2.5" {...s}/>
-      <circle cx="7.5" cy="10" r="1" fill="#8A7F78" stroke="none"/>
-    </svg>
-  );
-
-  if (category === 'finish' || category === 'sauce' || category === 'spice') return (
-    <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
-      <path d="M7.5 3.5h5l.5 1.5H7l.5-1.5z" {...s}/>
-      <path d="M7 5h6l.5 9a1.5 1.5 0 01-1.5 1.5h-4A1.5 1.5 0 016.5 14L7 5z" {...s}/>
-      <path d="M8.5 9.5h3" {...s}/>
-    </svg>
-  );
-
-  return (
-    <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
-      <circle cx="10" cy="10" r="6" {...s}/>
-      <path d="M10 7v3l2 1.5" {...s}/>
-    </svg>
-  );
-}
 
 function formatQty(total: number, unit: string, locale: string): string {
   const l = locale as 'en' | 'fr';
@@ -801,9 +750,6 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
     }
   }
 
-  function handleCopy() {
-    navigator.clipboard?.writeText(buildShareText()).catch(() => {});
-  }
 
   if (totalSelected === 0) {
     return (
@@ -828,17 +774,15 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
                 : `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} selected · ${toBuy} ingredient${toBuy > 1 ? 's' : ''} to buy`;
             })()}
           </span>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-            <button
-              onClick={() => setShowLocationPicker(v => !v)}
-              style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '3px 8px', cursor: 'pointer' }}
-            >
-              {currentLocationLabel}
-            </button>
-            <span style={{ fontSize: '10px', color: '#B0A89E', fontStyle: 'italic' }}>
-              {l === 'fr' ? 'alternatives locales' : 'local alternatives'}
-            </span>
-          </div>
+          <button
+            onClick={() => setShowLocationPicker(v => !v)}
+            style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            {shoppingLocation === 'singapore'
+              ? (l === 'fr' ? `Où acheter : ${currentLocationLabel} ▾` : `Where to shop: ${currentLocationLabel} ▾`)
+              : (l === 'fr' ? `Ma région : ${currentLocationLabel} ▾` : `My region: ${currentLocationLabel} ▾`)
+            }
+          </button>
         </div>
         {showLocationPicker && (
           <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
@@ -864,9 +808,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
         {sections.map(section => (
           <div key={section.label}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 12px 4px', background: '#F5F0E8' }}>
-              <SectionIcon category={section.category} />
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#1A1612', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace' }}>
+            <div style={{ padding: '7px 12px 4px 11px', background: '#F5F0E8', borderLeft: '3px solid #C4522A' }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'DM Mono, monospace' }}>
                 {section.label}
               </span>
             </div>
@@ -905,8 +848,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
                           onClick={() => hasSubInfo && toggleSub(item.id)}
                           style={{
                             fontSize: '13px',
-                            color: (isTicked && !item.isCommonPantry) ? '#A09890' : '#1A1612',
-                            textDecoration: (isTicked && !item.isCommonPantry) ? 'line-through' : 'none',
+                            color: isTicked ? '#B0A89E' : '#1A1612',
+                            textDecoration: 'none',
                             cursor: hasSubInfo ? 'pointer' : 'default',
                             fontFamily: 'DM Sans, sans-serif',
                           }}
@@ -983,13 +926,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 
         {recipeIngredients && recipeIngredients.length > 0 && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 12px 4px', background: '#F5F0E8' }}>
-              <svg viewBox="0 0 20 20" width={14} height={14} fill="none" stroke="#8A7F78" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 10c0-3 2-6 5-6s5 3 5 6"/>
-                <path d="M3 10h14"/>
-                <path d="M5 10c0 3 2 5 5 5s5-2 5-5"/>
-              </svg>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#1A1612', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace' }}>
+            <div style={{ padding: '7px 12px 4px 11px', background: '#F5F0E8', borderLeft: '3px solid #C4522A' }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'DM Mono, monospace' }}>
                 {l === 'fr' ? 'Pour votre pâte' : 'For your dough'}
               </span>
             </div>
@@ -1010,7 +948,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
                     </svg>
                   )}
                 </button>
-                <span style={{ fontSize: '13px', color: ticked['dough_' + i] ? '#A09890' : '#1A1612', flex: 1, textDecoration: ticked['dough_' + i] ? 'line-through' : 'none' }}>
+                <span style={{ fontSize: '13px', color: ticked['dough_' + i] ? '#B0A89E' : '#1A1612', flex: 1, textDecoration: 'none' }}>
                   {ing.name}
                 </span>
                 <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Mono, monospace' }}>{ing.amount}</span>
@@ -1022,36 +960,20 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 
       {/* Share + Copy buttons */}
       <div style={{ padding: '10px 12px 14px', borderTop: '1px solid #E0D8CF', background: '#FDFBF7' }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={handleShare}
-            style={{
-              flex: 1, padding: '11px', background: '#1A1612', color: '#F5F0E8',
-              border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 500,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
-            }}
-          >
-            <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#F5F0E8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10 3v10M6 7l4-4 4 4"/>
-              <path d="M4 14v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
-            </svg>
-            {l === 'fr' ? 'Partager' : 'Share'}
-          </button>
-          <button
-            onClick={handleCopy}
-            style={{
-              flex: 1, padding: '11px', background: 'transparent', color: '#1A1612',
-              border: '1.5px solid #E0D8CF', borderRadius: '10px', fontSize: '13px', fontWeight: 500,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
-            }}
-          >
-            <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#1A1612" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="7" y="7" width="9" height="11" rx="1.5"/>
-              <path d="M4 13V4a1 1 0 011-1h9"/>
-            </svg>
-            {l === 'fr' ? 'Copier' : 'Copy'}
-          </button>
-        </div>
+        <button
+          onClick={handleShare}
+          style={{
+            width: '100%', padding: '11px', background: '#1A1612', color: '#F5F0E8',
+            border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 500,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+          }}
+        >
+          <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#F5F0E8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 3v10M6 7l4-4 4 4"/>
+            <path d="M4 14v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
+          </svg>
+          {l === 'fr' ? 'Partager la liste' : 'Share list'}
+        </button>
       </div>
     </div>
   );
