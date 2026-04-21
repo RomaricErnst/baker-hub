@@ -9,8 +9,9 @@ import {
   filterPizzas, getFilterCounts, DEFAULT_FILTER, getCurrentSeason,
   type Pizza, type FilterState, type WineCategory, type BaseType,
   type OccasionTag, type DietaryTag, type Season, type BudgetTier,
-  type ComplexityTier, type RegionTag,
+  type ComplexityTier, type RegionTag, type IngredientCategory,
 } from '../lib/toppingDatabase';
+import type { Locale } from '../lib/toppingTypes';
 
 // ─── Ingredient chips ─────────────────────────────────────────
 
@@ -521,6 +522,492 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
             {l === 'fr' ? `✓ ${qty} ajoutée${qty > 1 ? 's' : ''} — continuez à parcourir` : `✓ ${qty} added — keep browsing`}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Shopping List ────────────────────────────────────────────────
+
+const SECTION_ORDER: IngredientCategory[] = ['veg', 'cheese', 'base', 'meat', 'seafood', 'sauce', 'finish', 'spice'];
+
+const SECTION_LABELS: Record<IngredientCategory, Locale> = {
+  veg:     { en: 'Produce',         fr: 'Fruits & Légumes' },
+  cheese:  { en: 'Dairy & Chilled', fr: 'Crèmerie & Frais' },
+  base:    { en: 'Dairy & Chilled', fr: 'Crèmerie & Frais' },
+  meat:    { en: 'Deli & Meat',     fr: 'Charcuterie & Viande' },
+  seafood: { en: 'Fish & Seafood',  fr: 'Poisson & Fruits de mer' },
+  sauce:   { en: 'Sauce & Pantry',  fr: 'Sauces & Épicerie' },
+  finish:  { en: 'Sauce & Pantry',  fr: 'Sauces & Épicerie' },
+  spice:   { en: 'Sauce & Pantry',  fr: 'Sauces & Épicerie' },
+};
+
+function SectionIcon({ category }: { category: IngredientCategory }) {
+  const s = { stroke: '#8A7F78', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
+  if (category === 'veg') return (
+    <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
+      <path d="M10 16V8" {...s}/>
+      <path d="M10 8C10 5 7 3 4 4c1 3 4 4 6 4z" {...s}/>
+      <path d="M10 8C10 5 13 3 16 4c-1 3-4 4-6 4z" {...s}/>
+      <path d="M7 16h6" {...s}/>
+    </svg>
+  );
+  if (category === 'cheese' || category === 'base') return (
+    <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
+      <path d="M3 12L10 4l7 8H3z" {...s}/>
+      <path d="M3 12h14v4H3z" {...s}/>
+      <circle cx="7" cy="14" r=".8" fill="#8A7F78" stroke="none"/>
+    </svg>
+  );
+  if (category === 'meat') return (
+    <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
+      <path d="M6 14c-1.5-1.5-2-4 0-6s4.5-1.5 6 0l2-2 2 2-2 2c1.5 1.5 1.5 4 0 6s-4.5 1.5-6 0L6 14z" {...s}/>
+    </svg>
+  );
+  if (category === 'seafood') return (
+    <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
+      <path d="M3 10c2-4 8-5 12-2" {...s}/>
+      <path d="M3 10c2 4 8 5 12 2" {...s}/>
+      <path d="M15 8l2-2M15 12l2 2" {...s}/>
+      <circle cx="6" cy="10" r="1" fill="#8A7F78" stroke="none"/>
+    </svg>
+  );
+  return (
+    <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
+      <path d="M7 3h6l1 2H6L7 3z" {...s}/>
+      <path d="M6 5h8l.5 8A1.5 1.5 0 0113 14.5H7A1.5 1.5 0 015.5 13L6 5z" {...s}/>
+      <path d="M9 9h2" {...s}/>
+    </svg>
+  );
+}
+
+function formatQty(total: number, unit: string, locale: string): string {
+  const l = locale as 'en' | 'fr';
+  const unitLabels: Record<string, Locale> = {
+    g:      { en: 'g',       fr: 'g' },
+    ml:     { en: 'ml',      fr: 'ml' },
+    pcs:    { en: 'pcs',     fr: 'pcs' },
+    slices: { en: 'slices',  fr: 'tranches' },
+    leaves: { en: 'leaves',  fr: 'feuilles' },
+    sprigs: { en: 'sprigs',  fr: 'brins' },
+    tbsp:   { en: 'tbsp',    fr: 'càs' },
+    pinch:  { en: 'pinches', fr: 'pincées' },
+  };
+  const label = unitLabels[unit]?.[l] ?? unit;
+  return `${total} ${label}`;
+}
+
+interface ShoppingItem {
+  id: string;
+  name: Locale;
+  category: IngredientCategory;
+  totalAmount?: number;
+  unit?: string;
+  qtyNote?: string;
+  isCommonPantry?: boolean;
+  hardToFind?: boolean;
+  goodEnough?: { name: Locale };
+  compromise?: { name: Locale };
+  localSwap?: Partial<Record<string, { name: Locale }>>;
+  forPizzas: string[];
+}
+
+function buildShoppingList(
+  qtys: Record<string, number>,
+  locale: string,
+): { sections: Array<{ category: IngredientCategory; label: string; items: ShoppingItem[] }> } {
+  const l = locale as 'en' | 'fr';
+  const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
+  const ingredientMap: Record<string, ShoppingItem & { pizzaCount: Record<string, number> }> = {};
+
+  Object.entries(qtys).forEach(([pizzaId, qty]) => {
+    if (qty <= 0) return;
+    const pizza = allPizzas.find(p => p.id === pizzaId);
+    if (!pizza) return;
+
+    pizza.ingredients.forEach((ing) => {
+      if (!ingredientMap[ing.id]) {
+        ingredientMap[ing.id] = {
+          id: ing.id,
+          name: ing.name,
+          category: ing.category,
+          totalAmount: undefined,
+          unit: undefined,
+          qtyNote: undefined,
+          isCommonPantry: ing.isCommonPantry,
+          hardToFind: ing.hardToFind,
+          goodEnough: ing.goodEnough,
+          compromise: ing.compromise,
+          localSwap: ing.localSwap as Partial<Record<string, { name: Locale }>> | undefined,
+          forPizzas: [],
+          pizzaCount: {},
+        };
+      }
+      const item = ingredientMap[ing.id];
+      if (ing.qtyPerPizza) {
+        const prev = item.totalAmount ?? 0;
+        item.totalAmount = prev + ing.qtyPerPizza.amount * qty;
+        item.unit = ing.qtyPerPizza.unit;
+        item.qtyNote = l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN;
+      }
+      const pizzaName = pizza.name[l] ?? pizza.name.en;
+      if (!item.pizzaCount[pizzaName]) item.pizzaCount[pizzaName] = 0;
+      item.pizzaCount[pizzaName] += qty;
+    });
+  });
+
+  Object.values(ingredientMap).forEach(item => {
+    item.forPizzas = Object.entries(item.pizzaCount).map(([name, count]) =>
+      count > 1 ? `${name} ×${count}` : name
+    );
+  });
+
+  const sectionMap: Record<string, ShoppingItem[]> = {};
+  const processedSections = new Set<string>();
+
+  SECTION_ORDER.forEach(cat => {
+    const label = SECTION_LABELS[cat][l];
+    if (processedSections.has(label)) return;
+    processedSections.add(label);
+    const items = Object.values(ingredientMap).filter(item => {
+      const itemLabel = SECTION_LABELS[item.category]?.[l];
+      return itemLabel === label;
+    });
+    if (items.length > 0) sectionMap[label] = items;
+  });
+
+  const sections = Object.entries(sectionMap).map(([label, items]) => ({
+    category: items[0].category,
+    label,
+    items: [...items].sort((a, b) => {
+      if (a.isCommonPantry && !b.isCommonPantry) return 1;
+      if (!a.isCommonPantry && b.isCommonPantry) return -1;
+      return 0;
+    }),
+  }));
+
+  return { sections };
+}
+
+const LOCATIONS = [
+  { key: 'singapore',    label: 'Singapore' },
+  { key: 'france',       label: 'France' },
+  { key: 'uk',           label: 'UK' },
+  { key: 'us',           label: 'US' },
+  { key: 'australia',    label: 'Australia' },
+  { key: 'international',label: 'International' },
+];
+
+function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
+  qtys: Record<string, number>;
+  locale: string;
+  numItems: number;
+  styleKey?: string;
+  recipeIngredients?: Array<{ name: string; amount: string }>;
+}) {
+  const l = locale as 'en' | 'fr';
+  const [ticked, setTicked] = useState<Record<string, boolean>>({});
+  const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({});
+  const [shoppingLocation, setShoppingLocation] = useState<string>('international');
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('bh_shopping_location');
+      if (saved) setShoppingLocation(saved);
+    } catch {}
+  }, []);
+
+  const { sections } = buildShoppingList(qtys, locale);
+  const totalSelected = Object.values(qtys).filter(q => q > 0).length;
+
+  // Pre-tick pantry items
+  useEffect(() => {
+    setTicked(prev => {
+      const next = { ...prev };
+      sections.forEach(s => s.items.forEach(item => {
+        if (item.isCommonPantry && !(item.id in next)) next[item.id] = true;
+      }));
+      return next;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalSelected]);
+
+  function toggleTick(id: string) {
+    setTicked(prev => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  function toggleSub(id: string) {
+    setExpandedSubs(prev => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  function setLocation(loc: string) {
+    setShoppingLocation(loc);
+    try { localStorage.setItem('bh_shopping_location', loc); } catch {}
+    setShowLocationPicker(false);
+  }
+
+  function handleShare() {
+    const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
+    const pizzaLines = Object.entries(qtys)
+      .filter(([, q]) => q > 0)
+      .map(([id, q]) => {
+        const p = allPizzas.find(x => x.id === id);
+        return p ? (p.name[l] ?? p.name.en) + (q > 1 ? ` ×${q}` : '') : id;
+      }).join(', ');
+
+    let text = `Baker Hub — ${l === 'fr' ? 'Liste de courses Pizza Party' : 'Pizza Party Shopping List'}\n`;
+    text += `${pizzaLines}\n\n`;
+
+    sections.forEach(section => {
+      text += `${section.label.toUpperCase()}\n`;
+      section.items.forEach(item => {
+        const tick = ticked[item.id] ? '✓' : '☐';
+        const name = item.name[l] ?? item.name.en;
+        const qty = item.totalAmount && item.unit ? formatQty(item.totalAmount, item.unit, locale) : '';
+        text += `${tick} ${name}${qty ? '  —  ' + qty : ''}\n`;
+      });
+      text += '\n';
+    });
+
+    if (recipeIngredients?.length) {
+      text += `${l === 'fr' ? 'POUR VOTRE PÂTE' : 'FOR YOUR DOUGH'}\n`;
+      recipeIngredients.forEach(i => { text += `☐ ${i.name}  —  ${i.amount}\n`; });
+      text += '\n';
+    }
+    text += `bakerhub.app`;
+
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(text);
+    }
+  }
+
+  if (totalSelected === 0) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', color: '#8A7F78', fontSize: '13px', textAlign: 'center' }}>
+        {l === 'fr' ? 'Ajoutez des pizzas pour voir la liste de courses' : 'Add pizzas to see your shopping list'}
+      </div>
+    );
+  }
+
+  const currentLocationLabel = LOCATIONS.find(loc => loc.key === shoppingLocation)?.label ?? 'International';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Header */}
+      <div style={{ padding: '10px 12px 8px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '12px', color: '#8A7F78' }}>
+            {totalSelected} {l === 'fr' ? (totalSelected > 1 ? 'pizzas' : 'pizza') : (totalSelected > 1 ? 'pizzas' : 'pizza')}
+            {' · '}
+            {sections.reduce((acc, s) => acc + s.items.filter(i => !ticked[i.id]).length, 0)}
+            {' '}{l === 'fr' ? 'à acheter' : 'to buy'}
+          </span>
+          <button
+            onClick={() => setShowLocationPicker(v => !v)}
+            style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '3px 8px', cursor: 'pointer' }}
+          >
+            {currentLocationLabel}
+          </button>
+        </div>
+        {showLocationPicker && (
+          <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+            {LOCATIONS.map(loc => (
+              <button
+                key={loc.key}
+                onClick={() => setLocation(loc.key)}
+                style={{
+                  fontSize: '11px', padding: '3px 10px', borderRadius: '12px', cursor: 'pointer',
+                  border: shoppingLocation === loc.key ? '1px solid #C4522A' : '1px solid #E0D8CF',
+                  background: shoppingLocation === loc.key ? '#C4522A' : '#FDFBF7',
+                  color: shoppingLocation === loc.key ? 'white' : '#3D3530',
+                }}
+              >
+                {loc.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* List */}
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
+        {sections.map(section => (
+          <div key={section.label}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 12px 4px', background: '#F5F0E8' }}>
+              <SectionIcon category={section.category} />
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#1A1612', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace' }}>
+                {section.label}
+              </span>
+            </div>
+
+            {section.items.map(item => {
+              const name = item.name[l] ?? item.name.en;
+              const isTicked = ticked[item.id] ?? false;
+              const isExpanded = expandedSubs[item.id] ?? false;
+              const hasSubInfo = !!(item.goodEnough || item.compromise);
+              const showSubProactively = !!item.hardToFind;
+              const localNote = item.localSwap?.[shoppingLocation]?.name;
+
+              return (
+                <div key={item.id} style={{ borderBottom: '0.5px solid #F0EBE3', background: isTicked ? '#FAFAF8' : '#FDFBF7' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', padding: '8px 12px', gap: '10px' }}>
+                    <button
+                      onClick={() => toggleTick(item.id)}
+                      style={{
+                        width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
+                        border: isTicked ? 'none' : '1.5px solid #C8C0B8',
+                        background: isTicked ? '#6B7A5A' : 'transparent',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        marginTop: '1px',
+                      }}
+                    >
+                      {isTicked && (
+                        <svg viewBox="0 0 12 12" width={10} height={10} fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                          <path d="M2 6l3 3 5-5"/>
+                        </svg>
+                      )}
+                    </button>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px' }}>
+                        <span
+                          onClick={() => hasSubInfo && toggleSub(item.id)}
+                          style={{
+                            fontSize: '13px',
+                            color: isTicked ? '#A09890' : '#1A1612',
+                            textDecoration: isTicked ? 'line-through' : 'none',
+                            cursor: hasSubInfo ? 'pointer' : 'default',
+                            fontFamily: 'DM Sans, sans-serif',
+                          }}
+                        >
+                          {name}
+                          {item.isCommonPantry && (
+                            <span style={{ fontSize: '10px', color: '#8A7F78', marginLeft: '5px', fontStyle: 'italic' }}>pantry</span>
+                          )}
+                          {hasSubInfo && !showSubProactively && (
+                            <span style={{ fontSize: '10px', color: '#C8C0B8', marginLeft: '4px' }}>{isExpanded ? '▲' : '▼'}</span>
+                          )}
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Mono, monospace', flexShrink: 0 }}>
+                          {item.totalAmount && item.unit ? formatQty(item.totalAmount, item.unit, locale) : ''}
+                        </span>
+                      </div>
+
+                      {item.qtyNote && (
+                        <div style={{ fontSize: '10px', color: '#A09890', marginTop: '1px' }}>{item.qtyNote}</div>
+                      )}
+
+                      {showSubProactively && (
+                        <div style={{ marginTop: '3px' }}>
+                          {item.goodEnough && (
+                            <div style={{ fontSize: '11px', color: '#6B7A5A' }}>
+                              <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'Très proche :' : 'Also great:'}</span>
+                              {' '}{item.goodEnough.name[l] ?? item.goodEnough.name.en}
+                            </div>
+                          )}
+                          {item.compromise && (
+                            <div style={{ fontSize: '11px', color: '#8A7F78' }}>
+                              <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'À défaut :' : 'If not available:'}</span>
+                              {' '}{item.compromise.name[l] ?? item.compromise.name.en}
+                            </div>
+                          )}
+                          {localNote && shoppingLocation !== 'international' && (
+                            <div style={{ fontSize: '11px', color: '#8A7F78', marginTop: '1px' }}>
+                              <span style={{ fontWeight: 500 }}>{LOCATIONS.find(loc => loc.key === shoppingLocation)?.label ?? ''}:</span>
+                              {' '}{localNote[l] ?? localNote.en}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {!showSubProactively && isExpanded && hasSubInfo && (
+                        <div style={{ marginTop: '3px', padding: '6px 8px', background: '#F5F0E8', borderRadius: '6px' }}>
+                          {item.goodEnough && (
+                            <div style={{ fontSize: '11px', color: '#6B7A5A', marginBottom: '2px' }}>
+                              <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'Très proche :' : 'Also great:'}</span>
+                              {' '}{item.goodEnough.name[l] ?? item.goodEnough.name.en}
+                            </div>
+                          )}
+                          {item.compromise && (
+                            <div style={{ fontSize: '11px', color: '#8A7F78' }}>
+                              <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'À défaut :' : 'If not available:'}</span>
+                              {' '}{item.compromise.name[l] ?? item.compromise.name.en}
+                            </div>
+                          )}
+                          {localNote && shoppingLocation !== 'international' && (
+                            <div style={{ fontSize: '11px', color: '#8A7F78', marginTop: '2px' }}>
+                              <span style={{ fontWeight: 500 }}>{LOCATIONS.find(loc => loc.key === shoppingLocation)?.label ?? ''}:</span>
+                              {' '}{localNote[l] ?? localNote.en}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+
+        {recipeIngredients && recipeIngredients.length > 0 && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 12px 4px', background: '#F5F0E8' }}>
+              <svg viewBox="0 0 20 20" width={14} height={14} fill="none" stroke="#8A7F78" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 10c0-3 2-6 5-6s5 3 5 6"/>
+                <path d="M3 10h14"/>
+                <path d="M5 10c0 3 2 5 5 5s5-2 5-5"/>
+              </svg>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#1A1612', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace' }}>
+                {l === 'fr' ? 'Pour votre pâte' : 'For your dough'}
+              </span>
+            </div>
+            {recipeIngredients.map((ing, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '10px', borderBottom: '0.5px solid #F0EBE3' }}>
+                <button
+                  onClick={() => toggleTick('dough_' + i)}
+                  style={{
+                    width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
+                    border: ticked['dough_' + i] ? 'none' : '1.5px solid #C8C0B8',
+                    background: ticked['dough_' + i] ? '#6B7A5A' : 'transparent',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  {ticked['dough_' + i] && (
+                    <svg viewBox="0 0 12 12" width={10} height={10} fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                      <path d="M2 6l3 3 5-5"/>
+                    </svg>
+                  )}
+                </button>
+                <span style={{ fontSize: '13px', color: ticked['dough_' + i] ? '#A09890' : '#1A1612', flex: 1, textDecoration: ticked['dough_' + i] ? 'line-through' : 'none' }}>
+                  {ing.name}
+                </span>
+                <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Mono, monospace' }}>{ing.amount}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Share button */}
+      <div style={{ padding: '10px 12px 14px', borderTop: '1px solid #E0D8CF', background: '#FDFBF7' }}>
+        <button
+          onClick={handleShare}
+          style={{
+            width: '100%', padding: '11px', background: '#1A1612', color: '#F5F0E8',
+            border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 500,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+          }}
+        >
+          <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#F5F0E8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 3v10M6 7l4-4 4 4"/>
+            <path d="M4 14v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
+          </svg>
+          {l === 'fr' ? 'Partager la liste' : 'Share list'}
+        </button>
       </div>
     </div>
   );
@@ -1152,9 +1639,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           SHOPPING pill — placeholder for Prompt 8
       ══════════════════════════════════════ */}
       {activePill === 'shopping' && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', color: '#8A7F78', fontSize: '13px', textAlign: 'center' }}>
-          {l === 'fr' ? 'Liste de courses — bientôt disponible' : 'Shopping list — coming soon'}
-        </div>
+        <ShoppingList
+          qtys={qtys}
+          locale={locale}
+          numItems={numItems}
+          styleKey={styleKey}
+        />
       )}
 
       {/* ══════════════════════════════════════
