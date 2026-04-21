@@ -447,13 +447,13 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
       onClick={onClose}
     >
       <div
-        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#FDFBF7', borderRadius: '14px 14px 0 0', height: '92%', display: 'flex', flexDirection: 'column' }}
+        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#FDFBF7', borderRadius: '14px 14px 0 0', maxHeight: '92%', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Scrollable content */}
         <div
           ref={(el) => { if (el) el.scrollTop = 0; }}
-          style={{ overflowY: 'auto', padding: '12px 14px 8px', flex: 1 }}
+          style={{ overflowY: 'auto', padding: '12px 14px 8px', flex: '0 1 auto', minHeight: 0 }}
         >
           {/* Handle */}
           <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '0 auto 10px' }} />

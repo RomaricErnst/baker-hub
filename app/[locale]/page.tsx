@@ -356,6 +356,9 @@ export default function Home() {
 
   // P6 — Active tab in two-tab layout
   const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide' | 'pizzaparty'>('setup');
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTab]);
   const pizzaPartyEnabled = bakeType === 'pizza';
   const [pizzaPartyPill, setPizzaPartyPill] = useState<'pizzas' | 'shopping' | 'party'>('pizzas');
 
