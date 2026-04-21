@@ -3097,6 +3097,38 @@ export const PIZZAS: Pizza[] = [
     compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
+  {
+    id: 'jerusalem',
+    name: { en: 'Jerusalem', fr: 'Jérusalem' },
+    story: { en: 'Roasted aubergine, chickpeas, tahini — Middle Eastern flavours on a Neapolitan base', fr: 'Aubergine rôtie, pois chiches, tahini — saveurs du Moyen-Orient sur base napolitaine' },
+    category: 'modern',
+    base: 'tomato_cooked',
+    season: ['all'],
+    occasion: ['impress', 'party'],
+    dietary: ['veg', 'vegan', 'no_nuts', 'no_fish', 'no_pork', 'halal', 'kosher'],
+    budget: 2, complexity: 2, prepMinutes: 12, ovenTemp: 'high',
+    wine: ['cw'],
+    flavour: { richness: 2, boldness: 3, creative: 4, refined: 3 },
+    ingredients: [ING.sanMarzano, ING.evoOil, ING.freshBasil],
+    wineNote: { en: 'Crisp white · Sauvignon Blanc or dry rosé', fr: 'Blanc vif · Sauvignon Blanc ou rosé sec' },
+  },
+
+  {
+    id: 'shakshuka',
+    name: { en: 'Shakshuka', fr: 'Shakshuka' },
+    story: { en: 'Spiced tomato base, poached egg, feta, roasted peppers — North African brunch on pizza', fr: 'Base tomate épicée, œuf poché, feta, poivrons rôtis — brunch nord-africain sur pizza' },
+    category: 'fusion',
+    base: 'tomato_cooked',
+    season: ['all'],
+    occasion: ['impress', 'quick'],
+    dietary: ['veg', 'no_nuts', 'no_fish', 'no_pork', 'halal', 'kosher'],
+    budget: 1, complexity: 1, prepMinutes: 8, ovenTemp: 'mid',
+    wine: ['ro', 'cw'],
+    flavour: { richness: 2, boldness: 4, creative: 4, refined: 2 },
+    ingredients: [ING.sanMarzano, ING.evoOil, ING.freshBasil],
+    wineNote: { en: 'Dry rosé · or crisp white with citrus notes', fr: 'Rosé sec · ou blanc vif aux notes d\'agrumes' },
+  },
+
 ]
 
 // ─── Dessert pizzas ───────────────────────────────────────────
