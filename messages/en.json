@@ -25,7 +25,7 @@
     "setup": "My Dough",
     "plan": "Bake Plan",
     "guide": "Guide",
-    "pizzaparty": "Pizza Night"
+    "pizzaparty": "Pizza Party"
   },
   "generate": {
     "generateBtn": "Generate my bake plan →",

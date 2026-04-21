@@ -25,7 +25,7 @@
     "setup": "Ma Pâte",
     "plan": "Recette",
     "guide": "Guide",
-    "pizzaparty": "Soirée Pizza"
+    "pizzaparty": "Pizza Party"
   },
   "generate": {
     "generateBtn": "Générer mon planning →",

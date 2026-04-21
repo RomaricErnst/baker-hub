@@ -356,7 +356,7 @@ export default function Home() {
 
   // P6 — Active tab in two-tab layout
   const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide' | 'pizzaparty'>('setup');
-  const [pizzaPartyEnabled, setPizzaPartyEnabled] = useState(false);
+  const pizzaPartyEnabled = bakeType === 'pizza';
   const [pizzaPartyPill, setPizzaPartyPill] = useState<'pizzas' | 'shopping' | 'party'>('pizzas');
 
   // M2 — Mode chosen: false on page load, true after baker selects a mode
@@ -724,7 +724,6 @@ export default function Home() {
                 key={opt.type}
                 onClick={() => {
                   selectBakeType(opt.type);
-                  if (opt.type === 'bread') setPizzaPartyEnabled(false);
                 }}
                 onMouseEnter={() => setHoveredBakeType(opt.type)}
                 onMouseLeave={() => setHoveredBakeType(null)}
@@ -844,44 +843,6 @@ export default function Home() {
                 ))}
               </div>
 
-              {/* Pizza Night checkbox — pizza only */}
-              {bakeType === 'pizza' && (
-                <div
-                  onClick={() => { setPizzaPartyEnabled(v => !v); }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 12px',
-                    borderRadius: '10px',
-                    border: pizzaPartyEnabled ? '1.5px solid #D4A853' : '1px dashed #D4A853',
-                    background: pizzaPartyEnabled ? '#FFF9EE' : 'transparent',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <div style={{
-                    width: '18px', height: '18px', borderRadius: '5px', flexShrink: 0,
-                    border: pizzaPartyEnabled ? 'none' : '1.5px solid #D4A853',
-                    background: pizzaPartyEnabled ? '#D4A853' : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    {pizzaPartyEnabled && (
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                        <path d="M2 5.5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
-                  </div>
-                  <div style={{ flex: 1, textAlign: 'left' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 500, color: '#1A1612', marginBottom: '1px' }}>
-                      {t('pizzaParty.checkboxTitle')}
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#8A7F78' }}>
-                      {t('pizzaParty.checkboxSub')}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -1183,7 +1144,7 @@ export default function Home() {
                     boxShadow: '0 4px 16px rgba(196,82,42,0.3)',
                   }}
                 >
-                  {pizzaPartyEnabled ? t('pizzaParty.generateBtn') : t('generate.generateBtn')}
+                  {t('generate.generateBtn')}
                 </button>
               </div>
             )}
@@ -2170,7 +2131,7 @@ export default function Home() {
                     boxShadow: '0 4px 16px rgba(196,82,42,0.3)',
                   }}
                 >
-                  {pizzaPartyEnabled ? t('pizzaParty.generateBtn') : t('generate.generateBtn')}
+                  {t('generate.generateBtn')}
                 </button>
               </div>
             )}
