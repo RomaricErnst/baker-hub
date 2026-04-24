@@ -1,0 +1,787 @@
+{
+  "results": [
+    {
+      "id": "margherita",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "marinara",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "diavola",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "quattro_formaggi",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "capricciosa",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "napoli",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "pepperoni",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "nduja_mozzarella",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "tonno_cipolla",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "smoked_salmon_creme",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "ortolana",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "funghi_tartufo",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "patate_rosmarino",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "bianca_ricotta_spinaci",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "truffle_bianca",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "prosciutto_rucola",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "burrata_prosciutto",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "fig_gorgonzola",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "pear_walnut_gorgonzola",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "bbq_chicken",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "speck_brie",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "tarte_flambee",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "raclette_pommes",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "chevre_miel",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "andouille_moutarde",
+      "status": "FAIL",
+      "reason": "The pizza contains round pepperoni slices instead of the expected sausage slices."
+    },
+    {
+      "id": "maroilles_oignons",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "jambon_espelette",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "camembert_pommes",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "tartiflette_pizza",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "la_reine",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "la_royale",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "la_paysanne",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "quatre_saisons",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "margherita_sbagliata",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "cosacca",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "salsiccia_friarielli",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "provola_pepe",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "acciughe_pomodorini",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "melanzane_parmigiana",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "zucca_provola",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "boscaiola",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "bismarck",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "pugliese",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "prosciutto_funghi",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "tonno_cipolla_red",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "piennolo",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "funghi_salsiccia",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "salmone_rucola",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "acciughe_burro",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "pollo_pesto",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "genovese",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "polpette",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "diavola_burrata",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "pistadella",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "stracciatella_datterini",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "nduja_burrata",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "tartufo_fior",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "lardo_rosmarino",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "scarpetta",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "caponata_pizza",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "soppressata_fichi",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "guanciale_pecorino",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "honey_pecorino",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "burrata_prosciutto_gourmet",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "porcini_stracciatella",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "wagyu_onion",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "crudo_parma_stracciatella",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "norma",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "carciofi_romana",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "fiori_zucca_alici",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "amatriciana_pizza",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "carbonara_pizza",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "cacio_pepe_pizza",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "gricia_pizza",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "bianca_rosmarino",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "bresaola_rucola_pizza",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "speck_stracchino",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "indivia_gorgonzola",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "prosciutto_stracciatella_romana",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "patata_rosmarino_romana",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "verdure_grigliate_burrata",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "alici_fresche_romana",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "porcini_pecorino_romana",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "teglia_patata_provola",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "teglia_funghi_salsiccia",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "teglia_prosciutto_cotto",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "teglia_zucchine_fiori",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "teglia_mortadella_pistacchio",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "teglia_tonno_cipolla",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "teglia_4_formaggi",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "teglia_speck_brie",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "teglia_verdure",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "teglia_nduja_stracciatella",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "ny_pepperoni_slice",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "hot_honey_pepperoni",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "white_clam_apizza",
+      "status": "FAIL",
+      "reason": "This appears to be a garlic and herb focaccia or flatbread, not a clam pizza — no clams are visible and the base appears to be a seasoned bread rather than a pizza with the expected clam topping."
+    },
+    {
+      "id": "ny_sausage_peppers",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "vodka_pizza",
+      "status": "FAIL",
+      "reason": "The pizza appears to have basil leaves on top, but the expected ingredients are pink vodka cream sauce and mozzarella only, with no basil specified."
+    },
+    {
+      "id": "ny_white_pizza",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "buffalo_chicken",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "california_bbq_chicken",
+      "status": "FAIL",
+      "reason": "The pizza contains red onion slices, which is not listed in the expected ingredients (BBQ sauce base, chicken pieces, mozzarella)."
+    },
+    {
+      "id": "smoked_salmon_cream_cheese",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "ny_clam_garlic",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "ny_margherita_bufala",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "ny_diavola",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "detroit_red_top",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "detroit_white",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "detroit_sausage",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "detroit_veggie",
+      "status": "FAIL",
+      "reason": "The pizza contains what appears to be anchovies or dark fish fillets arranged in stripes across the top, which is not an expected ingredient."
+    },
+    {
+      "id": "chicago_deep_dish",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "pan_margherita",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "pan_pepperoni_hot_honey",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "pan_bbq_chicken",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "pan_nduja_burrata",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "pan_4_formaggi",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "jamon_manchego",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "sobrasada_miel",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "escalivada",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "chorizo_padron",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "pulpo_gallega",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "halloumi_zaatar",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "zaatar_labneh",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "merguez_harissa",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "miso_funghi",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "mentaiko_cream",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "teriyaki_chicken",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "salmon_wasabi",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "korean_bbq",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "nori_sesame_bianca",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "provencale",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "lorraine_pizza",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "perigourdine",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "pistou_pizza",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "alsacienne_choucroute",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "basquaise",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "lyonnaise",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "normandie_camembert",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "jerusalem",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "shakshuka",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "nutella_fraises",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "tarte_tatin_pizza",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "poire_chocolat",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "honey_fig_mascarpone",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "speculoos_banana",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "creme_brulee_pizza",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "crisommola",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "ricotta_miele_castagne",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "fragole_basilico",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "cioccolato_peperoncino",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "mela_cannella",
+      "status": "PASS",
+      "reason": "correct"
+    },
+    {
+      "id": "caramel_noisette",
+      "status": "PASS",
+      "reason": "correct"
+    }
+  ],
+  "failed": [
+    {
+      "id": "andouille_moutarde",
+      "status": "FAIL",
+      "reason": "The pizza contains round pepperoni slices instead of the expected sausage slices."
+    },
+    {
+      "id": "white_clam_apizza",
+      "status": "FAIL",
+      "reason": "This appears to be a garlic and herb focaccia or flatbread, not a clam pizza — no clams are visible and the base appears to be a seasoned bread rather than a pizza with the expected clam topping."
+    },
+    {
+      "id": "vodka_pizza",
+      "status": "FAIL",
+      "reason": "The pizza appears to have basil leaves on top, but the expected ingredients are pink vodka cream sauce and mozzarella only, with no basil specified."
+    },
+    {
+      "id": "california_bbq_chicken",
+      "status": "FAIL",
+      "reason": "The pizza contains red onion slices, which is not listed in the expected ingredients (BBQ sauce base, chicken pieces, mozzarella)."
+    },
+    {
+      "id": "detroit_veggie",
+      "status": "FAIL",
+      "reason": "The pizza contains what appears to be anchovies or dark fish fillets arranged in stripes across the top, which is not an expected ingredient."
+    }
+  ],
+  "date": "2026-04-24T02:19:54.367Z"
+}
