@@ -367,8 +367,8 @@ function FilterSection({ title, badge, open, onToggle, children }: {
 
 // ─── Pizza card ───────────────────────────────────────────────
 
-function PizzaCard({ pizza, qty, locale, onQtyChange, onTap }: {
-  pizza: Pizza; qty: number; locale: string;
+function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
+  pizza: Pizza; qty: number; locale: string; styleKey?: string;
   onQtyChange: (delta: number, e: React.MouseEvent) => void;
   onTap: () => void;
 }) {
@@ -390,7 +390,16 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap }: {
         {/* Left: image spanning all rows */}
         <div style={{ width: '52px', height: '52px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: '#1A1612' }}>
           <img
-            src={`/pizzas/${pizza.id}.png`}
+            src={(() => {
+              const variantMap: Record<string, string> = {
+                pizza_romana: `_pizza_romana`,
+                newyork: `_newyork`,
+                pan: `_pan`,
+              };
+              const suffix = styleKey && variantMap[styleKey];
+              if (suffix) return `/pizzas/${pizza.id}${suffix}.png`;
+              return `/pizzas/${pizza.id}.png`;
+            })()}
             alt={name}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -434,8 +443,8 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap }: {
 
 // ─── Pizza sheet ──────────────────────────────────────────────
 
-function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
-  pizza: Pizza; qty: number; locale: string;
+function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
+  pizza: Pizza; qty: number; locale: string; styleKey?: string;
   onQtyChange: (delta: number) => void;
   onClose: () => void;
 }) {
@@ -463,7 +472,16 @@ function PizzaSheet({ pizza, qty, locale, onQtyChange, onClose }: {
           {/* Big image — fixed height so full sheet fits on screen */}
           <div style={{ width: '100%', height: '180px', borderRadius: '10px', overflow: 'hidden', background: '#1A1612', marginBottom: '12px', flexShrink: 0 }}>
             <img
-              src={`/pizzas/${pizza.id}.png`}
+              src={(() => {
+                const variantMap: Record<string, string> = {
+                  pizza_romana: `_pizza_romana`,
+                  newyork: `_newyork`,
+                  pan: `_pan`,
+                };
+                const suffix = styleKey && variantMap[styleKey];
+                if (suffix) return `/pizzas/${pizza.id}${suffix}.png`;
+                return `/pizzas/${pizza.id}.png`;
+              })()}
               alt={pizza.name[l] ?? pizza.name.en}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -1514,6 +1532,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     pizza={pizza}
                     qty={getQty(pizza.id)}
                     locale={locale}
+                    styleKey={styleKey}
                     onQtyChange={(delta, e) => { e.stopPropagation(); changeQty(pizza.id, delta); }}
                     onTap={() => setSheetId(pizza.id)}
                   />
@@ -1579,6 +1598,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       pizza={pizza}
                       qty={getQty(pizza.id)}
                       locale={locale}
+                      styleKey={styleKey}
                       onQtyChange={(delta, e) => { e.stopPropagation(); changeQty(pizza.id, delta); }}
                       onTap={() => setSheetId(pizza.id)}
                     />
@@ -1593,6 +1613,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 pizza={sheetPizza}
                 qty={getQty(sheetPizza.id)}
                 locale={locale}
+                styleKey={styleKey}
                 onQtyChange={delta => changeQty(sheetPizza.id, delta)}
                 onClose={() => setSheetId(null)}
               />
