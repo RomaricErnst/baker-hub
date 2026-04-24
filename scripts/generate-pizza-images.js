@@ -409,20 +409,21 @@ const BASE_PIZZAS = [
   { id: 'amatriciana_pizza_pizza_romana',    prompt: ROMA('Red tomato base, crispy guanciale strips, grated pecorino, cracked black pepper.') },
   { id: 'bresaola_rucola_pizza_romana',      prompt: ROMA('White base, melted mozzarella, thin dark red bresaola slices draped after baking, fresh rocket, parmesan shavings.') },
   { id: 'speck_stracchino_pizza_romana',     prompt: ROMA('White stracchino cream base, thin speck ham slices draped loosely, melted mozzarella.') },
+
+  // New York variants for shared pizzas
+  { id: 'boscaiola_newyork',          prompt: NY('Red tomato base, dark forest mushrooms, crumbled loose Italian sausage pieces, melted mozzarella.') },
+  { id: 'pugliese_newyork',           prompt: NY('Red tomato base, black olives, capers, thin red onion, melted mozzarella.') },
+  { id: 'prosciutto_funghi_newyork',  prompt: NY('Red tomato base, melted mozzarella, thin cooked ham slices, sliced brown mushrooms.') },
+  { id: 'tonno_cipolla_red_newyork',  prompt: NY('Red tomato base, melted mozzarella, softened red onion rings, tuna flakes placed cold on top.') },
+  { id: 'funghi_salsiccia_newyork',   prompt: NY('Red tomato base, sliced mushrooms, crumbled loose Italian sausage pieces, melted mozzarella.') },
+  { id: 'salmone_rucola_newyork',     prompt: NY('White cream base, pink smoked salmon slices draped after baking, fresh rocket, capers.') },
+  { id: 'polpette_newyork',           prompt: NY('Red tomato base, large spherical meatballs baked in, melted mozzarella, basil.') },
+  { id: 'hot_honey_pepperoni_newyork',prompt: NY('Red tomato base, crispy pepperoni cups curled from heat, melted mozzarella, hot honey drizzle.') },
+  { id: 'vodka_pizza_newyork',        prompt: NY('Pale pink-orange vodka cream sauce base, melted mozzarella, fresh basil.') },
+  { id: 'ny_white_pizza_newyork',     prompt: NY('White garlic oil base, melted mozzarella, ricotta dollops.') },
+  { id: 'california_bbq_chicken_newyork', prompt: NY('Dark BBQ sauce base, grilled chicken pieces, red onion, melted mozzarella, fresh coriander after baking.') },
 ];
 
-// ── New York variants for shared pizzas ──
-{ id: 'boscaiola_newyork',          prompt: NY('Red tomato base, dark forest mushrooms, crumbled loose Italian sausage pieces, melted mozzarella.') },
-{ id: 'pugliese_newyork',           prompt: NY('Red tomato base, black olives, capers, thin red onion, melted mozzarella.') },
-{ id: 'prosciutto_funghi_newyork',  prompt: NY('Red tomato base, melted mozzarella, thin cooked ham slices, sliced brown mushrooms.') },
-{ id: 'tonno_cipolla_red_newyork',  prompt: NY('Red tomato base, melted mozzarella, softened red onion rings, tuna flakes placed cold on top.') },
-{ id: 'funghi_salsiccia_newyork',   prompt: NY('Red tomato base, sliced mushrooms, crumbled loose Italian sausage pieces, melted mozzarella.') },
-{ id: 'salmone_rucola_newyork',     prompt: NY('White cream base, pink smoked salmon slices draped after baking, fresh rocket, capers.') },
-{ id: 'polpette_newyork',           prompt: NY('Red tomato base, large spherical meatballs baked in, melted mozzarella, basil.') },
-{ id: 'hot_honey_pepperoni_newyork',prompt: NY('Red tomato base, crispy pepperoni cups curled from heat, melted mozzarella, hot honey drizzle.') },
-{ id: 'vodka_pizza_newyork',        prompt: NY('Pale pink-orange vodka cream sauce base, melted mozzarella, fresh basil.') },
-{ id: 'ny_white_pizza_newyork',     prompt: NY('White garlic oil base, melted mozzarella, ricotta dollops.') },
-{ id: 'california_bbq_chicken_newyork', prompt: NY('Dark BBQ sauce base, grilled chicken pieces, red onion, melted mozzarella, fresh coriander after baking.') },
 // ─────────────────────────────────────────────────────────────────────────────
 // Variant generation
 // ─────────────────────────────────────────────────────────────────────────────
