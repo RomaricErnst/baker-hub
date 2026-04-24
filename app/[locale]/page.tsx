@@ -13,7 +13,6 @@ import Timeline from '../components/Timeline';
 import BakeGuide from '../components/BakeGuide';
 import { getPrefPeakH_RT, getPrefRTWarmupH } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
-import ToppingSelector from '../components/ToppingSelector';
 import PizzaNight from '../components/PizzaNight';
 import FlourPicker from '../components/FlourPicker';
 import PrefermentPicker from '../components/PrefermentPicker';

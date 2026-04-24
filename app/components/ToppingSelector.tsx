@@ -73,6 +73,8 @@ interface Props {
   activePill: 'pizzas' | 'shopping' | 'party';
   onPillChange: (pill: 'pizzas' | 'shopping' | 'party') => void;
   t: (key: string) => string;
+  controlledQtys?: Qty;
+  onQtysChange?: (qtys: Qty) => void;
 }
 
 // ─── Sub-region maps ─────────────────────────────────────────
@@ -999,7 +1001,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange }: Props) {
   const l = locale as 'en' | 'fr';
 
   // Filter state
@@ -1050,16 +1052,19 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // Region parent selection
   const [regionParent, setRegionParent] = useState<'all' | 'italy' | 'france' | 'fusion'>('all');
 
-  // Quantities
-  const [qtys, setQtys] = useState<Qty>({});
+  // Quantities — controlled from parent when controlledQtys provided, otherwise internal
+  const [internalQtys, setInternalQtys] = useState<Qty>({});
+  const qtys: Qty = controlledQtys ?? internalQtys;
   const getQty = (id: string) => qtys[id] ?? 0;
   const totalQty = Object.values(qtys).reduce((a, b) => a + b, 0);
   const changeQty = (id: string, delta: number) => {
-    setQtys(prev => {
-      const next = { ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) };
-      if (!next[id]) delete next[id];
-      return next;
-    });
+    const next = { ...qtys, [id]: Math.max(0, (qtys[id] ?? 0) + delta) };
+    if (!next[id]) delete next[id];
+    if (controlledQtys !== undefined) {
+      onQtysChange?.(next);
+    } else {
+      setInternalQtys(next);
+    }
   };
 
   // Summary open

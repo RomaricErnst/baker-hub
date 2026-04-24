@@ -29,6 +29,7 @@ function pillToTab(pill: Pill): Tab {
 
 export default function PizzaNight({ locale, bakeTime, numItems, styleKey, t }: PizzaNightProps) {
   const [activeTab, setActiveTab] = useState<Tab>('pick');
+  const [qtys, setQtys] = useState<Record<string, number>>({});
 
   const showSelector = activeTab === 'pick' || activeTab === 'shop';
 
@@ -41,7 +42,7 @@ export default function PizzaNight({ locale, bakeTime, numItems, styleKey, t }: 
         locale={locale}
       />
 
-      {/* Keep ToppingSelector mounted across pick/shop to preserve qty state */}
+      {/* ToppingSelector stays mounted across pick/shop to preserve filter state */}
       <div style={{ display: showSelector ? 'block' : 'none' }}>
         <ToppingSelector
           locale={locale}
@@ -50,11 +51,26 @@ export default function PizzaNight({ locale, bakeTime, numItems, styleKey, t }: 
           onPillChange={(pill) => setActiveTab(pillToTab(pill))}
           t={t}
           styleKey={styleKey}
+          controlledQtys={qtys}
+          onQtysChange={setQtys}
         />
       </div>
 
-      {activeTab === 'prep' && <PrepTab />}
-      {activeTab === 'bake' && <BakeTab />}
+      {activeTab === 'prep' && (
+        <PrepTab
+          bakeTime={bakeTime}
+          locale={locale}
+          selectedPizzas={qtys}
+          onGoToBake={() => setActiveTab('bake')}
+        />
+      )}
+
+      {activeTab === 'bake' && (
+        <BakeTab
+          selectedPizzas={qtys}
+          locale={locale}
+        />
+      )}
     </div>
   );
 }

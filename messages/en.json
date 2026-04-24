@@ -1165,5 +1165,34 @@
       "prep": "Prep",
       "bake": "Bake"
     }
+  },
+  "prep": {
+    "header": {
+      "title": "Your bake is at {time}",
+      "subtitle": "{n} min from now",
+      "past": "Bake time"
+    },
+    "bucket": {
+      "now": "NOW",
+      "30min": "30 MIN BEFORE BAKE",
+      "15min": "15 MIN BEFORE BAKE",
+      "ready": "READY TO BAKE"
+    },
+    "cta": "Continue to Bake"
+  },
+  "bake": {
+    "header": {
+      "title": "Time to bake",
+      "subtitle": "Tap a pizza to see what goes on"
+    },
+    "section": {
+      "before": "BEFORE THE BAKE",
+      "after": "AFTER THE BAKE"
+    },
+    "photo": {
+      "button": "Take a photo"
+    },
+    "back": "Back",
+    "perPizza": "per pizza"
   }
 }

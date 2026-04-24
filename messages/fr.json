@@ -1165,5 +1165,34 @@
       "prep": "Préparer",
       "bake": "Cuire"
     }
+  },
+  "prep": {
+    "header": {
+      "title": "Votre cuisson est à {time}",
+      "subtitle": "dans {n} min",
+      "past": "Heure de cuisson"
+    },
+    "bucket": {
+      "now": "MAINTENANT",
+      "30min": "30 MIN AVANT LA CUISSON",
+      "15min": "15 MIN AVANT LA CUISSON",
+      "ready": "PRÊT À ENFOURNER"
+    },
+    "cta": "Passer à la cuisson"
+  },
+  "bake": {
+    "header": {
+      "title": "C'est l'heure",
+      "subtitle": "Touchez une pizza pour voir les garnitures"
+    },
+    "section": {
+      "before": "AVANT L'ENFOURNEMENT",
+      "after": "APRÈS LA CUISSON"
+    },
+    "photo": {
+      "button": "Prendre une photo"
+    },
+    "back": "Retour",
+    "perPizza": "par pizza"
   }
 }
