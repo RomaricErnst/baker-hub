@@ -125,6 +125,7 @@ const ING: Record<string, Ingredient> = {
     id: 'creme_fraiche', category: 'base', bakeOrder: 'before',
     name: { en: 'Crème fraîche', fr: 'Crème fraîche' },
     prepNote: { en: 'Spread thinly — stable at high heat, slightly tangy', fr: 'Étaler finement — stable à haute chaleur, légèrement acidulée' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: 'per pizza', noteFR: 'par pizza' },
     localSwap: {
       singapore: {
         name: { en: 'President Crème Fraîche (Marketplace) or President Whipping Cream', fr: 'Crème fraîche Président (Marketplace) ou President Whipping' },
@@ -181,6 +182,7 @@ const ING: Record<string, Ingredient> = {
     id: 'chevre_frais', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Chèvre frais (fresh goat cheese)', fr: 'Chèvre frais' },
     prepNote: { en: 'Crumble or slice — place after spreading olive oil base', fr: 'Émietter ou trancher — poser après l\'huile d\'olive' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: 'per pizza', noteFR: 'par pizza' },
     goodEnough: { name: { en: 'Any fresh mild goat cheese log', fr: 'N\'importe quelle bûchette de chèvre doux' } },
     localSwap: {
       singapore: { name: { en: 'Goat cheese — Marketplace, Ryan\'s Grocery or Cold Storage', fr: 'Fromage de chèvre — Marketplace, Ryan\'s ou Cold Storage' } },
@@ -191,6 +193,7 @@ const ING: Record<string, Ingredient> = {
     id: 'mozzarella_lm', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Low-moisture mozzarella', fr: 'Mozzarella faible humidité' },
     prepNote: { en: 'Grate or slice thin — melts evenly without excess water', fr: 'Râper ou trancher fin — fond sans excès d\'eau' },
+    qtyPerPizza: { amount: 100, unit: 'g', noteEN: 'low-moisture block', noteFR: 'bloc faible humidité' },
   },
 
   fourCheeses: {
@@ -207,6 +210,7 @@ const ING: Record<string, Ingredient> = {
     id: 'nduja', category: 'meat', bakeOrder: 'before',
     name: { en: 'Nduja', fr: 'Nduja' },
     prepNote: { en: 'Spread directly on base before other toppings', fr: 'Étaler directement sur la base avant les autres garnitures' },
+    qtyPerPizza: { amount: 40, unit: 'g', noteEN: 'spread generously', noteFR: 'étaler généreusement' },
     goodEnough: { name: { en: 'Chorizo paste or spicy sobrasada', fr: 'Pâte de chorizo ou sobrasada épicée' } },
     localSwap: {
       singapore: {
@@ -257,6 +261,7 @@ const ING: Record<string, Ingredient> = {
     id: 'grilled_chicken', category: 'meat', bakeOrder: 'before',
     name: { en: 'Grilled chicken', fr: 'Poulet grillé' },
     prepNote: { en: 'Slice thin, season well before adding', fr: 'Trancher finement, bien assaisonner avant d\'ajouter' },
+    qtyPerPizza: { amount: 120, unit: 'g', noteEN: '1 breast per pizza', noteFR: '1 blanc par pizza' },
   },
 
   speck: {
@@ -295,6 +300,7 @@ const ING: Record<string, Ingredient> = {
     id: 'tuna', category: 'seafood', bakeOrder: 'before',
     name: { en: 'Good quality canned tuna in oil', fr: 'Thon de qualité à l\'huile' },
     prepNote: { en: 'Drain well before adding', fr: 'Bien égoutter avant d\'ajouter' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'drained weight', noteFR: 'poids égoutté' },
   },
 
   thinPotato: {
@@ -308,12 +314,14 @@ const ING: Record<string, Ingredient> = {
     id: 'mushrooms', category: 'veg', bakeOrder: 'before',
     name: { en: 'Mixed mushrooms', fr: 'Champignons mélangés' },
     prepNote: { en: 'Sauté briefly before adding — removes excess water', fr: 'Faire revenir brièvement — élimine l\'excès d\'eau' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'sliced', noteFR: 'émincés' },
   },
 
   porcini: {
     id: 'porcini', category: 'veg', bakeOrder: 'before',
     name: { en: 'Porcini mushrooms', fr: 'Cèpes' },
     prepNote: { en: 'Sauté in butter before adding', fr: 'Faire revenir au beurre avant d\'ajouter' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: 'fresh or rehydrated', noteFR: 'frais ou réhydratés' },
     goodEnough: { name: { en: 'Dried porcini (rehydrated) or chestnut mushrooms', fr: 'Cèpes séchés (réhydratés) ou champignons de châtaigne' } },
   },
 
@@ -321,6 +329,7 @@ const ING: Record<string, Ingredient> = {
     id: 'artichoke', category: 'veg', bakeOrder: 'before',
     name: { en: 'Artichoke hearts (jarred)', fr: 'Cœurs d\'artichaut (en bocal)' },
     prepNote: { en: 'Drain and halve before adding', fr: 'Égoutter et couper en deux avant d\'ajouter' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: 'hearts, quartered', noteFR: 'coeurs en quartiers' },
   },
 
   blackOlives: {
@@ -357,12 +366,14 @@ const ING: Record<string, Ingredient> = {
     id: 'spinach', category: 'veg', bakeOrder: 'before',
     name: { en: 'Fresh spinach', fr: 'Épinards frais' },
     prepNote: { en: 'Wilt briefly, squeeze out water completely before adding', fr: 'Faire tomber rapidement, presser l\'eau complètement avant d\'ajouter' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'fresh, wilts to ~30g', noteFR: 'frais, réduit à ~30g' },
   },
 
   aubergine: {
     id: 'aubergine', category: 'veg', bakeOrder: 'before',
     name: { en: 'Aubergine', fr: 'Aubergine' },
     prepNote: { en: 'Slice, salt 20 min, pat dry — roast or fry before adding', fr: 'Trancher, saler 20 min, sécher — rôtir ou frire avant d\'ajouter' },
+    qtyPerPizza: { amount: 100, unit: 'g', noteEN: 'sliced and grilled', noteFR: 'tranché et grillé' },
   },
 
   courgette: {
@@ -413,6 +424,7 @@ const ING: Record<string, Ingredient> = {
     id: 'gorgonzola', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Gorgonzola dolce', fr: 'Gorgonzola dolce' },
     prepNote: { en: 'Crumble over base — melts beautifully', fr: 'Émietter sur la base — fond magnifiquement' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: 'crumbled', noteFR: 'émietté' },
     goodEnough: { name: { en: 'Any creamy blue cheese', fr: 'N\'importe quel fromage bleu crémeux' } },
   },
 
@@ -463,6 +475,7 @@ const ING: Record<string, Ingredient> = {
     id: 'truffle_oil', category: 'finish', bakeOrder: 'after',
     name: { en: 'Truffle oil', fr: 'Huile de truffe' },
     prepNote: { en: 'Drizzle after baking — never cook truffle oil', fr: 'Arroser après cuisson — ne jamais cuire l\'huile de truffe' },
+    qtyPerPizza: { amount: 10, unit: 'ml', noteEN: 'drizzle only', noteFR: 'filet seulement' },
   },
 
   honey: {
@@ -622,6 +635,7 @@ const ING: Record<string, Ingredient> = {
     id: 'caramelised_apple', category: 'veg', bakeOrder: 'before',
     name: { en: 'Caramelised apple', fr: 'Pomme caramélisée' },
     prepNote: { en: 'Cook apple slices in butter and brown sugar 10 min before adding', fr: 'Cuire les tranches de pomme dans beurre et cassonade 10 min avant d\'ajouter' },
+    qtyPerPizza: { amount: 1, unit: 'pcs', noteEN: '1 apple per pizza', noteFR: '1 pomme par pizza' },
   },
 
   cinnamon: {
@@ -649,6 +663,7 @@ const ING: Record<string, Ingredient> = {
     id: 'almond_flakes', category: 'finish', bakeOrder: 'before',
     name: { en: 'Almond flakes', fr: 'Amandes effilées' },
     prepNote: { en: 'Toast lightly before adding', fr: 'Légèrement torréfier avant d\'ajouter' },
+    qtyPerPizza: { amount: 20, unit: 'g', noteEN: 'toasted', noteFR: 'grillées' },
   },
 
   asparagus: {
@@ -727,6 +742,7 @@ const ING: Record<string, Ingredient> = {
     id: 'ossau_iraty', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Ossau-Iraty (Basque sheep cheese)', fr: 'Ossau-Iraty' },
     prepNote: { en: 'Slice or grate — nutty, slightly tangy', fr: 'Trancher ou râper — noiseté, légèrement acidulé' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: 'sliced thin', noteFR: 'tranché fin' },
     goodEnough: { name: { en: 'Manchego or any mild sheep cheese', fr: 'Manchego ou tout fromage de brebis doux' } },
     localSwap: {
       singapore: { name: { en: 'Manchego — Marketplace or Ryan\'s Grocery', fr: 'Manchego — Marketplace ou Ryan\'s Grocery' } },
@@ -750,6 +766,7 @@ const ING: Record<string, Ingredient> = {
     id: 'caramelised_onion', category: 'veg', bakeOrder: 'before',
     name: { en: 'Caramelised onion', fr: 'Oignon caramélisé' },
     prepNote: { en: 'Cook sliced onion low and slow 25 min in butter — deeply sweet', fr: 'Cuire l\'oignon émincé à feu doux 25 min dans du beurre — très doux et sucré' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '2 onions cooked down', noteFR: '2 oignons fondus' },
   },
 
   camembert: {
