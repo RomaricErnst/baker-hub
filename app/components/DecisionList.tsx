@@ -6,6 +6,7 @@ interface Option {
   title: string;
   tagline: string;
   badge?: string;
+  thumbnailBg?: string;
 }
 
 interface DecisionListProps {
@@ -35,8 +36,15 @@ export default function DecisionList({ options, selectedId, onSelect }: Decision
               background: isSelected ? 'rgba(212,168,83,0.08)' : 'white',
             }}
           >
-            <div style={{ width: '44px', height: '44px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: '#1A1612' }}>
-              <img src={option.image} alt={option.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div style={{
+              width: '44px', height: '44px',
+              borderRadius: option.thumbnailBg ? '50%' : '8px',
+              overflow: 'hidden', flexShrink: 0,
+              background: option.thumbnailBg ?? '#1A1612',
+            }}>
+              {!option.thumbnailBg && option.image && (
+                <img src={option.image} alt={option.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

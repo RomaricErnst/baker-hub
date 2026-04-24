@@ -82,14 +82,11 @@ async function generateAll() {
     try {
       console.log('[' + (i+1) + '/' + total + '] 🎨 Generating: ' + v.id + '...');
       const response = await client.images.generate({
-        model: 'dall-e-3',
-        prompt: v.prompt,
-        n: 1,
-        size: '1024x1024',
-        quality: 'standard',
-        response_format: 'url',
-      });
-      await downloadImage(response.data[0].url, filepath);
+  model: 'gpt-image-2', prompt: v.prompt, n: 1,
+  size: '1024x1024', quality: 'medium',
+});
+const imageBuffer = Buffer.from(response.data[0].b64_json, 'base64');
+fs.writeFileSync(filepath, imageBuffer);
       console.log('[' + (i+1) + '/' + total + '] ✅ ' + v.id + '.png');
       generated++;
     } catch (err) {

@@ -1,7 +1,9 @@
 'use client';
 import { useState } from 'react';
-import { useLocale } from 'next-intl';
-import { MIXER_TYPES, type MixerType } from '../data';
+import { useTranslations } from 'next-intl';
+import { type MixerType } from '../data';
+import DecisionList from './DecisionList';
+import DecisionSummary from './DecisionSummary';
 
 interface MixerPickerProps {
   selected: MixerType | null;
@@ -17,111 +19,66 @@ const NO_KNEAD_WARNING: Partial<Record<string, string>> = {
 };
 
 export default function MixerPicker({ selected, onSelect, styleKey, bakeType, kitchenTemp }: MixerPickerProps) {
-  const locale = useLocale();
-  const isFr = locale === 'fr';
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const t = useTranslations('mixer');
+  const [expanded, setExpanded] = useState(!selected);
+
+  const options = [
+    { id: 'stand',    image: '/mixer_stand.png',   title: t('stand.title'),    tagline: t('stand.tagline') },
+    { id: 'hand',     image: '/mixer_hand.png',    title: t('hand.title'),     tagline: t('hand.tagline') },
+    { id: 'no_knead', image: '/mixer_noknead.png', title: t('no_knead.title'), tagline: t('no_knead.tagline') },
+    { id: 'spiral',   image: '/mixer_spiral.png',  title: t('spiral.title'),   tagline: t('spiral.tagline') },
+  ];
+
+  const selectedOpt = options.find(o => o.id === selected);
 
   return (
     <>
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-      gap: '.75rem',
-    }}>
-      {(Object.entries(MIXER_TYPES) as [MixerType, typeof MIXER_TYPES[MixerType]][]).map(([key, mixer]) => {
-        const isSelected = selected === key;
-        const imgSrc = (mixer as { image?: string }).image;
-        return (
-          <div
-            key={key}
-            onClick={() => onSelect(key)}
-            onMouseEnter={() => setHoveredKey(key)}
-            onMouseLeave={() => setHoveredKey(null)}
-            style={{
-              border: `2px solid ${isSelected ? 'var(--terra)' : 'var(--border)'}`,
-              borderRadius: '18px',
-              padding: '1rem .75rem',
-              cursor: 'pointer',
-              background: isSelected ? '#FFF8F3' : 'var(--warm)',
-              transition: 'all .25s',
-              boxShadow: hoveredKey === key ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
-              transform: hoveredKey === key ? 'translateY(-3px)' : 'none',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-            }}
-          >
-            {imgSrc ? (
-              <img
-                src={imgSrc}
-                alt={mixer.name}
-                style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: '10px', marginBottom: '.6rem' }}
-              />
-            ) : (
-              <span style={{ fontSize: '2rem', marginBottom: '.6rem' }}>{mixer.emoji}</span>
-            )}
-            <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.25rem', color: 'var(--char)' }}>
-              {isFr && (mixer as { nameFr?: string }).nameFr ? (mixer as { nameFr: string }).nameFr : mixer.name}
-            </div>
-            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', lineHeight: 1.45, marginBottom: '.5rem' }}>
-              {isFr && (mixer as { descFr?: string }).descFr ? (mixer as { descFr: string }).descFr : mixer.desc}
-            </div>
-            <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <span style={{
-                fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-                background: isSelected ? '#FCDECE' : '#F5F7F0',
-                color: isSelected ? 'var(--terra)' : 'var(--smoke)',
-                borderRadius: '5px', padding: '.2rem .4rem',
-              }}>
-                max {mixer.maxHydration === 100 ? '∞' : `${mixer.maxHydration}%`}
-              </span>
-              <span style={{
-                fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-                background: isSelected ? '#FCDECE' : '#F5F7F0',
-                color: isSelected ? 'var(--terra)' : 'var(--smoke)',
-                borderRadius: '5px', padding: '.2rem .4rem',
-              }}>
-                {mixer.folds}× folds
-              </span>
-            </div>
+      {!expanded && selectedOpt ? (
+        <DecisionSummary
+          thumbnail={selectedOpt.image}
+          title={selectedOpt.title}
+          tagline={selectedOpt.tagline}
+          onExpand={() => setExpanded(true)}
+        />
+      ) : (
+        <div>
+          <div style={{ marginBottom: 16 }}>
+            <h2 style={{ fontFamily: 'Playfair Display', fontSize: 22, fontWeight: 700, color: 'var(--char)', margin: 0 }}>
+              {t('heading')}
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '4px 0 0', fontFamily: 'DM Sans' }}>
+              {t('subtitle')}
+            </p>
           </div>
-        );
-      })}
-    </div>
-    {selected === 'spiral' && kitchenTemp !== undefined && kitchenTemp >= 26 && (
-      <div style={{
-        marginTop: '.75rem',
-        background: '#EEF6FF',
-        border: '1.5px solid #B0CDE8',
-        borderRadius: '10px',
-        padding: '.7rem .9rem',
-        fontSize: '.78rem',
-        color: '#3A5F80',
-        lineHeight: 1.55,
-        display: 'flex',
-        gap: '.5rem',
-        alignItems: 'flex-start',
-      }}>
-        <span>🧊</span>
-        <span>Use ice-cold water or add ice cubes to your mixing bowl at this temperature.</span>
-      </div>
-    )}
-    {selected === 'no_knead' && bakeType === 'pizza' && styleKey && NO_KNEAD_WARNING[styleKey] && (
-      <div style={{
-        marginTop: '.75rem',
-        background: '#FFF8E8',
-        border: '1.5px solid #E8D080',
-        borderRadius: '10px',
-        padding: '.7rem .9rem',
-        fontSize: '.78rem',
-        color: '#7A5A10',
-        lineHeight: 1.55,
-        display: 'flex',
-        gap: '.5rem',
-        alignItems: 'flex-start',
-      }}>
-        <span>⚠️</span>
-        <span>{NO_KNEAD_WARNING[styleKey]}</span>
-      </div>
-    )}
+          <DecisionList
+            options={options}
+            selectedId={selected ?? ''}
+            onSelect={(id) => { onSelect(id as MixerType); setExpanded(false); }}
+          />
+        </div>
+      )}
+
+      {/* Contextual warnings — always visible after selection */}
+      {selected === 'spiral' && kitchenTemp !== undefined && kitchenTemp >= 26 && (
+        <div style={{
+          marginTop: '.75rem', background: '#EEF6FF', border: '1.5px solid #B0CDE8',
+          borderRadius: '10px', padding: '.7rem .9rem', fontSize: '.78rem',
+          color: '#3A5F80', lineHeight: 1.55, display: 'flex', gap: '.5rem', alignItems: 'flex-start',
+        }}>
+          <span>🧊</span>
+          <span>Use ice-cold water or add ice cubes to your mixing bowl at this temperature.</span>
+        </div>
+      )}
+      {selected === 'no_knead' && bakeType === 'pizza' && styleKey && NO_KNEAD_WARNING[styleKey] && (
+        <div style={{
+          marginTop: '.75rem', background: '#FFF8E8', border: '1.5px solid #E8D080',
+          borderRadius: '10px', padding: '.7rem .9rem', fontSize: '.78rem',
+          color: '#7A5A10', lineHeight: 1.55, display: 'flex', gap: '.5rem', alignItems: 'flex-start',
+        }}>
+          <span>⚠️</span>
+          <span>{NO_KNEAD_WARNING[styleKey]}</span>
+        </div>
+      )}
     </>
   );
 }

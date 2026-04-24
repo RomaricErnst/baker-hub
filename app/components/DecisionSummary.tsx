@@ -2,13 +2,14 @@
 import { useTranslations } from 'next-intl';
 
 interface DecisionSummaryProps {
-  thumbnail: string;
+  thumbnail?: string;
+  thumbnailBg?: string;
   title: string;
   tagline: string;
   onExpand: () => void;
 }
 
-export default function DecisionSummary({ thumbnail, title, tagline, onExpand }: DecisionSummaryProps) {
+export default function DecisionSummary({ thumbnail, thumbnailBg, title, tagline, onExpand }: DecisionSummaryProps) {
   const t = useTranslations('decisionSummary');
 
   return (
@@ -26,8 +27,15 @@ export default function DecisionSummary({ thumbnail, title, tagline, onExpand }:
         cursor: 'pointer',
       }}
     >
-      <div style={{ width: '44px', height: '44px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: '#1A1612' }}>
-        <img src={thumbnail} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      <div style={{
+        width: '44px', height: '44px',
+        borderRadius: thumbnailBg ? '50%' : '8px',
+        overflow: 'hidden', flexShrink: 0,
+        background: thumbnailBg ?? '#1A1612',
+      }}>
+        {thumbnail && !thumbnailBg && (
+          <img src={thumbnail} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        )}
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
         <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '15px', fontWeight: 600, color: 'var(--char)' }}>

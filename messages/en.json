@@ -230,7 +230,14 @@
     "feedStarter": "Feed Starter",
     "makePreferment": "Make Preferment",
     "hydration": "hydration",
-    "coldFerment": "❄ Cold ferment"
+    "coldFerment": "❄ Cold ferment",
+    "heading": "Preferment",
+    "subtitle": "Optional head start for flavour and structure.",
+    "none": { "title": "None", "tagline": "Straight dough, simplest path" },
+    "poolish": { "title": "Poolish", "tagline": "Liquid, tangier, 12–18h window" },
+    "biga": { "title": "Biga", "tagline": "Stiff, forgiving, up to 72h" },
+    "levain": { "title": "Levain", "tagline": "Sourdough-based, naturally leavened" },
+    "recommended": "Recommended"
   },
   "yeastDesc": {
     "simple": {
@@ -270,7 +277,13 @@
     "priority": "Fermentation priority",
     "priorityFlavour": "🐢 Flavour first",
     "priorityBalanced": "⚖️ Balanced",
-    "prioritySpeed": "⚡ Faster proof"
+    "prioritySpeed": "⚡ Faster proof",
+    "heading": "Your kitchen",
+    "subtitle": "Your climate decides how fast the dough ferments.",
+    "cool": { "title": "Cool kitchen", "tagline": "Slow ferment, more time flexibility", "badge": "under 20°C" },
+    "normal": { "title": "Temperate", "tagline": "Standard Western recipe timing", "badge": "20–26°C" },
+    "warm": { "title": "Mediterranean", "tagline": "Balanced, forgiving schedules", "badge": "26–30°C" },
+    "tropical": { "title": "Tropical", "tagline": "Fast ferment, cold retard essential", "badge": "30°C+" }
   },
   "timeline": {
     "bakingProtocol": "Your baking protocol",
@@ -1115,5 +1128,34 @@
   },
   "decisionSummary": {
     "change": "CHANGE"
+  },
+  "oven": {
+    "heading": "Your oven",
+    "subtitle": "Shapes your bake time and temperature.",
+    "home":      { "title": "Home oven",      "tagline": "Up to 280°C, 6–8 min bake" },
+    "stone":     { "title": "Pizza stone",    "tagline": "Thermal mass, crispier base" },
+    "steel":     { "title": "Pizza steel",    "tagline": "Faster heat transfer, pro-level crust" },
+    "ooni":      { "title": "Ooni / Koda",    "tagline": "450°C+, 60–90 sec bake" },
+    "gozney":    { "title": "Gozney Dome",    "tagline": "High-heat outdoor, versatile" },
+    "woodfired": { "title": "Wood-fired",     "tagline": "Traditional, smoky char" },
+    "deck":      { "title": "Deck oven",      "tagline": "Commercial-style even heat" },
+    "pan":       { "title": "Pan / sheet",    "tagline": "For Detroit, pan, focaccia" },
+    "convection":{ "title": "Convection",     "tagline": "Fan-assisted, quicker browning" }
+  },
+  "mixer": {
+    "heading": "Your mixer",
+    "subtitle": "Affects dough development and friction.",
+    "stand":    { "title": "Stand mixer",  "tagline": "KitchenAid-style, 8 min knead" },
+    "hand":     { "title": "Hand knead",   "tagline": "Traditional, 10–15 min" },
+    "no_knead": { "title": "No knead",     "tagline": "Hands-off, long ferment does the work" },
+    "spiral":   { "title": "Spiral mixer", "tagline": "Pro equipment, fast development" }
+  },
+  "yeast": {
+    "heading": "Your yeast",
+    "subtitle": "How you'll leaven the dough.",
+    "idy":       { "title": "Instant dry yeast",  "tagline": "Most common, no activation needed" },
+    "ady":       { "title": "Active dry yeast",   "tagline": "Needs warm water to wake up" },
+    "fresh":     { "title": "Fresh yeast",        "tagline": "Cake yeast, strongest flavor" },
+    "sourdough": { "title": "Sourdough starter",  "tagline": "Natural leaven, tangy, slower" }
   }
 }

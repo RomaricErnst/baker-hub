@@ -230,7 +230,14 @@
     "feedStarter": "Nourrir le levain",
     "makePreferment": "Préparer le pré-ferment",
     "hydration": "hydratation",
-    "coldFerment": "❄ Fermentation froide"
+    "coldFerment": "❄ Fermentation froide",
+    "heading": "Pré-ferment",
+    "subtitle": "Tête de fermentation optionnelle pour la saveur et la structure.",
+    "none":    { "title": "Aucun",    "tagline": "Pâte directe, le chemin le plus simple" },
+    "poolish": { "title": "Poolish",  "tagline": "Liquide, acidulé, fenêtre de 12–18h" },
+    "biga":    { "title": "Biga",     "tagline": "Solide, flexible, jusqu'à 72h" },
+    "levain":  { "title": "Levain",   "tagline": "À base de levain, fermentation naturelle" },
+    "recommended": "Recommandé"
   },
   "yeastDesc": {
     "simple": {
@@ -270,7 +277,13 @@
     "priority": "Priorité de fermentation",
     "priorityFlavour": "🐢 Saveur avant tout",
     "priorityBalanced": "⚖️ Équilibré",
-    "prioritySpeed": "⚡ Pousse rapide"
+    "prioritySpeed": "⚡ Pousse rapide",
+    "heading": "Votre cuisine",
+    "subtitle": "Le climat décide de la vitesse de fermentation.",
+    "cool":     { "title": "Cuisine fraîche",    "tagline": "Fermentation lente, plus de flexibilité", "badge": "moins de 20°C" },
+    "normal":   { "title": "Tempérée",           "tagline": "Timing standard des recettes occidentales", "badge": "20–26°C" },
+    "warm":     { "title": "Méditerranéenne",    "tagline": "Équilibrée, horaires flexibles", "badge": "26–30°C" },
+    "tropical": { "title": "Tropicale",          "tagline": "Fermentation rapide, pousse au froid indispensable", "badge": "30°C+" }
   },
   "timeline": {
     "bakingProtocol": "Votre protocole de cuisson",
@@ -1115,5 +1128,34 @@
   },
   "decisionSummary": {
     "change": "CHANGER"
+  },
+  "oven": {
+    "heading": "Votre four",
+    "subtitle": "Définit la durée et la température de cuisson.",
+    "home":      { "title": "Four domestique",  "tagline": "Jusqu'à 280°C, cuisson 6–8 min" },
+    "stone":     { "title": "Pierre à pizza",   "tagline": "Masse thermique, base plus croustillante" },
+    "steel":     { "title": "Acier à pizza",    "tagline": "Transfert rapide, croûte niveau pro" },
+    "ooni":      { "title": "Ooni / Koda",      "tagline": "450°C+, cuisson 60–90 sec" },
+    "gozney":    { "title": "Gozney Dome",      "tagline": "Haute chaleur extérieure, polyvalent" },
+    "woodfired": { "title": "Feu de bois",      "tagline": "Traditionnel, fumé et carbonisé" },
+    "deck":      { "title": "Four à sole",      "tagline": "Chaleur uniforme style professionnel" },
+    "pan":       { "title": "Plaque / teglia",  "tagline": "Pour Detroit, pan, focaccia" },
+    "convection":{ "title": "Convection",       "tagline": "Ventilé, brunissement plus rapide" }
+  },
+  "mixer": {
+    "heading": "Votre méthode",
+    "subtitle": "Influence le développement du gluten et la friction.",
+    "stand":    { "title": "Robot pâtissier",         "tagline": "Type KitchenAid, 8 min de pétrissage" },
+    "hand":     { "title": "Pétrissage à la main",    "tagline": "Traditionnel, 10–15 min" },
+    "no_knead": { "title": "Sans pétrissage",         "tagline": "Sans effort, la fermentation fait le travail" },
+    "spiral":   { "title": "Pétrin spiral",           "tagline": "Équipement pro, développement rapide" }
+  },
+  "yeast": {
+    "heading": "Votre levure",
+    "subtitle": "Comment vous allez faire lever la pâte.",
+    "idy":       { "title": "Levure sèche instantanée", "tagline": "La plus courante, aucune activation nécessaire" },
+    "ady":       { "title": "Levure sèche active",      "tagline": "Nécessite de l'eau tiède pour s'activer" },
+    "fresh":     { "title": "Levure fraîche",           "tagline": "Levure en bloc, saveur la plus riche" },
+    "sourdough": { "title": "Levain",                   "tagline": "Fermentation naturelle, acidulé, plus lent" }
   }
 }

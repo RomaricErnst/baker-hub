@@ -1,7 +1,7 @@
 // scripts/audit-pizza-images.js
-// Audits all generated pizza images using Claude vision
-// Run AFTER generate-pizza-images.js completes
-// Usage: node scripts/audit-pizza-images.js
+// Audits pizza images for WRONG INGREDIENTS ONLY
+// Ignores: flour dust, decorations, plates/boards, lighting, background issues
+// Run: node scripts/audit-pizza-images.js
 
 const Anthropic = require('@anthropic-ai/sdk');
 const fs = require('fs');
@@ -11,158 +11,161 @@ require('dotenv').config({ path: '.env.local' });
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const PIZZAS_DIR = path.join(__dirname, '../public/pizzas');
 const REPORT_PATH = path.join(__dirname, '../public/pizzas/_audit_report.json');
-const DELAY_MS = 1000;
+const DELAY_MS = 1200;
 
+// ONLY check for wrong ingredients — ignore background, flour, plate, lighting
 const PIZZAS = [
-  { id: 'margherita', expect: 'tomato sauce, mozzarella, basil — NO meat, NO salami, NO pepperoni' },
-  { id: 'marinara', expect: 'tomato sauce, garlic, oregano — NO cheese, NO meat, NO salami' },
-  { id: 'diavola', expect: 'spicy salami slices, mozzarella, chilli' },
-  { id: 'quattro_formaggi', expect: 'four cheeses, white base — NO meat, NO salami, NO pepperoni' },
-  { id: 'capricciosa', expect: 'ham, mushrooms, olives, artichoke — NO salami, NO pepperoni' },
-  { id: 'napoli', expect: 'anchovies, capers, olives — NO salami, NO pepperoni, NO meat' },
-  { id: 'pepperoni', expect: 'pepperoni slices, mozzarella, tomato' },
-  { id: 'nduja_mozzarella', expect: 'orange-red nduja spread, mozzarella — NO salami rounds, NO pepperoni' },
-  { id: 'tonno_cipolla', expect: 'tuna chunks, onion rings — NO meat, NO salami' },
-  { id: 'smoked_salmon_creme', expect: 'pink salmon slices, creme fraiche, dill, capers — NO meat, NO salami' },
-  { id: 'ortolana', expect: 'courgette, aubergine, peppers — NO meat, NO salami, NO pepperoni' },
-  { id: 'funghi_tartufo', expect: 'mushrooms, truffle — NO meat, NO salami, NO pepperoni' },
-  { id: 'patate_rosmarino', expect: 'thin potato slices, rosemary — NO meat, NO salami, NO pepperoni' },
-  { id: 'bianca_ricotta_spinaci', expect: 'ricotta, dark green spinach, white base — NO meat, NO salami' },
-  { id: 'truffle_bianca', expect: 'truffle shavings, white cream base — NO meat, NO salami' },
-  { id: 'prosciutto_rucola', expect: 'thin pink prosciutto ham draped, green rocket leaves — NOT salami rounds' },
-  { id: 'burrata_prosciutto', expect: 'whole burrata cheese, prosciutto — NOT salami rounds' },
-  { id: 'fig_gorgonzola', expect: 'halved figs, blue gorgonzola, walnuts, honey — NO meat, NO salami' },
-  { id: 'pear_walnut_gorgonzola', expect: 'pear slices, walnuts, blue cheese, honey — NO meat, NO salami' },
-  { id: 'bbq_chicken', expect: 'BBQ sauce base, grilled chicken pieces, red onion — NO salami, NO pepperoni' },
-  { id: 'speck_brie', expect: 'smoked speck ham slices, melted brie — NOT salami rounds' },
-  { id: 'tarte_flambee', expect: 'creme fraiche base, smoked lardons, white onion slices — NO salami, NO pepperoni' },
-  { id: 'raclette_pommes', expect: 'melted raclette cheese, potato slices, lardons — NO salami, NO pepperoni' },
-  { id: 'chevre_miel', expect: 'goat cheese rounds, honey drizzle, thyme — NO salami, NO pepperoni, NO cured meat rounds of any kind' },
-  { id: 'andouille_moutarde', expect: 'sausage slices, mustard base, onions — NOT pepperoni-style rounds' },
-  { id: 'maroilles_onion', expect: 'orange-rind cheese slices, golden caramelised onions — NO salami, NO pepperoni' },
-  { id: 'jambon_bayonne', expect: 'thin ham slices, red pepper flakes — NOT salami rounds, NOT pepperoni' },
-  { id: 'camembert_apple', expect: 'camembert wedges, apple slices, lardons — NO salami, NO pepperoni' },
-  { id: 'tartiflette', expect: 'reblochon cheese melted, potato slices, lardons — NO salami, NO pepperoni' },
-  { id: 'la_reine', expect: 'ham slices, mushrooms, black olives — NO salami rounds, NO pepperoni' },
-  { id: 'la_royale', expect: 'ham and salami slices, red and green peppers' },
-  { id: 'la_paysanne', expect: 'lardons, potato slices, creme fraiche — NO salami, NO pepperoni' },
-  { id: 'quatre_saisons', expect: 'four distinct quarters: artichoke, ham, olives, mushrooms' },
-  { id: 'margherita_sbagliata', expect: 'tomato dollops on top, mozzarella baked into white base, basil — NO meat' },
-  { id: 'cosacca', expect: 'tomato sauce, grated pecorino, basil — NO mozzarella, NO meat, NO salami' },
-  { id: 'salsiccia_friarielli', expect: 'sausage pieces, dark green broccoli rabe, white base — NOT pepperoni rounds' },
-  { id: 'provola_pepe', expect: 'smoked cheese melted, cracked black pepper — NO meat, NO salami' },
-  { id: 'acciughe_pomodorini', expect: 'anchovy fillets, halved cherry tomatoes, capers — NO salami, NO pepperoni' },
-  { id: 'melanzane_parmigiana', expect: 'layered aubergine, parmesan, tomato, basil — NO meat, NO salami' },
-  { id: 'zucca_provola', expect: 'orange pumpkin slices, smoked provola — NO meat, NO salami' },
-  { id: 'boscaiola', expect: 'forest mushrooms, sausage pieces, tomato — NOT pepperoni rounds' },
-  { id: 'bismarck', expect: 'whole egg cracked in center, ham, mushrooms — NOT salami rounds' },
-  { id: 'pugliese', expect: 'black olives, capers, red onion slices — NO salami, NO pepperoni, NO meat' },
-  { id: 'prosciutto_funghi', expect: 'ham slices, mushrooms — NOT salami rounds, NOT pepperoni' },
-  { id: 'tonno_cipolla_rossa', expect: 'tuna flakes, red onion rings — NO meat, NO salami' },
-  { id: 'piennolo', expect: 'Vesuvian cherry tomatoes halved, basil, olive oil — NO cheese, NO meat, absolutely nothing else' },
-  { id: 'funghi_salsiccia', expect: 'earthy mushrooms, sausage pieces — NOT round pepperoni-style slices' },
-  { id: 'salmone_rucola', expect: 'pink smoked salmon, fresh green rocket, capers — NO meat, NO salami' },
-  { id: 'acciughe_burro', expect: 'anchovy fillets, white butter base — NO salami, NO pepperoni' },
-  { id: 'pollo_pesto', expect: 'green pesto base, grilled chicken slices, cherry tomatoes — NO salami' },
-  { id: 'genovese', expect: 'green pesto base, thin potato slices, green beans — NO meat, NO salami' },
-  { id: 'polpette', expect: 'round meatballs (large irregular), tomato, basil — NOT pepperoni-style rounds' },
-  { id: 'diavola_burrata', expect: 'spicy salami rounds, mozzarella, whole burrata placed on top cold' },
-  { id: 'pistadella', expect: 'mortadella slices draped (large pink), green pistachio pesto — NOT salami rounds' },
-  { id: 'stracciatella_datterini', expect: 'small datterini tomatoes, white stracciatella dollops — NO meat, NO salami' },
-  { id: 'nduja_burrata', expect: 'orange-red nduja spread base, whole burrata in center — NO salami rounds, NO pepperoni' },
-  { id: 'tartufo_fior_di_latte', expect: 'fior di latte mozzarella, truffle oil, truffle shavings — NO meat' },
-  { id: 'lardo_rosmarino', expect: 'thin translucent white lardo slices, rosemary sprigs — NOT salami, NOT pepperoni' },
-  { id: 'scarpetta', expect: 'buffalo mozzarella, Grana Padano fondue swirl, tomato compote dots — NO salami' },
-  { id: 'caponata', expect: 'aubergine, peppers, capers, olives — NO meat, NO salami, NO pepperoni' },
-  { id: 'soppressata_fichi', expect: 'soppressata salami slices, halved fresh figs, honey — correct salami here' },
-  { id: 'guanciale_pecorino', expect: 'guanciale pork strips (not rounds), grated pecorino, tomato — NOT pepperoni-style rounds' },
-  { id: 'honey_pecorino', expect: 'grated pecorino, golden honey drizzle, white base — NO meat, NO salami' },
-  { id: 'burrata_prosciutto_crudo', expect: 'whole burrata, prosciutto draped, tomato — NOT salami rounds' },
-  { id: 'porcini_stracciatella', expect: 'dark porcini mushrooms, stracciatella dollops — NO meat, NO salami' },
-  { id: 'wagyu_onion', expect: 'premium beef slices, golden caramelised onion — NOT salami rounds' },
-  { id: 'crudo_parma_stracciatella', expect: 'Parma ham draped (not rounds), stracciatella — NOT salami rounds' },
-  { id: 'norma', expect: 'fried aubergine slices, ricotta salata grated, tomato, basil — NO meat, NO salami' },
-  { id: 'carciofi_romana', expect: 'artichoke quarters, white olive oil base — NO meat, NO salami' },
-  { id: 'fiori_zucca_alici', expect: 'yellow courgette flowers, anchovy fillets — NO salami, NO pepperoni' },
-  { id: 'amatriciana', expect: 'guanciale strips (not rounds), tomato, pecorino — NOT pepperoni-style rounds' },
-  { id: 'carbonara', expect: 'pale yellow egg cream base, guanciale strips, cracked black pepper — NOT pepperoni rounds' },
-  { id: 'cacio_pepe', expect: 'white pecorino cream base, cracked black pepper only — NO meat, NO salami, NO other toppings' },
-  { id: 'gricia', expect: 'guanciale strips (not rounds), grated pecorino, white base — NOT pepperoni rounds' },
-  { id: 'bianca_rosmarino', expect: 'white olive oil base, rosemary sprigs, sea salt only — NO meat, NO cheese, NO salami, nothing else' },
-  { id: 'bresaola_rucola', expect: 'dark red bresaola cured beef slices (thin, draped), green rocket — NOT salami rounds' },
-  { id: 'speck_stracchino', expect: 'smoked speck slices, white stracchino cream — NOT salami rounds' },
-  { id: 'indivia_gorgonzola', expect: 'pale endive leaves, crumbled gorgonzola, walnuts — NO meat, NO salami' },
-  { id: 'prosciutto_stracciatella', expect: 'prosciutto draped (not rounds), cold stracciatella dollops — NOT salami rounds' },
-  { id: 'patata_rosmarino_roman', expect: 'thin overlapping potato slices, rosemary, olive oil — NO meat, NO salami' },
-  { id: 'verdure_grigliate_burrata', expect: 'grilled colourful vegetables, whole burrata in center — NO meat, NO salami' },
-  { id: 'alici_pomodorini', expect: 'fresh anchovy fillets, halved cherry tomatoes, capers — NO salami, NO pepperoni' },
-  { id: 'porcini_pecorino', expect: 'dark porcini mushrooms, grated pecorino — NO meat, NO salami' },
-  { id: 'teglia_patata_provola', expect: 'rectangular pizza, potato slices, smoked provola — NO salami, NO pepperoni' },
-  { id: 'teglia_funghi_salsiccia', expect: 'rectangular pizza, mushrooms, sausage pieces — NOT pepperoni rounds' },
-  { id: 'teglia_prosciutto_funghi', expect: 'rectangular pizza, cooked ham slices, mushrooms — NOT salami rounds' },
-  { id: 'teglia_zucchine_fiori', expect: 'rectangular pizza, courgette slices, yellow courgette flowers — NO meat, NO salami' },
-  { id: 'teglia_mortadella_pistacchio', expect: 'rectangular pizza, mortadella draped (large pink), green pistachio — NOT salami rounds' },
-  { id: 'teglia_tonno_cipolla', expect: 'rectangular pizza, tuna chunks, red onion — NO meat, NO salami' },
-  { id: 'teglia_quattro_formaggi', expect: 'rectangular pizza, four melted cheeses — NO meat, NO salami' },
-  { id: 'teglia_speck_brie', expect: 'rectangular pizza, smoked speck slices, melted brie — NOT salami rounds' },
-  { id: 'teglia_verdure', expect: 'rectangular pizza, grilled mixed vegetables — NO meat, NO salami' },
-  { id: 'teglia_nduja_stracciatella', expect: 'rectangular pizza, orange nduja spread, stracciatella dollops — NO salami rounds' },
-  { id: 'ny_pepperoni', expect: 'thin NY crust, pepperoni cups curled at edges, tomato, mozzarella' },
-  { id: 'hot_honey_pepperoni', expect: 'pepperoni cups, mozzarella, honey drizzle' },
-  { id: 'white_clam_apizza', expect: 'chopped clams, garlic, white base — NO mozzarella, NO meat, NO salami' },
-  { id: 'sausage_peppers', expect: 'sausage slices, green and red bell pepper strips — NOT pepperoni rounds' },
-  { id: 'vodka_sauce', expect: 'pink tomato vodka cream sauce, mozzarella, basil — NO meat, NO salami' },
-  { id: 'ny_white', expect: 'white garlic base, ricotta dollops, mozzarella — NO tomato, NO meat, NO salami' },
-  { id: 'buffalo_chicken', expect: 'orange buffalo chicken pieces, blue cheese crumbles, celery — NO salami, NO pepperoni' },
-  { id: 'california_bbq_chicken', expect: 'BBQ sauce, grilled chicken, red onion, fresh coriander — NO salami, NO pepperoni' },
-  { id: 'smoked_salmon_cream_cheese', expect: 'pink salmon draped, cream cheese, dill, capers — NO meat, NO salami' },
-  { id: 'clam_garlic_white', expect: 'chopped clams, garlic, white base, parsley — NO meat, NO salami' },
-  { id: 'ny_margherita_bufala', expect: 'tomato, buffalo mozzarella slices, fresh basil — NO meat, NO salami' },
-  { id: 'ny_diavola', expect: 'spicy salami slices, mozzarella, thin NY crust' },
-  { id: 'detroit_red_top', expect: 'rectangular thick pizza, cheese caramelised to edges, pepperoni, tomato sauce stripes on top' },
-  { id: 'detroit_white', expect: 'rectangular thick pizza, caramelised cheese edges, no tomato, herbs — NO salami rounds' },
-  { id: 'detroit_sausage_mushroom', expect: 'rectangular thick pizza, sausage pieces, mushrooms — NOT pepperoni rounds' },
-  { id: 'detroit_veggie', expect: 'rectangular thick pizza, roasted peppers, caramelised onion, caramelised cheese edges — NO meat, NO salami' },
-  { id: 'chicago_deep_dish', expect: 'very deep round pan, very tall buttery crust walls, chunky tomato sauce on top, sausage layer inside' },
-  { id: 'pan_margherita', expect: 'thick round pan base, tomato, mozzarella, basil — NO meat, NO salami' },
-  { id: 'pan_hot_honey_pepperoni', expect: 'thick round pan, crispy pepperoni, honey drizzle' },
-  { id: 'pan_bbq_chicken', expect: 'thick round pan, BBQ sauce, grilled chicken, red onion — NO salami, NO pepperoni' },
-  { id: 'pan_nduja', expect: 'thick round pan, orange nduja spread, whole burrata center — NO salami rounds' },
-  { id: 'pan_quattro_formaggi', expect: 'thick round pan, four melted cheeses — NO meat, NO salami' },
-  { id: 'jamon_manchego', expect: 'silky Iberico ham draped (not rounds), manchego shavings — NOT salami rounds' },
-  { id: 'sobrasada_miel', expect: 'orange-red sobrasada spread, honey drizzle — NO salami rounds, NOT pepperoni' },
-  { id: 'escalivada', expect: 'fire-roasted aubergine strips, red peppers, onion — NO meat, NO salami' },
-  { id: 'chorizo_padron', expect: 'chorizo slices, small green Padron peppers — NOT pepperoni-style' },
-  { id: 'pulpo_gallega', expect: 'octopus tentacle pieces, potato slices, smoked paprika — NO salami, NO pepperoni' },
-  { id: 'halloumi_zaatar', expect: 'grilled halloumi slices, zaatar herbs, tomatoes — NO meat, NO salami' },
-  { id: 'zaatar', expect: 'zaatar herb blend spread, sesame seeds, white olive oil base — NO cheese, NO meat, NO salami' },
-  { id: 'merguez_harissa', expect: 'merguez sausage slices, red harissa base, cracked egg — NOT round pepperoni-style' },
-  { id: 'miso_funghi', expect: 'white miso cream base, shiitake and oyster mushrooms — NO meat, NO salami' },
-  { id: 'mentaiko_cream', expect: 'pink mentaiko cream base, nori strips, spring onion slices — NO meat, NO salami' },
-  { id: 'teriyaki_chicken', expect: 'teriyaki-glazed chicken pieces, spring onion, sesame seeds — NO salami, NO pepperoni' },
-  { id: 'salmone_wasabi', expect: 'smoked salmon slices, wasabi cream base, nori, sesame — NO meat, NO salami' },
-  { id: 'korean_bbq', expect: 'bulgogi beef strips (thin, marinated), kimchi, sesame — NOT round pepperoni-style' },
-  { id: 'nori_sesame_bianca', expect: 'white sesame base, nori strips, sesame seeds — NO meat, NO salami' },
-  { id: 'provencale', expect: 'black olives, anchovy fillets, herbes de Provence, tomato — NO salami, NO pepperoni' },
-  { id: 'pizza_lorraine', expect: 'creme fraiche base, smoked lardons, emmental cheese, onions — NO salami, NO pepperoni' },
-  { id: 'perigourdine', expect: 'duck confit pieces, walnut halves, foie gras — NOT salami rounds' },
-  { id: 'pistou', expect: 'green pistou pesto base, summer vegetables, goat cheese — NO meat, NO salami' },
-  { id: 'alsacienne_choucroute', expect: 'sauerkraut (pale shredded cabbage), smoked lardons, Munster cheese — NO salami rounds' },
-  { id: 'basquaise', expect: 'Bayonne ham, red Espelette pepper, sheep cheese — NOT salami rounds' },
-  { id: 'lyonnaise', expect: 'fromage blanc base, caramelised golden onions, smoked lardons — NO salami, NO pepperoni' },
-  { id: 'normande_camembert', expect: 'camembert wedges melting, smoked lardons, apple slices, creme fraiche — NO salami, NO pepperoni' },
-  { id: 'nutella_fraises', expect: 'Nutella chocolate spread base, fresh strawberry halves, powdered sugar — NO meat, NO salami, sweet dessert only' },
-  { id: 'tarte_tatin_pizza', expect: 'caramelised apple slices in circle, golden caramel glaze — NO meat, NO salami, sweet dessert only' },
-  { id: 'poire_chocolat', expect: 'dark chocolate cream base, pear slices, mascarpone — NO meat, NO salami, sweet dessert only' },
-  { id: 'honey_fig_mascarpone', expect: 'white mascarpone base, halved figs, honey drizzle, pistachios — NO meat, NO salami, sweet dessert only' },
-  { id: 'speculoos_banana', expect: 'speculoos spread base, banana slices, caramel drizzle — NO meat, NO salami, sweet dessert only' },
-  { id: 'creme_brulee_pizza', expect: 'vanilla cream base, caramelised sugar crust crackled golden — NO meat, NO salami, sweet dessert only' },
-  { id: 'crisommola', expect: 'white ricotta base, apricot halves, honey drizzle — NO meat, NO salami, sweet dessert only' },
-  { id: 'ricotta_chestnut_honey', expect: 'fresh ricotta base, dark honey drizzle, toasted almond flakes — NO meat, NO salami, sweet dessert only' },
-  { id: 'fragole_basilico', expect: 'white mascarpone base, fresh strawberry halves, basil leaves — NO meat, NO salami, sweet dessert only' },
-  { id: 'cioccolato_peperoncino', expect: 'dark chocolate cream base, chilli flakes, sea salt — NO meat, NO salami, sweet dessert only' },
-  { id: 'mela_cannella', expect: 'caramelised apple slices, cinnamon, cream cheese base — NO meat, NO salami, sweet dessert only' },
-  { id: 'caramel_noisette', expect: 'salted caramel base, toasted hazelnut halves, vanilla cream — NO meat, NO salami, sweet dessert only' },
+  { id: 'margherita',            expect: 'tomato sauce, mozzarella, basil',                      forbidden: 'salami, pepperoni, cured meat rounds' },
+  { id: 'marinara',              expect: 'tomato sauce, garlic, oregano — NO cheese at all',      forbidden: 'mozzarella, cheese, salami, pepperoni' },
+  { id: 'diavola',               expect: 'spicy salami rounds, mozzarella',                       forbidden: null },
+  { id: 'quattro_formaggi',      expect: 'four cheeses, white base',                              forbidden: 'salami, pepperoni, cured meat rounds' },
+  { id: 'capricciosa',           expect: 'ham, mushrooms, olives, artichoke',                     forbidden: 'salami rounds, pepperoni rounds' },
+  { id: 'napoli',                expect: 'anchovies, capers, olives',                             forbidden: 'salami, pepperoni, cured meat rounds' },
+  { id: 'pepperoni',             expect: 'pepperoni slices curled at edges, mozzarella',          forbidden: null },
+  { id: 'nduja_mozzarella',      expect: 'orange-red nduja spread in dollops, mozzarella',        forbidden: 'round salami slices, flat pepperoni rounds' },
+  { id: 'tonno_cipolla',         expect: 'tuna, onion rings',                                     forbidden: 'salami, pepperoni, cured meat rounds' },
+  { id: 'smoked_salmon_creme',   expect: 'pink smoked salmon, cream base',                        forbidden: 'salami, pepperoni, meat rounds, tomato base' },
+  { id: 'ortolana',              expect: 'grilled vegetables: courgette, aubergine, peppers',     forbidden: 'salami, pepperoni, cured meat' },
+  { id: 'funghi_tartufo',        expect: 'mushrooms, white base',                                 forbidden: 'salami, pepperoni, tomato base, meat' },
+  { id: 'patate_rosmarino',      expect: 'thin potato slices, rosemary',                          forbidden: 'salami, pepperoni, meat, cheese' },
+  { id: 'bianca_ricotta_spinaci',expect: 'ricotta, spinach, white base',                          forbidden: 'salami, pepperoni, tomato base, meat' },
+  { id: 'truffle_bianca',        expect: 'truffle shavings, white cream base',                    forbidden: 'salami, pepperoni, tomato base, meat' },
+  { id: 'prosciutto_rucola',     expect: 'thin prosciutto ham slices draped, green rocket',       forbidden: 'round salami slices, round pepperoni' },
+  { id: 'burrata_prosciutto',    expect: 'whole burrata, prosciutto ham draped',                  forbidden: 'round salami slices, round pepperoni' },
+  { id: 'fig_gorgonzola',        expect: 'halved figs, blue cheese, walnuts',                     forbidden: 'salami, pepperoni, meat rounds' },
+  { id: 'pear_walnut_gorgonzola',expect: 'pear slices, walnuts, blue cheese',                     forbidden: 'salami, pepperoni, meat rounds' },
+  { id: 'bbq_chicken',           expect: 'BBQ sauce base, grilled chicken pieces',                forbidden: 'salami rounds, pepperoni rounds' },
+  { id: 'speck_brie',            expect: 'smoked speck ham, brie',                                forbidden: 'round salami slices, round pepperoni' },
+  { id: 'tarte_flambee',         expect: 'creme fraiche base, smoked lardons, onion',             forbidden: 'round salami, round pepperoni' },
+  { id: 'raclette_pommes',       expect: 'melted raclette cheese, potato, lardons',               forbidden: 'round salami, round pepperoni' },
+  { id: 'chevre_miel',           expect: 'goat cheese rounds, honey, walnuts',                    forbidden: 'salami rounds, pepperoni rounds, cured meat rounds' },
+  { id: 'andouille_moutarde',    expect: 'sausage slices, mustard base, onion',                   forbidden: 'round pepperoni' },
+  { id: 'maroilles_oignons',     expect: 'maroilles cheese, caramelised onions, cream base',      forbidden: 'salami, pepperoni, meat rounds' },
+  { id: 'jambon_espelette',      expect: 'ham slices, red pepper, cheese',                        forbidden: 'round salami, round pepperoni' },
+  { id: 'camembert_pommes',      expect: 'melted camembert, apple slices, lardons',               forbidden: 'round salami, round pepperoni' },
+  { id: 'tartiflette_pizza',     expect: 'reblochon cheese melted, potato, lardons',              forbidden: 'round salami, round pepperoni' },
+  { id: 'la_reine',              expect: 'ham, mushrooms, mozzarella, tomato base',               forbidden: 'salami rounds, pepperoni rounds' },
+  { id: 'la_royale',             expect: 'ham, mushrooms, black olives, mozzarella',              forbidden: 'salami rounds, pepperoni rounds' },
+  { id: 'la_paysanne',           expect: 'lardons, onion, creme fraiche base',                    forbidden: 'round salami, round pepperoni' },
+  { id: 'quatre_saisons',        expect: 'four quarters: artichoke, ham, olives, mushrooms',      forbidden: 'salami rounds, pepperoni rounds' },
+  { id: 'margherita_sbagliata',  expect: 'mozzarella baked in, fresh tomato dollops on top',      forbidden: 'salami, pepperoni, meat' },
+  { id: 'cosacca',               expect: 'tomato base, pecorino — NO mozzarella',                 forbidden: 'mozzarella, salami, pepperoni, meat' },
+  { id: 'salsiccia_friarielli',  expect: 'crumbled sausage pieces, broccoli rabe, mozzarella',    forbidden: 'round salami slices, round pepperoni' },
+  { id: 'provola_pepe',          expect: 'smoked provola melted, black pepper',                   forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'acciughe_pomodorini',   expect: 'anchovy fillets, cherry tomatoes',                      forbidden: 'salami, pepperoni, cured meat' },
+  { id: 'melanzane_parmigiana',  expect: 'aubergine slices, parmesan, mozzarella',                forbidden: 'salami, pepperoni, cured meat' },
+  { id: 'zucca_provola',         expect: 'orange pumpkin slices, provola cheese',                 forbidden: 'salami, pepperoni, meat' },
+  { id: 'boscaiola',             expect: 'mushrooms, crumbled sausage (NOT flat rounds)',          forbidden: 'flat round salami, flat round pepperoni' },
+  { id: 'bismarck',              expect: 'ham, mushrooms, whole egg in center',                   forbidden: 'salami rounds, pepperoni rounds' },
+  { id: 'pugliese',              expect: 'black olives, capers, red onion',                       forbidden: 'salami, pepperoni, cured meat' },
+  { id: 'prosciutto_funghi',     expect: 'ham slices, mushrooms, mozzarella',                     forbidden: 'round salami, round pepperoni' },
+  { id: 'tonno_cipolla_red',     expect: 'tuna, red onion, mozzarella',                           forbidden: 'salami, pepperoni, cured meat rounds' },
+  { id: 'piennolo',              expect: 'cherry tomatoes, olive oil — NO cheese, NO meat',       forbidden: 'mozzarella, cheese, salami, pepperoni, meat' },
+  { id: 'funghi_salsiccia',      expect: 'mushrooms, crumbled sausage (NOT flat rounds)',         forbidden: 'flat round pepperoni, flat round salami' },
+  { id: 'salmone_rucola',        expect: 'smoked salmon, green rocket, white base',               forbidden: 'salami, pepperoni, meat rounds, tomato base' },
+  { id: 'acciughe_burro',        expect: 'anchovy fillets, white base',                           forbidden: 'salami, pepperoni, cured meat rounds' },
+  { id: 'pollo_pesto',           expect: 'green pesto base, grilled chicken, cherry tomatoes',    forbidden: 'salami rounds, pepperoni rounds' },
+  { id: 'genovese',              expect: 'green pesto base, potato slices, green beans',          forbidden: 'salami, pepperoni, cured meat' },
+  { id: 'polpette',              expect: 'large round meatballs (big spheres), tomato base',      forbidden: 'flat round pepperoni, flat round salami' },
+  { id: 'diavola_burrata',       expect: 'spicy salami, mozzarella, whole burrata on top',        forbidden: null },
+  { id: 'pistadella',            expect: 'large mortadella slices (pink deli meat), pistachio pesto', forbidden: 'round salami, round pepperoni' },
+  { id: 'stracciatella_datterini',expect:'cherry tomatoes, stracciatella cheese dollops',         forbidden: 'salami, pepperoni, cured meat' },
+  { id: 'nduja_burrata',         expect: 'orange nduja spread base, whole burrata',               forbidden: 'round salami slices, round pepperoni' },
+  { id: 'tartufo_fior',          expect: 'truffle shavings, mozzarella, white base',              forbidden: 'salami, pepperoni, tomato base, meat' },
+  { id: 'lardo_rosmarino',       expect: 'thin white lardo slices, rosemary, white base',         forbidden: 'round salami, round pepperoni, tomato base' },
+  { id: 'scarpetta',             expect: 'mozzarella, small tomato dots, white base',             forbidden: 'salami, pepperoni, cured meat rounds' },
+  { id: 'caponata_pizza',        expect: 'caponata vegetables: aubergine, peppers, olives',       forbidden: 'salami, pepperoni, cured meat' },
+  { id: 'soppressata_fichi',     expect: 'soppressata salami, halved figs, honey',                forbidden: null },
+  { id: 'guanciale_pecorino',    expect: 'guanciale strips (NOT flat rounds), pecorino, tomato',  forbidden: 'flat round pepperoni, flat round salami' },
+  { id: 'honey_pecorino',        expect: 'pecorino cheese, honey, white base',                    forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'burrata_prosciutto_gourmet',expect:'whole burrata, prosciutto ham draped, tomato',       forbidden: 'round salami, round pepperoni' },
+  { id: 'porcini_stracciatella', expect: 'porcini mushrooms, stracciatella dollops, white base',  forbidden: 'salami, pepperoni, tomato base, meat' },
+  { id: 'wagyu_onion',           expect: 'thin wagyu beef slices, caramelised onions',            forbidden: 'round salami, round pepperoni' },
+  { id: 'crudo_parma_stracciatella',expect:'Parma ham thin slices, stracciatella, tomato base',   forbidden: 'round salami, round pepperoni' },
+  { id: 'norma',                 expect: 'aubergine slices, ricotta salata crumbled, tomato base',forbidden: 'salami, pepperoni, cured meat' },
+  { id: 'carciofi_romana',       expect: 'artichoke quarters, white oil base',                    forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'fiori_zucca_alici',     expect: 'yellow courgette flowers, anchovies, white base',       forbidden: 'salami, pepperoni, cured meat rounds' },
+  { id: 'amatriciana_pizza',     expect: 'guanciale strips (NOT flat rounds), pecorino, tomato',  forbidden: 'flat round pepperoni, flat round salami' },
+  { id: 'carbonara_pizza',       expect: 'pale egg cream base, guanciale strips, pecorino',       forbidden: 'flat round pepperoni, tomato base' },
+  { id: 'cacio_pepe_pizza',      expect: 'white pecorino base, black pepper — NO meat',           forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'gricia_pizza',          expect: 'guanciale strips (NOT flat rounds), pecorino, white base',forbidden:'flat round pepperoni, flat round salami, tomato base' },
+  { id: 'bianca_rosmarino',      expect: 'rosemary pressed into dough, white oil base — NO meat, NO cheese', forbidden: 'salami, pepperoni, meat, cheese, mozzarella, tomato base' },
+  { id: 'bresaola_rucola_pizza', expect: 'dark red bresaola thin slices (cured beef), green rocket', forbidden: 'round salami, round pepperoni' },
+  { id: 'speck_stracchino',      expect: 'speck ham slices, stracchino cream base',               forbidden: 'round salami, round pepperoni' },
+  { id: 'indivia_gorgonzola',    expect: 'pale endive, gorgonzola, walnuts, white base',          forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'prosciutto_stracciatella_romana',expect:'prosciutto ham draped, stracciatella dollops',  forbidden: 'round salami, round pepperoni' },
+  { id: 'patata_rosmarino_romana',expect:'ultra-thin potato slices, rosemary, white base',        forbidden: 'salami, pepperoni, meat, cheese, tomato base' },
+  { id: 'verdure_grigliate_burrata',expect:'grilled vegetables, whole burrata, white base',       forbidden: 'salami, pepperoni, meat' },
+  { id: 'alici_fresche_romana',  expect: 'fresh anchovy fillets, cherry tomatoes',                forbidden: 'salami, pepperoni, cured meat rounds' },
+  { id: 'porcini_pecorino_romana',expect:'porcini mushrooms, pecorino, white base',               forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'teglia_patata_provola', expect: 'potato slices, provola cheese, rectangular base',       forbidden: 'salami, pepperoni, meat' },
+  { id: 'teglia_funghi_salsiccia',expect:'mushrooms, crumbled sausage (NOT flat rounds), rectangular base', forbidden: 'flat round pepperoni, flat round salami' },
+  { id: 'teglia_prosciutto_cotto',expect:'cooked ham slices, mushrooms, rectangular base',        forbidden: 'round salami, round pepperoni' },
+  { id: 'teglia_zucchine_fiori', expect: 'courgette, courgette flowers, white base, rectangular', forbidden: 'salami, pepperoni, meat' },
+  { id: 'teglia_mortadella_pistacchio',expect:'large mortadella slices (pink deli meat), pistachio, rectangular', forbidden: 'round salami, round pepperoni' },
+  { id: 'teglia_tonno_cipolla',  expect: 'tuna, red onion, rectangular base',                     forbidden: 'salami, pepperoni, cured meat rounds' },
+  { id: 'teglia_4_formaggi',     expect: 'four cheeses, rectangular base',                        forbidden: 'salami, pepperoni, meat' },
+  { id: 'teglia_speck_brie',     expect: 'speck ham, brie, rectangular base',                     forbidden: 'round salami, round pepperoni' },
+  { id: 'teglia_verdure',        expect: 'grilled vegetables, tomato base, rectangular',          forbidden: 'salami, pepperoni, cured meat' },
+  { id: 'teglia_nduja_stracciatella',expect:'orange nduja spread, stracciatella, rectangular',    forbidden: 'round salami slices, round pepperoni' },
+  { id: 'ny_pepperoni_slice',    expect: 'pepperoni curled at edges, mozzarella, NY style',       forbidden: null },
+  { id: 'hot_honey_pepperoni',   expect: 'crispy pepperoni, mozzarella, honey drizzle',           forbidden: null },
+  { id: 'white_clam_apizza',     expect: 'clams, garlic, white base — NO mozzarella',             forbidden: 'mozzarella, cheese, salami, pepperoni, tomato base' },
+  { id: 'ny_sausage_peppers',    expect: 'crumbled sausage, bell peppers (NOT flat rounds)',       forbidden: 'flat round pepperoni' },
+  { id: 'vodka_pizza',           expect: 'pink vodka cream sauce, mozzarella',                    forbidden: 'salami, pepperoni, meat' },
+  { id: 'ny_white_pizza',        expect: 'white garlic base, ricotta, mozzarella',                forbidden: 'salami, pepperoni, tomato base, meat' },
+  { id: 'buffalo_chicken',       expect: 'orange buffalo sauce chicken, mozzarella',              forbidden: 'round salami, round pepperoni' },
+  { id: 'california_bbq_chicken',expect:'BBQ sauce base, chicken pieces, mozzarella',             forbidden: 'round salami, round pepperoni' },
+  { id: 'smoked_salmon_cream_cheese',expect:'pink smoked salmon, cream cheese base',              forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'ny_clam_garlic',        expect: 'clams, garlic, white base',                             forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'ny_margherita_bufala',  expect: 'tomato base, buffalo mozzarella, basil',                forbidden: 'salami, pepperoni, meat' },
+  { id: 'ny_diavola',            expect: 'spicy salami, mozzarella, tomato base',                 forbidden: null },
+  { id: 'detroit_red_top',       expect: 'thick square base, caramelised frico edges, sauce stripes on top', forbidden: null },
+  { id: 'detroit_white',         expect: 'thick square base, caramelised frico edges, white base',forbidden: 'tomato sauce, salami' },
+  { id: 'detroit_sausage',       expect: 'thick square base, frico edges, sausage, mushrooms',    forbidden: 'flat round pepperoni' },
+  { id: 'detroit_veggie',        expect: 'thick square base, frico edges, peppers, onions',       forbidden: 'salami, pepperoni, meat' },
+  { id: 'chicago_deep_dish',     expect: 'very deep crust walls, tomato sauce on top',            forbidden: null },
+  { id: 'pan_margherita',        expect: 'thick round base, tomato, mozzarella',                  forbidden: 'salami, pepperoni, meat' },
+  { id: 'pan_pepperoni_hot_honey',expect:'thick round base, pepperoni, honey drizzle',            forbidden: null },
+  { id: 'pan_bbq_chicken',       expect: 'thick round base, BBQ sauce, chicken',                  forbidden: 'round salami, round pepperoni' },
+  { id: 'pan_nduja_burrata',     expect: 'thick round base, nduja spread, whole burrata',         forbidden: 'round salami slices, round pepperoni' },
+  { id: 'pan_4_formaggi',        expect: 'thick round base, four cheeses, white base',            forbidden: 'salami, pepperoni, meat' },
+  { id: 'jamon_manchego',        expect: 'Iberico ham thin slices draped, manchego shavings',     forbidden: 'round salami, round pepperoni' },
+  { id: 'sobrasada_miel',        expect: 'orange sobrasada spread in dollops, honey, mozzarella', forbidden: 'round salami slices' },
+  { id: 'escalivada',            expect: 'fire-roasted aubergine, red pepper strips, white base', forbidden: 'salami, pepperoni, meat, cheese, tomato base' },
+  { id: 'chorizo_padron',        expect: 'chorizo slices, green Padron peppers, tomato base',     forbidden: null },
+  { id: 'pulpo_gallega',         expect: 'octopus pieces, potato slices, paprika',                forbidden: 'salami, pepperoni, cured meat rounds' },
+  { id: 'halloumi_zaatar',       expect: 'grilled halloumi, zaatar herb blend, olive oil',        forbidden: 'salami, pepperoni, meat' },
+  { id: 'zaatar_labneh',         expect: 'zaatar herb blend across base, labneh dollops',         forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'merguez_harissa',       expect: 'merguez sausage slices, red harissa base, egg',         forbidden: null },
+  { id: 'miso_funghi',           expect: 'miso cream base, shiitake mushrooms, mozzarella',       forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'mentaiko_cream',        expect: 'pale pink mentaiko cream base, spring onion, nori',     forbidden: 'salami, pepperoni, meat' },
+  { id: 'teriyaki_chicken',      expect: 'brown glazed chicken pieces, sesame seeds, mozzarella', forbidden: 'round salami, round pepperoni' },
+  { id: 'salmon_wasabi',         expect: 'smoked salmon, pale green wasabi cream or white base',  forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'korean_bbq',            expect: 'thin bulgogi beef strips (NOT flat rounds), mozzarella',forbidden: 'flat round pepperoni, flat round salami' },
+  { id: 'nori_sesame_bianca',    expect: 'white sesame base, sesame seeds, nori strips',          forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'provencale',            expect: 'tomato base, anchovies, black olives, herbes de Provence', forbidden: 'salami, pepperoni, cured meat rounds' },
+  { id: 'lorraine_pizza',        expect: 'creme fraiche base, lardons, emmental, onions',         forbidden: 'round salami, round pepperoni, tomato base' },
+  { id: 'perigourdine',          expect: 'duck confit pieces, walnuts, white base',               forbidden: 'round salami, round pepperoni' },
+  { id: 'pistou_pizza',          expect: 'green pistou pesto base, vegetables, goat cheese',      forbidden: 'salami, pepperoni, meat, tomato base' },
+  { id: 'alsacienne_choucroute', expect: 'pale sauerkraut, lardons, Munster cheese, cream base',  forbidden: 'round salami, round pepperoni, tomato base' },
+  { id: 'basquaise',             expect: 'Bayonne ham, red Espelette pepper, tomato base',        forbidden: 'round salami, round pepperoni' },
+  { id: 'lyonnaise',             expect: 'caramelised onions, lardons, fromage blanc base',       forbidden: 'round salami, round pepperoni, tomato base' },
+  { id: 'normandie_camembert',   expect: 'melted camembert, lardons, apple, cream base',          forbidden: 'round salami, round pepperoni, tomato base' },
+  { id: 'jerusalem',             expect: 'roasted aubergine, chickpeas, tahini, tomato base',     forbidden: 'salami, pepperoni, meat, cheese' },
+  { id: 'shakshuka',             expect: 'spiced tomato base, whole eggs baked in, feta',         forbidden: 'salami, pepperoni, cured meat' },
+  { id: 'nutella_fraises',       expect: 'chocolate Nutella spread, fresh strawberries',          forbidden: 'salami, pepperoni, cheese, tomato base' },
+  { id: 'tarte_tatin_pizza',     expect: 'caramelised apple slices, golden caramel glaze',        forbidden: 'salami, pepperoni, cheese, tomato base' },
+  { id: 'poire_chocolat',        expect: 'dark chocolate cream, pear slices',                    forbidden: 'salami, pepperoni, cheese, tomato base' },
+  { id: 'honey_fig_mascarpone',  expect: 'mascarpone base, halved figs, honey, pistachios',       forbidden: 'salami, pepperoni, cheese savory, tomato base' },
+  { id: 'speculoos_banana',      expect: 'speculoos cookie spread, banana slices, caramel',       forbidden: 'salami, pepperoni, cheese, tomato base' },
+  { id: 'creme_brulee_pizza',    expect: 'crackled caramelised sugar crust, golden-brown surface',forbidden: 'salami, pepperoni, cheese, tomato base' },
+  { id: 'crisommola',            expect: 'ricotta base, apricot halves, honey',                   forbidden: 'salami, pepperoni, savory cheese, tomato base' },
+  { id: 'ricotta_miele_castagne',expect:'fresh ricotta spread, honey drizzle, almond flakes',     forbidden: 'salami, pepperoni, tomato base' },
+  { id: 'fragole_basilico',      expect: 'mascarpone base, strawberry halves, basil',             forbidden: 'salami, pepperoni, savory cheese, tomato base' },
+  { id: 'cioccolato_peperoncino',expect:'dark chocolate cream, red chilli flakes',                forbidden: 'salami, pepperoni, savory cheese, tomato base' },
+  { id: 'mela_cannella',         expect: 'cream cheese base, caramelised apple, cinnamon',        forbidden: 'salami, pepperoni, savory cheese, tomato base' },
+  { id: 'caramel_noisette',      expect: 'golden caramel spread, toasted hazelnuts',              forbidden: 'salami, pepperoni, savory cheese, tomato base' },
 ];
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -170,115 +173,96 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 async function auditImage(pizza) {
   const filepath = path.join(PIZZAS_DIR, pizza.id + '.png');
   if (!fs.existsSync(filepath)) {
-    return { id: pizza.id, status: 'MISSING', note: 'File not found' };
+    return { id: pizza.id, status: 'MISSING', reason: 'File not found' };
   }
 
   const imageData = fs.readFileSync(filepath).toString('base64');
+  const forbiddenText = pizza.forbidden
+    ? `\nWrong ingredients to check for: ${pizza.forbidden}`
+    : '\nNo specific forbidden ingredients — just verify it looks like the right pizza.';
+
+  const prompt = `You are checking a pizza image for WRONG INGREDIENTS ONLY.
+Ignore completely: flour dust, decorations, plates, boards, background lighting, photographic styling.
+Only fail if the pizza clearly contains ingredients it should NOT have.
+
+Expected: ${pizza.expect}${forbiddenText}
+
+Is the pizza showing the RIGHT ingredients (even approximately)?
+
+Reply ONLY in this exact format:
+PASS or FAIL
+REASON: one sentence (if FAIL: name the specific wrong ingredient visible; if PASS: write "correct")`;
 
   const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 200,
+    model: 'claude-haiku-4-5',
+    max_tokens: 100,
     messages: [{
       role: 'user',
       content: [
-        {
-          type: 'image',
-          source: { type: 'base64', media_type: 'image/png', data: imageData },
-        },
-        {
-          type: 'text',
-          text: `This pizza image should show: ${pizza.expect}.
-
-Check ALL of the following:
-1. Does the image correctly show the expected ingredients?
-2. Is it clearly a pizza (not raw dough, not a toy, not abstract, not just a circle)?
-3. FAIL if any ingredients are scattered OUTSIDE the pizza edge as decoration (e.g. figs, nuts, tomatoes placed around the pizza).
-4. FAIL if the background is not clean and dark — any cloth, napkin, kitchen towel, linen visible = FAIL.
-5. FAIL if a plate, wooden board, marble board, pizza peel, or any serving surface is visible under the pizza.
-6. FAIL if there is excessive flour, breadcrumbs, or powder scattered on the background surface.
-7. FAIL if the image shows salami rounds or pepperoni slices when they are NOT listed in the expected ingredients.
-8. FAIL if completely wrong ingredients are visible (e.g. walnuts on a margherita, salami on a chevre miel).
-9. FAIL if the base colour is wrong — e.g. red tomato base when a white base is expected, or vice versa.
-
-Reply in this exact format:
-PASS or FAIL
-REASON: one sentence listing the specific problem (mention plate/board/flour/decoration/wrong ingredient), or "correct" if passing`,
-        },
+        { type: 'image', source: { type: 'base64', media_type: 'image/png', data: imageData } },
+        { type: 'text', text: prompt },
       ],
     }],
   });
 
   const text = response.content[0].type === 'text' ? response.content[0].text.trim() : '';
   const pass = text.startsWith('PASS');
-  const reason = text.replace(/^(PASS|FAIL)\n?/, '').replace('REASON: ', '').trim();
+  const reasonMatch = text.match(/REASON:\s*(.+)/);
+  const reason = reasonMatch ? reasonMatch[1].trim() : text;
 
-  return {
-    id: pizza.id,
-    status: pass ? 'PASS' : 'FAIL',
-    note: reason,
-    expect: pizza.expect,
-  };
+  return { id: pizza.id, status: pass ? 'PASS' : 'FAIL', reason };
 }
 
 async function runAudit() {
-  if (!fs.existsSync(PIZZAS_DIR)) {
-    console.error('❌ Pizzas directory not found: ' + PIZZAS_DIR);
-    console.error('Run generate-pizza-images.js first.');
-    process.exit(1);
-  }
-
   const files = fs.readdirSync(PIZZAS_DIR).filter(f => f.endsWith('.png') && !f.startsWith('_'));
-  console.log('\n🔍 Baker Hub Pizza Image Auditor');
-  console.log('📦 ' + PIZZAS.length + ' pizzas to audit | 🖼  ' + files.length + ' files found\n');
+  console.log(`\n🍕 Pizza Image Audit — ingredients only`);
+  console.log(`📦 ${PIZZAS.length} pizzas to audit | 📁 ${files.length} files found\n`);
 
-  const results = { pass: [], fail: [], missing: [] };
+  const results = [];
+  const failed = [];
 
   for (let i = 0; i < PIZZAS.length; i++) {
     const pizza = PIZZAS[i];
-    process.stdout.write('[' + (i+1) + '/' + PIZZAS.length + '] ' + pizza.id + '... ');
+    process.stdout.write(`[${i+1}/${PIZZAS.length}] ${pizza.id}... `);
+
     try {
       const result = await auditImage(pizza);
+      results.push(result);
+
       if (result.status === 'PASS') {
-        results.pass.push(result);
-        console.log('✅');
+        console.log(`✅`);
       } else if (result.status === 'MISSING') {
-        results.missing.push(result);
-        console.log('⚠️  MISSING');
+        console.log(`⚠️  MISSING`);
       } else {
-        results.fail.push(result);
-        console.log('❌  ' + result.note);
+        console.log(`❌  ${result.reason}`);
+        failed.push(result);
       }
     } catch (err) {
-      console.log('💥 ERROR: ' + err.message);
-      results.fail.push({ id: pizza.id, status: 'ERROR', note: err.message });
+      console.log(`💥 ERROR: ${err.message}`);
+      results.push({ id: pizza.id, status: 'ERROR', reason: err.message });
     }
+
     if (i < PIZZAS.length - 1) await sleep(DELAY_MS);
   }
 
-  // Save full report
-  fs.writeFileSync(REPORT_PATH, JSON.stringify(results, null, 2));
+  // Save report
+  fs.writeFileSync(REPORT_PATH, JSON.stringify({ results, failed, date: new Date().toISOString() }, null, 2));
 
-  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('✅ PASS:    ' + results.pass.length);
-  console.log('❌ FAIL:    ' + results.fail.length);
-  console.log('⚠️  MISSING: ' + results.missing.length);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  // Summary
+  const passed = results.filter(r => r.status === 'PASS').length;
+  const failedCount = failed.length;
+  const missing = results.filter(r => r.status === 'MISSING').length;
 
-  if (results.fail.length > 0) {
-    console.log('\n❌ Failed pizzas — delete and regenerate:');
-    results.fail.forEach(r => console.log('  • ' + r.id + ': ' + r.note));
-    console.log('\n📋 Copy-paste to delete all failed images:');
-    console.log(results.fail.map(r => 'rm public/pizzas/' + r.id + '.png').join('\n'));
+  console.log(`\n${'─'.repeat(50)}`);
+  console.log(`✅ Passed: ${passed} | ❌ Failed: ${failedCount} | ⚠️  Missing: ${missing}`);
+
+  if (failed.length > 0) {
+    console.log(`\n❌ Images to regenerate:`);
+    failed.forEach(f => console.log(`  rm public/pizzas/${f.id}.png  # ${f.reason}`));
+    console.log(`\nThen run: node scripts/generate-pizza-images.js`);
+  } else {
+    console.log(`\n🎉 All images have correct ingredients!`);
   }
-
-  if (results.missing.length > 0) {
-    console.log('\n⚠️  Missing images — will be generated on next run:');
-    results.missing.forEach(r => console.log('  • ' + r.id));
-  }
-
-  console.log('\n📄 Full report: public/pizzas/_audit_report.json');
-  console.log('\nAfter deleting failed images, run:');
-  console.log('  node scripts/generate-pizza-images.js');
 }
 
 runAudit().catch(console.error);

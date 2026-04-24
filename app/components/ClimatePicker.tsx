@@ -1,6 +1,9 @@
 'use client';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, tempC, displayTemp } from '../utils/units';
+import DecisionList from './DecisionList';
+import DecisionSummary from './DecisionSummary';
 
 interface ClimatePickerProps {
   kitchenTemp: number;
@@ -93,6 +96,8 @@ export default function ClimatePicker({
   kitchenTemp, humidity, fridgeTemp, mode, units, onChange,
 }: ClimatePickerProps) {
   const u = units ?? 'metric';
+  const tc = useTranslations('climate');
+  const [simpleExpanded, setSimpleExpanded] = useState(true);
   const [city, setCity] = useState('');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -152,48 +157,46 @@ export default function ClimatePicker({
 
   if (mode === 'simple') {
     const SIMPLE_OPTIONS = [
-      { label: 'Cool',    labelFr: 'Fraîche',   desc: 'Under 20°C', descFr: 'Moins de 20°C', temp: 18, color: '#6A7FA8', bg: '#EEF2FA', border: '#C4CDE0' },
-      { label: 'Normal',  labelFr: 'Normale',   desc: '20–26°C',    descFr: '20–26°C',        temp: 23, color: 'var(--sage)', bg: '#F0F4EE', border: '#BDD0BB' },
-      { label: 'Warm',    labelFr: 'Chaude',    desc: '26°C+',      descFr: '26°C+',          temp: 29, color: 'var(--terra)', bg: '#FFF4EF', border: '#F5C4B0' },
+      { id: 'cool',     temp: 18, hum: 'normal', thumbnailBg: '#6A7FA8',     title: tc('cool.title'),     tagline: tc('cool.tagline'),     badge: tc('cool.badge') },
+      { id: 'normal',   temp: 23, hum: 'normal', thumbnailBg: 'var(--sage)', title: tc('normal.title'),   tagline: tc('normal.tagline'),   badge: tc('normal.badge') },
+      { id: 'warm',     temp: 28, hum: 'humid',  thumbnailBg: 'var(--gold)', title: tc('warm.title'),     tagline: tc('warm.tagline'),     badge: tc('warm.badge') },
+      { id: 'tropical', temp: 32, hum: 'humid',  thumbnailBg: 'var(--terra)',title: tc('tropical.title'), tagline: tc('tropical.tagline'), badge: tc('tropical.badge') },
     ];
-    const selected = kitchenTemp <= 20 ? 18 : kitchenTemp <= 26 ? 23 : 29;
+
+    const selectedId = kitchenTemp <= 20 ? 'cool' : kitchenTemp <= 26 ? 'normal' : kitchenTemp <= 30 ? 'warm' : 'tropical';
+    const selectedOpt = SIMPLE_OPTIONS.find(o => o.id === selectedId)!;
+    const listOptions = SIMPLE_OPTIONS.map(o => ({ ...o, image: '' }));
+
+    if (!simpleExpanded) {
+      return (
+        <DecisionSummary
+          thumbnailBg={selectedOpt.thumbnailBg}
+          title={selectedOpt.title}
+          tagline={selectedOpt.tagline}
+          onExpand={() => setSimpleExpanded(true)}
+        />
+      );
+    }
+
     return (
-      <div style={{ display: 'flex', gap: '8px' }}>
-        {SIMPLE_OPTIONS.map(opt => {
-          const isSelected = selected === opt.temp;
-          return (
-            <div
-              key={opt.temp}
-              onClick={() => onChange(opt.temp, opt.temp >= 26 ? 'humid' : 'normal', fridgeTemp)}
-              style={{
-                flex: 1,
-                border: `2px solid ${isSelected ? opt.border : 'var(--border)'}`,
-                borderRadius: '12px',
-                padding: '12px 8px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                background: isSelected ? opt.bg : 'var(--warm)',
-                transition: 'all .15s',
-              }}
-            >
-              <div style={{
-                fontSize: '13px', fontWeight: 600,
-                color: isSelected ? opt.color : 'var(--char)',
-                marginBottom: '2px',
-                fontFamily: 'var(--font-dm-sans)',
-              }}>
-                {u === 'metric' ? opt.label : opt.label}
-              </div>
-              <div style={{
-                fontSize: '11px',
-                color: 'var(--smoke)',
-                fontFamily: 'var(--font-dm-mono)',
-              }}>
-                {opt.desc}
-              </div>
-            </div>
-          );
-        })}
+      <div>
+        <div style={{ marginBottom: 16 }}>
+          <h2 style={{ fontFamily: 'Playfair Display', fontSize: 22, fontWeight: 700, color: 'var(--char)', margin: 0 }}>
+            {tc('heading')}
+          </h2>
+          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '4px 0 0', fontFamily: 'DM Sans' }}>
+            {tc('subtitle')}
+          </p>
+        </div>
+        <DecisionList
+          options={listOptions}
+          selectedId={selectedId}
+          onSelect={(id) => {
+            const opt = SIMPLE_OPTIONS.find(o => o.id === id)!;
+            onChange(opt.temp, opt.hum, fridgeTemp);
+            setSimpleExpanded(false);
+          }}
+        />
       </div>
     );
   }
