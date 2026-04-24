@@ -1,7 +1,10 @@
 'use client';
 import { useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { PIZZA_STYLES, BREAD_STYLES, type StyleKey, type BakeType } from '../data';
+import DecisionHero from './DecisionHero';
+import DecisionList from './DecisionList';
+import DecisionSummary from './DecisionSummary';
 
 interface StylePickerProps {
   bakeType: BakeType;
@@ -112,22 +115,80 @@ const STYLE_ART: Record<string, { bg: string; svg: string }> = {
 };
 
 export default function StylePicker({ bakeType, selected, onSelect }: StylePickerProps) {
-  const styles = bakeType === 'pizza' ? PIZZA_STYLES : BREAD_STYLES;
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const t = useTranslations('style');
   const locale = useLocale();
+  const styleKey = selected;
+  const [expanded, setExpanded] = useState(!styleKey);
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   const isBread = bakeType === 'bread';
 
-  const imgHeight = isBread ? 90 : 110;
+  const pizzaListOptions = [
+    { id: 'newyork', image: '/pizzas/ny_pepperoni_slice.png', title: t('newyork.title'), tagline: t('newyork.tagline') },
+    { id: 'pizza_romana', image: '/pizzas/carciofi_romana.png', title: t('pizza_romana.title'), tagline: t('pizza_romana.tagline') },
+    { id: 'roman', image: '/pizzas/teglia_patata_provola.png', title: t('roman.title'), tagline: t('roman.tagline') },
+    { id: 'pan', image: '/pizzas/detroit_red_top.png', title: t('pan.title'), tagline: t('pan.tagline') },
+    { id: 'sourdough', image: '/pizzas/diavola.png', title: t('sourdough.title'), tagline: t('sourdough.tagline') },
+  ];
+
+  const allPizzaOptions = [
+    { id: 'neapolitan', image: '/pizzas/margherita.png', title: t('neapolitan.title'), tagline: t('neapolitan.tagline') },
+    ...pizzaListOptions,
+  ];
+
+  const selectedStyle = allPizzaOptions.find(s => s.id === styleKey);
+
+  if (!isBread) {
+    if (!expanded && selectedStyle) {
+      return (
+        <DecisionSummary
+          thumbnail={selectedStyle.image}
+          title={selectedStyle.title}
+          tagline={selectedStyle.tagline}
+          onExpand={() => setExpanded(true)}
+        />
+      );
+    }
+
+    return (
+      <div>
+        <div style={{ marginBottom: 16 }}>
+          <h2 style={{ fontFamily: 'Playfair Display', fontSize: 22, fontWeight: 700, color: 'var(--char)', margin: 0 }}>
+            {t('heading')}
+          </h2>
+          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '4px 0 0', fontFamily: 'DM Sans' }}>
+            {t('subtitle')}
+          </p>
+        </div>
+        <DecisionHero
+          image="/pizzas/margherita.png"
+          title={t('neapolitan.title')}
+          tagline={t('neapolitan.tagline')}
+          isSelected={styleKey === 'neapolitan'}
+          onSelect={() => { onSelect('neapolitan'); setExpanded(false); }}
+        />
+        <div style={{ marginTop: 12 }}>
+          <DecisionList
+            options={pizzaListOptions}
+            selectedId={styleKey ?? ''}
+            onSelect={(id) => { onSelect(id as StyleKey); setExpanded(false); }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Bread: existing grid layout
+  const styles = BREAD_STYLES;
+  const imgHeight = 90;
 
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: isBread ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
-      gap: isBread ? '.75rem' : '1rem',
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: '.75rem',
     }}>
       {(Object.entries(styles) as [string, { name: string; nameFr?: string; emoji: string; image?: string; desc: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
-
         const isSelected = selected === key;
         const art = STYLE_ART[key];
 
@@ -138,9 +199,7 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
             onMouseEnter={() => setHoveredKey(key)}
             onMouseLeave={() => setHoveredKey(null)}
             style={{
-              border: `2px solid ${isSelected
-                ? isBread ? 'var(--bread)' : 'var(--terra)'
-                : 'var(--border)'}`,
+              border: `2px solid ${isSelected ? 'var(--bread)' : 'var(--border)'}`,
               borderRadius: '16px',
               cursor: 'pointer',
               overflow: 'hidden',
@@ -155,7 +214,6 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
               padding: '1rem .75rem .85rem',
             }}
           >
-            {/* Image / SVG illustration */}
             {style.image ? (
               <img
                 src={style.image}
@@ -196,14 +254,12 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
                 {style.emoji}
               </div>
             )}
-
-            {/* Text */}
             <div style={{ width: '100%' }}>
-              <div style={{ fontWeight: 700, fontSize: isBread ? '.78rem' : '.88rem', color: 'var(--char)', marginBottom: '.2rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '.78rem', color: 'var(--char)', marginBottom: '.2rem' }}>
                 {locale === 'fr' && style.nameFr ? style.nameFr : style.name}
               </div>
               <div style={{
-                fontSize: isBread ? '.65rem' : '.7rem',
+                fontSize: '.65rem',
                 color: 'var(--smoke)', lineHeight: 1.4, fontWeight: 300,
                 overflow: 'hidden',
                 display: '-webkit-box',
@@ -212,15 +268,6 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
               } as React.CSSProperties}>
                 {style.desc}
               </div>
-              {!isBread && (
-                <div style={{
-                  fontSize: '.65rem', color: 'var(--smoke)',
-                  marginTop: '.3rem', fontFamily: 'var(--font-dm-mono)',
-                }}>
-                  {style.hydration}% hyd · {style.salt}% salt
-                  {'oil' in style && style.oil > 0 ? ` · ${style.oil}% oil` : ''}
-                </div>
-              )}
             </div>
           </div>
         );

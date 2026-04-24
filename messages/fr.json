@@ -1084,5 +1084,36 @@
     "longAhead": "16h+ à l'avance",
     "nightBefore": "La veille",
     "sameDay": "Jour même"
+  },
+  "style": {
+    "heading": "Votre style",
+    "subtitle": "Le style définit l'hydratation, le sel, la fermentation et la cuisson.",
+    "neapolitan": {
+      "title": "Napolitaine Classique",
+      "tagline": "Celle qui a tout commencé."
+    },
+    "newyork": {
+      "title": "New York Style",
+      "tagline": "Grandes parts croustillantes et pliables"
+    },
+    "pizza_romana": {
+      "title": "Pizza Romana",
+      "tagline": "Ultra-fine, craquante, étalée au rouleau"
+    },
+    "roman": {
+      "title": "Teglia Romaine",
+      "tagline": "Rectangulaire, ultra-croustillante, haute hydratation"
+    },
+    "pan": {
+      "title": "Pan / Detroit",
+      "tagline": "Épaisse, beurrée, bords caramélisés"
+    },
+    "sourdough": {
+      "title": "Pizza au Levain",
+      "tagline": "Levain naturel, acidulée, moelleuse"
+    }
+  },
+  "decisionSummary": {
+    "change": "CHANGER"
   }
 }
