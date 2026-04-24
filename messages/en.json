@@ -1157,5 +1157,13 @@
     "ady":       { "title": "Active dry yeast",   "tagline": "Needs warm water to wake up" },
     "fresh":     { "title": "Fresh yeast",        "tagline": "Cake yeast, strongest flavor" },
     "sourdough": { "title": "Sourdough starter",  "tagline": "Natural leaven, tangy, slower" }
+  },
+  "pizzaNight": {
+    "tab": {
+      "pick": "Pick",
+      "shop": "Shop",
+      "prep": "Prep",
+      "bake": "Bake"
+    }
   }
 }

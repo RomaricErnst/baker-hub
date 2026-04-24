@@ -1157,5 +1157,13 @@
     "ady":       { "title": "Levure sèche active",      "tagline": "Nécessite de l'eau tiède pour s'activer" },
     "fresh":     { "title": "Levure fraîche",           "tagline": "Levure en bloc, saveur la plus riche" },
     "sourdough": { "title": "Levain",                   "tagline": "Fermentation naturelle, acidulé, plus lent" }
+  },
+  "pizzaNight": {
+    "tab": {
+      "pick": "Choisir",
+      "shop": "Courses",
+      "prep": "Préparer",
+      "bake": "Cuire"
+    }
   }
 }

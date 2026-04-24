@@ -14,6 +14,7 @@ import BakeGuide from '../components/BakeGuide';
 import { getPrefPeakH_RT, getPrefRTWarmupH } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
 import ToppingSelector from '../components/ToppingSelector';
+import PizzaNight from '../components/PizzaNight';
 import FlourPicker from '../components/FlourPicker';
 import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
@@ -360,7 +361,6 @@ export default function Home() {
     window.scrollTo(0, 0);
   }, [activeTab]);
   const pizzaPartyEnabled = bakeType === 'pizza';
-  const [pizzaPartyPill, setPizzaPartyPill] = useState<'pizzas' | 'shopping' | 'party'>('pizzas');
 
   // M2 — Mode chosen: false on page load, true after baker selects a mode
   const [modeChosen, setModeChosen] = useState(false);
@@ -1331,13 +1331,12 @@ export default function Home() {
             {/* ── Pizza Party tab content ── */}
             {pizzaPartyEnabled && (
               <div style={{ display: activeTab === 'pizzaparty' ? 'block' : 'none' }}>
-                <ToppingSelector
+                <PizzaNight
                   locale={locale}
+                  bakeTime={eatTime ?? new Date()}
                   numItems={numItems}
-                  activePill={pizzaPartyPill}
-                  onPillChange={setPizzaPartyPill}
+                  styleKey={styleKey ?? 'neapolitan'}
                   t={t}
-                  styleKey={styleKey ?? undefined}
                 />
               </div>
             )}
@@ -2314,13 +2313,12 @@ export default function Home() {
             {/* ── Pizza Party tab content ── */}
             {pizzaPartyEnabled && (
               <div style={{ display: activeTab === 'pizzaparty' ? 'block' : 'none' }}>
-                <ToppingSelector
+                <PizzaNight
                   locale={locale}
+                  bakeTime={eatTime ?? new Date()}
                   numItems={numItems}
-                  activePill={pizzaPartyPill}
-                  onPillChange={setPizzaPartyPill}
+                  styleKey={styleKey ?? 'neapolitan'}
                   t={t}
-                  styleKey={styleKey ?? undefined}
                 />
               </div>
             )}
