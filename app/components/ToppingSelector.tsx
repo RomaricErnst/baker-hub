@@ -376,21 +376,13 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
 }) {
   const l = locale as 'en' | 'fr';
   const name = pizza.name[l] ?? pizza.name.en;
-  const tags = pizza.occasion.slice(0, 2).map(o =>
-    OCCASION_LABELS[o]?.[l] ?? o
-  );
-  const seasonEmoji =
-    pizza.season.includes('winter') && !pizza.season.includes('all') ? '❄️' :
-    pizza.season.includes('autumn') && !pizza.season.includes('all') ? '🍂' :
-    pizza.season.includes('spring') && !pizza.season.includes('all') ? '🌸' :
-    pizza.season.includes('summer') && !pizza.season.includes('all') ? '☀️' : null;
   const budget = '€'.repeat(pizza.budget);
 
   return (
     <div style={S.card(qty > 0)} onClick={onTap}>
       <div style={{ display: 'flex', gap: '8px', padding: '6px 10px 6px' }}>
         {/* Left: image spanning all rows */}
-        <div style={{ width: '52px', height: '52px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: '#1A1612' }}>
+        <div style={{ width: '80px', height: '80px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, background: '#1A1612' }}>
           <img
             src={(() => {
               const variantMap: Record<string, string> = {
@@ -422,15 +414,20 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
               {pizza.story[l] ?? pizza.story.en}
             </div>
           )}
-          {/* Row 3: time · tags · qty controls (always rendered, hidden when qty=0 to avoid layout jump) */}
+          {/* Row 3: wine pairing · time · qty controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            {pizza.winePairing?.[0] && (
+              <span style={{ fontSize: '10px', color: '#8A7F78', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80px', flexShrink: 1 }}>
+                {pizza.winePairing[0][l] ?? pizza.winePairing[0].en}
+              </span>
+            )}
+            {pizza.winePairing?.[0] && (
+              <span style={{ fontSize: '10px', color: '#C8C0B8' }}>·</span>
+            )}
             <span style={{ fontSize: '10px', color: '#8A7F78', flexShrink: 0 }}>
               {pizza.prepMinutes} min
             </span>
-            <div style={{ display: 'flex', gap: '3px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
-              {seasonEmoji && <span style={S.tag('season')}>{seasonEmoji}</span>}
-              {tags.map((tag, i) => <span key={i} style={S.tag('default')}>{tag}</span>)}
-            </div>
+            <div style={{ flex: 1 }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
               <button style={{ ...S.qtyBtn, visibility: qty > 0 ? 'visible' : 'hidden' }} onClick={e => onQtyChange(-1, e)}>−</button>
               <span style={{ fontSize: '12px', fontWeight: 600, color: '#C4522A', minWidth: '14px', textAlign: 'center', visibility: qty > 0 ? 'visible' : 'hidden' }}>{qty}</span>
