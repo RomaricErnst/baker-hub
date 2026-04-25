@@ -1168,19 +1168,12 @@
   },
   "prep": {
     "header": {
-      "title": "Votre cuisson est à {time}",
-      "subtitle": "dans {n} min",
-      "past": "Heure de cuisson"
+      "title": "Mise en place",
+      "subtitle": "Tout prêt avant de garnir."
     },
-    "bucket": {
-      "now": "MAINTENANT",
-      "60min": "60 MIN AVANT LA CUISSON",
-      "45min": "45 MIN AVANT LA CUISSON",
-      "30min": "30 MIN AVANT LA CUISSON",
-      "15min": "15 MIN AVANT LA CUISSON",
-      "ready": "PRÊT À ENFOURNER"
-    },
-    "cta": "Passer à la cuisson"
+    "empty": "Aucune préparation — garnissez et enfournez.",
+    "cta": "Prêt à garnir",
+    "timing": "{n} min avant"
   },
   "bake": {
     "header": {

@@ -1168,19 +1168,12 @@
   },
   "prep": {
     "header": {
-      "title": "Your bake is at {time}",
-      "subtitle": "{n} min from now",
-      "past": "Bake time"
+      "title": "Mise en place",
+      "subtitle": "Everything ready before you build."
     },
-    "bucket": {
-      "now": "NOW",
-      "60min": "60 MIN BEFORE BAKE",
-      "45min": "45 MIN BEFORE BAKE",
-      "30min": "30 MIN BEFORE BAKE",
-      "15min": "15 MIN BEFORE BAKE",
-      "ready": "READY TO BAKE"
-    },
-    "cta": "Continue to Bake"
+    "empty": "No prep needed — just build and bake.",
+    "cta": "Ready to build",
+    "timing": "{n} min before"
   },
   "bake": {
     "header": {

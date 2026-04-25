@@ -24,7 +24,7 @@ export type { IngredientUnit, IngredientQty } from './toppingTypes'
 
 // ─── Shared ingredients ──────────────────────────────────────
 
-const ING: Record<string, Ingredient> = {
+export const ING: Record<string, Ingredient> = {
 
   sanMarzano: {
     id: 'san_marzano', category: 'sauce', bakeOrder: 'before',
@@ -50,7 +50,7 @@ const ING: Record<string, Ingredient> = {
   marinaraSauce: {
     id: 'marinara_sauce', category: 'sauce', bakeOrder: 'before',
     name: { en: 'Cooked marinara sauce', fr: 'Sauce marinara cuite' },
-    prepNote: { en: 'Simmer 20 min: olive oil, garlic (remove), San Marzano, basil, salt', fr: 'Mijoter 20 min : huile, ail (retirer), San Marzano, basilic, sel' },
+    prepNote: { en: 'Simmer 20 min: olive oil, garlic (remove), San Marzano, basil, salt', fr: 'Mijoter 20 min : huile, ail (retirer), San Marzano, basilic, sel', timing: 30 },
     qtyPerPizza: { amount: 80, unit: 'g' },
   },
 
@@ -63,7 +63,7 @@ const ING: Record<string, Ingredient> = {
   fiordilatte: {
     id: 'fior_di_latte', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Fior di latte', fr: 'Fior di latte' },
-    prepNote: { en: 'Slice 5mm, drain on paper towel 30 min before baking', fr: 'Trancher à 5mm, égoutter sur papier 30 min avant cuisson' },
+    prepNote: { en: 'Slice 5mm, drain on paper towel 30 min before baking', fr: 'Trancher à 5mm, égoutter sur papier 30 min avant cuisson', timing: 30 },
     qtyPerPizza: { amount: 100, unit: 'g' },
     hardToFind: true,
     goodEnough: {
@@ -192,14 +192,14 @@ const ING: Record<string, Ingredient> = {
   mozzarellaLM: {
     id: 'mozzarella_lm', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Low-moisture mozzarella', fr: 'Mozzarella faible humidité' },
-    prepNote: { en: 'Grate or slice thin — melts evenly without excess water', fr: 'Râper ou trancher fin — fond sans excès d\'eau' },
+    prepNote: { en: 'Grate or slice thin — melts evenly without excess water', fr: 'Râper ou trancher fin — fond sans excès d\'eau', timing: 5 },
     qtyPerPizza: { amount: 100, unit: 'g', noteEN: 'low-moisture block', noteFR: 'bloc faible humidité' },
   },
 
   fourCheeses: {
     id: 'four_cheeses', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Four cheeses: mozzarella, gorgonzola, parmesan, taleggio', fr: 'Quatre fromages : mozzarella, gorgonzola, parmesan, taleggio' },
-    prepNote: { en: 'Grate parmesan, crumble gorgonzola, slice taleggio thin, tear mozzarella', fr: 'Râper parmesan, émietter gorgonzola, trancher taleggio finement, déchirer mozzarella' },
+    prepNote: { en: 'Grate parmesan, crumble gorgonzola, slice taleggio thin, tear mozzarella', fr: 'Râper parmesan, émietter gorgonzola, trancher taleggio finement, déchirer mozzarella', timing: 10 },
     qtyPerPizza: { amount: 120, unit: 'g', noteEN: 'total across 4 cheeses', noteFR: 'total pour 4 fromages' },
     hardToFind: true,
     goodEnough: { name: { en: 'Replace taleggio with young Fontina — same washed-rind family, melts identically', fr: 'Remplacer le taleggio par du Fontina jeune — même famille à croûte lavée, fond pareil' } },
@@ -260,7 +260,7 @@ const ING: Record<string, Ingredient> = {
   grilledChicken: {
     id: 'grilled_chicken', category: 'meat', bakeOrder: 'before',
     name: { en: 'Grilled chicken', fr: 'Poulet grillé' },
-    prepNote: { en: 'Slice thin, season well before adding', fr: 'Trancher finement, bien assaisonner avant d\'ajouter' },
+    prepNote: { en: 'Slice thin, season well before adding', fr: 'Trancher finement, bien assaisonner avant d\'ajouter', timing: 30 },
     qtyPerPizza: { amount: 120, unit: 'g', noteEN: '1 breast per pizza', noteFR: '1 blanc par pizza' },
   },
 
@@ -299,28 +299,28 @@ const ING: Record<string, Ingredient> = {
   tuna: {
     id: 'tuna', category: 'seafood', bakeOrder: 'before',
     name: { en: 'Good quality canned tuna in oil', fr: 'Thon de qualité à l\'huile' },
-    prepNote: { en: 'Drain well before adding', fr: 'Bien égoutter avant d\'ajouter' },
+    prepNote: { en: 'Drain well before adding', fr: 'Bien égoutter avant d\'ajouter', timing: 5 },
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'drained weight', noteFR: 'poids égoutté' },
   },
 
   thinPotato: {
     id: 'thin_potato', category: 'veg', bakeOrder: 'before',
     name: { en: 'Thinly sliced potato', fr: 'Pomme de terre en fines tranches' },
-    prepNote: { en: 'Slice 2mm — no pre-cooking for mid/low oven. High oven: blanch 2 min first.', fr: 'Trancher à 2mm — pas de précuisson four moyen. Four très chaud : blanchir 2 min.' },
+    prepNote: { en: 'Slice 2mm — no pre-cooking for mid/low oven. High oven: blanch 2 min first.', fr: 'Trancher à 2mm — pas de précuisson four moyen. Four très chaud : blanchir 2 min.', timing: 10 },
     qtyPerPizza: { amount: 150, unit: 'g', noteEN: 'sliced 2mm', noteFR: 'tranché à 2mm' },
   },
 
   mushrooms: {
     id: 'mushrooms', category: 'veg', bakeOrder: 'before',
     name: { en: 'Mixed mushrooms', fr: 'Champignons mélangés' },
-    prepNote: { en: 'Sauté briefly before adding — removes excess water', fr: 'Faire revenir brièvement — élimine l\'excès d\'eau' },
+    prepNote: { en: 'Sauté briefly before adding — removes excess water', fr: 'Faire revenir brièvement — élimine l\'excès d\'eau', timing: 15 },
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'sliced', noteFR: 'émincés' },
   },
 
   porcini: {
     id: 'porcini', category: 'veg', bakeOrder: 'before',
     name: { en: 'Porcini mushrooms', fr: 'Cèpes' },
-    prepNote: { en: 'Sauté in butter before adding', fr: 'Faire revenir au beurre avant d\'ajouter' },
+    prepNote: { en: 'Sauté in butter before adding', fr: 'Faire revenir au beurre avant d\'ajouter', timing: 15 },
     qtyPerPizza: { amount: 60, unit: 'g', noteEN: 'fresh or rehydrated', noteFR: 'frais ou réhydratés' },
     goodEnough: { name: { en: 'Dried porcini (rehydrated) or chestnut mushrooms', fr: 'Cèpes séchés (réhydratés) ou champignons de châtaigne' } },
   },
@@ -365,14 +365,14 @@ const ING: Record<string, Ingredient> = {
   spinach: {
     id: 'spinach', category: 'veg', bakeOrder: 'before',
     name: { en: 'Fresh spinach', fr: 'Épinards frais' },
-    prepNote: { en: 'Wilt briefly, squeeze out water completely before adding', fr: 'Faire tomber rapidement, presser l\'eau complètement avant d\'ajouter' },
+    prepNote: { en: 'Wilt briefly, squeeze out water completely before adding', fr: 'Faire tomber rapidement, presser l\'eau complètement avant d\'ajouter', timing: 10 },
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'fresh, wilts to ~30g', noteFR: 'frais, réduit à ~30g' },
   },
 
   aubergine: {
     id: 'aubergine', category: 'veg', bakeOrder: 'before',
     name: { en: 'Aubergine', fr: 'Aubergine' },
-    prepNote: { en: 'Slice, salt 20 min, pat dry — roast or fry before adding', fr: 'Trancher, saler 20 min, sécher — rôtir ou frire avant d\'ajouter' },
+    prepNote: { en: 'Slice, salt 20 min, pat dry — roast or fry before adding', fr: 'Trancher, saler 20 min, sécher — rôtir ou frire avant d\'ajouter', timing: 35 },
     qtyPerPizza: { amount: 100, unit: 'g', noteEN: 'sliced and grilled', noteFR: 'tranché et grillé' },
   },
 
@@ -386,7 +386,7 @@ const ING: Record<string, Ingredient> = {
   courgFlower: {
     id: 'courgette_flower', category: 'veg', bakeOrder: 'before',
     name: { en: 'Courgette flowers', fr: 'Fleurs de courgette' },
-    prepNote: { en: 'Open flat, remove pistil, add before baking', fr: 'Ouvrir à plat, retirer le pistil, ajouter avant cuisson' },
+    prepNote: { en: 'Open flat, remove pistil, add before baking', fr: 'Ouvrir à plat, retirer le pistil, ajouter avant cuisson', timing: 5 },
     qtyPerPizza: { amount: 2, unit: 'pcs' },
     hardToFind: true,
     goodEnough: { name: { en: 'Thinly sliced courgette', fr: 'Courgette tranchée finement' } },
@@ -489,7 +489,7 @@ const ING: Record<string, Ingredient> = {
   walnuts: {
     id: 'walnuts', category: 'finish', bakeOrder: 'before',
     name: { en: 'Walnuts', fr: 'Noix' },
-    prepNote: { en: 'Roughly crush — toast lightly for more flavour', fr: 'Concasser grossièrement — légèrement torréfier pour plus de goût' },
+    prepNote: { en: 'Roughly crush — toast lightly for more flavour', fr: 'Concasser grossièrement — légèrement torréfier pour plus de goût', timing: 10 },
     isCommonPantry: true,
     qtyPerPizza: { amount: 30, unit: 'g' },
     compromise: { name: { en: 'Pecans or hazelnuts', fr: 'Noix de pécan ou noisettes' } },
@@ -634,7 +634,7 @@ const ING: Record<string, Ingredient> = {
   caramelisedApple: {
     id: 'caramelised_apple', category: 'veg', bakeOrder: 'before',
     name: { en: 'Caramelised apple', fr: 'Pomme caramélisée' },
-    prepNote: { en: 'Cook apple slices in butter and brown sugar 10 min before adding', fr: 'Cuire les tranches de pomme dans beurre et cassonade 10 min avant d\'ajouter' },
+    prepNote: { en: 'Cook apple slices in butter and brown sugar 10 min before adding', fr: 'Cuire les tranches de pomme dans beurre et cassonade 10 min avant d\'ajouter', timing: 20 },
     qtyPerPizza: { amount: 1, unit: 'pcs', noteEN: '1 apple per pizza', noteFR: '1 pomme par pizza' },
   },
 
@@ -648,7 +648,7 @@ const ING: Record<string, Ingredient> = {
   darkChocCream: {
     id: 'dark_choc_cream', category: 'base', bakeOrder: 'before',
     name: { en: 'Dark chocolate cream', fr: 'Crème au chocolat noir' },
-    prepNote: { en: 'Melt dark chocolate with cream (2:1) — spread warm', fr: 'Fondre le chocolat noir avec la crème (2:1) — étaler tiède' },
+    prepNote: { en: 'Melt dark chocolate with cream (2:1) — spread warm', fr: 'Fondre le chocolat noir avec la crème (2:1) — étaler tiède', timing: 15 },
     qtyPerPizza: { amount: 60, unit: 'g' },
   },
 
@@ -662,14 +662,14 @@ const ING: Record<string, Ingredient> = {
   almondFlakes: {
     id: 'almond_flakes', category: 'finish', bakeOrder: 'before',
     name: { en: 'Almond flakes', fr: 'Amandes effilées' },
-    prepNote: { en: 'Toast lightly before adding', fr: 'Légèrement torréfier avant d\'ajouter' },
+    prepNote: { en: 'Toast lightly before adding', fr: 'Légèrement torréfier avant d\'ajouter', timing: 10 },
     qtyPerPizza: { amount: 20, unit: 'g', noteEN: 'toasted', noteFR: 'grillées' },
   },
 
   asparagus: {
     id: 'asparagus', category: 'veg', bakeOrder: 'before',
     name: { en: 'Asparagus', fr: 'Asperges' },
-    prepNote: { en: 'Blanch 2 min, slice lengthways, add before baking', fr: 'Blanchir 2 min, couper en longueur, ajouter avant cuisson' },
+    prepNote: { en: 'Blanch 2 min, slice lengthways, add before baking', fr: 'Blanchir 2 min, couper en longueur, ajouter avant cuisson', timing: 10 },
     qtyPerPizza: { amount: 60, unit: 'g' },
   },
 
@@ -765,7 +765,7 @@ const ING: Record<string, Ingredient> = {
   caramelisedOnion: {
     id: 'caramelised_onion', category: 'veg', bakeOrder: 'before',
     name: { en: 'Caramelised onion', fr: 'Oignon caramélisé' },
-    prepNote: { en: 'Cook sliced onion low and slow 25 min in butter — deeply sweet', fr: 'Cuire l\'oignon émincé à feu doux 25 min dans du beurre — très doux et sucré' },
+    prepNote: { en: 'Cook sliced onion low and slow 25 min in butter — deeply sweet', fr: 'Cuire l\'oignon émincé à feu doux 25 min dans du beurre — très doux et sucré', timing: 35 },
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: '2 onions cooked down', noteFR: '2 oignons fondus' },
   },
 
@@ -781,7 +781,7 @@ const ING: Record<string, Ingredient> = {
   ciderReduction: {
     id: 'cider_reduction', category: 'finish', bakeOrder: 'after',
     name: { en: 'Cider reduction drizzle', fr: 'Réduction de cidre' },
-    prepNote: { en: 'Reduce dry cider by half, drizzle after baking', fr: 'Réduire le cidre brut de moitié, arroser après cuisson' },
+    prepNote: { en: 'Reduce dry cider by half, drizzle after baking', fr: 'Réduire le cidre brut de moitié, arroser après cuisson', timing: 20 },
     qtyPerPizza: { amount: 1, unit: 'tbsp' },
   },
 
@@ -824,7 +824,7 @@ const ING: Record<string, Ingredient> = {
   mixedPeppers: {
     id: 'mixed_peppers', category: 'veg', bakeOrder: 'before',
     name: { en: 'Mixed peppers (roasted)', fr: 'Poivrons mélangés (rôtis)' },
-    prepNote: { en: 'Slice and roast at 200°C until soft — or use jarred roasted peppers', fr: "Couper et rôtir à 200°C jusqu'à tendreté — ou utiliser des poivrons en bocal" },
+    prepNote: { en: 'Slice and roast at 200°C until soft — or use jarred roasted peppers', fr: "Couper et rôtir à 200°C jusqu'à tendreté — ou utiliser des poivrons en bocal", timing: 25 },
     qtyPerPizza: { amount: 80, unit: 'g' },
     goodEnough: { name: { en: 'Jarred roasted red peppers — excellent substitute', fr: 'Poivrons rouges rôtis en bocal — excellent substitut' } },
   },
@@ -869,7 +869,7 @@ const ING: Record<string, Ingredient> = {
   salsiccia: {
     id: 'salsiccia', category: 'meat', bakeOrder: 'before',
     name: { en: 'Italian sausage (salsiccia)', fr: 'Saucisse italienne (salsiccia)' },
-    prepNote: { en: 'Remove casing, crumble over pizza before baking', fr: 'Retirer le boyau, émietter sur la pizza avant cuisson' },
+    prepNote: { en: 'Remove casing, crumble over pizza before baking', fr: 'Retirer le boyau, émietter sur la pizza avant cuisson', timing: 5 },
     qtyPerPizza: { amount: 80, unit: 'g' },
     goodEnough: { name: { en: 'Any good pork sausage, casing removed', fr: 'Toute bonne saucisse de porc, sans boyau' } },
   },
@@ -877,7 +877,7 @@ const ING: Record<string, Ingredient> = {
   friarielli: {
     id: 'friarielli', category: 'veg', bakeOrder: 'before',
     name: { en: 'Friarielli (Neapolitan broccoli)', fr: 'Friarielli (brocoli napolitain)' },
-    prepNote: { en: "Sauté with garlic and olive oil before adding — do not use raw", fr: "Faire revenir avec ail et huile d'olive avant d'ajouter — ne pas utiliser cru" },
+    prepNote: { en: "Sauté with garlic and olive oil before adding — do not use raw", fr: "Faire revenir avec ail et huile d'olive avant d'ajouter — ne pas utiliser cru", timing: 15 },
     qtyPerPizza: { amount: 80, unit: 'g' },
     hardToFind: true,
     goodEnough: { name: { en: 'Cime di rapa (rapini/broccoli rabe)', fr: 'Cime di rapa (brocoli rave)' } },
@@ -908,7 +908,7 @@ const ING: Record<string, Ingredient> = {
   pistachiosPesto: {
     id: 'pistachios_pesto', category: 'base', bakeOrder: 'before',
     name: { en: 'Pistachio pesto', fr: 'Pesto de pistaches' },
-    prepNote: { en: 'Blend pistachios, garlic, olive oil, parmesan — thick consistency', fr: "Mixer pistaches, ail, huile d'olive, parmesan — consistance épaisse" },
+    prepNote: { en: 'Blend pistachios, garlic, olive oil, parmesan — thick consistency', fr: "Mixer pistaches, ail, huile d'olive, parmesan — consistance épaisse", timing: 15 },
     qtyPerPizza: { amount: 40, unit: 'g' },
     goodEnough: { name: { en: 'Basil pesto with crushed pistachios added', fr: 'Pesto basilic avec pistaches concassées' } },
   },
@@ -957,7 +957,7 @@ const ING: Record<string, Ingredient> = {
   zaatarMix: {
     id: 'zaatar_mix', category: 'spice', bakeOrder: 'before',
     name: { en: "Za'atar spice blend", fr: "Mélange za'atar" },
-    prepNote: { en: 'Mix with olive oil before spreading', fr: "Mélanger avec de l'huile d'olive avant d'étaler" },
+    prepNote: { en: 'Mix with olive oil before spreading', fr: "Mélanger avec de l'huile d'olive avant d'étaler", timing: 5 },
     qtyPerPizza: { amount: 2, unit: 'tbsp' },
     hardToFind: false,
     goodEnough: { name: { en: 'Dried thyme + sesame + sumac + salt', fr: 'Thym séché + sésame + sumac + sel' } },
@@ -989,7 +989,7 @@ const ING: Record<string, Ingredient> = {
   misoPaste: {
     id: 'miso_paste', category: 'sauce', bakeOrder: 'before',
     name: { en: 'White miso paste (base)', fr: 'Pâte miso blanc (base)' },
-    prepNote: { en: 'Mix with a little cream or olive oil to thin before spreading', fr: "Diluer avec un peu de crème ou huile d'olive avant d'étaler" },
+    prepNote: { en: 'Mix with a little cream or olive oil to thin before spreading', fr: "Diluer avec un peu de crème ou huile d'olive avant d'étaler", timing: 5 },
     qtyPerPizza: { amount: 2, unit: 'tbsp' },
     hardToFind: false,
     localSwap: {
@@ -1000,7 +1000,7 @@ const ING: Record<string, Ingredient> = {
   mentaiko: {
     id: 'mentaiko', category: 'sauce', bakeOrder: 'before',
     name: { en: 'Mentaiko (spicy pollock roe)', fr: 'Mentaiko (œufs de lieu épicés)' },
-    prepNote: { en: 'Mix with cream or mayo — spread as base or drizzle after baking', fr: 'Mélanger avec crème ou mayo — étaler en base ou verser après cuisson' },
+    prepNote: { en: 'Mix with cream or mayo — spread as base or drizzle after baking', fr: 'Mélanger avec crème ou mayo — étaler en base ou verser après cuisson', timing: 5 },
     qtyPerPizza: { amount: 40, unit: 'g' },
     hardToFind: true,
     goodEnough: { name: { en: 'Ikura (salmon roe) added after baking', fr: 'Ikura (œufs de saumon) ajouté après cuisson' } },
@@ -1012,7 +1012,7 @@ const ING: Record<string, Ingredient> = {
   vodkaCream: {
     id: 'vodka_cream', category: 'sauce', bakeOrder: 'before',
     name: { en: 'Vodka tomato cream sauce', fr: 'Sauce tomate crémée à la vodka' },
-    prepNote: { en: "Simmer tomato + cream + splash vodka until thickened — sauce should coat a spoon", fr: "Mijoter tomate + crème + trait de vodka jusqu'à épaississement — la sauce doit napper une cuillère" },
+    prepNote: { en: "Simmer tomato + cream + splash vodka until thickened — sauce should coat a spoon", fr: "Mijoter tomate + crème + trait de vodka jusqu'à épaississement — la sauce doit napper une cuillère", timing: 25 },
     qtyPerPizza: { amount: 80, unit: 'g' },
     goodEnough: { name: { en: 'Cooked tomato sauce + tablespoon of cream', fr: 'Sauce tomate cuite + cuillère à soupe de crème' } },
   },
@@ -1048,7 +1048,7 @@ const ING: Record<string, Ingredient> = {
   octopus: {
     id: 'octopus', category: 'seafood', bakeOrder: 'before',
     name: { en: 'Octopus (cooked, sliced)', fr: 'Poulpe (cuit, tranché)' },
-    prepNote: { en: 'Must be pre-cooked tender before adding — raw octopus will not cook through on pizza', fr: "Doit être précuit et tendre avant d'ajouter — le poulpe cru ne cuira pas assez sur la pizza" },
+    prepNote: { en: 'Must be pre-cooked tender before adding — raw octopus will not cook through on pizza', fr: "Doit être précuit et tendre avant d'ajouter — le poulpe cru ne cuira pas assez sur la pizza", timing: 60 },
     qtyPerPizza: { amount: 80, unit: 'g' },
     hardToFind: false,
     goodEnough: { name: { en: 'Calamari rings (pre-cooked)', fr: 'Rondelles de calamar (précuites)' } },
@@ -1091,7 +1091,7 @@ const ING: Record<string, Ingredient> = {
   bulgogi: {
     id: 'bulgogi', category: 'meat', bakeOrder: 'before',
     name: { en: 'Bulgogi (Korean BBQ beef)', fr: 'Bulgogi (bœuf BBQ coréen)' },
-    prepNote: { en: "Pre-marinate and cook beef before adding — it won't cook through on pizza", fr: "Pré-mariner et cuire le bœuf avant d'ajouter — il ne cuira pas assez sur la pizza" },
+    prepNote: { en: "Pre-marinate and cook beef before adding — it won't cook through on pizza", fr: "Pré-mariner et cuire le bœuf avant d'ajouter — il ne cuira pas assez sur la pizza", timing: 45 },
     qtyPerPizza: { amount: 80, unit: 'g' },
     goodEnough: { name: { en: 'Thinly sliced beef with soy-sesame marinade', fr: 'Bœuf tranché finement avec marinade soja-sésame' } },
   },
@@ -1113,14 +1113,14 @@ const ING: Record<string, Ingredient> = {
   wasabiCream: {
     id: 'wasabi_cream', category: 'sauce', bakeOrder: 'before',
     name: { en: 'Wasabi cream base', fr: 'Base crème wasabi' },
-    prepNote: { en: 'Mix crème fraîche 30%+ + wasabi paste to taste — spread thin', fr: 'Mélanger crème fraîche 30%+ + pâte wasabi — étaler finement' },
+    prepNote: { en: 'Mix crème fraîche 30%+ + wasabi paste to taste — spread thin', fr: 'Mélanger crème fraîche 30%+ + pâte wasabi — étaler finement', timing: 5 },
     qtyPerPizza: { amount: 60, unit: 'g' },
   },
 
   duckConfit: {
     id: 'duck_confit', category: 'meat', bakeOrder: 'before',
     name: { en: 'Duck confit (shredded)', fr: 'Confit de canard (effiloché)' },
-    prepNote: { en: "Shred and remove excess fat before adding", fr: "Effilocher et retirer l'excès de gras avant d'ajouter" },
+    prepNote: { en: "Shred and remove excess fat before adding", fr: "Effilocher et retirer l'excès de gras avant d'ajouter", timing: 10 },
     qtyPerPizza: { amount: 80, unit: 'g' },
     hardToFind: false,
     compromise: { name: { en: 'Slow-cooked duck leg, shredded', fr: 'Cuisse de canard mijotée, effilochée' } },

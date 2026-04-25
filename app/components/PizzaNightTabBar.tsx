@@ -37,12 +37,13 @@ export default function PizzaNightTabBar({ activeTab, onTabChange }: PizzaNightT
         const leftLineColor = i <= activeIndex ? 'var(--gold)' : 'var(--border)';
         const rightLineColor = i < activeIndex ? 'var(--gold)' : 'var(--border)';
 
-        const dotSize = isActive ? '10px' : '8px';
-        const dotBackground = isActive ? 'var(--char)' : isCompleted ? 'var(--gold)' : 'var(--border)';
+        const dotSize = isActive ? '12px' : '8px';
+        const dotBackground = isActive ? 'var(--terra)' : isCompleted ? 'var(--gold)' : 'var(--border)';
         const dotBorder = isFuture ? '1.5px solid var(--smoke)' : undefined;
 
         const labelColor = isActive ? 'var(--char)' : isCompleted ? 'var(--gold)' : 'var(--smoke)';
-        const labelWeight = isActive ? 600 : isCompleted ? 500 : 400;
+        const labelWeight = isActive ? 700 : isCompleted ? 500 : 400;
+        const labelSize = isActive ? '14px' : '12px';
 
         return (
           <div
@@ -51,7 +52,7 @@ export default function PizzaNightTabBar({ activeTab, onTabChange }: PizzaNightT
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, cursor: 'pointer' }}
           >
             <span style={{
-              fontFamily: 'DM Sans, sans-serif', fontSize: '12px',
+              fontFamily: 'DM Sans, sans-serif', fontSize: labelSize,
               marginBottom: '6px', color: labelColor, fontWeight: labelWeight,
             }}>
               {tab.label}

@@ -75,6 +75,7 @@ interface Props {
   t: (key: string) => string;
   controlledQtys?: Qty;
   onQtysChange?: (qtys: Qty) => void;
+  hidePillBar?: boolean;
 }
 
 // ─── Sub-region maps ─────────────────────────────────────────
@@ -998,7 +999,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar }: Props) {
   const l = locale as 'en' | 'fr';
 
   // Filter state
@@ -1144,15 +1145,17 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
     <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', paddingBottom: '56px' }}>
 
       {/* ── 3 navigation pills ── */}
-      <div style={{ display: 'flex', gap: '6px', padding: '8px 12px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
-        {(['pizzas', 'shopping', 'party'] as const).map(pill => (
-          <div key={pill} style={S.navPill(activePill === pill)} onClick={() => onPillChange(pill)}>
-            {pill === 'pizzas'   ? t('pizzaParty.pill.pizzas')
-              : pill === 'shopping' ? t('pizzaParty.pill.shopping')
-              : t('pizzaParty.pill.partyTime')}
-          </div>
-        ))}
-      </div>
+      {!hidePillBar && (
+        <div style={{ display: 'flex', gap: '6px', padding: '8px 12px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
+          {(['pizzas', 'shopping', 'party'] as const).map(pill => (
+            <div key={pill} style={S.navPill(activePill === pill)} onClick={() => onPillChange(pill)}>
+              {pill === 'pizzas'   ? t('pizzaParty.pill.pizzas')
+                : pill === 'shopping' ? t('pizzaParty.pill.shopping')
+                : t('pizzaParty.pill.partyTime')}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ══════════════════════════════════════
           PIZZAS pill

@@ -52,6 +52,7 @@ export default function PizzaNight({ locale, bakeTime, numItems, styleKey, t }: 
           styleKey={styleKey}
           controlledQtys={qtys}
           onQtysChange={setQtys}
+          hidePillBar={true}
         />
       </div>
 

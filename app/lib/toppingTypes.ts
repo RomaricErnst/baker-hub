@@ -115,7 +115,7 @@ export type Ingredient = {
   name: Locale
   category: IngredientCategory
   bakeOrder: BakeOrder
-  prepNote?: Locale
+  prepNote?: { en: string; fr: string; timing?: number }
   goodEnough?: IngredientSubstitution   // close alternative — "Also great:"
   compromise?: IngredientSubstitution   // works but noticeably different — "If not available:"
   localSwap?: Partial<Record<ShoppingContext, IngredientSubstitution>>
