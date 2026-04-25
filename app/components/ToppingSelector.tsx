@@ -1712,61 +1712,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               </div>
             </div>
             )}
-            {/* Summary rows — only when pizzas selected */}
-            {totalQty > 0 && (
-            <div style={{ padding: '8px 12px 12px' }}>
-          {Object.entries(qtys)
-            .filter(([, qty]) => (qty as number) > 0)
-            .map(([pizzaId, qty]) => {
-              const pizza = [...PIZZAS, ...DESSERT_PIZZAS].find(p => p.id === pizzaId);
-              if (!pizza) return null;
-              return (
-                <div key={pizzaId} style={{
-                  display: 'flex', alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 0',
-                  borderBottom: '0.5px solid #E0D8CF',
-                }}>
-                  <span style={{
-                    fontSize: '13px', color: '#1A1612',
-                    fontFamily: 'DM Sans, sans-serif', flex: 1,
-                  }}>
-                    {pizza.name[l] ?? pizza.name.en}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <button
-                      onClick={() => changeQty(pizzaId, -1)}
-                      style={{
-                        width: '26px', height: '26px', borderRadius: '50%',
-                        border: '1px solid #E0D8CF', background: '#FDFBF7',
-                        cursor: 'pointer', fontSize: '16px', color: '#1A1612',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        lineHeight: 1,
-                      }}
-                    >−</button>
-                    <span style={{
-                      fontSize: '13px', fontWeight: 600, color: '#1A1612',
-                      fontFamily: 'DM Mono, monospace',
-                      minWidth: '16px', textAlign: 'center',
-                    }}>
-                      {qty as number}
-                    </span>
-                    <button
-                      onClick={() => changeQty(pizzaId, 1)}
-                      style={{
-                        width: '26px', height: '26px', borderRadius: '50%',
-                        border: '1px solid #C4522A', background: '#C4522A',
-                        cursor: 'pointer', fontSize: '16px', color: 'white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        lineHeight: 1,
-                      }}
-                    >+</button>
-                  </div>
-                </div>
-              );
-            })}
-            </div>
-            )}
           </div>
       </div>
 
