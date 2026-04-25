@@ -466,6 +466,11 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
   const l = locale as 'en' | 'fr';
   const allIngs = pizza.ingredients;
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.5)', zIndex: 100 }}
