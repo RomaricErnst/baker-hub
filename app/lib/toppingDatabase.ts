@@ -1181,6 +1181,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 2, boldness: 1, creative: 1, refined: 2 },
     ingredients: [ING.sanMarzano, ING.fiordilatte, ING.freshBasil, ING.evoOil],
     wineNote: { en: 'Falanghina · crisp white or sparkling', fr: 'Falanghina · blanc frais ou pétillant' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork', 'pan'],
   },
 
   {
@@ -1196,6 +1197,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 1, boldness: 2, creative: 1, refined: 2 },
     ingredients: [ING.sanMarzano, ING.garlic, ING.oregano, ING.evoOil],
     wineNote: { en: 'Vermentino or crisp Pinot Grigio', fr: 'Vermentino ou Pinot Gris frais' },
+    compatibleStyles: ['neapolitan', 'sourdough'],
   },
 
   {
@@ -1211,6 +1213,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 3, boldness: 5, creative: 1, refined: 2 },
     ingredients: [ING.sanMarzano, ING.fiordilatte, ING.spicySalami, ING.chilli, ING.evoOil],
     wineNote: { en: 'Primitivo or bold red', fr: 'Primitivo ou rouge puissant' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork', 'pan'],
   },
 
   {
@@ -1226,6 +1229,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 5, boldness: 3, creative: 1, refined: 4 },
     ingredients: [ING.olioBase, ING.mozzarellaLM, ING.gorgonzola, ING.parmigiano, ING.taleggio, ING.blackPepper],
     wineNote: { en: 'Barolo or aged Chianti', fr: 'Barolo ou Chianti vieilli' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork', 'pan'],
   },
 
   {
@@ -1241,6 +1245,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 3, boldness: 2, creative: 1, refined: 2 },
     ingredients: [ING.marinaraSauce, ING.fiordilatte, ING.mushrooms, ING.ham, ING.blackOlives, ING.artichoke, ING.evoOil],
     wineNote: { en: 'Chianti Classico · light red', fr: 'Chianti Classico · rouge léger' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork', 'pan'],
   },
 
   {
@@ -1256,6 +1261,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 2, boldness: 4, creative: 1, refined: 3 },
     ingredients: [ING.sanMarzano, ING.fiordilatte, ING.anchovies, ING.capers, ING.blackOlives, ING.evoOil],
     wineNote: { en: 'Verdicchio or Fiano · crisp white', fr: 'Verdicchio ou Fiano · blanc frais' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   // ── MEAT ─────────────────────────────────────────────────
@@ -1273,6 +1279,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 3, boldness: 3, creative: 1, refined: 1 },
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.pepperoni],
     wineNote: { en: 'Zinfandel or light red', fr: 'Zinfandel ou rouge léger' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork', 'pan'],
   },
 
   {
@@ -1288,6 +1295,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 4, boldness: 5, creative: 2, refined: 3 },
     ingredients: [ING.sanMarzano, ING.nduja, ING.fiordilatte, ING.freshBasil, ING.evoOil],
     wineNote: { en: 'Aglianico or bold Calabrian red', fr: 'Aglianico ou rouge calabrais puissant' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   // ── SEAFOOD ──────────────────────────────────────────────
@@ -1305,6 +1313,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 2, boldness: 3, creative: 1, refined: 2 },
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.tuna, ING.redOnion, ING.evoOil],
     wineNote: { en: 'Grillo or Sicilian white · crisp white', fr: 'Grillo ou blanc sicilien · blanc frais' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1320,6 +1329,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 4, boldness: 2, creative: 3, refined: 5 },
     ingredients: [ING.cremeFraiche, ING.fiordilatte, ING.smSalmon, ING.capers, ING.dill, ING.lemonWedge],
     wineNote: { en: 'Champagne or Chablis', fr: 'Champagne ou Chablis' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork'],
   },
 
   // ── VEGETABLE ────────────────────────────────────────────
@@ -1337,6 +1347,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 2, boldness: 2, creative: 1, refined: 2 },
     ingredients: [ING.marinaraSauce, ING.fiordilatte, ING.aubergine, ING.courgette, ING.roastedPepper, ING.freshBasil, ING.evoOil],
     wineNote: { en: 'Bardolino or light red', fr: 'Bardolino ou rouge léger' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork', 'pan'],
   },
 
   {
@@ -1352,6 +1363,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 4, boldness: 3, creative: 2, refined: 5 },
     ingredients: [ING.olioBase, ING.fiordilatte, ING.porcini, ING.mushrooms, ING.truffleOil, ING.evoOil],
     wineNote: { en: 'Burgundy or earthy full red', fr: 'Bourgogne rouge ou rouge terreux' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork', 'pan'],
   },
 
   // ── WHITE ────────────────────────────────────────────────
@@ -1369,6 +1381,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 3, boldness: 1, creative: 1, refined: 2 },
     ingredients: [ING.olioBase, ING.fiordilatte, ING.thinPotato, ING.rosemary, ING.seaSalt, ING.evoOil],
     wineNote: { en: 'Frascati or Soave · crisp white', fr: 'Frascati ou Soave · blanc frais' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1384,6 +1397,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 3, boldness: 2, creative: 2, refined: 4 },
     ingredients: [ING.ricotta, ING.fiordilatte, ING.spinach, ING.evoOil],
     wineNote: { en: 'Pinot Grigio or Soave · crisp white', fr: 'Pinot Gris ou Soave · blanc frais' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork', 'pan'],
   },
 
   {
@@ -1399,6 +1413,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 5, boldness: 3, creative: 3, refined: 5 },
     ingredients: [ING.cream35, ING.fiordilatte, ING.parmigianoShavings, ING.truffleOil],
     wineNote: { en: 'White Burgundy or aged Barolo', fr: 'Bourgogne blanc ou Barolo vieilli' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork', 'pan'],
   },
 
   // ── MODERN ───────────────────────────────────────────────
@@ -1416,6 +1431,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 2, boldness: 2, creative: 2, refined: 4 },
     ingredients: [ING.sanMarzano, ING.fiordilatte, ING.prosciutto, ING.rocket, ING.parmigianoShavings, ING.evoOil],
     wineNote: { en: 'Prosecco or light Pinot Noir', fr: 'Prosecco ou Pinot Noir léger' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork', 'pan'],
   },
 
   {
@@ -1431,6 +1447,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 4, boldness: 2, creative: 3, refined: 5 },
     ingredients: [ING.sanMarzano, ING.fiordilatte, ING.burrata, ING.prosciutto, ING.rocket, ING.evoOil],
     wineNote: { en: 'Champagne or Franciacorta', fr: 'Champagne ou Franciacorta' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1446,6 +1463,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 4, boldness: 4, creative: 4, refined: 4 },
     ingredients: [ING.olioBase, ING.fiordilatte, ING.gorgonzola, ING.fig, ING.honey, ING.rocket, ING.evoOil],
     wineNote: { en: 'Sauternes or late-harvest Riesling', fr: 'Sauternes ou Riesling vendanges tardives' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1461,6 +1479,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 4, boldness: 3, creative: 4, refined: 4 },
     ingredients: [ING.olioBase, ING.fiordilatte, ING.gorgonzola, ING.pear, ING.walnuts, ING.honey, ING.evoOil],
     wineNote: { en: 'Monbazillac or rich white', fr: 'Monbazillac ou blanc riche' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   // ── FUSION ───────────────────────────────────────────────
@@ -1478,6 +1497,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 3, boldness: 3, creative: 3, refined: 1 },
     ingredients: [ING.bbqSauce, ING.mozzarellaLM, ING.grilledChicken, ING.redOnion, ING.sweetcorn, ING.freshCoriander],
     wineNote: { en: 'Off-dry Riesling or light red', fr: 'Riesling demi-sec ou rouge léger' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'newyork', 'pan'],
   },
 
   // ── GOURMET ──────────────────────────────────────────────
@@ -1495,6 +1515,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 5, boldness: 3, creative: 4, refined: 5 },
     ingredients: [ING.olioBase, ING.fiordilatte, ING.brie, ING.speck, ING.honey, ING.walnuts, ING.evoOil],
     wineNote: { en: 'Alsatian Pinot Gris or light Beaujolais', fr: 'Pinot Gris d\'Alsace ou Beaujolais léger' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   // ── FRENCH REGIONAL ──────────────────────────────────────
@@ -1512,6 +1533,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 3, boldness: 2, creative: 2, refined: 4 },
     ingredients: [ING.fromageBlancBase, ING.cremeFraiche, ING.smokedLardons, ING.redOnion],
     wineNote: { en: 'Alsatian Riesling or Pinot Gris · rich white', fr: 'Riesling alsacien ou Pinot Gris · blanc riche' },
+    compatibleStyles: ['neapolitan', 'pizza_romana'],
   },
 
   {
@@ -1527,6 +1549,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 4, boldness: 2, creative: 2, refined: 3 },
     ingredients: [ING.cremeFraiche, ING.raclette, ING.thinPotato, ING.smokedLardons, ING.cornichons, ING.freshChives],
     wineNote: { en: 'Chignin or Apremont · crisp Savoie white', fr: 'Chignin ou Apremont · blanc de Savoie frais' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1542,6 +1565,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 3, boldness: 2, creative: 3, refined: 4 },
     ingredients: [ING.olioBase, ING.chevreFrais, ING.fiordilatte, ING.freshThyme, ING.walnuts, ING.honey, ING.evoOil],
     wineNote: { en: 'Sancerre or Provence rosé', fr: 'Sancerre ou rosé de Provence' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1557,6 +1581,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 4, boldness: 4, creative: 3, refined: 3 },
     ingredients: [ING.dijonMustard, ING.emmental, ING.andouille, ING.redOnion, ING.evoOil],
     wineNote: { en: 'Muscadet or light red', fr: 'Muscadet ou rouge léger' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1572,6 +1597,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 5, boldness: 4, creative: 3, refined: 3 },
     ingredients: [ING.olioBase, ING.maroilles, ING.caramelisedOnion, ING.freshThyme, ING.blackPepper],
     wineNote: { en: 'Côtes du Rhône or rich white', fr: 'Côtes du Rhône ou blanc riche' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1587,6 +1613,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 3, boldness: 3, creative: 3, refined: 4 },
     ingredients: [ING.sanMarzano, ING.fiordilatte, ING.bayonneHam, ING.espelettePepper, ING.evoOil],
     wineNote: { en: 'Irouléguy or Basque rosé', fr: 'Irouléguy ou rosé basque' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1617,6 +1644,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 5, boldness: 3, creative: 3, refined: 3 },
     ingredients: [ING.cremeFraiche, ING.reblochon, ING.thinPotato, ING.smokedLardons, ING.redOnion, ING.blackPepper],
     wineNote: { en: 'Roussette de Savoie · crisp alpine white', fr: 'Roussette de Savoie · blanc alpin frais' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1632,6 +1660,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 2, boldness: 2, creative: 1, refined: 2 },
     ingredients: [ING.sanMarzano, ING.fiordilatte, ING.curedHam, ING.mushrooms, ING.blackOlives, ING.evoOil],
     wineNote: { en: 'Côtes du Rhône or rosé', fr: 'Côtes du Rhône ou rosé' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1647,6 +1676,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 3, boldness: 3, creative: 1, refined: 2 },
     ingredients: [ING.sanMarzano, ING.fiordilatte, ING.curedHam, ING.salami, ING.mixedPeppers, ING.blackOlives, ING.evoOil],
     wineNote: { en: 'Côtes du Rhône or Languedoc red', fr: 'Côtes du Rhône ou rouge du Languedoc' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1662,6 +1692,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 4, boldness: 2, creative: 2, refined: 2 },
     ingredients: [ING.cremeFraiche, ING.fiordilatte, ING.smokedLardons, ING.thinPotato, ING.redOnion, ING.freshChives],
     wineNote: { en: 'Mâcon white or light Burgundy red', fr: 'Mâcon blanc ou Bourgogne rouge léger' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1677,6 +1708,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 3, boldness: 2, creative: 3, refined: 3 },
     ingredients: [ING.sanMarzano, ING.fiordilatte, ING.curedHam, ING.mushrooms, ING.artichoke, ING.blackOlives, ING.evoOil],
     wineNote: { en: 'Côtes de Provence rosé or light red', fr: 'Rosé Côtes de Provence ou rouge léger' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork', 'pan'],
   },
 
   {
@@ -3173,6 +3205,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 2, boldness: 3, creative: 4, refined: 3 },
     ingredients: [ING.sanMarzano, ING.evoOil, ING.freshBasil],
     wineNote: { en: 'Crisp white · Sauvignon Blanc or dry rosé', fr: 'Blanc vif · Sauvignon Blanc ou rosé sec' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -3189,6 +3222,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 2, boldness: 4, creative: 4, refined: 2 },
     ingredients: [ING.sanMarzano, ING.evoOil, ING.freshBasil],
     wineNote: { en: 'Dry rosé · or crisp white with citrus notes', fr: 'Rosé sec · ou blanc vif aux notes d\'agrumes' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'roman'],
   },
 
 ]
