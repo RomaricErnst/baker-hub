@@ -23,52 +23,69 @@ export default function PizzaNightTabBar({ activeTab, onTabChange }: PizzaNightT
 
   return (
     <div style={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      padding: '12px 20px 16px',
       background: 'var(--warm)',
+      padding: '8px 16px 0',
       borderBottom: '1px solid var(--border)',
     }}>
-      {tabs.map((tab, i) => {
-        const isActive = i === activeIndex;
-        const isCompleted = i < activeIndex;
-        const isFuture = i > activeIndex;
+      <div style={{
+        display: 'flex',
+        background: '#F5F0E8',
+        borderRadius: '14px',
+        padding: '4px',
+        gap: '2px',
+      }}>
+        {tabs.map((tab, i) => {
+          const isActive = i === activeIndex;
+          const isCompleted = i < activeIndex;
 
-        const leftLineColor = i <= activeIndex ? 'var(--gold)' : 'var(--border)';
-        const rightLineColor = i < activeIndex ? 'var(--gold)' : 'var(--border)';
-
-        const dotSize = isActive ? '12px' : '8px';
-        const dotBackground = isActive ? 'var(--terra)' : isCompleted ? 'var(--gold)' : 'var(--border)';
-        const dotBorder = isFuture ? '1.5px solid var(--smoke)' : undefined;
-
-        const labelColor = isActive ? 'var(--char)' : isCompleted ? 'var(--gold)' : 'var(--smoke)';
-        const labelWeight = isActive ? 700 : isCompleted ? 500 : 400;
-        const labelSize = isActive ? '14px' : '12px';
-
-        return (
-          <div
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, cursor: 'pointer' }}
-          >
-            <span style={{
-              fontFamily: 'DM Sans, sans-serif', fontSize: labelSize,
-              marginBottom: '6px', color: labelColor, fontWeight: labelWeight,
-            }}>
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                padding: '9px 4px',
+                borderRadius: '10px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                border: 'none',
+                position: 'relative',
+                fontFamily: 'DM Sans, sans-serif',
+                transition: 'all 0.2s',
+                ...(isActive ? {
+                  background: 'white',
+                  color: 'var(--char)',
+                  fontWeight: 700,
+                  boxShadow: '0 1px 6px rgba(26,22,18,0.12)',
+                } : isCompleted ? {
+                  background: 'transparent',
+                  color: 'var(--terra)',
+                  fontWeight: 500,
+                } : {
+                  background: 'transparent',
+                  color: 'var(--smoke)',
+                  fontWeight: 400,
+                }),
+              }}
+            >
               {tab.label}
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-              <div style={{ flex: 1, height: '1px', background: i === 0 ? 'transparent' : leftLineColor }} />
-              <div style={{
-                width: dotSize, height: dotSize, borderRadius: '50%', flexShrink: 0,
-                background: dotBackground,
-                border: dotBorder,
-              }} />
-              <div style={{ flex: 1, height: '1px', background: i === tabs.length - 1 ? 'transparent' : rightLineColor }} />
-            </div>
-          </div>
-        );
-      })}
+              {isCompleted && (
+                <span style={{
+                  position: 'absolute',
+                  top: '4px',
+                  right: '8px',
+                  width: '5px',
+                  height: '5px',
+                  borderRadius: '50%',
+                  background: 'var(--terra)',
+                  display: 'block',
+                }} />
+              )}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
