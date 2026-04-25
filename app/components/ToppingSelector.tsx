@@ -585,6 +585,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
         display: 'flex',
         alignItems: 'flex-end',
         justifyContent: 'center',
+        paddingBottom: 'calc(69px + env(safe-area-inset-bottom))',
       }}
       onClick={onClose}
     >
@@ -606,7 +607,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           position: 'relative',
           width: '100%',
           aspectRatio: '1 / 1',
-          maxHeight: 'calc(100dvh - 69px - 230px)',
+          maxHeight: 'calc(100dvh - 69px - 69px - 230px)',
           flexShrink: 0,
           background: '#1A1612',
           borderRadius: '20px 20px 0 0',
