@@ -1722,7 +1722,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                             </div>
                             <div style={{
                               display: 'flex', flexDirection: 'column', gap: '4px',
-                              maxHeight: '160px', overflowY: 'auto', overflowX: 'hidden',
+                              maxHeight: '148px', overflowY: 'auto', overflowX: 'hidden',
                               scrollbarWidth: 'thin' as React.CSSProperties['scrollbarWidth'],
                               scrollbarColor: '#E0D8CF transparent',
                               paddingRight: '2px',
