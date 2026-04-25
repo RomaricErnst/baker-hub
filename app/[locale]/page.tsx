@@ -719,7 +719,7 @@ export default function Home() {
               onClick={() => setActiveTab('setup')}
               style={{
                 padding: '7px 12px',
-                fontSize: '9px',
+                fontSize: '11px',
                 fontWeight: activeTab !== 'pizzaparty' ? 600 : 400,
                 color: activeTab !== 'pizzaparty' ? '#C4522A' : '#8A7F78',
                 background: 'transparent',
@@ -734,12 +734,12 @@ export default function Home() {
             </button>
 
             {/* My Pizza Party — only when pizza mode + style chosen */}
-            {pizzaPartyEnabled && styleKey && (
+            {pizzaPartyEnabled && (
               <button
                 onClick={() => setActiveTab('pizzaparty')}
                 style={{
                   padding: '7px 12px',
-                  fontSize: '9px',
+                  fontSize: '11px',
                   fontWeight: activeTab === 'pizzaparty' ? 600 : 400,
                   color: activeTab === 'pizzaparty' ? '#B8903A' : '#8A7F78',
                   background: 'transparent',
@@ -764,9 +764,10 @@ export default function Home() {
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                padding: '7px 8px',
+                padding: '7px 12px',
                 fontFamily: 'DM Sans, sans-serif',
                 whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
             >
               {t('tabs.startOver')}

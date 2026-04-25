@@ -320,24 +320,7 @@ export default function Header({
       position: 'sticky', top: 0, zIndex: 100,
       borderBottom: '2px solid var(--terra)',
     }}>
-      {/* Left: logo + tagline */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '.35rem', lineHeight: 1 }}>
-          <img src="/logo-mark.png" alt="Baker Hub" className="header-logo"
-            style={{ objectFit: 'contain', borderRadius: '6px', flexShrink: 0 }} />
-          <span style={{
-            fontFamily: 'var(--font-playfair)', fontSize: '1.35rem', fontWeight: 700,
-            color: 'var(--cream)', letterSpacing: '-.01em', lineHeight: 1,
-          }}>Baker Hub</span>
-        </div>
-        <div style={{
-          fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', fontSize: '.62rem',
-          color: 'var(--gold)', letterSpacing: '.04em', marginTop: '.2rem',
-          lineHeight: 1, textAlign: 'center', width: '100%',
-        }}>{t('tagline')}</div>
-      </div>
-
-      {/* Right: ☰ menu button */}
+      {/* Left: ☰ menu button */}
       <div ref={menuRef} style={{ position: 'relative' }}>
         <button
           onClick={() => setMenuOpen(v => !v)}
@@ -361,7 +344,7 @@ export default function Header({
         {/* Dropdown panel */}
         {menuOpen && (
           <div style={{
-            position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+            position: 'absolute', top: 'calc(100% + 8px)', left: 0,
             width: '300px', background: '#1A1612',
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
@@ -526,6 +509,30 @@ export default function Header({
           </div>
         )}
       </div>
+
+      {/* Centre: logo + tagline (absolute so it stays truly centred) */}
+      <div style={{
+        position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        pointerEvents: 'none',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '.35rem', lineHeight: 1 }}>
+          <img src="/logo-mark.png" alt="Baker Hub" className="header-logo"
+            style={{ objectFit: 'contain', borderRadius: '6px', flexShrink: 0 }} />
+          <span style={{
+            fontFamily: 'var(--font-playfair)', fontSize: '1.35rem', fontWeight: 700,
+            color: 'var(--cream)', letterSpacing: '-.01em', lineHeight: 1,
+          }}>Baker Hub</span>
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', fontSize: '.62rem',
+          color: 'var(--gold)', letterSpacing: '.04em', marginTop: '.2rem',
+          lineHeight: 1, textAlign: 'center', width: '100%',
+        }}>{t('tagline')}</div>
+      </div>
+
+      {/* Right placeholder for balance */}
+      <div style={{ width: '42px', flexShrink: 0 }} />
     </header>
   );
 }

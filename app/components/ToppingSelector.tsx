@@ -1453,7 +1453,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               ? (l === 'fr'
                   ? `Pizzas pour ${STYLE_NAMES_FR[styleKey] ?? styleKey}`
                   : `Showing pizzas for ${STYLE_NAMES[styleKey] ?? styleKey}`)
-              : (l === 'fr' ? 'Tous les styles' : 'All styles')
+              : (l === 'fr'
+                  ? 'Choisissez un style dans Ma Pâte pour des suggestions personnalisées'
+                  : 'Choose a style in My Dough for personalised suggestions')
             }
           </span>
           <span
