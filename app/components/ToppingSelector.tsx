@@ -1742,7 +1742,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                                       };
                                     })}
                                     style={{
-                                      fontSize: '11px', padding: '5px 4px', borderRadius: '20px',
+                                      fontSize: '11px', padding: '8px 6px', borderRadius: '6px',
                                       cursor: 'pointer', textAlign: 'center',
                                       border: active ? '1px solid #C4522A' : '1px solid #E8E0D5',
                                       background: active ? '#C4522A' : '#FDFBF7',
