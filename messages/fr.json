@@ -29,7 +29,7 @@
   },
   "generate": {
     "generateBtn": "Générer mon planning →",
-    "generateBtnPizzaNight": "Planifier ma soirée pizza →",
+    "generateBtnPizzaParty": "Planifier ma pizza party →",
     "editSetup": "← Modifier les paramètres",
     "staleBanner": "⚠️ Réglages modifiés — régénérez pour mettre à jour",
     "regenerate": "Régénérer",
@@ -1158,7 +1158,7 @@
     "fresh":     { "title": "Levure fraîche",           "tagline": "Levure en bloc, saveur la plus riche" },
     "sourdough": { "title": "Levain",                   "tagline": "Fermentation naturelle, acidulé, plus lent" }
   },
-  "pizzaNight": {
+  "pizzaParty": {
     "tab": {
       "pick": "Choisir",
       "shop": "Courses",

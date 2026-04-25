@@ -29,7 +29,7 @@
   },
   "generate": {
     "generateBtn": "Generate my bake plan →",
-    "generateBtnPizzaNight": "Plan my pizza night →",
+    "generateBtnPizzaParty": "Plan my pizza party →",
     "editSetup": "← Edit dough setup",
     "staleBanner": "⚠️ Settings changed — regenerate to update your bake plan",
     "regenerate": "Regenerate",
@@ -1158,7 +1158,7 @@
     "fresh":     { "title": "Fresh yeast",        "tagline": "Cake yeast, strongest flavor" },
     "sourdough": { "title": "Sourdough starter",  "tagline": "Natural leaven, tangy, slower" }
   },
-  "pizzaNight": {
+  "pizzaParty": {
     "tab": {
       "pick": "Pick",
       "shop": "Shop",

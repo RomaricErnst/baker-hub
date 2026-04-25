@@ -13,7 +13,7 @@ import Timeline from '../components/Timeline';
 import BakeGuide from '../components/BakeGuide';
 import { getPrefPeakH_RT, getPrefRTWarmupH } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
-import PizzaNight from '../components/PizzaNight';
+import PizzaParty from '../components/PizzaParty';
 import FlourPicker from '../components/FlourPicker';
 import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
@@ -777,7 +777,7 @@ export default function Home() {
           </div>
           )}
 
-          {/* Mode + Pizza Night card — only shown after bakeType selected */}
+          {/* Mode + Pizza Party card — only shown after bakeType selected */}
           {bakeType && (
             <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '14px', padding: '12px' }}>
 
@@ -1276,7 +1276,7 @@ export default function Home() {
             {/* ── Pizza Party tab content ── */}
             {pizzaPartyEnabled && (
               <div style={{ display: activeTab === 'pizzaparty' ? 'block' : 'none' }}>
-                <PizzaNight
+                <PizzaParty
                   locale={locale}
                   bakeTime={eatTime ?? new Date()}
                   numItems={numItems}
@@ -2208,7 +2208,7 @@ export default function Home() {
             {/* ── Pizza Party tab content ── */}
             {pizzaPartyEnabled && (
               <div style={{ display: activeTab === 'pizzaparty' ? 'block' : 'none' }}>
-                <PizzaNight
+                <PizzaParty
                   locale={locale}
                   bakeTime={eatTime ?? new Date()}
                   numItems={numItems}

@@ -1720,6 +1720,82 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           </div>
       </div>
 
+      {/* ── Selected pizza compact list — above party bar ── */}
+      {(activePill === 'pizzas' || hidePillBar) && totalQty > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: '110px',
+          left: 0, right: 0,
+          zIndex: 29,
+          background: 'var(--warm)',
+          borderTop: '1px solid var(--border)',
+          padding: '6px 16px',
+          maxHeight: '140px',
+          overflowY: 'auto',
+        }}>
+          {Object.entries(qtys)
+            .filter(([, qty]) => (qty as number) > 0)
+            .map(([pizzaId, qty]) => {
+              const pizza = getPizzaById(pizzaId);
+              if (!pizza) return null;
+              return (
+                <div key={pizzaId} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '5px 0',
+                  borderBottom: '0.5px solid var(--border)',
+                }}>
+                  <span style={{
+                    fontSize: '12px',
+                    color: 'var(--char)',
+                    fontFamily: 'DM Sans, sans-serif',
+                    flex: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    marginRight: '8px',
+                  }}>
+                    {pizza.name[l] ?? pizza.name.en}
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                    <button
+                      onClick={e => { e.stopPropagation(); changeQty(pizzaId, -1); }}
+                      style={{
+                        width: '22px', height: '22px', borderRadius: '50%',
+                        border: '1.5px solid var(--border)',
+                        background: 'var(--warm)', color: 'var(--char)',
+                        cursor: 'pointer', fontSize: '13px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        lineHeight: 1,
+                      }}
+                    >−</button>
+                    <span style={{
+                      fontFamily: 'DM Mono, monospace',
+                      fontSize: '12px', fontWeight: 600,
+                      color: 'var(--char)', minWidth: '14px', textAlign: 'center',
+                    }}>
+                      {qty as number}
+                    </span>
+                    <button
+                      onClick={e => { e.stopPropagation(); changeQty(pizzaId, 1); }}
+                      style={{
+                        width: '22px', height: '22px', borderRadius: '50%',
+                        border: 'none',
+                        background: 'var(--terra)', color: 'white',
+                        cursor: 'pointer', fontSize: '13px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        lineHeight: 1,
+                      }}
+                    >+</button>
+                  </div>
+                </div>
+              );
+            })
+          }
+        </div>
+      )}
+
       {/* ── Party bar — fixed at bottom, hides when summary visible ── */}
       {(activePill === 'pizzas' || hidePillBar) && !summaryVisible && (
       <div style={{

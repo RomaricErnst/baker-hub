@@ -1,14 +1,14 @@
 'use client';
 import { useState } from 'react';
-import PizzaNightTabBar from './PizzaNightTabBar';
+import PizzaPartyTabBar from './PizzaPartyTabBar';
 import ToppingSelector from './ToppingSelector';
-import PrepTab from './pizzaNight/PrepTab';
-import BakeTab from './pizzaNight/BakeTab';
+import PrepTab from './pizzaParty/PrepTab';
+import BakeTab from './pizzaParty/BakeTab';
 
 type Tab = 'pick' | 'shop' | 'prep' | 'bake';
 type Pill = 'pizzas' | 'shopping' | 'party';
 
-interface PizzaNightProps {
+interface PizzaPartyProps {
   locale: string;
   bakeTime: Date;
   numItems: number;
@@ -27,7 +27,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaNight({ locale, bakeTime, numItems, styleKey, t }: PizzaNightProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey, t }: PizzaPartyProps) {
   const [activeTab, setActiveTab] = useState<Tab>('pick');
   const [qtys, setQtys] = useState<Record<string, number>>({});
 
@@ -35,7 +35,7 @@ export default function PizzaNight({ locale, bakeTime, numItems, styleKey, t }: 
 
   return (
     <div>
-      <PizzaNightTabBar
+      <PizzaPartyTabBar
         activeTab={activeTab}
         onTabChange={setActiveTab}
         locale={locale}

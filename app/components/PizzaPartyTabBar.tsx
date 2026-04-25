@@ -3,14 +3,14 @@ import { useTranslations } from 'next-intl';
 
 type Tab = 'pick' | 'shop' | 'prep' | 'bake';
 
-interface PizzaNightTabBarProps {
+interface PizzaPartyTabBarProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
   locale: string;
 }
 
-export default function PizzaNightTabBar({ activeTab, onTabChange }: PizzaNightTabBarProps) {
-  const t = useTranslations('pizzaNight');
+export default function PizzaPartyTabBar({ activeTab, onTabChange }: PizzaPartyTabBarProps) {
+  const t = useTranslations('pizzaParty');
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'pick', label: t('tab.pick') },
