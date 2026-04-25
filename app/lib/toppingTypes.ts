@@ -69,6 +69,14 @@ export type ShoppingContext =
   | 'singapore' | 'france' | 'uk'
   | 'us' | 'australia' | 'international'
 
+export type ShopEntry = {
+  shops: string[]
+  online?: string[]
+  note?: string
+}
+
+export type WhereToFind = Partial<Record<ShoppingContext, ShopEntry>>
+
 // Wine: category only — all wines in same category produce identical filter results
 export type WineCategory =
   | 'lr'   // light red:   Pinot Noir, Gamay, Beaujolais
@@ -120,6 +128,7 @@ export type Ingredient = {
   goodEnough?: IngredientSubstitution   // close alternative — "Also great:"
   compromise?: IngredientSubstitution   // works but noticeably different — "If not available:"
   localSwap?: Partial<Record<ShoppingContext, IngredientSubstitution>>
+  whereToFind?: WhereToFind
   confusingNote?: Locale    // triggers ⓘ badge in UI
   isCommonPantry?: boolean  // pre-ticked in shopping list
   qtyPerPizza?: IngredientQty  // quantity for one 30cm pizza

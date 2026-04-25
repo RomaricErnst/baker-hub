@@ -52,6 +52,13 @@ export const ING: Record<string, Ingredient> = {
         brandExamples: { singapore: ['Mutti Polpa — Cold Storage', 'Annalisa whole peeled — Marketplace'] },
       },
     },
+    whereToFind: {
+      singapore: { shops: ['Cold Storage', 'Marketplace', 'Giant'], online: ['RedMart'], note: "Mutti Polpa easiest; Annalisa whole peeled at Marketplace" },
+      france:    { shops: ['Carrefour', 'Monoprix', 'Grand Frais'], note: 'San Marzano DOP in most large supermarkets — canned tomato aisle' },
+      us:        { shops: ['Whole Foods', "Trader Joe's", 'Italian specialty stores'], online: ['Amazon', 'Eataly online'] },
+      uk:        { shops: ['Waitrose', "Sainsbury's", 'Ocado'], online: ['Ocado'], note: 'Look for DOP label — Mutti or Cirio brand' },
+      australia: { shops: ['Harris Farm', 'Coles', 'IGA'], online: ['Amazon AU'], note: 'Mutti Polpa widely available' },
+    },
   },
 
   marinaraSauce: {
@@ -101,6 +108,12 @@ export const ING: Record<string, Ingredient> = {
         brandExamples: { singapore: ['FairPrice Finest fresh mozz', 'Bel Paese — Cold Storage'] },
       },
     },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'Culina', "Huber's Butchery", 'Marketplace'], note: "Any fresh mozzarella ball — 'fior di latte' label rare, fresh mozzarella works identically" },
+      france:    { shops: ['Grand Frais', 'Italian delis', 'Monoprix'], note: "Boule de mozzarella fraîche — look for 'au lait de vache' on label" },
+      uk:        { shops: ['Waitrose', 'M&S', 'Lina Stores', 'Italian delis'] },
+      australia: { shops: ['Coles', 'Woolworths Macro', 'Italian delis'], note: 'Fresh mozzarella balls — look for fridge section near deli counter' },
+    },
   },
 
   burrata: {
@@ -122,6 +135,13 @@ export const ING: Record<string, Ingredient> = {
       singapore: {
         name: { en: 'Burrata — Marketplace, Ryan\'s Grocery, Culina', fr: 'Burrata — Marketplace, Ryan\'s Grocery, Culina' },
       },
+    },
+    whereToFind: {
+      singapore: { shops: ['Marketplace', "Ryan's Grocery", 'Culina', "Huber's Butchery"], note: "Call ahead — stock varies. Ryan's and Culina most reliable" },
+      france:    { shops: ['Grand Frais', 'Italian delis', 'Monoprix', 'La Grande Épicerie'], note: 'Now widely available in most major French supermarkets' },
+      us:        { shops: ['Whole Foods', "Trader Joe's", 'Italian markets'], online: ['Eataly online', "Murray's Cheese"], note: 'Fresh burrata — refrigerated section near specialty cheeses' },
+      uk:        { shops: ['Waitrose', 'M&S', 'Lina Stores', 'Ocado'], online: ['Ocado'] },
+      australia: { shops: ['Harris Farm', 'Simon Johnson', 'Italian delis', 'Woolworths Metro'], note: 'Availability growing — Harris Farm most reliable' },
     },
   },
 
@@ -212,6 +232,12 @@ export const ING: Record<string, Ingredient> = {
         brandExamples: { singapore: ['Swiss Raclette — Marketplace', 'Emmental — Cold Storage'] },
       },
     },
+    whereToFind: {
+      singapore: { shops: ['Cold Storage', 'Marketplace', "Ryan's Grocery"], note: 'Swiss Raclette (not French AOP) usually in stock — Gruyère is an easy substitute' },
+      france:    { shops: ['Carrefour', 'Leclerc', 'Grand Frais', 'fromageries'], note: 'Raclette AOP and standard Raclette both widely available — essential alpine cheese in France' },
+      uk:        { shops: ['Waitrose', 'M&S', 'Ocado'], online: ['Ocado'], note: 'Available in most major supermarkets with good cheese sections' },
+      australia: { shops: ['Harris Farm', 'Simon Johnson', 'French delis'], note: "Less common — Gruyère is an easy substitute at any supermarket" },
+    },
   },
 
   chevreFrais: {
@@ -244,6 +270,13 @@ export const ING: Record<string, Ingredient> = {
       name: { en: 'Mild cheddar or young gouda', fr: 'Cheddar doux ou jeune gouda' },
       note: { en: 'Melts well but flavour is noticeably different. Use only if nothing else available.', fr: 'Fond bien mais le goût est différent. À utiliser en dernier recours.' },
     },
+    whereToFind: {
+      singapore: { shops: ['NTUC FairPrice', 'Cold Storage', 'Giant'], online: ['RedMart'], note: "Kraft or Perfect Italiano brand — look for 'pizza mozzarella' block in cheese section" },
+      france:    { shops: ['Carrefour', 'Leclerc', 'Monoprix'], note: 'Mozzarella râpée or mozzarella pour pizza — most supermarkets stock it' },
+      us:        { shops: ['Any grocery store'], note: "Polly-O, Sargento, Kraft all work — look for 'low-moisture' or 'part-skim' block" },
+      uk:        { shops: ['Any supermarket'], note: 'Galbani mozzarella for pizza — block form in cheese aisle' },
+      australia: { shops: ['Coles', 'Woolworths', 'IGA'], note: 'Perfect Italiano pizza mozzarella block — cheese aisle' },
+    },
   },
 
   nduja: {
@@ -263,6 +296,13 @@ export const ING: Record<string, Ingredient> = {
         brandExamples: { singapore: ['Culina', 'Ryan\'s Grocery', 'Huber\'s Butchery'] },
       },
     },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'Culina', "Huber's Butchery"], note: 'Call ahead — availability varies. Chorizo paste is an easy substitute' },
+      france:    { shops: ['Italian delis', 'Grand Frais', 'Monoprix (some locations)'], online: ['Amazon FR'], note: "'Nduja in jars now at some Monoprix — Italian delis most reliable" },
+      us:        { shops: ['Whole Foods', 'Eataly', 'Italian delis'], online: ['Eataly online', 'Amazon'], note: 'Becoming more mainstream — Whole Foods usually carries it' },
+      uk:        { shops: ['Waitrose', 'M&S', "Sainsbury's"], online: ['Ocado'], note: 'Now in most major UK supermarkets — great availability' },
+      australia: { shops: ['Harris Farm', 'Italian delis', 'Simon Johnson'], note: 'Less common — Italian delis most reliable' },
+    },
   },
 
   prosciutto: {
@@ -274,6 +314,13 @@ export const ING: Record<string, Ingredient> = {
     goodEnough: { name: { en: 'Good quality Parma ham', fr: 'Jambon de Parme de qualité' } },
     compromise: {
       name: { en: 'Good cooked ham — less delicate, milder', fr: 'Bon jambon cuit — moins délicat, plus doux' },
+    },
+    whereToFind: {
+      singapore: { shops: ['Cold Storage', 'Marketplace', "Ryan's Grocery", 'Culina'], online: ['RedMart'] },
+      france:    { shops: ['Carrefour', 'Monoprix', 'Grand Frais', 'charcuteries'] },
+      us:        { shops: ['Whole Foods', "Trader Joe's", 'any grocery store'] },
+      uk:        { shops: ['Waitrose', "Sainsbury's", 'M&S', 'any major supermarket'] },
+      australia: { shops: ['Coles', 'Woolworths', 'Harris Farm', 'IGA'] },
     },
   },
 
@@ -334,6 +381,12 @@ export const ING: Record<string, Ingredient> = {
     compromise: {
       name: { en: 'Prosciutto — less smoky but same delicacy', fr: 'Prosciutto — moins fumé mais même délicatesse' },
     },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'Marketplace', 'Culina'], note: 'Less common than prosciutto — smoked ham works well as substitute' },
+      france:    { shops: ['Grand Frais', 'Italian delis', 'La Grande Épicerie'], note: 'Available at Italian delis and Grand Frais — less common in standard supermarkets' },
+      us:        { shops: ['Eataly', 'Whole Foods (some)', 'Italian delis'], online: ['Amazon', 'Eataly online'] },
+      uk:        { shops: ['Waitrose', 'Natoora', 'Lina Stores'], online: ['Ocado'] },
+    },
   },
 
   ham: {
@@ -363,6 +416,13 @@ export const ING: Record<string, Ingredient> = {
       name: { en: 'Smoked trout', fr: 'Truite fumée' },
       note: { en: 'Milder smoke, slightly earthier. Works well with cream cheese and dill. Add after baking.', fr: 'Fumée plus douce, légèrement plus terreux. Fonctionne bien avec fromage frais et aneth. Ajouter après cuisson.' },
     },
+    whereToFind: {
+      singapore: { shops: ['Cold Storage', 'Marketplace', "Ryan's Grocery", 'Giant'], online: ['RedMart'] },
+      france:    { shops: ['Carrefour', 'Monoprix', 'Grand Frais', 'fishmongers'] },
+      us:        { shops: ['Whole Foods', "Trader Joe's", 'Costco', 'any grocery store'] },
+      uk:        { shops: ['Any supermarket'], note: 'Smoked salmon is a British staple — excellent quality widely available' },
+      australia: { shops: ['Coles', 'Woolworths', 'Harris Farm'] },
+    },
   },
 
   anchovies: {
@@ -378,6 +438,13 @@ export const ING: Record<string, Ingredient> = {
     compromise: {
       name: { en: 'Cured black olives (finely chopped)', fr: 'Olives noires séchées (finement hachées)' },
       note: { en: 'Loses the briny fish character but adds umami depth. Use only if no anchovy source available.', fr: "Perd le caractère marin mais apporte de l'umami. À utiliser uniquement si aucune source d'anchois disponible." },
+    },
+    whereToFind: {
+      singapore: { shops: ['Cold Storage', 'Marketplace', 'Giant', 'NTUC FairPrice'], online: ['RedMart'], note: 'Roland or Ortiz brand — olive oil packed in the canned fish aisle' },
+      france:    { shops: ['Any supermarket'], note: "Filets d'anchois à l'huile — ubiquitous in France" },
+      us:        { shops: ['Any grocery store'], note: 'Ortiz (premium) or any jarred anchovies in olive oil' },
+      uk:        { shops: ['Any major supermarket'] },
+      australia: { shops: ['Coles', 'Woolworths', 'IGA'] },
     },
   },
 
@@ -532,6 +599,13 @@ export const ING: Record<string, Ingredient> = {
     qtyPerPizza: { amount: 60, unit: 'g', noteEN: 'crumbled', noteFR: 'émietté' },
     qtyMultiplierByStyle: { roman: 1.2, pan: 1.3 },
     goodEnough: { name: { en: 'Any creamy blue cheese', fr: 'N\'importe quel fromage bleu crémeux' } },
+    whereToFind: {
+      singapore: { shops: ['Cold Storage', 'Marketplace', "Ryan's Grocery"], online: ['RedMart'], note: "Gorgonzola dolce (creamy) preferred over piccante (aged) for pizza" },
+      france:    { shops: ['Carrefour', 'Monoprix', 'Grand Frais', 'fromageries'], note: 'Well stocked in most supermarkets and cheese shops' },
+      us:        { shops: ['Whole Foods', "Trader Joe's", 'Costco'], online: ["Murray's Cheese"], note: "Look for 'dolce' style" },
+      uk:        { shops: ['Waitrose', 'M&S', "Sainsbury's", 'Ocado'], online: ['Ocado'] },
+      australia: { shops: ['Harris Farm', 'Coles', 'Woolworths', 'IGA'], note: 'Gorgonzola dolce in most major supermarkets' },
+    },
   },
 
   taleggio: {
@@ -545,6 +619,11 @@ export const ING: Record<string, Ingredient> = {
     compromise: { name: { en: 'Brie (double cream) — different character but melts well', fr: 'Brie (double crème) — caractère différent mais fond bien' } },
     localSwap: {
       singapore: { name: { en: 'Ryan\'s Grocery or Culina — usually in stock', fr: 'Ryan\'s Grocery ou Culina — généralement en stock' } },
+    },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'Culina', 'Marketplace'], note: "Usually in stock at Ryan's and Culina — call ahead to confirm" },
+      france:    { shops: ['Grand Frais', 'fromageries', 'Monoprix', 'La Grande Épicerie'], note: 'Available in most fromageries and Grand Frais cheese counters' },
+      uk:        { shops: ['Waitrose', "Sainsbury's", 'Ocado'], online: ['Ocado'], note: 'Widely available in supermarkets with good cheese sections' },
     },
   },
 
@@ -560,6 +639,13 @@ export const ING: Record<string, Ingredient> = {
     qtyMultiplierByStyle: { roman: 1.2, pan: 1.3 },
     goodEnough: { name: { en: 'Grana Padano — slightly milder, works well', fr: 'Grana Padano — légèrement plus doux, fonctionne bien' } },
     compromise: { name: { en: 'Any hard aged cheese, finely grated', fr: 'Tout fromage à pâte dure affiné, finement râpé' } },
+    whereToFind: {
+      singapore: { shops: ['Cold Storage', 'Marketplace', "Ryan's Grocery"], online: ['RedMart'], note: 'Pre-grated tubs at most Cold Storage — a wedge is better value and fresher' },
+      france:    { shops: ['Carrefour', 'Leclerc', 'Monoprix', 'Grand Frais'], note: 'Parmigiano Reggiano AOP — ubiquitous in France. Buy a wedge, not pre-grated' },
+      us:        { shops: ['Whole Foods', 'Costco (great value)', 'any grocery store'], note: 'Costco sells large wedges at excellent value' },
+      uk:        { shops: ['Waitrose', "Sainsbury's", 'Ocado', 'Costco'], note: 'Widely available — Grana Padano is a great budget alternative' },
+      australia: { shops: ['Coles', 'Woolworths', 'Harris Farm', 'IGA'] },
+    },
   },
 
   brie: {
@@ -570,6 +656,13 @@ export const ING: Record<string, Ingredient> = {
     goodEnough: {
       name: { en: 'Camembert', fr: 'Camembert' },
       note: { en: 'Same melt profile, slightly stronger flavour. Remove rind or leave on — both work.', fr: 'Même comportement à la fonte, goût légèrement plus fort. Avec ou sans croûte — les deux fonctionnent.' },
+    },
+    whereToFind: {
+      singapore: { shops: ['Cold Storage', 'Marketplace', 'Giant', "Ryan's Grocery"], online: ['RedMart'], note: 'President Brie or Ile de France — most supermarkets have it' },
+      france:    { shops: ['Any supermarket or fromagerie'], note: 'Brie de Meaux AOP or Brie de Melun AOP — buy from a fromagerie for best quality' },
+      us:        { shops: ['Any supermarket', "Trader Joe's", 'Whole Foods'], note: 'Widely available — look for a French import for best melt' },
+      uk:        { shops: ['Any supermarket'] },
+      australia: { shops: ['Coles', 'Woolworths', 'IGA'] },
     },
   },
 
@@ -604,6 +697,13 @@ export const ING: Record<string, Ingredient> = {
     compromise: {
       name: { en: "Truffle salt + extra olive oil", fr: "Sel à la truffe + huile d'olive" },
       note: { en: 'Finish the pizza with truffle salt and a generous drizzle of good olive oil. Subtle but effective.', fr: "Finir la pizza avec du sel à la truffe et un généreux filet d'huile d'olive de qualité. Subtil mais efficace." },
+    },
+    whereToFind: {
+      singapore: { shops: ['Cold Storage', 'Marketplace', "Ryan's Grocery", 'Culina'], online: ['RedMart', 'Lazada'], note: 'Tartufi Jimmy or Roland brand — avoid very cheap versions with no real truffle' },
+      france:    { shops: ['Carrefour', 'Monoprix', 'La Grande Épicerie', 'specialty oil shops'] },
+      us:        { shops: ['Whole Foods', "Trader Joe's", 'specialty food stores'], online: ['Amazon'] },
+      uk:        { shops: ['Waitrose', "Sainsbury's", 'Ocado', 'any major supermarket'], online: ['Ocado'] },
+      australia: { shops: ['Harris Farm', 'Simon Johnson', 'Coles (some)', 'specialty delis'] },
     },
   },
 
@@ -878,6 +978,11 @@ export const ING: Record<string, Ingredient> = {
     localSwap: {
       singapore: { name: { en: 'Manchego — Marketplace or Ryan\'s Grocery', fr: 'Manchego — Marketplace ou Ryan\'s Grocery' } },
     },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'Marketplace'], note: 'Manchego is a reliable substitute available at Cold Storage' },
+      france:    { shops: ['Grand Frais', 'fromageries', 'Carrefour', 'Monoprix'], note: 'Ossau-Iraty AOP — common in France, especially in southwest and Paris shops' },
+      uk:        { shops: ['Waitrose', "Neal's Yard Dairy", 'specialist cheesemongers'], online: ['Ocado'] },
+    },
   },
 
   maroilles: {
@@ -890,6 +995,11 @@ export const ING: Record<string, Ingredient> = {
     compromise: { name: { en: "Any strong washed-rind cheese — Époisses, Pont-l'Évêque", fr: "Tout fromage à croûte lavée fort — Époisses, Pont-l'Évêque" } },
     localSwap: {
       singapore: { name: { en: 'Limburger or strong brie — specialty delis', fr: 'Limburger ou brie fort — épiceries spécialisées' } },
+    },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery (call ahead)", 'Culina'], note: 'Very rare — Munster or strong washed-rind brie is the best substitute' },
+      france:    { shops: ['Carrefour', 'Leclerc', 'fromageries', 'Grand Frais'], note: 'Maroilles AOP — widely available in France, especially in the north' },
+      uk:        { shops: ['Specialist cheesemongers', 'La Fromagerie (London)'], note: 'Very rare in UK supermarkets — Munster is the best substitute' },
     },
   },
 
@@ -907,6 +1017,12 @@ export const ING: Record<string, Ingredient> = {
     qtyPerPizza: { amount: 80, unit: 'g' },
     goodEnough: { name: { en: 'Brie — same soft-ripened family, melts the same way', fr: 'Brie — même famille à pâte molle, fond pareillement' } },
     compromise: { name: { en: 'Any soft melting cheese', fr: 'Tout fromage fondant à pâte molle' } },
+    whereToFind: {
+      singapore: { shops: ['Cold Storage', 'Marketplace', 'Giant'], note: 'President Camembert widely available — small round boxes in cheese aisle' },
+      france:    { shops: ['Any supermarket or fromagerie'], note: 'Camembert de Normandie AOP — get it from a fromagerie for raw milk version' },
+      uk:        { shops: ['Waitrose', "Sainsbury's", 'M&S', 'Ocado'] },
+      australia: { shops: ['Coles', 'Woolworths', 'Harris Farm'] },
+    },
   },
 
   ciderReduction: {
@@ -927,6 +1043,11 @@ export const ING: Record<string, Ingredient> = {
     localSwap: {
       singapore: { name: { en: 'Soft brie — Marketplace or Cold Storage', fr: 'Brie moelleux — Marketplace ou Cold Storage' } },
     },
+    whereToFind: {
+      singapore: { shops: ['Marketplace', "Ryan's Grocery"], note: 'Seasonal availability — call ahead. Brie is the easiest substitute' },
+      france:    { shops: ['Carrefour', 'Grand Frais', 'fromageries', 'Leclerc'], note: 'Reblochon AOP — widely available in France, especially in winter/autumn' },
+      uk:        { shops: ['Waitrose', 'M&S', 'specialist cheesemongers'], online: ['Ocado'], note: 'Available but less common — Waitrose most reliable' },
+    },
   },
 
   merguez: {
@@ -939,6 +1060,12 @@ export const ING: Record<string, Ingredient> = {
     localSwap: {
       singapore: { name: { en: "Spicy lamb sausage — Ryan's Grocery or halal butcher", fr: "Saucisse d'agneau épicée — Ryan's Grocery ou boucherie halal" } },
     },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'halal butchers', 'Arab Street area shops'], note: 'Available at halal butchers — spiced lamb sausage' },
+      france:    { shops: ['Carrefour', 'Leclerc', 'Monoprix', 'boucheries halal'], note: 'Very widely available in France — standard supermarket item' },
+      uk:        { shops: ["Sainsbury's", 'Waitrose', 'Middle Eastern butchers'], online: ['Ocado'] },
+      australia: { shops: ['Middle Eastern butchers', 'specialty delis'], note: 'Less common — halal butchers most reliable' },
+    },
   },
 
   chorizo: {
@@ -949,6 +1076,13 @@ export const ING: Record<string, Ingredient> = {
     goodEnough: { name: { en: 'Pepperoni — similar heat and fat render', fr: 'Pepperoni — chaleur et fonte similaires' } },
     localSwap: {
       singapore: { name: { en: 'Chorizo — Cold Storage or Marketplace', fr: 'Chorizo — Cold Storage ou Marketplace' } },
+    },
+    whereToFind: {
+      singapore: { shops: ['Cold Storage', 'Marketplace', "Ryan's Grocery", 'Giant'], online: ['RedMart'] },
+      france:    { shops: ['Carrefour', 'Monoprix', 'Grand Frais', 'charcuteries'] },
+      us:        { shops: ['Any grocery store', "Trader Joe's", 'Whole Foods'] },
+      uk:        { shops: ['Any major supermarket'] },
+      australia: { shops: ['Coles', 'Woolworths', 'IGA', 'Harris Farm'] },
     },
   },
 
@@ -988,6 +1122,12 @@ export const ING: Record<string, Ingredient> = {
     hardToFind: true,
     goodEnough: { name: { en: 'Pancetta or smoked bacon', fr: 'Pancetta ou bacon fumé' } },
     compromise: { name: { en: 'Smoked lardons', fr: 'Lardons fumés' } },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", "Huber's Butchery", 'Culina'], note: 'Specialty item — call ahead. Pancetta is the best substitute' },
+      france:    { shops: ['Italian delis', 'La Grande Épicerie', 'specialist charcuteries'], note: 'Rare in standard supermarkets — Italian delis and charcuteries most reliable' },
+      us:        { shops: ['Eataly', 'Italian specialty stores'], online: ['Amazon', 'Di Bruno Bros'], note: 'Specialty item — online ordering most reliable outside major cities' },
+      uk:        { shops: ['Lina Stores', 'Natoora', 'Italian delis'], note: 'Specialist only — Pancetta is widely available and works well' },
+    },
   },
 
   pecorinoRomano: {
@@ -1000,6 +1140,13 @@ export const ING: Record<string, Ingredient> = {
     },
     qtyPerPizza: { amount: 30, unit: 'g' },
     goodEnough: { name: { en: 'Aged Pecorino or Parmigiano Reggiano', fr: 'Pecorino affiné ou Parmigiano Reggiano' } },
+    whereToFind: {
+      singapore: { shops: ['Cold Storage', 'Marketplace', "Ryan's Grocery"], note: 'Grated Pecorino Romano in most Cold Storage locations — DOP label preferred' },
+      france:    { shops: ['Carrefour', 'Monoprix', 'Italian delis'], note: 'Pecorino Romano râpé — available in most supermarkets. Grand Frais has best selection' },
+      us:        { shops: ['Whole Foods', "Trader Joe's", 'any grocery store'], note: 'Locatelli brand is excellent and widely available' },
+      uk:        { shops: ['Waitrose', "Sainsbury's", 'any major supermarket'] },
+      australia: { shops: ['Coles', 'Woolworths', 'IGA', 'Italian delis'] },
+    },
   },
 
   smokedProvola: {
@@ -1019,6 +1166,11 @@ export const ING: Record<string, Ingredient> = {
     qtyPerPizza: { amount: 80, unit: 'g' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
     goodEnough: { name: { en: 'Any good pork sausage, casing removed', fr: 'Toute bonne saucisse de porc, sans boyau' } },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", "Huber's Butchery", 'Culina'], note: 'Italian-style pork sausage — any good pork sausage with fennel works' },
+      france:    { shops: ['Italian delis', 'Grand Frais', 'some charcuteries'], note: 'Saucisse italienne or chair à saucisse — butchers can make fresh on request' },
+      uk:        { shops: ['Italian delis', 'Waitrose (Italian sausages)', 'Natoora'], online: ['Ocado'] },
+    },
   },
 
   friarielli: {
@@ -1046,6 +1198,11 @@ export const ING: Record<string, Ingredient> = {
     hardToFind: true,
     goodEnough: { name: { en: 'Burrata cream pulled apart', fr: 'Crème de burrata défaite' } },
     compromise: { name: { en: 'Fresh mozzarella torn and drizzled with cream', fr: 'Mozzarella fraîche déchirée avec un filet de crème' } },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'Culina', 'Marketplace'], note: 'Less common than burrata — call ahead. Burrata cream pulled apart is an excellent substitute' },
+      france:    { shops: ['Italian delis', 'La Grande Épicerie', 'Grand Frais'], note: 'Rare in standard supermarkets — Italian speciality delis most reliable' },
+      uk:        { shops: ['Lina Stores', 'Melrose & Morgan', 'good Italian delis'], online: ['Ocado (seasonal)'], note: 'Uncommon outside specialist shops — burrata is a reliable substitute' },
+    },
   },
 
   mortadella: {
@@ -1054,6 +1211,11 @@ export const ING: Record<string, Ingredient> = {
     prepNote: { en: 'Add after baking — drape loosely so it just warms through', fr: 'Ajouter après cuisson — disposer librement pour elle se réchauffe doucement' },
     qtyPerPizza: { amount: 60, unit: 'g', noteEN: '4–5 thin slices', noteFR: '4–5 tranches fines' },
     goodEnough: { name: { en: 'Any quality cooked ham, sliced thin', fr: 'Tout jambon cuit de qualité, tranché fin' } },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'Culina', 'Marketplace'], note: "Growing availability — Ryan's most reliable" },
+      france:    { shops: ['Italian delis', 'Grand Frais', 'La Grande Épicerie', 'Monoprix (some)'], note: 'Mortadelle de Bologne — Italian delis and Grand Frais best' },
+      uk:        { shops: ['Waitrose', 'Lina Stores', 'Natoora', 'Italian delis'], online: ['Ocado'] },
+    },
   },
 
   pistachiosPesto: {
@@ -1062,6 +1224,13 @@ export const ING: Record<string, Ingredient> = {
     prepNote: { en: 'Blend pistachios, garlic, olive oil, parmesan — thick consistency', fr: "Mixer pistaches, ail, huile d'olive, parmesan — consistance épaisse", timing: 15 },
     qtyPerPizza: { amount: 40, unit: 'g' },
     goodEnough: { name: { en: 'Basil pesto with crushed pistachios added', fr: 'Pesto basilic avec pistaches concassées' } },
+    whereToFind: {
+      singapore: { shops: ['Phoon Huat', 'Cold Storage', 'Marketplace'], note: 'Raw pistachios for blending at Phoon Huat — make pesto fresh. Jarred pistachio pesto at Culina' },
+      france:    { shops: ['Monoprix', 'Carrefour', 'Italian delis'], note: 'Pesto de pistaches en pot — available at Italian delis and some Monoprix' },
+      us:        { shops: ["Trader Joe's (pistachio pesto jar)", 'Whole Foods', 'Italian specialty stores'], online: ['Amazon', 'Eataly'] },
+      uk:        { shops: ['Waitrose', 'M&S', 'Ocado', 'Italian delis'], online: ['Ocado'] },
+      australia: { shops: ['Harris Farm', 'Simon Johnson', 'specialty delis'], note: 'Pistachio nuts widely available — make pesto fresh or find jarred version at delis' },
+    },
   },
 
   pistachiosTopped: {
@@ -1096,6 +1265,13 @@ export const ING: Record<string, Ingredient> = {
     prepNote: { en: 'Spread thin — very concentrated, a little goes a long way', fr: 'Étaler finement — très concentré, un peu suffit largement' },
     qtyPerPizza: { amount: 2, unit: 'tbsp' },
     goodEnough: { name: { en: 'Rose harissa for milder heat', fr: 'Harissa rose pour une chaleur plus douce' } },
+    whereToFind: {
+      singapore: { shops: ['Mustafa Centre', 'Cold Storage (some locations)', 'Middle Eastern shops'], online: ['RedMart', 'Lazada'], note: "Le Phare du Cap Bon (tube) at Mustafa Centre most reliable" },
+      france:    { shops: ['Carrefour', 'Monoprix', 'Leclerc', 'épiceries du Maghreb'], note: 'Harissa très répandue en France — tubes et bocaux dans tous les supermarchés' },
+      us:        { shops: ['Whole Foods', "Trader Joe's (seasonal)", 'Middle Eastern grocery stores'], online: ['Amazon'] },
+      uk:        { shops: ['Waitrose', "Sainsbury's", 'Middle Eastern shops', 'any major supermarket'], online: ['Ocado'] },
+      australia: { shops: ['Harris Farm', 'IGA', 'Middle Eastern delis', 'Woolworths (some)'] },
+    },
   },
 
   labneh: {
@@ -1104,6 +1280,13 @@ export const ING: Record<string, Ingredient> = {
     prepNote: { en: 'Dollop after baking — never cook it', fr: 'Déposer en petites boules après cuisson — ne jamais cuire' },
     qtyPerPizza: { amount: 80, unit: 'g' },
     goodEnough: { name: { en: 'Thick Greek yogurt 10%+ fat', fr: 'Yaourt grec épais 10%+ MG' } },
+    whereToFind: {
+      singapore: { shops: ['Mustafa Centre', 'Al-Ansar grocery', 'Middle Eastern shops'], online: ['RedMart (Puck brand)'], note: 'Puck cream cheese labneh at Mustafa or online — thick Greek yogurt strained overnight is a great substitute' },
+      france:    { shops: ['Monoprix', 'Carrefour', 'épiceries du Moyen-Orient'], note: 'Available in most Monoprix locations and Middle Eastern grocers' },
+      us:        { shops: ['Whole Foods', 'Middle Eastern grocery stores', "Trader Joe's (seasonal)"], online: ['Amazon'] },
+      uk:        { shops: ['Waitrose', "Sainsbury's", 'Middle Eastern grocery stores'], online: ['Ocado'], note: 'Al Wadi or Puck brand — now in most major UK supermarkets' },
+      australia: { shops: ['Harris Farm', 'Middle Eastern delis', 'IGA'], note: 'Becoming more available — Middle Eastern delis most reliable' },
+    },
   },
 
   zaatarMix: {
@@ -1116,6 +1299,13 @@ export const ING: Record<string, Ingredient> = {
     localSwap: {
       singapore: { name: { en: "Za'atar readily available at Mustafa Centre or Jamal Kazura", fr: "Za'atar disponible chez Mustafa Centre ou Jamal Kazura" } },
     },
+    whereToFind: {
+      singapore: { shops: ['Mustafa Centre', 'Jamal Kazura', 'Arab Street area shops', 'Phoon Huat'], note: "Za'atar blend at Mustafa Centre — great value and quality" },
+      france:    { shops: ['Épiceries du Moyen-Orient', 'Carrefour (some)', 'Monoprix (some)'], note: 'Disponible dans les épiceries du Moyen-Orient et certains supermarchés' },
+      us:        { shops: ['Whole Foods', 'Middle Eastern grocery stores', "Trader Joe's (seasonal)"], online: ['Amazon', "Kalustyan's"] },
+      uk:        { shops: ['Waitrose', "Sainsbury's", 'Middle Eastern grocery stores'], online: ['Ocado'] },
+      australia: { shops: ['Middle Eastern delis', 'Harris Farm (some)', 'IGA', 'spice shops'] },
+    },
   },
 
   jamon: {
@@ -1126,6 +1316,13 @@ export const ING: Record<string, Ingredient> = {
     hardToFind: true,
     goodEnough: { name: { en: 'Jamón Serrano', fr: 'Jamón Serrano' } },
     compromise: { name: { en: 'Good Prosciutto di Parma', fr: 'Bon Prosciutto di Parma' } },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'Culina', 'Marketplace', 'Cold Storage'], note: "Jamón Serrano widely available — Ibérico at Ryan's and Culina" },
+      france:    { shops: ['Carrefour', 'Monoprix', 'charcuteries espagnoles', 'Grand Frais'], note: 'Jamón Serrano in all supermarkets; Ibérico at specialty delis' },
+      us:        { shops: ['Whole Foods', "Trader Joe's (Serrano)", 'Spanish specialty stores'], online: ['La Tienda', 'Amazon'] },
+      uk:        { shops: ['Waitrose', "Sainsbury's", 'M&S', 'any major supermarket'] },
+      australia: { shops: ['Harris Farm', 'Spanish delis', 'Woolworths (Serrano)'] },
+    },
   },
 
   sobrasada: {
@@ -1136,6 +1333,12 @@ export const ING: Record<string, Ingredient> = {
     hardToFind: true,
     goodEnough: { name: { en: 'Nduja — similar spreadable spicy format', fr: 'Nduja — format tartinable épicé similaire' } },
     compromise: { name: { en: 'Chorizo paste crumbled', fr: 'Pâte de chorizo émiettée' } },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery (call ahead)", 'Culina'], note: "Rare — Nduja is the most widely available substitute" },
+      france:    { shops: ['Épiceries espagnoles', 'Grand Frais', 'La Grande Épicerie'], note: 'Available in Spanish specialty shops and some Grand Frais locations' },
+      us:        { shops: ['Spanish specialty stores', 'La Tienda'], online: ['La Tienda', 'Amazon'] },
+      uk:        { shops: ['Brindisa (London)', 'Spanish delis'], online: ['Brindisa online'] },
+    },
   },
 
   misoPaste: {
@@ -1151,6 +1354,13 @@ export const ING: Record<string, Ingredient> = {
       name: { en: 'Light tahini thinned with soy sauce', fr: 'Tahini léger dilué avec sauce soja' },
       note: { en: 'Mix 2 tbsp tahini + 1 tbsp soy + dash of sesame oil. Different but gives similar umami depth.', fr: "Mélanger 2 cs de tahini + 1 cs de sauce soja + un peu d'huile de sésame. Différent mais donne une profondeur umami similaire." },
     },
+    whereToFind: {
+      singapore: { shops: ['Meidi-Ya', 'Don Don Donki', 'Isetan B2', 'any Japanese supermarket'], online: ['RedMart'], note: 'Shiro (white) miso — abundant in Singapore. Any Japanese supermarket' },
+      france:    { shops: ['Naturalia', "Bio c'Bon", 'Asian supermarkets', 'Monoprix (some)'], online: ['Amazon FR'], note: 'Miso blanc in organic and Asian grocery stores' },
+      us:        { shops: ['Whole Foods', 'any Asian grocery store', "Trader Joe's (white miso)"], online: ['Amazon'] },
+      uk:        { shops: ['Waitrose', "Sainsbury's", 'Japan Centre', 'Asian supermarkets'], online: ['Ocado', 'Japan Centre online'] },
+      australia: { shops: ['Asian grocery stores', 'Woolworths (some)', 'Harris Farm'], note: 'Any Japanese or Asian grocery — white miso widely available' },
+    },
   },
 
   mentaiko: {
@@ -1162,6 +1372,11 @@ export const ING: Record<string, Ingredient> = {
     goodEnough: { name: { en: 'Ikura (salmon roe) added after baking', fr: 'Ikura (œufs de saumon) ajouté après cuisson' } },
     localSwap: {
       singapore: { name: { en: 'Mentaiko at Don Don Donki, Meidi-Ya or Isetan supermarket', fr: 'Mentaiko chez Don Don Donki, Meidi-Ya ou Isetan' } },
+    },
+    whereToFind: {
+      singapore: { shops: ['Don Don Donki', 'Meidi-Ya', 'Isetan supermarket'], note: 'Fresh mentaiko in the seafood/deli section — Don Don Donki most reliable and affordable' },
+      us:        { shops: ['Japanese grocery stores', 'Mitsuwa', 'Nijiya Market'], online: ['Amazon (frozen)', 'Weee! grocery'] },
+      australia: { shops: ['Japanese grocery stores', 'Fuji Mart', 'Tokyo Mart'], note: 'Japanese specialty grocery stores — major cities only' },
     },
   },
 
@@ -1183,6 +1398,11 @@ export const ING: Record<string, Ingredient> = {
     qtyPerPizza: { amount: 40, unit: 'g', noteEN: '4–6 thin slices', noteFR: '4–6 tranches fines' },
     hardToFind: true,
     goodEnough: { name: { en: 'Any quality lard or fatback, sliced paper-thin', fr: 'Lard de qualité tranché très finement' } },
+    whereToFind: {
+      france:    { shops: ['Italian delis', 'La Grande Épicerie', 'specialist charcuteries'], note: 'Rare even in France — Lardo di Colonnata DOP from Italian delis' },
+      us:        { shops: ['Eataly', 'specialty Italian stores'], online: ['Di Bruno Bros', 'Formaggio Kitchen'], note: 'Online ordering most reliable outside major cities' },
+      uk:        { shops: ['Lina Stores', 'Natoora', 'Borough Market'], note: 'Specialist only — worth finding for the right pizza' },
+    },
   },
 
   stracchino: {
@@ -1197,6 +1417,11 @@ export const ING: Record<string, Ingredient> = {
     hardToFind: true,
     goodEnough: { name: { en: 'Taleggio — similar soft melting character', fr: 'Taleggio — même caractère fondant doux' } },
     compromise: { name: { en: 'Brie centre without rind + squeeze of lemon', fr: 'Intérieur de brie sans croûte + trait de citron' } },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'Culina'], note: 'Very rare — call ahead. Taleggio is the best substitute if unavailable' },
+      france:    { shops: ['Italian delis', 'La Grande Épicerie'], note: 'Rare outside Italian speciality shops — crescenza is the same cheese' },
+      uk:        { shops: ['Lina Stores', 'Gelupo', 'specialist Italian delis'], note: 'Not found in supermarkets — Italian delis only' },
+    },
   },
 
   bresaola: {
@@ -1206,6 +1431,11 @@ export const ING: Record<string, Ingredient> = {
     qtyPerPizza: { amount: 50, unit: 'g', noteEN: '5–6 slices', noteFR: '5–6 tranches' },
     hardToFind: true,
     goodEnough: { name: { en: 'Thinly sliced roast beef', fr: 'Bœuf rôti tranché finement' } },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'Culina', 'Marketplace'], note: 'Available at specialty delis — call ahead' },
+      france:    { shops: ['Italian delis', 'Grand Frais', 'La Grande Épicerie', 'Monoprix (some)'] },
+      uk:        { shops: ['Waitrose', 'M&S', "Sainsbury's", 'Italian delis'], online: ['Ocado'] },
+    },
   },
 
   octopus: {
@@ -1261,6 +1491,13 @@ export const ING: Record<string, Ingredient> = {
       name: { en: 'Quick-pickled napa cabbage with gochugaru', fr: 'Chou de Pékin rapidement mariné avec gochugaru' },
       note: { en: 'Slice cabbage thin, toss with rice vinegar, gochugaru, garlic and salt. Rest 30 min. Not fermented but punchy.', fr: 'Trancher finement le chou, mélanger avec vinaigre de riz, gochugaru, ail et sel. Reposer 30 min. Pas fermenté mais incisif.' },
     },
+    whereToFind: {
+      singapore: { shops: ['NTUC FairPrice', 'Don Don Donki', 'Cold Storage', 'Korean grocery stores'], online: ['RedMart'] },
+      france:    { shops: ['Épiceries coréennes et asiatiques', 'K-Market', 'Tang Frères'], online: ['Amazon FR'] },
+      us:        { shops: ['Whole Foods', "Trader Joe's", 'Korean grocery stores (H-Mart)', 'any major grocery'], online: ['Amazon', 'Weee!'] },
+      uk:        { shops: ["Sainsbury's", 'Waitrose', 'Korean grocery stores', 'Wing Yip'], online: ['Ocado'] },
+      australia: { shops: ['Woolworths', 'Coles (some)', 'Korean grocery stores', 'Asian supermarkets'] },
+    },
   },
 
   bulgogi: {
@@ -1307,6 +1544,12 @@ export const ING: Record<string, Ingredient> = {
       name: { en: 'Duck leg confit (jarred or vacuum-packed)', fr: 'Cuisse de canard confite (en bocal ou sous vide)' },
       note: { en: 'The jarred/vacuum version is widely available and excellent. Remove skin and shred the meat while warm.', fr: 'La version en bocal ou sous vide est largement disponible et excellente. Retirer la peau et effilocher la viande encore chaude.' },
     },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'Culina', 'Marketplace', 'Cold Storage (jarred)'], note: 'Jarred duck confit (Maison Montfort or similar) in the specialty/French section' },
+      france:    { shops: ['Carrefour', 'Leclerc', 'Monoprix', 'any supermarket'], note: 'Confit de canard en bocal — essential French pantry item, in every supermarket' },
+      uk:        { shops: ['Waitrose', 'M&S', 'Ocado'], online: ['Ocado'], note: 'Duck confit pouches — Waitrose and M&S both stock reliably' },
+      australia: { shops: ['Harris Farm', 'Simon Johnson', 'specialty delis', 'Woolworths Metro (some)'], note: 'Jarred or vacuum-packed confit — specialty delis most reliable' },
+    },
   },
 
   foieGras: {
@@ -1316,6 +1559,11 @@ export const ING: Record<string, Ingredient> = {
     qtyPerPizza: { amount: 40, unit: 'g' },
     hardToFind: true,
     compromise: { name: { en: 'Good duck liver pâté', fr: 'Bonne terrine de foie de canard' } },
+    whereToFind: {
+      singapore: { shops: ["Ryan's Grocery", 'Culina', 'Marketplace'], note: "Fresh foie gras rare — bloc de foie gras (preserved) at Culina and Ryan's" },
+      france:    { shops: ['Carrefour', 'Leclerc', 'Monoprix', 'épiceries fines', 'Périgord speciality shops'], note: 'Foie gras de canard — standard supermarket item in France especially in southwest' },
+      uk:        { shops: ['Selfridges Food Hall', 'Harvey Nichols', 'specialist delis'], note: 'Legal to sell in UK — Fortnum & Mason and Selfridges Food Hall carry it' },
+    },
   },
 
   cookedHam: {
