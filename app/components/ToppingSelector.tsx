@@ -592,7 +592,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
         style={{
           width: '100%',
           maxWidth: '500px',
-          maxHeight: 'calc(100dvh - 64px)',
+          maxHeight: 'calc(100dvh - 64px - 60px - env(safe-area-inset-bottom))',
           background: '#FDFBF7',
           borderRadius: '20px 20px 0 0',
           display: 'flex',
@@ -607,7 +607,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           position: 'relative',
           flex: 1,
           minHeight: 0,
-          maxHeight: '260px',
+          maxHeight: 'clamp(160px, 40dvh, 320px)',
           background: '#1A1612',
           borderRadius: '20px 20px 0 0',
           overflow: 'hidden',
@@ -619,6 +619,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
+              objectPosition: 'center center',
               display: 'block',
             }}
             onError={e => {
