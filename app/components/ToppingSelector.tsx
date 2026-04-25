@@ -17,47 +17,119 @@ import type { Locale } from '../lib/toppingTypes';
 
 const INGREDIENT_CHIPS: {
   category: { en: string; fr: string };
-  color: string;
   items: { en: string; fr: string; search: string }[];
 }[] = [
   {
-    category: { en: 'Cheese', fr: 'Fromage' },
-    color: '#D4A853',
+    category: { en: 'Cheese & Dairy', fr: 'Fromage & Produits laitiers' },
     items: [
-      { en: 'Mozzarella', fr: 'Mozzarella', search: 'mozzarella' },
-      { en: 'Burrata',    fr: 'Burrata',    search: 'burrata' },
-      { en: 'Gorgonzola', fr: 'Gorgonzola', search: 'gorgonzola' },
-      { en: 'Ricotta',    fr: 'Ricotta',    search: 'ricotta' },
+      { en: 'Mozzarella',     fr: 'Mozzarella',       search: 'mozzarella' },
+      { en: 'Burrata',        fr: 'Burrata',           search: 'burrata' },
+      { en: 'Stracciatella',  fr: 'Stracciatella',     search: 'stracciatella' },
+      { en: 'Gorgonzola',     fr: 'Gorgonzola',        search: 'gorgonzola' },
+      { en: 'Ricotta',        fr: 'Ricotta',           search: 'ricotta' },
+      { en: 'Pecorino',       fr: 'Pecorino',          search: 'pecorino' },
+      { en: 'Parmesan',       fr: 'Parmesan',          search: 'parmesan' },
+      { en: 'Brie',           fr: 'Brie',              search: 'brie' },
+      { en: 'Camembert',      fr: 'Camembert',         search: 'camembert' },
+      { en: 'Raclette',       fr: 'Raclette',          search: 'raclette' },
+      { en: 'Goat cheese',    fr: 'Chèvre',            search: 'goat' },
+      { en: 'Taleggio',       fr: 'Taleggio',          search: 'taleggio' },
+      { en: 'Reblochon',      fr: 'Reblochon',         search: 'reblochon' },
+      { en: 'Smoked cheese',  fr: 'Fromage fumé',      search: 'provola' },
+      { en: 'Stracchino',     fr: 'Stracchino',        search: 'stracchino' },
+      { en: 'Labneh',         fr: 'Labneh',            search: 'labneh' },
+      { en: 'Cream',          fr: 'Crème',             search: 'cream' },
+      { en: 'Pistachio cream',fr: 'Crème de pistache', search: 'pistachio' },
     ],
   },
   {
-    category: { en: 'Meat', fr: 'Viande' },
-    color: '#C4522A',
+    category: { en: 'Meat, Fish & Deli', fr: 'Viande, Poisson & Charcuterie' },
     items: [
-      { en: 'Prosciutto', fr: 'Prosciutto', search: 'prosciutto' },
-      { en: 'Ham',        fr: 'Jambon',     search: 'ham' },
-      { en: 'Salmon',     fr: 'Saumon',     search: 'salmon' },
-      { en: 'Pepperoni',  fr: 'Pepperoni',  search: 'pepperoni' },
+      { en: 'Parma ham',      fr: 'Jambon de Parme',   search: 'prosciutto' },
+      { en: 'Pepperoni',      fr: 'Pepperoni',         search: 'pepperoni' },
+      { en: 'Spicy salami',   fr: 'Salami épicé',      search: 'salami' },
+      { en: 'Guanciale',      fr: 'Guanciale',         search: 'guanciale' },
+      { en: 'Speck',          fr: 'Speck',             search: 'speck' },
+      { en: 'Chorizo',        fr: 'Chorizo',           search: 'chorizo' },
+      { en: 'Merguez',        fr: 'Merguez',           search: 'merguez' },
+      { en: 'Sausage',        fr: 'Saucisse',          search: 'salsiccia' },
+      { en: 'Ham',            fr: 'Jambon',            search: 'ham' },
+      { en: 'Bacon',          fr: 'Lardons',           search: 'lardons' },
+      { en: 'Mortadella',     fr: 'Mortadelle',        search: 'mortadella' },
+      { en: 'Bresaola',       fr: 'Bresaola',          search: 'bresaola' },
+      { en: 'Chicken',        fr: 'Poulet',            search: 'chicken' },
+      { en: 'Duck',           fr: 'Canard',            search: 'duck' },
+      { en: 'Beef',           fr: 'Bœuf',              search: 'beef' },
+      { en: 'Char siu',       fr: 'Char siu',          search: 'char siu' },
+      { en: 'Foie gras',      fr: 'Foie gras',         search: 'foie gras' },
+      { en: 'Andouille',      fr: 'Andouille',         search: 'andouille' },
+      { en: 'Salmon',         fr: 'Saumon',            search: 'salmon' },
+      { en: 'Anchovy',        fr: 'Anchois',           search: 'anchovy' },
+      { en: 'Tuna',           fr: 'Thon',              search: 'tuna' },
+      { en: 'Prawns',         fr: 'Crevettes',         search: 'prawn' },
+      { en: 'Octopus',        fr: 'Poulpe',            search: 'octopus' },
+      { en: 'Clams',          fr: 'Palourdes',         search: 'clam' },
     ],
   },
   {
-    category: { en: 'Vegetables', fr: 'Légumes' },
-    color: '#6B7A5A',
+    category: { en: 'Produce & Herbs', fr: 'Légumes & Herbes' },
     items: [
-      { en: 'Mushrooms',  fr: 'Champignons', search: 'mushroom' },
-      { en: 'Artichoke',  fr: 'Artichaut',   search: 'artichoke' },
-      { en: 'Courgette',  fr: 'Courgette',   search: 'courgette' },
-      { en: 'Aubergine',  fr: 'Aubergine',   search: 'aubergine' },
+      { en: 'Mushrooms',      fr: 'Champignons',       search: 'mushroom' },
+      { en: 'Porcini',        fr: 'Cèpes',             search: 'porcini' },
+      { en: 'Artichoke',      fr: 'Artichaut',         search: 'artichoke' },
+      { en: 'Courgette',      fr: 'Courgette',         search: 'courgette' },
+      { en: 'Aubergine',      fr: 'Aubergine',         search: 'aubergine' },
+      { en: 'Potato',         fr: 'Pomme de terre',    search: 'potato' },
+      { en: 'Olive',          fr: 'Olive',             search: 'olive' },
+      { en: 'Capers',         fr: 'Câpres',            search: 'caper' },
+      { en: 'Spinach',        fr: 'Épinards',          search: 'spinach' },
+      { en: 'Peppers',        fr: 'Poivrons',          search: 'pepper' },
+      { en: 'Red onion',      fr: 'Oignon rouge',      search: 'onion' },
+      { en: 'Sweetcorn',      fr: 'Maïs',              search: 'sweetcorn' },
+      { en: 'Rocket',         fr: 'Roquette',          search: 'rocket' },
+      { en: 'Basil',          fr: 'Basilic',           search: 'basil' },
+      { en: 'Rosemary',       fr: 'Romarin',           search: 'rosemary' },
+      { en: 'Truffle',        fr: 'Truffe',            search: 'truffle' },
+      { en: 'Fig',            fr: 'Figue',             search: 'fig' },
+      { en: 'Pear',           fr: 'Poire',             search: 'pear' },
+      { en: 'Chilli',         fr: 'Piment',            search: 'chilli' },
+      { en: 'Pineapple',      fr: 'Ananas',            search: 'pineapple' },
+      { en: 'Kimchi',         fr: 'Kimchi',            search: 'kimchi' },
+      { en: 'Spring onion',   fr: 'Ciboule',           search: 'spring onion' },
+      { en: 'Pickled daikon', fr: 'Daïkon mariné',     search: 'daikon' },
+      { en: 'Bean sprouts',   fr: 'Germes de soja',    search: 'bean sprout' },
+      { en: 'Asparagus',      fr: 'Asperges',          search: 'asparagus' },
+      { en: 'Strawberries',   fr: 'Fraises',           search: 'strawberr' },
+      { en: 'Apple',          fr: 'Pomme',             search: 'apple' },
+      { en: 'Walnuts',        fr: 'Noix',              search: 'walnut' },
     ],
   },
   {
-    category: { en: 'More', fr: 'Autres' },
-    color: '#8A7F78',
+    category: { en: 'Sauces & Finish', fr: 'Sauces & Finitions' },
     items: [
-      { en: 'Anchovy',  fr: 'Anchois', search: 'anchovy' },
-      { en: 'Truffle',  fr: 'Truffe',  search: 'truffle' },
-      { en: 'Egg',      fr: 'Oeuf',    search: 'egg' },
-      { en: 'Capers',   fr: 'Câpres',  search: 'caper' },
+      { en: 'Egg',            fr: 'Œuf',               search: 'egg' },
+      { en: 'Truffle oil',    fr: 'Huile de truffe',   search: 'truffle oil' },
+      { en: 'Honey',          fr: 'Miel',              search: 'honey' },
+      { en: 'Hot honey',      fr: 'Miel pimenté',      search: 'hot honey' },
+      { en: 'Pesto',          fr: 'Pesto',             search: 'pesto' },
+      { en: 'BBQ sauce',      fr: 'Sauce BBQ',         search: 'bbq' },
+      { en: 'Harissa',        fr: 'Harissa',           search: 'harissa' },
+      { en: 'Miso',           fr: 'Miso',              search: 'miso' },
+      { en: 'Hoisin',         fr: 'Sauce hoisin',      search: 'hoisin' },
+      { en: 'Peanut sauce',   fr: 'Sauce cacahuète',   search: 'peanut' },
+      { en: 'Gochujang',      fr: 'Gochujang',         search: 'gochujang' },
+      { en: 'Laksa',          fr: 'Laksa',             search: 'laksa' },
+      { en: 'Tom yam',        fr: 'Tom yam',           search: 'tom yam' },
+      { en: 'Teriyaki',       fr: 'Teriyaki',          search: 'teriyaki' },
+      { en: 'Sesame oil',     fr: 'Huile de sésame',   search: 'sesame' },
+      { en: 'Mustard',        fr: 'Moutarde',          search: 'mustard' },
+      { en: 'Nutella',        fr: 'Nutella',           search: 'nutella' },
+      { en: 'Chocolate',      fr: 'Chocolat',          search: 'chocolat' },
+      { en: 'Cinnamon',       fr: 'Cannelle',          search: 'cinnamon' },
+      { en: 'Almond flakes',  fr: 'Amandes effilées',  search: 'almond' },
+      { en: 'Nori',           fr: 'Nori',              search: 'nori' },
+      { en: 'Lemongrass',     fr: 'Citronnelle',       search: 'lemongrass' },
+      { en: 'Kaffir lime',    fr: 'Citron kaffir',     search: 'kaffir' },
     ],
   },
 ];
@@ -1622,123 +1694,108 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               ]}
             />
 
-          </div>{/* end filter panel */}
-
-          {/* ── By Ingredient ── */}
-          <FilterGroup
-            label={l === 'fr' ? 'Par ingrédient' : 'By Ingredient'}
-            items={[
-              {
-                key: 'ingredient',
-                title: l === 'fr' ? 'Ingrédient' : 'Ingredient',
-                badge: (filter.ingredientChips ?? []).length > 0 || filter.ingredientSearch
-                  ? String((filter.ingredientChips ?? []).length + (filter.ingredientSearch ? 1 : 0))
-                  : undefined,
-                open: open.ingredient,
-                onToggle: () => togOpen('ingredient'),
-                children: (
-                  <div>
-                    {/* 4×4 grid */}
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr 1fr 1fr',
-                      gap: '4px',
-                      marginBottom: '10px',
-                    }}>
-                      {/* Column headers */}
-                      {([
-                        { en: 'Cheese',     fr: 'Fromage',  color: '#D4A853' },
-                        { en: 'Meat',       fr: 'Viande',   color: '#C4522A' },
-                        { en: 'Vegetables', fr: 'Légumes',  color: '#6B7A5A' },
-                        { en: 'More',       fr: 'Autres',   color: '#8A7F78' },
-                      ]).map(col => (
-                        <div key={col.en} style={{ display: 'flex', alignItems: 'center', gap: '4px', paddingBottom: '4px' }}>
-                          <span style={{
-                            width: '4px', height: '4px', borderRadius: '50%',
-                            background: col.color, flexShrink: 0, display: 'inline-block',
-                          }} />
-                          <span style={{
-                            fontSize: '8px', fontWeight: 600, color: '#8A7F78',
-                            textTransform: 'uppercase', letterSpacing: '0.08em',
-                            fontFamily: 'DM Mono, monospace',
-                          }}>
-                            {l === 'fr' ? col.fr : col.en}
-                          </span>
-                        </div>
-                      ))}
-                      {/* 4 rows of ingredients — one per column */}
-                      {[0, 1, 2, 3].flatMap(row => (
-                        INGREDIENT_CHIPS.map(group => {
-                          const item = group.items[row];
-                          if (!item) return <div key={group.category.en + row} />;
-                          const active = (filter.ingredientChips ?? []).includes(item.search);
-                          return (
-                            <span
-                              key={item.search}
-                              onClick={() => setFilter((prev: FilterState) => {
-                                const chips = prev.ingredientChips ?? [];
-                                return {
-                                  ...prev,
-                                  ingredientChips: active
-                                    ? chips.filter(c => c !== item.search)
-                                    : [...chips, item.search],
-                                };
+            <FilterGroup
+              label={l === 'fr' ? 'Par ingrédient' : 'By Ingredient'}
+              items={[
+                {
+                  key: 'ingredient',
+                  title: l === 'fr' ? 'Ingrédient' : 'Ingredient',
+                  badge: (filter.ingredientChips ?? []).length > 0 || filter.ingredientSearch
+                    ? String((filter.ingredientChips ?? []).length + (filter.ingredientSearch ? 1 : 0))
+                    : undefined,
+                  open: open.ingredient,
+                  onToggle: () => togOpen('ingredient'),
+                  children: (
+                    <div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '6px' }}>
+                        {INGREDIENT_CHIPS.map(group => (
+                          <div key={group.category.en} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{
+                              fontSize: '8px', fontWeight: 600, color: '#8A7F78',
+                              textTransform: 'uppercase', letterSpacing: '0.07em',
+                              fontFamily: 'DM Mono, monospace', paddingBottom: '5px',
+                              borderBottom: '1px solid #E8E0D5', marginBottom: '2px',
+                              textAlign: 'center', lineHeight: 1.3,
+                            }}>
+                              {l === 'fr' ? group.category.fr : group.category.en}
+                            </div>
+                            <div style={{
+                              display: 'flex', flexDirection: 'column', gap: '4px',
+                              maxHeight: '160px', overflowY: 'auto', overflowX: 'hidden',
+                              scrollbarWidth: 'thin' as React.CSSProperties['scrollbarWidth'],
+                              scrollbarColor: '#E0D8CF transparent',
+                              paddingRight: '2px',
+                            }}>
+                              {group.items.map(item => {
+                                const active = (filter.ingredientChips ?? []).includes(item.search);
+                                return (
+                                  <span
+                                    key={item.search}
+                                    onClick={() => setFilter((prev: FilterState) => {
+                                      const chips = prev.ingredientChips ?? [];
+                                      return {
+                                        ...prev,
+                                        ingredientChips: active
+                                          ? chips.filter(c => c !== item.search)
+                                          : [...chips, item.search],
+                                      };
+                                    })}
+                                    style={{
+                                      fontSize: '11px', padding: '5px 4px', borderRadius: '20px',
+                                      cursor: 'pointer', textAlign: 'center',
+                                      border: active ? '1px solid #C4522A' : '1px solid #E8E0D5',
+                                      background: active ? '#C4522A' : '#FDFBF7',
+                                      color: active ? 'white' : '#3D3530',
+                                      fontFamily: 'DM Sans, sans-serif',
+                                      transition: 'all 0.12s', lineHeight: 1.3,
+                                      userSelect: 'none' as React.CSSProperties['userSelect'],
+                                      whiteSpace: 'nowrap' as React.CSSProperties['whiteSpace'],
+                                      overflow: 'hidden', textOverflow: 'ellipsis',
+                                    }}
+                                  >
+                                    {l === 'fr' ? item.fr : item.en}
+                                  </span>
+                                );
                               })}
-                              style={{
-                                fontSize: '11px', padding: '5px 6px',
-                                borderRadius: '6px', cursor: 'pointer',
-                                textAlign: 'center',
-                                border: active ? `1px solid ${group.color}` : '1px solid #E8E0D5',
-                                background: active ? group.color : '#F5F0E8',
-                                color: active ? 'white' : '#3D3530',
-                                fontFamily: 'DM Sans, sans-serif',
-                                transition: 'all 0.12s',
-                                userSelect: 'none' as React.CSSProperties['userSelect'],
-                                whiteSpace: 'nowrap' as React.CSSProperties['whiteSpace'],
-                                overflow: 'hidden', textOverflow: 'ellipsis',
-                              }}
-                            >
-                              {item[l]}
-                            </span>
-                          );
-                        })
-                      ))}
-                    </div>
-
-                    {/* Active count + clear chips */}
-                    {(filter.ingredientChips ?? []).length > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '11px', color: '#C4522A', fontFamily: 'DM Sans' }}>
-                          {(filter.ingredientChips ?? []).length} {l === 'fr' ? 'sélectionné(s)' : 'selected'}
-                        </span>
-                        <button
-                          onClick={() => setFilter((p: FilterState) => ({ ...p, ingredientChips: [] }))}
-                          style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                        >
-                          · {l === 'fr' ? 'effacer' : 'clear'}
-                        </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    )}
 
-                    {/* Free text fallback */}
-                    <input
-                      type="text"
-                      value={filter.ingredientSearch}
-                      onChange={e => setFilter((p: FilterState) => ({ ...p, ingredientSearch: e.target.value }))}
-                      placeholder={l === 'fr' ? 'Autre ingrédient...' : 'Other ingredient...'}
-                      style={{
-                        width: '100%', fontSize: '12px', padding: '7px 10px',
-                        borderRadius: '8px', border: '0.5px solid #E0D8CF',
-                        background: '#F5F0E8', outline: 'none', color: '#1A1612',
-                        fontFamily: 'DM Sans, sans-serif',
-                        boxSizing: 'border-box' as React.CSSProperties['boxSizing'],
-                      }}
-                    />
-                  </div>
-                ),
-              },
-            ]}
-          />
+                      {(filter.ingredientChips ?? []).length > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '11px', color: '#C4522A', fontFamily: 'DM Sans' }}>
+                            {(filter.ingredientChips ?? []).length} {l === 'fr' ? 'sélectionné(s)' : 'selected'}
+                          </span>
+                          <button
+                            onClick={() => setFilter((p: FilterState) => ({ ...p, ingredientChips: [] }))}
+                            style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          >
+                            · {l === 'fr' ? 'effacer' : 'clear'}
+                          </button>
+                        </div>
+                      )}
+
+                      <input
+                        type="text"
+                        value={filter.ingredientSearch}
+                        onChange={e => setFilter((p: FilterState) => ({ ...p, ingredientSearch: e.target.value }))}
+                        placeholder={l === 'fr' ? 'Autre ingrédient...' : 'Other ingredient...'}
+                        style={{
+                          width: '100%', fontSize: '12px', padding: '7px 10px',
+                          borderRadius: '8px', border: '0.5px solid #E0D8CF',
+                          background: '#F5F0E8', outline: 'none', color: '#1A1612',
+                          fontFamily: 'DM Sans, sans-serif', marginTop: '8px',
+                          boxSizing: 'border-box' as React.CSSProperties['boxSizing'],
+                        }}
+                      />
+                    </div>
+                  ),
+                },
+              ]}
+            />
+
+          </div>{/* end filter panel */}
 
           {/* ── Results strip ── */}
           <div style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F5F0E8', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
