@@ -1716,12 +1716,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       </div>
 
       {/* ── Party bar — fixed at bottom, hides when summary visible ── */}
-      {activePill === 'pizzas' && !summaryVisible && (
+      {(activePill === 'pizzas' || hidePillBar) && !summaryVisible && (
       <div style={{
-        position: 'fixed',
-        bottom: '64px',
-        left: 0, right: 0,
-        zIndex: 30,
+        ...(hidePillBar
+          ? { position: 'sticky', bottom: 0, zIndex: 10 }
+          : { position: 'fixed', bottom: '64px', left: 0, right: 0, zIndex: 30 }
+        ),
         background: '#1A1612',
         borderTop: '1px solid #C4522A',
         display: 'flex', alignItems: 'center',
