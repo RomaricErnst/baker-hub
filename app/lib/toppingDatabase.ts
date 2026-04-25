@@ -3352,6 +3352,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
       { ...ING.strawberries, bakeOrder: 'after' },
       ING.icingSugar,
     ],
+    compatibleStyles: ['neapolitan', 'sourdough'],
   },
 
   {
