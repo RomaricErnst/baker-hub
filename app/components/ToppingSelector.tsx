@@ -615,6 +615,17 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
               {pizza.wineNote[l] ?? pizza.wineNote.en}
             </div>
           )}
+
+          {pizza.funNote && (
+            <div style={{
+              fontSize: '11px', color: '#6B7A5A',
+              fontStyle: 'italic',
+              marginTop: '4px',
+              paddingLeft: '2px',
+            }}>
+              {pizza.funNote[l] ?? pizza.funNote.en}
+            </div>
+          )}
         </div>
 
         {/* Footer — qty controls, always visible */}

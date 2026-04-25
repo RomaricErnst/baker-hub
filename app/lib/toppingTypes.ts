@@ -163,6 +163,7 @@ export type Pizza = {
   compatibleStyles?: StyleKey[]
   // V3 fields — optional, not rendered in V2 UI
   wineNote?: Locale
+  funNote?: Locale
   winePairing?: Locale[]
   photoUrl?: string
   bakerPhotoUrl?: string

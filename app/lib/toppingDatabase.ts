@@ -1158,6 +1158,32 @@ export const ING: Record<string, Ingredient> = {
     compromise: { name: { en: 'Good duck liver pâté', fr: 'Bonne terrine de foie de canard' } },
   },
 
+  cookedHam: {
+    id: 'cooked_ham', category: 'meat', bakeOrder: 'before',
+    name: { en: 'Cooked ham', fr: 'Jambon cuit' },
+    qtyPerPizza: { amount: 80, unit: 'g' },
+    goodEnough: {
+      name: { en: 'Smoked ham', fr: 'Jambon fumé' },
+      note: { en: 'Adds smokiness — works great', fr: 'Ajoute un goût fumé — très bien' },
+    },
+  },
+
+  pineapple: {
+    id: 'pineapple', category: 'veg', bakeOrder: 'before',
+    name: { en: 'Pineapple chunks', fr: 'Morceaux d\'ananas' },
+    qtyPerPizza: { amount: 100, unit: 'g', noteEN: 'Fresh or well-drained tinned', noteFR: 'Frais ou en conserve bien égoutté' },
+    goodEnough: {
+      name: { en: 'Tinned pineapple in juice (not syrup)', fr: 'Ananas en conserve au jus (pas au sirop)' },
+      note: { en: 'Drain and pat dry well', fr: 'Bien égoutter et éponger' },
+    },
+    localSwap: {
+      singapore: {
+        name: { en: 'Fresh pineapple — widely available', fr: 'Ananas frais — très disponible' },
+        brandExamples: { singapore: ['Fresh pineapple — any wet market or supermarket'] },
+      },
+    },
+  },
+
 }
 
 // ─── Pizza database — 35 pizzas ──────────────────────────────
@@ -3224,6 +3250,26 @@ export const PIZZAS: Pizza[] = [
     ingredients: [ING.sanMarzano, ING.evoOil, ING.freshBasil],
     wineNote: { en: 'Dry rosé · or crisp white with citrus notes', fr: 'Rosé sec · ou blanc vif aux notes d\'agrumes' },
     compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'roman'],
+  },
+
+  {
+    id: 'hawaiian',
+    name: { en: 'Hawaiian', fr: 'Hawaïenne' },
+    story: { en: 'Ham, pineapple, mozzarella — the pizza that divided a generation', fr: 'Jambon, ananas, mozzarella — la pizza qui a divisé une génération' },
+    category: 'fusion', region: 'american',
+    base: 'tomato_cooked', season: ['all'],
+    occasion: ['kids', 'party'],
+    dietary: ['no_nuts', 'no_fish', 'halal'],
+    budget: 1, complexity: 1, prepMinutes: 5, ovenTemp: 'mid',
+    wine: ['sp', 'ro'],
+    flavour: { richness: 2, boldness: 2, creative: 3, refined: 1 },
+    compatibleStyles: ['neapolitan', 'newyork', 'pan', 'sourdough'],
+    ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.cookedHam, ING.pineapple],
+    wineNote: { en: 'Sparkling or off-dry rosé — match the sweetness', fr: 'Pétillant ou rosé demi-sec — pour équilibrer le sucré' },
+    funNote: {
+      en: "Illegal in Naples. My wife's favourite. Some battles aren't worth fighting.",
+      fr: "Interdit à Naples. Le préféré de ma femme. Certaines batailles ne valent pas la peine.",
+    },
   },
 
 ]
