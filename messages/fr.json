@@ -1182,7 +1182,14 @@
     },
     "section": {
       "before": "AVANT L'ENFOURNEMENT",
-      "after": "APRÈS LA CUISSON"
+      "before_roman": "SUR LA TEGLIA",
+      "before_pan": "DANS LE MOULE",
+      "after": "APRÈS LA CUISSON",
+      "after_pan": "APRÈS LA CUISSON — SAUCE COMPRISE"
+    },
+    "assembly": {
+      "roman": "Style Teglia — appuyer les doigts huilés dans la pâte avant la première cuisson. Ajouter les garnitures après que la base soit cuite.",
+      "pan": "Style Detroit — presser le fromage jusqu'aux bords du moule pour créer la croûte frico. La sauce va sur le fromage, pas en dessous."
     },
     "photo": {
       "button": "Prendre une photo"

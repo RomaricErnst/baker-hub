@@ -639,6 +639,7 @@ interface ShoppingItem {
 function buildShoppingList(
   qtys: Record<string, number>,
   locale: string,
+  styleKey?: string,
 ): { sections: Array<{ category: IngredientCategory; label: string; items: ShoppingItem[] }> } {
   const l = locale as 'en' | 'fr';
   const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
@@ -669,8 +670,11 @@ function buildShoppingList(
       }
       const item = ingredientMap[ing.id];
       if (ing.qtyPerPizza) {
+        const multiplier = styleKey
+          ? ((ing as import('../lib/toppingTypes').Ingredient).qtyMultiplierByStyle?.[styleKey as import('../lib/toppingTypes').StyleKey] ?? 1)
+          : 1;
         const prev = item.totalAmount ?? 0;
-        item.totalAmount = prev + ing.qtyPerPizza.amount * qty;
+        item.totalAmount = prev + ing.qtyPerPizza.amount * qty * multiplier;
         item.unit = ing.qtyPerPizza.unit;
         item.qtyNote = l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN;
       }
@@ -742,7 +746,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
     } catch {}
   }, []);
 
-  const { sections } = buildShoppingList(qtys, locale);
+  const { sections } = buildShoppingList(qtys, locale, styleKey);
   const totalSelected = Object.values(qtys).filter(q => q > 0).length;
 
   // Pre-tick pantry items

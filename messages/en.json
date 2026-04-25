@@ -1182,7 +1182,14 @@
     },
     "section": {
       "before": "BEFORE THE BAKE",
-      "after": "AFTER THE BAKE"
+      "before_roman": "ON THE TEGLIA",
+      "before_pan": "IN THE PAN",
+      "after": "AFTER THE BAKE",
+      "after_pan": "AFTER THE BAKE — INCLUDING THE SAUCE"
+    },
+    "assembly": {
+      "roman": "Teglia style — dimple the oiled dough with your fingers before the first bake. Add toppings after the base is set.",
+      "pan": "Detroit style — press cheese all the way to the edges of the pan to create the frico crust. Sauce goes on top of the cheese, not underneath."
     },
     "photo": {
       "button": "Take a photo"

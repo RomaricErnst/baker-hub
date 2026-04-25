@@ -123,6 +123,12 @@ export type Ingredient = {
   isCommonPantry?: boolean  // pre-ticked in shopping list
   qtyPerPizza?: IngredientQty  // quantity for one 30cm pizza
   hardToFind?: boolean         // true = show substitution proactively in shopping list
+  // Quantity multiplier per style relative to base qtyPerPizza
+  // e.g. { roman: 1.4, pan: 1.5 } = 40% more for Teglia, 50% more for Pan
+  qtyMultiplierByStyle?: Partial<Record<StyleKey, number>>
+  // Override bakeOrder for specific styles
+  // e.g. { pan: 'after' } = sauce goes on TOP for Detroit
+  bakeOrderByStyle?: Partial<Record<StyleKey, BakeOrder>>
 }
 
 export type Pizza = {

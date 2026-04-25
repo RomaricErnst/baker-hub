@@ -2,17 +2,28 @@
 import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { PIZZAS, DESSERT_PIZZAS, type Pizza } from '../../lib/toppingDatabase';
+import type { StyleKey, IngredientCategory, Ingredient } from '../../lib/toppingTypes';
 
 interface BakeTabProps {
   selectedPizzas: Record<string, number>;
   locale: string;
+  styleKey?: string;
 }
 
 function getAllPizzas(): Pizza[] {
   return [...PIZZAS, ...DESSERT_PIZZAS];
 }
 
-export default function BakeTab({ selectedPizzas, locale }: BakeTabProps) {
+const ORDER_MAP: Record<IngredientCategory, number> = {
+  sauce: 1, base: 1,
+  cheese: 2,
+  meat: 3, seafood: 3,
+  veg: 4,
+  spice: 5,
+  finish: 6,
+};
+
+export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [selectedPizzaId, setSelectedPizzaId] = useState<string | null>(null);
@@ -36,13 +47,57 @@ export default function BakeTab({ selectedPizzas, locale }: BakeTabProps) {
     setPhotos(prev => ({ ...prev, [selectedPizzaId]: url }));
   }
 
+  function getEffectiveBakeOrder(ing: Ingredient): 'before' | 'after' {
+    if (styleKey) return ing.bakeOrderByStyle?.[styleKey as StyleKey] ?? ing.bakeOrder;
+    return ing.bakeOrder;
+  }
+
+  function getImageSrc(pizzaId: string): string {
+    const variantMap: Record<string, string> = {
+      pizza_romana: '_pizza_romana',
+      newyork: '_newyork',
+      pan: '_pan',
+      roman: '_roman',
+    };
+    const suffix = styleKey && variantMap[styleKey];
+    if (suffix) return `/pizzas/${pizzaId}${suffix}.png`;
+    return `/pizzas/${pizzaId}.png`;
+  }
+
+  function handleImageError(e: React.SyntheticEvent<HTMLImageElement>, pizzaId: string) {
+    const img = e.target as HTMLImageElement;
+    if (!img.src.endsWith(`${pizzaId}.png`)) {
+      img.src = `/pizzas/${pizzaId}.png`;
+    }
+  }
+
+  function getBeforeLabel(): string {
+    if (styleKey === 'roman') return t('section.before_roman');
+    if (styleKey === 'pan') return t('section.before_pan');
+    return t('section.before');
+  }
+
+  function getAfterLabel(): string {
+    if (styleKey === 'pan') return t('section.after_pan');
+    return t('section.after');
+  }
+
   // ── DETAIL VIEW ──────────────────────────────────────────
   if (selectedPizzaId !== null) {
     const entry = selectedEntries.find(e => e.pizza.id === selectedPizzaId);
     if (!entry) { setSelectedPizzaId(null); return null; }
     const { pizza, qty } = entry;
-    const beforeIngredients = pizza.ingredients.filter(i => i.bakeOrder === 'before');
-    const afterIngredients = pizza.ingredients.filter(i => i.bakeOrder === 'after');
+
+    const beforeIngredients = pizza.ingredients
+      .filter(i => getEffectiveBakeOrder(i) === 'before')
+      .sort((a, b) => (ORDER_MAP[a.category] ?? 5) - (ORDER_MAP[b.category] ?? 5));
+
+    const afterIngredients = pizza.ingredients
+      .filter(i => getEffectiveBakeOrder(i) === 'after');
+
+    const assemblyNote = styleKey === 'roman' || styleKey === 'pan'
+      ? (l === 'fr' ? t(`assembly.${styleKey}`) : t(`assembly.${styleKey}`))
+      : null;
 
     return (
       <div>
@@ -70,12 +125,29 @@ export default function BakeTab({ selectedPizzas, locale }: BakeTabProps) {
         {/* Hero image */}
         <div style={{ width: '100%', height: '220px', background: '#1A1612', overflow: 'hidden' }}>
           <img
-            src={`/pizzas/${pizza.id}.png`}
+            src={getImageSrc(pizza.id)}
             alt=""
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            onError={e => handleImageError(e, pizza.id)}
           />
         </div>
+
+        {/* Assembly note for Teglia / Detroit */}
+        {assemblyNote && (
+          <div style={{
+            margin: '12px 16px',
+            padding: '10px 12px',
+            background: 'rgba(196,82,42,0.06)',
+            border: '1px solid rgba(196,82,42,0.2)',
+            borderRadius: '10px',
+            fontSize: '12px',
+            color: 'var(--ash)',
+            fontFamily: 'DM Sans, sans-serif',
+            lineHeight: 1.5,
+          }}>
+            {assemblyNote}
+          </div>
+        )}
 
         {/* BEFORE section */}
         {beforeIngredients.length > 0 && (
@@ -85,7 +157,7 @@ export default function BakeTab({ selectedPizzas, locale }: BakeTabProps) {
               fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
               color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '1.5px',
             }}>
-              {t('section.before')}
+              {getBeforeLabel()}
             </div>
             {beforeIngredients.map((ing, i) => (
               <div
@@ -116,7 +188,7 @@ export default function BakeTab({ selectedPizzas, locale }: BakeTabProps) {
               fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
               color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '1.5px',
             }}>
-              {t('section.after')}
+              {getAfterLabel()}
             </div>
             {afterIngredients.map((ing, i) => (
               <div
@@ -202,10 +274,10 @@ export default function BakeTab({ selectedPizzas, locale }: BakeTabProps) {
             >
               <div style={{ height: '160px', background: '#1A1612', overflow: 'hidden' }}>
                 <img
-                  src={`/pizzas/${pizza.id}.png`}
+                  src={getImageSrc(pizza.id)}
                   alt=""
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  onError={e => handleImageError(e, pizza.id)}
                 />
               </div>
               <div style={{ padding: '12px' }}>

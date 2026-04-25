@@ -8,7 +8,43 @@ interface Props {
   locale: string;
   selectedPizzas: Record<string, number>;
   onGoToBake: () => void;
+  styleKey?: string;
 }
+
+const STYLE_PREP_NOTES: Partial<Record<string, { en: string; fr: string }[]>> = {
+  roman: [
+    {
+      en: 'Oil your baking tray generously — the teglia base needs to fry slightly in the oil for the crispy bottom.',
+      fr: "Huiler généreusement votre plaque — la base teglia doit légèrement frire dans l'huile pour le fond croustillant.",
+    },
+    {
+      en: 'First bake: bake the dough plain at 250°C for 10 min until set. Then add toppings and bake a further 10–12 min.',
+      fr: 'Première cuisson : cuire la pâte seule à 250°C pendant 10 min jusqu\'à ce qu\'elle soit prise. Puis ajouter les garnitures et cuire encore 10–12 min.',
+    },
+    {
+      en: 'Dimple the surface with oiled fingers just before the first bake — this gives the teglia its characteristic texture.',
+      fr: "Faire des empreintes dans la surface avec les doigts huilés juste avant la première cuisson — c'est ce qui donne à la teglia sa texture caractéristique.",
+    },
+  ],
+  pan: [
+    {
+      en: 'Oil the pan heavily — the cheese at the edges will fry in the oil and create the frico crust. This is not optional.',
+      fr: "Huiler généreusement le moule — le fromage sur les bords va frire dans l'huile et créer la croûte frico. Ce n'est pas optionnel.",
+    },
+    {
+      en: 'Press the cheese all the way to the edges and corners of the pan before baking — it must touch the pan walls.',
+      fr: 'Pousser le fromage jusqu\'aux bords et coins du moule avant d\'enfourner — il doit toucher les parois du moule.',
+    },
+    {
+      en: 'Sauce goes on TOP of the cheese, not underneath. Add it after placing cheese, in stripes across the surface.',
+      fr: 'La sauce va SUR le fromage, pas en dessous. L\'ajouter après le fromage, en lignes sur la surface.',
+    },
+    {
+      en: 'Bake at 230°C for 20–25 min. The crust is done when the edges are deep golden and pulling away from the pan.',
+      fr: 'Cuire à 230°C pendant 20–25 min. La croûte est prête quand les bords sont bien dorés et se décollent du moule.',
+    },
+  ],
+};
 
 interface PrepTask {
   id: string;
@@ -26,7 +62,7 @@ const SETUP_TASKS: PrepTask[] = [
   { id: 'topping_station', ingredientName: '', text: 'Set up topping station',           textFr: 'Préparer la station garnitures',          timing: 5 },
 ];
 
-export default function PrepTab({ locale, selectedPizzas, onGoToBake }: Props) {
+export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }: Props) {
   const t = useTranslations('prep');
   const l = locale as 'en' | 'fr';
   const [completed, setCompleted] = useState<Set<string>>(new Set());
@@ -79,6 +115,43 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake }: Props) {
           {t('header.subtitle')}
         </div>
       </div>
+
+      {/* Style-specific prep notes (Teglia / Detroit only) */}
+      {styleKey && STYLE_PREP_NOTES[styleKey] && (
+        <div style={{
+          margin: '16px 0',
+          border: '1px solid var(--border)',
+          borderRadius: '12px',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            background: 'var(--char)',
+            color: 'white',
+            padding: '8px 14px',
+            fontSize: '10px',
+            fontFamily: 'DM Mono, monospace',
+            letterSpacing: '1px',
+            textTransform: 'uppercase',
+          }}>
+            {styleKey === 'pan'
+              ? (l === 'fr' ? 'Style Detroit' : 'Detroit Style')
+              : (l === 'fr' ? 'Style Teglia' : 'Teglia Style')}
+          </div>
+          {STYLE_PREP_NOTES[styleKey]!.map((note, i) => (
+            <div key={i} style={{
+              padding: '10px 14px',
+              borderBottom: i < STYLE_PREP_NOTES[styleKey]!.length - 1
+                ? '1px solid var(--border)' : 'none',
+              fontSize: '13px',
+              color: 'var(--ash)',
+              fontFamily: 'DM Sans, sans-serif',
+              lineHeight: 1.5,
+            }}>
+              {l === 'fr' ? note.fr : note.en}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Task list */}
       {allTasks.length === 0 ? (

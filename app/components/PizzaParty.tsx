@@ -71,6 +71,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           locale={locale}
           selectedPizzas={qtys}
           onGoToBake={() => setActiveTab('bake')}
+          styleKey={pickStyleKey}
         />
       )}
 
@@ -78,6 +79,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
         <BakeTab
           selectedPizzas={qtys}
           locale={locale}
+          styleKey={pickStyleKey}
         />
       )}
     </div>

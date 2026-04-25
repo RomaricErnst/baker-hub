@@ -31,6 +31,8 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'San Marzano DOP tomatoes', fr: 'Tomates San Marzano DOP' },
     prepNote: { en: 'Hand-crush, salt only — never cook before baking', fr: 'Écraser à la main, saler uniquement — ne jamais cuire avant enfournement' },
     qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
+    bakeOrderByStyle: { pan: 'after' },
     hardToFind: true,
     goodEnough: {
       name: { en: 'Mutti Polpa crushed tomatoes', fr: 'Tomates concassées Mutti' },
@@ -52,12 +54,15 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Cooked marinara sauce', fr: 'Sauce marinara cuite' },
     prepNote: { en: 'Simmer 20 min: olive oil, garlic (remove), San Marzano, basil, salt', fr: 'Mijoter 20 min : huile, ail (retirer), San Marzano, basilic, sel', timing: 30 },
     qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
+    bakeOrderByStyle: { pan: 'after' },
   },
 
   olioBase: {
     id: 'olio_base', category: 'base', bakeOrder: 'before',
     name: { en: 'Olive oil base', fr: 'Base huile d\'olive' },
     isCommonPantry: true,
+    qtyMultiplierByStyle: { roman: 1.2, pan: 1.3 },
   },
 
   fiordilatte: {
@@ -65,6 +70,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Fior di latte', fr: 'Fior di latte' },
     prepNote: { en: 'Slice 5mm, drain on paper towel 30 min before baking', fr: 'Trancher à 5mm, égoutter sur papier 30 min avant cuisson', timing: 30 },
     qtyPerPizza: { amount: 100, unit: 'g' },
+    qtyMultiplierByStyle: { roman: 1.3, pan: 1.5 },
     hardToFind: true,
     goodEnough: {
       name: { en: 'Fresh mozzarella', fr: 'Mozzarella fraîche' },
@@ -86,6 +92,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Burrata', fr: 'Burrata' },
     prepNote: { en: 'Add whole after baking — break open at the table', fr: 'Ajouter entière après cuisson — ouvrir à table' },
     qtyPerPizza: { amount: 1, unit: 'pcs' },
+    qtyMultiplierByStyle: { roman: 1.1 },
     hardToFind: true,
     goodEnough: { name: { en: 'Fresh mozzarella + a drizzle of cream', fr: 'Mozzarella fraîche + filet de crème' } },
     compromise: {
@@ -126,6 +133,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Crème fraîche', fr: 'Crème fraîche' },
     prepNote: { en: 'Spread thinly — stable at high heat, slightly tangy', fr: 'Étaler finement — stable à haute chaleur, légèrement acidulée' },
     qtyPerPizza: { amount: 60, unit: 'g', noteEN: 'per pizza', noteFR: 'par pizza' },
+    qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
     localSwap: {
       singapore: {
         name: { en: 'President Crème Fraîche (Marketplace) or President Whipping Cream', fr: 'Crème fraîche Président (Marketplace) ou President Whipping' },
@@ -194,6 +202,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Low-moisture mozzarella', fr: 'Mozzarella faible humidité' },
     prepNote: { en: 'Grate or slice thin — melts evenly without excess water', fr: 'Râper ou trancher fin — fond sans excès d\'eau', timing: 5 },
     qtyPerPizza: { amount: 100, unit: 'g', noteEN: 'low-moisture block', noteFR: 'bloc faible humidité' },
+    qtyMultiplierByStyle: { roman: 1.3, pan: 1.5 },
   },
 
   fourCheeses: {
@@ -201,6 +210,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Four cheeses: mozzarella, gorgonzola, parmesan, taleggio', fr: 'Quatre fromages : mozzarella, gorgonzola, parmesan, taleggio' },
     prepNote: { en: 'Grate parmesan, crumble gorgonzola, slice taleggio thin, tear mozzarella', fr: 'Râper parmesan, émietter gorgonzola, trancher taleggio finement, déchirer mozzarella', timing: 10 },
     qtyPerPizza: { amount: 120, unit: 'g', noteEN: 'total across 4 cheeses', noteFR: 'total pour 4 fromages' },
+    qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
     hardToFind: true,
     goodEnough: { name: { en: 'Replace taleggio with young Fontina — same washed-rind family, melts identically', fr: 'Remplacer le taleggio par du Fontina jeune — même famille à croûte lavée, fond pareil' } },
     compromise: { name: { en: 'Replace taleggio with Brie (double cream) — different character but melts well', fr: 'Remplacer le taleggio par du Brie (double crème) — caractère différent mais fond bien' } },
@@ -211,6 +221,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Nduja', fr: 'Nduja' },
     prepNote: { en: 'Spread directly on base before other toppings', fr: 'Étaler directement sur la base avant les autres garnitures' },
     qtyPerPizza: { amount: 40, unit: 'g', noteEN: 'spread generously', noteFR: 'étaler généreusement' },
+    qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
     goodEnough: { name: { en: 'Chorizo paste or spicy sobrasada', fr: 'Pâte de chorizo ou sobrasada épicée' } },
     localSwap: {
       singapore: {
@@ -225,6 +236,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Prosciutto di Parma', fr: 'Prosciutto di Parma' },
     prepNote: { en: 'Add after baking — heat ruins the delicate texture', fr: 'Ajouter après cuisson — la chaleur détruit la texture délicate' },
     qtyPerPizza: { amount: 60, unit: 'g', noteEN: '4–5 slices', noteFR: '4–5 tranches' },
+    qtyMultiplierByStyle: { roman: 1.2, pan: 1.3 },
     goodEnough: { name: { en: 'Good quality Parma ham', fr: 'Jambon de Parme de qualité' } },
     compromise: {
       name: { en: 'Good cooked ham — less delicate, milder', fr: 'Bon jambon cuit — moins délicat, plus doux' },
@@ -244,6 +256,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'spicy_salami', category: 'meat', bakeOrder: 'before',
     name: { en: 'Spicy Calabrian salami', fr: 'Salami calabrais épicé' },
     qtyPerPizza: { amount: 60, unit: 'g', noteEN: '8–10 slices', noteFR: '8–10 tranches' },
+    qtyMultiplierByStyle: { roman: 1.2, pan: 1.5 },
     goodEnough: { name: { en: 'Any spicy salami or pepperoni', fr: 'Tout salami épicé ou pepperoni' } },
     compromise: {
       name: { en: 'Regular salami + chilli flakes', fr: 'Salami ordinaire + flocons de piment' },
@@ -255,6 +268,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Pepperoni', fr: 'Pepperoni' },
     prepNote: { en: 'Slice thin — cups and crisps beautifully in the oven', fr: 'Trancher finement — se gondole et croustille au four' },
     qtyPerPizza: { amount: 50, unit: 'g', noteEN: '12–15 slices', noteFR: '12–15 tranches' },
+    qtyMultiplierByStyle: { roman: 1.2, pan: 1.5 },
   },
 
   grilledChicken: {
@@ -294,6 +308,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Anchovy fillets in oil', fr: 'Filets d\'anchois à l\'huile' },
     prepNote: { en: 'No extra salt needed — anchovies season the entire pizza', fr: 'Pas besoin de sel — les anchois assaisonnent toute la pizza' },
     isCommonPantry: true,
+    qtyMultiplierByStyle: { roman: 1.2 },
   },
 
   tuna: {
@@ -315,6 +330,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Mixed mushrooms', fr: 'Champignons mélangés' },
     prepNote: { en: 'Sauté briefly before adding — removes excess water', fr: 'Faire revenir brièvement — élimine l\'excès d\'eau', timing: 15 },
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'sliced', noteFR: 'émincés' },
+    qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
   },
 
   porcini: {
@@ -425,6 +441,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Gorgonzola dolce', fr: 'Gorgonzola dolce' },
     prepNote: { en: 'Crumble over base — melts beautifully', fr: 'Émietter sur la base — fond magnifiquement' },
     qtyPerPizza: { amount: 60, unit: 'g', noteEN: 'crumbled', noteFR: 'émietté' },
+    qtyMultiplierByStyle: { roman: 1.2, pan: 1.3 },
     goodEnough: { name: { en: 'Any creamy blue cheese', fr: 'N\'importe quel fromage bleu crémeux' } },
   },
 
@@ -433,6 +450,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Taleggio', fr: 'Taleggio' },
     prepNote: { en: 'Slice thin — melts beautifully and evenly', fr: 'Trancher finement — fond parfaitement' },
     qtyPerPizza: { amount: 30, unit: 'g' },
+    qtyMultiplierByStyle: { roman: 1.2, pan: 1.3 },
     hardToFind: true,
     goodEnough: { name: { en: 'Young Fontina — same washed-rind family, melts identically', fr: 'Fontina jeune — même famille à croûte lavée, fond pareil' } },
     compromise: { name: { en: 'Brie (double cream) — different character but melts well', fr: 'Brie (double crème) — caractère différent mais fond bien' } },
@@ -446,6 +464,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Parmigiano Reggiano', fr: 'Parmesan Reggiano' },
     prepNote: { en: 'Grate finely — melts into other cheeses', fr: 'Râper finement — se mélange aux autres fromages' },
     qtyPerPizza: { amount: 30, unit: 'g' },
+    qtyMultiplierByStyle: { roman: 1.2, pan: 1.3 },
     goodEnough: { name: { en: 'Grana Padano — slightly milder, works well', fr: 'Grana Padano — légèrement plus doux, fonctionne bien' } },
     compromise: { name: { en: 'Any hard aged cheese, finely grated', fr: 'Tout fromage à pâte dure affiné, finement râpé' } },
   },
@@ -466,6 +485,7 @@ export const ING: Record<string, Ingredient> = {
       fr: 'Utiliser de la ricotta fraîche — pas sèche ni fumée. Doit être crémeuse.',
     },
     qtyPerPizza: { amount: 100, unit: 'g' },
+    qtyMultiplierByStyle: { roman: 1.2, pan: 1.3 },
     compromise: {
       name: { en: 'Mascarpone — richer, no tang', fr: 'Mascarpone — plus riche, sans acidité' },
     },
@@ -871,6 +891,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Italian sausage (salsiccia)', fr: 'Saucisse italienne (salsiccia)' },
     prepNote: { en: 'Remove casing, crumble over pizza before baking', fr: 'Retirer le boyau, émietter sur la pizza avant cuisson', timing: 5 },
     qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
     goodEnough: { name: { en: 'Any good pork sausage, casing removed', fr: 'Toute bonne saucisse de porc, sans boyau' } },
   },
 
@@ -892,6 +913,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Stracciatella', fr: 'Stracciatella' },
     prepNote: { en: 'Always add after baking — heat destroys its creamy texture', fr: 'Toujours ajouter après cuisson — la chaleur détruit sa texture crémeuse' },
     qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyMultiplierByStyle: { roman: 1.2 },
     hardToFind: true,
     goodEnough: { name: { en: 'Burrata cream pulled apart', fr: 'Crème de burrata défaite' } },
     compromise: { name: { en: 'Fresh mozzarella torn and drizzled with cream', fr: 'Mozzarella fraîche déchirée avec un filet de crème' } },
@@ -925,6 +947,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Wisconsin brick cheese', fr: 'Fromage brick du Wisconsin' },
     prepNote: { en: 'Spread to edges — caramelises against the pan for the frico crust', fr: "Étaler jusqu'aux bords — caramélise contre le moule pour le frico croustillant" },
     qtyPerPizza: { amount: 150, unit: 'g' },
+    qtyMultiplierByStyle: { pan: 1.0 },
     hardToFind: true,
     goodEnough: { name: { en: 'Low-moisture mozzarella + mild cheddar 50/50', fr: 'Mozzarella faible humidité + cheddar doux 50/50' } },
     compromise: { name: { en: 'Low-moisture mozzarella alone', fr: 'Mozzarella faible humidité seule' } },
