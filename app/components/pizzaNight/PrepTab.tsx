@@ -18,8 +18,10 @@ const DOUGH_TASKS: PrepTask[] = [
   { id: 'topping_station', text: 'Set up topping station',               textFr: 'Préparer la station garnitures',             minutesBeforeBake: 10, source: 'dough' },
 ];
 
-type Bucket = 'now' | '30min' | '15min' | 'ready';
+type Bucket = 'now' | '60min' | '45min' | '30min' | '15min' | 'ready';
 type BucketedTask = PrepTask & { bucket: Bucket };
+
+const BUCKET_ORDER: Bucket[] = ['now', '60min', '45min', '30min', '15min', 'ready'];
 
 interface Props {
   bakeTime: Date;
@@ -33,15 +35,21 @@ function formatTime(date: Date): string {
 }
 
 function getBucket(task: PrepTask, minutesLeft: number): Bucket | null {
-  if (task.minutesBeforeBake >= minutesLeft + 5) return null; // past — time has passed
-  if (task.minutesBeforeBake >= minutesLeft - 5) return 'now'; // currently due
+  // Task time has already passed (more than 5 min ago)
+  if (task.minutesBeforeBake >= minutesLeft + 5) return null;
+  // Currently due — within ±5 min of scheduled time
+  if (task.minutesBeforeBake >= minutesLeft - 5) return 'now';
+  // Named time-window buckets (exact ranges)
   if (task.minutesBeforeBake >= 25 && task.minutesBeforeBake <= 35) return '30min';
   if (task.minutesBeforeBake >= 10 && task.minutesBeforeBake <= 20) return '15min';
   if (task.minutesBeforeBake >= -5 && task.minutesBeforeBake <= 5) return 'ready';
-  return null; // future, not yet in a named bucket
+  // Fallback — assign non-past tasks that don't fit an exact range so they're always visible
+  if (task.minutesBeforeBake > 50) return '60min';
+  if (task.minutesBeforeBake > 35) return '45min';
+  if (task.minutesBeforeBake > 20) return '30min';
+  if (task.minutesBeforeBake > 5) return '15min';
+  return 'ready';
 }
-
-const BUCKET_ORDER: Bucket[] = ['now', '30min', '15min', 'ready'];
 
 export default function PrepTab({ bakeTime, locale, onGoToBake }: Props) {
   const t = useTranslations('prep');
@@ -55,7 +63,6 @@ export default function PrepTab({ bakeTime, locale, onGoToBake }: Props) {
   }, []);
 
   const minutesLeft = (bakeTime.getTime() - now.getTime()) / 60000;
-  const isPast = minutesLeft < 0;
 
   const allTasks: PrepTask[] = [...DOUGH_TASKS].sort((a, b) => b.minutesBeforeBake - a.minutesBeforeBake);
 
@@ -69,7 +76,7 @@ export default function PrepTab({ bakeTime, locale, onGoToBake }: Props) {
   const grouped = BUCKET_ORDER.reduce<Record<Bucket, BucketedTask[]>>((acc, b) => {
     acc[b] = bucketed.filter(task => task.bucket === b);
     return acc;
-  }, { now: [], '30min': [], '15min': [], ready: [] });
+  }, { now: [], '60min': [], '45min': [], '30min': [], '15min': [], ready: [] });
 
   const nowTasks = grouped['now'];
   const allNowDone = nowTasks.length > 0 && nowTasks.every(task => completed.has(task.id));
@@ -83,42 +90,30 @@ export default function PrepTab({ bakeTime, locale, onGoToBake }: Props) {
   }
 
   function bucketLabel(bucket: Bucket): string {
+    const absTime = (minBefore: number) =>
+      `(${formatTime(new Date(bakeTime.getTime() - minBefore * 60000))})`;
     switch (bucket) {
-      case 'now': return t('bucket.now');
-      case '30min': return `${t('bucket.30min')} (${formatTime(new Date(bakeTime.getTime() - 30 * 60000))})`;
-      case '15min': return `${t('bucket.15min')} (${formatTime(new Date(bakeTime.getTime() - 15 * 60000))})`;
+      case 'now':   return t('bucket.now');
+      case '60min': return `${t('bucket.60min')} ${absTime(60)}`;
+      case '45min': return `${t('bucket.45min')} ${absTime(45)}`;
+      case '30min': return `${t('bucket.30min')} ${absTime(30)}`;
+      case '15min': return `${t('bucket.15min')} ${absTime(15)}`;
       case 'ready': return t('bucket.ready');
     }
   }
 
-  const hasAnyTasks = bucketed.length > 0;
-
   return (
     <div style={{ padding: '0 16px 24px' }}>
-      {/* Header card */}
+      {/* Header card — title only, no subtitle */}
       <div style={{
         border: '1px solid var(--border)', borderRadius: '14px', padding: '16px',
         marginTop: '16px', marginBottom: '16px',
         background: 'linear-gradient(135deg, rgba(196,82,42,0.06) 0%, transparent 60%)',
       }}>
-        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '20px', fontWeight: 700, color: 'var(--char)', marginBottom: '4px' }}>
+        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '20px', fontWeight: 700, color: 'var(--char)' }}>
           {t('header.title', { time: formatTime(bakeTime) })}
         </div>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: isPast ? 'var(--sage)' : 'var(--terra)' }}>
-          {isPast
-            ? t('header.past')
-            : t('header.subtitle', { n: Math.round(minutesLeft) })}
-        </div>
       </div>
-
-      {/* Empty state when no tasks in any bucket */}
-      {!hasAnyTasks && (
-        <div style={{ textAlign: 'center', color: 'var(--smoke)', fontFamily: 'DM Sans, sans-serif', fontSize: '15px', paddingTop: '24px' }}>
-          {l === 'fr'
-            ? "Vos tâches apparaîtront ici à l'approche de la cuisson"
-            : 'Your tasks will appear here as bake time approaches'}
-        </div>
-      )}
 
       {/* Bucket sections */}
       {BUCKET_ORDER.map(bucket => {

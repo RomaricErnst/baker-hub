@@ -1174,6 +1174,8 @@
     },
     "bucket": {
       "now": "NOW",
+      "60min": "60 MIN BEFORE BAKE",
+      "45min": "45 MIN BEFORE BAKE",
       "30min": "30 MIN BEFORE BAKE",
       "15min": "15 MIN BEFORE BAKE",
       "ready": "READY TO BAKE"
@@ -1182,8 +1184,8 @@
   },
   "bake": {
     "header": {
-      "title": "Time to bake",
-      "subtitle": "Tap a pizza to see what goes on"
+      "title": "Which pizza goes in next?",
+      "subtitle": "Tap it to see what goes on."
     },
     "section": {
       "before": "BEFORE THE BAKE",

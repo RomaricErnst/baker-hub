@@ -1174,6 +1174,8 @@
     },
     "bucket": {
       "now": "MAINTENANT",
+      "60min": "60 MIN AVANT LA CUISSON",
+      "45min": "45 MIN AVANT LA CUISSON",
       "30min": "30 MIN AVANT LA CUISSON",
       "15min": "15 MIN AVANT LA CUISSON",
       "ready": "PRÊT À ENFOURNER"
@@ -1182,8 +1184,8 @@
   },
   "bake": {
     "header": {
-      "title": "C'est l'heure",
-      "subtitle": "Touchez une pizza pour voir les garnitures"
+      "title": "Quelle pizza part en premier ?",
+      "subtitle": "Touchez-la pour voir ses garnitures."
     },
     "section": {
       "before": "AVANT L'ENFOURNEMENT",

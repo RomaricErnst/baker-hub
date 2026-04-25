@@ -38,7 +38,6 @@ export default function PizzaNight({ locale, bakeTime, numItems, styleKey, t }: 
       <PizzaNightTabBar
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        bakeTime={bakeTime}
         locale={locale}
       />
 

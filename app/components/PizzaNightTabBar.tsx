@@ -6,16 +6,11 @@ type Tab = 'pick' | 'shop' | 'prep' | 'bake';
 interface PizzaNightTabBarProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
-  bakeTime: Date;
   locale: string;
 }
 
-export default function PizzaNightTabBar({ activeTab, onTabChange, bakeTime }: PizzaNightTabBarProps) {
+export default function PizzaNightTabBar({ activeTab, onTabChange }: PizzaNightTabBarProps) {
   const t = useTranslations('pizzaNight');
-  const now = new Date();
-  const msToBake = bakeTime.getTime() - now.getTime();
-  const withinPrepWindow = msToBake > 0 && msToBake <= 60 * 60 * 1000;
-  const bakeStarted = now >= bakeTime;
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'pick', label: t('tab.pick') },
@@ -24,62 +19,55 @@ export default function PizzaNightTabBar({ activeTab, onTabChange, bakeTime }: P
     { id: 'bake', label: t('tab.bake') },
   ];
 
+  const activeIndex = tabs.findIndex(tab => tab.id === activeTab);
+
   return (
     <div style={{
-      position: 'sticky',
-      top: 0,
-      zIndex: 20,
-      padding: '8px 16px 0',
+      display: 'flex',
+      alignItems: 'flex-start',
+      padding: '12px 20px 16px',
       background: 'var(--warm)',
+      borderBottom: '1px solid var(--border)',
     }}>
-      <div style={{
-        background: 'var(--cream)',
-        borderRadius: '12px',
-        padding: '3px',
-        display: 'flex',
-      }}>
-        {tabs.map(tab => {
-          const isActive = activeTab === tab.id;
-          const showDot =
-            (tab.id === 'prep' && withinPrepWindow) ||
-            (tab.id === 'bake' && bakeStarted);
+      {tabs.map((tab, i) => {
+        const isActive = i === activeIndex;
+        const isCompleted = i < activeIndex;
+        const isFuture = i > activeIndex;
 
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              style={{
-                flex: 1,
-                height: '44px',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                border: 'none',
-                fontSize: '13px',
-                fontFamily: 'DM Sans, sans-serif',
-                fontWeight: isActive ? 600 : 400,
-                color: isActive ? 'var(--char)' : 'var(--smoke)',
-                background: isActive ? 'white' : 'transparent',
-                boxShadow: isActive ? '0 2px 8px rgba(26,22,18,0.10)' : 'none',
-                position: 'relative',
-              }}
-            >
+        const leftLineColor = i <= activeIndex ? 'var(--gold)' : 'var(--border)';
+        const rightLineColor = i < activeIndex ? 'var(--gold)' : 'var(--border)';
+
+        const dotSize = isActive ? '10px' : '8px';
+        const dotBackground = isActive ? 'var(--char)' : isCompleted ? 'var(--gold)' : 'var(--border)';
+        const dotBorder = isFuture ? '1.5px solid var(--smoke)' : undefined;
+
+        const labelColor = isActive ? 'var(--char)' : isCompleted ? 'var(--gold)' : 'var(--smoke)';
+        const labelWeight = isActive ? 600 : isCompleted ? 500 : 400;
+
+        return (
+          <div
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, cursor: 'pointer' }}
+          >
+            <span style={{
+              fontFamily: 'DM Sans, sans-serif', fontSize: '12px',
+              marginBottom: '6px', color: labelColor, fontWeight: labelWeight,
+            }}>
               {tab.label}
-              {showDot && (
-                <span style={{
-                  position: 'absolute',
-                  top: '6px',
-                  right: '8px',
-                  width: '6px',
-                  height: '6px',
-                  background: 'var(--gold)',
-                  borderRadius: '50%',
-                  display: 'block',
-                }} />
-              )}
-            </button>
-          );
-        })}
-      </div>
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+              <div style={{ flex: 1, height: '1px', background: i === 0 ? 'transparent' : leftLineColor }} />
+              <div style={{
+                width: dotSize, height: dotSize, borderRadius: '50%', flexShrink: 0,
+                background: dotBackground,
+                border: dotBorder,
+              }} />
+              <div style={{ flex: 1, height: '1px', background: i === tabs.length - 1 ? 'transparent' : rightLineColor }} />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
