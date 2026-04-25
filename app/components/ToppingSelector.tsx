@@ -415,8 +415,23 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
               {pizza.story[l] ?? pizza.story.en}
             </div>
           )}
-          {/* Row 3: wine pairing · time · qty controls */}
+          {/* Row 3: occasion tags · wine pairing · time · qty controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            {pizza.occasion.slice(0, 2).map(tag => {
+              const OCCASION_LABELS: Record<string, { en: string; fr: string }> = {
+                classic: { en: 'Classic', fr: 'Classique' },
+                spicy:   { en: 'Spicy',   fr: 'Épicé' },
+                kids:    { en: 'Kids',    fr: 'Enfants' },
+                party:   { en: 'Party',   fr: 'Fête' },
+                impress: { en: 'Impress', fr: 'Impressionner' },
+                quick:   { en: 'Quick',   fr: 'Rapide' },
+              };
+              return (
+                <span key={tag} style={{ fontSize: '9px', color: 'var(--smoke)', background: 'var(--cream)', borderRadius: '10px', padding: '2px 6px', flexShrink: 0, fontFamily: 'DM Sans, sans-serif' }}>
+                  {OCCASION_LABELS[tag]?.[l] ?? OCCASION_LABELS[tag]?.en ?? tag}
+                </span>
+              );
+            })}
             {pizza.winePairing?.[0] && (
               <span style={{ fontSize: '10px', color: '#8A7F78', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80px', flexShrink: 1 }}>
                 {pizza.winePairing[0][l] ?? pizza.winePairing[0].en}
@@ -453,11 +468,11 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
 
   return (
     <div
-      style={{ position: 'absolute', inset: 0, background: 'rgba(26,22,18,0.5)', zIndex: 10, borderRadius: '0 0 24px 24px' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.5)', zIndex: 100 }}
       onClick={onClose}
     >
       <div
-        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#FDFBF7', borderRadius: '14px 14px 0 0', maxHeight: '92%', display: 'flex', flexDirection: 'column' }}
+        style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#FDFBF7', borderRadius: '20px 20px 0 0', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Scrollable content */}
@@ -470,7 +485,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           <button onClick={onClose} style={{ position: 'absolute', top: '12px', right: '14px', background: 'none', border: 'none', fontSize: '16px', color: '#8A7F78', cursor: 'pointer' }}>✕</button>
 
           {/* Big image — fixed height so full sheet fits on screen */}
-          <div style={{ width: '100%', height: '180px', borderRadius: '10px', overflow: 'hidden', background: '#1A1612', marginBottom: '12px', flexShrink: 0 }}>
+          <div style={{ width: '100%', height: '260px', borderRadius: '12px', overflow: 'hidden', background: '#1A1612', marginBottom: '12px', flexShrink: 0 }}>
             <img
               src={(() => {
                 const variantMap: Record<string, string> = {
@@ -488,7 +503,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
             />
           </div>
           {/* Title */}
-          <div style={{ fontSize: '16px', fontWeight: 600, color: '#1A1612', marginBottom: '4px' }}>
+          <div style={{ fontSize: '20px', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: '#1A1612', marginBottom: '4px' }}>
             {pizza.name[l] ?? pizza.name.en}
           </div>
           {/* Story */}
