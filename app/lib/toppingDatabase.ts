@@ -1629,6 +1629,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 4, boldness: 3, creative: 4, refined: 4 },
     ingredients: [ING.olioBase, ING.camembert, ING.caramelisedApple, ING.walnuts, ING.honey, ING.ciderReduction],
     wineNote: { en: 'Normandy cider or sparkling', fr: 'Cidre de Normandie ou pétillant' },
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
