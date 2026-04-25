@@ -657,6 +657,10 @@ export const ING: Record<string, Ingredient> = {
       name: { en: 'Camembert', fr: 'Camembert' },
       note: { en: 'Same melt profile, slightly stronger flavour. Remove rind or leave on — both work.', fr: 'Même comportement à la fonte, goût légèrement plus fort. Avec ou sans croûte — les deux fonctionnent.' },
     },
+    compromise: {
+      name: { en: 'Mild goat cheese log (buchette)', fr: 'Bûche de chèvre douce' },
+      note: { en: 'Crumbles rather than melts — place in small pieces. Delicious but different texture.', fr: "S'émiette plutôt que de fondre — placer en petits morceaux. Délicieux mais texture différente." },
+    },
     whereToFind: {
       singapore: { shops: ['Cold Storage', 'Marketplace', 'Giant', "Ryan's Grocery"], online: ['RedMart'], note: 'President Brie or Ile de France — most supermarkets have it' },
       france:    { shops: ['Any supermarket or fromagerie'], note: 'Brie de Meaux AOP or Brie de Melun AOP — buy from a fromagerie for best quality' },
@@ -1350,9 +1354,13 @@ export const ING: Record<string, Ingredient> = {
     localSwap: {
       singapore: { name: { en: 'Shiro miso at Meidi-Ya, Don Don Donki or any Japanese supermarket', fr: 'Miso blanc chez Meidi-Ya, Don Don Donki ou tout supermarché japonais' } },
     },
+    goodEnough: {
+      name: { en: 'White or yellow miso paste (shiro or shinshu)', fr: 'Pâte de miso blanc ou jaune (shiro ou shinshu)' },
+      note: { en: 'Any white or yellow miso works — milder and sweeter than red. Thin with cream or olive oil before spreading.', fr: "Tout miso blanc ou jaune convient — plus doux et sucré que le rouge. Diluer avec crème ou huile avant d'étaler." },
+    },
     compromise: {
-      name: { en: 'Light tahini thinned with soy sauce', fr: 'Tahini léger dilué avec sauce soja' },
-      note: { en: 'Mix 2 tbsp tahini + 1 tbsp soy + dash of sesame oil. Different but gives similar umami depth.', fr: "Mélanger 2 cs de tahini + 1 cs de sauce soja + un peu d'huile de sésame. Différent mais donne une profondeur umami similaire." },
+      name: { en: 'Tahini thinned with soy sauce and sesame oil', fr: 'Tahini dilué avec sauce soja et huile de sésame' },
+      note: { en: 'Mix 2 tbsp tahini + 1 tbsp soy + a few drops toasted sesame oil. Different but gives similar deep umami.', fr: "Mélanger 2 cs tahini + 1 cs soja + quelques gouttes d'huile de sésame. Différent mais profondeur umami similaire." },
     },
     whereToFind: {
       singapore: { shops: ['Meidi-Ya', 'Don Don Donki', 'Isetan B2', 'any Japanese supermarket'], online: ['RedMart'], note: 'Shiro (white) miso — abundant in Singapore. Any Japanese supermarket' },
@@ -1487,6 +1495,10 @@ export const ING: Record<string, Ingredient> = {
     localSwap: {
       singapore: { name: { en: 'Korean kimchi widely available at NTUC FairPrice, Don Don Donki', fr: 'Kimchi coréen disponible chez NTUC FairPrice, Don Don Donki' } },
     },
+    goodEnough: {
+      name: { en: 'Store-bought kimchi (any Korean brand)', fr: 'Kimchi du commerce (toute marque coréenne)' },
+      note: { en: 'Any kimchi works — drain excess brine before adding. Available in Asian supermarkets everywhere.', fr: "Tout kimchi convient — égoutter l'excès de saumure avant d'ajouter. Disponible dans tous les supermarchés asiatiques." },
+    },
     compromise: {
       name: { en: 'Quick-pickled napa cabbage with gochugaru', fr: 'Chou de Pékin rapidement mariné avec gochugaru' },
       note: { en: 'Slice cabbage thin, toss with rice vinegar, gochugaru, garlic and salt. Rest 30 min. Not fermented but punchy.', fr: 'Trancher finement le chou, mélanger avec vinaigre de riz, gochugaru, ail et sel. Reposer 30 min. Pas fermenté mais incisif.' },
@@ -1530,6 +1542,10 @@ export const ING: Record<string, Ingredient> = {
     goodEnough: {
       name: { en: 'Wasabi paste + crème fraîche (mix yourself)', fr: 'Pâte de wasabi + crème fraîche (à mélanger)' },
       note: { en: 'Mix 1 tsp wasabi paste into 3 tbsp crème fraîche or cream cheese. Adjust heat to taste.', fr: 'Mélanger 1 cc de pâte de wasabi dans 3 cs de crème fraîche ou fromage frais. Ajuster le piquant selon le goût.' },
+    },
+    compromise: {
+      name: { en: 'Horseradish cream + cream cheese', fr: 'Crème de raifort + fromage frais' },
+      note: { en: 'Similar pungent heat, different flavour. Mix equal parts. Works especially well with smoked salmon and dill.', fr: 'Chaleur piquante similaire, saveur différente. Mélanger à parts égales. Particulièrement bien avec saumon fumé et aneth.' },
     },
   },
 
