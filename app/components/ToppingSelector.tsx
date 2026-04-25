@@ -592,7 +592,6 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
         style={{
           width: '100%',
           maxWidth: '500px',
-          maxHeight: 'calc(100dvh - 64px - 60px - env(safe-area-inset-bottom))',
           background: '#FDFBF7',
           borderRadius: '20px 20px 0 0',
           display: 'flex',
@@ -605,9 +604,10 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
         {/* Image — takes all remaining space, shrinks to zero if needed */}
         <div style={{
           position: 'relative',
-          flex: 1,
-          minHeight: 0,
-          maxHeight: 'clamp(160px, 40dvh, 320px)',
+          width: '100%',
+          aspectRatio: '1 / 1',
+          maxHeight: 'calc(100dvh - 69px - 230px)',
+          flexShrink: 0,
           background: '#1A1612',
           borderRadius: '20px 20px 0 0',
           overflow: 'hidden',
