@@ -37,7 +37,7 @@ export default function DecisionList({ options, selectedId, onSelect }: Decision
             }}
           >
             <div style={{
-              width: '44px', height: '44px',
+              width: '56px', height: '56px',
               borderRadius: option.thumbnailBg ? '50%' : '8px',
               overflow: 'hidden', flexShrink: 0,
               background: option.thumbnailBg ?? '#1A1612',

@@ -1132,15 +1132,15 @@
   "oven": {
     "heading": "Your oven",
     "subtitle": "Shapes your bake time and temperature.",
-    "home":      { "title": "Home oven",      "tagline": "Up to 280°C, 6–8 min bake" },
-    "stone":     { "title": "Pizza stone",    "tagline": "Thermal mass, crispier base" },
-    "steel":     { "title": "Pizza steel",    "tagline": "Faster heat transfer, pro-level crust" },
-    "ooni":      { "title": "Ooni / Koda",    "tagline": "450°C+, 60–90 sec bake" },
-    "gozney":    { "title": "Gozney Dome",    "tagline": "High-heat outdoor, versatile" },
-    "woodfired": { "title": "Wood-fired",     "tagline": "Traditional, smoky char" },
-    "deck":      { "title": "Deck oven",      "tagline": "Commercial-style even heat" },
-    "pan":       { "title": "Pan / sheet",    "tagline": "For Detroit, pan, focaccia" },
-    "convection":{ "title": "Convection",     "tagline": "Fan-assisted, quicker browning" }
+    "pizzaOven":    { "title": "High-heat pizza oven",      "tagline": "Ooni, Gozney, wood-fired — 60–90 sec bake" },
+    "homeSteel":    { "title": "Home oven + stone or steel", "tagline": "Crispy base, 5–7 min bake" },
+    "homeStandard": { "title": "Home oven (standard)",       "tagline": "Best for thicker styles — Pan, Detroit" },
+    "electricPizza":{ "title": "Electric pizza oven",        "tagline": "400°C countertop — Ooni Volt, Effeuno" },
+    "dutchOven":    { "title": "Dutch oven / Combo cooker",  "tagline": "Perfect steam, open crumb — most home bakers" },
+    "homeStoneB":   { "title": "Home oven + stone or steel", "tagline": "Great for baguettes and bâtards" },
+    "standardB":    { "title": "Standard home oven",         "tagline": "Best for enriched breads — brioche, pain de mie" },
+    "woodFired":    { "title": "Wood-fired oven",            "tagline": "Exceptional crust and natural steam" },
+    "steamOven":    { "title": "Steam oven",                 "tagline": "Professional results — micro-bakery" }
   },
   "mixer": {
     "heading": "Your mixer",

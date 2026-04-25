@@ -1132,15 +1132,15 @@
   "oven": {
     "heading": "Votre four",
     "subtitle": "Définit la durée et la température de cuisson.",
-    "home":      { "title": "Four domestique",  "tagline": "Jusqu'à 280°C, cuisson 6–8 min" },
-    "stone":     { "title": "Pierre à pizza",   "tagline": "Masse thermique, base plus croustillante" },
-    "steel":     { "title": "Acier à pizza",    "tagline": "Transfert rapide, croûte niveau pro" },
-    "ooni":      { "title": "Ooni / Koda",      "tagline": "450°C+, cuisson 60–90 sec" },
-    "gozney":    { "title": "Gozney Dome",      "tagline": "Haute chaleur extérieure, polyvalent" },
-    "woodfired": { "title": "Feu de bois",      "tagline": "Traditionnel, fumé et carbonisé" },
-    "deck":      { "title": "Four à sole",      "tagline": "Chaleur uniforme style professionnel" },
-    "pan":       { "title": "Plaque / teglia",  "tagline": "Pour Detroit, pan, focaccia" },
-    "convection":{ "title": "Convection",       "tagline": "Ventilé, brunissement plus rapide" }
+    "pizzaOven":    { "title": "Four à pizza haute température", "tagline": "Ooni, Gozney, bois — cuisson en 60–90 sec" },
+    "homeSteel":    { "title": "Four + pierre ou acier",         "tagline": "Base croustillante, 5–7 min" },
+    "homeStandard": { "title": "Four domestique standard",       "tagline": "Idéal pour pizzas épaisses — Pan, Detroit" },
+    "electricPizza":{ "title": "Four électrique à pizza",        "tagline": "400°C compact — Ooni Volt, Effeuno" },
+    "dutchOven":    { "title": "Cocotte en fonte",               "tagline": "Vapeur parfaite, mie ouverte — idéal maison" },
+    "homeStoneB":   { "title": "Four + pierre ou acier",         "tagline": "Idéal pour baguettes et bâtards" },
+    "standardB":    { "title": "Four domestique standard",       "tagline": "Idéal pains enrichis — brioche, pain de mie" },
+    "woodFired":    { "title": "Four à bois",                    "tagline": "Croûte exceptionnelle, vapeur naturelle" },
+    "steamOven":    { "title": "Four vapeur",                    "tagline": "Résultats pro — micro-boulangerie" }
   },
   "mixer": {
     "heading": "Votre méthode",
