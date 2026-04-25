@@ -391,6 +391,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
                 pizza_romana: `_pizza_romana`,
                 newyork: `_newyork`,
                 pan: `_pan`,
+                roman: `_roman`,
               };
               const suffix = styleKey && variantMap[styleKey];
               if (suffix) return `/pizzas/${pizza.id}${suffix}.png`;
@@ -498,6 +499,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
                   pizza_romana: `_pizza_romana`,
                   newyork: `_newyork`,
                   pan: `_pan`,
+                  roman: `_roman`,
                 };
                 const suffix = styleKey && variantMap[styleKey];
                 if (suffix) return `/pizzas/${pizza.id}${suffix}.png`;

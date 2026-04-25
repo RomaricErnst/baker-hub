@@ -3218,7 +3218,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
   },
 
   {
-    id: 'miel_figue_mascarpone',
+    id: 'honey_fig_mascarpone',
     name: { en: 'Honey, Fig & Mascarpone', fr: 'Miel, Figue & Mascarpone' },
     story: { en: 'Autumn on a pizza — sweet figs, creamy mascarpone', fr: 'L\'automne sur une pizza — figues sucrées, mascarpone crémeux' },
     category: 'dessert', season: ['summer', 'autumn'],
@@ -3236,7 +3236,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
   },
 
   {
-    id: 'speculoos_banane',
+    id: 'speculoos_banana',
     name: { en: 'Speculoos & Banana', fr: 'Speculoos & Banane' },
     story: { en: 'Belgian biscuit spread, caramel, banana — crowd favourite', fr: 'Pâte de speculoos, caramel, banane — favori de la fête' },
     category: 'dessert', season: ['all'],
