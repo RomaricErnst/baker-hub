@@ -62,6 +62,25 @@ const INGREDIENT_CHIPS: {
   },
 ];
 
+// ─── Style names ──────────────────────────────────────────────
+
+const STYLE_NAMES: Record<string, string> = {
+  neapolitan:   'Neapolitan',
+  sourdough:    'Sourdough',
+  pizza_romana: 'Pizza Romana',
+  roman:        'Roman Teglia',
+  newyork:      'New York',
+  pan:          'Pan / Detroit',
+};
+const STYLE_NAMES_FR: Record<string, string> = {
+  neapolitan:   'Napolitaine',
+  sourdough:    'Au levain',
+  pizza_romana: 'Romaine',
+  roman:        'Teglia romaine',
+  newyork:      'New York',
+  pan:          'Pan / Detroit',
+};
+
 // ─── Types ───────────────────────────────────────────────────
 
 type Qty = Record<string, number>;
@@ -77,6 +96,8 @@ interface Props {
   onQtysChange?: (qtys: Qty) => void;
   hidePillBar?: boolean;
   onStyleChange?: (style: string) => void;
+  activeStyleKey?: string;
+  onStyleKeyChange?: (key: string) => void;
 }
 
 // ─── Sub-region maps ─────────────────────────────────────────
@@ -1022,7 +1043,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange }: Props) {
   const l = locale as 'en' | 'fr';
 
   // Filter state
@@ -1098,6 +1119,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // Dessert expanded
   const [dessertOpen, setDessertOpen] = useState(false);
 
+  // Style picker popup
+  const [showStylePicker, setShowStylePicker] = useState(false);
+
   // Flavour slider values — separate from filter for UI display
   const [flavourUI, setFlavourUI] = useState({ richness: 3, boldness: 3, creative: 3, refined: 3 });
 
@@ -1112,6 +1136,40 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
   // unused import guard
   void getFilterCounts;
+
+  // Per-option counts for smart filter hiding
+  const filterCounts = useMemo(() => {
+    const base = { ...filter, styleKey: styleKey ?? undefined } as import('../lib/toppingTypes').FilterState;
+    const countFor = (overrides: Partial<import('../lib/toppingTypes').FilterState>) =>
+      filterPizzas(PIZZAS, { ...base, ...overrides }).length;
+    return {
+      occasion: Object.fromEntries(
+        (['classic','spicy','kids','party','impress','quick'] as const)
+          .map(v => [v, countFor({ occasion: [v] })])
+      ) as Record<string, number>,
+      base: Object.fromEntries(
+        (['tomato_raw','tomato_cooked','tomato_concentrate',
+          'bianca_cream','bianca_oil','bianca_ricotta',
+          'pesto','nduja','truffle_cream','bbq','miso',
+          'harissa','zaatar','vodka_cream','other'] as const)
+          .map(v => [v, countFor({ base: v })])
+      ) as Record<string, number>,
+      region: Object.fromEntries(
+        (['neapolitan','roman','sicilian','ligurian','venetian',
+          'calabrian','alsace','bretagne','savoie','provence',
+          'basque','lyonnais','nord','normandie','american',
+          'asian','fusion','spanish','middle_eastern',
+          'north_african','japanese','northern_italian'] as const)
+          .map(v => [v, countFor({ region: v })])
+      ) as Record<string, number>,
+      budget: Object.fromEntries(
+        ([1,2,3] as const).map(v => [v, countFor({ budget: v })])
+      ) as Record<string, number>,
+      complexity: Object.fromEntries(
+        ([1,2,3] as const).map(v => [v, countFor({ complexity: v })])
+      ) as Record<string, number>,
+    };
+  }, [styleKey, filter]);
 
   // ── Filter helpers ──────────────────────────────────────────
 
@@ -1187,7 +1245,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           PIZZAS pill
       ══════════════════════════════════════ */}
       {/* Style awareness banner */}
-      {activePill === 'pizzas' && styleKey && (
+      {activePill === 'pizzas' && (
         <div style={{
           padding: '6px 12px',
           background: '#F5F0E8',
@@ -1198,33 +1256,35 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           alignItems: 'center',
           gap: '5px',
         }}>
-          <svg viewBox="0 0 20 20" width={12} height={12} fill="none" stroke="#6B7A5A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 20 20" width={12} height={12} fill="none"
+            stroke="#6B7A5A" strokeWidth="1.5"
+            strokeLinecap="round" strokeLinejoin="round">
             <circle cx="10" cy="10" r="7" />
             <path d="M10 9v5" />
             <circle cx="10" cy="7" r=".5" fill="#6B7A5A" stroke="none" />
           </svg>
-          <span>
-            {locale === 'fr'
-              ? `Pizzas adaptées à votre ${styleKey === 'neapolitan' ? 'pâte Napolitaine' : styleKey === 'newyork' ? 'pâte New York' : styleKey === 'roman' ? 'pâte Romaine' : styleKey === 'pan' ? 'pâte Pan' : styleKey === 'pizza_romana' ? 'pâte Romaine' : 'style'}`
-              : `Showing pizzas suited for ${styleKey === 'neapolitan' ? 'Neapolitan' : styleKey === 'newyork' ? 'New York' : styleKey === 'roman' ? 'Roman' : styleKey === 'pan' ? 'Pan' : styleKey === 'pizza_romana' ? 'Roman' : styleKey} dough`}
+          <span style={{ flex: 1 }}>
+            {styleKey
+              ? (l === 'fr'
+                  ? `Pizzas pour ${STYLE_NAMES_FR[styleKey] ?? styleKey}`
+                  : `Showing pizzas for ${STYLE_NAMES[styleKey] ?? styleKey}`)
+              : (l === 'fr' ? 'Tous les styles' : 'All styles')
+            }
           </span>
-          {styleKey && onStyleChange && (
-            <span
-              onClick={() => onStyleChange('')}
-              style={{
-                marginLeft: 'auto',
-                fontSize: '11px',
-                color: 'var(--terra)',
-                cursor: 'pointer',
-                fontFamily: 'DM Mono, monospace',
-                textDecoration: 'underline',
-                textUnderlineOffset: '2px',
-                flexShrink: 0,
-              }}
-            >
-              {locale === 'fr' ? 'Changer' : 'Change'}
-            </span>
-          )}
+          <span
+            onClick={() => setShowStylePicker(true)}
+            style={{
+              fontSize: '11px',
+              color: 'var(--terra)',
+              cursor: 'pointer',
+              fontFamily: 'DM Mono, monospace',
+              textDecoration: 'underline',
+              textUnderlineOffset: '2px',
+              flexShrink: 0,
+            }}
+          >
+            {l === 'fr' ? 'Changer' : 'Change'}
+          </span>
         </div>
       )}
 
@@ -1237,21 +1297,24 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             <FilterGroup
               label={l === 'fr' ? 'L\'essentiel' : 'The Basics'}
               items={[
-                {
+                ...(!Object.values(filterCounts.occasion).every(c => c === 0) ? [{
                   key: 'occasion', title: l === 'fr' ? 'Occasion' : 'Occasion',
                   badge: filter.occasion.length > 0 ? `${filter.occasion.length}` : undefined,
                   open: open.occasion, onToggle: () => togOpen('occasion'),
                   children: (
                     <div style={S.pillRow}>
-                      {(['classic','spicy','kids','party','impress','quick'] as OccasionTag[]).map(o => (
-                        <span key={o} style={S.pill(filter.occasion.includes(o))} onClick={() => toggleOccasion(o)}>
-                          {OCCASION_LABELS[o][l]}
-                        </span>
-                      ))}
+                      {(['classic','spicy','kids','party','impress','quick'] as OccasionTag[]).map(o => {
+                        if (filterCounts.occasion[o] === 0 && !filter.occasion.includes(o)) return null;
+                        return (
+                          <span key={o} style={S.pill(filter.occasion.includes(o))} onClick={() => toggleOccasion(o)}>
+                            {OCCASION_LABELS[o][l]}
+                          </span>
+                        );
+                      })}
                     </div>
                   ),
-                },
-                {
+                }] : []),
+                ...(!Object.values(filterCounts.base).every(c => c === 0) ? [{
                   key: 'base', title: l === 'fr' ? 'Base' : 'Base',
                   badge: filter.base !== null ? '1' : undefined,
                   open: open.base, onToggle: () => togOpen('base'),
@@ -1260,16 +1323,19 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       <span style={S.pill(filter.base === null, 'terra')} onClick={() => setBase(null)}>
                         {l === 'fr' ? 'Toutes' : 'All'}
                       </span>
-                      {(['tomato_raw','tomato_cooked','bianca_cream','bianca_oil','bianca_ricotta','pesto','nduja','bbq'] as BaseType[]).map(b => (
-                        <span key={b} style={S.pill(filter.base === b, 'terra')}
-                          onClick={() => setBase(filter.base === b ? null : b)}>
-                          {BASE_LABELS[b][l]}
-                        </span>
-                      ))}
+                      {(['tomato_raw','tomato_cooked','bianca_cream','bianca_oil','bianca_ricotta','pesto','nduja','bbq'] as BaseType[]).map(b => {
+                        if (filterCounts.base[b] === 0 && filter.base !== b) return null;
+                        return (
+                          <span key={b} style={S.pill(filter.base === b, 'terra')}
+                            onClick={() => setBase(filter.base === b ? null : b)}>
+                            {BASE_LABELS[b][l]}
+                          </span>
+                        );
+                      })}
                     </div>
                   ),
-                },
-                {
+                }] : []),
+                ...(!Object.values(filterCounts.region).every(c => c === 0) ? [{
                   key: 'region', title: l === 'fr' ? 'Région' : 'Region',
                   badge: regionParent !== 'all' ? (regionParent === 'italy' ? '🇮🇹' : regionParent === 'france' ? '🇫🇷' : '🌍') : undefined,
                   open: open.region, onToggle: () => togOpen('region'),
@@ -1286,7 +1352,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           </span>
                         ))}
                       </div>
-                      {regionParent !== 'all' && (
+                      {(regionParent === 'italy' || regionParent === 'france') && (
                         <div style={S.subSec}>
                           <span style={S.subLbl}>
                             {regionParent === 'italy'
@@ -1294,18 +1360,21 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                               : (l === 'fr' ? 'Régions françaises' : 'French regions')}
                           </span>
                           <div style={S.pillRow}>
-                            {(regionParent === 'italy' ? ITALY_REGIONS : FRANCE_REGIONS).map(r => (
-                              <span key={r} style={S.pill(filter.region === r)}
-                                onClick={() => setRegion(filter.region === r ? null : r)}>
-                                {REGION_NAMES[r][l]}
-                              </span>
-                            ))}
+                            {(regionParent === 'italy' ? ITALY_REGIONS : FRANCE_REGIONS).map(r => {
+                              if (filterCounts.region[r] === 0 && filter.region !== r) return null;
+                              return (
+                                <span key={r} style={S.pill(filter.region === r)}
+                                  onClick={() => setRegion(filter.region === r ? null : r)}>
+                                  {REGION_NAMES[r][l]}
+                                </span>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
                     </>
                   ),
-                },
+                }] : []),
               ]}
             />
 
@@ -1391,36 +1460,42 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             <FilterGroup
               label={l === 'fr' ? 'Pour les curieux' : 'Go Deeper'}
               items={[
-                {
+                ...(!Object.values(filterCounts.budget).every(c => c === 0) ? [{
                   key: 'budget', title: l === 'fr' ? 'Budget' : 'Budget',
                   badge: filter.budget !== null ? BUDGET_LABELS[filter.budget][l] : undefined,
                   open: open.budget, onToggle: () => togOpen('budget'),
                   children: (
                     <div style={S.pillRow}>
-                      {([1,2,3] as BudgetTier[]).map(b => (
-                        <span key={b} style={S.pill(filter.budget === b)}
-                          onClick={() => setBudget(filter.budget === b ? null : b)}>
-                          {BUDGET_LABELS[b][l]}
-                        </span>
-                      ))}
+                      {([1,2,3] as BudgetTier[]).map(b => {
+                        if (filterCounts.budget[b] === 0 && filter.budget !== b) return null;
+                        return (
+                          <span key={b} style={S.pill(filter.budget === b)}
+                            onClick={() => setBudget(filter.budget === b ? null : b)}>
+                            {BUDGET_LABELS[b][l]}
+                          </span>
+                        );
+                      })}
                     </div>
                   ),
-                },
-                {
+                }] : []),
+                ...(!Object.values(filterCounts.complexity).every(c => c === 0) ? [{
                   key: 'budget_complexity', title: l === 'fr' ? 'Complexité' : 'Complexity',
                   badge: filter.complexity !== null ? COMPLEXITY_LABELS[filter.complexity][l] : undefined,
                   open: open.budget_complexity, onToggle: () => togOpen('budget_complexity'),
                   children: (
                     <div style={S.pillRow}>
-                      {([1,2,3] as ComplexityTier[]).map(c => (
-                        <span key={c} style={S.pill(filter.complexity === c)}
-                          onClick={() => setComplexity(filter.complexity === c ? null : c)}>
-                          {COMPLEXITY_LABELS[c][l]}
-                        </span>
-                      ))}
+                      {([1,2,3] as ComplexityTier[]).map(c => {
+                        if (filterCounts.complexity[c] === 0 && filter.complexity !== c) return null;
+                        return (
+                          <span key={c} style={S.pill(filter.complexity === c)}
+                            onClick={() => setComplexity(filter.complexity === c ? null : c)}>
+                            {COMPLEXITY_LABELS[c][l]}
+                          </span>
+                        );
+                      })}
                     </div>
                   ),
-                },
+                }] : []),
                 {
                   key: 'flavour', title: l === 'fr' ? 'Saveurs' : 'Flavour',
                   open: open.flavour, onToggle: () => togOpen('flavour'),
@@ -1796,6 +1871,131 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           )}
         </div>
       </div>
+
+      {/* ── Style picker bottom sheet ── */}
+      {showStylePicker && (
+        <>
+          <div
+            onClick={() => setShowStylePicker(false)}
+            style={{
+              position: 'fixed', inset: 0,
+              background: 'rgba(26,22,18,0.5)',
+              zIndex: 200,
+            }}
+          />
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'fixed', bottom: 0, left: 0, right: 0,
+              background: '#FDFBF7',
+              borderRadius: '20px 20px 0 0',
+              maxHeight: '70vh',
+              zIndex: 201,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div style={{
+              width: '32px', height: '3px',
+              background: '#E0D8CF', borderRadius: '2px',
+              margin: '12px auto 0',
+              flexShrink: 0,
+            }} />
+            <div style={{
+              fontFamily: 'Playfair Display, serif',
+              fontSize: '18px', fontWeight: 700,
+              color: 'var(--char)',
+              padding: '12px 16px 8px',
+              flexShrink: 0,
+            }}>
+              {l === 'fr' ? 'Choisir un style de pizza' : 'Choose a pizza style'}
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {[
+                { key: 'neapolitan' },
+                { key: 'sourdough'  },
+                { key: 'pizza_romana' },
+                { key: 'roman'      },
+                { key: 'newyork'    },
+                { key: 'pan'        },
+              ].map(({ key }, idx, arr) => {
+                const isSelected = styleKey === key;
+                const isDoughStyle = key === activeStyleKey;
+                const name = l === 'fr'
+                  ? (STYLE_NAMES_FR[key] ?? key)
+                  : (STYLE_NAMES[key] ?? key);
+                return (
+                  <div
+                    key={key}
+                    onClick={() => {
+                      setShowStylePicker(false);
+                      onStyleKeyChange?.(key);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '14px 16px',
+                      borderBottom: idx < arr.length - 1
+                        ? '1px solid var(--border)' : 'none',
+                      cursor: 'pointer',
+                      background: isSelected
+                        ? 'rgba(196,82,42,0.06)' : 'transparent',
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontFamily: 'DM Sans, sans-serif',
+                        fontSize: '15px', fontWeight: 600,
+                        color: 'var(--char)',
+                      }}>
+                        {name}
+                      </div>
+                    </div>
+                    {isDoughStyle && (
+                      <span style={{
+                        fontFamily: 'DM Mono, monospace',
+                        fontSize: '9px',
+                        color: 'var(--gold)',
+                        background: 'rgba(212,168,83,0.15)',
+                        borderRadius: '10px',
+                        padding: '2px 6px',
+                        marginRight: '8px',
+                        flexShrink: 0,
+                      }}>
+                        {l === 'fr' ? 'Votre pâte' : 'Your dough'}
+                      </span>
+                    )}
+                    {isSelected && (
+                      <span style={{
+                        fontFamily: 'DM Mono, monospace',
+                        fontSize: '14px',
+                        color: 'var(--terra)',
+                        flexShrink: 0,
+                      }}>
+                        ✓
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{
+              padding: '10px 16px 20px',
+              fontSize: '11px',
+              color: 'var(--smoke)',
+              fontFamily: 'DM Sans, sans-serif',
+              fontStyle: 'italic',
+              borderTop: '1px solid var(--border)',
+              flexShrink: 0,
+            }}>
+              {l === 'fr'
+                ? 'Changer le style ici ne modifie pas votre recette de pâte.'
+                : 'Changing style here does not change your dough recipe.'}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── Party bar — fixed at bottom, hides when summary visible ── */}
       {(activePill === 'pizzas' || hidePillBar) && !summaryVisible && (

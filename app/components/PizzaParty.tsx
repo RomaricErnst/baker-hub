@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PizzaPartyTabBar from './PizzaPartyTabBar';
 import ToppingSelector from './ToppingSelector';
 import PrepTab from './pizzaParty/PrepTab';
@@ -31,6 +31,11 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
   const [activeTab, setActiveTab] = useState<Tab>('pick');
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [styleKey, setStyleKey] = useState<string>(initialStyleKey);
+  const [pickStyleKey, setPickStyleKey] = useState<string | undefined>(initialStyleKey);
+
+  useEffect(() => {
+    setPickStyleKey(initialStyleKey);
+  }, [initialStyleKey]);
 
   const showSelector = activeTab === 'pick' || activeTab === 'shop';
 
@@ -50,7 +55,9 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           activePill={tabToPill(activeTab)}
           onPillChange={(pill) => setActiveTab(pillToTab(pill))}
           t={t}
-          styleKey={styleKey}
+          styleKey={pickStyleKey}
+          activeStyleKey={styleKey}
+          onStyleKeyChange={(newKey) => setPickStyleKey(newKey)}
           controlledQtys={qtys}
           onQtysChange={setQtys}
           hidePillBar={true}
