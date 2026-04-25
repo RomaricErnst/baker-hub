@@ -566,23 +566,51 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           )}
         </div>
 
-        {/* Fixed footer — qty + confirmation — never scrolls away */}
-        <div style={{ padding: '10px 14px 14px', borderTop: '1px solid #F0EBE3', background: '#FDFBF7' }}>
-          {/* Quantity control */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: '#F5F0E8', borderRadius: '8px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', color: '#3D3530', fontWeight: 500 }}>
+        {/* Sticky footer — qty controls, never scrolls away */}
+        <div style={{ flexShrink: 0, borderTop: '1px solid var(--border)', padding: '12px 16px', background: '#FDFBF7' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'DM Sans, sans-serif' }}>
               {l === 'fr' ? 'Combien ?' : 'How many?'}
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button style={{ ...S.qtyBtn, width: '30px', height: '30px' }} onClick={() => onQtyChange(-1)}>−</button>
-              <span style={{ fontSize: '16px', fontWeight: 600, color: '#C4522A', minWidth: '22px', textAlign: 'center' }}>{qty}</span>
-              <button style={{ ...S.qtyBtn, width: '30px', height: '30px' }} onClick={() => onQtyChange(1)}>+</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button
+                onClick={() => onQtyChange(-1)}
+                style={{
+                  width: '36px', height: '36px', borderRadius: '50%',
+                  border: '1.5px solid var(--border)', background: 'var(--warm)',
+                  cursor: 'pointer', fontSize: '18px', color: 'var(--char)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >−</button>
+              <span style={{
+                fontSize: '18px', fontWeight: 700, color: 'var(--char)',
+                fontFamily: 'DM Mono, monospace', minWidth: '24px', textAlign: 'center',
+              }}>
+                {qty}
+              </span>
+              <button
+                onClick={() => onQtyChange(1)}
+                style={{
+                  width: '36px', height: '36px', borderRadius: '50%',
+                  border: 'none', background: 'var(--terra)',
+                  cursor: 'pointer', fontSize: '18px', color: 'white',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >+</button>
             </div>
           </div>
-          {/* Confirmation — always takes space to prevent layout shift */}
-          <div style={{ textAlign: 'center', fontSize: '12px', fontWeight: 500, height: '18px', color: qty > 0 ? '#6B7A5A' : 'transparent' }}>
-            {l === 'fr' ? `✓ ${qty} ajoutée${qty > 1 ? 's' : ''} — continuez à parcourir` : `✓ ${qty} added — keep browsing`}
-          </div>
+          {qty > 0 && (
+            <div style={{
+              marginTop: '8px', fontSize: '11px',
+              color: 'var(--sage)', fontFamily: 'DM Sans, sans-serif',
+              textAlign: 'center',
+            }}>
+              {qty === 1
+                ? (l === 'fr' ? '1 ajouté — continuer à choisir' : '1 added — keep browsing')
+                : (l === 'fr' ? `${qty} ajoutés — continuer à choisir` : `${qty} added — keep browsing`)
+              }
+            </div>
+          )}
         </div>
       </div>
     </div>
