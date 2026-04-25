@@ -415,8 +415,8 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
                 roman: `_roman`,
               };
               const suffix = styleKey && variantMap[styleKey];
-              if (suffix) return `/pizzas/${pizza.id}${suffix}.png`;
-              return `/pizzas/${pizza.id}.png`;
+              if (suffix) return `/pizzas/${pizza.id}${suffix}.webp`;
+              return `/pizzas/${pizza.id}.webp`;
             })()}
             alt={name}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -501,8 +501,8 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
   };
   const suffix = styleKey && variantMap[styleKey];
   const imgSrc = suffix
-    ? `/pizzas/${pizza.id}${suffix}.png`
-    : `/pizzas/${pizza.id}.png`;
+    ? `/pizzas/${pizza.id}${suffix}.webp`
+    : `/pizzas/${pizza.id}.webp`;
 
   return (
     <div
@@ -551,8 +551,8 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
             }}
             onError={e => {
               const img = e.target as HTMLImageElement;
-              if (suffix && !img.src.endsWith(`${pizza.id}.png`)) {
-                img.src = `/pizzas/${pizza.id}.png`;
+              if (suffix && !img.src.endsWith(`${pizza.id}.webp`)) {
+                img.src = `/pizzas/${pizza.id}.webp`;
               } else {
                 img.style.display = 'none';
               }

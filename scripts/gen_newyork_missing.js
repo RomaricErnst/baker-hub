@@ -93,11 +93,11 @@ async function run() {
 
   for (let i = 0; i < ITEMS.length; i++) {
     const { id, suffix, toppings } = ITEMS[i];
-    const outPath = path.join(OUTPUT, id + suffix + '.png');
+    const outPath = path.join(OUTPUT, id + suffix + '.webp');
 
     if (fs.existsSync(outPath)) {
       fs.unlinkSync(outPath);
-      console.log('[' + (i+1) + '/' + ITEMS.length + '] Deleted existing: ' + id + suffix + '.png');
+      console.log('[' + (i+1) + '/' + ITEMS.length + '] Deleted existing: ' + id + suffix + '.webp');
     }
 
     const prompt = buildPrompt(toppings);
@@ -105,10 +105,10 @@ async function run() {
       console.log('[' + (i+1) + '/' + ITEMS.length + '] Generating: ' + id + suffix + '...');
       const res = await client.images.generate({
         model: MODEL, prompt, n: 1,
-        size: '1024x1024', quality: 'high', output_format: 'png',
+        size: '1024x1024', quality: 'high', output_format: 'webp',
       });
       fs.writeFileSync(outPath, Buffer.from(res.data[0].b64_json, 'base64'));
-      console.log('[' + (i+1) + '/' + ITEMS.length + '] Done: ' + id + suffix + '.png');
+      console.log('[' + (i+1) + '/' + ITEMS.length + '] Done: ' + id + suffix + '.webp');
       done++;
     } catch (e) {
       console.error('[' + (i+1) + '/' + ITEMS.length + '] FAILED: ' + id + ' — ' + e.message);
@@ -120,7 +120,7 @@ async function run() {
 
   console.log('\nDone: ' + done + ' | Failed: ' + failed.length);
   if (failed.length) console.log('Failed: ' + failed.join(', '));
-  console.log('\nNext: git add public/pizzas/*_newyork.png && git commit -m "feat: add 9 missing NY variant images" && git push');
+  console.log('\nNext: git add public/pizzas/*_newyork.webp && git commit -m "feat: add 9 missing NY variant images" && git push');
 }
 
 run().catch(console.error);

@@ -24,10 +24,10 @@ export default function PrefermentPicker({
   const [expanded, setExpanded] = useState(selected === 'none');
 
   const ALL_OPTIONS = [
-    { id: 'none',    image: '/preferment-direct.png',  title: t('none.title'),    tagline: t('none.tagline') },
-    { id: 'poolish', image: '/preferment-poolish.png', title: t('poolish.title'), tagline: t('poolish.tagline') },
-    { id: 'biga',    image: '/preferment-biga.png',    title: t('biga.title'),    tagline: t('biga.tagline') },
-    { id: 'levain',  image: '/yeast_sourdough.png',    title: t('levain.title'),  tagline: t('levain.tagline') },
+    { id: 'none',    image: '/preferment-direct.webp',  title: t('none.title'),    tagline: t('none.tagline') },
+    { id: 'poolish', image: '/preferment-poolish.webp', title: t('poolish.title'), tagline: t('poolish.tagline') },
+    { id: 'biga',    image: '/preferment-biga.webp',    title: t('biga.title'),    tagline: t('biga.tagline') },
+    { id: 'levain',  image: '/yeast_sourdough.webp',    title: t('levain.title'),  tagline: t('levain.tagline') },
   ];
 
   const options = ALL_OPTIONS

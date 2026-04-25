@@ -71,7 +71,7 @@ async function generateAll() {
 
   for (let i = 0; i < VARIANTS.length; i++) {
     const v = VARIANTS[i];
-    const filepath = path.join(OUTPUT_DIR, v.id + '.png');
+    const filepath = path.join(OUTPUT_DIR, v.id + '.webp');
 
     if (fs.existsSync(filepath)) {
       console.log('[' + (i+1) + '/' + total + '] ⏭  Skipping: ' + v.id);
@@ -87,7 +87,7 @@ async function generateAll() {
 });
 const imageBuffer = Buffer.from(response.data[0].b64_json, 'base64');
 fs.writeFileSync(filepath, imageBuffer);
-      console.log('[' + (i+1) + '/' + total + '] ✅ ' + v.id + '.png');
+      console.log('[' + (i+1) + '/' + total + '] ✅ ' + v.id + '.webp');
       generated++;
     } catch (err) {
       console.error('[' + (i+1) + '/' + total + '] ❌ ' + v.id + ' — ' + err.message);
@@ -100,7 +100,7 @@ fs.writeFileSync(filepath, imageBuffer);
   console.log('\n✅ Done! Generated: ' + generated + ' | Skipped: ' + skipped + ' | Failed: ' + failed.length);
   if (failed.length) console.log('Failed: ' + failed.join(', '));
   console.log('💰 ~$' + (generated * 0.04).toFixed(2));
-  console.log('\nFiles saved to: public/pizzas/[id]_newyork.png etc.');
+  console.log('\nFiles saved to: public/pizzas/[id]_newyork.webp etc.');
   console.log('Run: git add public/pizzas && git commit -m "feat: pizza style variant images" && git push');
 }
 

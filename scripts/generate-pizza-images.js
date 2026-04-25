@@ -25,7 +25,7 @@ const DELAY_MS = 3000;
 const MODEL = 'gpt-image-2';
 const QUALITY = 'medium';
 const SIZE = '1024x1024';
-const OUTPUT_FORMAT = 'png';
+const OUTPUT_FORMAT = 'webp';
 
 const modeArg = process.argv.find((arg) => arg.startsWith('--mode='));
 const MODE = modeArg ? modeArg.split('=')[1] : 'anchors';
@@ -480,7 +480,7 @@ async function generateAll() {
 
   for (let i = 0; i < PIZZAS_TO_GENERATE.length; i++) {
     const pizza = PIZZAS_TO_GENERATE[i];
-    const filepath = path.join(OUTPUT_DIR, `${pizza.id}.png`);
+    const filepath = path.join(OUTPUT_DIR, `${pizza.id}.webp`);
 
     if (fs.existsSync(filepath)) {
       console.log(`[${i + 1}/${total}] ⏭  ${pizza.id}`);
@@ -503,7 +503,7 @@ async function generateAll() {
       const imageBuffer = Buffer.from(response.data[0].b64_json, 'base64');
       fs.writeFileSync(filepath, imageBuffer);
 
-      console.log(`[${i + 1}/${total}] ✅ ${pizza.id}.png`);
+      console.log(`[${i + 1}/${total}] ✅ ${pizza.id}.webp`);
       generated++;
     } catch (err) {
       console.error(`[${i + 1}/${total}] ❌ ${pizza.id} — ${err.message}`);

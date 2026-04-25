@@ -96,7 +96,7 @@ async function run() {
 
   for (let i = 0; i < ITEMS.length; i++) {
     const { id, toppings } = ITEMS[i];
-    const outPath = path.join(OUTPUT, id + '_roman.png');
+    const outPath = path.join(OUTPUT, id + '_roman.webp');
 
     if (fs.existsSync(outPath)) {
       console.log('[' + (i+1) + '/' + ITEMS.length + '] Skip (exists): ' + id);
@@ -115,10 +115,10 @@ async function run() {
         n: 1,
         size: '1024x1024',
         quality: 'high',
-        output_format: 'png',
+        output_format: 'webp',
       });
       fs.writeFileSync(outPath, Buffer.from(res.data[0].b64_json, 'base64'));
-      console.log('[' + (i+1) + '/' + ITEMS.length + '] Done: ' + id + '_roman.png');
+      console.log('[' + (i+1) + '/' + ITEMS.length + '] Done: ' + id + '_roman.webp');
       done++;
     } catch (e) {
       console.error('[' + (i+1) + '/' + ITEMS.length + '] Failed: ' + id + ' — ' + e.message);
@@ -132,7 +132,7 @@ async function run() {
   console.log('Done: ' + done + ' | Skipped: ' + skipped.length + ' | Failed: ' + failed.length);
   if (failed.length) console.log('Failed IDs: ' + failed.join(', '));
   console.log('\nNext step:');
-  console.log('git add public/pizzas/*_roman.png && git commit -m "feat: roman teglia variant images for all 64 compatible pizzas" && git push');
+  console.log('git add public/pizzas/*_roman.webp && git commit -m "feat: roman teglia variant images for all 64 compatible pizzas" && git push');
 }
 
 run().catch(console.error);

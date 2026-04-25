@@ -26,18 +26,18 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect }: O
   const [expanded, setExpanded] = useState(true);
 
   const pizzaOptions = [
-    { id: 'pizza_oven',         image: '/oven_fire.png',           title: t('pizzaOven.title'),     tagline: t('pizzaOven.tagline') },
-    { id: 'home_oven_steel',    image: '/oven_stone.png',          title: t('homeSteel.title'),     tagline: t('homeSteel.tagline') },
-    { id: 'home_oven_standard', image: '/oven_standard.png',       title: t('homeStandard.title'),  tagline: t('homeStandard.tagline') },
-    { id: 'electric_pizza',     image: '/oven_electric.png',       title: t('electricPizza.title'), tagline: t('electricPizza.tagline') },
+    { id: 'pizza_oven',         image: '/oven_fire.webp',           title: t('pizzaOven.title'),     tagline: t('pizzaOven.tagline') },
+    { id: 'home_oven_steel',    image: '/oven_stone.webp',          title: t('homeSteel.title'),     tagline: t('homeSteel.tagline') },
+    { id: 'home_oven_standard', image: '/oven_standard.webp',       title: t('homeStandard.title'),  tagline: t('homeStandard.tagline') },
+    { id: 'electric_pizza',     image: '/oven_electric.webp',       title: t('electricPizza.title'), tagline: t('electricPizza.tagline') },
   ];
 
   const allBreadOptions = [
-    { id: 'dutch_oven',            image: '/oven_dutch.png',          title: t('dutchOven.title'),  tagline: t('dutchOven.tagline') },
-    { id: 'home_oven_stone_bread', image: '/oven_stone_bread.png',    title: t('homeStoneB.title'), tagline: t('homeStoneB.tagline') },
-    { id: 'standard_bread',        image: '/oven_standard_bread.png', title: t('standardB.title'),  tagline: t('standardB.tagline') },
-    { id: 'wood_fired',            image: '/oven_wood_bread.png',     title: t('woodFired.title'),  tagline: t('woodFired.tagline') },
-    { id: 'steam_oven',            image: '/oven_steam.png',          title: t('steamOven.title'),  tagline: t('steamOven.tagline') },
+    { id: 'dutch_oven',            image: '/oven_dutch.webp',          title: t('dutchOven.title'),  tagline: t('dutchOven.tagline') },
+    { id: 'home_oven_stone_bread', image: '/oven_stone_bread.webp',    title: t('homeStoneB.title'), tagline: t('homeStoneB.tagline') },
+    { id: 'standard_bread',        image: '/oven_standard_bread.webp', title: t('standardB.title'),  tagline: t('standardB.tagline') },
+    { id: 'wood_fired',            image: '/oven_wood_bread.webp',     title: t('woodFired.title'),  tagline: t('woodFired.tagline') },
+    { id: 'steam_oven',            image: '/oven_steam.webp',          title: t('steamOven.title'),  tagline: t('steamOven.tagline') },
   ];
 
   const defaultId = bakeType === 'pizza' ? 'home_oven_steel' : 'dutch_oven';

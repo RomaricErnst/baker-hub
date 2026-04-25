@@ -97,7 +97,7 @@ async function generateAll() {
 
   for (let i = 0; i < ASSETS.length; i++) {
     const asset = ASSETS[i];
-    const filepath = path.join(OUTPUT_ROOT, `${asset.id}.png`);
+    const filepath = path.join(OUTPUT_ROOT, `${asset.id}.webp`);
 
     if (fs.existsSync(filepath)) {
       console.log(`[${i+1}/${ASSETS.length}] ⏭  ${asset.id}`);
@@ -117,7 +117,7 @@ async function generateAll() {
       });
       const imageBuffer = Buffer.from(response.data[0].b64_json, 'base64');
       fs.writeFileSync(filepath, imageBuffer);
-      console.log(`[${i+1}/${ASSETS.length}] ✅ ${asset.id}.png`);
+      console.log(`[${i+1}/${ASSETS.length}] ✅ ${asset.id}.webp`);
       generated++;
     } catch (err) {
       console.error(`[${i+1}/${ASSETS.length}] ❌ ${asset.id} — ${err.message}`);
@@ -130,7 +130,7 @@ async function generateAll() {
   console.log(`\n${'─'.repeat(50)}`);
   console.log(`✅ Generated: ${generated} | ⏭  Skipped: ${skipped} | ❌ Failed: ${failed.length}`);
   if (failed.length) console.log(`Failed: ${failed.join(', ')}`);
-  console.log(`\nNext: git add public/*.png && git commit -m "feat: UI assets" && git push`);
+  console.log(`\nNext: git add public/*.webp && git commit -m "feat: UI assets" && git push`);
 }
 
 generateAll().catch(console.error);

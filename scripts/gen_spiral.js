@@ -10,6 +10,6 @@ client.images.generate({
   quality: 'high',
   output_format: 'png'
 }).then(r => {
-  fs.writeFileSync('public/mixer_spiral.png', Buffer.from(r.data[0].b64_json, 'base64'));
+  fs.writeFileSync('public/mixer_spiral.webp', Buffer.from(r.data[0].b64_json, 'base64'));
   console.log('Done');
 }).catch(e => console.error(e.message));

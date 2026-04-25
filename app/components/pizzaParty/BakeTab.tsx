@@ -60,14 +60,14 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
       roman: '_roman',
     };
     const suffix = styleKey && variantMap[styleKey];
-    if (suffix) return `/pizzas/${pizzaId}${suffix}.png`;
-    return `/pizzas/${pizzaId}.png`;
+    if (suffix) return `/pizzas/${pizzaId}${suffix}.webp`;
+    return `/pizzas/${pizzaId}.webp`;
   }
 
   function handleImageError(e: React.SyntheticEvent<HTMLImageElement>, pizzaId: string) {
     const img = e.target as HTMLImageElement;
-    if (!img.src.endsWith(`${pizzaId}.png`)) {
-      img.src = `/pizzas/${pizzaId}.png`;
+    if (!img.src.endsWith(`${pizzaId}.webp`)) {
+      img.src = `/pizzas/${pizzaId}.webp`;
     }
   }
 

@@ -23,10 +23,10 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
   const [expanded, setExpanded] = useState(!selected);
 
   const options = [
-    { id: 'stand',    image: '/mixer_stand.png',   title: t('stand.title'),    tagline: t('stand.tagline') },
-    { id: 'hand',     image: '/mixer_hand.png',    title: t('hand.title'),     tagline: t('hand.tagline') },
-    { id: 'no_knead', image: '/mixer_noknead.png', title: t('no_knead.title'), tagline: t('no_knead.tagline') },
-    { id: 'spiral',   image: '/mixer_spiral.png',  title: t('spiral.title'),   tagline: t('spiral.tagline') },
+    { id: 'stand',    image: '/mixer_stand.webp',   title: t('stand.title'),    tagline: t('stand.tagline') },
+    { id: 'hand',     image: '/mixer_hand.webp',    title: t('hand.title'),     tagline: t('hand.tagline') },
+    { id: 'no_knead', image: '/mixer_noknead.webp', title: t('no_knead.title'), tagline: t('no_knead.tagline') },
+    { id: 'spiral',   image: '/mixer_spiral.webp',  title: t('spiral.title'),   tagline: t('spiral.tagline') },
   ];
 
   const selectedOpt = options.find(o => o.id === selected);

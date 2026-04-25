@@ -124,15 +124,15 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
   const isBread = bakeType === 'bread';
 
   const pizzaListOptions = [
-    { id: 'newyork', image: '/pizzas/ny_pepperoni_slice.png', title: t('newyork.title'), tagline: t('newyork.tagline') },
-    { id: 'pizza_romana', image: '/pizzas/carciofi_romana.png', title: t('pizza_romana.title'), tagline: t('pizza_romana.tagline') },
-    { id: 'roman', image: '/pizzas/teglia_patata_provola.png', title: t('roman.title'), tagline: t('roman.tagline') },
-    { id: 'pan', image: '/pizzas/detroit_red_top.png', title: t('pan.title'), tagline: t('pan.tagline') },
-    { id: 'sourdough', image: '/pizzas/diavola.png', title: t('sourdough.title'), tagline: t('sourdough.tagline') },
+    { id: 'newyork', image: '/pizzas/ny_pepperoni_slice.webp', title: t('newyork.title'), tagline: t('newyork.tagline') },
+    { id: 'pizza_romana', image: '/pizzas/carciofi_romana.webp', title: t('pizza_romana.title'), tagline: t('pizza_romana.tagline') },
+    { id: 'roman', image: '/pizzas/teglia_patata_provola.webp', title: t('roman.title'), tagline: t('roman.tagline') },
+    { id: 'pan', image: '/pizzas/detroit_red_top.webp', title: t('pan.title'), tagline: t('pan.tagline') },
+    { id: 'sourdough', image: '/pizzas/diavola.webp', title: t('sourdough.title'), tagline: t('sourdough.tagline') },
   ];
 
   const allPizzaOptions = [
-    { id: 'neapolitan', image: '/pizzas/margherita.png', title: t('neapolitan.title'), tagline: t('neapolitan.tagline') },
+    { id: 'neapolitan', image: '/pizzas/margherita.webp', title: t('neapolitan.title'), tagline: t('neapolitan.tagline') },
     ...pizzaListOptions,
   ];
 
@@ -161,7 +161,7 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
           </p>
         </div>
         <DecisionHero
-          image="/pizzas/margherita.png"
+          image="/pizzas/margherita.webp"
           title={t('neapolitan.title')}
           tagline={t('neapolitan.tagline')}
           isSelected={styleKey === 'neapolitan'}

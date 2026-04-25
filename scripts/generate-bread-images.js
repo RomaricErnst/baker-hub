@@ -78,7 +78,7 @@ async function generateAll() {
 
   for (let i = 0; i < BREADS.length; i++) {
     const bread = BREADS[i];
-    const filepath = path.join(OUTPUT_DIR, bread.id + '.png');
+    const filepath = path.join(OUTPUT_DIR, bread.id + '.webp');
 
     try {
       console.log('[' + (i+1) + '/' + BREADS.length + '] ' + bread.id + '...');
@@ -92,7 +92,7 @@ async function generateAll() {
       });
       const imageBuffer = Buffer.from(response.data[0].b64_json, 'base64');
       fs.writeFileSync(filepath, imageBuffer);
-      console.log('[' + (i+1) + '/' + BREADS.length + '] Done: ' + bread.id + '.png');
+      console.log('[' + (i+1) + '/' + BREADS.length + '] Done: ' + bread.id + '.webp');
       generated++;
     } catch (err) {
       console.error('[' + (i+1) + '/' + BREADS.length + '] Failed: ' + bread.id + ' — ' + err.message);
@@ -104,7 +104,7 @@ async function generateAll() {
 
   console.log('\nGenerated: ' + generated + ' | Failed: ' + failed.length);
   if (failed.length) console.log('Failed: ' + failed.join(', '));
-  console.log('\nNext: git add public/pain_*.png public/baguette.png public/fougasse.png public/brioche.png && git commit -m "feat: regenerate all 9 bread images with consistent photography style" && git push');
+  console.log('\nNext: git add public/pain_*.webp public/baguette.webp public/fougasse.webp public/brioche.webp && git commit -m "feat: regenerate all 9 bread images with consistent photography style" && git push');
 }
 
 generateAll().catch(console.error);

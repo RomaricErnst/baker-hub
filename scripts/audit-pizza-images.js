@@ -171,7 +171,7 @@ const PIZZAS = [
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function auditImage(pizza) {
-  const filepath = path.join(PIZZAS_DIR, pizza.id + '.png');
+  const filepath = path.join(PIZZAS_DIR, pizza.id + '.webp');
   if (!fs.existsSync(filepath)) {
     return { id: pizza.id, status: 'MISSING', reason: 'File not found' };
   }
@@ -214,7 +214,7 @@ REASON: one sentence (if FAIL: name the specific wrong ingredient visible; if PA
 }
 
 async function runAudit() {
-  const files = fs.readdirSync(PIZZAS_DIR).filter(f => f.endsWith('.png') && !f.startsWith('_'));
+  const files = fs.readdirSync(PIZZAS_DIR).filter(f => f.endsWith('.webp') && !f.startsWith('_'));
   console.log(`\n🍕 Pizza Image Audit — ingredients only`);
   console.log(`📦 ${PIZZAS.length} pizzas to audit | 📁 ${files.length} files found\n`);
 
@@ -258,7 +258,7 @@ async function runAudit() {
 
   if (failed.length > 0) {
     console.log(`\n❌ Images to regenerate:`);
-    failed.forEach(f => console.log(`  rm public/pizzas/${f.id}.png  # ${f.reason}`));
+    failed.forEach(f => console.log(`  rm public/pizzas/${f.id}.webp  # ${f.reason}`));
     console.log(`\nThen run: node scripts/generate-pizza-images.js`);
   } else {
     console.log(`\n🎉 All images have correct ingredients!`);
