@@ -1696,9 +1696,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
       {/* ── Full selection summary — always rendered for IntersectionObserver ── */}
       <div ref={summaryRef} style={{ margin: '0 -16px', marginTop: totalQty === 0 ? '10px' : '0' }}>
-          <div style={{ background: '#F5F0E8' }}>
-            {/* Summary header — only shown on pizzas pill */}
-            {activePill === 'pizzas' && (
+        <div style={{ background: '#F5F0E8' }}>
+          {(activePill === 'pizzas' || hidePillBar) && (
             <div style={{
               background: '#1A1612',
               borderTop: '1px solid #C4522A',
@@ -1737,84 +1736,69 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 )}
               </div>
             </div>
-            )}
-          </div>
-      </div>
-
-      {/* ── Selected pizza list — above party bar ── */}
-      {(activePill === 'pizzas' || hidePillBar) && totalQty > 0 && !summaryVisible && (
-        <div style={{
-          position: 'fixed',
-          bottom: '110px',
-          left: 0, right: 0,
-          zIndex: 29,
-          background: 'var(--warm)',
-          borderTop: '1px solid var(--border)',
-          padding: '6px 16px',
-          maxHeight: '140px',
-          overflowY: 'auto',
-        }}>
-          {Object.entries(qtys)
-            .filter(([, qty]) => (qty as number) > 0)
-            .map(([pizzaId, qty]) => {
-              const pizza = getPizzaById(pizzaId);
-              if (!pizza) return null;
-              return (
-                <div key={pizzaId} style={{
-                  display: 'flex', alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 0',
-                  borderBottom: '0.5px solid #E0D8CF',
-                }}>
-                  <span style={{
-                    fontSize: '13px', color: '#1A1612',
-                    fontFamily: 'DM Sans, sans-serif', flex: 1,
-                  }}>
-                    {pizza.name[l] ?? pizza.name.en}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <button
-                      onClick={e => { e.stopPropagation(); changeQty(pizzaId, -1); }}
-                      style={{
-                        width: '26px', height: '26px', borderRadius: '50%',
-                        border: '1px solid #E0D8CF', background: '#FDFBF7',
-                        cursor: 'pointer', fontSize: '16px', color: '#1A1612',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        lineHeight: 1,
-                      }}
-                    >−</button>
-                    <span style={{
-                      fontSize: '13px', fontWeight: 600, color: '#1A1612',
-                      fontFamily: 'DM Mono, monospace',
-                      minWidth: '16px', textAlign: 'center',
+          )}
+          {totalQty > 0 && (activePill === 'pizzas' || hidePillBar) && (
+            <div style={{ padding: '0 16px', background: 'var(--warm)' }}>
+              {Object.entries(qtys)
+                .filter(([, qty]) => (qty as number) > 0)
+                .map(([pizzaId, qty]) => {
+                  const pizza = getPizzaById(pizzaId);
+                  if (!pizza) return null;
+                  return (
+                    <div key={pizzaId} style={{
+                      display: 'flex', alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 0',
+                      borderBottom: '0.5px solid #E0D8CF',
                     }}>
-                      {qty as number}
-                    </span>
-                    <button
-                      onClick={e => { e.stopPropagation(); changeQty(pizzaId, 1); }}
-                      style={{
-                        width: '26px', height: '26px', borderRadius: '50%',
-                        border: '1px solid #C4522A', background: '#C4522A',
-                        cursor: 'pointer', fontSize: '16px', color: 'white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        lineHeight: 1,
-                      }}
-                    >+</button>
-                  </div>
-                </div>
-              );
-            })
-          }
+                      <span style={{
+                        fontSize: '13px', color: '#1A1612',
+                        fontFamily: 'DM Sans, sans-serif', flex: 1,
+                      }}>
+                        {pizza.name[l] ?? pizza.name.en}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <button
+                          onClick={e => { e.stopPropagation(); changeQty(pizzaId, -1); }}
+                          style={{
+                            width: '26px', height: '26px', borderRadius: '50%',
+                            border: '1px solid #E0D8CF', background: '#FDFBF7',
+                            cursor: 'pointer', fontSize: '16px', color: '#1A1612',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            lineHeight: 1,
+                          }}
+                        >−</button>
+                        <span style={{
+                          fontSize: '13px', fontWeight: 600, color: '#1A1612',
+                          fontFamily: 'DM Mono, monospace',
+                          minWidth: '16px', textAlign: 'center',
+                        }}>
+                          {qty as number}
+                        </span>
+                        <button
+                          onClick={e => { e.stopPropagation(); changeQty(pizzaId, 1); }}
+                          style={{
+                            width: '26px', height: '26px', borderRadius: '50%',
+                            border: '1px solid #C4522A', background: '#C4522A',
+                            cursor: 'pointer', fontSize: '16px', color: 'white',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            lineHeight: 1,
+                          }}
+                        >+</button>
+                      </div>
+                    </div>
+                  );
+                })
+              }
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ── Party bar — fixed at bottom, hides when summary visible ── */}
       {(activePill === 'pizzas' || hidePillBar) && !summaryVisible && (
       <div style={{
-        ...(hidePillBar
-          ? { position: 'sticky', bottom: 0, zIndex: 10 }
-          : { position: 'fixed', bottom: '64px', left: 0, right: 0, zIndex: 30 }
-        ),
+        position: 'fixed', bottom: '64px', left: 0, right: 0, zIndex: 30,
         background: '#1A1612',
         borderTop: '1px solid #C4522A',
         display: 'flex', alignItems: 'center',
