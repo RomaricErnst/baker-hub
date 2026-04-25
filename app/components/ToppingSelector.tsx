@@ -1741,8 +1741,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           </div>
       </div>
 
-      {/* ── Selected pizza compact list — above party bar ── */}
-      {(activePill === 'pizzas' || hidePillBar) && totalQty > 0 && (
+      {/* ── Selected pizza list — above party bar ── */}
+      {(activePill === 'pizzas' || hidePillBar) && totalQty > 0 && !summaryVisible && (
         <div style={{
           position: 'fixed',
           bottom: '110px',
@@ -1761,50 +1761,41 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               if (!pizza) return null;
               return (
                 <div key={pizzaId} style={{
-                  display: 'flex',
-                  alignItems: 'center',
+                  display: 'flex', alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '5px 0',
-                  borderBottom: '0.5px solid var(--border)',
+                  padding: '8px 0',
+                  borderBottom: '0.5px solid #E0D8CF',
                 }}>
                   <span style={{
-                    fontSize: '12px',
-                    color: 'var(--char)',
-                    fontFamily: 'DM Sans, sans-serif',
-                    flex: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    marginRight: '8px',
+                    fontSize: '13px', color: '#1A1612',
+                    fontFamily: 'DM Sans, sans-serif', flex: 1,
                   }}>
                     {pizza.name[l] ?? pizza.name.en}
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <button
                       onClick={e => { e.stopPropagation(); changeQty(pizzaId, -1); }}
                       style={{
-                        width: '22px', height: '22px', borderRadius: '50%',
-                        border: '1.5px solid var(--border)',
-                        background: 'var(--warm)', color: 'var(--char)',
-                        cursor: 'pointer', fontSize: '13px',
+                        width: '26px', height: '26px', borderRadius: '50%',
+                        border: '1px solid #E0D8CF', background: '#FDFBF7',
+                        cursor: 'pointer', fontSize: '16px', color: '#1A1612',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         lineHeight: 1,
                       }}
                     >−</button>
                     <span style={{
+                      fontSize: '13px', fontWeight: 600, color: '#1A1612',
                       fontFamily: 'DM Mono, monospace',
-                      fontSize: '12px', fontWeight: 600,
-                      color: 'var(--char)', minWidth: '14px', textAlign: 'center',
+                      minWidth: '16px', textAlign: 'center',
                     }}>
                       {qty as number}
                     </span>
                     <button
                       onClick={e => { e.stopPropagation(); changeQty(pizzaId, 1); }}
                       style={{
-                        width: '22px', height: '22px', borderRadius: '50%',
-                        border: 'none',
-                        background: 'var(--terra)', color: 'white',
-                        cursor: 'pointer', fontSize: '13px',
+                        width: '26px', height: '26px', borderRadius: '50%',
+                        border: '1px solid #C4522A', background: '#C4522A',
+                        cursor: 'pointer', fontSize: '16px', color: 'white',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         lineHeight: 1,
                       }}
