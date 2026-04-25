@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
-import PizzaPartyTabBar from './PizzaPartyTabBar';
+import { PizzaPartyTab } from './PizzaPartyTabBar';
 import ToppingSelector from './ToppingSelector';
 import PrepTab from './pizzaParty/PrepTab';
 import BakeTab from './pizzaParty/BakeTab';
 
-type Tab = 'pick' | 'shop' | 'prep' | 'bake';
+type Tab = PizzaPartyTab;
 type Pill = 'pizzas' | 'shopping' | 'party';
 
 interface PizzaPartyProps {
@@ -14,6 +14,8 @@ interface PizzaPartyProps {
   numItems: number;
   styleKey: string;
   t: (key: string) => string;
+  activeTab: Tab;
+  onTabChange: (tab: Tab) => void;
 }
 
 function tabToPill(tab: Tab): Pill {
@@ -27,8 +29,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t }: PizzaPartyProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('pick');
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange }: PizzaPartyProps) {
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [styleKey, setStyleKey] = useState<string>(initialStyleKey);
   const [pickStyleKey, setPickStyleKey] = useState<string | undefined>(initialStyleKey);
@@ -41,19 +42,13 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
 
   return (
     <div>
-      <PizzaPartyTabBar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        locale={locale}
-      />
-
       {/* ToppingSelector stays mounted across pick/shop to preserve filter state */}
       <div style={{ display: showSelector ? 'block' : 'none' }}>
         <ToppingSelector
           locale={locale}
           numItems={numItems}
           activePill={tabToPill(activeTab)}
-          onPillChange={(pill) => setActiveTab(pillToTab(pill))}
+          onPillChange={(pill) => onTabChange(pillToTab(pill))}
           t={t}
           styleKey={pickStyleKey}
           activeStyleKey={styleKey}
@@ -70,7 +65,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           bakeTime={bakeTime}
           locale={locale}
           selectedPizzas={qtys}
-          onGoToBake={() => setActiveTab('bake')}
+          onGoToBake={() => onTabChange('bake')}
           styleKey={pickStyleKey}
         />
       )}

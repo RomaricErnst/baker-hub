@@ -22,10 +22,17 @@
   "tabs": {
     "guided": "🧭 Simple",
     "advanced": "🎛️ Personnalisé",
-    "setup": "Ma Pâte",
+    "setup": "Configuration",
     "plan": "Recette",
     "guide": "Guide",
-    "pizzaparty": "Pizza Party"
+    "pizzaparty": "Soirée Pizza",
+    "myDough": "Ma Pâte",
+    "myPizzaParty": "Ma Soirée Pizza",
+    "startOver": "↺ Recommencer",
+    "pizzas": "Pizzas",
+    "shopping": "Courses",
+    "prep": "Préparation",
+    "bake": "Cuisson"
   },
   "generate": {
     "generateBtn": "Générer mon planning →",

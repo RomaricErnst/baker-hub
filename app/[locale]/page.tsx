@@ -355,10 +355,12 @@ export default function Home() {
 
   // P6 — Active tab in two-tab layout
   const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide' | 'pizzaparty'>('setup');
+  const [pizzaPartyTab, setPizzaPartyTab] = useState<'pick' | 'shop' | 'prep' | 'bake'>('pick');
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [activeTab]);
   const pizzaPartyEnabled = bakeType === 'pizza';
+  const pizzasConfirmed = pizzaPartyTab !== 'pick';
 
   // M2 — Mode chosen: false on page load, true after baker selects a mode
   const [modeChosen, setModeChosen] = useState(false);
@@ -559,6 +561,7 @@ export default function Home() {
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
     setModeChosen(false);
+    setPizzaPartyTab('pick');
     customOnlyStateRef.current = null;
   }
 
@@ -694,8 +697,271 @@ export default function Home() {
     <div style={{ minHeight: '100vh', background: 'var(--cream)' }}>
       <Header units={units} onUnitsChange={setUnitsAndPersist} onLoadRecipe={loadRecipe} />
 
+      {bakeType && (
+        <div style={{
+          position: 'sticky',
+          top: '60px',
+          zIndex: 99,
+          background: '#1A1612',
+          borderBottom: '1px solid #2D2824',
+        }}>
+
+          {/* ── Journey bar ── */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 4px',
+            borderBottom: '1px solid #2A2420',
+          }}>
+
+            {/* My Dough */}
+            <button
+              onClick={() => setActiveTab('setup')}
+              style={{
+                padding: '7px 12px',
+                fontSize: '9px',
+                fontWeight: activeTab !== 'pizzaparty' ? 600 : 400,
+                color: activeTab !== 'pizzaparty' ? '#C4522A' : '#8A7F78',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: activeTab !== 'pizzaparty' ? '2px solid #C4522A' : '2px solid transparent',
+                cursor: 'pointer',
+                fontFamily: 'DM Sans, sans-serif',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {t('tabs.myDough')}
+            </button>
+
+            {/* My Pizza Party — only when pizza mode + style chosen */}
+            {pizzaPartyEnabled && styleKey && (
+              <button
+                onClick={() => setActiveTab('pizzaparty')}
+                style={{
+                  padding: '7px 12px',
+                  fontSize: '9px',
+                  fontWeight: activeTab === 'pizzaparty' ? 600 : 400,
+                  color: activeTab === 'pizzaparty' ? '#B8903A' : '#8A7F78',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: activeTab === 'pizzaparty' ? '2px solid #B8903A' : '2px solid transparent',
+                  cursor: 'pointer',
+                  fontFamily: 'DM Sans, sans-serif',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {t('tabs.myPizzaParty')}
+              </button>
+            )}
+
+            <div style={{ flex: 1 }} />
+
+            <button
+              onClick={() => { startOver(); setPizzaPartyTab('pick'); }}
+              style={{
+                fontSize: '8px',
+                color: '#6B6460',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '7px 8px',
+                fontFamily: 'DM Sans, sans-serif',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {t('tabs.startOver')}
+            </button>
+          </div>
+
+          {/* ── Sub-tab bar ── */}
+          {activeTab !== 'pizzaparty' ? (
+
+            /* My Dough sub-tabs */
+            <div style={{ display: 'flex', background: '#fff' }}>
+              {([
+                {
+                  key: 'setup' as const,
+                  label: t('tabs.setup'),
+                  unlocked: true,
+                  icon: (color: string) => (
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                      <line x1="2" y1="5" x2="18" y2="5" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+                      <circle cx="7" cy="5" r="2.2" fill="white" stroke={color} strokeWidth="1.8"/>
+                      <line x1="2" y1="10" x2="18" y2="10" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+                      <circle cx="13" cy="10" r="2.2" fill="white" stroke={color} strokeWidth="1.8"/>
+                      <line x1="2" y1="15" x2="18" y2="15" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+                      <circle cx="9" cy="15" r="2.2" fill="white" stroke={color} strokeWidth="1.8"/>
+                    </svg>
+                  ),
+                },
+                {
+                  key: 'plan' as const,
+                  label: t('tabs.plan'),
+                  unlocked: recipeGenerated,
+                  icon: (color: string) => (
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                      <rect x="4" y="2" width="12" height="16" rx="2" stroke={color} strokeWidth="1.8"/>
+                      <line x1="7" y1="7" x2="13" y2="7" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
+                      <line x1="7" y1="10" x2="13" y2="10" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
+                      <line x1="7" y1="13" x2="11" y2="13" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
+                    </svg>
+                  ),
+                },
+                {
+                  key: 'guide' as const,
+                  label: t('tabs.guide'),
+                  unlocked: recipeGenerated,
+                  icon: (color: string) => (
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                      <path d="M10 17V7" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+                      <path d="M4 5.5c2-.7 4-.7 6 1 2-1.7 4-1.7 6-1v11c-2-.7-4-.7-6 1-2-1.7-4-1.7-6-1V5.5z"
+                        stroke={color} strokeWidth="1.8" strokeLinejoin="round"/>
+                    </svg>
+                  ),
+                },
+              ] as const).map(({ key: tabKey, label, icon, unlocked }) => {
+                const isActive = activeTab === tabKey;
+                const color = isActive ? '#C4522A' : '#8A7F78';
+                const opacity = isActive ? 1 : unlocked ? 0.6 : 0.13;
+                return (
+                  <button
+                    key={tabKey}
+                    onClick={() => unlocked && setActiveTab(tabKey)}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '3px',
+                      padding: '7px 4px 6px',
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: isActive ? '2px solid #C4522A' : '2px solid transparent',
+                      cursor: unlocked ? 'pointer' : 'default',
+                      opacity,
+                      transition: 'opacity 0.3s',
+                    }}
+                  >
+                    {icon(color)}
+                    <span style={{
+                      fontSize: '7px',
+                      color,
+                      fontWeight: isActive ? 700 : 400,
+                      fontFamily: 'DM Sans, sans-serif',
+                      lineHeight: 1,
+                    }}>
+                      {label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+          ) : (
+
+            /* My Pizza Party sub-tabs */
+            <div style={{ display: 'flex', background: '#fff' }}>
+              {([
+                {
+                  key: 'pick' as const,
+                  label: t('tabs.pizzas'),
+                  unlocked: true,
+                  icon: (color: string) => (
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                      <path d="M10 2.5L3 17.5h14L10 2.5z" stroke={color} strokeWidth="1.8" strokeLinejoin="round"/>
+                      <path d="M4.5 17Q10 13.5 15.5 17" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
+                      <circle cx="10" cy="11" r="1.2" fill={color}/>
+                      <circle cx="7.5" cy="14" r="1" fill={color}/>
+                      <circle cx="12.5" cy="14" r="1" fill={color}/>
+                    </svg>
+                  ),
+                },
+                {
+                  key: 'shop' as const,
+                  label: t('tabs.shopping'),
+                  unlocked: pizzasConfirmed,
+                  icon: (color: string) => (
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                      <path d="M4 7h12l-1 9H5L4 7z" stroke={color} strokeWidth="1.8" strokeLinejoin="round"/>
+                      <path d="M7 7V5.5a3 3 0 0 1 6 0V7" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+                      <line x1="8" y1="11" x2="8" y2="13" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
+                      <line x1="12" y1="11" x2="12" y2="13" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
+                    </svg>
+                  ),
+                },
+                {
+                  key: 'prep' as const,
+                  label: t('tabs.prep'),
+                  unlocked: pizzasConfirmed,
+                  icon: (color: string) => (
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                      <line x1="0" y1="16" x2="20" y2="16" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+                      <path d="M2 10h6c0 3.5-1.3 6-3 6S2 13.5 2 10z"
+                        stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      <line x1="1.5" y1="10" x2="8.5" y2="10" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+                      <rect x="11" y="9" width="7" height="7" rx="1.2" stroke={color} strokeWidth="1.8"/>
+                      <path d="M12 9V7.5h5V9" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
+                      <line x1="11" y1="12" x2="18" y2="12" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
+                    </svg>
+                  ),
+                },
+                {
+                  key: 'bake' as const,
+                  label: t('tabs.bake'),
+                  unlocked: pizzasConfirmed,
+                  icon: (color: string) => (
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none"
+                      stroke={color} strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="8.5" y="2" width="3" height="4" rx=".5" fill={color} stroke="none"/>
+                      <path d="M2 17V11a8 4.5 0 0116 0v6" strokeWidth="1.5"/>
+                      <line x1="1.5" y1="17" x2="18.5" y2="17" strokeWidth="1.5"/>
+                      <path d="M6 17v-4.5a4 2.5 0 018 0V17" fill={color} fillOpacity="0.18" stroke="none"/>
+                    </svg>
+                  ),
+                },
+              ] as const).map(({ key: tabKey, label, icon, unlocked }) => {
+                const isActive = pizzaPartyTab === tabKey;
+                const color = isActive ? '#B8903A' : '#8A7F78';
+                const opacity = isActive ? 1 : unlocked ? 0.6 : 0.13;
+                return (
+                  <button
+                    key={tabKey}
+                    onClick={() => unlocked && setPizzaPartyTab(tabKey)}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '3px',
+                      padding: '7px 4px 6px',
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: isActive ? '2px solid #B8903A' : '2px solid transparent',
+                      cursor: unlocked ? 'pointer' : 'default',
+                      opacity,
+                      transition: 'opacity 0.3s',
+                    }}
+                  >
+                    {icon(color)}
+                    <span style={{
+                      fontSize: '7px',
+                      color,
+                      fontWeight: isActive ? 700 : 400,
+                      fontFamily: 'DM Sans, sans-serif',
+                      lineHeight: 1,
+                    }}>
+                      {label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Main content ───────────────────── */}
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) 80px' }}>
+      <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) 32px' }}>
 
         {/* ── Hero + bake type picker ── */}
         {activeTab === 'setup' && (
@@ -1282,6 +1548,8 @@ export default function Home() {
                   numItems={numItems}
                   styleKey={styleKey ?? 'neapolitan'}
                   t={t}
+                  activeTab={pizzaPartyTab}
+                  onTabChange={setPizzaPartyTab}
                 />
               </div>
             )}
@@ -2214,6 +2482,8 @@ export default function Home() {
                   numItems={numItems}
                   styleKey={styleKey ?? 'neapolitan'}
                   t={t}
+                  activeTab={pizzaPartyTab}
+                  onTabChange={setPizzaPartyTab}
                 />
               </div>
             )}
@@ -2221,147 +2491,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ── Bottom nav ── */}
-        <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: '#FDFBF7',
-          borderTop: '1px solid #E0D8CF',
-          display: 'flex',
-          zIndex: 100,
-          paddingBottom: 'env(safe-area-inset-bottom)',
-        }}>
-          {([
-            {
-              key: 'setup' as const,
-              label: t('tabs.setup'),
-              icon: (color: string) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <line x1="2" y1="5" x2="18" y2="5" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
-                  <circle cx="7" cy="5" r="2" fill="#FDFBF7" stroke={color} strokeWidth="1.4"/>
-                  <line x1="2" y1="10" x2="18" y2="10" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
-                  <circle cx="13" cy="10" r="2" fill="#FDFBF7" stroke={color} strokeWidth="1.4"/>
-                  <line x1="2" y1="15" x2="18" y2="15" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
-                  <circle cx="9" cy="15" r="2" fill="#FDFBF7" stroke={color} strokeWidth="1.4"/>
-                </svg>
-              ),
-              locked: false,
-              done: recipeGenerated && activeTab !== 'setup',
-            },
-            {
-              key: 'plan' as const,
-              label: t('tabs.plan'),
-              icon: (color: string) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <rect x="4" y="2" width="12" height="16" rx="2" stroke={color} strokeWidth="1.4"/>
-                  <line x1="7" y1="7" x2="13" y2="7" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
-                  <line x1="7" y1="10" x2="13" y2="10" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
-                  <line x1="7" y1="13" x2="11" y2="13" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
-                </svg>
-              ),
-              locked: !recipeGenerated,
-              done: recipeGenerated && activeTab !== 'plan' && activeTab !== 'setup',
-            },
-            {
-              key: 'guide' as const,
-              label: t('tabs.guide'),
-              icon: (color: string) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 17V7" stroke={color} strokeWidth="1.4"/>
-                  <path d="M4 5.5c2-.7 4-.7 6 1 2-1.7 4-1.7 6-1v11c-2-.7-4-.7-6 1-2-1.7-4-1.7-6-1V5.5z" stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
-                </svg>
-              ),
-              locked: !recipeGenerated,
-              done: false,
-            },
-            ...(pizzaPartyEnabled ? [{
-              key: 'pizzaparty' as const,
-              label: t('tabs.pizzaparty'),
-              icon: (color: string) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 2.5L3 17.5h14L10 2.5z" stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
-                  <path d="M4.5 17Q10 13.5 15.5 17" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
-                  <circle cx="10" cy="11" r="1" fill={color}/>
-                  <circle cx="7.5" cy="14" r="0.8" fill={color}/>
-                  <circle cx="12.5" cy="14" r="0.8" fill={color}/>
-                </svg>
-              ),
-              locked: !styleKey,
-              done: false,
-            }] : []),
-          ]).map(({ key: tabKey, label, icon, locked, done }) => {
-            const isActive = activeTab === tabKey;
-            const isPizza = tabKey === 'pizzaparty';
-            const activeColor = isPizza ? '#B8903A' : '#C4522A';
-            const doneColor = '#6B7A5A';
-            const lockedColor = '#C8C0B8';
-            const color = locked ? lockedColor : isActive ? activeColor : done ? doneColor : '#8A7F78';
-
-            return (
-              <button
-                key={tabKey}
-                onClick={() => !locked && setActiveTab(tabKey)}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '10px 4px 12px',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: locked ? 'default' : 'pointer',
-                }}
-              >
-                <div style={{
-                  width: '40px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
-                  background: isActive
-                    ? isPizza ? '#D4A85320' : '#C4522A1A'
-                    : done ? '#6B7A5A14'
-                    : 'transparent',
-                }}>
-                  {icon(color)}
-                  {done && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '1px',
-                      right: '1px',
-                      width: '11px',
-                      height: '11px',
-                      borderRadius: '50%',
-                      background: '#6B7A5A',
-                      border: '1.5px solid #FDFBF7',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                      <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
-                        <path d="M1.5 3.5l1.5 1.5 2.5-2.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <span style={{
-                  fontSize: '10px',
-                  lineHeight: 1,
-                  color,
-                  fontWeight: isActive ? 600 : 400,
-                  fontFamily: 'DM Sans, sans-serif',
-                }}>
-                  {label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
     </div>

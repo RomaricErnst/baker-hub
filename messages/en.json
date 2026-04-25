@@ -22,10 +22,17 @@
   "tabs": {
     "guided": "🧭 Simple",
     "advanced": "🎛️ Custom",
-    "setup": "My Dough",
-    "plan": "Bake Plan",
+    "setup": "Setup",
+    "plan": "Recipe",
     "guide": "Guide",
-    "pizzaparty": "Pizza Party"
+    "pizzaparty": "Pizza Party",
+    "myDough": "My Dough",
+    "myPizzaParty": "My Pizza Party",
+    "startOver": "↺ Start Over",
+    "pizzas": "Pizzas",
+    "shopping": "Shopping",
+    "prep": "Prep",
+    "bake": "Bake"
   },
   "generate": {
     "generateBtn": "Generate my bake plan →",
