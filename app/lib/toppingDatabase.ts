@@ -1906,7 +1906,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'rw'],
     flavour: { richness: 3, boldness: 3, creative: 2, refined: 2 },
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.mushrooms, ING.salsiccia, ING.freshThyme],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1934,7 +1934,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'lr'],
     flavour: { richness: 2, boldness: 3, creative: 1, refined: 2 },
     ingredients: [ING.sanMarzano, ING.mozzarellaLM, ING.redOnion, ING.blackOlives, ING.capers, ING.oregano],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1948,7 +1948,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'cw'],
     flavour: { richness: 2, boldness: 2, creative: 1, refined: 2 },
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.ham, ING.mushrooms],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1962,7 +1962,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 2, boldness: 2, creative: 1, refined: 2 },
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.tuna, ING.redOnion, ING.capers],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -1990,7 +1990,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'rw'],
     flavour: { richness: 3, boldness: 3, creative: 2, refined: 2 },
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.mushrooms, ING.salsiccia],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2004,7 +2004,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 3, boldness: 2, creative: 2, refined: 4 },
     ingredients: [ING.cremeFraiche, ING.mozzarellaLM, ING.smSalmon, ING.rocket, ING.dill, ING.lemonWedge],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'newyork'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2203,7 +2203,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'rw'],
     flavour: { richness: 3, boldness: 3, creative: 3, refined: 4 },
     ingredients: [ING.marinaraSauce, ING.fiordilatte, ING.guanciale, ING.pecorinoRomano, ING.blackPepper],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2245,7 +2245,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['rw', 'cw'],
     flavour: { richness: 4, boldness: 3, creative: 4, refined: 5 },
     ingredients: [ING.fiordilatte, ING.porcini, ING.stracciatella, ING.truffleOil, ING.evoOil],
-    compatibleStyles: ['neapolitan', 'sourdough'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2304,7 +2304,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 2, boldness: 2, creative: 2, refined: 4 },
     ingredients: [ING.mozzarellaLM, ING.artichoke, ING.pecorinoRomano, ING.garlic, ING.evoOil],
-    compatibleStyles: ['pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2346,7 +2346,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'rw'],
     flavour: { richness: 4, boldness: 3, creative: 4, refined: 4 },
     ingredients: [ING.cremeFraiche, ING.mozzarellaLM, ING.guanciale, ING.egg, ING.pecorinoRomano, ING.blackPepper],
-    compatibleStyles: ['pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2360,7 +2360,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'rw'],
     flavour: { richness: 3, boldness: 3, creative: 3, refined: 5 },
     ingredients: [ING.cremeFraiche, ING.pecorinoRomano, ING.blackPepper, ING.evoOil],
-    compatibleStyles: ['pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2374,7 +2374,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'rw'],
     flavour: { richness: 3, boldness: 3, creative: 2, refined: 4 },
     ingredients: [ING.mozzarellaLM, ING.guanciale, ING.pecorinoRomano, ING.blackPepper],
-    compatibleStyles: ['pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2388,7 +2388,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 1, boldness: 1, creative: 1, refined: 3 },
     ingredients: [ING.rosemary, ING.seaSalt, ING.evoOil],
-    compatibleStyles: ['pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2402,7 +2402,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 2, boldness: 2, creative: 2, refined: 4 },
     ingredients: [ING.mozzarellaLM, ING.bresaola, ING.rocket, ING.parmigianoShavings, ING.lemonWedge],
-    compatibleStyles: ['pizza_romana', 'roman', 'neapolitan'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2430,7 +2430,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'rw'],
     flavour: { richness: 3, boldness: 3, creative: 3, refined: 4 },
     ingredients: [ING.mozzarellaLM, ING.gorgonzola, ING.walnuts, ING.honey, ING.evoOil],
-    compatibleStyles: ['pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2444,7 +2444,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 3, boldness: 2, creative: 3, refined: 5 },
     ingredients: [ING.mozzarellaLM, ING.prosciutto, ING.stracciatella, ING.evoOil],
-    compatibleStyles: ['pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2458,7 +2458,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 2, boldness: 1, creative: 1, refined: 3 },
     ingredients: [ING.thinPotato, ING.rosemary, ING.seaSalt, ING.evoOil],
-    compatibleStyles: ['pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2472,7 +2472,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 3, boldness: 2, creative: 3, refined: 4 },
     ingredients: [ING.mozzarellaLM, ING.courgette, ING.roastedPepper, ING.aubergine, ING.burrata, ING.evoOil],
-    compatibleStyles: ['pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2486,7 +2486,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 2, boldness: 3, creative: 2, refined: 4 },
     ingredients: [ING.sanMarzano, ING.mozzarellaLM, ING.anchovies, ING.capers, ING.oregano],
-    compatibleStyles: ['pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
@@ -2500,7 +2500,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['rw', 'cw'],
     flavour: { richness: 3, boldness: 3, creative: 2, refined: 4 },
     ingredients: [ING.mozzarellaLM, ING.porcini, ING.pecorinoRomano, ING.freshThyme, ING.evoOil],
-    compatibleStyles: ['pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
 
@@ -2674,7 +2674,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'rw'],
     flavour: { richness: 3, boldness: 4, creative: 3, refined: 3 },
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.pepperoni, ING.hotHoney],
-    compatibleStyles: ['newyork', 'neapolitan', 'sourdough'],
+    compatibleStyles: ['newyork', 'pan'],
   },
 
   {
@@ -2702,7 +2702,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'rw'],
     flavour: { richness: 3, boldness: 3, creative: 2, refined: 2 },
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.salsiccia, ING.roastedPepper, ING.redOnion],
-    compatibleStyles: ['newyork'],
+    compatibleStyles: ['newyork', 'pan'],
   },
 
   {
@@ -2716,7 +2716,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'lr'],
     flavour: { richness: 4, boldness: 2, creative: 3, refined: 3 },
     ingredients: [ING.vodkaCream, ING.mozzarellaLM, ING.prosciutto, ING.freshBasil],
-    compatibleStyles: ['newyork', 'neapolitan', 'sourdough'],
+    compatibleStyles: ['newyork', 'pan'],
   },
 
   {
@@ -2730,7 +2730,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 3, boldness: 1, creative: 2, refined: 3 },
     ingredients: [ING.mozzarellaLM, ING.ricotta, ING.garlic, ING.oregano, ING.evoOil],
-    compatibleStyles: ['newyork', 'neapolitan', 'sourdough'],
+    compatibleStyles: ['newyork'],
   },
 
   {
@@ -2758,7 +2758,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'rw'],
     flavour: { richness: 3, boldness: 3, creative: 3, refined: 2 },
     ingredients: [ING.bbqSauce, ING.mozzarellaLM, ING.grilledChicken, ING.redOnion, ING.freshCoriander],
-    compatibleStyles: ['newyork', 'neapolitan', 'sourdough'],
+    compatibleStyles: ['newyork', 'pan'],
   },
 
   {
@@ -2800,7 +2800,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 2, boldness: 2, creative: 2, refined: 4 },
     ingredients: [ING.sanMarzano, ING.burrata, ING.freshBasil, ING.evoOil],
-    compatibleStyles: ['newyork'],
+    compatibleStyles: ['newyork', 'neapolitan', 'sourdough'],
   },
 
   {
@@ -2814,7 +2814,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'rw'],
     flavour: { richness: 3, boldness: 4, creative: 1, refined: 2 },
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.spicySalami, ING.chilli],
-    compatibleStyles: ['newyork'],
+    compatibleStyles: ['newyork', 'neapolitan', 'sourdough'],
   },
 
 
@@ -3190,7 +3190,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'rw'],
     flavour: { richness: 3, boldness: 2, creative: 2, refined: 3 },
     ingredients: [ING.cremeFraiche, ING.mozzarellaLM, ING.smokedLardons, ING.emmental, ING.redOnion],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {

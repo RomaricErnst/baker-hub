@@ -1,0 +1,947 @@
+{
+  "generated": "2026-04-25T14:18:03.414Z",
+  "total": 152,
+  "issues": [
+    {
+      "id": "napoli",
+      "label": "Napoli",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No napoli_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "nduja_mozzarella",
+      "label": "Nduja e Mozzarella",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No nduja_mozzarella_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "tonno_cipolla",
+      "label": "Tonno e Cipolla",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No tonno_cipolla_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "smoked_salmon_creme",
+      "label": "Smoked Salmon & Crème Fraîche",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana",
+        "newyork"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No smoked_salmon_creme_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "burrata_prosciutto",
+      "label": "Burrata e Prosciutto",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No burrata_prosciutto_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "fig_gorgonzola",
+      "label": "Fig & Gorgonzola",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No fig_gorgonzola_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "pear_walnut_gorgonzola",
+      "label": "Pear, Walnut & Gorgonzola",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No pear_walnut_gorgonzola_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "speck_brie",
+      "label": "Speck & Brie",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No speck_brie_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "tarte_flambee",
+      "label": "Tarte Flambée",
+      "compatibleStyles": [
+        "neapolitan",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No tarte_flambee_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "raclette_pommes",
+      "label": "Raclette & Pommes de Terre",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No raclette_pommes_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "chevre_miel",
+      "label": "Chèvre & Miel",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No chevre_miel_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "andouille_moutarde",
+      "label": "Andouille & Moutarde",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No andouille_moutarde_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "maroilles_oignons",
+      "label": "Maroilles & Caramelised Onion",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No maroilles_oignons_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "jambon_espelette",
+      "label": "Jambon de Bayonne & Espelette",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No jambon_espelette_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "camembert_pommes",
+      "label": "Camembert & Apple",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No camembert_pommes_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "tartiflette_pizza",
+      "label": "Tartiflette Pizza",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No tartiflette_pizza_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "la_reine",
+      "label": "La Reine",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No la_reine_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "la_royale",
+      "label": "La Royale",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No la_royale_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "la_paysanne",
+      "label": "La Paysanne",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No la_paysanne_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "caponata_pizza",
+      "label": "Caponata",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No caponata_pizza_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "hot_honey_pepperoni",
+      "label": "Hot Honey & Pepperoni",
+      "compatibleStyles": [
+        "newyork",
+        "pan"
+      ],
+      "baseStyle": "newyork",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No hot_honey_pepperoni_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "ny_sausage_peppers",
+      "label": "Sausage & Peppers",
+      "compatibleStyles": [
+        "newyork",
+        "pan"
+      ],
+      "baseStyle": "newyork",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No ny_sausage_peppers_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "vodka_pizza",
+      "label": "Vodka Sauce Pizza",
+      "compatibleStyles": [
+        "newyork",
+        "pan"
+      ],
+      "baseStyle": "newyork",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No vodka_pizza_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "buffalo_chicken",
+      "label": "Buffalo Chicken",
+      "compatibleStyles": [
+        "newyork",
+        "pan"
+      ],
+      "baseStyle": "newyork",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No buffalo_chicken_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "california_bbq_chicken",
+      "label": "California BBQ Chicken",
+      "compatibleStyles": [
+        "newyork",
+        "pan"
+      ],
+      "baseStyle": "newyork",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No california_bbq_chicken_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "detroit_red_top",
+      "label": "Detroit Red Top",
+      "compatibleStyles": [
+        "pan"
+      ],
+      "baseStyle": "pan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No detroit_red_top_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "detroit_white",
+      "label": "Detroit White",
+      "compatibleStyles": [
+        "pan"
+      ],
+      "baseStyle": "pan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No detroit_white_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "detroit_sausage",
+      "label": "Detroit Sausage & Mushroom",
+      "compatibleStyles": [
+        "pan"
+      ],
+      "baseStyle": "pan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No detroit_sausage_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "detroit_veggie",
+      "label": "Detroit Veggie",
+      "compatibleStyles": [
+        "pan"
+      ],
+      "baseStyle": "pan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No detroit_veggie_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "chicago_deep_dish",
+      "label": "Chicago Deep Dish",
+      "compatibleStyles": [
+        "pan"
+      ],
+      "baseStyle": "pan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No chicago_deep_dish_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "pan_margherita",
+      "label": "Pan Margherita",
+      "compatibleStyles": [
+        "pan"
+      ],
+      "baseStyle": "pan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No pan_margherita_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "pan_pepperoni_hot_honey",
+      "label": "Pan Hot Honey Pepperoni",
+      "compatibleStyles": [
+        "pan"
+      ],
+      "baseStyle": "pan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No pan_pepperoni_hot_honey_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "pan_bbq_chicken",
+      "label": "Pan BBQ Chicken",
+      "compatibleStyles": [
+        "pan"
+      ],
+      "baseStyle": "pan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No pan_bbq_chicken_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "pan_nduja_burrata",
+      "label": "Pan ",
+      "compatibleStyles": [
+        "pan"
+      ],
+      "baseStyle": "pan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No pan_nduja_burrata_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "pan_4_formaggi",
+      "label": "Pan Quattro Formaggi",
+      "compatibleStyles": [
+        "pan"
+      ],
+      "baseStyle": "pan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No pan_4_formaggi_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "jerusalem",
+      "label": "Jerusalem",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No jerusalem_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "shakshuka",
+      "label": "Shakshuka",
+      "compatibleStyles": [
+        "neapolitan",
+        "sourdough",
+        "pizza_romana",
+        "roman"
+      ],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No shakshuka_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "nutella_fraises",
+      "label": "Nutella & Fraises",
+      "compatibleStyles": [],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No nutella_fraises_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No nutella_fraises_roman.webp — falls back to base image for roman (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No nutella_fraises_newyork.webp — falls back to base image for newyork (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No nutella_fraises_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "tarte_tatin_pizza",
+      "label": "Tarte Tatin Pizza",
+      "compatibleStyles": [],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No tarte_tatin_pizza_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No tarte_tatin_pizza_roman.webp — falls back to base image for roman (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No tarte_tatin_pizza_newyork.webp — falls back to base image for newyork (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No tarte_tatin_pizza_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "poire_chocolat",
+      "label": "Poire & Chocolat",
+      "compatibleStyles": [],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No poire_chocolat_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No poire_chocolat_roman.webp — falls back to base image for roman (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No poire_chocolat_newyork.webp — falls back to base image for newyork (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No poire_chocolat_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "honey_fig_mascarpone",
+      "label": "Honey, Fig & Mascarpone",
+      "compatibleStyles": [],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No honey_fig_mascarpone_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No honey_fig_mascarpone_roman.webp — falls back to base image for roman (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No honey_fig_mascarpone_newyork.webp — falls back to base image for newyork (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No honey_fig_mascarpone_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "speculoos_banana",
+      "label": "Speculoos & Banana",
+      "compatibleStyles": [],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No speculoos_banana_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No speculoos_banana_roman.webp — falls back to base image for roman (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No speculoos_banana_newyork.webp — falls back to base image for newyork (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No speculoos_banana_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "creme_brulee_pizza",
+      "label": "Crème Brûlée Pizza",
+      "compatibleStyles": [],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No creme_brulee_pizza_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No creme_brulee_pizza_roman.webp — falls back to base image for roman (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No creme_brulee_pizza_newyork.webp — falls back to base image for newyork (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No creme_brulee_pizza_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "crisommola",
+      "label": "Crisommola",
+      "compatibleStyles": [],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No crisommola_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No crisommola_roman.webp — falls back to base image for roman (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No crisommola_newyork.webp — falls back to base image for newyork (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No crisommola_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "ricotta_miele_castagne",
+      "label": "Ricotta & Chestnut Honey",
+      "compatibleStyles": [],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No ricotta_miele_castagne_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No ricotta_miele_castagne_roman.webp — falls back to base image for roman (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No ricotta_miele_castagne_newyork.webp — falls back to base image for newyork (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No ricotta_miele_castagne_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "fragole_basilico",
+      "label": "Fragole e Basilico",
+      "compatibleStyles": [],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No fragole_basilico_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No fragole_basilico_roman.webp — falls back to base image for roman (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No fragole_basilico_newyork.webp — falls back to base image for newyork (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No fragole_basilico_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "cioccolato_peperoncino",
+      "label": "Cioccolato e Peperoncino",
+      "compatibleStyles": [],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No cioccolato_peperoncino_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No cioccolato_peperoncino_roman.webp — falls back to base image for roman (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No cioccolato_peperoncino_newyork.webp — falls back to base image for newyork (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No cioccolato_peperoncino_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "mela_cannella",
+      "label": "Mela e Cannella",
+      "compatibleStyles": [],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No mela_cannella_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No mela_cannella_roman.webp — falls back to base image for roman (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No mela_cannella_newyork.webp — falls back to base image for newyork (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No mela_cannella_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    },
+    {
+      "id": "caramel_noisette",
+      "label": "Caramel Salé & Noisette",
+      "compatibleStyles": [],
+      "baseStyle": "neapolitan",
+      "issues": [
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No caramel_noisette_pizza_romana.webp — falls back to base image for pizza_romana (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No caramel_noisette_roman.webp — falls back to base image for roman (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No caramel_noisette_newyork.webp — falls back to base image for newyork (acceptable fallback)"
+        },
+        {
+          "type": "MISSING_VARIANT",
+          "severity": "LOW",
+          "msg": "No caramel_noisette_pan.webp — falls back to base image for pan (acceptable fallback)"
+        }
+      ]
+    }
+  ]
+}
