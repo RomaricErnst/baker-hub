@@ -65,6 +65,14 @@ export const ING: Record<string, Ingredient> = {
     qtyPerPizza: { amount: 80, unit: 'g' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
     bakeOrderByStyle: { pan: 'after' },
+    goodEnough: {
+      name: { en: 'Good quality passata (strained tomatoes)', fr: 'Passata de bonne qualité (tomates tamisées)' },
+      note: { en: 'Reduce in a pan 10 min with olive oil, garlic, salt and a pinch of sugar. Or use straight from the bottle if good quality.', fr: "Réduire à la casserole 10 min avec huile d'olive, ail, sel et une pincée de sucre. Ou utiliser directement si bonne qualité." },
+    },
+    compromise: {
+      name: { en: 'Good quality canned crushed tomatoes', fr: 'Tomates concassées de bonne qualité en conserve' },
+      note: { en: 'Drain excess liquid first. Crush by hand, season with salt and olive oil. Works well for Neapolitan style raw.', fr: "Égoutter l'excès de liquide d'abord. Écraser à la main, assaisonner avec sel et huile d'olive. Fonctionne bien cru pour le style napolitain." },
+    },
   },
 
   olioBase: {
@@ -85,13 +93,8 @@ export const ING: Record<string, Ingredient> = {
     qtyPerPizza: { amount: 100, unit: 'g' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.5 },
     hardToFind: true,
-    goodEnough: {
-      name: { en: 'Fresh mozzarella', fr: 'Mozzarella fraîche' },
-      note: { en: 'Widely available, minimal difference', fr: 'Très disponible, différence minimale' },
-    },
-    compromise: {
-      name: { en: 'Low-moisture mozzarella — melts differently, less fresh', fr: 'Mozzarella faible humidité — fond différemment, moins fraîche' },
-    },
+    goodEnough: { name: { en: 'Fresh mozzarella ball (any brand)', fr: 'Boule de mozzarella fraîche (toute marque)' }, note: { en: 'Slice 5mm and drain on paper towel. The difference from fior di latte is minimal for most home ovens.', fr: 'Trancher à 5mm et égoutter sur papier. La différence avec la fior di latte est minime pour la plupart des fours domestiques.' } },
+    compromise: { name: { en: 'Low-moisture mozzarella block', fr: 'Mozzarella en bloc faible humidité' }, note: { en: 'No draining needed but loses the fresh milky character. Melts more evenly.', fr: 'Pas besoin d\'égoutter mais perd le caractère lacté frais. Fonte plus uniforme.' } },
     localSwap: {
       singapore: {
         name: { en: 'Fresh mozzarella — FairPrice Finest or Cold Storage', fr: 'Mozzarella fraîche — FairPrice Finest ou Cold Storage' },
@@ -156,6 +159,14 @@ export const ING: Record<string, Ingredient> = {
         name: { en: 'President Crème Fraîche (Marketplace) or President Whipping Cream', fr: 'Crème fraîche Président (Marketplace) ou President Whipping' },
         brandExamples: { singapore: ['President Crème Fraîche — Marketplace', 'Ryan\'s Grocery'] },
       },
+    },
+    goodEnough: {
+      name: { en: 'Sour cream (full fat)', fr: 'Crème aigre entière' },
+      note: { en: 'Very close — same tang, slightly thinner. Full fat only, light versions split in the oven.', fr: 'Très proche — même acidité, légèrement plus liquide. Entière uniquement, les versions allégées se séparent au four.' },
+    },
+    compromise: {
+      name: { en: 'Greek yogurt (full fat, strained)', fr: 'Yaourt grec entier (égoutté)' },
+      note: { en: 'Spread thicker and strain overnight if possible. Tangier and less rich but works in a pinch.', fr: "Étaler plus épais et égoutter si possible. Plus acide et moins riche mais dépanne bien." },
     },
   },
 
@@ -225,6 +236,14 @@ export const ING: Record<string, Ingredient> = {
     },
     qtyPerPizza: { amount: 100, unit: 'g', noteEN: 'low-moisture block', noteFR: 'bloc faible humidité' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.5 },
+    goodEnough: {
+      name: { en: 'Block mozzarella (any brand)', fr: 'Mozzarella en bloc (toute marque)' },
+      note: { en: 'Grate or slice thin. Drier than fresh — less pooling, more even melt. Works perfectly for NY and Pan styles.', fr: 'Râper ou trancher finement. Plus sèche que la fraîche — fonte uniforme. Parfait pour NY et Pan.' },
+    },
+    compromise: {
+      name: { en: 'Mild cheddar or young gouda', fr: 'Cheddar doux ou jeune gouda' },
+      note: { en: 'Melts well but flavour is noticeably different. Use only if nothing else available.', fr: 'Fond bien mais le goût est différent. À utiliser en dernier recours.' },
+    },
   },
 
   nduja: {
@@ -288,6 +307,14 @@ export const ING: Record<string, Ingredient> = {
     prepNote: { en: 'Slice thin — cups and crisps beautifully in the oven', fr: 'Trancher finement — se gondole et croustille au four' },
     qtyPerPizza: { amount: 50, unit: 'g', noteEN: '12–15 slices', noteFR: '12–15 tranches' },
     qtyMultiplierByStyle: { roman: 1.2, pan: 1.5 },
+    goodEnough: {
+      name: { en: 'Salami piccante or diavola salami', fr: 'Salami piccante ou salami diavola' },
+      note: { en: "Won't cup as dramatically as US pepperoni but crisps well and has great spice. Slice thin.", fr: 'Ne formera pas autant de coupelles que le pepperoni américain mais croustille bien et est bien épicé. Trancher finement.' },
+    },
+    compromise: {
+      name: { en: 'Any spicy cured salami', fr: 'Tout salami épicé séché' },
+      note: { en: 'Chorizo, spicy sobrasada, or hot coppa all work. Slice thin.', fr: 'Chorizo, sobrasada piquante ou coppa forte conviennent. Trancher finement.' },
+    },
   },
 
   grilledChicken: {
@@ -313,6 +340,14 @@ export const ING: Record<string, Ingredient> = {
     id: 'cooked_ham', category: 'meat', bakeOrder: 'before',
     name: { en: 'Cooked ham', fr: 'Jambon cuit' },
     qtyPerPizza: { amount: 80, unit: 'g' },
+    goodEnough: {
+      name: { en: 'Cooked ham (jambon cuit, any quality)', fr: 'Jambon cuit (toute qualité)' },
+      note: { en: 'Any cooked ham works — Paris ham, honey ham, rosemary ham. Avoid overly watery supermarket ham.', fr: 'Tout jambon cuit convient — jambon de Paris, jambon au miel, au romarin. Éviter les jambons industriels trop aqueux.' },
+    },
+    compromise: {
+      name: { en: 'Turkey breast (sliced)', fr: 'Blanc de dinde (en tranches)' },
+      note: { en: 'Milder and leaner. Works but pizza will be less rich.', fr: 'Plus doux et moins gras. Fonctionne mais la pizza sera moins riche.' },
+    },
   },
 
   smSalmon: {
@@ -320,6 +355,14 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Smoked salmon', fr: 'Saumon fumé' },
     prepNote: { en: 'Always add after baking — never cook smoked salmon', fr: 'Toujours ajouter après cuisson — ne jamais cuire le saumon fumé' },
     qtyPerPizza: { amount: 60, unit: 'g' },
+    goodEnough: {
+      name: { en: 'Hot-smoked salmon (flaked)', fr: 'Saumon fumé à chaud (émietté)' },
+      note: { en: 'Different texture — flakier, meatier. Add after baking like cold-smoked.', fr: 'Texture différente — plus feuilletée, plus charnue. Ajouter après cuisson comme le saumon fumé à froid.' },
+    },
+    compromise: {
+      name: { en: 'Smoked trout', fr: 'Truite fumée' },
+      note: { en: 'Milder smoke, slightly earthier. Works well with cream cheese and dill. Add after baking.', fr: 'Fumée plus douce, légèrement plus terreux. Fonctionne bien avec fromage frais et aneth. Ajouter après cuisson.' },
+    },
   },
 
   anchovies: {
@@ -328,6 +371,14 @@ export const ING: Record<string, Ingredient> = {
     prepNote: { en: 'No extra salt needed — anchovies season the entire pizza', fr: 'Pas besoin de sel — les anchois assaisonnent toute la pizza' },
     isCommonPantry: true,
     qtyMultiplierByStyle: { roman: 1.2 },
+    goodEnough: {
+      name: { en: 'Anchovy paste (tube)', fr: "Pâte d'anchois (tube)" },
+      note: { en: 'Squeeze small dots across the pizza before baking. Same depth of flavour, easier to distribute.', fr: 'Déposer de petits points sur la pizza avant cuisson. Même profondeur de goût, plus facile à répartir.' },
+    },
+    compromise: {
+      name: { en: 'Cured black olives (finely chopped)', fr: 'Olives noires séchées (finement hachées)' },
+      note: { en: 'Loses the briny fish character but adds umami depth. Use only if no anchovy source available.', fr: "Perd le caractère marin mais apporte de l'umami. À utiliser uniquement si aucune source d'anchois disponible." },
+    },
   },
 
   tuna: {
@@ -335,6 +386,14 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Good quality canned tuna in oil', fr: 'Thon de qualité à l\'huile' },
     prepNote: { en: 'Drain well before adding', fr: 'Bien égoutter avant d\'ajouter', timing: 5 },
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'drained weight', noteFR: 'poids égoutté' },
+    goodEnough: {
+      name: { en: 'Tuna in olive oil (any good brand)', fr: "Thon à l'huile d'olive (bonne marque)" },
+      note: { en: 'Quality matters here — avoid brine-packed tuna which is too wet. Rio Mare, Ortiz, or equivalent.', fr: 'La qualité compte ici — éviter le thon au naturel trop aqueux. Rio Mare, Ortiz ou équivalent.' },
+    },
+    compromise: {
+      name: { en: 'Canned sardines in olive oil (drained)', fr: "Sardines en conserve à l'huile d'olive (égouttées)" },
+      note: { en: 'Stronger flavour. Remove bones, flake, pat dry. Unexpectedly good on pizza.', fr: 'Goût plus fort. Enlever les arêtes, émietter, éponger. Étonnamment bon sur pizza.' },
+    },
   },
 
   thinPotato: {
@@ -508,6 +567,10 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Brie', fr: 'Brie' },
     prepNote: { en: 'Slice thin with rind on — melts beautifully', fr: 'Trancher finement avec la croûte — fond magnifiquement' },
     qtyPerPizza: { amount: 80, unit: 'g' },
+    goodEnough: {
+      name: { en: 'Camembert', fr: 'Camembert' },
+      note: { en: 'Same melt profile, slightly stronger flavour. Remove rind or leave on — both work.', fr: 'Même comportement à la fonte, goût légèrement plus fort. Avec ou sans croûte — les deux fonctionnent.' },
+    },
   },
 
   ricotta: {
@@ -523,6 +586,10 @@ export const ING: Record<string, Ingredient> = {
     compromise: {
       name: { en: 'Mascarpone — richer, no tang', fr: 'Mascarpone — plus riche, sans acidité' },
     },
+    goodEnough: {
+      name: { en: 'Fresh fromage blanc or quark', fr: 'Fromage blanc frais ou quark' },
+      note: { en: 'Season with salt and nutmeg as you would ricotta. Slightly wetter — drain briefly if needed.', fr: 'Assaisonner avec sel et noix de muscade comme la ricotta. Légèrement plus humide — égoutter brièvement si besoin.' },
+    },
   },
 
   truffleOil: {
@@ -530,6 +597,14 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Truffle oil', fr: 'Huile de truffe' },
     prepNote: { en: 'Drizzle after baking — never cook truffle oil', fr: 'Arroser après cuisson — ne jamais cuire l\'huile de truffe' },
     qtyPerPizza: { amount: 10, unit: 'ml', noteEN: 'drizzle only', noteFR: 'filet seulement' },
+    goodEnough: {
+      name: { en: 'Black truffle paste (small jar)', fr: 'Crème de truffe noire (petit bocal)' },
+      note: { en: 'Thin with a little olive oil and drizzle after baking. More flavourful than most truffle oils.', fr: "Diluer avec un peu d'huile d'olive et arroser après cuisson. Plus parfumé que la plupart des huiles de truffe." },
+    },
+    compromise: {
+      name: { en: "Truffle salt + extra olive oil", fr: "Sel à la truffe + huile d'olive" },
+      note: { en: 'Finish the pizza with truffle salt and a generous drizzle of good olive oil. Subtle but effective.', fr: "Finir la pizza avec du sel à la truffe et un généreux filet d'huile d'olive de qualité. Subtil mais efficace." },
+    },
   },
 
   honey: {
@@ -767,6 +842,8 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Emmental', fr: 'Emmental' },
     prepNote: { en: 'Grate — melts evenly', fr: 'Râper — fond uniformément' },
     qtyPerPizza: { amount: 80, unit: 'g' },
+    goodEnough: { name: { en: 'Gruyère or Comté', fr: 'Gruyère ou Comté' }, note: { en: 'Better flavour than emmental, same melt. Slightly more expensive but worth it.', fr: "Meilleur goût que l'emmental, même fonte. Légèrement plus cher mais ça vaut le coup." } },
+    compromise: { name: { en: 'Any semi-hard melting cheese', fr: 'Tout fromage à pâte semi-dure fondant' }, note: { en: 'Edam, mild gouda, or raclette all work. Avoid anything too strong.', fr: 'Edam, gouda doux ou raclette conviennent. Éviter les fromages trop forts.' } },
   },
 
   bayonneHam: {
@@ -1070,6 +1147,10 @@ export const ING: Record<string, Ingredient> = {
     localSwap: {
       singapore: { name: { en: 'Shiro miso at Meidi-Ya, Don Don Donki or any Japanese supermarket', fr: 'Miso blanc chez Meidi-Ya, Don Don Donki ou tout supermarché japonais' } },
     },
+    compromise: {
+      name: { en: 'Light tahini thinned with soy sauce', fr: 'Tahini léger dilué avec sauce soja' },
+      note: { en: 'Mix 2 tbsp tahini + 1 tbsp soy + dash of sesame oil. Different but gives similar umami depth.', fr: "Mélanger 2 cs de tahini + 1 cs de sauce soja + un peu d'huile de sésame. Différent mais donne une profondeur umami similaire." },
+    },
   },
 
   mentaiko: {
@@ -1158,6 +1239,14 @@ export const ING: Record<string, Ingredient> = {
     prepNote: { en: 'Spread thin — sweet, reduces quickly in the oven', fr: 'Étaler finement — sucré, réduit rapidement au four' },
     qtyPerPizza: { amount: 3, unit: 'tbsp' },
     isCommonPantry: false,
+    goodEnough: {
+      name: { en: 'Homemade teriyaki: soy + mirin + sugar + sake', fr: 'Teriyaki maison : sauce soja + mirin + sucre + saké' },
+      note: { en: 'Simmer 2 tbsp soy + 1 tbsp mirin + 1 tsp sugar + 1 tbsp sake until slightly thickened. Better than most bottles.', fr: "Mijoter 2 cs de sauce soja + 1 cs de mirin + 1 cc de sucre + 1 cs de saké jusqu'à légèrement épaississement." },
+    },
+    compromise: {
+      name: { en: 'Hoisin sauce (thinned with soy)', fr: 'Sauce hoisin (diluée avec soja)' },
+      note: { en: 'Mix 1 tbsp hoisin + 1 tsp soy. Sweeter and more complex but gives similar sticky umami quality.', fr: 'Mélanger 1 cs de hoisin + 1 cc de soja. Plus sucré et complexe mais donne une qualité umami collante similaire.' },
+    },
   },
 
   kimchi: {
@@ -1167,6 +1256,10 @@ export const ING: Record<string, Ingredient> = {
     qtyPerPizza: { amount: 60, unit: 'g' },
     localSwap: {
       singapore: { name: { en: 'Korean kimchi widely available at NTUC FairPrice, Don Don Donki', fr: 'Kimchi coréen disponible chez NTUC FairPrice, Don Don Donki' } },
+    },
+    compromise: {
+      name: { en: 'Quick-pickled napa cabbage with gochugaru', fr: 'Chou de Pékin rapidement mariné avec gochugaru' },
+      note: { en: 'Slice cabbage thin, toss with rice vinegar, gochugaru, garlic and salt. Rest 30 min. Not fermented but punchy.', fr: 'Trancher finement le chou, mélanger avec vinaigre de riz, gochugaru, ail et sel. Reposer 30 min. Pas fermenté mais incisif.' },
     },
   },
 
@@ -1197,6 +1290,10 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Wasabi cream base', fr: 'Base crème wasabi' },
     prepNote: { en: 'Mix crème fraîche 30%+ + wasabi paste to taste — spread thin', fr: 'Mélanger crème fraîche 30%+ + pâte wasabi — étaler finement', timing: 5 },
     qtyPerPizza: { amount: 60, unit: 'g' },
+    goodEnough: {
+      name: { en: 'Wasabi paste + crème fraîche (mix yourself)', fr: 'Pâte de wasabi + crème fraîche (à mélanger)' },
+      note: { en: 'Mix 1 tsp wasabi paste into 3 tbsp crème fraîche or cream cheese. Adjust heat to taste.', fr: 'Mélanger 1 cc de pâte de wasabi dans 3 cs de crème fraîche ou fromage frais. Ajuster le piquant selon le goût.' },
+    },
   },
 
   duckConfit: {
@@ -1206,6 +1303,10 @@ export const ING: Record<string, Ingredient> = {
     qtyPerPizza: { amount: 80, unit: 'g' },
     hardToFind: false,
     compromise: { name: { en: 'Slow-cooked duck leg, shredded', fr: 'Cuisse de canard mijotée, effilochée' } },
+    goodEnough: {
+      name: { en: 'Duck leg confit (jarred or vacuum-packed)', fr: 'Cuisse de canard confite (en bocal ou sous vide)' },
+      note: { en: 'The jarred/vacuum version is widely available and excellent. Remove skin and shred the meat while warm.', fr: 'La version en bocal ou sous vide est largement disponible et excellente. Retirer la peau et effilocher la viande encore chaude.' },
+    },
   },
 
   foieGras: {
