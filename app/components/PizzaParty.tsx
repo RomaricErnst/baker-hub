@@ -27,9 +27,10 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey, t }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t }: PizzaPartyProps) {
   const [activeTab, setActiveTab] = useState<Tab>('pick');
   const [qtys, setQtys] = useState<Record<string, number>>({});
+  const [styleKey, setStyleKey] = useState<string>(initialStyleKey);
 
   const showSelector = activeTab === 'pick' || activeTab === 'shop';
 
@@ -53,6 +54,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey, t }: 
           controlledQtys={qtys}
           onQtysChange={setQtys}
           hidePillBar={true}
+          onStyleChange={setStyleKey}
         />
       </div>
 

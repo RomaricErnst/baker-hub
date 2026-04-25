@@ -76,6 +76,7 @@ interface Props {
   controlledQtys?: Qty;
   onQtysChange?: (qtys: Qty) => void;
   hidePillBar?: boolean;
+  onStyleChange?: (style: string) => void;
 }
 
 // ─── Sub-region maps ─────────────────────────────────────────
@@ -1019,7 +1020,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange }: Props) {
   const l = locale as 'en' | 'fr';
 
   // Filter state
@@ -1099,7 +1100,10 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   const [flavourUI, setFlavourUI] = useState({ richness: 3, boldness: 3, creative: 3, refined: 3 });
 
   // Filtered pizzas
-  const filtered = useMemo(() => filterPizzas(PIZZAS, filter), [filter, styleKey]);
+  const filtered = useMemo(() =>
+    filterPizzas(PIZZAS, { ...filter, styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined }),
+    [filter, styleKey]
+  );
 
   // Current season for auto-detect label
   const currentSeason = getCurrentSeason();
@@ -1202,6 +1206,23 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               ? `Pizzas adaptées à votre ${styleKey === 'neapolitan' ? 'pâte Napolitaine' : styleKey === 'newyork' ? 'pâte New York' : styleKey === 'roman' ? 'pâte Romaine' : styleKey === 'pan' ? 'pâte Pan' : styleKey === 'pizza_romana' ? 'pâte Romaine' : 'style'}`
               : `Showing pizzas suited for ${styleKey === 'neapolitan' ? 'Neapolitan' : styleKey === 'newyork' ? 'New York' : styleKey === 'roman' ? 'Roman' : styleKey === 'pan' ? 'Pan' : styleKey === 'pizza_romana' ? 'Roman' : styleKey} dough`}
           </span>
+          {styleKey && onStyleChange && (
+            <span
+              onClick={() => onStyleChange('')}
+              style={{
+                marginLeft: 'auto',
+                fontSize: '11px',
+                color: 'var(--terra)',
+                cursor: 'pointer',
+                fontFamily: 'DM Mono, monospace',
+                textDecoration: 'underline',
+                textUnderlineOffset: '2px',
+                flexShrink: 0,
+              }}
+            >
+              {locale === 'fr' ? 'Changer' : 'Change'}
+            </span>
+          )}
         </div>
       )}
 
