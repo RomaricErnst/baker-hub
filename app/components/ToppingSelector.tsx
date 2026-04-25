@@ -1723,7 +1723,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                             </div>
                             <div style={{
                               display: 'flex', flexDirection: 'column', gap: '4px',
-                              maxHeight: '148px', overflowY: 'auto', overflowX: 'hidden',
+                              maxHeight: '176px', overflowY: 'auto', overflowX: 'hidden',
                               scrollbarWidth: 'thin' as React.CSSProperties['scrollbarWidth'],
                               scrollbarColor: '#E0D8CF transparent',
                               paddingRight: '2px',
@@ -1743,7 +1743,14 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                                       };
                                     })}
                                     style={{
-                                      fontSize: '11px', padding: '8px 6px', borderRadius: '6px',
+                                      fontSize: '12px',
+                                      padding: '12px 6px',
+                                      borderRadius: '6px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      minHeight: '40px',
+                                      boxSizing: 'border-box' as const,
                                       cursor: 'pointer', textAlign: 'center',
                                       border: active ? '1px solid #C4522A' : '1px solid #E8E0D5',
                                       background: active ? '#C4522A' : '#FDFBF7',
