@@ -307,7 +307,6 @@ export default function Home() {
   const [priorityOverride, setPriorityOverride] = useState<string | null | undefined>(undefined);
 
   // Modals & results
-  const [showYeastHelper, setShowYeastHelper] = useState(false);
   const [showResults, setShowResults]         = useState(false);
 
 
@@ -1044,64 +1043,11 @@ export default function Home() {
               summary={yeastType ? (locale === 'fr' && (YEAST_TYPES[yeastType] as { nameFr?: string }).nameFr ? (YEAST_TYPES[yeastType] as { nameFr: string }).nameFr : YEAST_TYPES[yeastType].name) : undefined}
               onEdit={() => setActiveStep(6)}
             >
-              <div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem', marginBottom: '.65rem' }}>
-                  {(Object.entries(YEAST_TYPES) as [YeastType, typeof YEAST_TYPES[YeastType]][]).filter(([yt]) => yt !== 'sourdough').map(([yt, y]) => {
-                    const active = yeastType === yt;
-                    const yImg = (y as { image?: string }).image;
-                    const guidedDesc: Record<string, string> = {
-                      instant:    t('yeastDesc.simple.instant'),
-                      active_dry: t('yeastDesc.simple.active_dry'),
-                      fresh:      t('yeastDesc.simple.fresh'),
-                      sourdough:  t('yeastDesc.simple.sourdough'),
-                    };
-                    return (
-                      <div
-                        key={yt}
-                        onClick={() => { setYeastType(yt); advance(6); }}
-                        style={{
-                          border: `2px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                          borderRadius: '14px', padding: '.75rem .75rem',
-                          cursor: 'pointer', background: active ? '#FEF4EF' : 'var(--warm)',
-                          transition: 'all .15s', textAlign: 'left',
-                          display: 'flex', flexDirection: 'row', alignItems: 'center',
-                          gap: '12px',
-                        }}
-                      >
-                        {yImg ? (
-                          <img src={yImg} alt={y.name}
-                            style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '10px', flexShrink: 0 }} />
-                        ) : (
-                          <span style={{ fontSize: '1.5rem', display: 'block', flexShrink: 0, width: '48px', textAlign: 'center' }}>{y.emoji}</span>
-                        )}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--char)', marginBottom: '.2rem' }}>
-                            {locale === 'fr' && (y as { nameFr?: string }).nameFr ? (y as { nameFr: string }).nameFr : y.name}
-                          </div>
-                          <span style={{
-                            fontSize: '.65rem', fontFamily: 'var(--font-dm-sans)',
-                            color: 'var(--smoke)', lineHeight: 1.45,
-                            display: 'block',
-                          }}>
-                            {guidedDesc[yt]}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <button
-                  onClick={() => setShowYeastHelper(true)}
-                  className="btn"
-                  style={{
-                    padding: '.38rem .75rem', borderRadius: '20px',
-                    border: '1.5px solid var(--border)', background: 'var(--warm)',
-                    color: 'var(--smoke)', fontSize: '.75rem', cursor: 'pointer',
-                  }}
-                >
-                  {t('common.notSure')}
-                </button>
-              </div>
+              <YeastHelper
+                selected={yeastType}
+                onSelect={(yt) => { setYeastType(yt); advance(6); }}
+                onClose={() => {}}
+              />
             </StepCard>
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
@@ -1666,13 +1612,6 @@ export default function Home() {
                     );
                   })}
                 </div>
-                <button
-                  onClick={() => setShowYeastHelper(true)}
-                  className="btn"
-                  style={{ padding: '.38rem .75rem', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '.75rem', cursor: 'pointer' }}
-                >
-                  {t('common.notSure')}
-                </button>
               </div>
             </StepCard>
 
@@ -2468,13 +2407,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Yeast Helper modal ──────────────── */}
-      {showYeastHelper && (
-        <YeastHelper
-          onSelect={yt => { setYeastType(yt); setShowYeastHelper(false); advance(6); }}
-          onClose={() => setShowYeastHelper(false)}
-        />
-      )}
     </div>
   );
 }
