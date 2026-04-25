@@ -1407,7 +1407,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 3, boldness: 1, creative: 1, refined: 2 },
     ingredients: [ING.olioBase, ING.fiordilatte, ING.thinPotato, ING.rosemary, ING.seaSalt, ING.evoOil],
     wineNote: { en: 'Frascati or Soave · crisp white', fr: 'Frascati ou Soave · blanc frais' },
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
+    compatibleStyles: ['neapolitan', 'sourdough'],
   },
 
   {
@@ -2186,7 +2186,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['rw', 'cw'],
     flavour: { richness: 4, boldness: 3, creative: 4, refined: 5 },
     ingredients: [ING.fiordilatte, ING.porcini, ING.stracciatella, ING.truffleOil, ING.evoOil],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
+    compatibleStyles: ['neapolitan', 'sourdough'],
   },
 
   {
