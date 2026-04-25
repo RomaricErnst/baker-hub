@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { PIZZAS, ING } from '../../lib/toppingDatabase';
+import { PIZZAS } from '../../lib/toppingDatabase';
 
 interface Props {
   bakeTime: Date;
@@ -12,17 +12,18 @@ interface Props {
 
 interface PrepTask {
   id: string;
-  en: string;
-  fr: string;
-  timing?: number;
+  ingredientName: string;
+  text: string;
+  textFr: string;
+  timing: number;
 }
 
 const SETUP_TASKS: PrepTask[] = [
-  { id: 'fridge_out',      en: 'Take dough out of the fridge',    fr: 'Sortir la pâte du réfrigérateur',         timing: 60 },
-  { id: 'preheat',         en: 'Preheat oven to full temperature', fr: 'Préchauffer le four à température max',   timing: 45 },
-  { id: 'dough_counter',   en: 'Move dough balls to the counter',  fr: 'Poser les pâtons sur le plan de travail', timing: 15 },
-  { id: 'flour_surface',   en: 'Dust work surface with flour',     fr: 'Fariner le plan de travail',              timing: 10 },
-  { id: 'topping_station', en: 'Set up topping station',           fr: 'Préparer la station garnitures',          timing: 5 },
+  { id: 'fridge_out',      ingredientName: '', text: 'Take dough out of the fridge',    textFr: 'Sortir la pâte du réfrigérateur',         timing: 60 },
+  { id: 'preheat',         ingredientName: '', text: 'Preheat oven to full temperature', textFr: 'Préchauffer le four à température max',   timing: 45 },
+  { id: 'dough_counter',   ingredientName: '', text: 'Move dough balls to the counter',  textFr: 'Poser les pâtons sur le plan de travail', timing: 15 },
+  { id: 'flour_surface',   ingredientName: '', text: 'Dust work surface with flour',     textFr: 'Fariner le plan de travail',              timing: 10 },
+  { id: 'topping_station', ingredientName: '', text: 'Set up topping station',           textFr: 'Préparer la station garnitures',          timing: 5 },
 ];
 
 export default function PrepTab({ locale, selectedPizzas, onGoToBake }: Props) {
@@ -51,16 +52,17 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake }: Props) {
       seen.add(ing.id);
       ingredientTasks.push({
         id: `ing_${ing.id}`,
-        en: ing.prepNote.en,
-        fr: ing.prepNote.fr,
-        timing: ing.prepNote.timing,
+        ingredientName: ing.name[l] ?? ing.name.en,
+        text: ing.prepNote.en,
+        textFr: ing.prepNote.fr,
+        timing: ing.prepNote.timing ?? 0,
       });
     });
   });
 
   // Merge setup + ingredient tasks, sort by timing descending (longest first)
   const allTasks: PrepTask[] = [...SETUP_TASKS, ...ingredientTasks]
-    .sort((a, b) => (b.timing ?? 0) - (a.timing ?? 0));
+    .sort((a, b) => b.timing - a.timing);
 
   return (
     <div style={{ padding: '0 16px 24px' }}>
@@ -87,48 +89,84 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake }: Props) {
         <div style={{ border: '1px solid var(--border)', borderRadius: '14px', overflow: 'hidden' }}>
           {allTasks.map((task, i) => {
             const done = completed.has(task.id);
-            const label = l === 'fr' ? task.fr : task.en;
-            const showTiming = (task.timing ?? 0) > 5;
             return (
               <div
                 key={task.id}
                 onClick={() => toggleCompleted(task.id)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  minHeight: '56px', padding: '10px 14px',
+                  display: 'flex', alignItems: 'flex-start', gap: '12px',
+                  minHeight: '64px', padding: '12px 14px',
                   borderBottom: i < allTasks.length - 1 ? '1px solid var(--border)' : undefined,
                   cursor: 'pointer',
-                  background: done ? 'rgba(138,127,120,0.04)' : 'white',
                 }}
               >
+                {/* Checkbox */}
                 <div style={{
-                  width: '24px', height: '24px', borderRadius: '6px', flexShrink: 0,
+                  width: '28px', height: '28px', borderRadius: '6px', flexShrink: 0,
+                  marginTop: '2px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: done ? '1.5px solid var(--gold)' : '1.5px solid var(--border)',
                   background: done ? 'var(--gold)' : 'var(--warm)',
                 }}>
-                  {done && (
-                    <span style={{ fontSize: '13px', color: 'white', fontFamily: 'DM Sans, sans-serif', lineHeight: 1 }}>
-                      &#10003;
-                    </span>
+                  {done && <span style={{ fontSize: '14px', color: 'var(--char)' }}>&#10003;</span>}
+                </div>
+
+                {/* Content */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {task.ingredientName ? (
+                    <>
+                      {/* Row 1: ingredient name + timing */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
+                        <span style={{
+                          fontFamily: 'Playfair Display, serif',
+                          fontSize: '14px', fontWeight: 600,
+                          color: done ? 'var(--smoke)' : 'var(--char)',
+                          textDecoration: done ? 'line-through' : undefined,
+                        }}>
+                          {task.ingredientName}
+                        </span>
+                        {task.timing > 5 && (
+                          <span style={{
+                            fontFamily: 'DM Mono, monospace', fontSize: '10px',
+                            color: 'var(--smoke)', flexShrink: 0, marginLeft: '8px',
+                          }}>
+                            {task.timing} min before
+                          </span>
+                        )}
+                      </div>
+                      {/* Row 2: prep instruction */}
+                      <span style={{
+                        fontFamily: 'DM Sans, sans-serif',
+                        fontSize: '13px', lineHeight: 1.4,
+                        color: 'var(--smoke)',
+                        textDecoration: done ? 'line-through' : undefined,
+                        opacity: done ? 0.6 : 1,
+                      }}>
+                        {l === 'fr' ? task.textFr : task.text}
+                      </span>
+                    </>
+                  ) : (
+                    /* Setup task — single line with optional timing */
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{
+                        fontFamily: 'DM Sans, sans-serif', fontSize: '15px', lineHeight: 1.4,
+                        color: done ? 'var(--smoke)' : 'var(--char)',
+                        textDecoration: done ? 'line-through' : undefined,
+                        opacity: done ? 0.55 : 1,
+                      }}>
+                        {l === 'fr' ? task.textFr : task.text}
+                      </span>
+                      {task.timing > 5 && (
+                        <span style={{
+                          fontFamily: 'DM Mono, monospace', fontSize: '10px',
+                          color: 'var(--smoke)', flexShrink: 0, marginLeft: '8px',
+                        }}>
+                          {task.timing} min before
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
-                <span style={{
-                  fontFamily: 'DM Sans, sans-serif', fontSize: '15px', lineHeight: 1.4, flex: 1,
-                  color: done ? 'var(--smoke)' : 'var(--char)',
-                  textDecoration: done ? 'line-through' : undefined,
-                  opacity: done ? 0.55 : 1,
-                }}>
-                  {label}
-                </span>
-                {showTiming && (
-                  <span style={{
-                    fontFamily: 'DM Mono, monospace', fontSize: '11px',
-                    color: 'var(--smoke)', flexShrink: 0,
-                  }}>
-                    {t('timing', { n: task.timing ?? 0 })}
-                  </span>
-                )}
               </div>
             );
           })}
