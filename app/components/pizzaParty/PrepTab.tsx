@@ -80,13 +80,15 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
     pizza.ingredients.forEach((ing: Ingredient) => {
       if (!ing.prepNote || seen.has(ing.id)) return;
       seen.add(ing.id);
-      const timing = ing.prepNote.timing ?? 0;
+      const styleNote = styleKey ? (ing as any).prepNoteByStyle?.[styleKey] : undefined;
+      const note = styleNote ?? ing.prepNote;
+      const timing = note.timing ?? 0;
       const mustCool = timing >= 15 && (ing.category === 'meat' || ing.category === 'sauce');
       tasks.push({
         id: `ing_${ing.id}`,
         ingredientName: ing.name[l] ?? ing.name.en,
-        text: ing.prepNote.en,
-        textFr: ing.prepNote.fr,
+        text: note.en,
+        textFr: note.fr,
         timing,
         mustCool,
         category: ing.category,
