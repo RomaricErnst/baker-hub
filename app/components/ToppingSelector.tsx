@@ -495,55 +495,100 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
   }, []);
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.5)', zIndex: 100 }}
-      onClick={onClose}
-    >
-      <div
-        style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#FDFBF7', borderRadius: '20px 20px 0 0', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Scrollable content */}
-        <div
-          ref={(el) => { if (el) el.scrollTop = 0; }}
-          style={{ overflowY: 'auto', padding: '12px 14px 8px', flex: '0 1 auto', minHeight: 0 }}
-        >
-          {/* Handle */}
-          <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '0 auto 10px' }} />
-          <button onClick={onClose} style={{ position: 'absolute', top: '12px', right: '14px', background: 'none', border: 'none', fontSize: '16px', color: '#8A7F78', cursor: 'pointer' }}>✕</button>
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: 'rgba(26,22,18,0.5)',
+      zIndex: 100,
+    }} onClick={onClose}>
 
-          {/* Big image — fixed height so full sheet fits on screen */}
-          <div style={{ width: '100%', height: '260px', borderRadius: '12px', overflow: 'hidden', background: '#1A1612', marginBottom: '12px', flexShrink: 0 }}>
-            <img
-              src={(() => {
-                const variantMap: Record<string, string> = {
-                  pizza_romana: `_pizza_romana`,
-                  newyork: `_newyork`,
-                  pan: `_pan`,
-                  roman: `_roman`,
-                };
-                const suffix = styleKey && variantMap[styleKey];
-                if (suffix) return `/pizzas/${pizza.id}${suffix}.png`;
-                return `/pizzas/${pizza.id}.png`;
-              })()}
-              alt={pizza.name[l] ?? pizza.name.en}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-          </div>
-          {/* Title */}
-          <div style={{ fontSize: '20px', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: '#1A1612', marginBottom: '4px' }}>
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        background: '#FDFBF7',
+        borderRadius: '20px 20px 0 0',
+        maxHeight: '92vh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }} onClick={e => e.stopPropagation()}>
+
+        {/* Square image — flush to top, no padding above */}
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          aspectRatio: '1 / 1',
+          flexShrink: 0,
+          background: '#1A1612',
+          borderRadius: '20px 20px 0 0',
+          overflow: 'hidden',
+        }}>
+          <img
+            src={(() => {
+              const variantMap: Record<string, string> = {
+                pizza_romana: '_pizza_romana',
+                newyork: '_newyork',
+                pan: '_pan',
+                roman: '_roman',
+              };
+              const suffix = styleKey && variantMap[styleKey];
+              if (suffix) return `/pizzas/${pizza.id}${suffix}.png`;
+              return `/pizzas/${pizza.id}.png`;
+            })()}
+            alt={pizza.name[l] ?? pizza.name.en}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+            }}
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+          {/* Close button floats over image top-right */}
+          <button
+            onClick={onClose}
+            style={{
+              position: 'absolute', top: '12px', right: '12px',
+              width: '30px', height: '30px',
+              background: 'rgba(26,22,18,0.55)',
+              border: 'none', borderRadius: '50%',
+              color: 'white', fontSize: '14px',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(4px)',
+            }}
+          >&#x2715;</button>
+        </div>
+
+        {/* Scrollable content — title, ingredients, wine */}
+        <div style={{
+          overflowY: 'auto',
+          flex: 1,
+          minHeight: 0,
+          padding: '14px 16px 0',
+        }}>
+          <div style={{
+            fontSize: '20px',
+            fontFamily: 'Playfair Display, serif',
+            fontWeight: 700,
+            color: '#1A1612',
+            marginBottom: '4px',
+          }}>
             {pizza.name[l] ?? pizza.name.en}
           </div>
-          {/* Story */}
+
           {pizza.story && (
-            <div style={{ fontSize: '12px', color: '#8A7F78', marginBottom: '10px', lineHeight: 1.5 }}>
+            <div style={{
+              fontSize: '12px', color: '#8A7F78',
+              marginBottom: '10px', lineHeight: 1.5,
+            }}>
               {pizza.story[l] ?? pizza.story.en}
             </div>
           )}
-          {/* Ingredients as pills */}
+
           {allIngs.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '12px' }}>
+            <div style={{
+              display: 'flex', flexWrap: 'wrap',
+              gap: '5px', marginBottom: '12px',
+            }}>
               {allIngs.map(ing => (
                 <span key={ing.id} style={{
                   fontSize: '11px', color: '#3D3530',
@@ -555,9 +600,14 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
               ))}
             </div>
           )}
-          {/* Wine pairing */}
+
           {pizza.wineNote && (
-            <div style={{ fontSize: '11px', color: '#7A4A8A', background: '#F5EDF8', borderRadius: '8px', padding: '6px 10px', marginBottom: '8px', lineHeight: 1.5 }}>
+            <div style={{
+              fontSize: '11px', color: '#7A4A8A',
+              background: '#F5EDF8', borderRadius: '8px',
+              padding: '6px 10px', marginBottom: '12px',
+              lineHeight: 1.5,
+            }}>
               <span style={{ fontWeight: 600, marginRight: '4px' }}>
                 {l === 'fr' ? 'Accord vin :' : 'Wine pairing:'}
               </span>
@@ -566,35 +616,49 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           )}
         </div>
 
-        {/* Sticky footer — qty controls, never scrolls away */}
-        <div style={{ flexShrink: 0, borderTop: '1px solid var(--border)', padding: '12px 16px', background: '#FDFBF7' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'DM Sans, sans-serif' }}>
+        {/* Sticky qty footer — never scrolls away */}
+        <div style={{
+          flexShrink: 0,
+          borderTop: '1px solid #E0D8CF',
+          padding: '12px 16px 28px',
+          background: '#FDFBF7',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <span style={{
+              fontSize: '13px', color: '#8A7F78',
+              fontFamily: 'DM Sans, sans-serif',
+            }}>
               {l === 'fr' ? 'Combien ?' : 'How many?'}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <button
-                onClick={() => onQtyChange(-1)}
+                onClick={e => { e.stopPropagation(); onQtyChange(-1); }}
                 style={{
                   width: '36px', height: '36px', borderRadius: '50%',
-                  border: '1.5px solid var(--border)', background: 'var(--warm)',
-                  cursor: 'pointer', fontSize: '18px', color: 'var(--char)',
+                  border: '1.5px solid #E0D8CF', background: '#FDFBF7',
+                  cursor: 'pointer', fontSize: '20px', color: '#1A1612',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  lineHeight: 1,
                 }}
-              >−</button>
+              >&#x2212;</button>
               <span style={{
-                fontSize: '18px', fontWeight: 700, color: 'var(--char)',
-                fontFamily: 'DM Mono, monospace', minWidth: '24px', textAlign: 'center',
+                fontSize: '20px', fontWeight: 700, color: '#1A1612',
+                fontFamily: 'DM Mono, monospace',
+                minWidth: '28px', textAlign: 'center',
               }}>
                 {qty}
               </span>
               <button
-                onClick={() => onQtyChange(1)}
+                onClick={e => { e.stopPropagation(); onQtyChange(1); }}
                 style={{
                   width: '36px', height: '36px', borderRadius: '50%',
-                  border: 'none', background: 'var(--terra)',
-                  cursor: 'pointer', fontSize: '18px', color: 'white',
+                  border: 'none', background: '#C4522A',
+                  cursor: 'pointer', fontSize: '20px', color: 'white',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  lineHeight: 1,
                 }}
               >+</button>
             </div>
@@ -602,16 +666,17 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           {qty > 0 && (
             <div style={{
               marginTop: '8px', fontSize: '11px',
-              color: 'var(--sage)', fontFamily: 'DM Sans, sans-serif',
+              color: '#6B7A5A', fontFamily: 'DM Sans, sans-serif',
               textAlign: 'center',
             }}>
               {qty === 1
-                ? (l === 'fr' ? '1 ajouté — continuer à choisir' : '1 added — keep browsing')
-                : (l === 'fr' ? `${qty} ajoutés — continuer à choisir` : `${qty} added — keep browsing`)
+                ? (l === 'fr' ? '1 ajouté — continuer' : '1 added — keep browsing')
+                : (l === 'fr' ? `${qty} ajoutés — continuer` : `${qty} added — keep browsing`)
               }
             </div>
           )}
         </div>
+
       </div>
     </div>
   );
