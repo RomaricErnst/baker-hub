@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '../navigation';
 import { createClient } from '@/app/lib/supabase/client';
@@ -254,17 +255,6 @@ export default function Header({
     return () => subscription.unsubscribe();
   }, []);
 
-  // Close menu on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    if (menuOpen) document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [menuOpen]);
-
   // Load saved recipes when menu opens and user is logged in
   useEffect(() => {
     if (menuOpen && user) {
@@ -317,6 +307,7 @@ export default function Header({
   }
 
   return (
+    <>
     <header style={{
       background: 'var(--char)', color: 'var(--cream)',
       padding: '0 1.5rem', display: 'flex', alignItems: 'center',
@@ -344,221 +335,6 @@ export default function Header({
             }} />
           ))}
         </button>
-
-        {/* Slide-in drawer */}
-        {menuOpen && (
-          <>
-            {/* Scrim — tap to close */}
-            <div
-              onClick={() => setMenuOpen(false)}
-              style={{
-                position: 'fixed',
-                inset: 0,
-                background: 'rgba(0,0,0,0.45)',
-                zIndex: 199,
-              }}
-            />
-            {/* Drawer panel */}
-            <div style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              bottom: 0,
-              width: '300px',
-              background: '#1A1612',
-              borderRight: '1px solid rgba(255,255,255,0.12)',
-              boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
-              zIndex: 200,
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-            }}>
-              {/* Drawer header */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px 16px 12px',
-                borderBottom: '1px solid rgba(255,255,255,0.08)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <img src="/logo-mark.png" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }}/>
-                  <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700, color: 'var(--cream)' }}>
-                    Baker Hub
-                  </span>
-                </div>
-                <button
-                  onClick={() => setMenuOpen(false)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--smoke)',
-                    fontSize: '1.2rem',
-                    cursor: 'pointer',
-                    padding: '4px 8px',
-                    lineHeight: 1,
-                  }}
-                >✕</button>
-              </div>
-
-            {/* Language + Units — unified toggle style */}
-            {([
-              {
-                label: 'Language',
-                options: [
-                  { key: 'en', display: 'EN', active: locale === 'en', onSelect: () => { router.replace(pathname, { locale: 'en' }); setMenuOpen(false); } },
-                  { key: 'fr', display: 'FR', active: locale === 'fr', onSelect: () => { router.replace(pathname, { locale: 'fr' }); setMenuOpen(false); } },
-                ],
-              },
-              {
-                label: 'Units',
-                options: [
-                  { key: 'metric',   display: 'g/°C',   active: units === 'metric',   onSelect: () => onUnitsChange?.('metric') },
-                  { key: 'imperial', display: 'oz/°F',  active: units === 'imperial', onSelect: () => onUnitsChange?.('imperial') },
-                ],
-              },
-            ] as const).map(row => (
-              <div key={row.label} style={{
-                padding: '10px 16px',
-                borderBottom: '1px solid rgba(255,255,255,0.08)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}>
-                <span style={{
-                  fontSize: '.68rem', color: 'var(--smoke)',
-                  fontFamily: 'var(--font-dm-mono)',
-                  textTransform: 'uppercase', letterSpacing: '.06em',
-                }}>{row.label}</span>
-                <div style={{ display: 'flex', gap: '.25rem' }}>
-                  {row.options.map(opt => (
-                    <button key={opt.key}
-                      onClick={opt.onSelect}
-                      style={{
-                        minWidth: '48px', padding: '.22rem .4rem',
-                        borderRadius: '5px', border: 'none', cursor: 'pointer',
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', fontWeight: 600,
-                        textAlign: 'center',
-                        background: opt.active ? 'var(--terra)' : 'transparent',
-                        color: opt.active ? '#fff' : 'var(--smoke)',
-                      }}>{opt.display}</button>
-                  ))}
-                </div>
-              </div>
-            ))}
-
-            {/* Auth */}
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              {user ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.5rem' }}>
-                  <span style={{
-                    fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
-                  }}>{user.email}</span>
-                  <button onClick={signOut} style={{
-                    padding: '.3rem .65rem', borderRadius: '7px', flexShrink: 0,
-                    border: '1.5px solid rgba(255,255,255,0.15)', background: 'transparent',
-                    color: 'var(--smoke)', fontSize: '.7rem', cursor: 'pointer',
-                    fontFamily: 'var(--font-dm-sans)',
-                  }}>Sign out</button>
-                </div>
-              ) : emailSent ? (
-                <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', textAlign: 'center', padding: '.25rem 0' }}>
-                  Check your inbox — link sent ✓
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {/* Google */}
-                  <button onClick={signInWithGoogle} style={{
-                    width: '100%', padding: '.5rem', borderRadius: '8px',
-                    border: '1.5px solid rgba(255,255,255,0.15)',
-                    background: 'rgba(255,255,255,0.06)', color: 'var(--cream)',
-                    fontSize: '.8rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
-                    fontWeight: 500, textAlign: 'center',
-                  }}>Sign in with Google</button>
-                  {/* Email divider */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                    <span style={{ fontSize: '.65rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-mono)' }}>or</span>
-                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                  </div>
-                  {/* Email magic link */}
-                  {showEmailForm ? (
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <input
-                        type="email"
-                        placeholder="your@email.com"
-                        value={emailInput}
-                        onChange={e => setEmailInput(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && signInWithEmail()}
-                        style={{
-                          flex: 1, padding: '.45rem .6rem', borderRadius: '7px',
-                          border: '1px solid rgba(255,255,255,0.18)',
-                          background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
-                          fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)',
-                          outline: 'none',
-                        }}
-                      />
-                      <button onClick={signInWithEmail} style={{
-                        padding: '.45rem .7rem', borderRadius: '7px', flexShrink: 0,
-                        background: 'var(--terra)', border: 'none',
-                        color: '#fff', fontSize: '.78rem', cursor: 'pointer',
-                        fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
-                      }}>Send</button>
-                    </div>
-                  ) : (
-                    <button onClick={() => setShowEmailForm(true)} style={{
-                      width: '100%', padding: '.5rem', borderRadius: '8px',
-                      border: '1.5px solid rgba(255,255,255,0.15)',
-                      background: 'transparent', color: 'rgba(255,255,255,0.55)',
-                      fontSize: '.8rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
-                      textAlign: 'center',
-                    }}>Sign in with email</button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Saved recipes */}
-            <div style={{ padding: '12px 16px' }}>
-              <div style={{
-                fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
-                textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px',
-              }}>Saved recipes</div>
-
-              {!user ? (
-                <div style={{
-                  fontSize: '.78rem', color: 'rgba(255,255,255,0.3)',
-                  fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic',
-                }}>Sign in to see your saved recipes</div>
-              ) : loadingRecipes ? (
-                <div style={{
-                  fontSize: '.78rem', color: 'rgba(255,255,255,0.3)',
-                  fontFamily: 'var(--font-dm-sans)',
-                }}>Loading…</div>
-              ) : recipes.length === 0 ? (
-                <div style={{
-                  fontSize: '.78rem', color: 'rgba(255,255,255,0.3)',
-                  fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic',
-                }}>No saved recipes yet</div>
-              ) : (
-                <div style={{
-                  display: 'flex', flexDirection: 'column', gap: '8px',
-                  maxHeight: '320px', overflowY: 'auto',
-                }}>
-                  {recipes.map(r => (
-                    <RecipeCard
-                      key={r.id}
-                      r={r}
-                      onUpdate={handleFieldBlur}
-                      onLoad={r2 => { onLoadRecipe?.(r2); setMenuOpen(false); }}
-                      onDelete={handleDeleteRecipe}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          </>
-        )}
       </div>
 
       {/* Centre: logo + tagline (absolute so it stays truly centred) */}
@@ -605,5 +381,176 @@ export default function Header({
         <div style={{ width: '42px', flexShrink: 0 }} />
       )}
     </header>
+
+    {/* Drawer rendered via portal — outside header stacking context */}
+    {menuOpen && typeof document !== 'undefined' && createPortal(
+      <>
+        {/* Scrim */}
+        <div
+          onClick={() => setMenuOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 199 }}
+        />
+        {/* Drawer panel */}
+        <div style={{
+          position: 'fixed', top: 0, left: 0, bottom: 0, width: '300px',
+          background: '#1A1612', borderRight: '1px solid rgba(255,255,255,0.12)',
+          boxShadow: '4px 0 24px rgba(0,0,0,0.5)', zIndex: 200,
+          overflowY: 'auto', display: 'flex', flexDirection: 'column',
+          animation: 'slideInLeft 0.25s ease',
+        }}>
+          {/* Drawer header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '16px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <img src="/logo-mark.png" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }}/>
+              <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700, color: 'var(--cream)' }}>
+                Baker Hub
+              </span>
+            </div>
+            <button
+              onClick={() => setMenuOpen(false)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--smoke)', fontSize: '1.2rem', cursor: 'pointer', padding: '4px 8px', lineHeight: 1 }}
+            >✕</button>
+          </div>
+
+          {/* Language + Units */}
+          {([
+            {
+              label: 'Language',
+              options: [
+                { key: 'en', display: 'EN', active: locale === 'en', onSelect: () => { router.replace(pathname, { locale: 'en' }); setMenuOpen(false); } },
+                { key: 'fr', display: 'FR', active: locale === 'fr', onSelect: () => { router.replace(pathname, { locale: 'fr' }); setMenuOpen(false); } },
+              ],
+            },
+            {
+              label: 'Units',
+              options: [
+                { key: 'metric',   display: 'g/°C',   active: units === 'metric',   onSelect: () => onUnitsChange?.('metric') },
+                { key: 'imperial', display: 'oz/°F',  active: units === 'imperial', onSelect: () => onUnitsChange?.('imperial') },
+              ],
+            },
+          ] as const).map(row => (
+            <div key={row.label} style={{
+              padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span style={{
+                fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                textTransform: 'uppercase', letterSpacing: '.06em',
+              }}>{row.label}</span>
+              <div style={{ display: 'flex', gap: '.25rem' }}>
+                {row.options.map(opt => (
+                  <button key={opt.key} onClick={opt.onSelect} style={{
+                    minWidth: '48px', padding: '.22rem .4rem', borderRadius: '5px',
+                    border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)',
+                    fontSize: '.75rem', fontWeight: 600, textAlign: 'center',
+                    background: opt.active ? 'var(--terra)' : 'transparent',
+                    color: opt.active ? '#fff' : 'var(--smoke)',
+                  }}>{opt.display}</button>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* Auth */}
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            {user ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.5rem' }}>
+                <span style={{
+                  fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
+                }}>{user.email}</span>
+                <button onClick={signOut} style={{
+                  padding: '.3rem .65rem', borderRadius: '7px', flexShrink: 0,
+                  border: '1.5px solid rgba(255,255,255,0.15)', background: 'transparent',
+                  color: 'var(--smoke)', fontSize: '.7rem', cursor: 'pointer',
+                  fontFamily: 'var(--font-dm-sans)',
+                }}>Sign out</button>
+              </div>
+            ) : emailSent ? (
+              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', textAlign: 'center', padding: '.25rem 0' }}>
+                Check your inbox — link sent ✓
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button onClick={signInWithGoogle} style={{
+                  width: '100%', padding: '.5rem', borderRadius: '8px',
+                  border: '1.5px solid rgba(255,255,255,0.15)',
+                  background: 'rgba(255,255,255,0.06)', color: 'var(--cream)',
+                  fontSize: '.8rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                  fontWeight: 500, textAlign: 'center',
+                }}>Sign in with Google</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                  <span style={{ fontSize: '.65rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-mono)' }}>or</span>
+                  <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                </div>
+                {showEmailForm ? (
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <input
+                      type="email" placeholder="your@email.com"
+                      value={emailInput} onChange={e => setEmailInput(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && signInWithEmail()}
+                      style={{
+                        flex: 1, padding: '.45rem .6rem', borderRadius: '7px',
+                        border: '1px solid rgba(255,255,255,0.18)',
+                        background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
+                        fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)', outline: 'none',
+                      }}
+                    />
+                    <button onClick={signInWithEmail} style={{
+                      padding: '.45rem .7rem', borderRadius: '7px', flexShrink: 0,
+                      background: 'var(--terra)', border: 'none',
+                      color: '#fff', fontSize: '.78rem', cursor: 'pointer',
+                      fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
+                    }}>Send</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setShowEmailForm(true)} style={{
+                    width: '100%', padding: '.5rem', borderRadius: '8px',
+                    border: '1.5px solid rgba(255,255,255,0.15)',
+                    background: 'transparent', color: 'rgba(255,255,255,0.55)',
+                    fontSize: '.8rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                    textAlign: 'center',
+                  }}>Sign in with email</button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Saved recipes */}
+          <div style={{ padding: '12px 16px' }}>
+            <div style={{
+              fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+              textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px',
+            }}>Saved recipes</div>
+            {!user ? (
+              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+                Sign in to see your saved recipes
+              </div>
+            ) : loadingRecipes ? (
+              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>Loading…</div>
+            ) : recipes.length === 0 ? (
+              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>No saved recipes yet</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto' }}>
+                {recipes.map(r => (
+                  <RecipeCard
+                    key={r.id} r={r}
+                    onUpdate={handleFieldBlur}
+                    onLoad={r2 => { onLoadRecipe?.(r2); setMenuOpen(false); }}
+                    onDelete={handleDeleteRecipe}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </>,
+      document.body
+    )}
+    </>
   );
 }
