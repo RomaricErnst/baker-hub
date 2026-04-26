@@ -170,6 +170,7 @@ interface Props {
   onStyleChange?: (style: string) => void;
   activeStyleKey?: string;
   onStyleKeyChange?: (key: string) => void;
+  doughConfigured?: boolean;
 }
 
 // ─── Sub-region maps ─────────────────────────────────────────
@@ -1228,7 +1229,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured }: Props) {
   const l = locale as 'en' | 'fr';
 
   // Filter state
@@ -1966,21 +1967,21 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', gap: '3px' }}>
-                  {Array.from({ length: Math.min(numItems, 10) }, (_, i) => (
+                  {Array.from({ length: doughConfigured ? Math.min(numItems, 10) : Math.min(Math.max(totalQty, 1), 10) }, (_, i) => (
                     <div key={i} style={{
                       width: '8px', height: '8px', borderRadius: '50%',
                       background: i < totalQty
-                        ? (totalQty >= numItems ? '#6B7A5A' : '#C4522A')
+                        ? (doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#C4522A')
                         : '#3D3530',
                     }} />
                   ))}
                 </div>
                 <span style={{
                   fontSize: '11px',
-                  color: totalQty >= numItems ? '#6B7A5A' : '#C4522A',
+                  color: doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#C4522A',
                   fontFamily: 'DM Mono, monospace', fontWeight: 600,
                 }}>
-                  {totalQty}/{numItems}
+                  {doughConfigured ? `${totalQty}/${numItems}` : `${totalQty}`}
                 </span>
                 {totalQty > 0 && (
                   <span
@@ -2191,21 +2192,21 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ display: 'flex', gap: '3px' }}>
-            {Array.from({ length: Math.min(numItems, 10) }, (_, i) => (
+            {Array.from({ length: doughConfigured ? Math.min(numItems, 10) : Math.min(Math.max(totalQty, 1), 10) }, (_, i) => (
               <div key={i} style={{
                 width: '8px', height: '8px', borderRadius: '50%',
                 background: i < totalQty
-                  ? (totalQty >= numItems ? '#6B7A5A' : '#C4522A')
+                  ? (doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#C4522A')
                   : '#3D3530',
               }} />
             ))}
           </div>
           <span style={{
             fontSize: '11px',
-            color: totalQty >= numItems ? '#6B7A5A' : '#C4522A',
+            color: doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#C4522A',
             fontFamily: 'DM Mono, monospace', fontWeight: 600,
           }}>
-            {totalQty}/{numItems}
+            {doughConfigured ? `${totalQty}/${numItems}` : `${totalQty}`}
           </span>
           {totalQty > 0 && (
             <span

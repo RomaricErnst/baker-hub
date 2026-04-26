@@ -734,16 +734,14 @@ export default function Home() {
             borderBottom: '1px solid #2D2824',
           }}>
             {/* ── Journey bar ── */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0 4px',
-            }}>
+            <div style={{ display: 'flex' }}>
               <button
-                onClick={() => setActiveTab('setup')}
+                onClick={() => { setActiveTab('setup'); setNavHidden(false); }}
                 style={{
-                  padding: '7px 12px',
-                  fontSize: '11px',
+                  flex: 1,
+                  textAlign: 'center',
+                  padding: '10px 8px',
+                  fontSize: '13px',
                   fontWeight: activeTab !== 'pizzaparty' ? 600 : 400,
                   color: activeTab !== 'pizzaparty' ? '#C4522A' : '#8A7F78',
                   background: 'transparent',
@@ -751,7 +749,6 @@ export default function Home() {
                   borderBottom: activeTab !== 'pizzaparty' ? '2px solid #C4522A' : '2px solid transparent',
                   cursor: 'pointer',
                   fontFamily: 'DM Sans, sans-serif',
-                  whiteSpace: 'nowrap',
                 }}
               >
                 {t('tabs.myDough')}
@@ -759,10 +756,12 @@ export default function Home() {
 
               {pizzaPartyEnabled && (
                 <button
-                  onClick={() => setActiveTab('pizzaparty')}
+                  onClick={() => { setActiveTab('pizzaparty'); setNavHidden(false); }}
                   style={{
-                    padding: '7px 12px',
-                    fontSize: '11px',
+                    flex: 1,
+                    textAlign: 'center',
+                    padding: '10px 8px',
+                    fontSize: '13px',
                     fontWeight: activeTab === 'pizzaparty' ? 600 : 400,
                     color: activeTab === 'pizzaparty' ? '#B8903A' : '#8A7F78',
                     background: 'transparent',
@@ -770,7 +769,6 @@ export default function Home() {
                     borderBottom: activeTab === 'pizzaparty' ? '2px solid #B8903A' : '2px solid transparent',
                     cursor: 'pointer',
                     fontFamily: 'DM Sans, sans-serif',
-                    whiteSpace: 'nowrap',
                   }}
                 >
                   {t('tabs.myPizzaParty')}
@@ -787,6 +785,7 @@ export default function Home() {
         {/* ── Hero + bake type picker ── */}
         {activeTab === 'setup' && (
         <div ref={modeSelectorRef} style={{ textAlign: 'center', marginBottom: '16px' }}>
+          {!bakeType && (
           <h1 style={{
             fontFamily: 'var(--font-playfair)',
             fontSize: 'clamp(1.4rem, 5vw, 2rem)',
@@ -800,6 +799,7 @@ export default function Home() {
               {t('hero.headlineEm')}
             </em>
           </h1>
+          )}
 
           {/* Pizza / Bread picker — full cards before selection, compact toggle after */}
           {!bakeType && (
@@ -1371,6 +1371,7 @@ export default function Home() {
                   t={t}
                   activeTab={pizzaPartyTab}
                   onTabChange={setPizzaPartyTab}
+                  doughConfigured={!!styleKey}
                 />
               </div>
             )}
@@ -2305,6 +2306,7 @@ export default function Home() {
                   t={t}
                   activeTab={pizzaPartyTab}
                   onTabChange={setPizzaPartyTab}
+                  doughConfigured={!!styleKey}
                 />
               </div>
             )}

@@ -325,7 +325,7 @@ export default function Header({
       borderBottom: '2px solid var(--terra)',
     }}>
       {/* Left: ☰ menu button */}
-      <div ref={menuRef} style={{ position: 'relative' }}>
+      <div ref={menuRef}>
         <button
           onClick={() => setMenuOpen(v => !v)}
           aria-label="Menu"
@@ -345,15 +345,61 @@ export default function Header({
           ))}
         </button>
 
-        {/* Dropdown panel */}
+        {/* Slide-in drawer */}
         {menuOpen && (
-          <div style={{
-            position: 'absolute', top: 'calc(100% + 8px)', left: 0,
-            width: '300px', background: '#1A1612',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
-            overflow: 'hidden', zIndex: 200,
-          }}>
+          <>
+            {/* Scrim — tap to close */}
+            <div
+              onClick={() => setMenuOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.45)',
+                zIndex: 199,
+              }}
+            />
+            {/* Drawer panel */}
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              width: '300px',
+              background: '#1A1612',
+              borderRight: '1px solid rgba(255,255,255,0.12)',
+              boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
+              zIndex: 200,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
+              {/* Drawer header */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 16px 12px',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <img src="/logo-mark.png" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }}/>
+                  <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700, color: 'var(--cream)' }}>
+                    Baker Hub
+                  </span>
+                </div>
+                <button
+                  onClick={() => setMenuOpen(false)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--smoke)',
+                    fontSize: '1.2rem',
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    lineHeight: 1,
+                  }}
+                >✕</button>
+              </div>
 
             {/* Language + Units — unified toggle style */}
             {([
@@ -511,6 +557,7 @@ export default function Header({
               )}
             </div>
           </div>
+          </>
         )}
       </div>
 
@@ -540,12 +587,13 @@ export default function Header({
         <button
           onClick={onStartOver}
           style={{
-            fontSize: '8px',
-            color: '#6B6460',
+            fontSize: '11px',
+            fontWeight: 500,
+            color: '#8A7F78',
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',
-            padding: '4px 8px',
+            padding: '6px 10px',
             fontFamily: 'DM Sans, sans-serif',
             flexShrink: 0,
             whiteSpace: 'nowrap',
