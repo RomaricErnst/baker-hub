@@ -352,93 +352,6 @@ function FlavorSlider({ leftLabel, rightLabel, value, onChange }: {
   );
 }
 
-// ─── Filter group (3-column grid with subtitle) ───────────────
-function FilterGroup({ label, items }: {
-  label: string;
-  items: { key: string; title: string; badge?: string; open: boolean; onToggle: () => void; children: React.ReactNode }[];
-}) {
-  const openItem = items.find(i => i.open);
-  return (
-    <div style={{ borderBottom: '0.5px solid #F0EBE3', paddingBottom: '4px' }}>
-      {/* Group subtitle */}
-      <div style={{
-        fontSize: '10px', fontWeight: 700, color: '#1A1612',
-        textTransform: 'uppercase', letterSpacing: '0.1em',
-        padding: '10px 12px 3px',
-        fontFamily: 'DM Mono, monospace',
-        display: 'flex', alignItems: 'center', gap: '6px',
-      }}>
-        <span style={{
-          width: '5px', height: '5px', borderRadius: '50%',
-          background: '#C4522A', flexShrink: 0, display: 'inline-block',
-        }} />
-        {label}
-      </div>
-      {/* Header row — 3 columns or full width if single item */}
-      <div style={{ display: 'grid', gridTemplateColumns: items.length === 1 ? '1fr' : '1fr 1fr 1fr' }}>
-        {items.map(item => (
-          <div
-            key={item.key}
-            onClick={item.onToggle}
-            style={{
-              display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '5px 8px',
-              margin: '3px 4px',
-              cursor: 'pointer',
-              borderRadius: '8px',
-              border: item.open
-                ? '1px solid rgba(196,82,42,0.3)'
-                : '1px solid rgba(26,22,18,0.07)',
-              background: item.open
-                ? 'rgba(196,82,42,0.07)'
-                : 'rgba(26,22,18,0.03)',
-              transition: 'all 0.12s',
-            }}
-          >
-            <span style={{
-              fontSize: '10px',
-              color: item.open ? '#C4522A' : '#3D3530',
-              textTransform: 'uppercase', letterSpacing: '0.08em',
-              fontWeight: item.open ? 700 : 500,
-              fontFamily: 'DM Sans, sans-serif',
-              display: 'flex', alignItems: 'center', gap: '4px',
-            }}>
-              {item.title}
-              {item.badge && (
-                <span style={{
-                  background: '#C4522A', color: 'white',
-                  borderRadius: '10px', fontSize: '8px',
-                  padding: '1px 5px', fontWeight: 600,
-                }}>
-                  {item.badge}
-                </span>
-              )}
-            </span>
-            <span style={{
-              fontSize: '11px',
-              color: item.open ? '#C4522A' : '#8A7F78',
-              transform: item.open ? 'rotate(180deg)' : 'none',
-              transition: 'all 0.15s', display: 'inline-block',
-              marginLeft: '3px', flexShrink: 0,
-            }}>⌄</span>
-          </div>
-        ))}
-      </div>
-      {/* Full-width expanded content */}
-      {openItem && (
-        <div style={{
-          borderTop: '0.5px solid #F0EBE3',
-          background: '#FDFBF7',
-          padding: '10px 12px 12px',
-        }}>
-          {openItem.children}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Filter section ───────────────────────────────────────────
 
 function FilterSection({ title, badge, open, onToggle, children }: {
@@ -1305,6 +1218,13 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // Dessert expanded
   const [dessertOpen, setDessertOpen] = useState(false);
 
+  // Filter sheet + ingredient sheet state
+  const [filterSheetKey, setFilterSheetKey] = useState<string | null>(null);
+  const [ingTab, setIngTab] = useState<string>('Cheese & Dairy');
+  const [ingSearch, setIngSearch] = useState('');
+  const [summarySheetOpen, setSummarySheetOpen] = useState(false);
+  const [dessertSheetOpen, setDessertSheetOpen] = useState(false);
+
   // Style picker popup
   const [showStylePicker, setShowStylePicker] = useState(false);
 
@@ -1412,20 +1332,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // ── Render ──────────────────────────────────────────────────
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', paddingBottom: '56px' }}>
-
-      {/* ── 3 navigation pills ── */}
-      {!hidePillBar && (
-        <div style={{ display: 'flex', gap: '6px', padding: '8px 12px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
-          {(['pizzas', 'shopping', 'party'] as const).map(pill => (
-            <div key={pill} style={S.navPill(activePill === pill)} onClick={() => onPillChange(pill)}>
-              {pill === 'pizzas'   ? t('pizzaParty.pill.pizzas')
-                : pill === 'shopping' ? t('pizzaParty.pill.shopping')
-                : t('pizzaParty.pill.partyTime')}
-            </div>
-          ))}
-        </div>
-      )}
+    <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', paddingBottom: '80px' }}>
 
       {/* ══════════════════════════════════════
           PIZZAS pill
@@ -1478,336 +1385,502 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
       {activePill === 'pizzas' && (
         <>
-          {/* ── Filter panel ── */}
-          <div style={{ background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
+          {/* ── Chip row: 4 priority + More ── */}
+          <div style={{
+            display: 'flex',
+            gap: '6px',
+            padding: '8px 10px',
+            background: '#FDFBF7',
+            borderBottom: '1px solid #E0D8CF',
+            overflowX: 'auto',
+            scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
+            WebkitOverflowScrolling: 'touch',
+            flexShrink: 0,
+            alignItems: 'center',
+          }}>
+            {([
+              { key: 'occasion',   label: l === 'fr' ? 'Occasion' : 'Occasion',    count: filter.occasion.length },
+              { key: 'diet',       label: l === 'fr' ? 'Régime'   : 'Diet',         count: filter.dietary.length },
+              { key: 'complexity', label: l === 'fr' ? 'Complexité': 'Complexity',  count: filter.complexity !== null ? 1 : 0 },
+              { key: 'ingredient', label: l === 'fr' ? 'Ingrédient': 'Ingredient',  count: (filter.ingredientChips ?? []).length + (filter.ingredientSearch ? 1 : 0) },
+            ] as const).map(chip => (
+              <button
+                key={chip.key}
+                onClick={() => setFilterSheetKey(chip.key)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '6px 11px',
+                  borderRadius: '20px',
+                  border: chip.count > 0 ? '1px solid #C4522A' : '1px solid #E0D8CF',
+                  background: chip.count > 0 ? '#FBF0EB' : '#FDFBF7',
+                  color: chip.count > 0 ? '#993C1D' : '#3D3530',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap' as const,
+                  flexShrink: 0,
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontWeight: chip.count > 0 ? 500 : 400,
+                }}
+              >
+                {chip.label}
+                {chip.count > 0 && (
+                  <span style={{
+                    background: '#C4522A', color: '#fff',
+                    borderRadius: '50%', width: '15px', height: '15px',
+                    fontSize: '9px', display: 'inline-flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 700, flexShrink: 0,
+                  }}>
+                    {chip.count}
+                  </span>
+                )}
+              </button>
+            ))}
+            <button
+              onClick={() => setFilterSheetKey('more')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                padding: '6px 11px', borderRadius: '20px',
+                border: (() => {
+                  const moreCnt = (filter.base !== null ? 1 : 0)
+                    + (filter.region !== null ? 1 : 0)
+                    + (filter.season !== 'all' ? 1 : 0)
+                    + filter.wine.length
+                    + (filter.budget !== null ? 1 : 0);
+                  return moreCnt > 0 ? '1px solid #3D3530' : '1px solid #8A7F78';
+                })(),
+                background: '#FDFBF7', color: '#8A7F78',
+                fontSize: '12px', cursor: 'pointer',
+                whiteSpace: 'nowrap' as const, flexShrink: 0,
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+            >
+              {l === 'fr' ? 'Plus ▾' : 'More ▾'}
+              {(() => {
+                const moreCnt = (filter.base !== null ? 1 : 0)
+                  + (filter.region !== null ? 1 : 0)
+                  + (filter.season !== 'all' ? 1 : 0)
+                  + filter.wine.length
+                  + (filter.budget !== null ? 1 : 0);
+                return moreCnt > 0 ? (
+                  <span style={{
+                    background: '#3D3530', color: '#fff',
+                    borderRadius: '50%', width: '15px', height: '15px',
+                    fontSize: '9px', display: 'inline-flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 700, flexShrink: 0,
+                  }}>{moreCnt}</span>
+                ) : null;
+              })()}
+            </button>
+          </div>
 
-            {/* ── Group 1: The Basics ── */}
-            <FilterGroup
-              label={l === 'fr' ? 'L\'essentiel' : 'The Basics'}
-              items={[
-                ...(!Object.values(filterCounts.occasion).every(c => c === 0) ? [{
-                  key: 'occasion', title: l === 'fr' ? 'Occasion' : 'Occasion',
-                  badge: filter.occasion.length > 0 ? `${filter.occasion.length}` : undefined,
-                  open: open.occasion, onToggle: () => togOpen('occasion'),
-                  children: (
-                    <div style={S.pillRow}>
+          {/* ── Active filter chips row ── */}
+          {(() => {
+            const activeChips: { label: string; onRemove: () => void }[] = [];
+            filter.occasion.forEach(o => activeChips.push({
+              label: OCCASION_LABELS[o][l],
+              onRemove: () => toggleOccasion(o),
+            }));
+            filter.dietary.forEach(d => activeChips.push({
+              label: d,
+              onRemove: () => toggleDietary(d),
+            }));
+            if (filter.complexity !== null) {
+              const cLabels: Record<number, string> = { 1: l === 'fr' ? 'Sans cuisson' : 'No cook', 2: l === 'fr' ? 'Léger' : 'Light prep', 3: l === 'fr' ? 'Cuisiné' : 'Cooked', 4: l === 'fr' ? 'Chef' : 'Chef level' };
+              activeChips.push({ label: cLabels[filter.complexity] ?? String(filter.complexity), onRemove: () => setComplexity(null) });
+            }
+            (filter.ingredientChips ?? []).forEach(ic => activeChips.push({
+              label: ic,
+              onRemove: () => setFilter((p: FilterState) => ({ ...p, ingredientChips: (p.ingredientChips ?? []).filter(c => c !== ic) })),
+            }));
+            if (filter.base !== null) activeChips.push({ label: BASE_LABELS[filter.base][l], onRemove: () => setBase(null) });
+            if (filter.region !== null) activeChips.push({ label: REGION_NAMES[filter.region][l], onRemove: () => setRegion(null) });
+            if (filter.season !== 'all') activeChips.push({ label: SEASON_LABELS[filter.season][l], onRemove: () => setSeason('all') });
+            filter.wine.forEach(w => activeChips.push({ label: WINE_CATEGORY_LABELS[w][l], onRemove: () => toggleWine(w) }));
+            if (filter.budget !== null) activeChips.push({ label: BUDGET_LABELS[filter.budget][l], onRemove: () => setBudget(null) });
+            if (activeChips.length === 0) return null;
+            return (
+              <div style={{
+                display: 'flex', flexWrap: 'wrap', gap: '5px',
+                padding: '6px 10px',
+                background: '#FDFBF7',
+                borderBottom: '1px solid #E0D8CF',
+              }}>
+                {activeChips.map((chip, i) => (
+                  <span
+                    key={i}
+                    onClick={chip.onRemove}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '4px',
+                      padding: '4px 8px', borderRadius: '20px',
+                      border: '1px solid #C4522A', background: '#FBF0EB',
+                      fontSize: '11px', color: '#993C1D', cursor: 'pointer',
+                      whiteSpace: 'nowrap' as const,
+                    }}
+                  >
+                    {chip.label}
+                    <span style={{ fontSize: '13px', lineHeight: 1, color: '#C4522A' }}>×</span>
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* ── Filter bottom sheet ── */}
+          {filterSheetKey !== null && (
+            <>
+              <div
+                onClick={() => setFilterSheetKey(null)}
+                style={{ position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.5)', zIndex: 150 }}
+              />
+              <div
+                onClick={e => e.stopPropagation()}
+                style={{
+                  position: 'fixed', bottom: 0, left: 0, right: 0,
+                  background: '#FDFBF7',
+                  borderRadius: '20px 20px 0 0',
+                  maxHeight: filterSheetKey === 'more' ? '80vh' : '65vh',
+                  zIndex: 151,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}
+              >
+                <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px 10px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#1A1612', fontFamily: 'Playfair Display, serif' }}>
+                    {filterSheetKey === 'occasion'   ? (l === 'fr' ? 'Occasion' : 'Occasion')
+                    : filterSheetKey === 'diet'       ? (l === 'fr' ? 'Régime alimentaire' : 'Diet')
+                    : filterSheetKey === 'complexity' ? (l === 'fr' ? 'Complexité' : 'Complexity')
+                    : filterSheetKey === 'ingredient' ? (l === 'fr' ? 'Par ingrédient' : 'By Ingredient')
+                    : (l === 'fr' ? 'Plus de filtres' : 'More filters')}
+                  </span>
+                  <button
+                    onClick={() => setFilterSheetKey(null)}
+                    style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F5F0E8', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >✕</button>
+                </div>
+                <div style={{ overflowY: 'auto', flex: 1, paddingBottom: '8px' }}>
+
+                  {filterSheetKey === 'occasion' && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '10px 14px' }}>
                       {(['classic','spicy','kids','party','impress','quick'] as OccasionTag[]).map(o => {
                         if (filterCounts.occasion[o] === 0 && !filter.occasion.includes(o)) return null;
+                        const active = filter.occasion.includes(o);
                         return (
-                          <span key={o} style={S.pill(filter.occasion.includes(o))} onClick={() => toggleOccasion(o)}>
+                          <span key={o} onClick={() => toggleOccasion(o)} style={S.pill(active, 'terra')}>
                             {OCCASION_LABELS[o][l]}
                           </span>
                         );
                       })}
                     </div>
-                  ),
-                }] : []),
-                ...(!Object.values(filterCounts.base).every(c => c === 0) ? [{
-                  key: 'base', title: l === 'fr' ? 'Base' : 'Base',
-                  badge: filter.base !== null ? '1' : undefined,
-                  open: open.base, onToggle: () => togOpen('base'),
-                  children: (
-                    <div style={S.pillRow}>
-                      <span style={S.pill(filter.base === null, 'terra')} onClick={() => setBase(null)}>
-                        {l === 'fr' ? 'Toutes' : 'All'}
-                      </span>
-                      {(['tomato_raw','tomato_cooked','bianca_cream','bianca_oil','bianca_ricotta','pesto','nduja','bbq'] as BaseType[]).map(b => {
-                        if (filterCounts.base[b] === 0 && filter.base !== b) return null;
+                  )}
+
+                  {filterSheetKey === 'diet' && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '10px 14px' }}>
+                      {([
+                        ['veg', l === 'fr' ? 'Végétarien' : 'Vegetarian'],
+                        ['vegan', 'Vegan'],
+                        ['pescatarian', l === 'fr' ? 'Pescatarien' : 'Pescatarian'],
+                        ['dairy_free', l === 'fr' ? 'Sans lactose' : 'Dairy-free'],
+                      ] as [DietaryTag, string][]).map(([d, label]) => {
+                        const active = filter.dietary.includes(d);
                         return (
-                          <span key={b} style={S.pill(filter.base === b, 'terra')}
-                            onClick={() => setBase(filter.base === b ? null : b)}>
-                            {BASE_LABELS[b][l]}
+                          <span key={d} onClick={() => toggleDietary(d)} style={S.pill(active, 'terra')}>
+                            {label}
                           </span>
                         );
                       })}
                     </div>
-                  ),
-                }] : []),
-                ...(!Object.values(filterCounts.region).every(c => c === 0) ? [{
-                  key: 'region', title: l === 'fr' ? 'Région' : 'Region',
-                  badge: regionParent !== 'all' ? (regionParent === 'italy' ? '🇮🇹' : regionParent === 'france' ? '🇫🇷' : '🌍') : undefined,
-                  open: open.region, onToggle: () => togOpen('region'),
-                  children: (
+                  )}
+
+                  {filterSheetKey === 'complexity' && (
+                    <div style={{ margin: '12px 14px' }}>
+                      <div style={{ display: 'flex', border: '1px solid #E0D8CF', borderRadius: '8px', overflow: 'hidden' }}>
+                        {([
+                          [null,  l === 'fr' ? 'Tous' : 'All'],
+                          [1,     l === 'fr' ? 'Sans cuisson' : 'No cook'],
+                          [2,     l === 'fr' ? 'Léger' : 'Light prep'],
+                          [3,     l === 'fr' ? 'Cuisiné' : 'Cooked'],
+                          [4,     l === 'fr' ? 'Chef' : 'Chef level'],
+                        ] as [ComplexityTier | null, string][]).map(([v, label]) => {
+                          const active = filter.complexity === v;
+                          return (
+                            <div
+                              key={String(v)}
+                              onClick={() => setComplexity(v)}
+                              style={{
+                                flex: 1, padding: '9px 4px', textAlign: 'center', fontSize: '11px',
+                                background: active ? '#C4522A' : '#FDFBF7',
+                                color: active ? '#fff' : '#8A7F78',
+                                fontWeight: active ? 600 : 400,
+                                cursor: 'pointer', transition: 'all 0.1s',
+                                fontFamily: 'DM Sans, sans-serif',
+                                borderRight: '1px solid #E0D8CF',
+                              }}
+                            >
+                              {label}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {filterSheetKey === 'ingredient' && (
                     <>
-                      <div style={S.pillRow}>
-                        {(['all','italy','france','fusion'] as const).map(r => (
-                          <span key={r} style={S.pill(regionParent === r, 'terra')}
-                            onClick={() => { setRegionParent(r); setRegion(null); }}>
-                            {r === 'all' ? (l === 'fr' ? 'Toutes' : 'All')
+                      <div style={{ padding: '8px 14px 4px' }}>
+                        <input
+                          type="text"
+                          placeholder={l === 'fr' ? 'Rechercher un ingrédient...' : 'Search ingredients...'}
+                          value={ingSearch}
+                          onChange={e => setIngSearch(e.target.value)}
+                          style={{
+                            width: '100%', padding: '8px 10px',
+                            border: '1px solid #E0D8CF', borderRadius: '8px',
+                            fontSize: '13px', color: '#1A1612',
+                            background: '#FDFBF7', fontFamily: 'DM Sans, sans-serif',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                      {!ingSearch && (
+                        <div style={{ display: 'flex', borderBottom: '1px solid #E0D8CF' }}>
+                          {INGREDIENT_CHIPS.map(cat => {
+                            const tabLabel = l === 'fr' ? cat.category.fr : cat.category.en;
+                            const isActive = ingTab === tabLabel;
+                            return (
+                              <div
+                                key={cat.category.en}
+                                onClick={() => setIngTab(tabLabel)}
+                                style={{
+                                  flex: 1, padding: '8px 4px', textAlign: 'center',
+                                  fontSize: '11px', cursor: 'pointer',
+                                  color: isActive ? '#C4522A' : '#8A7F78',
+                                  borderBottom: isActive ? '2px solid #C4522A' : '2px solid transparent',
+                                  fontWeight: isActive ? 700 : 400,
+                                  fontFamily: 'DM Sans, sans-serif',
+                                  whiteSpace: 'nowrap' as const, overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                }}
+                              >
+                                {tabLabel.split(' ')[0]}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 14px' }}>
+                        {(ingSearch
+                          ? INGREDIENT_CHIPS.flatMap(c => c.items).filter(item => {
+                              const name = l === 'fr' ? item.fr : item.en;
+                              return name.toLowerCase().includes(ingSearch.toLowerCase());
+                            })
+                          : (INGREDIENT_CHIPS.find(c => {
+                              const label = l === 'fr' ? c.category.fr : c.category.en;
+                              return label === ingTab;
+                            })?.items ?? INGREDIENT_CHIPS[0].items)
+                        ).map(item => {
+                          const label = l === 'fr' ? item.fr : item.en;
+                          const active = (filter.ingredientChips ?? []).includes(item.search);
+                          return (
+                            <span
+                              key={item.search}
+                              onClick={() => setFilter((p: FilterState) => {
+                                const chips = p.ingredientChips ?? [];
+                                return {
+                                  ...p,
+                                  ingredientChips: active
+                                    ? chips.filter(c => c !== item.search)
+                                    : [...chips, item.search],
+                                };
+                              })}
+                              style={{
+                                padding: '7px 12px', borderRadius: '20px',
+                                border: active ? '1px solid #C4522A' : '1px solid #E0D8CF',
+                                background: active ? '#C4522A' : '#FDFBF7',
+                                color: active ? '#fff' : '#3D3530',
+                                fontSize: '12px', cursor: 'pointer',
+                                transition: 'all 0.12s', fontFamily: 'DM Sans, sans-serif',
+                              }}
+                            >
+                              {label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+
+                  {filterSheetKey === 'more' && (
+                    <>
+                      <FilterSection
+                        title={l === 'fr' ? 'Base' : 'Base'}
+                        badge={filter.base !== null ? '1' : undefined}
+                        open={open.base}
+                        onToggle={() => togOpen('base')}
+                      >
+                        <div style={S.pillRow}>
+                          <span style={S.pill(filter.base === null, 'terra')} onClick={() => setBase(null)}>
+                            {l === 'fr' ? 'Toutes' : 'All'}
+                          </span>
+                          {(['tomato_raw','tomato_cooked','bianca_cream','bianca_oil','bianca_ricotta','pesto','nduja','bbq'] as BaseType[]).map(b => {
+                            if (filterCounts.base[b] === 0 && filter.base !== b) return null;
+                            return (
+                              <span key={b} style={S.pill(filter.base === b, 'terra')}
+                                onClick={() => setBase(filter.base === b ? null : b)}>
+                                {BASE_LABELS[b][l]}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </FilterSection>
+
+                      <FilterSection
+                        title={l === 'fr' ? 'Région' : 'Region'}
+                        badge={regionParent !== 'all' ? (regionParent === 'italy' ? '🇮🇹' : regionParent === 'france' ? '🇫🇷' : '🌍') : undefined}
+                        open={open.region}
+                        onToggle={() => togOpen('region')}
+                      >
+                        <div style={S.pillRow}>
+                          {(['all','italy','france','fusion'] as const).map(r => (
+                            <span key={r} style={S.pill(regionParent === r, 'terra')}
+                              onClick={() => { setRegionParent(r); setRegion(null); }}>
+                              {r === 'all' ? (l === 'fr' ? 'Toutes' : 'All')
                               : r === 'italy'  ? '🇮🇹 ' + (l === 'fr' ? 'Italie' : 'Italy')
                               : r === 'france' ? '🇫🇷 France'
                               : '🌍 Fusion'}
-                          </span>
-                        ))}
-                      </div>
-                      {(regionParent === 'italy' || regionParent === 'france') && (
-                        <div style={S.subSec}>
-                          <span style={S.subLbl}>
-                            {regionParent === 'italy'
-                              ? (l === 'fr' ? 'Régions italiennes' : 'Italian regions')
-                              : (l === 'fr' ? 'Régions françaises' : 'French regions')}
-                          </span>
-                          <div style={S.pillRow}>
-                            {(regionParent === 'italy' ? ITALY_REGIONS : FRANCE_REGIONS).map(r => {
-                              if (filterCounts.region[r] === 0 && filter.region !== r) return null;
-                              return (
-                                <span key={r} style={S.pill(filter.region === r)}
-                                  onClick={() => setRegion(filter.region === r ? null : r)}>
-                                  {REGION_NAMES[r][l]}
-                                </span>
-                              );
-                            })}
-                          </div>
+                            </span>
+                          ))}
                         </div>
-                      )}
-                    </>
-                  ),
-                }] : []),
-              ]}
-            />
-
-            {/* ── Group 2: Refine ── */}
-            <FilterGroup
-              label={l === 'fr' ? 'Affinez' : 'Refine'}
-              items={[
-                {
-                  key: 'season', title: l === 'fr' ? 'Saison' : 'Season',
-                  badge: filter.season !== 'all' ? SEASON_LABELS[filter.season][l] : undefined,
-                  open: open.season, onToggle: () => togOpen('season'),
-                  children: (
-                    <div style={S.pillRow}>
-                      {(['all','spring','summer','autumn','winter'] as Season[]).map(s => (
-                        <span key={s}
-                          style={S.pill(filter.season === s, filter.season === s && s === 'all' ? 'terra' : 'sage')}
-                          onClick={() => setSeason(s)}>
-                          {SEASON_LABELS[s][l]}{s === currentSeason && s !== 'all' ? (l === 'fr' ? ' · maintenant' : ' · now') : ''}
-                        </span>
-                      ))}
-                    </div>
-                  ),
-                },
-                {
-                  key: 'diet', title: l === 'fr' ? 'Régime' : 'Diet',
-                  badge: filter.dietary.length > 0 ? `${filter.dietary.length}` : undefined,
-                  open: open.diet, onToggle: () => togOpen('diet'),
-                  children: (
-                    <>
-                      <div style={S.subSec}>
-                        <span style={S.subLbl}>{l === 'fr' ? 'Préférence alimentaire' : 'Dietary preference'}</span>
-                        <div style={S.pillRow}>
-                          {([['veg', l === 'fr' ? 'Végétarien' : 'Vegetarian'],['vegan','Vegan'],['pescatarian', l === 'fr' ? 'Pescatarien' : 'Pescatarian']] as [DietaryTag,string][]).map(([d,label]) => {
-                            const count = filtered.filter(p => p.dietary.includes(d as DietaryTag)).length + DESSERT_PIZZAS.filter(p => p.dietary.includes(d as DietaryTag)).length;
-                            if (count === 0 && !filter.dietary.includes(d as DietaryTag)) return null;
-                            return <span key={d} style={S.pill(filter.dietary.includes(d as DietaryTag))} onClick={() => toggleDietary(d as DietaryTag)}>{label}</span>;
-                          })}
-                        </div>
-                      </div>
-                      <div style={S.subSec}>
-                        <span style={S.subLbl}>{l === 'fr' ? 'Allergènes · exclure' : 'Allergens · exclude'}</span>
-                        <div style={S.pillRow}>
-                          {([['dairy_free', l === 'fr' ? 'Sans lactose' : 'No dairy'],['no_nuts', l === 'fr' ? 'Sans noix' : 'No nuts'],['no_fish', l === 'fr' ? 'Sans poisson' : 'No fish'],['no_pork', l === 'fr' ? 'Sans porc' : 'No pork']] as [DietaryTag,string][]).map(([d,label]) => {
-                            const count = filtered.filter(p => p.dietary.includes(d as DietaryTag)).length + DESSERT_PIZZAS.filter(p => p.dietary.includes(d as DietaryTag)).length;
-                            if (count === 0 && !filter.dietary.includes(d as DietaryTag)) return null;
-                            return <span key={d} style={S.pill(filter.dietary.includes(d as DietaryTag))} onClick={() => toggleDietary(d as DietaryTag)}>{label}</span>;
-                          })}
-                        </div>
-                      </div>
-                      <div style={S.subSec}>
-                        <span style={S.subLbl}>{l === 'fr' ? 'Restrictions religieuses' : 'Religious'}</span>
-                        <div style={S.pillRow}>
-                          {(['halal','kosher'] as DietaryTag[]).map(d => {
-                            const count = filtered.filter(p => p.dietary.includes(d)).length + DESSERT_PIZZAS.filter(p => p.dietary.includes(d)).length;
-                            if (count === 0 && !filter.dietary.includes(d)) return null;
-                            return <span key={d} style={S.pill(filter.dietary.includes(d))} onClick={() => toggleDietary(d)}>{d === 'halal' ? 'Halal' : 'Kosher'}</span>;
-                          })}
-                        </div>
-                      </div>
-                    </>
-                  ),
-                },
-                {
-                  key: 'wine', title: l === 'fr' ? 'Vins' : 'Wine',
-                  badge: filter.wine.length > 0 ? `${filter.wine.length}` : undefined,
-                  open: open.wine, onToggle: () => togOpen('wine'),
-                  children: (
-                    <div style={S.subSec}>
-                      <span style={S.subLbl}>{l === 'fr' ? 'Toucher une catégorie · exemples à droite' : 'Tap a category · examples on the right'}</span>
-                      {(['lr','fr','cw','rw','sp','ro'] as WineCategory[]).map(w => (
-                        <div key={w} style={{ display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'baseline', gap: '8px', marginBottom: '6px' }}>
-                          <span style={S.winePill(filter.wine.includes(w))} onClick={() => toggleWine(w)}>{WINE_CATEGORY_LABELS[w][l]}</span>
-                          <span style={{ fontSize: '10px', color: '#8A7F78' }}>{WINE_EXAMPLES[w][l]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ),
-                },
-              ]}
-            />
-
-            {/* ── Group 3: Go Deeper ── */}
-            <FilterGroup
-              label={l === 'fr' ? 'Pour les curieux' : 'Go Deeper'}
-              items={[
-                ...(!Object.values(filterCounts.budget).every(c => c === 0) ? [{
-                  key: 'budget', title: l === 'fr' ? 'Budget' : 'Budget',
-                  badge: filter.budget !== null ? BUDGET_LABELS[filter.budget][l] : undefined,
-                  open: open.budget, onToggle: () => togOpen('budget'),
-                  children: (
-                    <div style={S.pillRow}>
-                      {([1,2,3] as BudgetTier[]).map(b => {
-                        if (filterCounts.budget[b] === 0 && filter.budget !== b) return null;
-                        return (
-                          <span key={b} style={S.pill(filter.budget === b)}
-                            onClick={() => setBudget(filter.budget === b ? null : b)}>
-                            {BUDGET_LABELS[b][l]}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  ),
-                }] : []),
-                ...(!Object.values(filterCounts.complexity).every(c => c === 0) ? [{
-                  key: 'budget_complexity', title: l === 'fr' ? 'Complexité' : 'Complexity',
-                  badge: filter.complexity !== null ? COMPLEXITY_LABELS[filter.complexity][l] : undefined,
-                  open: open.budget_complexity, onToggle: () => togOpen('budget_complexity'),
-                  children: (
-                    <div style={S.pillRow}>
-                      {([1,2,3] as ComplexityTier[]).map(c => {
-                        if (filterCounts.complexity[c] === 0 && filter.complexity !== c) return null;
-                        return (
-                          <span key={c} style={S.pill(filter.complexity === c)}
-                            onClick={() => setComplexity(filter.complexity === c ? null : c)}>
-                            {COMPLEXITY_LABELS[c][l]}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  ),
-                }] : []),
-                {
-                  key: 'flavour', title: l === 'fr' ? 'Saveurs' : 'Flavour',
-                  open: open.flavour, onToggle: () => togOpen('flavour'),
-                  children: (
-                    <div style={S.subSec}>
-                      <FlavorSlider leftLabel={l === 'fr' ? 'Léger' : 'Light'} rightLabel={l === 'fr' ? 'Riche' : 'Rich'} value={flavourUI.richness} onChange={v => updateFlavour('richness', v)} />
-                      <FlavorSlider leftLabel={l === 'fr' ? 'Délicat' : 'Delicate'} rightLabel={l === 'fr' ? 'Puissant' : 'Bold'} value={flavourUI.boldness} onChange={v => updateFlavour('boldness', v)} />
-                      <FlavorSlider leftLabel={l === 'fr' ? 'Classique' : 'Classic'} rightLabel={l === 'fr' ? 'Créatif' : 'Creative'} value={flavourUI.creative} onChange={v => updateFlavour('creative', v)} />
-                      <FlavorSlider leftLabel={l === 'fr' ? 'Réconfort' : 'Comfort'} rightLabel={l === 'fr' ? 'Raffiné' : 'Refined'} value={flavourUI.refined} onChange={v => updateFlavour('refined', v)} />
-                    </div>
-                  ),
-                },
-              ]}
-            />
-
-            <FilterGroup
-              label={l === 'fr' ? 'Par ingrédient' : 'By Ingredient'}
-              items={[
-                {
-                  key: 'ingredient',
-                  title: l === 'fr' ? 'Ingrédient' : 'Ingredient',
-                  badge: (filter.ingredientChips ?? []).length > 0 || filter.ingredientSearch
-                    ? String((filter.ingredientChips ?? []).length + (filter.ingredientSearch ? 1 : 0))
-                    : undefined,
-                  open: open.ingredient,
-                  onToggle: () => togOpen('ingredient'),
-                  children: (
-                    <div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '6px' }}>
-                        {INGREDIENT_CHIPS.map(group => (
-                          <div key={group.category.en} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <div style={{
-                              fontSize: '8px', fontWeight: 600, color: '#8A7F78',
-                              textTransform: 'uppercase', letterSpacing: '0.07em',
-                              fontFamily: 'DM Mono, monospace', paddingBottom: '5px',
-                              borderBottom: '1px solid #E8E0D5', marginBottom: '2px',
-                              textAlign: 'center', lineHeight: 1.3,
-                            }}>
-                              {l === 'fr' ? group.category.fr : group.category.en}
-                            </div>
-                            <div style={{
-                              display: 'flex', flexDirection: 'column', gap: '4px',
-                              maxHeight: '176px', overflowY: 'auto', overflowX: 'hidden',
-                              scrollbarWidth: 'thin' as React.CSSProperties['scrollbarWidth'],
-                              scrollbarColor: '#E0D8CF transparent',
-                              paddingRight: '2px',
-                            }}>
-                              {group.items.map(item => {
-                                const active = (filter.ingredientChips ?? []).includes(item.search);
+                        {(regionParent === 'italy' || regionParent === 'france') && (
+                          <div style={{ ...S.subSec, marginTop: '6px' }}>
+                            <span style={S.subLbl}>
+                              {regionParent === 'italy'
+                                ? (l === 'fr' ? 'Régions italiennes' : 'Italian regions')
+                                : (l === 'fr' ? 'Régions françaises' : 'French regions')}
+                            </span>
+                            <div style={S.pillRow}>
+                              {(regionParent === 'italy' ? ITALY_REGIONS : FRANCE_REGIONS).map(r => {
+                                if (filterCounts.region[r] === 0 && filter.region !== r) return null;
                                 return (
-                                  <span
-                                    key={item.search}
-                                    onClick={() => setFilter((prev: FilterState) => {
-                                      const chips = prev.ingredientChips ?? [];
-                                      return {
-                                        ...prev,
-                                        ingredientChips: active
-                                          ? chips.filter(c => c !== item.search)
-                                          : [...chips, item.search],
-                                      };
-                                    })}
-                                    style={{
-                                      fontSize: '12px',
-                                      padding: '12px 6px',
-                                      borderRadius: '6px',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      minHeight: '40px',
-                                      boxSizing: 'border-box' as const,
-                                      cursor: 'pointer', textAlign: 'center',
-                                      border: active ? '1px solid #C4522A' : '1px solid #E8E0D5',
-                                      background: active ? '#C4522A' : '#FDFBF7',
-                                      color: active ? 'white' : '#3D3530',
-                                      fontFamily: 'DM Sans, sans-serif',
-                                      transition: 'all 0.12s', lineHeight: 1.3,
-                                      userSelect: 'none' as React.CSSProperties['userSelect'],
-                                      whiteSpace: 'nowrap' as React.CSSProperties['whiteSpace'],
-                                      overflow: 'hidden', textOverflow: 'ellipsis',
-                                    }}
-                                  >
-                                    {l === 'fr' ? item.fr : item.en}
+                                  <span key={r} style={S.pill(filter.region === r)}
+                                    onClick={() => setRegion(filter.region === r ? null : r)}>
+                                    {REGION_NAMES[r][l]}
                                   </span>
                                 );
                               })}
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        )}
+                      </FilterSection>
 
-                      {(filter.ingredientChips ?? []).length > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '11px', color: '#C4522A', fontFamily: 'DM Sans' }}>
-                            {(filter.ingredientChips ?? []).length} {l === 'fr' ? 'sélectionné(s)' : 'selected'}
-                          </span>
-                          <button
-                            onClick={() => setFilter((p: FilterState) => ({ ...p, ingredientChips: [] }))}
-                            style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                          >
-                            · {l === 'fr' ? 'effacer' : 'clear'}
-                          </button>
+                      <FilterSection
+                        title={l === 'fr' ? 'Saison' : 'Season'}
+                        badge={filter.season !== 'all' ? SEASON_LABELS[filter.season][l] : undefined}
+                        open={open.season}
+                        onToggle={() => togOpen('season')}
+                      >
+                        <div style={S.pillRow}>
+                          {(['all','spring','summer','autumn','winter'] as Season[]).map(s => (
+                            <span key={s}
+                              style={S.pill(filter.season === s, filter.season === s && s === 'all' ? 'terra' : 'sage')}
+                              onClick={() => setSeason(s)}>
+                              {SEASON_LABELS[s][l]}{s === currentSeason && s !== 'all' ? (l === 'fr' ? ' · maintenant' : ' · now') : ''}
+                            </span>
+                          ))}
                         </div>
-                      )}
+                      </FilterSection>
 
-                      <input
-                        type="text"
-                        value={filter.ingredientSearch}
-                        onChange={e => setFilter((p: FilterState) => ({ ...p, ingredientSearch: e.target.value }))}
-                        placeholder={l === 'fr' ? 'Autre ingrédient...' : 'Other ingredient...'}
-                        style={{
-                          width: '100%', fontSize: '12px', padding: '7px 10px',
-                          borderRadius: '8px', border: '0.5px solid #E0D8CF',
-                          background: '#F5F0E8', outline: 'none', color: '#1A1612',
-                          fontFamily: 'DM Sans, sans-serif', marginTop: '8px',
-                          boxSizing: 'border-box' as React.CSSProperties['boxSizing'],
-                        }}
-                      />
-                    </div>
-                  ),
-                },
-              ]}
-            />
+                      <FilterSection
+                        title={l === 'fr' ? 'Accord vin' : 'Wine pairing'}
+                        badge={filter.wine.length > 0 ? `${filter.wine.length}` : undefined}
+                        open={open.wine}
+                        onToggle={() => togOpen('wine')}
+                      >
+                        <div style={S.pillRow}>
+                          {(Object.keys(WINE_CATEGORY_LABELS) as WineCategory[]).map(w => {
+                            const active = filter.wine.includes(w);
+                            return (
+                              <span key={w} style={S.winePill(active)} onClick={() => toggleWine(w)}>
+                                {WINE_CATEGORY_LABELS[w][l]}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </FilterSection>
 
-          </div>{/* end filter panel */}
+                      <FilterSection
+                        title={l === 'fr' ? 'Budget' : 'Budget'}
+                        badge={filter.budget !== null ? BUDGET_LABELS[filter.budget][l] : undefined}
+                        open={open.budget}
+                        onToggle={() => togOpen('budget')}
+                      >
+                        <div style={S.pillRow}>
+                          <span style={S.pill(filter.budget === null, 'terra')} onClick={() => setBudget(null)}>
+                            {l === 'fr' ? 'Tous' : 'All'}
+                          </span>
+                          {([1, 2, 3] as BudgetTier[]).map(b => {
+                            if (filterCounts.budget[b] === 0 && filter.budget !== b) return null;
+                            return (
+                              <span key={b} style={S.pill(filter.budget === b, 'terra')}
+                                onClick={() => setBudget(filter.budget === b ? null : b)}>
+                                {BUDGET_LABELS[b][l]}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </FilterSection>
+
+                      <FilterSection
+                        title={l === 'fr' ? 'Saveurs' : 'Flavour'}
+                        open={open.flavour}
+                        onToggle={() => togOpen('flavour')}
+                      >
+                        <FlavorSlider leftLabel={l === 'fr' ? 'Léger' : 'Light'} rightLabel={l === 'fr' ? 'Riche' : 'Rich'} value={flavourUI.richness} onChange={v => updateFlavour('richness', v)} />
+                        <FlavorSlider leftLabel={l === 'fr' ? 'Doux' : 'Mild'} rightLabel={l === 'fr' ? 'Puissant' : 'Bold'} value={flavourUI.boldness} onChange={v => updateFlavour('boldness', v)} />
+                        <FlavorSlider leftLabel={l === 'fr' ? 'Classique' : 'Classic'} rightLabel={l === 'fr' ? 'Créatif' : 'Creative'} value={flavourUI.creative} onChange={v => updateFlavour('creative', v)} />
+                        <FlavorSlider leftLabel={l === 'fr' ? 'Simple' : 'Simple'} rightLabel={l === 'fr' ? 'Raffiné' : 'Refined'} value={flavourUI.refined} onChange={v => updateFlavour('refined', v)} />
+                      </FilterSection>
+                    </>
+                  )}
+
+                </div>
+
+                {filterSheetKey === 'more' && (
+                  <div style={{ padding: '10px 14px', borderTop: '1px solid #F0EAE3', display: 'flex', gap: '8px', flexShrink: 0 }}>
+                    <button
+                      onClick={() => { clearAll(); }}
+                      style={{
+                        flex: 1, padding: '10px', border: '1px solid #E0D8CF',
+                        borderRadius: '10px', background: '#FDFBF7',
+                        fontSize: '12px', color: '#8A7F78', cursor: 'pointer',
+                        fontFamily: 'DM Sans, sans-serif',
+                      }}
+                    >
+                      {l === 'fr' ? 'Réinitialiser' : 'Reset'}
+                    </button>
+                    <button
+                      onClick={() => setFilterSheetKey(null)}
+                      style={{
+                        flex: 2, padding: '10px', border: 'none',
+                        borderRadius: '10px', background: '#C4522A',
+                        fontSize: '13px', fontWeight: 600, color: '#fff',
+                        cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                      }}
+                    >
+                      {l === 'fr'
+                        ? `Voir ${filtered.length} pizza${filtered.length !== 1 ? 's' : ''}`
+                        : `Show ${filtered.length} pizza${filtered.length !== 1 ? 's' : ''}`}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           {/* ── Results strip ── */}
           <div style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F5F0E8', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
@@ -1825,7 +1898,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           {/* ── Cards + dessert + summary ── */}
           <div>
 
-            <div style={{ overflowY: 'auto', maxHeight: '462px', borderBottom: '1px solid #E0D8CF' }}>
+            <div>
 
               {/* Pizza cards */}
               <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -1850,65 +1923,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               </div>
 
             </div>
-
-            {/* Grey spacer between pizza list and dessert */}
-            <div style={{ height: '10px', background: '#F5F0E8' }} />
-
-            {/* Dessert toggle */}
-            <div
-              onClick={() => setDessertOpen(v => !v)}
-              style={{
-                padding: '10px 12px 8px',
-                cursor: 'pointer',
-                background: dessertOpen ? '#F5F0E8' : '#FDFBF7',
-                borderTop: '1px solid #E0D8CF',
-                display: 'flex', alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{
-                  width: '5px', height: '5px', borderRadius: '50%',
-                  background: '#D4A853', flexShrink: 0, display: 'inline-block',
-                }} />
-                <span style={{
-                  fontSize: '10px', fontWeight: 700, color: '#1A1612',
-                  textTransform: 'uppercase', letterSpacing: '0.1em',
-                  fontFamily: 'DM Mono, monospace',
-                }}>
-                  {l === 'fr' ? 'Une touche sucrée ?' : 'Something sweet?'}
-                </span>
-              </div>
-              <span style={{
-                fontSize: '11px',
-                color: dessertOpen ? '#C4522A' : '#8A7F78',
-                transform: dessertOpen ? 'rotate(180deg)' : 'none',
-                transition: 'all 0.15s', display: 'inline-block',
-              }}>⌄</span>
-            </div>
-
-            {/* Dessert cards */}
-            {dessertOpen && (
-              <div style={{
-                background: '#F5F0E8',
-                overflowY: 'auto',
-                maxHeight: '228px',
-              }}>
-                <div style={{ padding: '6px 12px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {DESSERT_PIZZAS.map(pizza => (
-                    <PizzaCard
-                      key={pizza.id}
-                      pizza={pizza}
-                      qty={getQty(pizza.id)}
-                      locale={locale}
-                      styleKey={styleKey}
-                      onQtyChange={(delta, e) => { e.stopPropagation(); changeQty(pizza.id, delta); }}
-                      onTap={() => setSheetId(pizza.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* ── Sheet overlay ── */}
             {sheetPizza && (
@@ -1983,14 +1997,21 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 }}>
                   {doughConfigured ? `${totalQty}/${numItems}` : `${totalQty}`}
                 </span>
-                {totalQty > 0 && (
-                  <span
-                    onClick={() => onPillChange('shopping')}
-                    style={{ fontSize: '11px', color: '#C4522A', marginLeft: '10px', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'DM Sans, sans-serif' }}
-                  >
-                    {l === 'fr' ? 'Liste →' : 'Shopping →'}
-                  </span>
-                )}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                  {totalQty >= 2 && (
+                    <span style={{ fontSize: '10px', color: '#B8903A', fontFamily: 'DM Sans, sans-serif' }}>
+                      {l === 'fr' ? '🍰 Une touche sucrée ?' : '🍰 Something sweet?'}
+                    </span>
+                  )}
+                  {totalQty > 0 && (
+                    <span
+                      onClick={() => setSummarySheetOpen(true)}
+                      style={{ fontSize: '11px', color: '#C4522A', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'DM Mono, monospace', textUnderlineOffset: '2px' }}
+                    >
+                      {l === 'fr' ? 'Voir →' : 'View →'}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -2051,6 +2072,106 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           )}
         </div>
       </div>
+
+      {/* ── Summary sheet ── */}
+      {summarySheetOpen && (
+        <>
+          <div
+            onClick={() => { setSummarySheetOpen(false); setDessertSheetOpen(false); }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.52)', zIndex: 160 }}
+          />
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'fixed', bottom: 0, left: 0, right: 0,
+              background: '#FDFBF7', borderRadius: '20px 20px 0 0',
+              maxHeight: '75vh', zIndex: 161, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            }}
+          >
+            <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px 10px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#1A1612', fontFamily: 'Playfair Display, serif' }}>
+                {!dessertSheetOpen
+                  ? (l === 'fr' ? 'Votre pizza party' : 'Your Pizza Party')
+                  : (l === 'fr' ? 'Desserts' : 'Dessert pizzas')}
+              </span>
+              <button onClick={() => { setSummarySheetOpen(false); setDessertSheetOpen(false); }}
+                style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F5F0E8', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {!dessertSheetOpen ? (
+                <>
+                  {Object.entries(qtys).filter(([, q]) => (q as number) > 0).map(([pizzaId, qty]) => {
+                    const pizza = getPizzaById(pizzaId);
+                    if (!pizza) return null;
+                    return (
+                      <div key={pizzaId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '0.5px solid #F0EAE3' }}>
+                        <span style={{ fontSize: '13px', color: '#1A1612', fontFamily: 'Georgia, serif', flex: 1 }}>
+                          {pizza.name[l] ?? pizza.name.en}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <button onClick={() => changeQty(pizzaId, -1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #E0D8CF', background: '#FDFBF7', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
+                          <span style={{ fontSize: '13px', fontWeight: 600, minWidth: '16px', textAlign: 'center', fontFamily: 'DM Mono, monospace' }}>{qty as number}</span>
+                          <button onClick={() => changeQty(pizzaId, 1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #C4522A', background: '#C4522A', cursor: 'pointer', fontSize: '16px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div
+                    onClick={() => setDessertSheetOpen(true)}
+                    style={{
+                      margin: '10px 14px', background: '#FBF5E8', border: '1px solid #E8D8A0',
+                      borderRadius: '10px', padding: '12px 14px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                    }}
+                  >
+                    <span style={{ fontSize: '20px' }}>🍰</span>
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#1A1612', marginBottom: '2px' }}>
+                        {l === 'fr' ? 'Ajouter quelque chose de sucré ?' : 'Add something sweet?'}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#8A7F78' }}>
+                        {l === 'fr' ? 'Desserts — la touche finale parfaite' : 'Dessert pizzas — the perfect finale'}
+                      </div>
+                    </div>
+                    <span style={{ marginLeft: 'auto', color: '#B8903A', fontSize: '18px', fontWeight: 300 }}>›</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ padding: '6px 14px 4px', fontSize: '11px', color: '#8A7F78' }}>
+                    {l === 'fr' ? 'Une finale sucrée pour votre soirée pizza' : 'A sweet finale for your pizza night'}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '8px 14px' }}>
+                    {DESSERT_PIZZAS.map(pizza => {
+                      const name = pizza.name[l] ?? pizza.name.en;
+                      const qty = getQty(pizza.id);
+                      return (
+                        <div key={pizza.id} style={{ border: qty > 0 ? '1.5px solid #B8903A' : '1px solid #E0D8CF', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', background: qty > 0 ? '#FBF5E8' : '#FDFBF7', transition: 'all 0.12s' }}
+                          onClick={() => changeQty(pizza.id, qty > 0 ? -qty : 1)}>
+                          <div style={{ height: '60px', background: '#2D2824', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+                            {pizzaEmoji(pizza.id)}
+                          </div>
+                          <div style={{ padding: '6px 8px 8px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: 600, color: '#1A1612', fontFamily: 'Georgia, serif', marginBottom: '2px' }}>{name}</div>
+                            {qty > 0 && <div style={{ fontSize: '10px', color: '#B8903A', fontWeight: 600 }}>✓ Added</div>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => setDessertSheetOpen(false)}
+                    style={{ margin: '8px 14px', padding: '10px', border: 'none', borderRadius: '10px', background: '#C4522A', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', width: 'calc(100% - 28px)', fontFamily: 'DM Sans, sans-serif' }}
+                  >
+                    {l === 'fr' ? 'Retour à la sélection' : 'Back to party'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── Style picker bottom sheet ── */}
       {showStylePicker && (
@@ -2208,14 +2329,21 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           }}>
             {doughConfigured ? `${totalQty}/${numItems}` : `${totalQty}`}
           </span>
-          {totalQty > 0 && (
-            <span
-              onClick={() => onPillChange('shopping')}
-              style={{ fontSize: '11px', color: '#C4522A', marginLeft: '10px', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'DM Sans, sans-serif' }}
-            >
-              {l === 'fr' ? 'Liste →' : 'Shopping →'}
-            </span>
-          )}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+            {totalQty >= 2 && (
+              <span style={{ fontSize: '10px', color: '#B8903A', fontFamily: 'DM Sans, sans-serif' }}>
+                {l === 'fr' ? '🍰 Une touche sucrée ?' : '🍰 Something sweet?'}
+              </span>
+            )}
+            {totalQty > 0 && (
+              <span
+                onClick={() => setSummarySheetOpen(true)}
+                style={{ fontSize: '11px', color: '#C4522A', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'DM Mono, monospace', textUnderlineOffset: '2px' }}
+              >
+                {l === 'fr' ? 'Voir →' : 'View →'}
+              </span>
+            )}
+          </div>
         </div>
       </div>
       )}
