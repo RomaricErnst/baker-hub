@@ -1547,7 +1547,7 @@ export default function Home() {
                   locale={locale}
                   bakeTime={eatTime ?? new Date()}
                   numItems={numItems}
-                  styleKey={styleKey ?? 'neapolitan'}
+                  styleKey={styleKey ?? undefined}
                   t={t}
                   activeTab={pizzaPartyTab}
                   onTabChange={setPizzaPartyTab}
@@ -2481,7 +2481,7 @@ export default function Home() {
                   locale={locale}
                   bakeTime={eatTime ?? new Date()}
                   numItems={numItems}
-                  styleKey={styleKey ?? 'neapolitan'}
+                  styleKey={styleKey ?? undefined}
                   t={t}
                   activeTab={pizzaPartyTab}
                   onTabChange={setPizzaPartyTab}

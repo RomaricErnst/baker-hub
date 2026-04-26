@@ -12,7 +12,7 @@ interface PizzaPartyProps {
   locale: string;
   bakeTime: Date;
   numItems: number;
-  styleKey: string;
+  styleKey?: string;
   t: (key: string) => string;
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
@@ -31,7 +31,7 @@ function pillToTab(pill: Pill): Tab {
 
 export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange }: PizzaPartyProps) {
   const [qtys, setQtys] = useState<Record<string, number>>({});
-  const [styleKey, setStyleKey] = useState<string>(initialStyleKey);
+  const [styleKey, setStyleKey] = useState<string | undefined>(initialStyleKey);
   const [pickStyleKey, setPickStyleKey] = useState<string | undefined>(initialStyleKey);
 
   useEffect(() => {
