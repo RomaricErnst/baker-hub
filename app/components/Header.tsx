@@ -221,10 +221,14 @@ export default function Header({
   units = 'metric',
   onUnitsChange,
   onLoadRecipe,
+  showStartOver,
+  onStartOver,
 }: {
   units?: UnitSystem;
   onUnitsChange?: (u: UnitSystem) => void;
   onLoadRecipe?: (r: SavedRecipe) => void;
+  showStartOver?: boolean;
+  onStartOver?: () => void;
 }) {
   const t = useTranslations('header');
   const locale = useLocale();
@@ -531,8 +535,27 @@ export default function Header({
         }}>{t('tagline')}</div>
       </div>
 
-      {/* Right placeholder for balance */}
-      <div style={{ width: '42px', flexShrink: 0 }} />
+      {/* Right: ↺ Start over or balance placeholder */}
+      {showStartOver && onStartOver ? (
+        <button
+          onClick={onStartOver}
+          style={{
+            fontSize: '8px',
+            color: '#6B6460',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px 8px',
+            fontFamily: 'DM Sans, sans-serif',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          ↺ Start over
+        </button>
+      ) : (
+        <div style={{ width: '42px', flexShrink: 0 }} />
+      )}
     </header>
   );
 }
