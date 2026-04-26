@@ -377,7 +377,7 @@ export default function Home() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
   const pizzaPartyEnabled = bakeType === 'pizza';
-  const pizzasConfirmed = pizzaPartyTab !== 'pick';
+  const [pizzasConfirmed, setPizzasConfirmed] = useState(false);
 
   // M2 — Mode chosen: false on page load, true after baker selects a mode
   const [modeChosen, setModeChosen] = useState(false);
@@ -579,6 +579,7 @@ export default function Home() {
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
     setModeChosen(false);
     setPizzaPartyTab('pick');
+    setPizzasConfirmed(false);
     customOnlyStateRef.current = null;
   }
 
@@ -1372,6 +1373,7 @@ export default function Home() {
                   activeTab={pizzaPartyTab}
                   onTabChange={setPizzaPartyTab}
                   doughConfigured={!!styleKey}
+                  onHasSelection={setPizzasConfirmed}
                 />
               </div>
             )}
@@ -2307,6 +2309,7 @@ export default function Home() {
                   activeTab={pizzaPartyTab}
                   onTabChange={setPizzaPartyTab}
                   doughConfigured={!!styleKey}
+                  onHasSelection={setPizzasConfirmed}
                 />
               </div>
             )}

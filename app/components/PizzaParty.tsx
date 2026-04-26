@@ -17,6 +17,7 @@ interface PizzaPartyProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
   doughConfigured?: boolean;
+  onHasSelection?: (hasSelection: boolean) => void;
 }
 
 function tabToPill(tab: Tab): Pill {
@@ -30,7 +31,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection }: PizzaPartyProps) {
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [styleKey, setStyleKey] = useState<string | undefined>(initialStyleKey);
   const [pickStyleKey, setPickStyleKey] = useState<string | undefined>(initialStyleKey);
@@ -38,6 +39,11 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
   useEffect(() => {
     setPickStyleKey(initialStyleKey);
   }, [initialStyleKey]);
+
+  useEffect(() => {
+    const total = Object.values(qtys).reduce((s, v) => s + v, 0);
+    onHasSelection?.(total > 0);
+  }, [qtys, onHasSelection]);
 
   const showSelector = activeTab === 'pick' || activeTab === 'shop';
 
