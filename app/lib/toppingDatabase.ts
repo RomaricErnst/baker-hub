@@ -2660,7 +2660,7 @@ export const PIZZAS: Pizza[] = [
 
   {
     id: 'carciofi_romana',
-    name: { en: 'Carciofi alla Romana', fr: 'Artichauts à la Romaine' },
+    name: { en: 'Carciofi e Menta', fr: 'Artichauts et Menthe' },
     story: { en: 'Artichoke, olive oil, garlic, mint — Rome\'s iconic vegetable on a crispy white base', fr: 'Artichaut, huile d\'olive, ail, menthe — le légume iconique de Rome sur base blanche croustillante' },
     category: 'veg', region: 'roman',
     base: 'bianca_oil', season: ['spring'],
@@ -2697,7 +2697,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'rw'],
     flavour: { richness: 3, boldness: 3, creative: 3, refined: 4 },
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.guanciale, ING.pecorinoRomano, ING.blackPepper],
-    compatibleStyles: ['pizza_romana', 'roman', 'neapolitan', 'sourdough'],
+    compatibleStyles: ['pizza_romana', 'roman', 'sourdough'],
   },
 
   {
@@ -2711,7 +2711,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'rw'],
     flavour: { richness: 4, boldness: 3, creative: 4, refined: 4 },
     ingredients: [ING.cremeFraiche, ING.mozzarellaLM, ING.guanciale, ING.egg, ING.pecorinoRomano, ING.blackPepper],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
+    compatibleStyles: ['pizza_romana', 'sourdough'],
   },
 
   {
@@ -2725,7 +2725,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'rw'],
     flavour: { richness: 3, boldness: 3, creative: 3, refined: 5 },
     ingredients: [ING.cremeFraiche, ING.pecorinoRomano, ING.blackPepper, ING.evoOil],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
+    compatibleStyles: ['pizza_romana', 'sourdough'],
   },
 
   {
@@ -2739,7 +2739,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'rw'],
     flavour: { richness: 3, boldness: 3, creative: 2, refined: 4 },
     ingredients: [ING.mozzarellaLM, ING.guanciale, ING.pecorinoRomano, ING.blackPepper],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
+    compatibleStyles: ['pizza_romana', 'sourdough'],
   },
 
   {
@@ -2799,34 +2799,6 @@ export const PIZZAS: Pizza[] = [
   },
 
   {
-    id: 'prosciutto_stracciatella_romana',
-    name: { en: 'Prosciutto e Stracciatella', fr: 'Prosciutto et Stracciatella' },
-    story: { en: 'The crispy Roman base makes the cold stracciatella contrast even more striking', fr: 'La base romaine croustillante rend le contraste de la stracciatella froide encore plus saisissant' },
-    category: 'meat', region: 'roman',
-    base: 'bianca_oil', season: ['all'],
-    occasion: ['impress', 'quick'],
-    dietary: ['no_nuts', 'no_fish'], budget: 2, complexity: 1, prepMinutes: 5, ovenTemp: 'mid',
-    wine: ['cw', 'sp'],
-    flavour: { richness: 3, boldness: 2, creative: 3, refined: 5 },
-    ingredients: [ING.mozzarellaLM, ING.prosciutto, ING.stracciatella, ING.evoOil],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
-  },
-
-  {
-    id: 'patata_rosmarino_romana',
-    name: { en: 'Patata e Rosmarino', fr: 'Pomme de terre et Romarin' },
-    story: { en: 'The Roman white pizza classic — thin potato, rosemary and olive oil on crispy base', fr: "Le classique blanc romain — pomme de terre fine, romarin et huile d'olive sur base croustillante" },
-    category: 'veg', region: 'roman',
-    base: 'bianca_oil', season: ['all'],
-    occasion: ['classic', 'kids', 'quick'],
-    dietary: ['veg', 'vegan', 'no_nuts', 'no_fish', 'no_pork', 'halal', 'kosher'], budget: 1, complexity: 1, prepMinutes: 8, ovenTemp: 'mid',
-    wine: ['cw', 'sp'],
-    flavour: { richness: 2, boldness: 1, creative: 1, refined: 3 },
-    ingredients: [ING.thinPotato, ING.rosemary, ING.seaSalt, ING.evoOil],
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
-  },
-
-  {
     id: 'verdure_grigliate_burrata',
     name: { en: 'Verdure Grigliate e Burrata', fr: 'Légumes Grillés et Burrata' },
     story: { en: 'Summer Roman — colourful grilled vegetables with cold burrata', fr: 'Romain estival — légumes grillés colorés avec burrata froide' },
@@ -2856,7 +2828,7 @@ export const PIZZAS: Pizza[] = [
 
   {
     id: 'porcini_pecorino_romana',
-    name: { en: 'Porcini e Pecorino Romano', fr: 'Porcini et Pecorino Romano' },
+    name: { en: 'Porcini e Pecorino', fr: 'Porcini et Pecorino' },
     story: { en: 'Autumn in Rome — earthy porcini and sharp pecorino on crispy white base', fr: 'Automne à Rome — porcini terreux et pecorino tranchant sur base blanche croustillante' },
     category: 'veg', region: 'roman',
     base: 'bianca_oil', season: ['autumn', 'winter'],
@@ -3165,7 +3137,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 2, boldness: 2, creative: 2, refined: 4 },
     ingredients: [ING.sanMarzano, ING.burrata, ING.freshBasil, ING.evoOil],
-    compatibleStyles: ['newyork', 'neapolitan', 'sourdough'],
+    compatibleStyles: ['newyork', 'sourdough'],
   },
 
   {
@@ -3179,7 +3151,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'rw'],
     flavour: { richness: 3, boldness: 4, creative: 1, refined: 2 },
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.spicySalami, ING.chilli],
-    compatibleStyles: ['newyork', 'neapolitan', 'sourdough'],
+    compatibleStyles: ['newyork', 'sourdough'],
   },
 
 
