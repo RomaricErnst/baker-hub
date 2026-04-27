@@ -1,8 +1,11 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { PIZZAS, DESSERT_PIZZAS, type Pizza } from '../../lib/toppingDatabase';
 import type { StyleKey, IngredientCategory, Ingredient } from '../../lib/toppingTypes';
+import { createClient } from '@/app/lib/supabase/client';
+import { uploadPhoto, ALLOWED_MIME_TYPES, PHOTO_SOFT_WARN } from '@/app/lib/photoUpload';
+import type { User } from '@supabase/supabase-js';
 
 interface BakeTabProps {
   selectedPizzas: Record<string, number>;
@@ -31,6 +34,15 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
   const fileInputRef = useRef<HTMLInputElement>(null);
   // doneCounts[pizzaId] = how many of that pizza have been baked
   const [doneCounts, setDoneCounts] = useState<Record<string, number>>({});
+  const [user, setUser] = useState<User | null>(null);
+  const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
+  const [photoWarn, setPhotoWarn] = useState(false);
+  const [showSignInNudge, setShowSignInNudge] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+  }, []);
 
   const allPizzas = getAllPizzas();
 
@@ -54,11 +66,39 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
     });
   }
 
-  function handlePhotoCapture(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoCapture(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file || !selectedPizzaId) return;
-    const url = URL.createObjectURL(file);
-    setPhotos(prev => ({ ...prev, [selectedPizzaId]: url }));
+
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) return;
+
+    if (!user) {
+      const url = URL.createObjectURL(file);
+      setPhotos(prev => ({ ...prev, [selectedPizzaId]: url }));
+      try {
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'My pizza' });
+        }
+      } catch { /* user cancelled */ }
+      setShowSignInNudge(true);
+      setTimeout(() => setShowSignInNudge(false), 5000);
+      return;
+    }
+
+    setUploadingSlot(selectedPizzaId);
+    try {
+      const slotIndex = selectedEntries.findIndex(e => e.pizza.id === selectedPizzaId);
+      const result = await uploadPhoto(file, user.id, null, slotIndex >= 0 ? slotIndex : null);
+      setPhotos(prev => ({ ...prev, [selectedPizzaId]: result.url }));
+      if (result.warned) setPhotoWarn(true);
+    } catch (err) {
+      console.error('Photo upload failed:', err);
+      const url = URL.createObjectURL(file);
+      setPhotos(prev => ({ ...prev, [selectedPizzaId]: url }));
+    } finally {
+      setUploadingSlot(null);
+    }
   }
 
   function getEffectiveBakeOrder(ing: Ingredient): 'before' | 'after' {
@@ -114,6 +154,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
       : null;
 
     return (
+      <>
+      <style>{`@keyframes bh-spin { to { transform: rotate(360deg); } }`}</style>
       <div>
         {/* Top bar */}
         <div style={{ height: '56px', display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: '1px solid var(--border)' }}>
@@ -243,6 +285,36 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
           </>
         )}
 
+        {/* Photo soft-warn banner */}
+        {photoWarn && (
+          <div style={{
+            margin: '0 16px 8px',
+            padding: '8px 12px',
+            background: 'rgba(212,168,83,0.1)',
+            border: '1px solid rgba(212,168,83,0.3)',
+            borderRadius: '8px',
+            fontSize: '12px',
+            color: 'var(--ash)',
+            fontFamily: 'DM Sans, sans-serif',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: '8px',
+            lineHeight: 1.4,
+          }}>
+            <span>
+              {l === 'fr'
+                ? 'Vous avez 40+ photos. Les plus anciennes sont supprimees apres 50.'
+                : 'You have 40+ photos saved. Oldest are removed automatically after 50.'}
+            </span>
+            <button
+              onClick={() => setPhotoWarn(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--smoke)', fontSize: '14px', lineHeight: 1, flexShrink: 0, padding: 0 }}
+            >x</button>
+          </div>
+        )}
+
         {/* Sticky action bar — photo (independent) + Done (primary) */}
         <div style={{
           position: 'sticky', bottom: 0,
@@ -265,6 +337,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
           {/* Photo button — small, independent, no state impact */}
           <button
             onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingSlot === selectedPizzaId}
             title={l === 'fr' ? 'Prendre une photo' : 'Take a photo'}
             style={{
               width: '48px', height: '48px', flexShrink: 0,
@@ -273,10 +346,19 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
                 ? '1.5px solid #6B7A5A' : '1px solid var(--border)',
               borderRadius: '10px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', overflow: 'hidden', padding: 0,
+              cursor: uploadingSlot === selectedPizzaId ? 'default' : 'pointer',
+              overflow: 'hidden', padding: 0,
             }}
           >
-            {photos[selectedPizzaId ?? ''] ? (
+            {uploadingSlot === selectedPizzaId ? (
+              <span style={{
+                display: 'block', width: '20px', height: '20px',
+                border: '2px solid var(--border)',
+                borderTop: '2px solid var(--smoke)',
+                borderRadius: '50%',
+                animation: 'bh-spin 0.8s linear infinite',
+              }} />
+            ) : photos[selectedPizzaId ?? ''] ? (
               <img src={photos[selectedPizzaId ?? '']}
                 style={{ width: '48px', height: '48px', objectFit: 'cover' }} alt=""/>
             ) : (
@@ -343,7 +425,31 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
             );
           })()}
         </div>
+
+        {/* Sign-in nudge toast */}
+        {showSignInNudge && (
+          <div style={{
+            position: 'fixed',
+            bottom: '80px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#1A1612',
+            color: 'var(--cream)',
+            fontSize: '13px',
+            borderRadius: '10px',
+            padding: '10px 16px',
+            zIndex: 999,
+            whiteSpace: 'nowrap',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+            fontFamily: 'DM Sans, sans-serif',
+          }}>
+            {l === 'fr'
+              ? 'Connectez-vous pour sauvegarder vos photos'
+              : 'Sign in to save photos to your session'}
+          </div>
+        )}
       </div>
+      </>
     );
   }
 
