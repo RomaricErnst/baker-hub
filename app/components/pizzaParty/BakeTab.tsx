@@ -49,7 +49,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
     setDoneCounts(prev => {
       const current = prev[pizzaId] ?? 0;
       const ordered = selectedPizzas[pizzaId] ?? 0;
-      const next = Math.min(ordered, Math.max(0, current + delta));
+      const next = Math.max(0, current + delta);
       return { ...prev, [pizzaId]: next };
     });
   }
@@ -318,8 +318,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
                   flex: 1, textAlign: 'center',
                   fontFamily: 'DM Mono, monospace', lineHeight: 1.2,
                 }}>
-                  <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--char)' }}>
-                    {baked} / {ordered}
+                  <div style={{ fontWeight: 700, fontSize: '15px',
+                    color: baked > ordered ? '#D4A853' : 'var(--char)' }}>
+                    {baked > ordered ? baked : `${baked} / ${ordered}`}
                   </div>
                   <div style={{ fontSize: '10px', color: 'var(--smoke)', marginTop: '1px' }}>
                     {l === 'fr' ? 'cuites' : 'baked'}
@@ -327,13 +328,13 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
                 </div>
                 <button
                   onClick={() => selectedPizzaId && changeDoneCount(selectedPizzaId, 1)}
-                  disabled={baked >= ordered}
+                  disabled={false}
                   style={{
                     width: '48px', height: '48px', flexShrink: 0,
-                    background: baked >= ordered ? 'transparent' : '#6B7A5A',
+                    background: baked > ordered ? '#D4A853' : '#6B7A5A',
                     border: 'none', fontSize: '22px', lineHeight: 1,
-                    color: baked >= ordered ? '#C8C0B8' : 'white',
-                    cursor: baked >= ordered ? 'default' : 'pointer',
+                    color: 'white',
+                    cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'background 0.15s ease',
                   }}
@@ -422,7 +423,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
                     return (
                       <div style={{
                         position: 'absolute', top: '8px', right: '8px',
-                        background: '#6B7A5A', borderRadius: '12px',
+                        background: baked > qty ? '#D4A853' : '#6B7A5A', borderRadius: '12px',
                         padding: '3px 8px',
                         display: 'flex', alignItems: 'center', gap: '4px',
                       }}>
