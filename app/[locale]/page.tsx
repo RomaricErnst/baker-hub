@@ -1606,6 +1606,7 @@ export default function Home() {
                   prefStartTime={prefStartTime}
                   feedTime={feedTime}
                   units={units}
+                  locale={locale}
                 />
               )}
             </div>{/* end guide tab */}
@@ -2588,6 +2589,7 @@ export default function Home() {
                   prefStartTime={prefStartTime}
                   feedTime={feedTime}
                   units={units}
+                  locale={locale}
                 />
               )}
             </div>{/* end guide tab */}
