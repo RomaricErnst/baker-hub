@@ -3689,7 +3689,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
       { ...ING.strawberries, bakeOrder: 'after' },
       ING.icingSugar,
     ],
-    compatibleStyles: ['neapolitan', 'sourdough'],
+    compatibleStyles: ['neapolitan', 'pizza_romana', 'sourdough'],
   },
 
   {
@@ -3704,6 +3704,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
     flavour: { richness: 4, boldness: 2, creative: 4, refined: 4 },
     ingredients: [ING.cremeFraiche, ING.caramelisedApple, ING.cinnamon, ING.icingSugar],
     wineNote: { en: 'Crémant or sparkling', fr: 'Crémant ou pétillant' },
+    compatibleStyles: ['neapolitan', 'pizza_romana', 'sourdough'],
   },
 
   {
@@ -3716,6 +3717,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
     wine: [],
     flavour: { richness: 4, boldness: 3, creative: 4, refined: 4 },
     ingredients: [ING.darkChocCream, ING.pearSlices, ING.almondFlakes, ING.icingSugar],
+    compatibleStyles: ['neapolitan', 'pizza_romana', 'sourdough'],
   },
 
   {
@@ -3734,6 +3736,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
       ING.walnuts,
     ],
     wineNote: { en: 'Moscato d\'Asti or rosé sparkling', fr: 'Moscato d\'Asti ou rosé pétillant' },
+    compatibleStyles: ['neapolitan', 'pizza_romana', 'sourdough'],
   },
 
   {
@@ -3751,6 +3754,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
       { id: 'caramel_drizzle', category: 'finish', bakeOrder: 'after', name: { en: 'Caramel drizzle', fr: 'Filet de caramel' } },
       ING.icingSugar,
     ],
+    compatibleStyles: ['neapolitan', 'pizza_romana', 'sourdough'],
   },
 
   {
@@ -3768,6 +3772,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
       { id: 'mixed_berries', category: 'finish', bakeOrder: 'after', name: { en: 'Mixed berries', fr: 'Fruits rouges mélangés' } },
     ],
     wineNote: { en: 'Champagne brut or Crémant', fr: 'Champagne brut ou Crémant' },
+    compatibleStyles: ['neapolitan', 'pizza_romana', 'sourdough'],
   },
 
   {
@@ -3781,6 +3786,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
     wine: ['sp'],
     flavour: { richness: 3, boldness: 2, creative: 5, refined: 5 },
     ingredients: [ING.ricotta, ING.caramelisedApple, ING.honey, ING.evoOil],
+    compatibleStyles: ['neapolitan', 'pizza_romana', 'sourdough'],
   },
 
   {
@@ -3794,6 +3800,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
     wine: ['sp'],
     flavour: { richness: 3, boldness: 2, creative: 3, refined: 5 },
     ingredients: [ING.ricotta, ING.honey, ING.almondFlakes, ING.cinnamon],
+    compatibleStyles: ['neapolitan', 'pizza_romana', 'sourdough'],
   },
 
   {
@@ -3807,6 +3814,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
     wine: ['sp'],
     flavour: { richness: 3, boldness: 2, creative: 4, refined: 4 },
     ingredients: [ING.ricotta, ING.strawberries, ING.freshBasil, ING.honey, ING.evoOil],
+    compatibleStyles: ['neapolitan', 'pizza_romana', 'sourdough'],
   },
 
   {
@@ -3820,6 +3828,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
     wine: ['sp'],
     flavour: { richness: 4, boldness: 4, creative: 5, refined: 4 },
     ingredients: [ING.darkChocCream, ING.chilli, ING.seaSalt, ING.almondFlakes],
+    compatibleStyles: ['neapolitan', 'pizza_romana', 'sourdough'],
   },
 
   {
@@ -3833,6 +3842,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
     wine: ['sp'],
     flavour: { richness: 3, boldness: 2, creative: 3, refined: 3 },
     ingredients: [ING.cremeFraiche, ING.caramelisedApple, ING.cinnamon, ING.almondFlakes, ING.honey],
+    compatibleStyles: ['neapolitan', 'pizza_romana', 'sourdough'],
   },
 
   {
@@ -3846,6 +3856,7 @@ export const DESSERT_PIZZAS: Pizza[] = [
     wine: ['sp'],
     flavour: { richness: 5, boldness: 2, creative: 4, refined: 5 },
     ingredients: [ING.cremeFraiche, { id: 'caramel_drizzle', category: 'finish', bakeOrder: 'after', name: { en: 'Caramel drizzle', fr: 'Filet de caramel' } }, ING.almondFlakes, ING.seaSalt, ING.walnuts],
+    compatibleStyles: ['neapolitan', 'pizza_romana', 'sourdough'],
   },
 
 ]
