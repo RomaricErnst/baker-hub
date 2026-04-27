@@ -1374,6 +1374,7 @@ export default function Home() {
                   onTabChange={setPizzaPartyTab}
                   doughConfigured={!!styleKey}
                   onHasSelection={setPizzasConfirmed}
+                  onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
                 />
               </div>
             )}
@@ -2310,6 +2311,7 @@ export default function Home() {
                   onTabChange={setPizzaPartyTab}
                   doughConfigured={!!styleKey}
                   onHasSelection={setPizzasConfirmed}
+                  onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
                 />
               </div>
             )}

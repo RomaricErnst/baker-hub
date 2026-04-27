@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   PIZZAS, DESSERT_PIZZAS, getPizzaById,
   BASE_LABELS, OCCASION_LABELS, SEASON_LABELS,
@@ -171,6 +171,7 @@ interface Props {
   activeStyleKey?: string;
   onStyleKeyChange?: (key: string) => void;
   doughConfigured?: boolean;
+  onGoToMyDough?: () => void;
 }
 
 // ─── Sub-region maps ─────────────────────────────────────────
@@ -1142,7 +1143,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough }: Props) {
   const l = locale as 'en' | 'fr';
 
   // Filter state
@@ -1150,19 +1151,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
     ...DEFAULT_FILTER,
     styleKey: styleKey as import('../lib/toppingTypes').StyleKey | undefined,
   });
-
-  const summaryRef = useRef<HTMLDivElement>(null);
-  const [summaryVisible, setSummaryVisible] = useState(false);
-  useEffect(() => {
-    const el = summaryRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => setSummaryVisible(entry.isIntersecting),
-      { threshold: 0 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
 
   // Section open/closed — Occasion open by default, all others closed
   const [open, setOpen] = useState<Record<string, boolean>>({
@@ -1337,45 +1325,43 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {/* ══════════════════════════════════════
           PIZZAS pill
       ══════════════════════════════════════ */}
-      {/* Style awareness banner */}
+      {/* Context line: style name + count */}
       {activePill === 'pizzas' && (
         <div style={{
-          padding: '6px 12px',
-          background: '#F5F0E8',
+          background: '#FDFBF7',
           borderBottom: '1px solid #E0D8CF',
-          fontSize: '11px',
-          color: '#6B7A5A',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '5px',
+          padding: '8px 12px',
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          flexShrink: 0,
         }}>
-          <svg viewBox="0 0 20 20" width={12} height={12} fill="none"
-            stroke="#6B7A5A" strokeWidth="1.5"
-            strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="10" cy="10" r="7" />
-            <path d="M10 9v5" />
-            <circle cx="10" cy="7" r=".5" fill="#6B7A5A" stroke="none" />
-          </svg>
-          <span style={{ flex: 1 }}>
-            {styleKey
-              ? (l === 'fr'
-                  ? `Pizzas pour ${STYLE_NAMES_FR[styleKey] ?? styleKey}`
-                  : `Showing pizzas for ${STYLE_NAMES[styleKey] ?? styleKey}`)
-              : (l === 'fr'
-                  ? 'Napolitaine par défaut — pas encore de style choisi.'
-                  : 'Showing Neapolitan by default — no dough style set yet.')
-            }
+          <span style={{
+            fontFamily: 'DM Sans, sans-serif', fontSize: '13px',
+            color: '#3D3530',
+          }}>
+            {l === 'fr'
+              ? (STYLE_NAMES_FR[styleKey ?? 'neapolitan'] ?? 'Napolitaine')
+              : (STYLE_NAMES[styleKey ?? 'neapolitan'] ?? 'Neapolitan')}
+            {' · '}
+            <span style={{ color: '#8A7F78' }}>
+              {filtered.length} {l === 'fr' ? 'pizzas' : 'pizzas'}
+            </span>
+            {Object.values(filter).some(v => Array.isArray(v) ? v.length > 0 : v !== null && v !== 'all') && (
+              <span
+                onClick={clearAll}
+                style={{ fontSize: '11px', color: '#C4522A', cursor: 'pointer', marginLeft: '6px' }}
+              >
+                {l === 'fr' ? '· Effacer' : '· Clear'}
+              </span>
+            )}
           </span>
           <span
             onClick={() => setShowStylePicker(true)}
             style={{
-              fontSize: '11px',
-              color: 'var(--terra)',
-              cursor: 'pointer',
+              fontSize: '12px', color: '#C4522A',
               fontFamily: 'DM Mono, monospace',
-              textDecoration: 'underline',
+              cursor: 'pointer', textDecoration: 'underline',
               textUnderlineOffset: '2px',
-              flexShrink: 0,
             }}
           >
             {l === 'fr' ? 'Changer' : 'Change'}
@@ -1960,119 +1946,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         </div>
       )}
 
-      {/* Grey spacer between dessert and summary */}
-      {totalQty > 0 && (
-        <div style={{ height: '10px', background: '#F5F0E8' }} />
-      )}
-
-      {/* ── Full selection summary — always rendered for IntersectionObserver ── */}
-      <div ref={summaryRef} style={{ margin: '0 -16px', marginTop: totalQty === 0 ? '10px' : '0' }}>
-        <div style={{ background: '#F5F0E8' }}>
-          {(activePill === 'pizzas' || hidePillBar) && (
-            <div style={{
-              background: '#1A1612',
-              borderTop: '1px solid #C4522A',
-              display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '9px 16px',
-            }}>
-              <span style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
-                {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ display: 'flex', gap: '3px' }}>
-                  {Array.from({ length: doughConfigured ? Math.min(numItems, 10) : Math.min(Math.max(totalQty, 1), 10) }, (_, i) => (
-                    <div key={i} style={{
-                      width: '8px', height: '8px', borderRadius: '50%',
-                      background: i < totalQty
-                        ? (doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#C4522A')
-                        : '#3D3530',
-                    }} />
-                  ))}
-                </div>
-                <span style={{
-                  fontSize: '11px',
-                  color: doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#C4522A',
-                  fontFamily: 'DM Mono, monospace', fontWeight: 600,
-                }}>
-                  {doughConfigured ? `${totalQty}/${numItems}` : `${totalQty}`}
-                </span>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                  {totalQty >= 2 && (
-                    <span style={{ fontSize: '10px', color: '#B8903A', fontFamily: 'DM Sans, sans-serif' }}>
-                      {l === 'fr' ? '🍰 Une touche sucrée ?' : '🍰 Something sweet?'}
-                    </span>
-                  )}
-                  {totalQty > 0 && (
-                    <span
-                      onClick={() => setSummarySheetOpen(true)}
-                      style={{ fontSize: '11px', color: '#C4522A', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'DM Mono, monospace', textUnderlineOffset: '2px' }}
-                    >
-                      {l === 'fr' ? 'Voir →' : 'View →'}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-          {totalQty > 0 && (activePill === 'pizzas' || hidePillBar) && (
-            <div style={{ padding: '0 16px', background: 'var(--warm)' }}>
-              {Object.entries(qtys)
-                .filter(([, qty]) => (qty as number) > 0)
-                .map(([pizzaId, qty]) => {
-                  const pizza = getPizzaById(pizzaId);
-                  if (!pizza) return null;
-                  return (
-                    <div key={pizzaId} style={{
-                      display: 'flex', alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 0',
-                      borderBottom: '0.5px solid #E0D8CF',
-                    }}>
-                      <span style={{
-                        fontSize: '13px', color: '#1A1612',
-                        fontFamily: 'DM Sans, sans-serif', flex: 1,
-                      }}>
-                        {pizza.name[l] ?? pizza.name.en}
-                      </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <button
-                          onClick={e => { e.stopPropagation(); changeQty(pizzaId, -1); }}
-                          style={{
-                            width: '26px', height: '26px', borderRadius: '50%',
-                            border: '1px solid #E0D8CF', background: '#FDFBF7',
-                            cursor: 'pointer', fontSize: '16px', color: '#1A1612',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            lineHeight: 1,
-                          }}
-                        >−</button>
-                        <span style={{
-                          fontSize: '13px', fontWeight: 600, color: '#1A1612',
-                          fontFamily: 'DM Mono, monospace',
-                          minWidth: '16px', textAlign: 'center',
-                        }}>
-                          {qty as number}
-                        </span>
-                        <button
-                          onClick={e => { e.stopPropagation(); changeQty(pizzaId, 1); }}
-                          style={{
-                            width: '26px', height: '26px', borderRadius: '50%',
-                            border: '1px solid #C4522A', background: '#C4522A',
-                            cursor: 'pointer', fontSize: '16px', color: 'white',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            lineHeight: 1,
-                          }}
-                        >+</button>
-                      </div>
-                    </div>
-                  );
-                })
-              }
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* ── Summary sheet ── */}
       {summarySheetOpen && (
         <>
@@ -2136,29 +2009,146 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     </div>
                     <span style={{ marginLeft: 'auto', color: '#B8903A', fontSize: '18px', fontWeight: 300 }}>›</span>
                   </div>
+                  {/* Dough awareness */}
+                  {(() => {
+                    if (doughConfigured && totalQty <= numItems) return null;
+                    if (!doughConfigured) return (
+                      <div
+                        onClick={onGoToMyDough}
+                        style={{
+                          margin: '8px 14px 0',
+                          padding: '10px 12px',
+                          background: 'rgba(196,82,42,0.06)',
+                          border: '1px solid rgba(196,82,42,0.15)',
+                          borderRadius: '10px',
+                          cursor: onGoToMyDough ? 'pointer' : 'default',
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        }}
+                      >
+                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
+                          {l === 'fr'
+                            ? 'Définissez vos quantités dans Ma Pâte'
+                            : 'Set your dough quantities in My Dough'}
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#C4522A', fontFamily: 'DM Mono, monospace' }}>→</span>
+                      </div>
+                    );
+                    return (
+                      <div
+                        onClick={onGoToMyDough}
+                        style={{
+                          margin: '8px 14px 0',
+                          padding: '10px 12px',
+                          background: 'rgba(212,168,83,0.08)',
+                          border: '1px solid rgba(212,168,83,0.3)',
+                          borderRadius: '10px',
+                          cursor: onGoToMyDough ? 'pointer' : 'default',
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        }}
+                      >
+                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
+                          {l === 'fr'
+                            ? 'Vous aurez peut-être besoin de plus de pâte — ajustez dans Ma Pâte'
+                            : 'You may need more dough — adjust in My Dough'}
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#D4A853', fontFamily: 'DM Mono, monospace' }}>→</span>
+                      </div>
+                    );
+                  })()}
                 </>
               ) : (
                 <>
                   <div style={{ padding: '6px 14px 4px', fontSize: '11px', color: '#8A7F78' }}>
                     {l === 'fr' ? 'Une finale sucrée pour votre soirée pizza' : 'A sweet finale for your pizza night'}
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '8px 14px' }}>
-                    {DESSERT_PIZZAS.map(pizza => {
-                      const name = pizza.name[l] ?? pizza.name.en;
-                      const qty = getQty(pizza.id);
-                      return (
-                        <div key={pizza.id} style={{ border: qty > 0 ? '1.5px solid #B8903A' : '1px solid #E0D8CF', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', background: qty > 0 ? '#FBF5E8' : '#FDFBF7', transition: 'all 0.12s' }}
-                          onClick={() => changeQty(pizza.id, qty > 0 ? -qty : 1)}>
-                          <div style={{ height: '60px', background: '#2D2824', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
-                            {pizzaEmoji(pizza.id)}
+                  <div style={{
+                    display: 'flex',
+                    gap: '10px',
+                    overflowX: 'auto',
+                    padding: '8px 14px 12px',
+                    scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
+                    WebkitOverflowScrolling: 'touch',
+                  }}>
+                    {DESSERT_PIZZAS
+                      .filter(pizza =>
+                        !styleKey || (pizza.compatibleStyles ?? []).includes(styleKey as import('../lib/toppingTypes').StyleKey)
+                      )
+                      .map(pizza => {
+                        const name = pizza.name[l] ?? pizza.name.en;
+                        const qty = getQty(pizza.id);
+                        const keyIngs = pizza.ingredients
+                          .filter((i: import('../lib/toppingTypes').Ingredient) => i.category !== 'base' && i.category !== 'spice')
+                          .slice(0, 2)
+                          .map((i: import('../lib/toppingTypes').Ingredient) => (i.name as Record<string, string>)[l] ?? (i.name as Record<string, string>).en)
+                          .join(', ');
+                        const variantMap: Record<string, string> = {
+                          pizza_romana: '_pizza_romana',
+                          newyork: '_newyork', pan: '_pan', roman: '_roman',
+                        };
+                        const suffix = styleKey && variantMap[styleKey] ? variantMap[styleKey] : '';
+                        const imgSrc = `/pizzas/${pizza.id}${suffix}.webp`;
+                        const fallbackSrc = `/pizzas/${pizza.id}.webp`;
+                        return (
+                          <div
+                            key={pizza.id}
+                            onClick={() => changeQty(pizza.id, qty > 0 ? -qty : 1)}
+                            style={{
+                              flexShrink: 0,
+                              width: '140px',
+                              borderRadius: '12px',
+                              overflow: 'hidden',
+                              border: qty > 0 ? '2px solid #B8903A' : '1px solid #E0D8CF',
+                              background: '#FDFBF7',
+                              cursor: 'pointer',
+                              transition: 'border 0.15s ease',
+                            }}
+                          >
+                            <div style={{ position: 'relative', height: '100px', background: '#1A1612' }}>
+                              <img
+                                src={imgSrc}
+                                onError={e => { (e.target as HTMLImageElement).src = fallbackSrc; }}
+                                alt=""
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                              />
+                              <div style={{
+                                position: 'absolute', bottom: 0, left: 0, right: 0,
+                                background: 'linear-gradient(transparent, rgba(26,22,18,0.82))',
+                                padding: '16px 8px 6px',
+                              }}>
+                                <div style={{
+                                  fontFamily: 'Playfair Display, serif',
+                                  fontSize: '11px', fontWeight: 700,
+                                  color: '#FDFBF7', lineHeight: 1.2,
+                                }}>
+                                  {name}
+                                </div>
+                              </div>
+                              {qty > 0 && (
+                                <div style={{
+                                  position: 'absolute', top: '6px', right: '6px',
+                                  width: '20px', height: '20px', borderRadius: '50%',
+                                  background: '#B8903A',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}>
+                                  <svg viewBox="0 0 10 10" width={10} height={10} fill="none"
+                                    stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M2 5l2 2 4-4"/>
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                            <div style={{
+                              padding: '6px 8px 8px',
+                              fontFamily: 'DM Sans, sans-serif',
+                              fontSize: '10px', color: '#8A7F78',
+                              lineHeight: 1.3,
+                            }}>
+                              {keyIngs || '—'}
+                            </div>
                           </div>
-                          <div style={{ padding: '6px 8px 8px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: 600, color: '#1A1612', fontFamily: 'Georgia, serif', marginBottom: '2px' }}>{name}</div>
-                            {qty > 0 && <div style={{ fontSize: '10px', color: '#B8903A', fontWeight: 600 }}>✓ Added</div>}
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    }
                   </div>
                   <button
                     onClick={() => setDessertSheetOpen(false)}
@@ -2298,54 +2288,89 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         </>
       )}
 
-      {/* ── Party bar — fixed at bottom, hides when summary visible ── */}
-      {(activePill === 'pizzas' || hidePillBar) && !summaryVisible && (
-      <div style={{
-        position: 'fixed', bottom: '64px', left: 0, right: 0, zIndex: 30,
-        background: '#1A1612',
-        borderTop: '1px solid #C4522A',
-        display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '9px 16px',
-      }}>
-        <span style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
-          {l === 'fr' ? 'Votre pizza party' : 'Your pizza party'}
-        </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ display: 'flex', gap: '3px' }}>
-            {Array.from({ length: doughConfigured ? Math.min(numItems, 10) : Math.min(Math.max(totalQty, 1), 10) }, (_, i) => (
-              <div key={i} style={{
-                width: '8px', height: '8px', borderRadius: '50%',
-                background: i < totalQty
-                  ? (doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#C4522A')
-                  : '#3D3530',
-              }} />
-            ))}
-          </div>
-          <span style={{
-            fontSize: '11px',
-            color: doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#C4522A',
-            fontFamily: 'DM Mono, monospace', fontWeight: 600,
-          }}>
-            {doughConfigured ? `${totalQty}/${numItems}` : `${totalQty}`}
-          </span>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-            {totalQty >= 2 && (
-              <span style={{ fontSize: '10px', color: '#B8903A', fontFamily: 'DM Sans, sans-serif' }}>
-                {l === 'fr' ? '🍰 Une touche sucrée ?' : '🍰 Something sweet?'}
-              </span>
-            )}
+      {/* ── Sticky bar — always visible when pizzas pill active ── */}
+      {activePill === 'pizzas' && (
+        <div style={{
+          position: 'fixed', bottom: '72px', left: 0, right: 0,
+          background: '#1A1612',
+          borderTop: '1px solid #C4522A',
+          padding: '10px 14px',
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          zIndex: 90,
+        }}>
+          {/* Left: dots + count */}
+          <div
+            onClick={() => totalQty > 0 && setSummarySheetOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, cursor: totalQty > 0 ? 'pointer' : 'default' }}
+          >
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {Array.from({ length: Math.min(doughConfigured ? numItems : Math.max(totalQty, 3), 8) }, (_, i) => (
+                <div key={i} style={{
+                  width: '7px', height: '7px', borderRadius: '50%',
+                  background: i < totalQty
+                    ? (doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#C4522A')
+                    : '#3D3530',
+                  transition: 'background 0.2s ease',
+                }} />
+              ))}
+            </div>
+            <span style={{
+              fontFamily: 'DM Mono, monospace', fontSize: '12px', fontWeight: 600,
+              color: totalQty === 0 ? '#8A7F78'
+                : (doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#C4522A'),
+            }}>
+              {totalQty === 0
+                ? (l === 'fr'
+                  ? `Choisissez ${doughConfigured ? numItems : 'vos'} pizzas`
+                  : `Select ${doughConfigured ? numItems : 'your'} pizzas`)
+                : (doughConfigured
+                  ? `${totalQty}/${numItems}`
+                  : `${totalQty}`)}
+            </span>
             {totalQty > 0 && (
-              <span
-                onClick={() => setSummarySheetOpen(true)}
-                style={{ fontSize: '11px', color: '#C4522A', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'DM Mono, monospace', textUnderlineOffset: '2px' }}
-              >
-                {l === 'fr' ? 'Voir →' : 'View →'}
+              <span style={{
+                fontFamily: 'DM Sans, sans-serif', fontSize: '11px',
+                color: '#8A7F78', marginLeft: '2px',
+              }}>
+                {l === 'fr' ? '· voir →' : '· review →'}
               </span>
             )}
           </div>
+
+          {/* Right: Dessert CTA when threshold reached */}
+          {(() => {
+            const showDessert = doughConfigured
+              ? totalQty >= Math.ceil(numItems * 2 / 3) && totalQty < numItems && totalQty >= 3
+              : totalQty >= 3;
+            if (!showDessert) return null;
+            return (
+              <button
+                onClick={e => { e.stopPropagation(); setSummarySheetOpen(true); setDessertSheetOpen(true); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  background: 'rgba(184,144,58,0.15)',
+                  border: '1px solid rgba(184,144,58,0.4)',
+                  borderRadius: '20px', padding: '6px 12px',
+                  cursor: 'pointer', flexShrink: 0,
+                }}
+              >
+                <svg viewBox="0 0 14 14" width={12} height={12} fill="none"
+                  stroke="#B8903A" strokeWidth="1.5"
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M7 1l1.5 4H13l-3.5 2.5L11 12 7 9.5 3 12l1.5-4.5L1 5h4.5L7 1z"/>
+                </svg>
+                <span style={{
+                  fontFamily: 'DM Sans, sans-serif', fontSize: '12px',
+                  color: '#B8903A', fontWeight: 500,
+                  fontStyle: 'italic',
+                }}>
+                  {l === 'fr' ? 'Dessert ?' : 'Sweet finish?'}
+                </span>
+              </button>
+            );
+          })()}
         </div>
-      </div>
       )}
 
     </div>
