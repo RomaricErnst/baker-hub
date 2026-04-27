@@ -19,6 +19,8 @@ import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import { saveRecipe } from '../lib/supabase/saveRecipe';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
+import { clearSession, hasSession } from '../lib/session';
+import { useSessionSave } from '../hooks/useSessionSave';
 import { type UnitSystem } from '../utils/units';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
@@ -332,6 +334,8 @@ export default function Home() {
   // Auth
   const [user, setUser] = useState<User | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [sessionSaved, setSessionSaved] = useState(false);
+  const [showWelcomeBack, setShowWelcomeBack] = useState(false);
 
   const resultsRef           = useRef<HTMLDivElement>(null);
   const modeSelectorRef      = useRef<HTMLDivElement>(null);
@@ -400,6 +404,11 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Welcome back — check for saved session on mount
+  useEffect(() => {
+    if (hasSession()) setShowWelcomeBack(true);
+  }, []);
+
   // Scroll to results when they appear
   useEffect(() => {
     if (showResults) {
@@ -423,6 +432,22 @@ export default function Home() {
   useEffect(() => {
     setScheduleReady(false);
   }, [bakeType, styleKey]);
+
+  // Auto-save session to localStorage
+  useSessionSave(
+    {
+      tab, bakeType, styleKey, numItems, itemWeight, pizzaDiameter,
+      ovenType, mixerType, yeastType,
+      kitchenTemp, humidity, fridgeTemp,
+      flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+      manualHydration, manualOil, manualSugar, manualSalt,
+      targetDoughTemp, flourInFridge, wastePct, priorityOverride,
+      eatTime: eatTime?.getTime() ?? null,
+      blocks,
+      recipeGenerated, activeTab, modeChosen,
+    },
+    () => setSessionSaved(true),
+  );
 
   // ── Computed ──────────────────────────────
   const ovenData = ovenType
@@ -581,6 +606,9 @@ export default function Home() {
     setPizzaPartyTab('pick');
     setPizzasConfirmed(false);
     customOnlyStateRef.current = null;
+    clearSession();
+    setSessionSaved(false);
+    setShowWelcomeBack(false);
   }
 
   function handleGenerate() {
@@ -728,6 +756,21 @@ export default function Home() {
           showStartOver={!!bakeType}
           onStartOver={() => setShowStartOverConfirm(true)}
         />
+
+        {/* ── Session save indicator ── */}
+        {sessionSaved && (
+          <div style={{
+            position: 'absolute',
+            top: 10,
+            right: 56,
+            fontSize: '11px',
+            color: 'var(--smoke)',
+            pointerEvents: 'none',
+            fontFamily: 'var(--font-dm-mono)',
+          }}>
+            {locale === 'fr' ? 'Session enregistrée' : 'Session saved'}
+          </div>
+        )}
 
         {bakeType && (
           <div style={{
@@ -2627,6 +2670,47 @@ export default function Home() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Welcome back toast ── */}
+      {showWelcomeBack && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'var(--char)',
+            color: '#fff',
+            borderRadius: 10,
+            padding: '12px 20px',
+            fontSize: '14px',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            zIndex: 9999,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+            animation: 'fadeInUp 0.3s ease',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span>{locale === 'fr' ? 'Session precedente trouvee' : 'Previous session found'}</span>
+          <button
+            onClick={() => setShowWelcomeBack(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--smoke)',
+              cursor: 'pointer',
+              fontSize: '16px',
+              lineHeight: 1,
+              padding: 0,
+            }}
+          >
+            ×
+          </button>
         </div>
       )}
 
