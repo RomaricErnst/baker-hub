@@ -34,6 +34,7 @@ export interface SessionData {
   activeTab: string;
   modeChosen: boolean;
   pizzaParty?: { qtys: Record<string, number> } | null;
+  bakedDone?: boolean;
 }
 
 export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): void {

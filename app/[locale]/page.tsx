@@ -340,6 +340,8 @@ export default function Home() {
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
   const [pizzaPartyQtys, setPizzaPartyQtys] = useState<Record<string, number>>({});
+  const [bakePhotoUrl, setBakePhotoUrl] = useState<string | null>(null);
+  const [bakedDone, setBakedDone] = useState(false);
 
   const resultsRef           = useRef<HTMLDivElement>(null);
   const modeSelectorRef      = useRef<HTMLDivElement>(null);
@@ -465,6 +467,7 @@ export default function Home() {
     }
 
     if (session.pizzaParty?.qtys) setPizzaPartyQtys(session.pizzaParty.qtys);
+    if (session.bakedDone) setBakedDone(true);
     setShowWelcomeBack(true);
   }, []);
 
@@ -505,6 +508,7 @@ export default function Home() {
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
       recipeGenerated, activeTab, modeChosen,
       pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+      bakedDone,
     },
     () => setSessionSaved(true),
   );
@@ -671,6 +675,8 @@ export default function Home() {
     setShowWelcomeBack(false);
     setBakeEventId(null);
     setPizzaPartyQtys({});
+    setBakePhotoUrl(null);
+    setBakedDone(false);
   }
 
   function handleGenerate() {
@@ -855,6 +861,7 @@ export default function Home() {
               blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
               recipeGenerated, activeTab, modeChosen,
               pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+              bakedDone,
             };
             saveSession(sessionPayload);
             setSessionSaved(true);
@@ -1495,6 +1502,46 @@ export default function Home() {
                 </div>
               )}
 
+              {/* How did it go? card */}
+              {eatTime && new Date() > eatTime && (
+                <div style={{ border: '1.5px solid var(--border)', borderRadius: '14px', background: 'var(--warm)', padding: '14px 16px', marginTop: '16px', marginBottom: '4px' }}>
+                  <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>How did it go?</p>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <label htmlFor="bake-photo-input" style={{ width: '56px', height: '56px', borderRadius: '10px', border: '1.5px dashed var(--border)', background: bakePhotoUrl ? 'none' : 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }}>
+                      {bakePhotoUrl
+                        ? <img src={bakePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span style={{ fontSize: '20px' }}>📷</span>}
+                      <input id="bake-photo-input" type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const { compressImage, uploadPhoto } = await import('../lib/photoUpload');
+                          const blob = await compressImage(file);
+                          setBakePhotoUrl(URL.createObjectURL(blob));
+                          if (user && bakeEventId) await uploadPhoto(file, user.id, bakeEventId, 0);
+                        }}
+                      />
+                    </label>
+                    {!bakedDone ? (
+                      <button
+                        onClick={async () => {
+                          setBakedDone(true);
+                          if (user && bakeEventId) {
+                            const { markBaked } = await import('../lib/supabase/saveBakeEvent');
+                            await markBaked(bakeEventId);
+                          }
+                        }}
+                        style={{ flex: 1, background: 'var(--sage)', border: 'none', color: '#fff', borderRadius: '10px', padding: '10px 0', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-dm-sans)' }}
+                      >
+                        ✓ Mark as baked
+                      </button>
+                    ) : (
+                      <p style={{ flex: 1, fontSize: '13px', color: 'var(--sage)', fontWeight: 600, margin: 0 }}>✓ Baked!</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Start Bake Guide CTA */}
               <button
                 onClick={() => setActiveTab('guide')}
@@ -1503,16 +1550,17 @@ export default function Home() {
                   border: 'none',
                   color: 'var(--cream)',
                   borderRadius: '12px',
-                  padding: '12px 0',
+                  padding: '10px 0',
                   fontSize: '14px',
                   fontWeight: 600,
                   width: '100%',
                   marginTop: '12px',
                   cursor: 'pointer',
                   fontFamily: 'var(--font-dm-sans)',
+                  letterSpacing: '.01em',
                 }}
               >
-                ▶ Start Bake Guide
+                {t('tabs.guide')} →
               </button>
 
               {/* Edit setup button */}
@@ -1520,15 +1568,16 @@ export default function Home() {
                 onClick={() => setActiveTab('setup')}
                 style={{
                   background: 'transparent',
-                  border: '1px solid #C4522A',
-                  color: '#C4522A',
-                  borderRadius: '12px',
-                  padding: '12px 0',
+                  border: 'none',
+                  color: 'var(--smoke)',
                   fontSize: '14px',
                   fontWeight: 500,
                   width: '100%',
-                  marginTop: '8px',
+                  marginTop: '10px',
                   cursor: 'pointer',
+                  textDecoration: 'underline',
+                  padding: '4px 0',
+                  fontFamily: 'var(--font-dm-sans)',
                 }}
               >
                 {t('generate.editSetup')}
@@ -2435,6 +2484,46 @@ export default function Home() {
                 </div>
               )}
 
+              {/* How did it go? card */}
+              {eatTime && new Date() > eatTime && (
+                <div style={{ border: '1.5px solid var(--border)', borderRadius: '14px', background: 'var(--warm)', padding: '14px 16px', marginTop: '16px', marginBottom: '4px' }}>
+                  <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>How did it go?</p>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <label htmlFor="bake-photo-input" style={{ width: '56px', height: '56px', borderRadius: '10px', border: '1.5px dashed var(--border)', background: bakePhotoUrl ? 'none' : 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }}>
+                      {bakePhotoUrl
+                        ? <img src={bakePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span style={{ fontSize: '20px' }}>📷</span>}
+                      <input id="bake-photo-input" type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const { compressImage, uploadPhoto } = await import('../lib/photoUpload');
+                          const blob = await compressImage(file);
+                          setBakePhotoUrl(URL.createObjectURL(blob));
+                          if (user && bakeEventId) await uploadPhoto(file, user.id, bakeEventId, 0);
+                        }}
+                      />
+                    </label>
+                    {!bakedDone ? (
+                      <button
+                        onClick={async () => {
+                          setBakedDone(true);
+                          if (user && bakeEventId) {
+                            const { markBaked } = await import('../lib/supabase/saveBakeEvent');
+                            await markBaked(bakeEventId);
+                          }
+                        }}
+                        style={{ flex: 1, background: 'var(--sage)', border: 'none', color: '#fff', borderRadius: '10px', padding: '10px 0', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-dm-sans)' }}
+                      >
+                        ✓ Mark as baked
+                      </button>
+                    ) : (
+                      <p style={{ flex: 1, fontSize: '13px', color: 'var(--sage)', fontWeight: 600, margin: 0 }}>✓ Baked!</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Start Bake Guide CTA */}
               <button
                 onClick={() => setActiveTab('guide')}
@@ -2443,16 +2532,17 @@ export default function Home() {
                   border: 'none',
                   color: 'var(--cream)',
                   borderRadius: '12px',
-                  padding: '12px 0',
+                  padding: '10px 0',
                   fontSize: '14px',
                   fontWeight: 600,
                   width: '100%',
                   marginTop: '12px',
                   cursor: 'pointer',
                   fontFamily: 'var(--font-dm-sans)',
+                  letterSpacing: '.01em',
                 }}
               >
-                ▶ Start Bake Guide
+                {t('tabs.guide')} →
               </button>
 
               {/* Edit setup button */}
@@ -2460,15 +2550,16 @@ export default function Home() {
                 onClick={() => setActiveTab('setup')}
                 style={{
                   background: 'transparent',
-                  border: '1px solid #C4522A',
-                  color: '#C4522A',
-                  borderRadius: '12px',
-                  padding: '12px 0',
+                  border: 'none',
+                  color: 'var(--smoke)',
                   fontSize: '14px',
                   fontWeight: 500,
                   width: '100%',
-                  marginTop: '8px',
+                  marginTop: '10px',
                   cursor: 'pointer',
+                  textDecoration: 'underline',
+                  padding: '4px 0',
+                  fontFamily: 'var(--font-dm-sans)',
                 }}
               >
                 {t('generate.editSetup')}
