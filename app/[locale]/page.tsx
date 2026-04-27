@@ -19,7 +19,7 @@ import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import { saveRecipe } from '../lib/supabase/saveRecipe';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
-import { clearSession, loadSession } from '../lib/session';
+import { clearSession, loadSession, saveSession } from '../lib/session';
 import { useSessionSave } from '../hooks/useSessionSave';
 import { type UnitSystem } from '../utils/units';
 import {
@@ -361,7 +361,6 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide' | 'pizzaparty'>('setup');
   const [pizzaPartyTab, setPizzaPartyTab] = useState<'pick' | 'shop' | 'prep' | 'bake'>('pick');
   const [navHidden, setNavHidden] = useState(false);
-  const [showStartOverConfirm, setShowStartOverConfirm] = useState(false);
   const lastScrollY = useRef(0);
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -808,8 +807,37 @@ export default function Home() {
           units={units}
           onUnitsChange={setUnitsAndPersist}
           onLoadRecipe={loadRecipe}
-          showStartOver={!!bakeType}
-          onStartOver={() => setShowStartOverConfirm(true)}
+          recipeGenerated={recipeGenerated}
+          sessionSaved={sessionSaved}
+          sessionSummary={(() => {
+            if (!styleKey || !eatTime) return '';
+            const styleName = (ALL_STYLES as Record<string, { name?: string }>)[styleKey]?.name ?? styleKey;
+            const dateStr = eatTime.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+            const timeStr = formatTime(eatTime);
+            const itemLabel = bakeType === 'bread'
+              ? (numItems === 1 ? 'loaf' : 'loaves')
+              : (numItems === 1 ? 'pizza' : 'pizzas');
+            return `${styleName} · ${numItems} ${itemLabel} · ${dateStr}, ${timeStr}`;
+          })()}
+          sessionDoughSpec={tab === 'custom' && manualHydration !== undefined
+            ? `${manualHydration}% · ${prefermentType !== 'none' ? prefermentType.charAt(0).toUpperCase() + prefermentType.slice(1) + ' · ' : ''}Custom`
+            : ''}
+          onSaveSession={() => {
+            saveSession({
+              tab, bakeType, styleKey, numItems, itemWeight,
+              pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+              fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+              manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
+              flourInFridge, wastePct, priorityOverride,
+              eatTime: eatTime?.getTime() ?? null,
+              blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
+              recipeGenerated, activeTab, modeChosen,
+            });
+            setSessionSaved(true);
+          }}
+          onNewSession={() => {
+            if (window.confirm(locale === 'fr' ? 'Effacer la session en cours ?' : 'Clear the current session?')) startOver();
+          }}
         />
 
         {/* ── Session save indicator ── */}
@@ -2648,85 +2676,6 @@ export default function Home() {
           })
         )}
       </div>}
-
-      {/* ── Start over confirmation sheet ── */}
-      {showStartOverConfirm && (
-        <div
-          onClick={() => setShowStartOverConfirm(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(26,22,18,0.55)',
-            zIndex: 200,
-            display: 'flex',
-            alignItems: 'flex-end',
-          }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              width: '100%',
-              background: '#FDFBF7',
-              borderRadius: '18px 18px 0 0',
-              padding: '20px 20px 32px',
-              borderTop: '1px solid #E0D8CF',
-            }}
-          >
-            <div style={{
-              width: '36px', height: '4px', borderRadius: '2px',
-              background: '#E0D8CF', margin: '0 auto 20px',
-            }}/>
-            <p style={{
-              fontFamily: 'var(--font-playfair)',
-              fontSize: '1.1rem', fontWeight: 700,
-              color: 'var(--char)', marginBottom: '8px',
-            }}>
-              {locale === 'fr' ? 'Recommencer ?' : 'Start over?'}
-            </p>
-            <p style={{
-              fontSize: '14px', color: '#8A7F78',
-              lineHeight: 1.5, marginBottom: '20px',
-              fontFamily: 'DM Sans, sans-serif',
-            }}>
-              {locale === 'fr'
-                ? 'Cela effacera votre configuration et votre planning. Vous repartirez du début.'
-                : "This will clear your dough setup and schedule. You'll go back to the beginning."}
-            </p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={() => setShowStartOverConfirm(false)}
-                style={{
-                  flex: 1, padding: '12px',
-                  border: '1px solid #E0D8CF',
-                  borderRadius: '10px',
-                  background: '#fff',
-                  fontSize: '14px', fontWeight: 600,
-                  color: '#3D3530',
-                  cursor: 'pointer',
-                  fontFamily: 'DM Sans, sans-serif',
-                }}
-              >
-                {locale === 'fr' ? 'Continuer' : 'Keep going'}
-              </button>
-              <button
-                onClick={() => { startOver(); setPizzaPartyTab('pick'); setShowStartOverConfirm(false); }}
-                style={{
-                  flex: 1, padding: '12px',
-                  border: 'none',
-                  borderRadius: '10px',
-                  background: '#C4522A',
-                  fontSize: '14px', fontWeight: 600,
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontFamily: 'DM Sans, sans-serif',
-                }}
-              >
-                {locale === 'fr' ? 'Oui, recommencer' : 'Yes, start over'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Welcome back toast ── */}
       {showWelcomeBack && (

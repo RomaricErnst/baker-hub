@@ -31,7 +31,6 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
     onUpdate(r.id, 'notes', notes);
   }
 
-  // Confirm-delete state
   if (confirmDelete) {
     return (
       <div style={{
@@ -68,7 +67,6 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
     );
   }
 
-  // Edit mode — both fields open
   if (editing) {
     return (
       <div style={{
@@ -77,7 +75,6 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
         border: '1px solid rgba(255,255,255,0.2)',
         overflow: 'hidden',
       }}>
-        {/* Subtitle visible at top */}
         <div style={{ padding: '8px 12px 6px' }}>
           <div style={{
             fontSize: '.65rem', color: 'rgba(255,255,255,0.38)',
@@ -94,7 +91,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder="Recipe name…"
+            placeholder="Recipe name..."
             style={{
               display: 'block', width: '100%', boxSizing: 'border-box',
               background: 'rgba(255,255,255,0.08)',
@@ -108,7 +105,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
           <textarea
             value={notes}
             onChange={e => setNotes(e.target.value)}
-            placeholder="Notes…"
+            placeholder="Notes..."
             rows={2}
             style={{
               display: 'block', width: '100%', boxSizing: 'border-box',
@@ -145,7 +142,6 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
     );
   }
 
-  // Read-only — two-zone layout
   return (
     <div style={{
       borderRadius: '10px',
@@ -153,7 +149,6 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
       border: '1px solid rgba(255,255,255,0.08)',
       overflow: 'hidden',
     }}>
-      {/* Identity zone — tap to edit */}
       <div
         onClick={() => setEditing(true)}
         style={{ padding: '9px 12px 8px', cursor: 'pointer' }}
@@ -186,7 +181,6 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
         )}
       </div>
 
-      {/* Action bar */}
       <div style={{
         display: 'flex', borderTop: '1px solid rgba(255,255,255,0.06)',
       }}>
@@ -197,7 +191,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
             borderRight: '1px solid rgba(255,255,255,0.06)',
             color: 'rgba(255,255,255,0.5)', fontSize: '.68rem',
             fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
-          }}>✏ Edit</button>
+          }}>Edit</button>
         <button
           onClick={() => setConfirmDelete(true)}
           style={{
@@ -205,14 +199,14 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
             borderRight: '1px solid rgba(255,255,255,0.06)',
             color: 'rgba(255,255,255,0.5)', fontSize: '.68rem',
             fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
-          }}>🗑 Delete</button>
+          }}>Delete</button>
         <button
           onClick={() => onLoad?.(r)}
           style={{
             flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
             color: '#E8785A', fontSize: '.68rem',
             fontFamily: 'var(--font-dm-sans)', fontWeight: 600, cursor: 'pointer',
-          }}>Load</button>
+          }}>Resume</button>
       </div>
     </div>
   );
@@ -222,14 +216,22 @@ export default function Header({
   units = 'metric',
   onUnitsChange,
   onLoadRecipe,
-  showStartOver,
-  onStartOver,
+  recipeGenerated,
+  sessionSaved,
+  sessionSummary,
+  sessionDoughSpec,
+  onSaveSession,
+  onNewSession,
 }: {
   units?: UnitSystem;
   onUnitsChange?: (u: UnitSystem) => void;
   onLoadRecipe?: (r: SavedRecipe) => void;
-  showStartOver?: boolean;
-  onStartOver?: () => void;
+  recipeGenerated?: boolean;
+  sessionSaved?: boolean;
+  sessionSummary?: string;
+  sessionDoughSpec?: string;
+  onSaveSession?: () => void;
+  onNewSession?: () => void;
 }) {
   const t = useTranslations('header');
   const locale = useLocale();
@@ -246,7 +248,6 @@ export default function Header({
   const [showEmailForm, setShowEmailForm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Auth state
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -255,7 +256,6 @@ export default function Header({
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load saved recipes when menu opens and user is logged in
   useEffect(() => {
     if (menuOpen && user) {
       setLoadingRecipes(true);
@@ -306,6 +306,11 @@ export default function Header({
     deleteRecipe(id);
   }
 
+  const monoLabel: React.CSSProperties = {
+    fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+    textTransform: 'uppercase', letterSpacing: '.06em',
+  };
+
   return (
     <>
     <header style={{
@@ -315,7 +320,7 @@ export default function Header({
       position: 'sticky', top: 0, zIndex: 100,
       borderBottom: '2px solid var(--terra)',
     }}>
-      {/* Left: ☰ menu button */}
+      {/* Left: hamburger menu button */}
       <div ref={menuRef}>
         <button
           onClick={() => setMenuOpen(v => !v)}
@@ -337,7 +342,7 @@ export default function Header({
         </button>
       </div>
 
-      {/* Centre: logo + tagline (absolute so it stays truly centred) */}
+      {/* Centre: logo + tagline */}
       <div style={{
         position: 'absolute', left: '50%', transform: 'translateX(-50%)',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -358,28 +363,8 @@ export default function Header({
         }}>{t('tagline')}</div>
       </div>
 
-      {/* Right: ↺ Start over or balance placeholder */}
-      {showStartOver && onStartOver ? (
-        <button
-          onClick={onStartOver}
-          style={{
-            fontSize: '11px',
-            fontWeight: 500,
-            color: '#8A7F78',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '6px 10px',
-            fontFamily: 'DM Sans, sans-serif',
-            flexShrink: 0,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          ↺ Start over
-        </button>
-      ) : (
-        <div style={{ width: '42px', flexShrink: 0 }} />
-      )}
+      {/* Right: balance placeholder */}
+      <div style={{ width: '42px', flexShrink: 0 }} />
     </header>
 
     {/* Drawer rendered via portal — outside header stacking context */}
@@ -395,13 +380,14 @@ export default function Header({
           position: 'fixed', top: 0, left: 0, bottom: 0, width: '300px',
           background: '#1A1612', borderRight: '1px solid rgba(255,255,255,0.12)',
           boxShadow: '4px 0 24px rgba(0,0,0,0.5)', zIndex: 200,
-          overflowY: 'auto', display: 'flex', flexDirection: 'column',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
           animation: 'slideInLeft 0.25s ease',
         }}>
           {/* Drawer header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '16px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)',
+            flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <img src="/logo-mark.png" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }}/>
@@ -412,50 +398,168 @@ export default function Header({
             <button
               onClick={() => setMenuOpen(false)}
               style={{ background: 'transparent', border: 'none', color: 'var(--smoke)', fontSize: '1.2rem', cursor: 'pointer', padding: '4px 8px', lineHeight: 1 }}
-            >✕</button>
+            >x</button>
           </div>
 
-          {/* Language + Units */}
-          {([
-            {
-              label: 'Language',
-              options: [
-                { key: 'en', display: 'EN', active: locale === 'en', onSelect: () => { router.replace(pathname, { locale: 'en' }); setMenuOpen(false); } },
-                { key: 'fr', display: 'FR', active: locale === 'fr', onSelect: () => { router.replace(pathname, { locale: 'fr' }); setMenuOpen(false); } },
-              ],
-            },
-            {
-              label: 'Units',
-              options: [
-                { key: 'metric',   display: 'g/°C',   active: units === 'metric',   onSelect: () => onUnitsChange?.('metric') },
-                { key: 'imperial', display: 'oz/°F',  active: units === 'imperial', onSelect: () => onUnitsChange?.('imperial') },
-              ],
-            },
-          ] as const).map(row => (
-            <div key={row.label} style={{
-              padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <span style={{
-                fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
-                textTransform: 'uppercase', letterSpacing: '.06em',
-              }}>{row.label}</span>
-              <div style={{ display: 'flex', gap: '.25rem' }}>
-                {row.options.map(opt => (
-                  <button key={opt.key} onClick={opt.onSelect} style={{
-                    minWidth: '48px', padding: '.22rem .4rem', borderRadius: '5px',
-                    border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)',
-                    fontSize: '.75rem', fontWeight: 600, textAlign: 'center',
-                    background: opt.active ? 'var(--terra)' : 'transparent',
-                    color: opt.active ? '#fff' : 'var(--smoke)',
-                  }}>{opt.display}</button>
-                ))}
-              </div>
-            </div>
-          ))}
+          {/* Scrollable body */}
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
 
-          {/* Auth */}
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            {/* ── Section 1: Current session ── */}
+            {recipeGenerated && (
+              <div style={{
+                padding: '12px 16px',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                flexShrink: 0,
+              }}>
+                <div style={{ ...monoLabel, marginBottom: '8px' }}>
+                  {locale === 'fr' ? 'Session en cours' : 'Current session'}
+                </div>
+
+                {/* Summary card */}
+                <div style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '10px',
+                  padding: '10px 12px',
+                }}>
+                  {sessionSummary && (
+                    <div style={{
+                      fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
+                      fontWeight: 600, color: 'var(--cream)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>{sessionSummary}</div>
+                  )}
+                  {sessionDoughSpec && (
+                    <div style={{
+                      fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
+                      color: 'var(--smoke)', marginTop: '2px',
+                    }}>{sessionDoughSpec}</div>
+                  )}
+                </div>
+
+                {/* Action row */}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
+                  {sessionSaved ? (
+                    <span style={{
+                      fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
+                      color: 'var(--sage)', cursor: 'default',
+                    }}>
+                      {locale === 'fr' ? 'Session enregistree' : 'Session saved'}
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => { onSaveSession?.(); setMenuOpen(false); }}
+                      style={{
+                        fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
+                        color: 'var(--terra)',
+                        border: '1px solid rgba(196,82,42,0.4)',
+                        borderRadius: '6px',
+                        background: 'rgba(196,82,42,0.1)',
+                        padding: '3px 10px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {locale === 'fr' ? 'Enregistrer' : 'Save session'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { onNewSession?.(); setMenuOpen(false); }}
+                    style={{
+                      fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
+                      color: 'var(--smoke)',
+                      background: 'none', border: 'none',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    {locale === 'fr' ? 'Nouvelle session' : 'New session'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Section 2: My sessions ── */}
+            <div style={{
+              padding: '12px 16px',
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              display: 'flex', flexDirection: 'column',
+            }}>
+              <div style={{ ...monoLabel, marginBottom: '10px' }}>
+                {locale === 'fr' ? 'Mes sessions' : 'My sessions'}
+              </div>
+              {!user ? (
+                <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+                  {locale === 'fr' ? 'Connectez-vous pour sauvegarder vos sessions' : 'Sign in to save your sessions'}
+                </div>
+              ) : loadingRecipes ? (
+                <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>
+                  {locale === 'fr' ? 'Chargement...' : 'Loading...'}
+                </div>
+              ) : recipes.length === 0 ? (
+                <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+                  {locale === 'fr' ? 'Aucune session sauvegardee' : 'No saved sessions yet'}
+                </div>
+              ) : (
+                <div style={{ maxHeight: '260px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {recipes.map(r => (
+                    <RecipeCard
+                      key={r.id} r={r}
+                      onUpdate={handleFieldBlur}
+                      onLoad={r2 => { onLoadRecipe?.(r2); setMenuOpen(false); }}
+                      onDelete={handleDeleteRecipe}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ── Section 3: Language · Units ── */}
+            {([
+              {
+                label: locale === 'fr' ? 'Langue' : 'Language',
+                options: [
+                  { key: 'en', display: 'EN', active: locale === 'en', onSelect: () => { router.replace(pathname, { locale: 'en' }); setMenuOpen(false); } },
+                  { key: 'fr', display: 'FR', active: locale === 'fr', onSelect: () => { router.replace(pathname, { locale: 'fr' }); setMenuOpen(false); } },
+                ],
+              },
+              {
+                label: locale === 'fr' ? 'Unites' : 'Units',
+                options: [
+                  { key: 'metric',   display: 'g/°C',   active: units === 'metric',   onSelect: () => onUnitsChange?.('metric') },
+                  { key: 'imperial', display: 'oz/°F',  active: units === 'imperial', onSelect: () => onUnitsChange?.('imperial') },
+                ],
+              },
+            ] as const).map((row, idx) => (
+              <div key={row.label} style={{
+                padding: '10px 16px',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                borderTop: idx === 0 ? 'none' : undefined,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                flexShrink: 0,
+              }}>
+                <span style={monoLabel}>{row.label}</span>
+                <div style={{ display: 'flex', gap: '.25rem' }}>
+                  {row.options.map(opt => (
+                    <button key={opt.key} onClick={opt.onSelect} style={{
+                      minWidth: '48px', padding: '.22rem .4rem', borderRadius: '5px',
+                      border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)',
+                      fontSize: '.75rem', fontWeight: 600, textAlign: 'center',
+                      background: opt.active ? 'var(--terra)' : 'transparent',
+                      color: opt.active ? '#fff' : 'var(--smoke)',
+                    }}>{opt.display}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+          </div>{/* end scrollable body */}
+
+          {/* ── Section 4: Auth — pinned to bottom ── */}
+          <div style={{
+            padding: '12px 16px',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            flexShrink: 0,
+          }}>
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.5rem' }}>
                 <span style={{
@@ -471,7 +575,7 @@ export default function Header({
               </div>
             ) : emailSent ? (
               <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', textAlign: 'center', padding: '.25rem 0' }}>
-                Check your inbox — link sent ✓
+                Check your inbox — link sent
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -520,33 +624,6 @@ export default function Header({
             )}
           </div>
 
-          {/* Saved recipes */}
-          <div style={{ padding: '12px 16px' }}>
-            <div style={{
-              fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
-              textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px',
-            }}>Saved recipes</div>
-            {!user ? (
-              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
-                Sign in to see your saved recipes
-              </div>
-            ) : loadingRecipes ? (
-              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>Loading…</div>
-            ) : recipes.length === 0 ? (
-              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>No saved recipes yet</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto' }}>
-                {recipes.map(r => (
-                  <RecipeCard
-                    key={r.id} r={r}
-                    onUpdate={handleFieldBlur}
-                    onLoad={r2 => { onLoadRecipe?.(r2); setMenuOpen(false); }}
-                    onDelete={handleDeleteRecipe}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       </>,
       document.body
