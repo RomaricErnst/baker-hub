@@ -19,6 +19,8 @@ interface PizzaPartyProps {
   doughConfigured?: boolean;
   onHasSelection?: (hasSelection: boolean) => void;
   bakeEventId?: string | null;
+  initialQtys?: Record<string, number>;
+  onQtysSnapshot?: (qtys: Record<string, number>) => void;
   onGoToMyDough?: () => void;
 }
 
@@ -33,8 +35,8 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, onGoToMyDough }: PizzaPartyProps) {
-  const [qtys, setQtys] = useState<Record<string, number>>({});
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, onGoToMyDough }: PizzaPartyProps) {
+  const [qtys, setQtys] = useState<Record<string, number>>(initialQtys ?? {});
   const [styleKey, setStyleKey] = useState<string | undefined>(initialStyleKey);
   const [pickStyleKey, setPickStyleKey] = useState<string | undefined>(initialStyleKey);
 
@@ -46,6 +48,11 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
     const total = Object.values(qtys).reduce((s, v) => s + v, 0);
     onHasSelection?.(total > 0);
   }, [qtys, onHasSelection]);
+
+  useEffect(() => {
+    const t = setTimeout(() => onQtysSnapshot?.(qtys), 800);
+    return () => clearTimeout(t);
+  }, [qtys, onQtysSnapshot]);
 
   const showSelector = activeTab === 'pick' || activeTab === 'shop';
 

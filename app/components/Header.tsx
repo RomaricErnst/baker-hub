@@ -6,7 +6,7 @@ import { useRouter, usePathname } from '../navigation';
 import { createClient } from '@/app/lib/supabase/client';
 import { fetchRecipes, recipeSubtitle, type SavedRecipe } from '@/app/lib/supabase/fetchRecipes';
 import { updateRecipe, deleteRecipe } from '@/app/lib/supabase/saveRecipe';
-import { fetchBakeEvents, deleteBakeEvent, bakeEventTitle, bakeEventDoughSpec, type BakeEvent } from '@/app/lib/supabase/fetchBakeEvents';
+import { fetchBakeEvents, deleteBakeEvent, bakeEventTitle, bakeEventDoughSpec, fetchPhotosForEvents, type BakeEvent, type BakePhoto } from '@/app/lib/supabase/fetchBakeEvents';
 import type { User } from '@supabase/supabase-js';
 import { type UnitSystem } from '../utils/units';
 import SessionViewer from './SessionViewer';
@@ -249,6 +249,7 @@ export default function Header({
   const [menuOpen, setMenuOpen] = useState(false);
   const [recipes, setRecipes] = useState<SavedRecipe[]>([]);
   const [bakeEvents, setBakeEvents] = useState<BakeEvent[]>([]);
+  const [eventPhotos, setEventPhotos] = useState<Record<string, BakePhoto[]>>({});
   const [loadingRecipes, setLoadingRecipes] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [emailSent, setEmailSent] = useState(false);
@@ -269,8 +270,13 @@ export default function Header({
       setLoadingRecipes(true);
       Promise.all([fetchRecipes(), fetchBakeEvents()]).then(([recipeData, eventData]) => {
         setRecipes(recipeData);
-        setBakeEvents(eventData.filter(e => e.notes !== '__autosave__'));
+        const filtered = eventData.filter(e => e.notes !== '__autosave__');
+        setBakeEvents(filtered);
         setLoadingRecipes(false);
+        const ids = filtered.map(e => e.id);
+        if (ids.length > 0) {
+          fetchPhotosForEvents(ids).then(photos => setEventPhotos(photos));
+        }
       });
     }
   }, [menuOpen, user]);
@@ -547,6 +553,46 @@ export default function Header({
                             color: statusColor,
                           }}>{statusLabel}</div>
                         </div>
+                        {/* Photo thumbnails */}
+                        {(() => {
+                          const photos = eventPhotos[event.id] ?? [];
+                          if (photos.length === 0) return null;
+                          const bySlot = photos.reduce((acc, p) => {
+                            const key = p.slot_index ?? 'main';
+                            if (!acc[key]) acc[key] = [];
+                            acc[key].push(p);
+                            return acc;
+                          }, {} as Record<string | number, BakePhoto[]>);
+                          const slots = Object.values(bySlot);
+                          return (
+                            <div style={{
+                              display: 'flex', flexWrap: 'wrap', gap: '4px',
+                              padding: '0 12px 8px',
+                            }}>
+                              {slots.map((slot, si) => (
+                                <div key={si} style={{
+                                  width: '40px', height: '40px',
+                                  borderRadius: '6px', overflow: 'hidden',
+                                  position: 'relative', flexShrink: 0,
+                                }}>
+                                  <img
+                                    src={slot[0].photo_url}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                    alt=""
+                                  />
+                                  {slot.length > 1 && (
+                                    <div style={{
+                                      position: 'absolute', bottom: '2px', right: '2px',
+                                      background: 'rgba(0,0,0,0.6)', borderRadius: '4px',
+                                      padding: '1px 4px',
+                                      fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: 'white',
+                                    }}>{`×${slot.length}`}</div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
                         <div style={{ display: 'flex', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                           <button
                             onClick={() => { setMenuOpen(false); setViewingEvent(event); }}

@@ -62,6 +62,35 @@ export async function fetchBakeEvents(): Promise<BakeEvent[]> {
   } catch { return []; }
 }
 
+export interface BakePhoto {
+  id: string;
+  slot_index: number | null;
+  photo_url: string;
+  taken_at: string;
+}
+
+export async function fetchPhotosForEvents(
+  eventIds: string[]
+): Promise<Record<string, BakePhoto[]>> {
+  try {
+    if (eventIds.length === 0) return {};
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('bake_photos')
+      .select('id, bake_event_id, slot_index, photo_url, taken_at')
+      .in('bake_event_id', eventIds)
+      .order('taken_at', { ascending: true });
+    if (error || !data) return {};
+    const result: Record<string, BakePhoto[]> = {};
+    for (const photo of data) {
+      const eid = photo.bake_event_id as string;
+      if (!result[eid]) result[eid] = [];
+      result[eid].push(photo as BakePhoto);
+    }
+    return result;
+  } catch { return {}; }
+}
+
 export async function deleteBakeEvent(id: string): Promise<boolean> {
   try {
     const supabase = createClient();

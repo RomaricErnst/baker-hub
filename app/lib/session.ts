@@ -33,6 +33,7 @@ export interface SessionData {
   recipeGenerated: boolean;
   activeTab: string;
   modeChosen: boolean;
+  pizzaParty?: { qtys: Record<string, number> } | null;
 }
 
 export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): void {

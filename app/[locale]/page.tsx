@@ -339,6 +339,7 @@ export default function Home() {
   const [sessionSaved, setSessionSaved] = useState(false);
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
+  const [pizzaPartyQtys, setPizzaPartyQtys] = useState<Record<string, number>>({});
 
   const resultsRef           = useRef<HTMLDivElement>(null);
   const modeSelectorRef      = useRef<HTMLDivElement>(null);
@@ -463,6 +464,7 @@ export default function Home() {
       }
     }
 
+    if (session.pizzaParty?.qtys) setPizzaPartyQtys(session.pizzaParty.qtys);
     setShowWelcomeBack(true);
   }, []);
 
@@ -502,6 +504,7 @@ export default function Home() {
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
       recipeGenerated, activeTab, modeChosen,
+      pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
     },
     () => setSessionSaved(true),
   );
@@ -667,6 +670,7 @@ export default function Home() {
     setSessionSaved(false);
     setShowWelcomeBack(false);
     setBakeEventId(null);
+    setPizzaPartyQtys({});
   }
 
   function handleGenerate() {
@@ -850,6 +854,7 @@ export default function Home() {
               eatTime: eatTime?.getTime() ?? null,
               blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
               recipeGenerated, activeTab, modeChosen,
+              pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
             };
             saveSession(sessionPayload);
             setSessionSaved(true);
@@ -1570,6 +1575,8 @@ export default function Home() {
                   doughConfigured={!!styleKey}
                   onHasSelection={setPizzasConfirmed}
                   bakeEventId={bakeEventId}
+                  initialQtys={pizzaPartyQtys}
+                  onQtysSnapshot={setPizzaPartyQtys}
                   onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
                 />
               </div>
@@ -2508,6 +2515,8 @@ export default function Home() {
                   doughConfigured={!!styleKey}
                   onHasSelection={setPizzasConfirmed}
                   bakeEventId={bakeEventId}
+                  initialQtys={pizzaPartyQtys}
+                  onQtysSnapshot={setPizzaPartyQtys}
                   onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
                 />
               </div>
