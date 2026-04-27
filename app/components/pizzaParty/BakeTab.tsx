@@ -12,6 +12,7 @@ interface BakeTabProps {
   locale: string;
   styleKey?: string;
   bakeEventId?: string | null;
+  ovenType?: string;
 }
 
 function getAllPizzas(): Pizza[] {
@@ -27,7 +28,106 @@ const ORDER_MAP: Record<IngredientCategory, number> = {
   finish: 6,
 };
 
-export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId }: BakeTabProps) {
+// ── Inline CoachButton (self-contained, no external deps beyond React) ────────
+const COACH_STEPS_BT = new Set(['poolish','biga','starter','mix','bulk','shape','open','proof','score','topping_check','bake']);
+const GATE_STEPS_BT  = new Set(['poolish','biga','starter','proof']);
+
+function CoachButton({
+  stepId, styleKey, kitchenTemp, locale, ovenType, pizzaName,
+}: {
+  stepId: string;
+  styleKey: string;
+  kitchenTemp: number;
+  locale: string;
+  ovenType?: string;
+  pizzaName?: string;
+}) {
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState(false);
+  const fileInputRef            = useRef<HTMLInputElement>(null);
+  const isGate                  = GATE_STEPS_BT.has(stepId);
+  const l = locale === 'fr' ? 'fr' : 'en';
+
+  const LABELS: Record<string, { en: string; fr: string }> = {
+    open:          { en: 'Base ready to top?',  fr: 'Base prête ?' },
+    topping_check: { en: 'Ready to bake?',      fr: 'Prêt à enfourner ?' },
+    bake:          { en: 'How did it go?',       fr: "Comment ça s'est passé ?" },
+  };
+  const label = LABELS[stepId]?.[l] ?? 'Ask coach';
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const ALLOWED = ['image/jpeg','image/png','image/webp','image/heic','image/heif'];
+    if (!ALLOWED.includes(file.type)) return;
+    setLoading(true); setFeedback(null); setError(false);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch('/api/bake-coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: base64,
+          mimeType: (file.type === 'image/heic' || file.type === 'image/heif') ? 'image/jpeg' : file.type,
+          stepId, styleKey, kitchenTemp, locale, ovenType, pizzaName,
+        }),
+      });
+      const data = await res.json();
+      if (data.feedback) setFeedback(data.feedback); else setError(true);
+    } catch { setError(true); }
+    finally { setLoading(false); }
+  }
+
+  if (!COACH_STEPS_BT.has(stepId)) return null;
+
+  return (
+    <div style={{ marginTop: '14px', marginBottom: '4px' }}>
+      <input type="file" accept="image/*" capture="environment"
+        style={{ display: 'none' }} ref={fileInputRef} onChange={handleFile} />
+      {feedback && (
+        <div style={{ background: '#1A1612', borderLeft: '3px solid #C4522A', borderRadius: '10px', padding: '12px 14px', marginBottom: '10px', position: 'relative' }}>
+          <div style={{ color: '#F5F0E8', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>{feedback}</div>
+          <button onClick={() => { setFeedback(null); setError(false); }}
+            style={{ position: 'absolute', bottom: '8px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: 0 }}>
+            {l === 'fr' ? 'Reprendre' : 'Retake'}
+          </button>
+        </div>
+      )}
+      {error && !feedback && (
+        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', marginBottom: '8px' }}>
+          {l === 'fr' ? 'Coach indisponible. Réessayez.' : 'Coach unavailable. Please try again.'}
+        </div>
+      )}
+      {!feedback && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={() => fileInputRef.current?.click()} disabled={loading}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#1A1612', border: isGate ? '1px solid rgba(212,168,83,0.5)' : '1px solid rgba(245,240,232,0.15)', borderRadius: '20px', padding: '4px 12px', cursor: loading ? 'default' : 'pointer', height: '28px', opacity: loading ? 0.7 : 1 }}>
+            {loading ? (
+              <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '1.5px solid rgba(245,240,232,0.3)', borderTop: '1.5px solid #F5F0E8', borderRadius: '50%', animation: 'bh-spin 0.7s linear infinite', flexShrink: 0 }} />
+            ) : (
+              <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="#F5F0E8" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 6A1.2 1.2 0 012.2 4.8h.7a1.6 1.6 0 001.33-.71l.65-.98A1.6 1.6 0 016.2 2.4h3.6a1.6 1.6 0 011.33.71l.65.98a1.6 1.6 0 001.33.71h.69A1.2 1.2 0 0115 6v7a1.2 1.2 0 01-1.2 1.2H2.2A1.2 1.2 0 011 13V6z"/>
+                <circle cx="8" cy="9" r="2.4"/>
+              </svg>
+            )}
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: loading ? 'rgba(245,240,232,0.6)' : '#F5F0E8', whiteSpace: 'nowrap' }}>
+              {loading ? (l === 'fr' ? 'Analyse...' : 'Analysing...') : label}
+            </span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId, ovenType }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [selectedPizzaId, setSelectedPizzaId] = useState<string | null>(null);
@@ -206,6 +306,17 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId 
           </div>
         )}
 
+        {/* Open base check */}
+        <div style={{ padding: '0 16px' }}>
+          <CoachButton
+            stepId="open"
+            styleKey={styleKey ?? 'neapolitan'}
+            kitchenTemp={22}
+            locale={l}
+            ovenType={ovenType}
+          />
+        </div>
+
         {/* BEFORE section */}
         {beforeIngredients.length > 0 && (
           <>
@@ -285,6 +396,18 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId 
             ))}
           </>
         )}
+
+        {/* Topping check before baking */}
+        <div style={{ padding: '0 16px' }}>
+          <CoachButton
+            stepId="topping_check"
+            styleKey={styleKey ?? 'neapolitan'}
+            kitchenTemp={22}
+            locale={l}
+            ovenType={ovenType}
+            pizzaName={pizza.name[l]}
+          />
+        </div>
 
         {/* Photo soft-warn banner */}
         {photoWarn && (

@@ -213,13 +213,15 @@ const COACH_STEPS = new Set(['poolish','biga','starter','mix','bulk','shape','pr
 const GATE_STEPS  = new Set(['poolish','biga','starter','proof']);
 
 function CoachButton({
-  stepId, styleKey, kitchenTemp, prefermentType, locale,
+  stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName,
 }: {
   stepId: string;
   styleKey: string;
   kitchenTemp: number;
   prefermentType?: string;
   locale: string;
+  ovenType?: string;
+  pizzaName?: string;
 }) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [loading, setLoading]   = useState(false);
@@ -229,14 +231,17 @@ function CoachButton({
   const l = locale === 'fr' ? 'fr' : 'en';
 
   const LABELS: Record<string, { en: string; fr: string }> = {
-    poolish: { en: 'Is it ready?',     fr: 'Est-il prêt ?' },
-    biga:    { en: 'Is it ready?',     fr: 'Est-il prêt ?' },
-    starter: { en: 'Is it ready?',     fr: 'Est-il prêt ?' },
-    mix:     { en: 'Check my gluten',  fr: 'Vérifier le gluten' },
-    bulk:    { en: 'Ready to shape?',  fr: 'Prêt à façonner ?' },
-    shape:   { en: 'Check my shape',   fr: 'Vérifier la forme' },
-    proof:   { en: 'Over or under?',   fr: 'Sur ou sous-fermenté ?' },
-    bake:    { en: 'How did it go?',   fr: "Comment ça s'est passé ?" },
+    poolish:       { en: 'Is it ready?',          fr: 'Est-il prêt ?' },
+    biga:          { en: 'Is it ready?',           fr: 'Est-il prêt ?' },
+    starter:       { en: 'Is it ready?',           fr: 'Est-il prêt ?' },
+    mix:           { en: 'Check my gluten',        fr: 'Vérifier le gluten' },
+    bulk:          { en: 'Ready to shape?',        fr: 'Prêt à façonner ?' },
+    shape:         { en: 'Check my shape',         fr: 'Vérifier la forme' },
+    open:          { en: 'Base ready to top?',     fr: 'Base prête ?' },
+    proof:         { en: 'Over or under?',         fr: 'Sur ou sous-fermenté ?' },
+    score:         { en: 'Check my scoring',       fr: 'Vérifier les incisions' },
+    topping_check: { en: 'Ready to bake?',         fr: 'Prêt à enfourner ?' },
+    bake:          { en: 'How did it go?',         fr: "Comment ça s'est passé ?" },
   };
 
   const label = LABELS[stepId]?.[l] ?? 'Ask coach';
@@ -271,6 +276,8 @@ function CoachButton({
           kitchenTemp,
           prefermentType,
           locale,
+          ovenType,
+          pizzaName,
         }),
       });
 
@@ -480,7 +487,8 @@ export default function BakeGuide({
           </Section>
           <CoachButton stepId={isPoolish ? 'poolish' : 'biga'}
             styleKey={styleKey} kitchenTemp={kitchenTemp}
-            prefermentType={prefermentType} locale={locale ?? 'en'} />
+            prefermentType={prefermentType} locale={locale ?? 'en'}
+            ovenType={ovenType} />
         </StepCard>
       )}
 
@@ -501,7 +509,8 @@ export default function BakeGuide({
           </Section>
           <CoachButton stepId="starter"
             styleKey={styleKey} kitchenTemp={kitchenTemp}
-            prefermentType={prefermentType} locale={locale ?? 'en'} />
+            prefermentType={prefermentType} locale={locale ?? 'en'}
+            ovenType={ovenType} />
         </StepCard>
       )}
 
@@ -632,7 +641,8 @@ export default function BakeGuide({
         </Section>
         <CoachButton stepId="mix"
           styleKey={styleKey} kitchenTemp={kitchenTemp}
-          prefermentType={prefermentType} locale={locale ?? 'en'} />
+          prefermentType={prefermentType} locale={locale ?? 'en'}
+          ovenType={ovenType} />
       </StepCard>
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
@@ -679,7 +689,8 @@ export default function BakeGuide({
         </Section>
         <CoachButton stepId="bulk"
           styleKey={styleKey} kitchenTemp={kitchenTemp}
-          prefermentType={prefermentType} locale={locale ?? 'en'} />
+          prefermentType={prefermentType} locale={locale ?? 'en'}
+          ovenType={ovenType} />
       </StepCard>
 
       {/* ── STEP: Cold Retard 1 ──────────────────────── */}
@@ -786,7 +797,8 @@ export default function BakeGuide({
           </Section>
           <CoachButton stepId="shape"
             styleKey={styleKey} kitchenTemp={kitchenTemp}
-            prefermentType={prefermentType} locale={locale ?? 'en'} />
+            prefermentType={prefermentType} locale={locale ?? 'en'}
+            ovenType={ovenType} />
         </StepCard>
       )}
 
@@ -861,7 +873,14 @@ export default function BakeGuide({
           </Section>
           <CoachButton stepId="proof"
             styleKey={styleKey} kitchenTemp={kitchenTemp}
-            prefermentType={prefermentType} locale={locale ?? 'en'} />
+            prefermentType={prefermentType} locale={locale ?? 'en'}
+            ovenType={ovenType} />
+          {!isBread && (
+            <CoachButton stepId="open"
+              styleKey={styleKey} kitchenTemp={kitchenTemp}
+              prefermentType={prefermentType} locale={locale ?? 'en'}
+              ovenType={ovenType} />
+          )}
         </StepCard>
       )}
 
@@ -975,9 +994,16 @@ export default function BakeGuide({
             <ExtLink href="https://www.theperfectloaf.com/guides/how-to-score-bread-dough/" label={t('bake.learnMoreScoring')} />
           </Section>
         )}
+        {isBread && (
+          <CoachButton stepId="score"
+            styleKey={styleKey} kitchenTemp={kitchenTemp}
+            prefermentType={prefermentType} locale={locale ?? 'en'}
+            ovenType={ovenType} />
+        )}
         <CoachButton stepId="bake"
           styleKey={styleKey} kitchenTemp={kitchenTemp}
-          prefermentType={prefermentType} locale={locale ?? 'en'} />
+          prefermentType={prefermentType} locale={locale ?? 'en'}
+          ovenType={ovenType} />
       </StepCard>
 
       {learnTerm && <LearnModal term={learnTerm} onClose={() => setLearnTerm(null)} />}

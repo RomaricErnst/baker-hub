@@ -1628,6 +1628,7 @@ export default function Home() {
                   initialQtys={pizzaPartyQtys}
                   onQtysSnapshot={setPizzaPartyQtys}
                   onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
+                  ovenType={ovenType ?? undefined}
                 />
               </div>
             )}
@@ -2611,6 +2612,7 @@ export default function Home() {
                   initialQtys={pizzaPartyQtys}
                   onQtysSnapshot={setPizzaPartyQtys}
                   onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
+                  ovenType={ovenType ?? undefined}
                 />
               </div>
             )}
