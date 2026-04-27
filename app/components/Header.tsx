@@ -6,6 +6,7 @@ import { useRouter, usePathname } from '../navigation';
 import { createClient } from '@/app/lib/supabase/client';
 import { fetchRecipes, recipeSubtitle, type SavedRecipe } from '@/app/lib/supabase/fetchRecipes';
 import { updateRecipe, deleteRecipe } from '@/app/lib/supabase/saveRecipe';
+import { fetchBakeEvents, deleteBakeEvent, bakeEventTitle, bakeEventDoughSpec, type BakeEvent } from '@/app/lib/supabase/fetchBakeEvents';
 import type { User } from '@supabase/supabase-js';
 import { type UnitSystem } from '../utils/units';
 
@@ -222,6 +223,7 @@ export default function Header({
   sessionDoughSpec,
   onSaveSession,
   onNewSession,
+  onLoadBakeEvent,
 }: {
   units?: UnitSystem;
   onUnitsChange?: (u: UnitSystem) => void;
@@ -232,6 +234,7 @@ export default function Header({
   sessionDoughSpec?: string;
   onSaveSession?: () => void;
   onNewSession?: () => void;
+  onLoadBakeEvent?: (event: BakeEvent) => void;
 }) {
   const t = useTranslations('header');
   const locale = useLocale();
@@ -242,6 +245,7 @@ export default function Header({
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [recipes, setRecipes] = useState<SavedRecipe[]>([]);
+  const [bakeEvents, setBakeEvents] = useState<BakeEvent[]>([]);
   const [loadingRecipes, setLoadingRecipes] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [emailSent, setEmailSent] = useState(false);
@@ -259,8 +263,9 @@ export default function Header({
   useEffect(() => {
     if (menuOpen && user) {
       setLoadingRecipes(true);
-      fetchRecipes().then(data => {
-        setRecipes(data);
+      Promise.all([fetchRecipes(), fetchBakeEvents()]).then(([recipeData, eventData]) => {
+        setRecipes(recipeData);
+        setBakeEvents(eventData.filter(e => e.notes !== '__autosave__'));
         setLoadingRecipes(false);
       });
     }
@@ -495,20 +500,73 @@ export default function Header({
                 <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>
                   {locale === 'fr' ? 'Chargement...' : 'Loading...'}
                 </div>
-              ) : recipes.length === 0 ? (
+              ) : bakeEvents.length === 0 ? (
                 <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
                   {locale === 'fr' ? 'Aucune session sauvegardee' : 'No saved sessions yet'}
                 </div>
               ) : (
                 <div style={{ maxHeight: '260px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {recipes.map(r => (
-                    <RecipeCard
-                      key={r.id} r={r}
-                      onUpdate={handleFieldBlur}
-                      onLoad={r2 => { onLoadRecipe?.(r2); setMenuOpen(false); }}
-                      onDelete={handleDeleteRecipe}
-                    />
-                  ))}
+                  {bakeEvents.map(event => {
+                    const title = bakeEventTitle(event);
+                    const spec = bakeEventDoughSpec(event);
+                    const statusColor = event.status === 'baked' ? 'var(--sage)' : event.status === 'pizza_planned' ? 'var(--gold)' : 'var(--smoke)';
+                    const statusLabel = event.status === 'baked' ? 'Baked' : event.status === 'pizza_planned' ? 'Pizza planned' : 'Dough planned';
+                    return (
+                      <div key={event.id} style={{
+                        borderRadius: '10px',
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        overflow: 'hidden',
+                      }}>
+                        <div
+                          onClick={() => { onLoadBakeEvent?.(event); setMenuOpen(false); }}
+                          style={{ padding: '9px 12px 8px', cursor: 'pointer' }}
+                        >
+                          <div style={{
+                            fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
+                            fontWeight: 600, color: 'var(--cream)',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>{title}</div>
+                          {spec && (
+                            <div style={{
+                              fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
+                              color: 'var(--smoke)', marginTop: '2px',
+                            }}>{spec}</div>
+                          )}
+                          <div style={{
+                            display: 'inline-flex', alignItems: 'center',
+                            marginTop: '4px',
+                            padding: '1px 6px',
+                            borderRadius: '10px',
+                            background: 'rgba(255,255,255,0.06)',
+                            fontSize: '.60rem', fontFamily: 'var(--font-dm-mono)',
+                            color: statusColor,
+                          }}>{statusLabel}</div>
+                        </div>
+                        <div style={{ display: 'flex', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                          <button
+                            onClick={() => { onLoadBakeEvent?.(event); setMenuOpen(false); }}
+                            style={{
+                              flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
+                              borderRight: '1px solid rgba(255,255,255,0.06)',
+                              color: '#E8785A', fontSize: '.68rem',
+                              fontFamily: 'var(--font-dm-sans)', fontWeight: 600, cursor: 'pointer',
+                            }}>Resume</button>
+                          <button
+                            onClick={async () => {
+                              if (!window.confirm('Delete this session?')) return;
+                              await deleteBakeEvent(event.id);
+                              setBakeEvents(prev => prev.filter(e => e.id !== event.id));
+                            }}
+                            style={{
+                              flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
+                              color: 'rgba(255,255,255,0.5)', fontSize: '.68rem',
+                              fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                            }}>Delete</button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

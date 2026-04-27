@@ -18,6 +18,7 @@ interface PizzaPartyProps {
   onTabChange: (tab: Tab) => void;
   doughConfigured?: boolean;
   onHasSelection?: (hasSelection: boolean) => void;
+  bakeEventId?: string | null;
   onGoToMyDough?: () => void;
 }
 
@@ -32,7 +33,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, onGoToMyDough }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, onGoToMyDough }: PizzaPartyProps) {
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [styleKey, setStyleKey] = useState<string | undefined>(initialStyleKey);
   const [pickStyleKey, setPickStyleKey] = useState<string | undefined>(initialStyleKey);
@@ -85,6 +86,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           selectedPizzas={qtys}
           locale={locale}
           styleKey={pickStyleKey}
+          bakeEventId={bakeEventId}
         />
       )}
     </div>

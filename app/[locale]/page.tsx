@@ -19,7 +19,9 @@ import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import { saveRecipe } from '../lib/supabase/saveRecipe';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
-import { clearSession, loadSession, saveSession } from '../lib/session';
+import { clearSession, loadSession, saveSession, type SessionData } from '../lib/session';
+import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
+import type { BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
 import { type UnitSystem } from '../utils/units';
 import {
@@ -336,6 +338,7 @@ export default function Home() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [sessionSaved, setSessionSaved] = useState(false);
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
+  const [bakeEventId, setBakeEventId] = useState<string | null>(null);
 
   const resultsRef           = useRef<HTMLDivElement>(null);
   const modeSelectorRef      = useRef<HTMLDivElement>(null);
@@ -663,6 +666,7 @@ export default function Home() {
     clearSession();
     setSessionSaved(false);
     setShowWelcomeBack(false);
+    setBakeEventId(null);
   }
 
   function handleGenerate() {
@@ -680,6 +684,20 @@ export default function Home() {
     setShowResults(true);
     setActiveTab('plan');
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
+    if (user) {
+      const sessionPayload = {
+        tab, bakeType: bakeType ?? '', styleKey, numItems, itemWeight,
+        pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+        fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+        manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
+        flourInFridge, wastePct, priorityOverride,
+        eatTime: eatTime?.getTime() ?? null,
+        blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
+        recipeGenerated: true, activeTab: 'plan' as const, modeChosen,
+      };
+      upsertBakeEvent({ session: sessionPayload as SessionData })
+        .then(id => { if (id) setBakeEventId(id); });
+    }
   }
 
   async function handleSaveRecipe(recipeMode: 'simple' | 'custom') {
@@ -822,8 +840,8 @@ export default function Home() {
           sessionDoughSpec={tab === 'custom' && manualHydration !== undefined
             ? `${manualHydration}% · ${prefermentType !== 'none' ? prefermentType.charAt(0).toUpperCase() + prefermentType.slice(1) + ' · ' : ''}Custom`
             : ''}
-          onSaveSession={() => {
-            saveSession({
+          onSaveSession={async () => {
+            const sessionPayload = {
               tab, bakeType, styleKey, numItems, itemWeight,
               pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
               fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
@@ -832,11 +850,62 @@ export default function Home() {
               eatTime: eatTime?.getTime() ?? null,
               blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
               recipeGenerated, activeTab, modeChosen,
-            });
+            };
+            saveSession(sessionPayload);
             setSessionSaved(true);
+            if (user) {
+              const id = await upsertBakeEvent({ session: sessionPayload as SessionData });
+              if (id) setBakeEventId(id);
+            }
           }}
           onNewSession={() => {
             if (window.confirm(locale === 'fr' ? 'Effacer la session en cours ?' : 'Clear the current session?')) startOver();
+          }}
+          onLoadBakeEvent={(event: BakeEvent) => {
+            if (!event.dough_snapshot) return;
+            const snap = event.dough_snapshot;
+            setTab(snap.tab as 'simple' | 'custom');
+            setBakeType(snap.bakeType as BakeType | null);
+            setStyleKey(snap.styleKey as StyleKey | null);
+            setNumItems(snap.numItems);
+            setItemWeight(snap.itemWeight);
+            setPizzaDiameter(snap.pizzaDiameter);
+            setOvenType(snap.ovenType as AnyOvenType | null);
+            setMixerType(snap.mixerType as MixerType | null);
+            setYeastType(snap.yeastType as YeastType | null);
+            setKitchenTemp(snap.kitchenTemp);
+            setHumidity(snap.humidity);
+            setFridgeTemp(snap.fridgeTemp);
+            if (snap.flourBlend) setFlourBlend(snap.flourBlend as FlourBlend);
+            setPrefermentType(snap.prefermentType as PrefermentType);
+            setPrefermentFlourPct(snap.prefermentFlourPct);
+            setPrefOffsetH(snap.prefOffsetH);
+            setManualHydration(snap.manualHydration);
+            setManualOil(snap.manualOil);
+            setManualSugar(snap.manualSugar);
+            setManualSalt(snap.manualSalt);
+            setTargetDoughTemp(snap.targetDoughTemp);
+            setFlourInFridge(snap.flourInFridge);
+            setWastePct(snap.wastePct);
+            setPriorityOverride(snap.priorityOverride);
+            if (snap.eatTime) setEatTime(new Date(snap.eatTime));
+            if (snap.blocks?.length) {
+              setBlocks((snap.blocks as unknown[]).map((b) => {
+                const bl = b as { label: string; from: number; to: number };
+                return { label: bl.label, from: new Date(bl.from), to: new Date(bl.to) };
+              }));
+            }
+            setRecipeGenerated(snap.recipeGenerated);
+            setModeChosen(snap.modeChosen);
+            setBakeEventId(event.id);
+            if (snap.recipeGenerated) {
+              setActiveTab(snap.activeTab as 'setup' | 'plan' | 'guide' | 'pizzaparty');
+              setAdvancedStep(snap.tab === 'custom' ? 99 : 1);
+              setActiveStep(snap.tab === 'custom' ? 1 : 99);
+              setShowResults(true);
+              setProtocolStale(false);
+              setSessionSaved(true);
+            }
           }}
         />
 
@@ -1500,6 +1569,7 @@ export default function Home() {
                   onTabChange={setPizzaPartyTab}
                   doughConfigured={!!styleKey}
                   onHasSelection={setPizzasConfirmed}
+                  bakeEventId={bakeEventId}
                   onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
                 />
               </div>
@@ -2437,6 +2507,7 @@ export default function Home() {
                   onTabChange={setPizzaPartyTab}
                   doughConfigured={!!styleKey}
                   onHasSelection={setPizzasConfirmed}
+                  bakeEventId={bakeEventId}
                   onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
                 />
               </div>

@@ -11,6 +11,7 @@ interface BakeTabProps {
   selectedPizzas: Record<string, number>;
   locale: string;
   styleKey?: string;
+  bakeEventId?: string | null;
 }
 
 function getAllPizzas(): Pizza[] {
@@ -26,7 +27,7 @@ const ORDER_MAP: Record<IngredientCategory, number> = {
   finish: 6,
 };
 
-export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabProps) {
+export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [selectedPizzaId, setSelectedPizzaId] = useState<string | null>(null);
@@ -89,7 +90,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
     setUploadingSlot(selectedPizzaId);
     try {
       const slotIndex = selectedEntries.findIndex(e => e.pizza.id === selectedPizzaId);
-      const result = await uploadPhoto(file, user.id, null, slotIndex >= 0 ? slotIndex : null);
+      const result = await uploadPhoto(file, user.id, bakeEventId ?? null, slotIndex >= 0 ? slotIndex : null);
       setPhotos(prev => ({ ...prev, [selectedPizzaId]: result.url }));
       if (result.warned) setPhotoWarn(true);
     } catch (err) {
