@@ -9,6 +9,7 @@ import { updateRecipe, deleteRecipe } from '@/app/lib/supabase/saveRecipe';
 import { fetchBakeEvents, deleteBakeEvent, bakeEventTitle, bakeEventDoughSpec, type BakeEvent } from '@/app/lib/supabase/fetchBakeEvents';
 import type { User } from '@supabase/supabase-js';
 import { type UnitSystem } from '../utils/units';
+import SessionViewer from './SessionViewer';
 
 function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   r: SavedRecipe;
@@ -224,6 +225,7 @@ export default function Header({
   onSaveSession,
   onNewSession,
   onLoadBakeEvent,
+  onResumeBakeEvent,
 }: {
   units?: UnitSystem;
   onUnitsChange?: (u: UnitSystem) => void;
@@ -235,6 +237,7 @@ export default function Header({
   onSaveSession?: () => void;
   onNewSession?: () => void;
   onLoadBakeEvent?: (event: BakeEvent) => void;
+  onResumeBakeEvent?: (event: BakeEvent) => void;
 }) {
   const t = useTranslations('header');
   const locale = useLocale();
@@ -251,6 +254,7 @@ export default function Header({
   const [emailSent, setEmailSent] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [viewingEvent, setViewingEvent] = useState<BakeEvent | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -545,13 +549,13 @@ export default function Header({
                         </div>
                         <div style={{ display: 'flex', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                           <button
-                            onClick={() => { onLoadBakeEvent?.(event); setMenuOpen(false); }}
+                            onClick={() => { setMenuOpen(false); setViewingEvent(event); }}
                             style={{
                               flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
                               borderRight: '1px solid rgba(255,255,255,0.06)',
                               color: '#E8785A', fontSize: '.68rem',
                               fontFamily: 'var(--font-dm-sans)', fontWeight: 600, cursor: 'pointer',
-                            }}>Resume</button>
+                            }}>View</button>
                           <button
                             onClick={async () => {
                               if (!window.confirm('Delete this session?')) return;
@@ -686,6 +690,12 @@ export default function Header({
       </>,
       document.body
     )}
+
+    <SessionViewer
+      event={viewingEvent}
+      onClose={() => setViewingEvent(null)}
+      onResume={(ev) => { onResumeBakeEvent?.(ev); setViewingEvent(null); }}
+    />
     </>
   );
 }

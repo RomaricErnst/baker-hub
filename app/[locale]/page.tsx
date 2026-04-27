@@ -861,7 +861,7 @@ export default function Home() {
           onNewSession={() => {
             if (window.confirm(locale === 'fr' ? 'Effacer la session en cours ?' : 'Clear the current session?')) startOver();
           }}
-          onLoadBakeEvent={(event: BakeEvent) => {
+          onResumeBakeEvent={(event: BakeEvent) => {
             if (!event.dough_snapshot) return;
             const snap = event.dough_snapshot;
             setTab(snap.tab as 'simple' | 'custom');
