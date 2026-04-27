@@ -2320,7 +2320,7 @@ export default function Home() {
       </div>
 
       {/* ── Bottom nav ── */}
-      <div style={{
+      {!!bakeType && <div style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
@@ -2547,7 +2547,7 @@ export default function Home() {
             );
           })
         )}
-      </div>
+      </div>}
 
       {/* ── Start over confirmation sheet ── */}
       {showStartOverConfirm && (

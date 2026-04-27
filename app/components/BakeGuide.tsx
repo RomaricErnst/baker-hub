@@ -134,13 +134,33 @@ function StepCard({
           borderLeft: `4px solid ${ea}`,
         }}
       >
+        {/* Circle toggle — tap to mark done/undo, independent of accordion */}
+        <div
+          onClick={e => { e.stopPropagation(); onDone(); }}
+          style={{
+            width: '24px', height: '24px', borderRadius: '50%',
+            flexShrink: 0, cursor: 'pointer',
+            border: done ? '2px solid #6B7A5A' : '2px solid #C8C0B8',
+            background: done ? '#6B7A5A' : 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          {done && (
+            <svg viewBox="0 0 12 12" width={12} height={12} fill="none"
+              stroke="white" strokeWidth="2.2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 6l3 3 5-5"/>
+            </svg>
+          )}
+        </div>
         <span style={{
           width: '28px', height: '28px', borderRadius: '50%',
           background: `${ea}18`, border: `1.5px solid ${ea}40`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
           color: ea, fontWeight: 700, flexShrink: 0,
-        }}>{done ? '✓' : number}</span>
+        }}>{number}</span>
         <span style={{ width: '22px', height: '22px', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: ea }}>{icon}</span>
@@ -148,6 +168,7 @@ function StepCard({
           <div style={{
             fontFamily: 'var(--font-playfair)', fontSize: '1rem',
             fontWeight: 700, color: done ? D.smoke : D.char,
+            textDecoration: done ? 'line-through' : 'none',
           }}>{title}</div>
           {time && (
             <div style={{ fontSize: '.72rem', color: D.smoke, fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem' }}>
@@ -156,24 +177,9 @@ function StepCard({
             </div>
           )}
         </div>
-        {done ? (
-          <span style={{ color: D.sage, fontSize: '.85rem', flexShrink: 0 }}>✓</span>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexShrink: 0 }}>
-            {open && (
-              <button
-                onClick={e => { e.stopPropagation(); onDone(); }}
-                style={{
-                  background: D.sage, color: '#fff', border: 'none',
-                  borderRadius: '20px', padding: '.25rem .75rem',
-                  fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
-                  cursor: 'pointer', fontWeight: 600,
-                }}
-              >Done ✓</button>
-            )}
-            <span style={{ color: D.smoke, fontSize: '.8rem' }}>{open ? '▲' : '▼'}</span>
-          </div>
-        )}
+        <span style={{ color: D.smoke, fontSize: '.8rem', flexShrink: 0 }}>
+          {open ? '▲' : '▼'}
+        </span>
       </div>
       {/* Card body */}
       {open && (
@@ -251,7 +257,19 @@ export default function BakeGuide({
       open: currentStep === s,
       done: doneSteps.has(s),
       onToggle: () => setCurrentStep(prev => prev === s ? 0 : s),
-      onDone: () => { setDoneSteps(prev => new Set(prev).add(s)); setCurrentStep(s + 1); },
+      onDone: () => {
+        setDoneSteps(prev => {
+          const next = new Set(prev);
+          if (next.has(s)) {
+            next.delete(s);
+            return next;
+          } else {
+            next.add(s);
+            setCurrentStep(s + 1);
+            return next;
+          }
+        });
+      },
     };
   };
 

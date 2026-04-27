@@ -45,9 +45,13 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
   const totalOrdered = selectedEntries.reduce((acc, e) => acc + e.qty, 0);
   const totalDone = Object.values(doneCounts).reduce((a, b) => a + b, 0);
 
-  function markOneDone(pizzaId: string) {
-    setDoneCounts(prev => ({ ...prev, [pizzaId]: (prev[pizzaId] ?? 0) + 1 }));
-    setSelectedPizzaId(null);
+  function changeDoneCount(pizzaId: string, delta: number) {
+    setDoneCounts(prev => {
+      const current = prev[pizzaId] ?? 0;
+      const ordered = selectedPizzas[pizzaId] ?? 0;
+      const next = Math.min(ordered, Math.max(0, current + delta));
+      return { ...prev, [pizzaId]: next };
+    });
   }
 
   function handlePhotoCapture(e: React.ChangeEvent<HTMLInputElement>) {
@@ -264,7 +268,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
             title={l === 'fr' ? 'Prendre une photo' : 'Take a photo'}
             style={{
               width: '48px', height: '48px', flexShrink: 0,
-              background: photos[selectedPizzaId ?? ''] ? 'transparent' : 'var(--border)',
+              background: photos[selectedPizzaId ?? ''] ? 'transparent' : '#F0EAE3',
               border: photos[selectedPizzaId ?? '']
                 ? '1.5px solid #6B7A5A' : '1px solid var(--border)',
               borderRadius: '10px',
@@ -273,11 +277,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
             }}
           >
             {photos[selectedPizzaId ?? ''] ? (
-              <img
-                src={photos[selectedPizzaId ?? '']}
-                style={{ width: '48px', height: '48px', objectFit: 'cover' }}
-                alt=""
-              />
+              <img src={photos[selectedPizzaId ?? '']}
+                style={{ width: '48px', height: '48px', objectFit: 'cover' }} alt=""/>
             ) : (
               <svg viewBox="0 0 20 20" width={20} height={20} fill="none"
                 stroke="var(--smoke)" strokeWidth="1.5"
@@ -287,37 +288,57 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
               </svg>
             )}
           </button>
-          {/* Done button — marks one unit baked, returns to grid */}
+          {/* Baked stepper */}
           {(() => {
             const currentEntry = selectedEntries.find(e => e.pizza.id === selectedPizzaId);
-            const doneCount = doneCounts[selectedPizzaId ?? ''] ?? 0;
-            const remainingQty = (currentEntry?.qty ?? 1) - doneCount;
-            const isLastOne = remainingQty <= 1;
+            const ordered = currentEntry?.qty ?? 1;
+            const baked = doneCounts[selectedPizzaId ?? ''] ?? 0;
             return (
-              <button
-                onClick={() => selectedPizzaId && markOneDone(selectedPizzaId)}
-                style={{
-                  flex: 1, height: '48px',
-                  background: '#6B7A5A', color: 'white',
-                  border: 'none', borderRadius: '10px',
-                  fontFamily: 'DM Sans, sans-serif',
-                  fontSize: '15px', fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', gap: '8px',
-                }}
-              >
-                <svg viewBox="0 0 16 16" width={16} height={16} fill="none"
-                  stroke="white" strokeWidth="2.2"
-                  strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2 8l4 4 8-8"/>
-                </svg>
-                {isLastOne
-                  ? (l === 'fr' ? 'Pizza cuite !' : 'Pizza baked!')
-                  : (l === 'fr'
-                    ? `Cuite — encore ${remainingQty - 1}`
-                    : `Baked — ${remainingQty - 1} left`)}
-              </button>
+              <div style={{
+                flex: 1, height: '48px',
+                display: 'flex', alignItems: 'center',
+                background: '#F5F0E8',
+                borderRadius: '10px',
+                border: '1px solid var(--border)',
+                overflow: 'hidden',
+              }}>
+                <button
+                  onClick={() => selectedPizzaId && changeDoneCount(selectedPizzaId, -1)}
+                  disabled={baked === 0}
+                  style={{
+                    width: '48px', height: '48px', flexShrink: 0,
+                    background: 'transparent', border: 'none',
+                    fontSize: '22px', lineHeight: 1,
+                    color: baked === 0 ? '#C8C0B8' : '#6B7A5A',
+                    cursor: baked === 0 ? 'default' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >−</button>
+                <div style={{
+                  flex: 1, textAlign: 'center',
+                  fontFamily: 'DM Mono, monospace', lineHeight: 1.2,
+                }}>
+                  <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--char)' }}>
+                    {baked} / {ordered}
+                  </div>
+                  <div style={{ fontSize: '10px', color: 'var(--smoke)', marginTop: '1px' }}>
+                    {l === 'fr' ? 'cuites' : 'baked'}
+                  </div>
+                </div>
+                <button
+                  onClick={() => selectedPizzaId && changeDoneCount(selectedPizzaId, 1)}
+                  disabled={baked >= ordered}
+                  style={{
+                    width: '48px', height: '48px', flexShrink: 0,
+                    background: baked >= ordered ? 'transparent' : '#6B7A5A',
+                    border: 'none', fontSize: '22px', lineHeight: 1,
+                    color: baked >= ordered ? '#C8C0B8' : 'white',
+                    cursor: baked >= ordered ? 'default' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'background 0.15s ease',
+                  }}
+                >+</button>
+              </div>
             );
           })()}
         </div>
@@ -375,21 +396,16 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', padding: '16px' }}>
           {selectedEntries.map(({ pizza, qty }) => {
-            const doneCount = doneCounts[pizza.id] ?? 0;
-            const remainingQty = qty - doneCount;
-            const isFullyDone = remainingQty <= 0;
             return (
               <div
                 key={pizza.id}
-                onClick={() => !isFullyDone && setSelectedPizzaId(pizza.id)}
+                onClick={() => setSelectedPizzaId(pizza.id)}
                 style={{
-                  border: isFullyDone ? '1.5px solid #6B7A5A' : '1px solid var(--border)',
+                  border: '1px solid var(--border)',
                   borderRadius: '14px',
                   overflow: 'hidden',
-                  cursor: isFullyDone ? 'default' : 'pointer',
+                  cursor: 'pointer',
                   boxShadow: '0 2px 8px rgba(26,22,18,0.06)',
-                  opacity: isFullyDone ? 0.55 : 1,
-                  transition: 'opacity 0.2s ease, border 0.2s ease',
                 }}
               >
                 <div style={{ height: '160px', background: '#1A1612', overflow: 'hidden', position: 'relative' }}>
@@ -399,37 +415,42 @@ export default function BakeTab({ selectedPizzas, locale, styleKey }: BakeTabPro
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                     onError={e => handleImageError(e, pizza.id)}
                   />
-                  {isFullyDone && (
-                    <div style={{
-                      position: 'absolute', top: '8px', right: '8px',
-                      width: '28px', height: '28px', borderRadius: '50%',
-                      background: '#6B7A5A',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <svg viewBox="0 0 12 12" width={14} height={14} fill="none"
-                        stroke="white" strokeWidth="2.2"
-                        strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M2 6l3 3 5-5"/>
-                      </svg>
-                    </div>
-                  )}
+                  {(() => {
+                    const baked = doneCounts[pizza.id] ?? 0;
+                    if (baked === 0) return null;
+                    const allDone = baked >= qty;
+                    return (
+                      <div style={{
+                        position: 'absolute', top: '8px', right: '8px',
+                        background: '#6B7A5A', borderRadius: '12px',
+                        padding: '3px 8px',
+                        display: 'flex', alignItems: 'center', gap: '4px',
+                      }}>
+                        {allDone && (
+                          <svg viewBox="0 0 10 10" width={10} height={10} fill="none"
+                            stroke="white" strokeWidth="2.2"
+                            strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1.5 5l2.5 2.5 4.5-4.5"/>
+                          </svg>
+                        )}
+                        <span style={{
+                          fontFamily: 'DM Mono, monospace', fontSize: '11px',
+                          color: 'white', fontWeight: 700, lineHeight: 1,
+                        }}>
+                          {baked}/{qty}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div style={{ padding: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline' }}>
                     <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '15px', fontWeight: 700, color: 'var(--char)' }}>
                       {pizza.name[l]}
                     </span>
-                    {remainingQty > 1 && (
+                    {qty > 1 && (
                       <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: 'var(--smoke)', marginLeft: '6px' }}>
-                        &times;{remainingQty}
-                      </span>
-                    )}
-                    {isFullyDone && (
-                      <span style={{
-                        fontFamily: 'DM Sans, sans-serif', fontSize: '11px',
-                        color: '#6B7A5A', marginLeft: '6px', fontWeight: 500,
-                      }}>
-                        {l === 'fr' ? '✓ Cuite' : '✓ Done'}
+                        &times;{qty}
                       </span>
                     )}
                   </div>
