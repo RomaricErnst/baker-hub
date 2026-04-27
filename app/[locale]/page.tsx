@@ -19,7 +19,7 @@ import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import { saveRecipe } from '../lib/supabase/saveRecipe';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
-import { clearSession, hasSession } from '../lib/session';
+import { clearSession, loadSession } from '../lib/session';
 import { useSessionSave } from '../hooks/useSessionSave';
 import { type UnitSystem } from '../utils/units';
 import {
@@ -404,9 +404,64 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Welcome back — check for saved session on mount
+  // Welcome back — hydrate full wizard state from localStorage on mount
   useEffect(() => {
-    if (hasSession()) setShowWelcomeBack(true);
+    const session = loadSession();
+    if (!session) return;
+
+    setTab(session.tab as 'simple' | 'custom');
+    setBakeType(session.bakeType as BakeType | null);
+    setStyleKey(session.styleKey as StyleKey | null);
+    setNumItems(session.numItems);
+    setItemWeight(session.itemWeight);
+    setPizzaDiameter(session.pizzaDiameter);
+    setOvenType(session.ovenType as AnyOvenType | null);
+    setMixerType(session.mixerType as MixerType | null);
+    setYeastType(session.yeastType as YeastType | null);
+    setKitchenTemp(session.kitchenTemp);
+    setHumidity(session.humidity);
+    setFridgeTemp(session.fridgeTemp);
+    if (session.flourBlend) setFlourBlend(session.flourBlend as FlourBlend);
+    setPrefermentType(session.prefermentType as PrefermentType);
+    setPrefermentFlourPct(session.prefermentFlourPct);
+    setPrefOffsetH(session.prefOffsetH);
+    setManualHydration(session.manualHydration);
+    setManualOil(session.manualOil);
+    setManualSugar(session.manualSugar);
+    setManualSalt(session.manualSalt);
+    setTargetDoughTemp(session.targetDoughTemp);
+    setFlourInFridge(session.flourInFridge);
+    setWastePct(session.wastePct);
+    setPriorityOverride(session.priorityOverride);
+    if (session.eatTime) setEatTime(new Date(session.eatTime));
+    if (session.blocks && session.blocks.length > 0) {
+      setBlocks(session.blocks.map((b: unknown) => {
+        const block = b as { label: string; from: number; to: number };
+        return { label: block.label, from: new Date(block.from), to: new Date(block.to) };
+      }));
+    }
+    setRecipeGenerated(session.recipeGenerated);
+    setModeChosen(session.modeChosen);
+
+    if (session.recipeGenerated) {
+      setActiveTab(session.activeTab as 'setup' | 'plan' | 'guide' | 'pizzaparty');
+      if (session.tab === 'custom') {
+        setAdvancedStep(99);
+      } else {
+        setActiveStep(99);
+      }
+      setShowResults(true);
+      setProtocolStale(false);
+      setSessionSaved(true);
+    } else {
+      if (session.tab === 'custom') {
+        setAdvancedStep(session.ovenType ? 3 : 2);
+      } else {
+        setActiveStep(session.ovenType ? 3 : 2);
+      }
+    }
+
+    setShowWelcomeBack(true);
   }, []);
 
   // Scroll to results when they appear
@@ -443,7 +498,7 @@ export default function Home() {
       manualHydration, manualOil, manualSugar, manualSalt,
       targetDoughTemp, flourInFridge, wastePct, priorityOverride,
       eatTime: eatTime?.getTime() ?? null,
-      blocks,
+      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
       recipeGenerated, activeTab, modeChosen,
     },
     () => setSessionSaved(true),
