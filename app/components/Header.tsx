@@ -240,6 +240,7 @@ export default function Header({
   onResumeBakeEvent?: (event: BakeEvent) => void;
 }) {
   const t = useTranslations('header');
+  const tS = useTranslations('session');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -378,8 +379,52 @@ export default function Header({
         }}>{t('tagline')}</div>
       </div>
 
-      {/* Right: balance placeholder */}
-      <div style={{ width: '42px', flexShrink: 0 }} />
+      {/* Right: session pill or balance placeholder */}
+      {recipeGenerated ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <button
+            onClick={() => onSaveSession?.()}
+            style={{
+              fontFamily: 'var(--font-dm-mono)',
+              fontSize: '11px',
+              borderRadius: '20px',
+              padding: '4px 12px',
+              border: sessionSaved
+                ? '1px solid rgba(107,122,90,0.5)'
+                : '1px solid rgba(196,82,42,0.5)',
+              background: sessionSaved
+                ? 'rgba(107,122,90,0.12)'
+                : 'rgba(196,82,42,0.12)',
+              color: sessionSaved ? 'var(--sage)' : 'var(--terra)',
+              cursor: sessionSaved ? 'default' : 'pointer',
+              transition: 'all .2s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {sessionSaved ? tS('saved') : tS('saveSession')}
+          </button>
+          <button
+            onClick={() => {
+              if (window.confirm(tS('newSessionConfirm'))) onNewSession?.();
+            }}
+            style={{
+              fontFamily: 'var(--font-dm-mono)',
+              fontSize: '11px',
+              color: 'var(--smoke)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              padding: 0,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {tS('newSession')}
+          </button>
+        </div>
+      ) : (
+        <div style={{ width: '42px', flexShrink: 0 }} />
+      )}
     </header>
 
     {/* Drawer rendered via portal — outside header stacking context */}
