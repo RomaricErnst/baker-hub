@@ -17,7 +17,6 @@ import PizzaParty from '../components/PizzaParty';
 import FlourPicker from '../components/FlourPicker';
 import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
-import { saveRecipe } from '../lib/supabase/saveRecipe';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { clearSession, loadSession, saveSession, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
@@ -335,7 +334,6 @@ export default function Home() {
 
   // Auth
   const [user, setUser] = useState<User | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [sessionSaved, setSessionSaved] = useState(false);
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
@@ -710,45 +708,6 @@ export default function Home() {
     }
   }
 
-  async function handleSaveRecipe(recipeMode: 'simple' | 'custom') {
-    if (!styleKey || !schedule || !ovenType || !mixerType || !yeastType) return;
-    const activeRecipe = recipeMode === 'custom' ? (advancedDisplayRecipe ?? advancedRecipe) : (displayRecipe ?? recipe);
-    if (!activeRecipe) return;
-    setSaveStatus('saving');
-    const result = await saveRecipe({
-      mode: recipeMode,
-      styleKey,
-      bakeType: bakeType ?? 'pizza',
-      numItems,
-      itemWeight,
-      ovenType: ovenType as OvenType,
-      mixerType,
-      yeastType,
-      kitchenTemp,
-      humidity,
-      fridgeTemp,
-      startTime,
-      eatTime,
-      flour: activeRecipe.flour,
-      water: activeRecipe.water,
-      salt: activeRecipe.salt,
-      yeastGrams: activeRecipe.yeast?.convertedGrams ?? null,
-      hydration: activeRecipe.hydration,
-      totalColdHours: schedule.totalColdHours,
-      totalRTHours: schedule.totalRTHours,
-      prefermentType: prefermentType !== 'none' ? prefermentType : undefined,
-      prefermentFlourPct: prefermentFlourPct,
-      manualOil: manualOil,
-      manualSugar: manualSugar,
-      manualSalt: manualSalt,
-      flourBlend: flourBlend,
-      targetDoughTemp: targetDoughTemp,
-      wastePct: wastePct,
-    });
-    setSaveStatus(result.success ? 'saved' : 'error');
-    if (result.success) setTimeout(() => setSaveStatus('idle'), 3000);
-  }
-
   function loadRecipe(r: SavedRecipe) {
     const isCustom = r.mode === 'custom';
 
@@ -866,7 +825,8 @@ export default function Home() {
             saveSession(sessionPayload);
             setSessionSaved(true);
             if (user) {
-              const id = await upsertBakeEvent({ session: sessionPayload as SessionData });
+              const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
+              const id = await saveNamedSession(sessionPayload as SessionData);
               if (id) setBakeEventId(id);
             }
           }}
@@ -1457,8 +1417,6 @@ export default function Home() {
                         bakeType={bakeType ?? 'pizza'}
                         flourBlend={flourBlend}
                         units={units}
-                        saveStatus={user ? saveStatus : undefined}
-                        onSave={user ? () => handleSaveRecipe('simple') : undefined}
                       />
 
 
@@ -2442,8 +2400,6 @@ export default function Home() {
                         onPriorityOverride={v => setPriorityOverride(v)}
                         flourBlend={flourBlend}
                         units={units}
-                        saveStatus={user ? saveStatus : undefined}
-                        onSave={user ? () => handleSaveRecipe('custom') : undefined}
                         wastePct={wastePct}
                       />
                       {schedule && (
