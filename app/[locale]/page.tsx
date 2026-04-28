@@ -335,6 +335,7 @@ export default function Home() {
   // Auth
   const [user, setUser] = useState<User | null>(null);
   const [sessionSaved, setSessionSaved] = useState(false);
+  const [showSignInForSave, setShowSignInForSave] = useState(false);
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
   const [pizzaPartyQtys, setPizzaPartyQtys] = useState<Record<string, number>>({});
@@ -822,13 +823,16 @@ export default function Home() {
               pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
               bakedDone,
             };
+            if (!user) {
+              setShowSignInForSave(true);
+              setTimeout(() => setShowSignInForSave(false), 4000);
+              return;
+            }
             saveSession(sessionPayload);
             setSessionSaved(true);
-            if (user) {
-              const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
-              const id = await saveNamedSession(sessionPayload as SessionData);
-              if (id) setBakeEventId(id);
-            }
+            const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
+            const id = await saveNamedSession(sessionPayload as SessionData);
+            if (id) setBakeEventId(id);
           }}
           onNewSession={() => {
             if (window.confirm(locale === 'fr' ? 'Effacer la session en cours ?' : 'Clear the current session?')) startOver();
@@ -2793,6 +2797,30 @@ export default function Home() {
           })
         )}
       </div>}
+
+      {/* ── Sign-in nudge toast ── */}
+      {showSignInForSave && (
+        <div
+          onClick={() => setShowSignInForSave(false)}
+          style={{
+            position: 'fixed', bottom: '24px', right: '16px',
+            zIndex: 999, background: '#1A1612', color: 'var(--cream)',
+            fontFamily: 'var(--font-dm-sans)', fontSize: '14px',
+            borderRadius: '12px', padding: '12px 16px', maxWidth: '280px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            display: 'flex', alignItems: 'flex-start', gap: '10px',
+            cursor: 'pointer', animation: 'fadeInUp 0.3s ease',
+          }}
+        >
+          <span style={{ flex: 1, lineHeight: 1.4 }}>
+            {locale === 'fr'
+              ? 'Connectez-vous pour sauvegarder vos sessions'
+              : 'Sign in to save your sessions'}
+          </span>
+          <span style={{ color: 'var(--smoke)', fontSize: '16px',
+            lineHeight: 1, flexShrink: 0 }}>×</span>
+        </div>
+      )}
 
       {/* ── Welcome back toast ── */}
       {showWelcomeBack && (
