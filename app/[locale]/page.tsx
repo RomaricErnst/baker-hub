@@ -510,7 +510,7 @@ export default function Home() {
       pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
       bakedDone,
     },
-    () => setSessionSaved(true),
+    () => {}, // auto-save (localStorage only) — don't flip the Supabase save pill
   );
 
   // ── Computed ──────────────────────────────
