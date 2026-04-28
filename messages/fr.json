@@ -1131,6 +1131,12 @@
       "tagline": "Levain naturel, acidulée, moelleuse"
     }
   },
+  "session": {
+    "saved": "Sauvegardé",
+    "saveSession": "Sauvegarder",
+    "newSession": "Nouvelle session",
+    "newSessionConfirm": "Commencer une nouvelle session ? Vos recettes sauvegardées ne sont pas affectées."
+  },
   "decisionSummary": {
     "change": "CHANGER"
   },

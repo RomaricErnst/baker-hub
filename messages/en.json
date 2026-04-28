@@ -1131,6 +1131,12 @@
       "tagline": "Naturally leavened, tangy, chewy"
     }
   },
+  "session": {
+    "saved": "Saved",
+    "saveSession": "Save session",
+    "newSession": "New session",
+    "newSessionConfirm": "Start a new session? Your saved recipes are not affected."
+  },
   "decisionSummary": {
     "change": "CHANGE"
   },

@@ -921,18 +921,84 @@ export default function Home() {
           }}
         />
 
-        {/* ── Session save indicator ── */}
-        {sessionSaved && (
+        {/* ── Session save indicator pill ── */}
+        {recipeGenerated && (
           <div style={{
             position: 'absolute',
-            top: 10,
-            right: 56,
-            fontSize: '11px',
-            color: 'var(--smoke)',
-            pointerEvents: 'none',
-            fontFamily: 'var(--font-dm-mono)',
+            top: 0,
+            right: '1rem',
+            height: '60px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            zIndex: 101,
           }}>
-            {locale === 'fr' ? 'Session enregistrée' : 'Session saved'}
+            <button
+              onClick={async () => {
+                const sessionPayload = {
+                  tab, bakeType: bakeType ?? '', styleKey, numItems, itemWeight,
+                  pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp,
+                  humidity, fridgeTemp, flourBlend, prefermentType,
+                  prefermentFlourPct, prefOffsetH, manualHydration, manualOil,
+                  manualSugar, manualSalt, targetDoughTemp, flourInFridge,
+                  wastePct, priorityOverride,
+                  eatTime: eatTime?.getTime() ?? null,
+                  blocks: blocks.map(b => ({
+                    label: b.label,
+                    from: b.from.getTime(),
+                    to: b.to.getTime(),
+                  })),
+                  recipeGenerated, activeTab, modeChosen,
+                  pizzaParty: Object.keys(pizzaPartyQtys).length > 0
+                    ? { qtys: pizzaPartyQtys } : null,
+                  bakedDone,
+                };
+                saveSession(sessionPayload as SessionData);
+                setSessionSaved(true);
+                if (user) {
+                  const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
+                  const id = await upsertBakeEvent({ session: sessionPayload as SessionData });
+                  if (id) setBakeEventId(id);
+                }
+              }}
+              style={{
+                fontFamily: 'var(--font-dm-mono)',
+                fontSize: '11px',
+                borderRadius: '20px',
+                padding: '4px 12px',
+                border: sessionSaved
+                  ? '1px solid rgba(107,122,90,0.5)'
+                  : '1px solid rgba(196,82,42,0.5)',
+                background: sessionSaved
+                  ? 'rgba(107,122,90,0.12)'
+                  : 'rgba(196,82,42,0.12)',
+                color: sessionSaved ? 'var(--sage)' : 'var(--terra)',
+                cursor: sessionSaved ? 'default' : 'pointer',
+                transition: 'all .2s',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {sessionSaved ? t('session.saved') : t('session.saveSession')}
+            </button>
+
+            <button
+              onClick={() => {
+                if (window.confirm(t('session.newSessionConfirm'))) startOver();
+              }}
+              style={{
+                fontFamily: 'var(--font-dm-mono)',
+                fontSize: '11px',
+                color: 'var(--smoke)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                padding: 0,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {t('session.newSession')}
+            </button>
           </div>
         )}
 
