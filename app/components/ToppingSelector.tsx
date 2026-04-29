@@ -1339,9 +1339,11 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             fontFamily: 'DM Sans, sans-serif', fontSize: '13px',
             color: '#3D3530',
           }}>
-            {l === 'fr'
-              ? (STYLE_NAMES_FR[styleKey ?? 'neapolitan'] ?? 'Napolitaine')
-              : (STYLE_NAMES[styleKey ?? 'neapolitan'] ?? 'Neapolitan')}
+            {styleKey
+              ? (l === 'fr'
+                  ? (STYLE_NAMES_FR[styleKey] ?? styleKey)
+                  : (STYLE_NAMES[styleKey] ?? styleKey))
+              : (l === 'fr' ? 'Tous les styles' : 'All styles')}
             {' · '}
             <span style={{ color: '#8A7F78' }}>
               {filtered.length} {l === 'fr' ? 'pizzas' : 'pizzas'}
