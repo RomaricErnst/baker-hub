@@ -468,6 +468,7 @@ export default function Home() {
 
     if (session.pizzaParty?.qtys) setPizzaPartyQtys(session.pizzaParty.qtys);
     if (session.bakedDone) setBakedDone(true);
+    setProtocolStale(false);
     setShowWelcomeBack(true);
   }, []);
 
@@ -1074,16 +1075,7 @@ export default function Home() {
                       <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 700, color: 'var(--char)' }}>
                         {m.title}
                       </span>
-                      {m.key === 'custom' && (
-                        <span style={{
-                          fontSize: '9px', fontWeight: 600, color: 'var(--terra)',
-                          background: 'rgba(196,82,42,0.1)', borderRadius: '8px',
-                          padding: '1px 6px', letterSpacing: '0.03em', whiteSpace: 'nowrap',
-                        }}>
-                          {t('modeCards.custom.badge')}
-                        </span>
-                      )}
-                    </div>
+                      </div>
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', lineHeight: 1.7 }}>
                       {m.collapsed.split('|').map((line, i) => (
                         <div key={i}>{line.trim()}</div>

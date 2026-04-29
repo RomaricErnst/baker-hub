@@ -981,7 +981,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
               const isTicked = ticked[item.id] ?? false;
               const isExpanded = expandedSubs[item.id] ?? false;
               const hasSubInfo = !!(item.goodEnough || item.compromise);
-              const showSubProactively = !!item.hardToFind;
+              const showSubProactively = !!item.hardToFind || !!item.goodEnough;
               const localNote = item.localSwap?.[shoppingLocation]?.name;
 
               return (
@@ -1372,10 +1372,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {activePill === 'pizzas' && (
         <>
           {/* ── Chip row: 4 priority + More ── */}
-          <div style={{
+          <style>{'.filter-scroll::-webkit-scrollbar { display: none; }'}</style>
+          <div className="filter-scroll" style={{
             display: 'flex',
+            flexWrap: 'nowrap',
             gap: '6px',
-            padding: '8px 10px',
+            padding: '4px 16px 8px',
             background: '#FDFBF7',
             borderBottom: '1px solid #E0D8CF',
             overflowX: 'auto',

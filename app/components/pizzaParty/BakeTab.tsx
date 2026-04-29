@@ -548,6 +548,17 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
               </div>
             );
           })()}
+          <button
+            onClick={() => setSelectedPizzaId(null)}
+            style={{
+              marginLeft: '4px', flexShrink: 0,
+              background: 'var(--terra)', color: 'white',
+              border: 'none', borderRadius: '20px',
+              padding: '4px 14px',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+          >{l === 'fr' ? 'Confirmer ✓' : 'Done ✓'}</button>
         </div>
 
         {/* Sign-in nudge toast */}
