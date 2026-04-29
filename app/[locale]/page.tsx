@@ -839,9 +839,7 @@ export default function Home() {
               setSessionSaved(true);
             }
           }}
-          onNewSession={() => {
-            if (window.confirm(locale === 'fr' ? 'Effacer la session en cours ?' : 'Clear the current session?')) startOver();
-          }}
+          onNewSession={startOver}
           onResumeBakeEvent={(event: BakeEvent) => {
             if (!event.dough_snapshot) return;
             const snap = event.dough_snapshot;
