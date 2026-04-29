@@ -365,7 +365,7 @@ export default function Header({
         pointerEvents: 'none',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.35rem', lineHeight: 1 }}>
-          <img src="/logo-mark.png" alt="Baker Hub" className="header-logo"
+          <img src="/logo-mark.webp" alt="Baker Hub" className="header-logo"
             style={{ objectFit: 'contain', borderRadius: '6px', flexShrink: 0 }} />
           <span style={{
             fontFamily: 'var(--font-playfair)', fontSize: '1.35rem', fontWeight: 700,
@@ -450,7 +450,7 @@ export default function Header({
             flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <img src="/logo-mark.png" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }}/>
+              <img src="/logo-mark.webp" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }}/>
               <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700, color: 'var(--cream)' }}>
                 Baker Hub
               </span>
