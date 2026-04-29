@@ -404,6 +404,7 @@ export default function Home() {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      setProtocolStale(false);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -823,16 +824,19 @@ export default function Home() {
               pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
               bakedDone,
             };
-            if (!user) {
+            saveSession(sessionPayload);
+            if (user) {
+              const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
+              const id = await saveNamedSession(sessionPayload as SessionData);
+              if (id) {
+                setBakeEventId(id);
+                setSessionSaved(true);
+              }
+            } else {
               setShowSignInForSave(true);
               setTimeout(() => setShowSignInForSave(false), 4000);
-              return;
+              setSessionSaved(true);
             }
-            saveSession(sessionPayload);
-            setSessionSaved(true);
-            const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
-            const id = await saveNamedSession(sessionPayload as SessionData);
-            if (id) setBakeEventId(id);
           }}
           onNewSession={() => {
             if (window.confirm(locale === 'fr' ? 'Effacer la session en cours ?' : 'Clear the current session?')) startOver();
