@@ -366,7 +366,8 @@ export default function Header({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.35rem', lineHeight: 1 }}>
           <img src="/logo-mark.webp" alt="Baker Hub" className="header-logo"
-            style={{ objectFit: 'contain', borderRadius: '6px', flexShrink: 0 }} />
+            width={44} height={44}
+            style={{ objectFit: 'contain', flexShrink: 0 }} />
           <span style={{
             fontFamily: 'var(--font-playfair)', fontSize: '1.35rem', fontWeight: 700,
             color: 'var(--cream)', letterSpacing: '-.01em', lineHeight: 1,
