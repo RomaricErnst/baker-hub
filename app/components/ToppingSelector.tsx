@@ -176,8 +176,16 @@ interface Props {
 
 // ─── Sub-region maps ─────────────────────────────────────────
 
-const ITALY_REGIONS: RegionTag[] = ['neapolitan','roman','sicilian','ligurian','venetian','calabrian'];
-const FRANCE_REGIONS: RegionTag[] = ['alsace','savoie','provence','bretagne','normandie','basque','lyonnais','nord'];
+const ITALY_REGIONS: RegionTag[] = ['neapolitan','roman','sicilian','ligurian','venetian','calabrian','italian'];
+const FRANCE_REGIONS: RegionTag[] = ['alsace','savoie','provence','bretagne','normandie','basque','lyonnais','nord','french'];
+const ASIA_REGIONS: RegionTag[]   = ['japanese','korean','asian'];
+
+const REGION_GROUP_MAP: Record<string, RegionTag[]> = {
+  italy:  ['neapolitan','roman','calabrian','sicilian','ligurian','venetian','italian'],
+  france: ['alsace','savoie','normandie','provence','bretagne','basque','lyonnais','nord','french'],
+  asia:   ['japanese','korean','chinese','singaporean','thai','vietnamese','indonesian','asian'],
+  fusion: ['american','spanish','middle_eastern','north_african','fusion'],
+};
 
 const REGION_NAMES: Record<RegionTag, { en: string; fr: string }> = {
   neapolitan: { en: 'Naples',   fr: 'Naples' },
@@ -186,6 +194,7 @@ const REGION_NAMES: Record<RegionTag, { en: string; fr: string }> = {
   ligurian:   { en: 'Liguria',  fr: 'Ligurie' },
   venetian:   { en: 'Venice',   fr: 'Venise' },
   calabrian:  { en: 'Calabria', fr: 'Calabre' },
+  italian:    { en: 'Italian',  fr: 'Italienne' },
   alsace:     { en: 'Alsace',   fr: 'Alsace' },
   savoie:     { en: 'Savoie',   fr: 'Savoie' },
   provence:   { en: 'Provence', fr: 'Provence' },
@@ -194,6 +203,7 @@ const REGION_NAMES: Record<RegionTag, { en: string; fr: string }> = {
   basque:     { en: 'Basque',   fr: 'Pays Basque' },
   lyonnais:   { en: 'Lyon',     fr: 'Lyonnais' },
   nord:       { en: 'Nord',     fr: 'Nord' },
+  french:     { en: 'French',   fr: 'Française' },
   american:         { en: 'American',       fr: 'Américaine' },
   asian:            { en: 'Asian',          fr: 'Asiatique' },
   fusion:           { en: 'Fusion',         fr: 'Fusion' },
@@ -201,6 +211,12 @@ const REGION_NAMES: Record<RegionTag, { en: string; fr: string }> = {
   middle_eastern:   { en: 'Middle Eastern', fr: 'Moyen-Orient' },
   north_african:    { en: 'North African',  fr: 'Afrique du Nord' },
   japanese:         { en: 'Japanese',       fr: 'Japonaise' },
+  korean:           { en: 'Korean',         fr: 'Coréenne' },
+  chinese:          { en: 'Chinese',        fr: 'Chinoise' },
+  singaporean:      { en: 'Singaporean',    fr: 'Singapourienne' },
+  thai:             { en: 'Thai',           fr: 'Thaïlandaise' },
+  vietnamese:       { en: 'Vietnamese',     fr: 'Vietnamienne' },
+  indonesian:       { en: 'Indonesian',     fr: 'Indonésienne' },
   northern_italian: { en: 'Northern Italy', fr: 'Italie du Nord' },
 };
 
@@ -1179,7 +1195,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   }
 
   // Region parent selection
-  const [regionParent, setRegionParent] = useState<'all' | 'italy' | 'france' | 'fusion'>('all');
+  const [regionParent, setRegionParent] = useState<'all' | 'italy' | 'france' | 'asia' | 'fusion'>('all');
 
   // Quantities — controlled from parent when controlledQtys provided, otherwise internal
   const [internalQtys, setInternalQtys] = useState<Qty>({});
@@ -1250,10 +1266,10 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       ) as Record<string, number>,
       region: Object.fromEntries(
         (['neapolitan','roman','sicilian','ligurian','venetian',
-          'calabrian','alsace','bretagne','savoie','provence',
-          'basque','lyonnais','nord','normandie','american',
+          'calabrian','italian','alsace','bretagne','savoie','provence',
+          'basque','lyonnais','nord','normandie','french','american',
           'asian','fusion','spanish','middle_eastern',
-          'north_african','japanese','northern_italian'] as const)
+          'north_african','japanese','korean','northern_italian'] as const)
           .map(v => [v, countFor({ region: v })])
       ) as Record<string, number>,
       budget: Object.fromEntries(
@@ -1272,6 +1288,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
   const setRegion = (v: RegionTag | null) =>
     setFilter((p: FilterState) => ({ ...p, region: v }));
+  const setRegions = (v: RegionTag[] | null) =>
+    setFilter((p: FilterState) => ({ ...p, regions: v }));
 
   const toggleOccasion = (v: OccasionTag) =>
     setFilter((p: FilterState) => ({
@@ -1435,7 +1453,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 padding: '6px 11px', borderRadius: '20px',
                 border: (() => {
                   const moreCnt = (filter.base !== null ? 1 : 0)
-                    + (filter.region !== null ? 1 : 0)
+                    + (filter.region !== null || (filter.regions ?? []).length > 0 ? 1 : 0)
                     + (filter.season !== 'all' ? 1 : 0)
                     + filter.wine.length
                     + (filter.budget !== null ? 1 : 0);
@@ -1450,7 +1468,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               {l === 'fr' ? 'Plus ▾' : 'More ▾'}
               {(() => {
                 const moreCnt = (filter.base !== null ? 1 : 0)
-                  + (filter.region !== null ? 1 : 0)
+                  + (filter.region !== null || (filter.regions ?? []).length > 0 ? 1 : 0)
                   + (filter.season !== 'all' ? 1 : 0)
                   + filter.wine.length
                   + (filter.budget !== null ? 1 : 0);
@@ -1487,7 +1505,15 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               onRemove: () => setFilter((p: FilterState) => ({ ...p, ingredientChips: (p.ingredientChips ?? []).filter(c => c !== ic) })),
             }));
             if (filter.base !== null) activeChips.push({ label: BASE_LABELS[filter.base][l], onRemove: () => setBase(null) });
-            if (filter.region !== null) activeChips.push({ label: REGION_NAMES[filter.region][l], onRemove: () => setRegion(null) });
+            if (filter.region !== null) {
+              activeChips.push({ label: REGION_NAMES[filter.region][l], onRemove: () => setRegion(null) });
+            } else if ((filter.regions ?? []).length > 0) {
+              const groupLabel = regionParent === 'italy' ? (l === 'fr' ? '🇮🇹 Italie' : '🇮🇹 Italy')
+                : regionParent === 'france' ? '🇫🇷 France'
+                : regionParent === 'asia' ? '🌏 Asia'
+                : (l === 'fr' ? '🌍 Fusion' : '🌍 Fusion');
+              activeChips.push({ label: groupLabel, onRemove: () => { setRegions(null); setRegionParent('all'); } });
+            }
             if (filter.season !== 'all') activeChips.push({ label: SEASON_LABELS[filter.season][l], onRemove: () => setSeason('all') });
             filter.wine.forEach(w => activeChips.push({ label: WINE_CATEGORY_LABELS[w][l], onRemove: () => toggleWine(w) }));
             if (filter.budget !== null) activeChips.push({ label: BUDGET_LABELS[filter.budget][l], onRemove: () => setBudget(null) });
@@ -1731,30 +1757,33 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
                       <FilterSection
                         title={l === 'fr' ? 'Région' : 'Region'}
-                        badge={regionParent !== 'all' ? (regionParent === 'italy' ? '🇮🇹' : regionParent === 'france' ? '🇫🇷' : '🌍') : undefined}
+                        badge={regionParent !== 'all' ? (regionParent === 'italy' ? '🇮🇹' : regionParent === 'france' ? '🇫🇷' : regionParent === 'asia' ? '🌏' : '🌍') : undefined}
                         open={open.region}
                         onToggle={() => togOpen('region')}
                       >
                         <div style={S.pillRow}>
-                          {(['all','italy','france','fusion'] as const).map(r => (
+                          {(['all','italy','france','asia','fusion'] as const).map(r => (
                             <span key={r} style={S.pill(regionParent === r, 'terra')}
-                              onClick={() => { setRegionParent(r); setRegion(null); }}>
-                              {r === 'all' ? (l === 'fr' ? 'Toutes' : 'All')
+                              onClick={() => { setRegionParent(r); setRegion(null); setRegions(r === 'all' ? null : REGION_GROUP_MAP[r] ?? null); }}>
+                              {r === 'all'    ? (l === 'fr' ? 'Toutes' : 'All')
                               : r === 'italy'  ? '🇮🇹 ' + (l === 'fr' ? 'Italie' : 'Italy')
                               : r === 'france' ? '🇫🇷 France'
+                              : r === 'asia'   ? '🌏 Asia'
                               : '🌍 Fusion'}
                             </span>
                           ))}
                         </div>
-                        {(regionParent === 'italy' || regionParent === 'france') && (
+                        {(regionParent === 'italy' || regionParent === 'france' || regionParent === 'asia') && (
                           <div style={{ ...S.subSec, marginTop: '6px' }}>
                             <span style={S.subLbl}>
                               {regionParent === 'italy'
                                 ? (l === 'fr' ? 'Régions italiennes' : 'Italian regions')
-                                : (l === 'fr' ? 'Régions françaises' : 'French regions')}
+                                : regionParent === 'france'
+                                ? (l === 'fr' ? 'Régions françaises' : 'French regions')
+                                : (l === 'fr' ? 'Cuisine asiatique' : 'Asian cuisine')}
                             </span>
                             <div style={S.pillRow}>
-                              {(regionParent === 'italy' ? ITALY_REGIONS : FRANCE_REGIONS).map(r => {
+                              {(regionParent === 'italy' ? ITALY_REGIONS : regionParent === 'france' ? FRANCE_REGIONS : ASIA_REGIONS).map(r => {
                                 if (filterCounts.region[r] === 0 && filter.region !== r) return null;
                                 return (
                                   <span key={r} style={S.pill(filter.region === r)}

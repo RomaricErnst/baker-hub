@@ -40,12 +40,17 @@ export type Category =
 export type RegionTag =
   | 'neapolitan' | 'roman'    | 'sicilian'
   | 'ligurian'   | 'venetian' | 'calabrian'
+  | 'italian'
   | 'alsace'     | 'bretagne' | 'savoie'
   | 'provence'   | 'basque'   | 'lyonnais'
   | 'nord'       | 'normandie'
+  | 'french'
   | 'american'   | 'asian'    | 'fusion'
   | 'spanish'    | 'middle_eastern' | 'north_african'
-  | 'japanese'   | 'northern_italian'
+  | 'japanese'   | 'korean'
+  | 'chinese'    | 'singaporean' | 'thai'
+  | 'vietnamese' | 'indonesian'
+  | 'northern_italian'
 
 export type OccasionTag =
   | 'classic' | 'spicy' | 'kids'
@@ -198,6 +203,7 @@ export type PizzaPartySession = {
 export type FilterState = {
   base: BaseType | null
   region: RegionTag | null
+  regions: RegionTag[] | null
   occasion: OccasionTag[]
   dietary: DietaryTag[]
   season: Season              // 'all' = no season filter
@@ -331,6 +337,14 @@ export const REGION_LABELS: Record<RegionTag, Locale> = {
   middle_eastern:   { en: 'Middle Eastern',  fr: 'Moyen-Orient' },
   north_african:    { en: 'North African',   fr: 'Afrique du Nord' },
   japanese:         { en: 'Japanese',        fr: 'Japonaise' },
+  korean:           { en: 'Korean',          fr: 'Coréenne' },
+  chinese:          { en: 'Chinese',         fr: 'Chinoise' },
+  singaporean:      { en: 'Singaporean',     fr: 'Singapourienne' },
+  thai:             { en: 'Thai',            fr: 'Thaïlandaise' },
+  vietnamese:       { en: 'Vietnamese',      fr: 'Vietnamienne' },
+  indonesian:       { en: 'Indonesian',      fr: 'Indonésienne' },
+  italian:          { en: 'Italian',         fr: 'Italienne' },
+  french:           { en: 'French',          fr: 'Française' },
   northern_italian: { en: 'Northern Italy',  fr: 'Italie du Nord' },
 }
 
@@ -349,7 +363,8 @@ export function filterPizzas(pizzas: Pizza[], f: FilterState): Pizza[] {
     if (f.styleKey && p.compatibleStyles && p.compatibleStyles.length > 0 &&
         !p.compatibleStyles.includes(f.styleKey)) return false
     if (f.base && p.base !== f.base) return false
-    if (f.region && p.region !== f.region) return false
+    if (f.region) { if (p.region !== f.region) return false }
+    else if (f.regions && f.regions.length > 0) { if (!p.region || !f.regions.includes(p.region)) return false }
     if (f.occasion.length && !f.occasion.some(o => p.occasion.includes(o))) return false
     if (f.dietary.length && !f.dietary.every(d => p.dietary.includes(d))) return false
     if (f.season !== 'all' && !p.season.includes('all') && !p.season.includes(f.season)) return false
@@ -398,6 +413,7 @@ export function getFilterCounts(pizzas: Pizza[]): Record<string, number> {
 export const DEFAULT_FILTER: FilterState = {
   base: null,
   region: null,
+  regions: null,
   occasion: [],
   dietary: [],
   season: 'all',
