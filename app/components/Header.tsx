@@ -380,47 +380,61 @@ export default function Header({
         }}>{t('tagline')}</div>
       </div>
 
-      {/* Right: session pill or balance placeholder */}
+      {/* Right: two-part Save / New bake button */}
       {recipeGenerated ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        <div style={{
+          display: 'flex',
+          border: sessionSaved
+            ? '1px solid rgba(107,122,90,0.4)'
+            : '1px solid rgba(196,82,42,0.4)',
+          borderRadius: '20px',
+          overflow: 'hidden',
+          background: sessionSaved
+            ? 'rgba(107,122,90,0.08)'
+            : 'rgba(196,82,42,0.08)',
+          flexShrink: 0,
+        }}>
+          {/* Save side */}
           <button
             onClick={() => onSaveSession?.()}
             style={{
+              background: 'none', border: 'none',
+              padding: '4px 10px',
               fontFamily: 'var(--font-dm-mono)',
               fontSize: '11px',
-              borderRadius: '20px',
-              padding: '4px 12px',
-              border: sessionSaved
-                ? '1px solid rgba(107,122,90,0.5)'
-                : '1px solid rgba(196,82,42,0.5)',
-              background: sessionSaved
-                ? 'rgba(107,122,90,0.12)'
-                : 'rgba(196,82,42,0.12)',
               color: sessionSaved ? 'var(--sage)' : 'var(--terra)',
               cursor: sessionSaved ? 'default' : 'pointer',
-              transition: 'all .2s',
               whiteSpace: 'nowrap',
             }}
           >
             {sessionSaved ? tS('saved') : tS('saveSession')}
           </button>
+
+          {/* Divider */}
+          <div style={{
+            width: '1px',
+            background: sessionSaved
+              ? 'rgba(107,122,90,0.3)'
+              : 'rgba(196,82,42,0.3)',
+            margin: '6px 0',
+          }} />
+
+          {/* New bake side */}
           <button
             onClick={() => {
               if (window.confirm(tS('newSessionConfirm'))) onNewSession?.();
             }}
             style={{
+              background: 'none', border: 'none',
+              padding: '4px 10px',
               fontFamily: 'var(--font-dm-mono)',
               fontSize: '11px',
               color: 'var(--smoke)',
-              background: 'none',
-              border: 'none',
               cursor: 'pointer',
-              textDecoration: 'underline',
-              padding: 0,
               whiteSpace: 'nowrap',
             }}
           >
-            {tS('newSession')}
+            {locale === 'fr' ? 'Nouveau' : 'New bake'}
           </button>
         </div>
       ) : (

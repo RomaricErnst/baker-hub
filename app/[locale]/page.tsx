@@ -339,6 +339,9 @@ export default function Home() {
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
   const [pizzaPartyQtys, setPizzaPartyQtys] = useState<Record<string, number>>({});
+  useEffect(() => {
+    if (Object.keys(pizzaPartyQtys).length > 0) setSessionSaved(false);
+  }, [pizzaPartyQtys]);
   const [bakePhotoUrl, setBakePhotoUrl] = useState<string | null>(null);
   const [bakedDone, setBakedDone] = useState(false);
 
@@ -681,6 +684,7 @@ export default function Home() {
   }
 
   function handleGenerate() {
+    setSessionSaved(false);
     if (recipeGenerated && user) {
       const msg = t('generate.confirmOverwrite');
       if (!window.confirm(msg)) return;
