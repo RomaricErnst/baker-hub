@@ -1,11 +1,12 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { PIZZAS, DESSERT_PIZZAS, type Pizza } from '../../lib/toppingDatabase';
 import type { StyleKey, IngredientCategory, Ingredient } from '../../lib/toppingTypes';
 import { createClient } from '@/app/lib/supabase/client';
-import { uploadPhoto, ALLOWED_MIME_TYPES, PHOTO_SOFT_WARN } from '@/app/lib/photoUpload';
+import { uploadPhoto, ALLOWED_MIME_TYPES } from '@/app/lib/photoUpload';
 import type { User } from '@supabase/supabase-js';
+import { useRef } from 'react';
 
 interface BakeTabProps {
   selectedPizzas: Record<string, number>;
@@ -142,10 +143,8 @@ function CoachButton({
 export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId, ovenType }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
-  const [selectedPizzaId, setSelectedPizzaId] = useState<string | null>(null);
+  const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
   const [photos, setPhotos] = useState<Record<string, string>>({});
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  // doneCounts[pizzaId] = how many of that pizza have been baked
   const [doneCounts, setDoneCounts] = useState<Record<string, number>>({});
   const [user, setUser] = useState<User | null>(null);
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
@@ -173,7 +172,6 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
   function changeDoneCount(pizzaId: string, delta: number) {
     setDoneCounts(prev => {
       const current = prev[pizzaId] ?? 0;
-      const ordered = selectedPizzas[pizzaId] ?? 0;
       const next = Math.max(0, current + delta);
       return { ...prev, [pizzaId]: next };
     });
@@ -182,13 +180,13 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
   async function handlePhotoCapture(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file || !selectedPizzaId) return;
+    if (!file || !sheetPizzaId) return;
 
     if (!ALLOWED_MIME_TYPES.includes(file.type)) return;
 
     if (!user) {
       const url = URL.createObjectURL(file);
-      setPhotos(prev => ({ ...prev, [selectedPizzaId]: url }));
+      setPhotos(prev => ({ ...prev, [sheetPizzaId]: url }));
       try {
         if (navigator.share && navigator.canShare?.({ files: [file] })) {
           await navigator.share({ files: [file], title: 'My pizza' });
@@ -199,16 +197,16 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
       return;
     }
 
-    setUploadingSlot(selectedPizzaId);
+    setUploadingSlot(sheetPizzaId);
     try {
-      const slotIndex = selectedEntries.findIndex(e => e.pizza.id === selectedPizzaId);
+      const slotIndex = selectedEntries.findIndex(e => e.pizza.id === sheetPizzaId);
       const result = await uploadPhoto(file, user.id, bakeEventId ?? null, slotIndex >= 0 ? slotIndex : null);
-      setPhotos(prev => ({ ...prev, [selectedPizzaId]: result.url }));
+      setPhotos(prev => ({ ...prev, [sheetPizzaId]: result.url }));
       if (result.warned) setPhotoWarn(true);
     } catch (err) {
       console.error('Photo upload failed:', err);
       const url = URL.createObjectURL(file);
-      setPhotos(prev => ({ ...prev, [selectedPizzaId]: url }));
+      setPhotos(prev => ({ ...prev, [sheetPizzaId]: url }));
     } finally {
       setUploadingSlot(null);
     }
@@ -249,349 +247,16 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
     return t('section.after');
   }
 
-  // ── DETAIL VIEW ──────────────────────────────────────────
-  if (selectedPizzaId !== null) {
-    const entry = selectedEntries.find(e => e.pizza.id === selectedPizzaId);
-    if (!entry) { setSelectedPizzaId(null); return null; }
-    const { pizza, qty } = entry;
+  const sheetEntry = sheetPizzaId ? selectedEntries.find(e => e.pizza.id === sheetPizzaId) : null;
 
-    const beforeIngredients = pizza.ingredients
-      .filter(i => getEffectiveBakeOrder(i) === 'before')
-      .sort((a, b) => (ORDER_MAP[a.category] ?? 5) - (ORDER_MAP[b.category] ?? 5));
-
-    const afterIngredients = pizza.ingredients
-      .filter(i => getEffectiveBakeOrder(i) === 'after');
-
-    const assemblyNote = styleKey === 'roman' || styleKey === 'pan'
-      ? (l === 'fr' ? t(`assembly.${styleKey}`) : t(`assembly.${styleKey}`))
-      : null;
-
-    return (
-      <>
-      <style>{`@keyframes bh-spin { to { transform: rotate(360deg); } }`}</style>
-      <div>
-        {/* Top bar */}
-        <div style={{ height: '56px', display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: '1px solid var(--border)' }}>
-          <button
-            onClick={() => setSelectedPizzaId(null)}
-            style={{
-              color: 'var(--terra)', fontFamily: 'DM Sans, sans-serif', fontSize: '14px',
-              cursor: 'pointer', background: 'none', border: 'none', marginRight: 'auto', padding: 0,
-            }}
-          >
-            {'\u2190'} {l === 'fr' ? 'Toutes les pizzas' : 'All pizzas'}
-          </button>
-          <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '16px', fontWeight: 600, color: 'var(--char)' }}>
-            {pizza.name[l]}
-          </span>
-          {qty > 1 && (
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: 'var(--smoke)', marginLeft: '6px' }}>
-              &times;{qty}
-            </span>
-          )}
-        </div>
-
-        {/* Hero image */}
-        <div style={{ width: '100%', height: '220px', background: '#1A1612', overflow: 'hidden' }}>
-          <img
-            src={getImageSrc(pizza.id)}
-            alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            onError={e => handleImageError(e, pizza.id)}
-          />
-        </div>
-
-        {/* Assembly note for Teglia / Detroit */}
-        {assemblyNote && (
-          <div style={{
-            margin: '12px 16px',
-            padding: '10px 12px',
-            background: 'rgba(196,82,42,0.06)',
-            border: '1px solid rgba(196,82,42,0.2)',
-            borderRadius: '10px',
-            fontSize: '12px',
-            color: 'var(--ash)',
-            fontFamily: 'DM Sans, sans-serif',
-            lineHeight: 1.5,
-          }}>
-            {assemblyNote}
-          </div>
-        )}
-
-        {/* BEFORE section */}
-        {beforeIngredients.length > 0 && (
-          <>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              margin: '20px 16px 4px',
-            }}>
-              <div style={{
-                width: '3px', height: '16px', borderRadius: '2px',
-                background: 'var(--terra)', flexShrink: 0,
-              }} />
-              <span style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-                color: 'var(--terra)', textTransform: 'uppercase',
-                letterSpacing: '1.5px', fontWeight: 700,
-              }}>
-                {getBeforeLabel()}
-              </span>
-            </div>
-            {beforeIngredients.map((ing, i) => (
-              <div
-                key={ing.id}
-                style={{
-                  display: 'flex', alignItems: 'center', minHeight: '56px', padding: '0 16px',
-                  borderBottom: i < beforeIngredients.length - 1 ? '1px solid var(--border)' : undefined,
-                }}
-              >
-                <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '16px', fontWeight: 600, color: 'var(--char)', flex: 1 }}>
-                  {ing.name[l]}
-                </span>
-                {ing.qtyPerPizza && (
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: 'var(--smoke)', textAlign: 'right' }}>
-                    {ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}
-                  </span>
-                )}
-              </div>
-            ))}
-          </>
-        )}
-
-        {/* AFTER section */}
-        {afterIngredients.length > 0 && (
-          <>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              margin: '20px 16px 4px',
-            }}>
-              <div style={{
-                width: '3px', height: '16px', borderRadius: '2px',
-                background: 'var(--gold)', flexShrink: 0,
-              }} />
-              <span style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-                color: 'var(--gold)', textTransform: 'uppercase',
-                letterSpacing: '1.5px', fontWeight: 700,
-              }}>
-                {getAfterLabel()}
-              </span>
-            </div>
-            {afterIngredients.map((ing, i) => (
-              <div
-                key={ing.id}
-                style={{
-                  display: 'flex', alignItems: 'center', minHeight: '56px', padding: '0 16px',
-                  borderBottom: i < afterIngredients.length - 1 ? '1px solid var(--border)' : undefined,
-                }}
-              >
-                <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '16px', fontWeight: 600, color: 'var(--char)', flex: 1 }}>
-                  {ing.name[l]}
-                </span>
-                {ing.qtyPerPizza && (
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: 'var(--smoke)', textAlign: 'right' }}>
-                    {ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}
-                  </span>
-                )}
-              </div>
-            ))}
-          </>
-        )}
-
-        {/* Maestro — single smart button covering base / topped / baked */}
-        <div style={{ padding: '12px 16px 0' }}>
-          <CoachButton
-            stepId="pizza_maestro"
-            styleKey={styleKey ?? 'neapolitan'}
-            kitchenTemp={22}
-            locale={l}
-            ovenType={ovenType}
-            pizzaName={pizza.name[l]}
-          />
-        </div>
-
-        {/* Photo soft-warn banner */}
-        {photoWarn && (
-          <div style={{
-            margin: '0 16px 8px',
-            padding: '8px 12px',
-            background: 'rgba(212,168,83,0.1)',
-            border: '1px solid rgba(212,168,83,0.3)',
-            borderRadius: '8px',
-            fontSize: '12px',
-            color: 'var(--ash)',
-            fontFamily: 'DM Sans, sans-serif',
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: '8px',
-            lineHeight: 1.4,
-          }}>
-            <span>
-              {l === 'fr'
-                ? 'Vous avez 40+ photos. Les plus anciennes sont supprimees apres 50.'
-                : 'You have 40+ photos saved. Oldest are removed automatically after 50.'}
-            </span>
-            <button
-              onClick={() => setPhotoWarn(false)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--smoke)', fontSize: '14px', lineHeight: 1, flexShrink: 0, padding: 0 }}
-            >x</button>
-          </div>
-        )}
-
-        {/* Sticky action bar — photo (independent) + Done (primary) */}
-        <div style={{
-          position: 'sticky', bottom: 0,
-          background: 'var(--warm)',
-          borderTop: '1px solid var(--border)',
-          padding: '12px 16px',
-          display: 'flex',
-          gap: '10px',
-          alignItems: 'center',
-        }}>
-          {/* Hidden file input */}
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            style={{ display: 'none' }}
-            ref={fileInputRef}
-            onChange={handlePhotoCapture}
-          />
-          {/* Photo button — small, independent, no state impact */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingSlot === selectedPizzaId}
-            title={l === 'fr' ? 'Prendre une photo' : 'Take a photo'}
-            style={{
-              width: '48px', height: '48px', flexShrink: 0,
-              background: photos[selectedPizzaId ?? ''] ? 'transparent' : '#F0EAE3',
-              border: photos[selectedPizzaId ?? '']
-                ? '1.5px solid #6B7A5A' : '1px solid var(--border)',
-              borderRadius: '10px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: uploadingSlot === selectedPizzaId ? 'default' : 'pointer',
-              overflow: 'hidden', padding: 0,
-            }}
-          >
-            {uploadingSlot === selectedPizzaId ? (
-              <span style={{
-                display: 'block', width: '20px', height: '20px',
-                border: '2px solid var(--border)',
-                borderTop: '2px solid var(--smoke)',
-                borderRadius: '50%',
-                animation: 'bh-spin 0.8s linear infinite',
-              }} />
-            ) : photos[selectedPizzaId ?? ''] ? (
-              <img src={photos[selectedPizzaId ?? '']}
-                style={{ width: '48px', height: '48px', objectFit: 'cover' }} alt=""/>
-            ) : (
-              <svg viewBox="0 0 20 20" width={20} height={20} fill="none"
-                stroke="var(--smoke)" strokeWidth="1.5"
-                strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 7.5A1.5 1.5 0 012.5 6h.879a2 2 0 001.664-.89l.812-1.22A2 2 0 017.519 3h4.962a2 2 0 011.664.89l.812 1.22A2 2 0 0016.62 6H17.5A1.5 1.5 0 0119 7.5v8A1.5 1.5 0 0117.5 17h-15A1.5 1.5 0 011 15.5v-8z"/>
-                <circle cx="10" cy="11" r="3"/>
-              </svg>
-            )}
-          </button>
-          {/* Baked stepper */}
-          {(() => {
-            const currentEntry = selectedEntries.find(e => e.pizza.id === selectedPizzaId);
-            const ordered = currentEntry?.qty ?? 1;
-            const baked = doneCounts[selectedPizzaId ?? ''] ?? 0;
-            return (
-              <div style={{
-                flex: 1, height: '48px',
-                display: 'flex', alignItems: 'center',
-                background: '#F5F0E8',
-                borderRadius: '10px',
-                border: '1px solid var(--border)',
-                overflow: 'hidden',
-              }}>
-                <button
-                  onClick={() => selectedPizzaId && changeDoneCount(selectedPizzaId, -1)}
-                  disabled={baked === 0}
-                  style={{
-                    width: '48px', height: '48px', flexShrink: 0,
-                    background: 'transparent', border: 'none',
-                    fontSize: '22px', lineHeight: 1,
-                    color: baked === 0 ? '#C8C0B8' : '#6B7A5A',
-                    cursor: baked === 0 ? 'default' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >−</button>
-                <div style={{
-                  flex: 1, textAlign: 'center',
-                  fontFamily: 'DM Mono, monospace', lineHeight: 1.2,
-                }}>
-                  <div style={{ fontWeight: 700, fontSize: '15px',
-                    color: baked > ordered ? '#D4A853' : 'var(--char)' }}>
-                    {baked > ordered ? baked : `${baked} / ${ordered}`}
-                  </div>
-                  <div style={{ fontSize: '10px', color: 'var(--smoke)', marginTop: '1px' }}>
-                    {l === 'fr' ? 'cuites' : 'baked'}
-                  </div>
-                </div>
-                <button
-                  onClick={() => selectedPizzaId && changeDoneCount(selectedPizzaId, 1)}
-                  disabled={false}
-                  style={{
-                    width: '48px', height: '48px', flexShrink: 0,
-                    background: baked > ordered ? '#D4A853' : '#6B7A5A',
-                    border: 'none', fontSize: '22px', lineHeight: 1,
-                    color: 'white',
-                    cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'background 0.15s ease',
-                  }}
-                >+</button>
-              </div>
-            );
-          })()}
-          <button
-            onClick={() => setSelectedPizzaId(null)}
-            style={{
-              marginLeft: '4px', flexShrink: 0,
-              background: 'var(--terra)', color: 'white',
-              border: 'none', borderRadius: '20px',
-              padding: '4px 14px',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
-          >{l === 'fr' ? 'Confirmer ✓' : 'Done ✓'}</button>
-        </div>
-
-        {/* Sign-in nudge toast */}
-        {showSignInNudge && (
-          <div style={{
-            position: 'fixed',
-            bottom: '80px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: '#1A1612',
-            color: 'var(--cream)',
-            fontSize: '13px',
-            borderRadius: '10px',
-            padding: '10px 16px',
-            zIndex: 999,
-            whiteSpace: 'nowrap',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-            fontFamily: 'DM Sans, sans-serif',
-          }}>
-            {l === 'fr'
-              ? 'Connectez-vous pour sauvegarder vos photos'
-              : 'Sign in to save photos to your session'}
-          </div>
-        )}
-      </div>
-      </>
-    );
-  }
-
-  // ── GRID VIEW ────────────────────────────────────────────
+  // ── GRID VIEW (always rendered) ──────────────────────────────────────────────
   return (
     <div>
+      <style>{`
+        @keyframes bh-spin { to { transform: rotate(360deg); } }
+        @keyframes slideUpSheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      `}</style>
+
       <div style={{ padding: '16px 16px 0' }}>
         <h2 style={{
           fontFamily: 'Playfair Display, serif', fontSize: '26px',
@@ -618,9 +283,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
                   ? `${totalDone} / ${totalOrdered} cuites`
                   : `${totalDone} / ${totalOrdered} baked`)}
             </div>
-            <div style={{
-              height: '4px', borderRadius: '2px', background: 'var(--border)',
-            }}>
+            <div style={{ height: '4px', borderRadius: '2px', background: 'var(--border)' }}>
               <div style={{
                 height: '100%', borderRadius: '2px',
                 background: totalDone >= totalOrdered ? '#6B7A5A' : 'var(--terra)',
@@ -642,7 +305,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
             return (
               <div
                 key={pizza.id}
-                onClick={() => setSelectedPizzaId(pizza.id)}
+                onClick={() => setSheetPizzaId(pizza.id)}
                 style={{
                   border: '1px solid var(--border)',
                   borderRadius: '14px',
@@ -709,6 +372,311 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Bottom sheet ──────────────────────────────────────────────────────── */}
+      {sheetPizzaId && sheetEntry && (() => {
+        const { pizza, qty } = sheetEntry;
+        const beforeIngredients = pizza.ingredients
+          .filter(i => getEffectiveBakeOrder(i) === 'before')
+          .sort((a, b) => (ORDER_MAP[a.category] ?? 5) - (ORDER_MAP[b.category] ?? 5));
+        const afterIngredients = pizza.ingredients
+          .filter(i => getEffectiveBakeOrder(i) === 'after');
+        const assemblyNote = (styleKey === 'roman' || styleKey === 'pan')
+          ? t(`assembly.${styleKey}`)
+          : null;
+        const baked = doneCounts[sheetPizzaId] ?? 0;
+
+        return (
+          <>
+            {/* Scrim */}
+            <div
+              onClick={() => setSheetPizzaId(null)}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40 }}
+            />
+
+            {/* Sheet */}
+            <div style={{
+              position: 'fixed', bottom: 0, left: 0, right: 0,
+              background: 'var(--warm)',
+              borderRadius: '16px 16px 0 0',
+              zIndex: 50,
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              animation: 'slideUpSheet 0.3s ease',
+              paddingBottom: 'env(safe-area-inset-bottom, 16px)',
+            }}>
+              {/* Drag handle */}
+              <div style={{
+                width: 36, height: 4,
+                background: 'rgba(0,0,0,0.15)',
+                borderRadius: 2,
+                margin: '14px auto 10px',
+              }} />
+
+              {/* Sheet header */}
+              <div style={{
+                display: 'flex', justifyContent: 'space-between',
+                alignItems: 'center', padding: '0 16px 12px',
+                borderBottom: '1px solid var(--border)',
+              }}>
+                <div>
+                  <span style={{
+                    fontFamily: 'var(--font-playfair)',
+                    fontSize: '18px', fontWeight: 700,
+                    color: 'var(--char)',
+                  }}>
+                    {pizza.name[l]}
+                  </span>
+                  {qty > 1 && (
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: 'var(--smoke)', marginLeft: '6px' }}>
+                      &times;{qty}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSheetPizzaId(null)}
+                  style={{
+                    width: 28, height: 28, borderRadius: '50%',
+                    border: '1px solid var(--border)',
+                    background: 'var(--cream)',
+                    cursor: 'pointer', fontSize: 16, lineHeight: 1,
+                    color: 'var(--smoke)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >×</button>
+              </div>
+
+              {/* Hero image */}
+              <div style={{ width: '100%', height: '180px', background: '#1A1612', overflow: 'hidden' }}>
+                <img
+                  src={getImageSrc(pizza.id)}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  onError={e => handleImageError(e, pizza.id)}
+                />
+              </div>
+
+              {/* Assembly note */}
+              {assemblyNote && (
+                <div style={{
+                  margin: '12px 16px',
+                  padding: '10px 12px',
+                  background: 'rgba(196,82,42,0.06)',
+                  border: '1px solid rgba(196,82,42,0.2)',
+                  borderRadius: '10px',
+                  fontSize: '12px', color: 'var(--ash)',
+                  fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5,
+                }}>
+                  {assemblyNote}
+                </div>
+              )}
+
+              {/* BEFORE section */}
+              {beforeIngredients.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '16px 16px 4px' }}>
+                    <div style={{ width: '3px', height: '16px', borderRadius: '2px', background: 'var(--terra)', flexShrink: 0 }} />
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>
+                      {getBeforeLabel()}
+                    </span>
+                  </div>
+                  {beforeIngredients.map((ing, i) => (
+                    <div key={ing.id} style={{
+                      display: 'flex', alignItems: 'center', minHeight: '48px', padding: '0 16px',
+                      borderBottom: i < beforeIngredients.length - 1 ? '1px solid var(--border)' : undefined,
+                    }}>
+                      <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '15px', fontWeight: 600, color: 'var(--char)', flex: 1 }}>
+                        {ing.name[l]}
+                      </span>
+                      {ing.qtyPerPizza && (
+                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)' }}>
+                          {ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* AFTER section */}
+              {afterIngredients.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '16px 16px 4px' }}>
+                    <div style={{ width: '3px', height: '16px', borderRadius: '2px', background: 'var(--gold)', flexShrink: 0 }} />
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>
+                      {getAfterLabel()}
+                    </span>
+                  </div>
+                  {afterIngredients.map((ing, i) => (
+                    <div key={ing.id} style={{
+                      display: 'flex', alignItems: 'center', minHeight: '48px', padding: '0 16px',
+                      borderBottom: i < afterIngredients.length - 1 ? '1px solid var(--border)' : undefined,
+                    }}>
+                      <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '15px', fontWeight: 600, color: 'var(--char)', flex: 1 }}>
+                        {ing.name[l]}
+                      </span>
+                      {ing.qtyPerPizza && (
+                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)' }}>
+                          {ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Maestro */}
+              <div style={{ padding: '12px 16px 0' }}>
+                <CoachButton
+                  stepId="pizza_maestro"
+                  styleKey={styleKey ?? 'neapolitan'}
+                  kitchenTemp={22}
+                  locale={l}
+                  ovenType={ovenType}
+                  pizzaName={pizza.name[l]}
+                />
+              </div>
+
+              {/* Photo soft-warn banner */}
+              {photoWarn && (
+                <div style={{
+                  margin: '8px 16px',
+                  padding: '8px 12px',
+                  background: 'rgba(212,168,83,0.1)',
+                  border: '1px solid rgba(212,168,83,0.3)',
+                  borderRadius: '8px', fontSize: '12px', color: 'var(--ash)',
+                  fontFamily: 'DM Sans, sans-serif',
+                  display: 'flex', alignItems: 'flex-start',
+                  justifyContent: 'space-between', gap: '8px', lineHeight: 1.4,
+                }}>
+                  <span>
+                    {l === 'fr'
+                      ? 'Vous avez 40+ photos. Les plus anciennes sont supprimees apres 50.'
+                      : 'You have 40+ photos saved. Oldest are removed automatically after 50.'}
+                  </span>
+                  <button
+                    onClick={() => setPhotoWarn(false)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '14px', lineHeight: 1, flexShrink: 0, padding: 0 }}
+                  >x</button>
+                </div>
+              )}
+
+              {/* Sticky footer: photo + baked stepper */}
+              <div style={{
+                position: 'sticky', bottom: 0,
+                background: 'var(--warm)',
+                borderTop: '1px solid var(--border)',
+                padding: '10px 16px',
+                display: 'flex', gap: 10, alignItems: 'center',
+              }}>
+                {/* Hidden photo input */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  id={`photo-${sheetPizzaId}`}
+                  onChange={handlePhotoCapture}
+                />
+
+                {/* Photo button */}
+                <button
+                  onClick={() => document.getElementById(`photo-${sheetPizzaId}`)?.click()}
+                  disabled={uploadingSlot === sheetPizzaId}
+                  title={l === 'fr' ? 'Prendre une photo' : 'Take a photo'}
+                  style={{
+                    width: 44, height: 44, flexShrink: 0,
+                    background: photos[sheetPizzaId] ? 'transparent' : '#F0EAE3',
+                    border: photos[sheetPizzaId] ? '1.5px solid #6B7A5A' : '1px solid var(--border)',
+                    borderRadius: '10px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: uploadingSlot === sheetPizzaId ? 'default' : 'pointer',
+                    overflow: 'hidden', padding: 0,
+                  }}
+                >
+                  {uploadingSlot === sheetPizzaId ? (
+                    <span style={{
+                      display: 'block', width: '18px', height: '18px',
+                      border: '2px solid var(--border)', borderTop: '2px solid var(--smoke)',
+                      borderRadius: '50%', animation: 'bh-spin 0.8s linear infinite',
+                    }} />
+                  ) : photos[sheetPizzaId] ? (
+                    <img src={photos[sheetPizzaId]}
+                      style={{ width: 44, height: 44, objectFit: 'cover' }} alt="" />
+                  ) : (
+                    <svg viewBox="0 0 20 20" width={18} height={18} fill="none"
+                      stroke="var(--smoke)" strokeWidth="1.5"
+                      strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 7.5A1.5 1.5 0 012.5 6h.879a2 2 0 001.664-.89l.812-1.22A2 2 0 017.519 3h4.962a2 2 0 011.664.89l.812 1.22A2 2 0 0016.62 6H17.5A1.5 1.5 0 0119 7.5v8A1.5 1.5 0 0117.5 17h-15A1.5 1.5 0 011 15.5v-8z"/>
+                      <circle cx="10" cy="11" r="3"/>
+                    </svg>
+                  )}
+                </button>
+
+                {/* Baked stepper */}
+                <div style={{
+                  flex: 1, height: '44px',
+                  display: 'flex', alignItems: 'center',
+                  background: '#F5F0E8',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border)',
+                  overflow: 'hidden',
+                }}>
+                  <button
+                    onClick={() => changeDoneCount(sheetPizzaId, -1)}
+                    disabled={baked === 0}
+                    style={{
+                      width: '48px', height: '44px', flexShrink: 0,
+                      background: 'transparent', border: 'none',
+                      fontSize: '22px', lineHeight: 1,
+                      color: baked === 0 ? '#C8C0B8' : '#6B7A5A',
+                      cursor: baked === 0 ? 'default' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >−</button>
+                  <div style={{ flex: 1, textAlign: 'center', fontFamily: 'DM Mono, monospace', lineHeight: 1.2 }}>
+                    <div style={{ fontWeight: 700, fontSize: '15px', color: baked > qty ? '#D4A853' : 'var(--char)' }}>
+                      {baked > qty ? baked : `${baked} / ${qty}`}
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--smoke)', marginTop: '1px' }}>
+                      {l === 'fr' ? 'cuites' : 'baked'}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => changeDoneCount(sheetPizzaId, 1)}
+                    style={{
+                      width: '48px', height: '44px', flexShrink: 0,
+                      background: baked >= qty ? '#D4A853' : '#6B7A5A',
+                      border: 'none', fontSize: '22px', lineHeight: 1,
+                      color: 'white', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'background 0.15s ease',
+                    }}
+                  >+</button>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
+
+      {/* Sign-in nudge toast */}
+      {showSignInNudge && (
+        <div style={{
+          position: 'fixed', bottom: '80px', left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#1A1612', color: 'var(--cream)',
+          fontSize: '13px', borderRadius: '10px',
+          padding: '10px 16px', zIndex: 999,
+          whiteSpace: 'nowrap',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          fontFamily: 'DM Sans, sans-serif',
+        }}>
+          {l === 'fr'
+            ? 'Connectez-vous pour sauvegarder vos photos'
+            : 'Sign in to save photos to your session'}
         </div>
       )}
     </div>
