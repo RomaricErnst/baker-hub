@@ -523,7 +523,6 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
       <div
         style={{
           width: '100%',
-          maxWidth: '500px',
           background: '#FDFBF7',
           borderRadius: '20px 20px 0 0',
           display: 'flex',
@@ -1397,7 +1396,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             display: 'flex',
             flexWrap: 'nowrap',
             gap: '6px',
-            padding: '4px 16px 8px',
+            padding: '4px 12px 8px',
             background: '#FDFBF7',
             borderBottom: '1px solid #E0D8CF',
             overflowX: 'auto',
@@ -1419,7 +1418,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px',
-                  padding: '6px 11px',
+                  padding: '5px 10px',
                   borderRadius: '20px',
                   border: chip.count > 0 ? '1px solid #C4522A' : '1px solid #E0D8CF',
                   background: chip.count > 0 ? '#FBF0EB' : '#FDFBF7',
