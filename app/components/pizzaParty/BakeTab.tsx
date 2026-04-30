@@ -29,8 +29,17 @@ const ORDER_MAP: Record<IngredientCategory, number> = {
 };
 
 // ── Inline CoachButton (self-contained, no external deps beyond React) ────────
-const COACH_STEPS_BT = new Set(['poolish','biga','starter','mix','bulk','shape','open','proof','score','topping_check','bake']);
-const GATE_STEPS_BT  = new Set(['poolish','biga','starter','proof']);
+const COACH_STEPS_BT = new Set(['pizza_maestro']);
+
+const MAESTRO_CONTENT_BT: Record<string, {
+  question: { en: string; fr: string };
+  instruction?: { en: string; fr: string };
+}> = {
+  pizza_maestro: {
+    question: { en: 'What does Maestro think?', fr: 'Que pense le Maestro ?' },
+    instruction: { en: 'Show the base, topped pizza, or fresh from the oven', fr: 'Montrez la base, la pizza garnie, ou à la sortie du four' },
+  },
+};
 
 function CoachButton({
   stepId, styleKey, kitchenTemp, locale, ovenType, pizzaName,
@@ -46,15 +55,7 @@ function CoachButton({
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState(false);
   const fileInputRef            = useRef<HTMLInputElement>(null);
-  const isGate                  = GATE_STEPS_BT.has(stepId);
   const l = locale === 'fr' ? 'fr' : 'en';
-
-  const LABELS: Record<string, { en: string; fr: string }> = {
-    open:          { en: 'Base ready to top?',  fr: 'Base prête ?' },
-    topping_check: { en: 'Ready to bake?',      fr: 'Prêt à enfourner ?' },
-    bake:          { en: 'How did it go?',       fr: "Comment ça s'est passé ?" },
-  };
-  const label = LABELS[stepId]?.[l] ?? 'Ask coach';
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -89,8 +90,20 @@ function CoachButton({
 
   return (
     <div style={{ marginTop: '14px', marginBottom: '4px' }}>
-      <input type="file" accept="image/*" capture="environment"
+      <input type="file" accept="image/*"
         style={{ display: 'none' }} ref={fileInputRef} onChange={handleFile} />
+
+      {MAESTRO_CONTENT_BT[stepId]?.question && (
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: 'var(--char)', fontWeight: 500, marginBottom: '4px' }}>
+          {MAESTRO_CONTENT_BT[stepId].question[l]}
+        </div>
+      )}
+      {MAESTRO_CONTENT_BT[stepId]?.instruction && (
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)', fontStyle: 'italic', marginBottom: '8px' }}>
+          {MAESTRO_CONTENT_BT[stepId].instruction![l]}
+        </div>
+      )}
+
       {feedback && (
         <div style={{ background: '#1A1612', borderLeft: '3px solid #C4522A', borderRadius: '10px', padding: '12px 14px', marginBottom: '10px', position: 'relative' }}>
           <div style={{ color: '#F5F0E8', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>{feedback}</div>
@@ -102,23 +115,22 @@ function CoachButton({
       )}
       {error && !feedback && (
         <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', marginBottom: '8px' }}>
-          {l === 'fr' ? 'Coach indisponible. Réessayez.' : 'Coach unavailable. Please try again.'}
+          {l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.'}
         </div>
       )}
       {!feedback && (
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button onClick={() => fileInputRef.current?.click()} disabled={loading}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#1A1612', border: isGate ? '1px solid rgba(212,168,83,0.5)' : '1px solid rgba(245,240,232,0.15)', borderRadius: '20px', padding: '4px 12px', cursor: loading ? 'default' : 'pointer', height: '28px', opacity: loading ? 0.7 : 1 }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#1A1612', border: '1px solid rgba(245,240,232,0.15)', borderRadius: '20px', padding: '4px 12px', cursor: loading ? 'default' : 'pointer', height: '28px', opacity: loading ? 0.7 : 1 }}>
             {loading ? (
               <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '1.5px solid rgba(245,240,232,0.3)', borderTop: '1.5px solid #F5F0E8', borderRadius: '50%', animation: 'bh-spin 0.7s linear infinite', flexShrink: 0 }} />
             ) : (
               <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="#F5F0E8" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 6A1.2 1.2 0 012.2 4.8h.7a1.6 1.6 0 001.33-.71l.65-.98A1.6 1.6 0 016.2 2.4h3.6a1.6 1.6 0 011.33.71l.65.98a1.6 1.6 0 001.33.71h.69A1.2 1.2 0 0115 6v7a1.2 1.2 0 01-1.2 1.2H2.2A1.2 1.2 0 011 13V6z"/>
-                <circle cx="8" cy="9" r="2.4"/>
+                <path d="M8 1v3M8 12v3M1 8h3M12 8h3M3.05 3.05l2.12 2.12M10.83 10.83l2.12 2.12M3.05 12.95l2.12-2.12M10.83 5.17l2.12-2.12"/>
               </svg>
             )}
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: loading ? 'rgba(245,240,232,0.6)' : '#F5F0E8', whiteSpace: 'nowrap' }}>
-              {loading ? (l === 'fr' ? 'Analyse...' : 'Analysing...') : label}
+              {loading ? (l === 'fr' ? 'Le Maestro regarde...' : 'Maestro is looking...') : (l === 'fr' ? 'Demander au Maestro' : 'Ask Maestro')}
             </span>
           </button>
         </div>
@@ -306,17 +318,6 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
           </div>
         )}
 
-        {/* Open base check */}
-        <div style={{ padding: '0 16px' }}>
-          <CoachButton
-            stepId="open"
-            styleKey={styleKey ?? 'neapolitan'}
-            kitchenTemp={22}
-            locale={l}
-            ovenType={ovenType}
-          />
-        </div>
-
         {/* BEFORE section */}
         {beforeIngredients.length > 0 && (
           <>
@@ -397,10 +398,10 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
           </>
         )}
 
-        {/* Topping check before baking */}
-        <div style={{ padding: '0 16px' }}>
+        {/* Maestro — single smart button covering base / topped / baked */}
+        <div style={{ padding: '12px 16px 0' }}>
           <CoachButton
-            stepId="topping_check"
+            stepId="pizza_maestro"
             styleKey={styleKey ?? 'neapolitan'}
             kitchenTemp={22}
             locale={l}

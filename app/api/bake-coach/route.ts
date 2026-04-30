@@ -105,6 +105,14 @@ function buildSystemPrompt(stepId: string, styleKey: string, ovenType?: string, 
       }
       return `${base} You are reviewing a finished bake. Assess crust colour, structure, and overall result. Give honest feedback on what went well and one specific thing to try next time.`;
 
+    case 'pizza_maestro': {
+      const pizzaCtx = pizzaName ? ` This is a ${pizzaName}.` : '';
+      const ovenCtx  = ovenType === 'pizza_oven' || ovenType === 'electric_pizza'
+        ? ' Oven reaches 400-500°C.'
+        : ' Oven reaches around 250-280°C.';
+      return `${base} You are an expert pizzaiolo.${pizzaCtx}${ovenCtx} Look at this photo and identify which stage you see: 1. Opened dough base before toppings — assess stretch, thickness, cornicione. 2. Topped pizza ready to bake — assess topping distribution, coverage, any issues. 3. Baked pizza — assess crust colour, leoparding, cheese melt, overall result. Start your response by identifying the stage in one word (Base / Topped / Baked), then give 2-3 sentences of specific feedback.`;
+    }
+
     default:
       return `${base} Assess this dough or bake and give actionable feedback.`;
   }

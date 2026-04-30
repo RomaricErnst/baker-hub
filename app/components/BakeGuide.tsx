@@ -209,8 +209,47 @@ function LearnLink({ term, label, onOpen }: { term: string; label: string; onOpe
 }
 
 // ── Coach button ─────────────────────────────────────
-const COACH_STEPS = new Set(['poolish','biga','starter','mix','bulk','shape','proof','bake']);
+const COACH_STEPS = new Set(['poolish','biga','starter','mix','bulk','shape','proof','bake','open','score','pizza_maestro']);
 const GATE_STEPS  = new Set(['poolish','biga','starter','proof']);
+
+const MAESTRO_CONTENT: Record<string, {
+  question: { en: string; fr: string };
+  instruction?: { en: string; fr: string };
+}> = {
+  poolish: {
+    question: { en: 'Does my poolish look ready to use?', fr: "Mon poolish a-t-il l'air prêt à utiliser ?" },
+  },
+  biga: {
+    question: { en: 'Does my biga look ready to use?', fr: 'Ma biga a-t-elle l\'air prête à utiliser ?' },
+  },
+  starter: {
+    question: { en: 'Does my starter look ready to use?', fr: 'Mon levain a-t-il l\'air prêt à utiliser ?' },
+  },
+  mix: {
+    question: { en: 'Does my dough look smooth and elastic?', fr: 'Ma pâte semble-t-elle lisse et élastique ?' },
+    instruction: { en: 'Take a top-down photo of your dough surface', fr: 'Prenez une photo du dessus de votre pâte' },
+  },
+  shape: {
+    question: { en: 'Is the surface taut and the seam tight?', fr: 'La surface est-elle tendue et la soudure serrée ?' },
+  },
+  proof: {
+    question: { en: 'Does it look properly proofed?', fr: 'Semble-t-il correctement levé ?' },
+    instruction: { en: 'Press gently with a floured finger, then photograph', fr: 'Appuyez doucement avec un doigt fariné, puis photographiez' },
+  },
+  score: {
+    question: { en: 'Are the cuts clean and well-placed?', fr: 'Les grignes sont-elles nettes et bien placées ?' },
+  },
+  bake: {
+    question: { en: 'How is the crust colour and bloom?', fr: 'Comment sont la couleur de la croûte et le développement ?' },
+  },
+  open: {
+    question: { en: 'Is the base evenly stretched with a good cornicione?', fr: 'La base est-elle bien étalée avec une bonne corniche ?' },
+  },
+  pizza_maestro: {
+    question: { en: 'What does Maestro think?', fr: 'Que pense le Maestro ?' },
+    instruction: { en: 'Show the base, topped pizza, or fresh from the oven', fr: 'Montrez la base, la pizza garnie, ou à la sortie du four' },
+  },
+};
 
 function CoachButton({
   stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName,
@@ -229,22 +268,6 @@ function CoachButton({
   const fileInputRef            = useRef<HTMLInputElement>(null);
   const isGate                  = GATE_STEPS.has(stepId);
   const l = locale === 'fr' ? 'fr' : 'en';
-
-  const LABELS: Record<string, { en: string; fr: string }> = {
-    poolish:       { en: 'Is it ready?',          fr: 'Est-il prêt ?' },
-    biga:          { en: 'Is it ready?',           fr: 'Est-il prêt ?' },
-    starter:       { en: 'Is it ready?',           fr: 'Est-il prêt ?' },
-    mix:           { en: 'Check my gluten',        fr: 'Vérifier le gluten' },
-    bulk:          { en: 'Ready to shape?',        fr: 'Prêt à façonner ?' },
-    shape:         { en: 'Check my shape',         fr: 'Vérifier la forme' },
-    open:          { en: 'Base ready to top?',     fr: 'Base prête ?' },
-    proof:         { en: 'Over or under?',         fr: 'Sur ou sous-fermenté ?' },
-    score:         { en: 'Check my scoring',       fr: 'Vérifier les incisions' },
-    topping_check: { en: 'Ready to bake?',         fr: 'Prêt à enfourner ?' },
-    bake:          { en: 'How did it go?',         fr: "Comment ça s'est passé ?" },
-  };
-
-  const label = LABELS[stepId]?.[l] ?? 'Ask coach';
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -301,11 +324,28 @@ function CoachButton({
       <input
         type="file"
         accept="image/*"
-        capture="environment"
         style={{ display: 'none' }}
         ref={fileInputRef}
         onChange={handleFile}
       />
+
+      {MAESTRO_CONTENT[stepId]?.question && (
+        <div style={{
+          fontFamily: 'var(--font-dm-sans)', fontSize: '13px',
+          color: 'var(--char)', fontWeight: 500, marginBottom: '4px',
+        }}>
+          {MAESTRO_CONTENT[stepId].question[l]}
+        </div>
+      )}
+
+      {MAESTRO_CONTENT[stepId]?.instruction && (
+        <div style={{
+          fontFamily: 'var(--font-dm-sans)', fontSize: '11px',
+          color: 'var(--smoke)', fontStyle: 'italic', marginBottom: '8px',
+        }}>
+          {MAESTRO_CONTENT[stepId].instruction![l]}
+        </div>
+      )}
 
       {feedback && (
         <div style={{
@@ -336,7 +376,7 @@ function CoachButton({
 
       {error && !feedback && (
         <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', marginBottom: '8px' }}>
-          {l === 'fr' ? 'Coach indisponible. Réessayez.' : 'Coach unavailable. Please try again.'}
+          {l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.'}
         </div>
       )}
 
@@ -366,8 +406,7 @@ function CoachButton({
               <svg viewBox="0 0 16 16" width={14} height={14} fill="none"
                 stroke="#F5F0E8" strokeWidth="1.4"
                 strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 6A1.2 1.2 0 012.2 4.8h.7a1.6 1.6 0 001.33-.71l.65-.98A1.6 1.6 0 016.2 2.4h3.6a1.6 1.6 0 011.33.71l.65.98a1.6 1.6 0 001.33.71h.69A1.2 1.2 0 0115 6v7a1.2 1.2 0 01-1.2 1.2H2.2A1.2 1.2 0 011 13V6z"/>
-                <circle cx="8" cy="9" r="2.4"/>
+                <path d="M8 1v3M8 12v3M1 8h3M12 8h3M3.05 3.05l2.12 2.12M10.83 10.83l2.12 2.12M3.05 12.95l2.12-2.12M10.83 5.17l2.12-2.12"/>
               </svg>
             )}
             <span style={{
@@ -375,7 +414,9 @@ function CoachButton({
               color: loading ? 'rgba(245,240,232,0.6)' : '#F5F0E8',
               whiteSpace: 'nowrap',
             }}>
-              {loading ? (l === 'fr' ? 'Analyse...' : 'Analysing...') : label}
+              {loading
+                ? (l === 'fr' ? 'Le Maestro regarde...' : 'Maestro is looking...')
+                : (l === 'fr' ? 'Demander au Maestro' : 'Ask Maestro')}
             </span>
           </button>
         </div>
