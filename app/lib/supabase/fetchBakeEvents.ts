@@ -91,6 +91,52 @@ export async function fetchPhotosForEvents(
   } catch { return {}; }
 }
 
+export interface PizzaPartySlot {
+  id: string;
+  session_id: string;
+  slot_index: number;
+  preset_id: string;
+  qty?: number;
+  toppings: Record<string, unknown> | null;
+  notes: string | null;
+}
+
+export async function fetchPizzaPartySlots(
+  bakeEventIds: string[],
+): Promise<Record<string, PizzaPartySlot[]>> {
+  try {
+    if (bakeEventIds.length === 0) return {};
+    const supabase = createClient();
+
+    const { data: sessions } = await supabase
+      .from('pizza_party_sessions')
+      .select('id, bake_event_id')
+      .in('bake_event_id', bakeEventIds);
+    if (!sessions?.length) return {};
+
+    const sessionIds = sessions.map(s => s.id);
+    const sessionMap = Object.fromEntries(
+      sessions.map(s => [s.id, s.bake_event_id as string]),
+    );
+
+    const { data: slots } = await supabase
+      .from('pizza_party_slots')
+      .select('id, session_id, slot_index, preset_id, qty, toppings, notes')
+      .in('session_id', sessionIds)
+      .order('slot_index', { ascending: true });
+
+    if (!slots?.length) return {};
+
+    const result: Record<string, PizzaPartySlot[]> = {};
+    for (const slot of slots) {
+      const eventId = sessionMap[slot.session_id];
+      if (!result[eventId]) result[eventId] = [];
+      result[eventId].push(slot as PizzaPartySlot);
+    }
+    return result;
+  } catch { return {}; }
+}
+
 export async function deleteBakeEvent(id: string): Promise<boolean> {
   try {
     const supabase = createClient();

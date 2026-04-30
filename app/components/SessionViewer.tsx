@@ -7,12 +7,13 @@ import {
   type MixerType, type StyleKey, type AnyOvenType, type FlourBlend, type PrefermentType, type YeastType,
 } from '@/app/data';
 import { buildSchedule, calculateRecipe } from '@/app/utils';
-import { bakeEventTitle, bakeEventDoughSpec, type BakeEvent } from '@/app/lib/supabase/fetchBakeEvents';
+import { bakeEventTitle, bakeEventDoughSpec, type BakeEvent, type PizzaPartySlot } from '@/app/lib/supabase/fetchBakeEvents';
 
 interface SessionViewerProps {
   event: BakeEvent | null;
   onClose: () => void;
   onResume: (event: BakeEvent) => void;
+  slots?: PizzaPartySlot[];
 }
 
 function formatHours(h: number): string {
@@ -22,7 +23,7 @@ function formatHours(h: number): string {
   return `${whole}h ${mins}m`;
 }
 
-export default function SessionViewer({ event, onClose, onResume }: SessionViewerProps) {
+export default function SessionViewer({ event, onClose, onResume, slots }: SessionViewerProps) {
   const locale = useLocale();
   const l = locale === 'fr' ? 'fr' : 'en';
 
@@ -235,6 +236,37 @@ export default function SessionViewer({ event, onClose, onResume }: SessionViewe
             </div>
           )}
         </div>
+
+        {/* Pizza selections */}
+        {slots && slots.length > 0 && (
+          <>
+            <div style={{ height: '1px', background: 'var(--border)', margin: '16px 20px 0' }} />
+            <div style={{ padding: '16px 20px 0' }}>
+              <div style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--smoke)',
+                textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '10px',
+              }}>
+                {l === 'fr' ? 'Pizzas' : 'Pizzas'}
+              </div>
+              {slots.map((slot, i) => (
+                <div key={slot.id ?? i} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  fontSize: '13px', color: 'var(--char)',
+                  fontFamily: 'var(--font-dm-sans)',
+                  padding: '6px 0',
+                  borderBottom: i < slots.length - 1 ? '1px solid var(--border)' : undefined,
+                }}>
+                  <span>{slot.preset_id}</span>
+                  {slot.qty && slot.qty > 1 && (
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)' }}>
+                      ×{slot.qty}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Spacer before action bar */}
         <div style={{ height: '24px' }} />

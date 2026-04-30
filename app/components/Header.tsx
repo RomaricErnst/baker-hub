@@ -6,7 +6,7 @@ import { useRouter, usePathname } from '../navigation';
 import { createClient } from '@/app/lib/supabase/client';
 import { fetchRecipes, recipeSubtitle, type SavedRecipe } from '@/app/lib/supabase/fetchRecipes';
 import { updateRecipe, deleteRecipe } from '@/app/lib/supabase/saveRecipe';
-import { fetchBakeEvents, deleteBakeEvent, bakeEventTitle, bakeEventDoughSpec, fetchPhotosForEvents, type BakeEvent, type BakePhoto } from '@/app/lib/supabase/fetchBakeEvents';
+import { fetchBakeEvents, deleteBakeEvent, bakeEventTitle, bakeEventDoughSpec, fetchPhotosForEvents, fetchPizzaPartySlots, type BakeEvent, type BakePhoto, type PizzaPartySlot } from '@/app/lib/supabase/fetchBakeEvents';
 import type { User } from '@supabase/supabase-js';
 import { type UnitSystem } from '../utils/units';
 import SessionViewer from './SessionViewer';
@@ -257,6 +257,7 @@ export default function Header({
   const [showEmailForm, setShowEmailForm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [viewingEvent, setViewingEvent] = useState<BakeEvent | null>(null);
+  const [eventSlots, setEventSlots] = useState<Record<string, PizzaPartySlot[]>>({});
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -277,6 +278,7 @@ export default function Header({
         const ids = filtered.map(e => e.id);
         if (ids.length > 0) {
           fetchPhotosForEvents(ids).then(photos => setEventPhotos(photos));
+          fetchPizzaPartySlots(ids).then(slots => setEventSlots(slots));
         }
       });
     }
@@ -603,6 +605,15 @@ export default function Header({
                               color: 'var(--smoke)', marginTop: '2px',
                             }}>{spec}</div>
                           )}
+                          {(eventSlots[event.id] ?? []).length > 0 && (
+                            <div style={{
+                              fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+                              color: 'rgba(255,255,255,0.4)', marginTop: '2px',
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}>
+                              {(eventSlots[event.id] ?? []).map(s => s.preset_id).join(' · ')}
+                            </div>
+                          )}
                           <div style={{
                             display: 'inline-flex', alignItems: 'center',
                             marginTop: '4px',
@@ -801,6 +812,7 @@ export default function Header({
       event={viewingEvent}
       onClose={() => setViewingEvent(null)}
       onResume={(ev) => { onResumeBakeEvent?.(ev); setViewingEvent(null); }}
+      slots={eventSlots[viewingEvent?.id ?? ''] ?? []}
     />
     </>
   );

@@ -847,7 +847,7 @@ export default function Home() {
             }
           }}
           onNewSession={startOver}
-          onResumeBakeEvent={(event: BakeEvent) => {
+          onResumeBakeEvent={async (event: BakeEvent) => {
             if (!event.dough_snapshot) return;
             const snap = event.dough_snapshot;
             setTab(snap.tab as 'simple' | 'custom');
@@ -891,6 +891,19 @@ export default function Home() {
               setShowResults(true);
               setProtocolStale(false);
               setSessionSaved(true);
+            }
+            // Restore pizza selections from DB if available
+            if (event.pizza_party_id) {
+              const { fetchPizzaPartySlots } = await import('../lib/supabase/fetchBakeEvents');
+              const slotsMap = await fetchPizzaPartySlots([event.id]);
+              const slots = slotsMap[event.id] ?? [];
+              if (slots.length > 0) {
+                const qtys: Record<string, number> = {};
+                for (const slot of slots) {
+                  qtys[slot.preset_id] = (qtys[slot.preset_id] ?? 0) + (slot.qty ?? 1);
+                }
+                setPizzaPartyQtys(qtys);
+              }
             }
           }}
         />
