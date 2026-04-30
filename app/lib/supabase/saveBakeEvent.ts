@@ -108,6 +108,55 @@ export async function nameBakeEvent(
   } catch { return false; }
 }
 
+export async function savePizzaPartySelections(
+  bakeEventId: string,
+  qtys: Record<string, number>,
+  style: string,
+): Promise<string | null> {
+  try {
+    const supabase = createClient();
+
+    const quantity = Object.values(qtys).reduce((a, b) => a + b, 0);
+    if (quantity === 0) return null;
+
+    const { data: session, error: sessionError } = await supabase
+      .from('pizza_party_sessions')
+      .upsert(
+        { bake_event_id: bakeEventId, quantity, style },
+        { onConflict: 'bake_event_id' },
+      )
+      .select('id')
+      .single();
+
+    if (sessionError || !session) return null;
+
+    const slots = Object.entries(qtys)
+      .filter(([, qty]) => qty > 0)
+      .map(([presetId, qty], index) => ({
+        session_id: session.id,
+        slot_index: index,
+        preset_id: presetId,
+        qty,
+        toppings: null,
+      }));
+
+    if (slots.length > 0) {
+      await supabase.from('pizza_party_slots').delete().eq('session_id', session.id);
+      await supabase.from('pizza_party_slots').insert(slots);
+    }
+
+    await supabase
+      .from('bake_events')
+      .update({ pizza_party_id: session.id, status: 'pizza_planned' })
+      .eq('id', bakeEventId);
+
+    return session.id;
+  } catch (e) {
+    console.error('savePizzaPartySelections error:', e);
+    return null;
+  }
+}
+
 export async function markBaked(bakeEventId: string): Promise<boolean> {
   try {
     const supabase = createClient();

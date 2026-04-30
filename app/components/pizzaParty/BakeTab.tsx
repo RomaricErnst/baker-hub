@@ -14,6 +14,7 @@ interface BakeTabProps {
   styleKey?: string;
   bakeEventId?: string | null;
   ovenType?: string;
+  onEnsureBakeEvent?: () => Promise<string | null>;
 }
 
 function getAllPizzas(): Pizza[] {
@@ -140,7 +141,7 @@ function CoachButton({
   );
 }
 
-export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId, ovenType }: BakeTabProps) {
+export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId, ovenType, onEnsureBakeEvent }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
@@ -200,7 +201,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
     setUploadingSlot(sheetPizzaId);
     try {
       const slotIndex = selectedEntries.findIndex(e => e.pizza.id === sheetPizzaId);
-      const result = await uploadPhoto(file, user.id, bakeEventId ?? null, slotIndex >= 0 ? slotIndex : null);
+      const evId = bakeEventId ?? (onEnsureBakeEvent ? await onEnsureBakeEvent() : null);
+      const result = await uploadPhoto(file, user.id, evId, slotIndex >= 0 ? slotIndex : null);
       setPhotos(prev => ({ ...prev, [sheetPizzaId]: result.url }));
       if (result.warned) setPhotoWarn(true);
     } catch (err) {

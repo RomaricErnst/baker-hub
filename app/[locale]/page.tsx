@@ -831,11 +831,14 @@ export default function Home() {
             };
             saveSession(sessionPayload);
             if (user) {
-              const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
+              const { saveNamedSession, savePizzaPartySelections } = await import('../lib/supabase/saveBakeEvent');
               const id = await saveNamedSession(sessionPayload as SessionData);
               if (id) {
                 setBakeEventId(id);
                 setSessionSaved(true);
+                if (Object.keys(pizzaPartyQtys).length > 0 && styleKey) {
+                  await savePizzaPartySelections(id, pizzaPartyQtys, styleKey);
+                }
               }
             } else {
               setShowSignInForSave(true);
@@ -1464,7 +1467,27 @@ export default function Home() {
                           const { compressImage, uploadPhoto } = await import('../lib/photoUpload');
                           const blob = await compressImage(file);
                           setBakePhotoUrl(URL.createObjectURL(blob));
-                          if (user && bakeEventId) await uploadPhoto(file, user.id, bakeEventId, 0);
+                          if (user) {
+                            let evId = bakeEventId;
+                            if (!evId) {
+                              const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
+                              const payload = {
+                                tab, bakeType, styleKey, numItems, itemWeight,
+                                pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+                                fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+                                manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
+                                flourInFridge, wastePct, priorityOverride,
+                                eatTime: eatTime?.getTime() ?? null,
+                                blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
+                                recipeGenerated, activeTab, modeChosen,
+                                pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+                                bakedDone,
+                              };
+                              evId = await upsertBakeEvent({ session: payload as SessionData });
+                              if (evId) setBakeEventId(evId);
+                            }
+                            if (evId) await uploadPhoto(file, user.id, evId, 0);
+                          }
                         }}
                       />
                     </label>
@@ -1575,6 +1598,26 @@ export default function Home() {
                   onQtysSnapshot={setPizzaPartyQtys}
                   onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
                   ovenType={ovenType ?? undefined}
+                  onEnsureBakeEvent={async () => {
+                    if (bakeEventId) return bakeEventId;
+                    if (!user) return null;
+                    const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
+                    const payload = {
+                      tab, bakeType, styleKey, numItems, itemWeight,
+                      pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+                      fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+                      manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
+                      flourInFridge, wastePct, priorityOverride,
+                      eatTime: eatTime?.getTime() ?? null,
+                      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
+                      recipeGenerated, activeTab, modeChosen,
+                      pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+                      bakedDone,
+                    };
+                    const id = await upsertBakeEvent({ session: payload as SessionData });
+                    if (id) setBakeEventId(id);
+                    return id;
+                  }}
                 />
               </div>
             )}
@@ -2446,7 +2489,27 @@ export default function Home() {
                           const { compressImage, uploadPhoto } = await import('../lib/photoUpload');
                           const blob = await compressImage(file);
                           setBakePhotoUrl(URL.createObjectURL(blob));
-                          if (user && bakeEventId) await uploadPhoto(file, user.id, bakeEventId, 0);
+                          if (user) {
+                            let evId = bakeEventId;
+                            if (!evId) {
+                              const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
+                              const payload = {
+                                tab, bakeType, styleKey, numItems, itemWeight,
+                                pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+                                fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+                                manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
+                                flourInFridge, wastePct, priorityOverride,
+                                eatTime: eatTime?.getTime() ?? null,
+                                blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
+                                recipeGenerated, activeTab, modeChosen,
+                                pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+                                bakedDone,
+                              };
+                              evId = await upsertBakeEvent({ session: payload as SessionData });
+                              if (evId) setBakeEventId(evId);
+                            }
+                            if (evId) await uploadPhoto(file, user.id, evId, 0);
+                          }
                         }}
                       />
                     </label>
@@ -2557,6 +2620,26 @@ export default function Home() {
                   onQtysSnapshot={setPizzaPartyQtys}
                   onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
                   ovenType={ovenType ?? undefined}
+                  onEnsureBakeEvent={async () => {
+                    if (bakeEventId) return bakeEventId;
+                    if (!user) return null;
+                    const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
+                    const payload = {
+                      tab, bakeType, styleKey, numItems, itemWeight,
+                      pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+                      fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+                      manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
+                      flourInFridge, wastePct, priorityOverride,
+                      eatTime: eatTime?.getTime() ?? null,
+                      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
+                      recipeGenerated, activeTab, modeChosen,
+                      pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+                      bakedDone,
+                    };
+                    const id = await upsertBakeEvent({ session: payload as SessionData });
+                    if (id) setBakeEventId(id);
+                    return id;
+                  }}
                 />
               </div>
             )}

@@ -23,6 +23,7 @@ interface PizzaPartyProps {
   onQtysSnapshot?: (qtys: Record<string, number>) => void;
   onGoToMyDough?: () => void;
   ovenType?: string;
+  onEnsureBakeEvent?: () => Promise<string | null>;
 }
 
 function tabToPill(tab: Tab): Pill {
@@ -36,7 +37,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, onGoToMyDough, ovenType }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, onGoToMyDough, ovenType, onEnsureBakeEvent }: PizzaPartyProps) {
   const [qtys, setQtys] = useState<Record<string, number>>(initialQtys ?? {});
   const [styleKey, setStyleKey] = useState<string | undefined>(initialStyleKey);
   const [pickStyleKey, setPickStyleKey] = useState<string | undefined>(initialStyleKey);
@@ -96,6 +97,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           styleKey={pickStyleKey}
           bakeEventId={bakeEventId}
           ovenType={ovenType}
+          onEnsureBakeEvent={onEnsureBakeEvent}
         />
       )}
     </div>
