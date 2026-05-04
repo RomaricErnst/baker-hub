@@ -406,7 +406,7 @@ function CoachButton({
       )}
 
       {!feedback && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={loading}

@@ -121,7 +121,7 @@ function CoachButton({
         </div>
       )}
       {!feedback && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
           <button onClick={() => fileInputRef.current?.click()} disabled={loading}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#1A1612', border: '1px solid rgba(245,240,232,0.15)', borderRadius: '20px', padding: '4px 12px', cursor: loading ? 'default' : 'pointer', height: '28px', opacity: loading ? 0.7 : 1 }}>
             {loading ? (
