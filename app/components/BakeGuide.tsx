@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
 import { MIXER_TYPES, type MixerType } from '../data';
@@ -123,17 +123,18 @@ function Pill({ label, color }: { label: string; color?: string }) {
 // ── Step card ────────────────────────────────────────
 function StepCard({
   number, icon, title, time, duration, accent = D.terra,
-  open, done, onToggle, onDone, children,
+  open, done, onToggle, onDone, children, divRef,
 }: {
   number: number; icon: React.ReactNode; title: string;
   time?: Date; duration?: number | null;
   accent?: string; open: boolean; done: boolean;
   onToggle: () => void; onDone: () => void;
   children: React.ReactNode;
+  divRef?: React.RefCallback<HTMLDivElement>;
 }) {
   const ea = done ? D.sage : accent;
   return (
-    <div style={{
+    <div ref={divRef} style={{
       background: D.warm, borderRadius: '18px',
       border: `1px solid ${done ? D.sage + '60' : D.border}`,
       overflow: 'hidden',
@@ -475,7 +476,14 @@ export default function BakeGuide({
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const t = useTranslations('bakeGuide');
+
+  useEffect(() => {
+    if (currentStep > 0) {
+      stepRefs.current[currentStep]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [currentStep]);
 
   const isSourdough   = styleKey === 'sourdough' || styleKey === 'pain_levain';
   const isBread       = ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois','sourdough'].includes(styleKey);
@@ -519,6 +527,7 @@ export default function BakeGuide({
           }
         });
       },
+      divRef: (el: HTMLDivElement | null) => { stepRefs.current[s] = el; },
     };
   };
 
