@@ -395,7 +395,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
             {/* Scrim */}
             <div
               onClick={() => setSheetPizzaId(null)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40 }}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 190 }}
             />
 
             {/* Sheet */}
@@ -403,11 +403,10 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
               position: 'fixed', bottom: 0, left: 0, right: 0,
               background: 'var(--warm)',
               borderRadius: '16px 16px 0 0',
-              zIndex: 50,
-              maxHeight: '85vh',
+              zIndex: 200,
+              maxHeight: 'calc(100dvh - 60px)',
               overflowY: 'auto',
               animation: 'slideUpSheet 0.3s ease',
-              paddingBottom: 'env(safe-area-inset-bottom, 16px)',
             }}>
               {/* Drag handle */}
               <div style={{
@@ -572,6 +571,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
                 background: 'var(--warm)',
                 borderTop: '1px solid var(--border)',
                 padding: '10px 16px',
+                paddingBottom: 'calc(10px + env(safe-area-inset-bottom, 0px))',
                 display: 'flex', gap: 10, alignItems: 'center',
               }}>
                 {/* Hidden photo input */}

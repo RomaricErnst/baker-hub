@@ -961,7 +961,7 @@ export default function Home() {
       </div>
 
       {/* ── Main content ───────────────────── */}
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) 80px' }}>
+      <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) calc(80px + env(safe-area-inset-bottom, 0px))' }}>
 
         {/* ── Hero + bake type picker ── */}
         {activeTab === 'setup' && (
