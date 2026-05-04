@@ -20,8 +20,8 @@ export const metadata: Metadata = {
     title: 'Baker Hub',
   },
   icons: {
-    icon: '/icon-512.webp',
-    apple: '/icon-512.webp',
+    icon: '/logos/logo_v7_proofing_dome.webp',
+    apple: '/logos/logo_v7_proofing_dome.webp',
   },
 };
 

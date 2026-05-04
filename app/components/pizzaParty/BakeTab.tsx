@@ -38,8 +38,8 @@ const MAESTRO_CONTENT_BT: Record<string, {
   instruction?: { en: string; fr: string };
 }> = {
   pizza_maestro: {
-    question: { en: 'What does Maestro think?', fr: 'Que pense le Maestro ?' },
-    instruction: { en: 'Show the base, topped pizza, or fresh from the oven', fr: 'Montrez la base, la pizza garnie, ou à la sortie du four' },
+    question: { en: 'How is my pizza looking?', fr: 'Comment va ma pizza ?' },
+    instruction: { en: 'Photo your base, topped pizza, or fresh from the oven', fr: 'Photographiez votre base, pizza garnie, ou à la sortie du four' },
   },
 };
 
@@ -145,6 +145,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
+  const [showTechSheet, setShowTechSheet] = useState(false);
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [doneCounts, setDoneCounts] = useState<Record<string, number>>({});
   const [user, setUser] = useState<User | null>(null);
@@ -394,7 +395,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
           <>
             {/* Scrim */}
             <div
-              onClick={() => setSheetPizzaId(null)}
+              onClick={() => { setSheetPizzaId(null); setShowTechSheet(false); }}
               style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 190 }}
             />
 
@@ -437,7 +438,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
                   )}
                 </div>
                 <button
-                  onClick={() => setSheetPizzaId(null)}
+                  onClick={() => { setSheetPizzaId(null); setShowTechSheet(false); }}
                   style={{
                     width: 28, height: 28, borderRadius: '50%',
                     border: '1px solid var(--border)',
@@ -529,17 +530,121 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
                 </>
               )}
 
-              {/* Maestro */}
-              <div style={{ padding: '12px 16px 0' }}>
-                <CoachButton
-                  stepId="pizza_maestro"
-                  styleKey={styleKey ?? 'neapolitan'}
-                  kitchenTemp={22}
-                  locale={l}
-                  ovenType={ovenType}
-                  pizzaName={pizza.name[l]}
-                />
+              {/* Technique & tips link */}
+              <div style={{ padding: '14px 16px 4px' }}>
+                <button
+                  onClick={() => setShowTechSheet(true)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                    color: 'var(--terra)', fontFamily: 'var(--font-dm-sans)',
+                    fontSize: '13px', fontWeight: 500,
+                    textDecoration: 'underline', textUnderlineOffset: '3px',
+                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                  }}
+                >
+                  ✦ {l === 'fr' ? 'Technique & conseils' : 'Technique & tips'}
+                </button>
               </div>
+
+              {/* Technique sheet */}
+              {showTechSheet && (
+                <>
+                  <div
+                    onClick={() => setShowTechSheet(false)}
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 210 }}
+                  />
+                  <div style={{
+                    position: 'fixed', bottom: 0, left: 0, right: 0,
+                    background: 'var(--warm)', borderRadius: '16px 16px 0 0',
+                    zIndex: 220, maxHeight: 'calc(100dvh - 60px)',
+                    display: 'flex', flexDirection: 'column',
+                    animation: 'slideUpSheet 0.3s ease',
+                  }}>
+                    <div style={{ overflowY: 'auto', flex: 1 }}>
+                      {/* Drag handle */}
+                      <div style={{ width: 36, height: 4, background: 'rgba(0,0,0,0.15)', borderRadius: 2, margin: '14px auto 10px' }} />
+
+                      {/* Title */}
+                      <div style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '0 16px 12px', borderBottom: '1px solid var(--border)',
+                      }}>
+                        <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '18px', fontWeight: 700, color: 'var(--char)' }}>
+                          {l === 'fr' ? 'Étirement & Cuisson' : 'Stretch & Bake'}
+                        </span>
+                        <button onClick={() => setShowTechSheet(false)} style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--cream)', cursor: 'pointer', fontSize: 16, color: 'var(--smoke)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                      </div>
+
+                      {/* Sections */}
+                      {([
+                        {
+                          key: 'STRETCH',
+                          fr: 'ÉTIREMENT',
+                          body: {
+                            en: 'Use knuckles and gravity — no rolling pin. Start from the centre, let the weight do the work. Keep the cornicione ring intact. Work quickly once the dough is out of the fridge.',
+                            fr: "Utilisez les articulations et la gravité — pas de rouleau. Partez du centre, laissez le poids travailler. Gardez le cornicione intact. Travaillez rapidement une fois la pâte sortie du froid.",
+                          },
+                        },
+                        {
+                          key: 'TOP',
+                          fr: 'GARNITURE',
+                          body: {
+                            en: 'Sauce first, then cheese, then toppings. Wet toppings go last or they make the base soggy. Top quickly — exposed dough dries fast.',
+                            fr: "Sauce en premier, puis fromage, puis garnitures. Les garnitures humides vont en dernier sinon elles détremperont la base. Garnissez rapidement — la pâte exposée sèche vite.",
+                          },
+                        },
+                        {
+                          key: 'LAUNCH',
+                          fr: 'ENFOURNEMENT',
+                          body: {
+                            en: 'Flour the peel well. Build the pizza on the peel, not on the counter. Launch with one confident forward push — hesitation causes sticking.',
+                            fr: "Farinez bien la pelle. Montez la pizza sur la pelle, pas sur le plan de travail. Enfournez d'un seul geste confiant vers l'avant — l'hésitation colle.",
+                          },
+                        },
+                        {
+                          key: 'WATCH FOR',
+                          fr: 'À SURVEILLER',
+                          body: {
+                            en: 'Leoparding on the cornicione (dark spots) = correct fermentation and heat. Cheese melted and slightly golden = done.',
+                            fr: "Léopardage sur le cornicione (taches sombres) = fermentation et chaleur correctes. Fromage fondu et légèrement doré = cuit.",
+                          },
+                        },
+                      ] as const).map(({ key, fr: frKey, body }) => (
+                        <div key={key} style={{ padding: '16px 16px 0' }}>
+                          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '6px' }}>
+                            {l === 'fr' ? frKey : key}
+                          </div>
+                          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: 'var(--ash)', lineHeight: 1.6 }}>
+                            {body[l]}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Maestro in tech sheet */}
+                      <div style={{ padding: '20px 16px 8px' }}>
+                        <CoachButton
+                          stepId="pizza_maestro"
+                          styleKey={styleKey ?? 'neapolitan'}
+                          kitchenTemp={22}
+                          locale={l}
+                          ovenType={ovenType}
+                          pizzaName={pizza.name[l]}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Close bar */}
+                    <div style={{ borderTop: '1px solid var(--border)', padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}>
+                      <button
+                        onClick={() => setShowTechSheet(false)}
+                        style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)', textDecoration: 'underline' }}
+                      >
+                        {l === 'fr' ? 'Fermer' : 'Close'}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Photo soft-warn banner */}
               {photoWarn && (

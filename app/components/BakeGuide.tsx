@@ -236,30 +236,36 @@ const MAESTRO_CONTENT: Record<string, {
   instruction?: { en: string; fr: string };
 }> = {
   poolish: {
-    question: { en: 'Does my poolish look ready to use?', fr: "Mon poolish a-t-il l'air prêt à utiliser ?" },
+    question: { en: 'Does my poolish look ready?', fr: 'Mon poolish est-il prêt ?' },
+    instruction: { en: 'Photo the surface of your container', fr: 'Photographiez la surface de votre récipient' },
   },
   biga: {
-    question: { en: 'Does my biga look ready to use?', fr: 'Ma biga a-t-elle l\'air prête à utiliser ?' },
+    question: { en: 'Does my biga look ready?', fr: 'Ma biga est-elle prête ?' },
+    instruction: { en: 'Photo the surface of your container', fr: 'Photographiez la surface de votre récipient' },
   },
   starter: {
-    question: { en: 'Does my starter look ready to use?', fr: 'Mon levain a-t-il l\'air prêt à utiliser ?' },
+    question: { en: 'Does my starter look ready?', fr: 'Mon levain est-il prêt ?' },
+    instruction: { en: 'Photo the surface of your container', fr: 'Photographiez la surface de votre récipient' },
   },
   mix: {
-    question: { en: 'Does my dough look smooth and elastic?', fr: 'Ma pâte semble-t-elle lisse et élastique ?' },
-    instruction: { en: 'Take a top-down photo of your dough surface', fr: 'Prenez une photo du dessus de votre pâte' },
+    question: { en: 'Is my gluten well developed?', fr: 'Mon gluten est-il bien développé ?' },
+    instruction: { en: 'Stretch a small piece thin and photograph it', fr: 'Étirez un petit morceau fin et photographiez-le' },
   },
   shape: {
-    question: { en: 'Is the surface taut and the seam tight?', fr: 'La surface est-elle tendue et la soudure serrée ?' },
+    question: { en: 'Is my shaping correct?', fr: 'Mon façonnage est-il correct ?' },
+    instruction: { en: 'Photo the top of your shaped ball', fr: 'Photographiez le dessus de votre boule façonnée' },
   },
   proof: {
-    question: { en: 'Does it look properly proofed?', fr: 'Semble-t-il correctement levé ?' },
+    question: { en: 'Is my dough properly proofed?', fr: 'Ma pâte est-elle correctement levée ?' },
     instruction: { en: 'Press gently with a floured finger, then photograph', fr: 'Appuyez doucement avec un doigt fariné, puis photographiez' },
   },
   score: {
-    question: { en: 'Are the cuts clean and well-placed?', fr: 'Les grignes sont-elles nettes et bien placées ?' },
+    question: { en: 'Are my scores clean and deep enough?', fr: 'Mes grignes sont-elles nettes et assez profondes ?' },
+    instruction: { en: 'Photo top-down before loading the oven', fr: "Photo de dessus avant d'enfourner" },
   },
   bake: {
-    question: { en: 'How is the crust colour and bloom?', fr: 'Comment sont la couleur de la croûte et le développement ?' },
+    question: { en: 'How did my bake turn out?', fr: 'Comment s\'est passée ma cuisson ?' },
+    instruction: { en: 'Photo your loaf fresh from the oven', fr: 'Photographiez votre pain à la sortie du four' },
   },
   open: {
     question: { en: 'Is the base evenly stretched with a good cornicione?', fr: 'La base est-elle bien étalée avec une bonne corniche ?' },
