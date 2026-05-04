@@ -2,7 +2,22 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { PIZZAS, DESSERT_PIZZAS } from '../../lib/toppingDatabase';
-import type { Ingredient } from '../../lib/toppingTypes';
+import type { Ingredient, IngredientUnit } from '../../lib/toppingTypes';
+
+function formatQty(amount: number, unit: IngredientUnit, locale: string): string {
+  const unitLabels: Record<IngredientUnit, { en: string; fr: string }> = {
+    g:      { en: 'g',       fr: 'g' },
+    ml:     { en: 'ml',      fr: 'ml' },
+    pcs:    { en: 'pcs',     fr: 'pcs' },
+    slices: { en: 'slices',  fr: 'tranches' },
+    leaves: { en: 'leaves',  fr: 'feuilles' },
+    sprigs: { en: 'sprigs',  fr: 'brins' },
+    tbsp:   { en: 'tbsp',    fr: 'càs' },
+    pinch:  { en: 'pinches', fr: 'pincées' },
+  };
+  const label = unitLabels[unit]?.[locale as 'en' | 'fr'] ?? unit;
+  return `${Math.round(amount)} ${label}`;
+}
 
 interface Props {
   bakeTime: Date;
@@ -34,6 +49,8 @@ interface PrepTask {
   timing: number;
   mustCool: boolean;
   category: string;
+  totalAmount?: number;
+  unit?: IngredientUnit;
 }
 
 const STATIONS = [
@@ -68,33 +85,42 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
     });
   }
 
-  // Collect tasks from selected pizzas
-  const seen = new Set<string>();
-  const tasks: PrepTask[] = [];
+  // Collect tasks from selected pizzas — accumulate quantities across multiple pizzas
+  const taskMap: Record<string, PrepTask> = {};
   const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
 
-  Object.keys(selectedPizzas).forEach(pizzaId => {
-    if (!selectedPizzas[pizzaId]) return;
+  Object.entries(selectedPizzas).forEach(([pizzaId, qty]) => {
+    if (!qty) return;
     const pizza = allPizzas.find(p => p.id === pizzaId);
     if (!pizza) return;
     pizza.ingredients.forEach((ing: Ingredient) => {
-      if (!ing.prepNote || seen.has(ing.id)) return;
-      seen.add(ing.id);
-      const styleNote = styleKey ? (ing as any).prepNoteByStyle?.[styleKey] : undefined;
-      const note = styleNote ?? ing.prepNote;
-      const timing = note.timing ?? 0;
-      const mustCool = timing >= 15 && (ing.category === 'meat' || ing.category === 'sauce');
-      tasks.push({
-        id: `ing_${ing.id}`,
-        ingredientName: ing.name[l] ?? ing.name.en,
-        text: note.en,
-        textFr: note.fr,
-        timing,
-        mustCool,
-        category: ing.category,
-      });
+      if (!ing.prepNote) return;
+      if (!taskMap[ing.id]) {
+        const styleNote = styleKey ? (ing as any).prepNoteByStyle?.[styleKey] : undefined;
+        const note = styleNote ?? ing.prepNote;
+        const timing = note.timing ?? 0;
+        const mustCool = timing >= 15 && (ing.category === 'meat' || ing.category === 'sauce');
+        taskMap[ing.id] = {
+          id: `ing_${ing.id}`,
+          ingredientName: ing.name[l] ?? ing.name.en,
+          text: note.en,
+          textFr: note.fr,
+          timing,
+          mustCool,
+          category: ing.category,
+          totalAmount: undefined,
+          unit: undefined,
+        };
+      }
+      if (ing.qtyPerPizza) {
+        const multiplier = styleKey ? ((ing as any).qtyMultiplierByStyle?.[styleKey] ?? 1) : 1;
+        taskMap[ing.id].totalAmount = (taskMap[ing.id].totalAmount ?? 0) + ing.qtyPerPizza.amount * qty * multiplier;
+        taskMap[ing.id].unit = ing.qtyPerPizza.unit;
+      }
     });
   });
+
+  const tasks = Object.values(taskMap);
 
   // Split into early (get ahead) and flexible
   const earlyStations = ['cool', 'time'];
@@ -142,12 +168,22 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
             display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
             gap: '8px', marginBottom: '2px',
           }}>
-            <span style={{
-              fontFamily: 'Playfair Display, serif', fontSize: '14px', fontWeight: 600,
-              color: done ? '#8A7F78' : '#1A1612',
-              textDecoration: done ? 'line-through' : undefined,
-            }}>
-              {task.ingredientName}
+            <span style={{ display: 'flex', alignItems: 'baseline', gap: '6px', minWidth: 0 }}>
+              <span style={{
+                fontFamily: 'Playfair Display, serif', fontSize: '14px', fontWeight: 600,
+                color: done ? '#8A7F78' : '#1A1612',
+                textDecoration: done ? 'line-through' : undefined,
+              }}>
+                {task.ingredientName}
+              </span>
+              {task.totalAmount != null && task.unit && (
+                <span style={{
+                  fontFamily: 'DM Mono, monospace', fontSize: '11px',
+                  color: done ? '#B8A9A0' : '#C4522A', flexShrink: 0,
+                }}>
+                  {formatQty(task.totalAmount, task.unit, l)}
+                </span>
+              )}
             </span>
             {task.timing > 5 && (
               <span style={{
