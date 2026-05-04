@@ -56,6 +56,8 @@ export type OccasionTag =
   | 'classic' | 'spicy' | 'kids'
   | 'party'   | 'impress' | 'quick'
 
+export type FlavorChip = 'light' | 'rich' | 'mild' | 'bold' | 'creative' | 'spicy'
+
 export type DietaryTag =
   | 'veg' | 'vegan' | 'pescatarian'
   | 'dairy_free' | 'gluten_aware'
@@ -210,12 +212,7 @@ export type FilterState = {
   wine: WineCategory[]        // empty = no wine filter
   budget: BudgetTier | null
   complexity: ComplexityTier | null
-  flavour: {
-    richness: [number, number] | null
-    boldness: [number, number] | null
-    creative: [number, number] | null
-    refined:  [number, number] | null
-  }
+  flavour: FlavorChip[]
   ingredientSearch: string    // free text — matches pizza name + all ingredient names
   ingredientChips?: string[]  // selected quick-chips — OR logic
   styleKey?: StyleKey
@@ -392,10 +389,20 @@ export function filterPizzas(pizzas: Pizza[], f: FilterState): Pizza[] {
       ].join(' ').toLowerCase();
       if (!activeChips.some(chip => allText.includes(chip.toLowerCase()))) return false;
     }
-    if (f.flavour.richness && (p.flavour.richness < f.flavour.richness[0] || p.flavour.richness > f.flavour.richness[1])) return false
-    if (f.flavour.boldness && (p.flavour.boldness < f.flavour.boldness[0] || p.flavour.boldness > f.flavour.boldness[1])) return false
-    if (f.flavour.creative && (p.flavour.creative < f.flavour.creative[0] || p.flavour.creative > f.flavour.creative[1])) return false
-    if (f.flavour.refined  && (p.flavour.refined  < f.flavour.refined[0]  || p.flavour.refined  > f.flavour.refined[1]))  return false
+    if (f.flavour.length > 0) {
+      const chipMatch = f.flavour.some(chip => {
+        switch (chip) {
+          case 'light':    return p.flavour.richness <= 2
+          case 'rich':     return p.flavour.richness >= 4
+          case 'mild':     return p.flavour.boldness <= 2
+          case 'bold':     return p.flavour.boldness >= 4
+          case 'creative': return (p.flavour as any).creative >= 4 || p.occasion?.includes('creative' as any)
+          case 'spicy':    return p.occasion?.includes('spicy')
+          default:         return false
+        }
+      })
+      if (!chipMatch) return false
+    }
     return true
   })
 }
@@ -420,7 +427,7 @@ export const DEFAULT_FILTER: FilterState = {
   wine: [],
   budget: null,
   complexity: null,
-  flavour: { richness: null, boldness: null, creative: null, refined: null },
+  flavour: [],
   ingredientSearch: '',
   ingredientChips: [],
 }

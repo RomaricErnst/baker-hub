@@ -11,7 +11,7 @@ import {
   type OccasionTag, type DietaryTag, type Season, type BudgetTier,
   type ComplexityTier, type RegionTag, type IngredientCategory,
 } from '../lib/toppingDatabase';
-import type { Locale } from '../lib/toppingTypes';
+import type { Locale, FlavorChip } from '../lib/toppingTypes';
 
 // ─── Ingredient chips ─────────────────────────────────────────
 
@@ -344,30 +344,6 @@ const S = {
     flexShrink: 0, marginTop: '2px',
   } as React.CSSProperties,
 };
-
-// ─── Flavour slider ───────────────────────────────────────────
-
-function FlavorSlider({ leftLabel, rightLabel, value, onChange }: {
-  leftLabel: string; rightLabel: string;
-  value: number; onChange: (v: number) => void;
-}) {
-  return (
-    <div style={{ marginBottom: '10px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '54px 1fr 54px', alignItems: 'center', gap: '6px' }}>
-        <span style={{ fontSize: '10px', color: '#8A7F78', textAlign: 'right' }}>{leftLabel}</span>
-        <input
-          type="range" min={1} max={5} step={1} value={value}
-          onChange={e => onChange(Number(e.target.value))}
-          style={{ accentColor: '#C4522A', width: '100%' }}
-        />
-        <span style={{ fontSize: '10px', color: '#8A7F78' }}>{rightLabel}</span>
-      </div>
-      <div style={{ textAlign: 'center', fontSize: '9px', color: value === 3 ? '#C4522A' : 'transparent', fontWeight: 500, marginTop: '1px' }}>
-        Any
-      </div>
-    </div>
-  );
-}
 
 // ─── Filter section ───────────────────────────────────────────
 
@@ -1231,8 +1207,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // Style picker popup
   const [showStylePicker, setShowStylePicker] = useState(false);
 
-  // Flavour slider values — separate from filter for UI display
-  const [flavourUI, setFlavourUI] = useState({ richness: 3, boldness: 3, creative: 3, refined: 3 });
 
   // Filtered pizzas
   const filtered = useMemo(() =>
@@ -1317,20 +1291,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   const setComplexity = (v: ComplexityTier | null) =>
     setFilter((p: FilterState) => ({ ...p, complexity: v }));
 
-  const updateFlavour = (axis: keyof typeof flavourUI, v: number) => {
-    setFlavourUI(p => ({ ...p, [axis]: v }));
-    setFilter((p: FilterState) => ({
-      ...p,
-      flavour: {
-        ...p.flavour,
-        [axis]: v === 3 ? null : v <= 2 ? [1, 2] : [4, 5],
-      },
-    }));
-  };
-
   const clearAll = () => {
     setFilter({ ...DEFAULT_FILTER });
-    setFlavourUI({ richness: 3, boldness: 3, creative: 3, refined: 3 });
     setRegionParent('all');
   };
 
@@ -1853,16 +1815,54 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         </div>
                       </FilterSection>
 
-                      <FilterSection
-                        title={l === 'fr' ? 'Saveurs' : 'Flavour'}
-                        open={open.flavour}
-                        onToggle={() => togOpen('flavour')}
-                      >
-                        <FlavorSlider leftLabel={l === 'fr' ? 'Léger' : 'Light'} rightLabel={l === 'fr' ? 'Riche' : 'Rich'} value={flavourUI.richness} onChange={v => updateFlavour('richness', v)} />
-                        <FlavorSlider leftLabel={l === 'fr' ? 'Doux' : 'Mild'} rightLabel={l === 'fr' ? 'Puissant' : 'Bold'} value={flavourUI.boldness} onChange={v => updateFlavour('boldness', v)} />
-                        <FlavorSlider leftLabel={l === 'fr' ? 'Classique' : 'Classic'} rightLabel={l === 'fr' ? 'Créatif' : 'Creative'} value={flavourUI.creative} onChange={v => updateFlavour('creative', v)} />
-                        <FlavorSlider leftLabel={l === 'fr' ? 'Simple' : 'Simple'} rightLabel={l === 'fr' ? 'Raffiné' : 'Refined'} value={flavourUI.refined} onChange={v => updateFlavour('refined', v)} />
-                      </FilterSection>
+                      {(() => {
+                        const FLAVOR_CHIPS: { key: FlavorChip; en: string; fr: string }[] = [
+                          { key: 'light',    en: 'Light',    fr: 'Léger' },
+                          { key: 'rich',     en: 'Rich',     fr: 'Riche' },
+                          { key: 'mild',     en: 'Mild',     fr: 'Doux' },
+                          { key: 'bold',     en: 'Bold',     fr: 'Puissant' },
+                          { key: 'creative', en: 'Creative', fr: 'Créatif' },
+                          { key: 'spicy',    en: 'Spicy',    fr: 'Épicé' },
+                        ];
+                        return (
+                          <FilterSection
+                            title={l === 'fr' ? 'Saveurs' : 'Flavour'}
+                            badge={filter.flavour.length > 0 ? `${filter.flavour.length}` : undefined}
+                            open={open.flavour}
+                            onToggle={() => togOpen('flavour')}
+                          >
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '4px 0 8px' }}>
+                              {FLAVOR_CHIPS.map(chip => {
+                                const active = filter.flavour.includes(chip.key);
+                                return (
+                                  <button
+                                    key={chip.key}
+                                    onClick={() => {
+                                      const next = active
+                                        ? filter.flavour.filter(c => c !== chip.key)
+                                        : [...filter.flavour, chip.key];
+                                      setFilter(p => ({ ...p, flavour: next }));
+                                    }}
+                                    style={{
+                                      padding: '5px 14px',
+                                      borderRadius: '20px',
+                                      border: active ? '1.5px solid var(--terra)' : '1px solid var(--border)',
+                                      background: active ? 'rgba(196,82,42,0.1)' : 'var(--cream)',
+                                      color: active ? 'var(--terra)' : 'var(--ash)',
+                                      fontFamily: 'var(--font-dm-sans)',
+                                      fontSize: '13px',
+                                      cursor: 'pointer',
+                                      transition: 'all .15s',
+                                    }}
+                                  >
+                                    {l === 'fr' ? chip.fr : chip.en}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </FilterSection>
+                        );
+                      })()}
                     </>
                   )}
 
