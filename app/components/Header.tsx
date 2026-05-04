@@ -338,8 +338,8 @@ export default function Header({
       position: 'sticky', top: 0, zIndex: 100,
       borderBottom: '2px solid var(--terra)',
     }}>
-      {/* Left: hamburger menu button */}
-      <div ref={menuRef}>
+      {/* Left: menu button + logo + tagline */}
+      <div ref={menuRef} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <button
           onClick={() => setMenuOpen(v => !v)}
           aria-label="Menu"
@@ -358,28 +358,22 @@ export default function Header({
             }} />
           ))}
         </button>
-      </div>
-
-      {/* Centre: logo + tagline */}
-      <div style={{
-        position: 'absolute', left: '50%', transform: 'translateX(-50%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        pointerEvents: 'none',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '.35rem', lineHeight: 1 }}>
-          <img src="/logo-mark.webp" alt="Baker Hub" className="header-logo"
-            width={44} height={44}
-            style={{ objectFit: 'contain', flexShrink: 0 }} />
-          <span style={{
-            fontFamily: 'var(--font-playfair)', fontSize: '1.35rem', fontWeight: 700,
-            color: 'var(--cream)', letterSpacing: '-.01em', lineHeight: 1,
-          }}>Baker Hub</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="/logo-mark.webp" width={36} height={36}
+            style={{ objectFit: 'contain' }} alt="Baker Hub" />
+          <div>
+            <div style={{
+              fontFamily: 'var(--font-playfair)',
+              fontSize: '16px', fontWeight: 700,
+              color: 'var(--cream)', lineHeight: 1,
+            }}>Baker Hub</div>
+            <div style={{
+              fontFamily: 'var(--font-dm-sans)',
+              fontSize: '11px', color: 'var(--gold)',
+              fontStyle: 'italic', lineHeight: 1, marginTop: 2,
+            }}>{t('tagline')}</div>
+          </div>
         </div>
-        <div style={{
-          fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', fontSize: '.62rem',
-          color: 'var(--gold)', letterSpacing: '.04em', marginTop: '.2rem',
-          lineHeight: 1, textAlign: 'center', width: '100%',
-        }}>{t('tagline')}</div>
       </div>
 
       {/* Right: two-part Save / New bake button */}
