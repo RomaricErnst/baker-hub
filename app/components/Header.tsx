@@ -284,6 +284,19 @@ export default function Header({
     }
   }, [menuOpen, user]);
 
+  useEffect(() => {
+    if (!sessionSaved || !user) return;
+    fetchBakeEvents().then(events => {
+      const filtered = events.filter(e => e.notes !== '__autosave__');
+      setBakeEvents(filtered);
+      const withPizza = filtered.filter(e => e.pizza_party_id);
+      if (withPizza.length > 0) {
+        fetchPizzaPartySlots(withPizza.map(e => e.id))
+          .then(map => setEventSlots(prev => ({ ...prev, ...map })));
+      }
+    });
+  }, [sessionSaved, user]);
+
   async function signInWithGoogle() {
     const redirectTo = typeof window !== 'undefined'
       ? window.location.hostname === 'localhost'
@@ -370,7 +383,7 @@ export default function Header({
       </div>
 
       {/* Right: two-part Save / New bake button */}
-      {recipeGenerated ? (
+      {(recipeGenerated || sessionSaved) ? (
         <div style={{
           display: 'flex',
           border: sessionSaved
@@ -466,7 +479,7 @@ export default function Header({
           </div>
 
           {/* Scrollable body */}
-          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', maxHeight: 'calc(100dvh - 80px)' }}>
 
             {/* ── Section 1: Current session ── */}
             {recipeGenerated && (
@@ -564,7 +577,7 @@ export default function Header({
                   {locale === 'fr' ? 'Aucune session sauvegardee' : 'No saved sessions yet'}
                 </div>
               ) : (
-                <div style={{ maxHeight: '320px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {bakeEvents.map(event => {
                     const title = bakeEventTitle(event);
                     const spec = bakeEventDoughSpec(event);
@@ -801,6 +814,7 @@ export default function Header({
       event={viewingEvent}
       onClose={() => setViewingEvent(null)}
       onResume={(ev) => { onResumeBakeEvent?.(ev); setViewingEvent(null); }}
+      onDelete={(id) => { setBakeEvents(prev => prev.filter(e => e.id !== id)); setViewingEvent(null); }}
       slots={eventSlots[viewingEvent?.id ?? ''] ?? []}
     />
     </>

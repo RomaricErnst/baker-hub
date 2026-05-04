@@ -13,6 +13,7 @@ interface SessionViewerProps {
   event: BakeEvent | null;
   onClose: () => void;
   onResume: (event: BakeEvent) => void;
+  onDelete?: (id: string) => void;
   slots?: PizzaPartySlot[];
 }
 
@@ -23,7 +24,7 @@ function formatHours(h: number): string {
   return `${whole}h ${mins}m`;
 }
 
-export default function SessionViewer({ event, onClose, onResume, slots }: SessionViewerProps) {
+export default function SessionViewer({ event, onClose, onResume, onDelete, slots }: SessionViewerProps) {
   const locale = useLocale();
   const l = locale === 'fr' ? 'fr' : 'en';
 
@@ -288,6 +289,26 @@ export default function SessionViewer({ event, onClose, onResume, slots }: Sessi
           padding: '14px 20px',
           paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
         }}>
+          <button
+            onClick={async () => {
+              if (!window.confirm('Delete this session? This cannot be undone.')) return;
+              const { deleteBakeEvent } = await import('@/app/lib/supabase/fetchBakeEvents');
+              await deleteBakeEvent(event.id);
+              onDelete?.(event.id);
+              onClose();
+            }}
+            style={{
+              width: '100%', padding: '12px',
+              background: 'none',
+              border: '1px solid rgba(196,82,42,0.3)',
+              color: 'var(--terra)',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '13px',
+              borderRadius: '10px', cursor: 'pointer',
+              marginBottom: '10px',
+            }}
+          >
+            {l === 'fr' ? 'Supprimer la session' : 'Delete session'}
+          </button>
           <button
             onClick={onClose}
             style={{

@@ -835,10 +835,10 @@ export default function Home() {
               const id = await saveNamedSession(sessionPayload as SessionData);
               if (id) {
                 setBakeEventId(id);
-                setSessionSaved(true);
                 if (Object.keys(pizzaPartyQtys).length > 0 && styleKey) {
                   await savePizzaPartySelections(id, pizzaPartyQtys, styleKey);
                 }
+                setSessionSaved(true);
               }
             } else {
               setShowSignInForSave(true);
