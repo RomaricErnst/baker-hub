@@ -1227,7 +1227,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       filterPizzas(PIZZAS, { ...base, ...overrides }).length;
     return {
       occasion: Object.fromEntries(
-        (['classic','spicy','kids','party','impress','quick'] as const)
+        (['classic','kids','party','impress','quick'] as const)
           .map(v => [v, countFor({ occasion: [v] })])
       ) as Record<string, number>,
       base: Object.fromEntries(
@@ -1544,7 +1544,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
                   {filterSheetKey === 'occasion' && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '10px 14px' }}>
-                      {(['classic','spicy','kids','party','impress','quick'] as OccasionTag[]).map(o => {
+                      {(['classic','kids','party','impress','quick'] as OccasionTag[]).map(o => {
                         if (filterCounts.occasion[o] === 0 && !filter.occasion.includes(o)) return null;
                         const active = filter.occasion.includes(o);
                         return (
@@ -2030,7 +2030,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       display: 'flex', alignItems: 'center', gap: '10px',
                     }}
                   >
-                    <span style={{ fontSize: '20px' }}>🍰</span>
                     <div>
                       <div style={{ fontSize: '12px', fontWeight: 600, color: '#1A1612', marginBottom: '2px' }}>
                         {l === 'fr' ? 'Ajouter quelque chose de sucré ?' : 'Add something sweet?'}
