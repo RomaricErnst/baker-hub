@@ -576,8 +576,8 @@ export default function Header({
                         overflow: 'hidden',
                       }}>
                         <div
-                          onClick={() => { onLoadBakeEvent?.(event); setMenuOpen(false); }}
-                          style={{ padding: '9px 12px 8px', cursor: 'pointer' }}
+                          onClick={() => { setViewingEvent(event); setMenuOpen(false); }}
+                          style={{ padding: '12px 12px 10px', cursor: 'pointer' }}
                         >
                           <div style={{
                             fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
@@ -661,15 +661,7 @@ export default function Header({
                             </div>
                           );
                         })()}
-                        <div style={{ display: 'flex', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                          <button
-                            onClick={() => { setMenuOpen(false); setViewingEvent(event); }}
-                            style={{
-                              flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
-                              borderRight: '1px solid rgba(255,255,255,0.06)',
-                              color: '#E8785A', fontSize: '.68rem',
-                              fontFamily: 'var(--font-dm-sans)', fontWeight: 600, cursor: 'pointer',
-                            }}>View</button>
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                           <button
                             onClick={async () => {
                               if (!window.confirm('Delete this session?')) return;
@@ -677,7 +669,7 @@ export default function Header({
                               setBakeEvents(prev => prev.filter(e => e.id !== event.id));
                             }}
                             style={{
-                              flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
+                              width: '100%', padding: '.32rem 0', background: 'none', border: 'none',
                               color: 'rgba(255,255,255,0.5)', fontSize: '.68rem',
                               fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                             }}>Delete</button>
