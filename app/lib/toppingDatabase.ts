@@ -2686,7 +2686,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'sp'],
     flavour: { richness: 2, boldness: 2, creative: 3, refined: 5 },
     ingredients: [ING.mozzarellaLM, ING.courgFlower, ING.anchovies, ING.evoOil],
-    compatibleStyles: ['pizza_romana', 'roman', 'neapolitan'],
+    compatibleStyles: ['pizza_romana', 'neapolitan'],
   },
 
   {
@@ -2700,7 +2700,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'rw'],
     flavour: { richness: 3, boldness: 3, creative: 3, refined: 4 },
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.guanciale, ING.pecorinoRomano, ING.blackPepper],
-    compatibleStyles: ['pizza_romana', 'roman'],
+    compatibleStyles: ['pizza_romana'],
   },
 
   {
@@ -2784,7 +2784,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['cw', 'rw'],
     flavour: { richness: 3, boldness: 2, creative: 3, refined: 4 },
     ingredients: [ING.stracchino, ING.speck, ING.freshThyme, ING.evoOil],
-    compatibleStyles: ['pizza_romana', 'roman', 'neapolitan'],
+    compatibleStyles: ['pizza_romana', 'neapolitan'],
   },
 
   {
@@ -3216,50 +3216,8 @@ export const PIZZAS: Pizza[] = [
   },
 
   {
-    id: 'pan_margherita',
-    name: { en: 'Pan Margherita', fr: 'Margherita Pan' },
-    story: { en: 'Tomato, mozzarella, fresh basil on a thick airy pan base — the crowd-pleasing Margherita', fr: 'Tomate, mozzarella, basilic frais sur épaisse base pan aérée — la Margherita pour régaler tout le monde' },
-    category: 'classic_italian', region: 'american',
-    base: 'tomato_cooked', season: ['all'],
-    occasion: ['classic', 'kids', 'party', 'quick'],
-    dietary: ['veg', 'no_nuts', 'no_fish', 'no_pork', 'halal', 'kosher'], budget: 1, complexity: 1, prepMinutes: 5, ovenTemp: 'mid',
-    wine: ['cw', 'sp'],
-    flavour: { richness: 2, boldness: 2, creative: 1, refined: 2 },
-    ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.freshBasil, ING.evoOil],
-    compatibleStyles: ['pan'],
-  },
-
-  {
-    id: 'pan_pepperoni_hot_honey',
-    name: { en: 'Pan Hot Honey Pepperoni', fr: 'Pan Pepperoni Miel Pimenté' },
-    story: { en: 'American trend meets thick pan base — hot honey with crispy pepperoni cups', fr: 'Tendance américaine sur épaisse base pan — miel pimenté avec coupelles de pepperoni croustillantes' },
-    category: 'meat', region: 'american',
-    base: 'tomato_cooked', season: ['all'],
-    occasion: ['party', 'spicy', 'impress'],
-    dietary: ['no_nuts', 'no_fish'], budget: 1, complexity: 1, prepMinutes: 5, ovenTemp: 'mid',
-    wine: ['lr', 'rw'],
-    flavour: { richness: 3, boldness: 4, creative: 3, refined: 2 },
-    ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.pepperoni, ING.hotHoney],
-    compatibleStyles: ['pan'],
-  },
-
-  {
-    id: 'pan_bbq_chicken',
-    name: { en: 'Pan BBQ Chicken', fr: 'Pan Poulet BBQ' },
-    story: { en: 'Thick pan base for the American BBQ chicken favourite', fr: 'Épaisse base pan pour le favori américain au poulet BBQ' },
-    category: 'fusion', region: 'american',
-    base: 'bbq', season: ['all'],
-    occasion: ['kids', 'party', 'classic'],
-    dietary: ['no_nuts', 'no_fish', 'no_pork', 'halal'], budget: 1, complexity: 2, prepMinutes: 15, ovenTemp: 'mid',
-    wine: ['lr', 'rw'],
-    flavour: { richness: 3, boldness: 3, creative: 3, refined: 2 },
-    ingredients: [ING.bbqSauce, ING.mozzarellaLM, ING.grilledChicken, ING.redOnion, ING.freshCoriander],
-    compatibleStyles: ['pan'],
-  },
-
-  {
-    id: 'pan_nduja_burrata',
-    name: { en: "Pan 'Nduja e Burrata", fr: "Pan 'Nduja et Burrata" },
+    id: 'nduja_burrata_pan',
+    name: { en: "'Nduja e Burrata (Pan)", fr: "'Nduja e Burrata (Pan)" },
     story: { en: '\'Nduja (fiery spreadable salami), burrata, mozzarella on thick pan — spicy Calabrian heat cooled by creamy burrata', fr: '\'Nduja (salami tartinable ardent), burrata, mozzarella sur base pan — chaleur calabraise refroidie par la burrata crémeuse' },
     category: 'gourmet', region: 'american',
     base: 'nduja', season: ['all'],
@@ -3268,20 +3226,6 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'rw'],
     flavour: { richness: 4, boldness: 5, creative: 4, refined: 3 },
     ingredients: [ING.nduja, ING.mozzarellaLM, ING.burrata, ING.freshBasil],
-    compatibleStyles: ['pan'],
-  },
-
-  {
-    id: 'pan_4_formaggi',
-    name: { en: 'Pan Quattro Formaggi', fr: 'Pan Quatre Fromages' },
-    story: { en: 'Four cheeses melted into the airy pan crust — ultimate indulgence', fr: 'Quatre fromages fondus dans la croûte pan aérée — ultime indulgence' },
-    category: 'white', region: 'american',
-    base: 'bianca_oil', season: ['all'],
-    occasion: ['party', 'kids', 'classic'],
-    dietary: ['veg', 'no_nuts', 'no_fish', 'no_pork', 'halal', 'kosher'], budget: 2, complexity: 1, prepMinutes: 5, ovenTemp: 'mid',
-    wine: ['rw', 'cw'],
-    flavour: { richness: 5, boldness: 3, creative: 2, refined: 3 },
-    ingredients: [ING.mozzarellaLM, ING.gorgonzola, ING.brickCheese, ING.parmigianoShavings],
     compatibleStyles: ['pan'],
   },
 
@@ -3633,7 +3577,7 @@ export const PIZZAS: Pizza[] = [
     flavour: { richness: 2, boldness: 4, creative: 4, refined: 2 },
     ingredients: [ING.sanMarzano, ING.evoOil, ING.freshBasil],
     wineNote: { en: 'Dry rosé · or crisp white with citrus notes', fr: 'Rosé sec · ou blanc vif aux notes d\'agrumes' },
-    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana', 'roman'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pizza_romana'],
   },
 
   {
