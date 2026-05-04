@@ -568,8 +568,6 @@ export default function Header({
                   {bakeEvents.map(event => {
                     const title = bakeEventTitle(event);
                     const spec = bakeEventDoughSpec(event);
-                    const statusColor = event.status === 'baked' ? 'var(--sage)' : event.status === 'pizza_planned' ? 'var(--gold)' : 'var(--smoke)';
-                    const statusLabel = event.status === 'baked' ? 'Baked' : event.status === 'pizza_planned' ? 'Pizza planned' : 'Dough planned';
                     return (
                       <div key={event.id} style={{
                         borderRadius: '10px',
@@ -601,15 +599,27 @@ export default function Header({
                               {(eventSlots[event.id] ?? []).map(s => s.preset_id).join(' · ')}
                             </div>
                           )}
-                          <div style={{
-                            display: 'inline-flex', alignItems: 'center',
-                            marginTop: '4px',
-                            padding: '1px 6px',
-                            borderRadius: '10px',
-                            background: 'rgba(255,255,255,0.06)',
-                            fontSize: '.60rem', fontFamily: 'var(--font-dm-mono)',
-                            color: statusColor,
-                          }}>{statusLabel}</div>
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                            <span style={{
+                              fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                              padding: '2px 8px', borderRadius: '20px',
+                              background: 'rgba(107,122,90,0.15)', color: 'var(--sage)',
+                            }}>Dough</span>
+                            {event.pizza_party_id && (
+                              <span style={{
+                                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                                padding: '2px 8px', borderRadius: '20px',
+                                background: 'rgba(212,168,83,0.15)', color: 'var(--gold)',
+                              }}>Pizza</span>
+                            )}
+                            {event.status === 'baked' && (
+                              <span style={{
+                                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                                padding: '2px 8px', borderRadius: '20px',
+                                background: 'rgba(196,82,42,0.15)', color: 'var(--terra)',
+                              }}>Baked</span>
+                            )}
+                          </div>
                         </div>
                         {/* Photo thumbnails */}
                         {(() => {
