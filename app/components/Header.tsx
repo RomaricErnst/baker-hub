@@ -577,7 +577,7 @@ export default function Header({
                   {locale === 'fr' ? 'Aucune session sauvegardee' : 'No saved sessions yet'}
                 </div>
               ) : (
-                <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ maxHeight: '420px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {bakeEvents.map(event => {
                     const title = bakeEventTitle(event);
                     const spec = bakeEventDoughSpec(event);
@@ -587,7 +587,23 @@ export default function Header({
                         background: 'rgba(255,255,255,0.05)',
                         border: '1px solid rgba(255,255,255,0.08)',
                         overflow: 'hidden',
+                        position: 'relative',
                       }}>
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!window.confirm('Delete this session?')) return;
+                            await deleteBakeEvent(event.id);
+                            setBakeEvents(prev => prev.filter(ev => ev.id !== event.id));
+                          }}
+                          style={{
+                            position: 'absolute', top: '6px', right: '6px',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            color: 'rgba(255,255,255,0.25)', fontSize: '14px',
+                            padding: '4px 6px', lineHeight: 1, zIndex: 1,
+                          }}
+                          title="Delete session"
+                        >✕</button>
                         <div
                           onClick={() => { setViewingEvent(event); setMenuOpen(false); }}
                           style={{ padding: '12px 12px 10px', cursor: 'pointer' }}
@@ -674,19 +690,6 @@ export default function Header({
                             </div>
                           );
                         })()}
-                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                          <button
-                            onClick={async () => {
-                              if (!window.confirm('Delete this session?')) return;
-                              await deleteBakeEvent(event.id);
-                              setBakeEvents(prev => prev.filter(e => e.id !== event.id));
-                            }}
-                            style={{
-                              width: '100%', padding: '.32rem 0', background: 'none', border: 'none',
-                              color: 'rgba(255,255,255,0.5)', fontSize: '.68rem',
-                              fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
-                            }}>Delete</button>
-                        </div>
                       </div>
                     );
                   })}

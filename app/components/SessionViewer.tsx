@@ -30,7 +30,7 @@ export default function SessionViewer({ event, onClose, onResume, onDelete, slot
 
   const [localSlots, setLocalSlots] = useState<PizzaPartySlot[]>([]);
   useEffect(() => {
-    if (!event?.pizza_party_id) { setLocalSlots([]); return; }
+    if (!event?.pizza_party_id && event?.status !== 'pizza_planned') { setLocalSlots([]); return; }
     if (slots && slots.length > 0) { setLocalSlots(slots); return; }
     fetchPizzaPartySlots([event.id]).then(map => setLocalSlots(map[event.id] ?? []));
   }, [event?.id, slots]);
@@ -91,21 +91,6 @@ export default function SessionViewer({ event, onClose, onResume, onDelete, slot
   const title = bakeEventTitle(event);
   const spec = bakeEventDoughSpec(event);
 
-  const statusLabel = event.status === 'baked'
-    ? (l === 'fr' ? 'Cuite' : 'Baked')
-    : event.status === 'pizza_planned'
-    ? (l === 'fr' ? 'Pizzas planifiees' : 'Pizza planned')
-    : (l === 'fr' ? 'Planifiee' : 'Planned');
-  const statusBg = event.status === 'baked'
-    ? 'rgba(107,122,90,0.15)'
-    : event.status === 'pizza_planned'
-    ? 'rgba(212,168,83,0.15)'
-    : 'rgba(138,127,120,0.15)';
-  const statusColor = event.status === 'baked'
-    ? 'var(--sage)'
-    : event.status === 'pizza_planned'
-    ? 'var(--gold)'
-    : 'var(--smoke)';
 
   const prefLabel = hasPref
     ? snap.prefermentType!.charAt(0).toUpperCase() + snap.prefermentType!.slice(1)
@@ -158,12 +143,27 @@ export default function SessionViewer({ event, onClose, onResume, onDelete, slot
               {spec}
             </p>
           )}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center',
-            marginTop: '8px', padding: '3px 10px',
-            borderRadius: '20px', background: statusBg,
-            fontSize: '10px', fontFamily: 'var(--font-dm-mono)', color: statusColor,
-          }}>{statusLabel}</div>
+          <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+            <span style={{
+              fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+              padding: '3px 10px', borderRadius: '20px',
+              background: 'rgba(107,122,90,0.15)', color: 'var(--sage)',
+            }}>Dough</span>
+            {(event.pizza_party_id || event.status === 'pizza_planned') && (
+              <span style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                padding: '3px 10px', borderRadius: '20px',
+                background: 'rgba(212,168,83,0.15)', color: 'var(--gold)',
+              }}>Pizza</span>
+            )}
+            {event.status === 'baked' && (
+              <span style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                padding: '3px 10px', borderRadius: '20px',
+                background: 'rgba(196,82,42,0.15)', color: 'var(--terra)',
+              }}>Baked</span>
+            )}
+          </div>
         </div>
 
         {/* Divider */}
@@ -298,16 +298,14 @@ export default function SessionViewer({ event, onClose, onResume, onDelete, slot
               onClose();
             }}
             style={{
-              width: '100%', padding: '12px',
-              background: 'none',
-              border: '1px solid rgba(196,82,42,0.3)',
-              color: 'var(--terra)',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '13px',
-              borderRadius: '10px', cursor: 'pointer',
-              marginBottom: '10px',
+              display: 'block', width: '100%', textAlign: 'center',
+              marginBottom: '8px', fontFamily: 'var(--font-dm-mono)',
+              fontSize: '12px', color: 'var(--terra)',
+              background: 'none', border: 'none', cursor: 'pointer',
+              textDecoration: 'underline', opacity: 0.7,
             }}
           >
-            {l === 'fr' ? 'Supprimer la session' : 'Delete session'}
+            {l === 'fr' ? 'Supprimer' : 'Delete session'}
           </button>
           <button
             onClick={onClose}
