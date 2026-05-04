@@ -21,6 +21,7 @@ interface BakeGuideProps {
   feedTime?: Date | null;
   units?: UnitSystem;
   locale?: string;
+  onNavigateToPizzaParty?: () => void;
 }
 
 // ── Design tokens ────────────────────────────────────
@@ -88,6 +89,18 @@ function Steps({ items }: { items: { bold: string; note: string }[] }) {
 // ── Pumpkin shape SVG (spiral mixer) ────────────────
 function PumpkinSVG() {
   return null;
+}
+
+// ── Sparkle SVG — marks AI-powered learn links ───────
+function SparkleSVG() {
+  return (
+    <svg viewBox="0 0 12 12" width={10} height={10} fill="none"
+      stroke="currentColor" strokeWidth="1.3"
+      strokeLinecap="round" strokeLinejoin="round"
+      style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }}>
+      <path d="M6 1v2M6 9v2M1 6h2M9 6h2M2.4 2.4l1.4 1.4M8.2 8.2l1.4 1.4M2.4 9.6l1.4-1.4M8.2 3.8l1.4-1.4"/>
+    </svg>
+  );
 }
 
 // ── Pill tag ─────────────────────────────────────────
@@ -193,7 +206,9 @@ function StepCard({
 }
 
 // ── Learn link ───────────────────────────────────────
-function LearnLink({ term, label, onOpen }: { term: string; label: string; onOpen: (t: string) => void }) {
+function LearnLink({ term, label, onOpen, showSparkle = false }: {
+  term: string; label: string; onOpen: (t: string) => void; showSparkle?: boolean;
+}) {
   return (
     <button
       onClick={() => onOpen(term)}
@@ -202,9 +217,12 @@ function LearnLink({ term, label, onOpen }: { term: string; label: string; onOpe
         color: D.terra, fontSize: '.78rem',
         fontFamily: 'var(--font-dm-sans)',
         textDecoration: 'underline', textUnderlineOffset: '2px',
-        padding: 0,
+        padding: 0, display: 'inline-flex', alignItems: 'center',
       }}
-    >{label} →</button>
+    >
+      {showSparkle && <SparkleSVG />}
+      {label}
+    </button>
   );
 }
 
@@ -437,11 +455,23 @@ function ExtLink({ href, label }: { href: string; label: string }) {
 }
 
 // ── Main component ───────────────────────────────────
+const TERM_TO_STEPID: Record<string, string> = {
+  windowpane:        'mix',
+  bulk_fermentation: 'bulk',
+  poke_test:         'proof',
+  preferment_ready:  'poolish',
+  shape_check:       'shape',
+  score_technique:   'score',
+  stretch_bake:      'open',
+};
+
 export default function BakeGuide({
   schedule, mixerType, styleKey, kitchenTemp, numItems,
   prefermentType, oil, hydration, ovenType, prefStartTime, feedTime, units, locale,
+  onNavigateToPizzaParty,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
+  const l = locale === 'fr' ? 'fr' : 'en';
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
@@ -526,10 +556,9 @@ export default function BakeGuide({
           <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
             <Bullets items={t.raw(isPoolish ? 'poolish.pitfalls' : 'biga.pitfalls') as string[]} />
           </Section>
-          <CoachButton stepId={isPoolish ? 'poolish' : 'biga'}
-            styleKey={styleKey} kitchenTemp={kitchenTemp}
-            prefermentType={prefermentType} locale={locale ?? 'en'}
-            ovenType={ovenType} />
+          <div style={{ marginTop: '.5rem' }}>
+            <LearnLink term="preferment_ready" label={l === 'fr' ? 'Est-il prêt ?' : 'Is it ready?'} onOpen={setLearnTerm} showSparkle={true} />
+          </div>
         </StepCard>
       )}
 
@@ -548,10 +577,9 @@ export default function BakeGuide({
           <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
             <Bullets items={t.raw('starter.pitfalls') as string[]} />
           </Section>
-          <CoachButton stepId="starter"
-            styleKey={styleKey} kitchenTemp={kitchenTemp}
-            prefermentType={prefermentType} locale={locale ?? 'en'}
-            ovenType={ovenType} />
+          <div style={{ marginTop: '.5rem' }}>
+            <LearnLink term="preferment_ready" label={l === 'fr' ? 'Est-il prêt ?' : 'Is it ready?'} onOpen={setLearnTerm} showSparkle={true} />
+          </div>
         </StepCard>
       )}
 
@@ -666,7 +694,7 @@ export default function BakeGuide({
             ...(t.raw('mix.watchForAll') as string[]),
           ]} />
           <div style={{ marginTop: '.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <LearnLink term="windowpane" label="Windowpane test" onOpen={setLearnTerm} />
+            <LearnLink term="windowpane" label="Windowpane test" onOpen={setLearnTerm} showSparkle={true} />
             {mixerType === 'hand' && !isSourdough && <LearnLink term="autolyse" label="Autolyse" onOpen={setLearnTerm} />}
             {isSpiral && <LearnLink term="pumpkin" label="Pumpkin shape" onOpen={setLearnTerm} />}
             {hydration > 70 && <LearnLink term="bassinage" label="Bassinage" onOpen={setLearnTerm} />}
@@ -680,10 +708,6 @@ export default function BakeGuide({
             (t.raw('mix.pitfalls') as string[])[2],
           ].filter(Boolean)} />
         </Section>
-        <CoachButton stepId="mix"
-          styleKey={styleKey} kitchenTemp={kitchenTemp}
-          prefermentType={prefermentType} locale={locale ?? 'en'}
-          ovenType={ovenType} />
       </StepCard>
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
@@ -711,7 +735,7 @@ export default function BakeGuide({
         <Section icon="👁️" title="Watch for — bulk is done when">
           <Bullets items={t.raw('bulk.watchFor') as string[]} />
           <div style={{ marginTop: '.5rem' }}>
-            <LearnLink term="bulk_fermentation" label="Bulk fermentation guide" onOpen={setLearnTerm} />
+            <LearnLink term="bulk_fermentation" label="Bulk fermentation guide" onOpen={setLearnTerm} showSparkle={true} />
           </div>
         </Section>
 
@@ -728,10 +752,6 @@ export default function BakeGuide({
             ...(t.raw('bulk.pitfallsBase') as string[]),
           ]} />
         </Section>
-        <CoachButton stepId="bulk"
-          styleKey={styleKey} kitchenTemp={kitchenTemp}
-          prefermentType={prefermentType} locale={locale ?? 'en'}
-          ovenType={ovenType} />
       </StepCard>
 
       {/* ── STEP: Cold Retard 1 ──────────────────────── */}
@@ -836,10 +856,9 @@ export default function BakeGuide({
               ]
             } />
           </Section>
-          <CoachButton stepId="shape"
-            styleKey={styleKey} kitchenTemp={kitchenTemp}
-            prefermentType={prefermentType} locale={locale ?? 'en'}
-            ovenType={ovenType} />
+          <div style={{ marginTop: '.5rem' }}>
+            <LearnLink term="shape_check" label={l === 'fr' ? 'Vérifier ma forme' : 'Check your shape'} onOpen={setLearnTerm} showSparkle={true} />
+          </div>
         </StepCard>
       )}
 
@@ -900,7 +919,7 @@ export default function BakeGuide({
           <Section icon="👁️" title={t('sectionTitles.pokeTest')}>
             <Bullets items={t.raw('finalProof.pokeResponses') as string[]} />
             <div style={{ marginTop: '.5rem' }}>
-              <LearnLink term="poke_test" label="Full poke test guide" onOpen={setLearnTerm} />
+              <LearnLink term="poke_test" label="Full poke test guide" onOpen={setLearnTerm} showSparkle={true} />
             </div>
           </Section>
 
@@ -912,16 +931,6 @@ export default function BakeGuide({
               (t.raw('finalProof.pitfalls') as string[])[2],
             ]} />
           </Section>
-          <CoachButton stepId="proof"
-            styleKey={styleKey} kitchenTemp={kitchenTemp}
-            prefermentType={prefermentType} locale={locale ?? 'en'}
-            ovenType={ovenType} />
-          {!isBread && (
-            <CoachButton stepId="open"
-              styleKey={styleKey} kitchenTemp={kitchenTemp}
-              prefermentType={prefermentType} locale={locale ?? 'en'}
-              ovenType={ovenType} />
-          )}
         </StepCard>
       )}
 
@@ -1033,21 +1042,52 @@ export default function BakeGuide({
         {isBread && (
           <Section icon="🎓" title={t('sectionTitles.learnMore')}>
             <ExtLink href="https://www.theperfectloaf.com/guides/how-to-score-bread-dough/" label={t('bake.learnMoreScoring')} />
+            <div style={{ marginTop: '.5rem' }}>
+              <LearnLink term="score_technique" label={l === 'fr' ? 'Technique de grignage' : 'Scoring technique'} onOpen={setLearnTerm} showSparkle={true} />
+            </div>
           </Section>
         )}
-        {isBread && (
-          <CoachButton stepId="score"
-            styleKey={styleKey} kitchenTemp={kitchenTemp}
-            prefermentType={prefermentType} locale={locale ?? 'en'}
-            ovenType={ovenType} />
+        {!isBread && (
+          <div style={{ marginTop: '.5rem' }}>
+            <LearnLink term="stretch_bake" label={l === 'fr' ? 'Étirer et cuire' : 'Stretch & bake tips'} onOpen={setLearnTerm} showSparkle={true} />
+          </div>
         )}
-        <CoachButton stepId="bake"
-          styleKey={styleKey} kitchenTemp={kitchenTemp}
-          prefermentType={prefermentType} locale={locale ?? 'en'}
-          ovenType={ovenType} />
+        {!isBread && onNavigateToPizzaParty && (
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${D.border}` }}>
+            <button
+              onClick={onNavigateToPizzaParty}
+              style={{
+                background: 'none', border: 'none',
+                color: D.terra, cursor: 'pointer',
+                fontFamily: 'var(--font-dm-sans)',
+                fontSize: '13px', fontWeight: 500,
+                textDecoration: 'underline', padding: 0,
+              }}
+            >
+              {l === 'fr' ? 'Planifier votre Pizza Party →' : 'Plan your Pizza Party →'}
+            </button>
+          </div>
+        )}
       </StepCard>
 
-      {learnTerm && <LearnModal term={learnTerm} onClose={() => setLearnTerm(null)} />}
+      {learnTerm && (
+        <LearnModal
+          term={learnTerm}
+          onClose={() => setLearnTerm(null)}
+          footer={TERM_TO_STEPID[learnTerm] ? (
+            <div style={{ borderTop: `1px solid ${D.border}`, marginTop: 16, paddingTop: 12 }}>
+              <CoachButton
+                stepId={TERM_TO_STEPID[learnTerm]}
+                styleKey={styleKey}
+                kitchenTemp={kitchenTemp}
+                prefermentType={prefermentType}
+                locale={locale ?? 'en'}
+                ovenType={ovenType}
+              />
+            </div>
+          ) : undefined}
+        />
+      )}
     </div>
   );
 }

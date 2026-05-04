@@ -351,7 +351,8 @@
       "long": "Start now — while dough finishes its final proof. Give it the full {min} min to fully saturate your baking surface.",
       "short": "Start now — while dough finishes its final proof. Set oven to maximum temperature for {min} minutes."
     },
-    "eatTip": "Your dough is perfectly fermented. Score, load, and bake. Buon appetito!",
+    "eatTipPizza": "Your dough is perfectly fermented. Stretch, top and bake. Buon appetito!",
+    "eatTipBread": "Your dough is perfectly fermented. Score, load and bake. Buon appétit!",
     "phaseLabels": {
       "mixing": "Mixing",
       "bulkFerm": "Bulk Fermentation",

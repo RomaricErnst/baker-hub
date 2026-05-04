@@ -3,6 +3,7 @@
 interface LearnModalProps {
   term: string;
   onClose: () => void;
+  footer?: React.ReactNode;
 }
 
 type TermContent = {
@@ -26,7 +27,7 @@ const TERMS: Record<string, TermContent> = {
   },
   pumpkin: {
     title: 'The Pumpkin Shape',
-    emoji: '🎃',
+    emoji: '',
     explanation: 'As your dough develops in a spiral mixer, it will gradually pull away from the sides of the bowl and wrap tightly around the breaker bar, forming a smooth rounded ball resembling a pumpkin. This shape tells you the gluten network is developing correctly — the dough has enough strength to hold itself together against the centrifugal force of the rotating bowl.',
     tip: 'Watch for the transition: at first the dough looks shaggy and sticks to the bowl walls. As mixing progresses it slowly gathers and climbs the breaker bar. A full pumpkin shape means you are roughly 60–70% developed — continue mixing until the surface is smooth and the dough pulls completely clean from the bowl.',
     secondTip: 'If adding water gradually (bassinage), wait for the pumpkin to reform after each water addition before adding more. If the pumpkin collapses and the dough spreads flat, you have added water too fast — stop and let the dough recover before continuing.',
@@ -70,9 +71,37 @@ const TERMS: Record<string, TermContent> = {
     videoLabel: 'Read full guide →',
     videoUrl: 'https://www.theperfectloaf.com/guides/the-ultimate-guide-to-bread-dough-bulk-fermentation/',
   },
+  preferment_ready: {
+    title: 'Is it ready?',
+    emoji: '🫧',
+    explanation: 'A ready poolish/biga/starter shows: a domed or just-past-peak surface, bubbles throughout, and slight recession from the edges. Flat = needs more time. Collapsed or alcoholic smell = overfermented.',
+    tip: 'For poolish: the dome should be just starting to recede. For biga: break a piece open — you should see a network of bubbles inside. For sourdough starter: it should have doubled, smell tangy-yeasty, and pass the float test.',
+    secondTip: 'If the poolish or biga smells strongly of alcohol or acetone, it has gone too far. A mildly over-peaked poolish can still work if the rest of the fermentation is shortened — but if it smells like acetone, discard it.',
+  },
+  shape_check: {
+    title: 'Check your shape',
+    emoji: '⚪',
+    explanation: 'A well-shaped dough ball has: a smooth, taut surface with no tears, a clean seam pinched tight underneath, and holds its round shape without spreading immediately.',
+    tip: 'The surface should feel like a drum — firm tension all around. If the surface tears, re-shape before proofing. For pizza balls: a loose, spreading ball will be hard to open without tearing. For bread boules: insufficient tension means a flat loaf.',
+    secondTip: 'If the dough keeps tearing when you try to tighten it, it needs a 5 min bench rest. Cover loosely and let the gluten relax before trying again.',
+  },
+  score_technique: {
+    title: 'Scoring technique',
+    emoji: '🔪',
+    explanation: 'Hold the lame or razor at 30–45 degrees to the dough surface. Cut with a single swift motion — hesitation causes dragging. Depth: 5–7mm.',
+    tip: 'For a boule: score a cross or leaf pattern centred on the dome. For a baguette: 5–7 overlapping diagonal cuts. Wet the blade slightly to reduce sticking. Cold dough scores more cleanly — if your dough is very soft, refrigerate 15 min before scoring.',
+    secondTip: 'The score controls where the bread opens. A weak score produces a split crust; no score at all can cause blowouts at the sides. One confident deep cut beats multiple hesitant shallow ones.',
+  },
+  stretch_bake: {
+    title: 'Stretch & bake tips',
+    emoji: '🍕',
+    explanation: 'Stretch with knuckles and gravity — no rolling pin. Start from the centre and let weight do the work. Keep the cornicione ring intact. Top quickly: sauce first, then cheese, then toppings.',
+    tip: 'Wet toppings go last or they make the base soggy. Launch with a single confident forward push — hesitation causes sticking. Watch for leoparding on the cornicione: dark spots mean proper fermentation and heat.',
+    secondTip: 'If the dough springs back and resists stretching, cover it and rest 5 more minutes. Cold dough straight from the fridge is almost impossible to stretch — always bring balls to room temperature first.',
+  },
 };
 
-export default function LearnModal({ term, onClose }: LearnModalProps) {
+export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
   const content = TERMS[term];
   if (!content) return null;
 
@@ -105,7 +134,7 @@ export default function LearnModal({ term, onClose }: LearnModalProps) {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
-            <span style={{ fontSize: '1.6rem', lineHeight: 1 }}>{content.emoji}</span>
+            {content.emoji && <span style={{ fontSize: '1.6rem', lineHeight: 1 }}>{content.emoji}</span>}
             <span style={{
               fontFamily: 'var(--font-playfair)',
               fontSize: '1.1rem', fontWeight: 700,
@@ -186,6 +215,9 @@ export default function LearnModal({ term, onClose }: LearnModalProps) {
               </p>
             </div>
           )}
+
+          {/* Footer slot — Maestro or other contextual content */}
+          {footer}
 
           {/* External link — only if present */}
           {content.videoUrl && content.videoLabel && (

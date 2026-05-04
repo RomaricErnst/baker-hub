@@ -351,7 +351,8 @@
       "long": "Commencez maintenant — pendant que la pâte finit son apprêt. Donnez-lui les {min} min complètes pour saturer votre surface de cuisson.",
       "short": "Commencez maintenant — pendant que la pâte finit son apprêt. Mettez le four à température maximale pendant {min} minutes."
     },
-    "eatTip": "Votre pâte est parfaitement fermentée. Grignez, enfournez et cuisez. Buon appetito !",
+    "eatTipPizza": "Votre pâte est parfaitement fermentée. Étirez, garnissez et enfournez. Buon appetito !",
+    "eatTipBread": "Votre pâte est parfaitement fermentée. Grignez, enfournez et régalez-vous. Buon appétit !",
     "phaseLabels": {
       "mixing": "Frasage",
       "bulkFerm": "Pointage",

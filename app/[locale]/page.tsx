@@ -1457,6 +1457,7 @@ export default function Home() {
                           prefGoesInFridge={prefGoesInFridge}
                           prefRemoveFromFridgeTime={prefRemoveFromFridgeTime}
                           onStartBaking={() => setActiveTab('guide')}
+                          bakeType={bakeType ?? undefined}
                         />
                       )}
                     </div>
@@ -1589,6 +1590,7 @@ export default function Home() {
                   feedTime={feedTime}
                   units={units}
                   locale={locale}
+                  onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
                 />
               )}
             </div>{/* end guide tab */}
@@ -2479,6 +2481,7 @@ export default function Home() {
                           prefGoesInFridge={prefGoesInFridge}
                           prefRemoveFromFridgeTime={prefRemoveFromFridgeTime}
                           onStartBaking={() => setActiveTab('guide')}
+                          bakeType={bakeType ?? undefined}
                         />
                       )}
                     </div>
@@ -2611,6 +2614,7 @@ export default function Home() {
                   feedTime={feedTime}
                   units={units}
                   locale={locale}
+                  onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
                 />
               )}
             </div>{/* end guide tab */}

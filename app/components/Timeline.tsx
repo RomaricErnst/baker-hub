@@ -29,6 +29,7 @@ interface TimelineProps {
   prefermentType?: string;
   prefGoesInFridge?: boolean;
   prefRemoveFromFridgeTime?: Date | null;
+  bakeType?: string;
 }
 
 // ── Step kinds ────────────────────────────────
@@ -85,6 +86,7 @@ function buildItems(
   hydration?: number,
   oil?: number,
   t: (key: string, params?: Record<string, string | number>) => string = (k) => k,
+  bakeType?: string,
 ): TimelineStep[] {
   const items: TimelineStep[] = [];
 
@@ -369,7 +371,7 @@ function buildItems(
     label: t('timeline.steps.eat'),
     icon: '🎉',
     iconKey: 'bake',
-    tip: t('timeline.eatTip'),
+    tip: bakeType === 'bread' ? t('timeline.eatTipBread') : t('timeline.eatTipPizza'),
     durationH: null,
   });
 
@@ -433,14 +435,14 @@ function InfoBadge({ term, onOpen }: { term: string; onOpen: (t: string) => void
 
 // ── Component ─────────────────────────────────
 export default function Timeline({
-  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, oil, hydration, numItems, feedTime, kitchenTemp, onStartBaking, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime,
+  schedule, blocks, preheatMin, startTime, eatTime, mixerType, styleKey, oil, hydration, numItems, feedTime, kitchenTemp, onStartBaking, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, bakeType,
 }: TimelineProps) {
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
   const t = useTranslations();
 
   const isSourdough = styleKey === 'sourdough' || styleKey === 'pain_levain';
 
-  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t);
+  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t, bakeType);
   const phases = buildPhases(schedule, preheatMin, t);
 
   const lastStepId = items[items.length - 1]?.id;
