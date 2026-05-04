@@ -361,18 +361,11 @@ export default function Header({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <img src="/logo-mark.webp" width={36} height={36}
             style={{ objectFit: 'contain' }} alt="Baker Hub" />
-          <div>
-            <div style={{
-              fontFamily: 'var(--font-playfair)',
-              fontSize: '16px', fontWeight: 700,
-              color: 'var(--cream)', lineHeight: 1,
-            }}>Baker Hub</div>
-            <div style={{
-              fontFamily: 'var(--font-dm-sans)',
-              fontSize: '11px', color: 'var(--gold)',
-              fontStyle: 'italic', lineHeight: 1, marginTop: 2,
-            }}>{t('tagline')}</div>
-          </div>
+          <div style={{
+            fontFamily: 'var(--font-playfair)',
+            fontSize: '16px', fontWeight: 700,
+            color: 'var(--cream)', lineHeight: 1,
+          }}>Baker Hub</div>
         </div>
       </div>
 
