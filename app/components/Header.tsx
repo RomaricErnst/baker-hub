@@ -564,7 +564,7 @@ export default function Header({
                   {locale === 'fr' ? 'Aucune session sauvegardee' : 'No saved sessions yet'}
                 </div>
               ) : (
-                <div style={{ maxHeight: '260px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ maxHeight: '320px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {bakeEvents.map(event => {
                     const title = bakeEventTitle(event);
                     const spec = bakeEventDoughSpec(event);

@@ -1,5 +1,5 @@
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale } from 'next-intl';
 import {
@@ -7,7 +7,7 @@ import {
   type MixerType, type StyleKey, type AnyOvenType, type FlourBlend, type PrefermentType, type YeastType,
 } from '@/app/data';
 import { buildSchedule, calculateRecipe } from '@/app/utils';
-import { bakeEventTitle, bakeEventDoughSpec, type BakeEvent, type PizzaPartySlot } from '@/app/lib/supabase/fetchBakeEvents';
+import { fetchPizzaPartySlots, bakeEventTitle, bakeEventDoughSpec, type BakeEvent, type PizzaPartySlot } from '@/app/lib/supabase/fetchBakeEvents';
 
 interface SessionViewerProps {
   event: BakeEvent | null;
@@ -26,6 +26,13 @@ function formatHours(h: number): string {
 export default function SessionViewer({ event, onClose, onResume, slots }: SessionViewerProps) {
   const locale = useLocale();
   const l = locale === 'fr' ? 'fr' : 'en';
+
+  const [localSlots, setLocalSlots] = useState<PizzaPartySlot[]>([]);
+  useEffect(() => {
+    if (!event?.pizza_party_id) { setLocalSlots([]); return; }
+    if (slots && slots.length > 0) { setLocalSlots(slots); return; }
+    fetchPizzaPartySlots([event.id]).then(map => setLocalSlots(map[event.id] ?? []));
+  }, [event?.id, slots]);
 
   const snap = event?.dough_snapshot ?? null;
 
@@ -125,12 +132,13 @@ export default function SessionViewer({ event, onClose, onResume, slots }: Sessi
       {/* Sheet */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        maxHeight: '88vh', overflowY: 'auto',
+        maxHeight: '88vh', overflowY: 'hidden',
+        display: 'flex', flexDirection: 'column',
         background: 'var(--warm)', borderRadius: '20px 20px 0 0',
         zIndex: 300, animation: 'slideUpSheet 0.3s ease',
-        paddingBottom: 'env(safe-area-inset-bottom, 20px)',
         maxWidth: '680px', margin: '0 auto',
       }}>
+      <div style={{ overflowY: 'auto', flex: 1 }}>
 
         {/* Drag handle */}
         <div style={{
@@ -238,7 +246,7 @@ export default function SessionViewer({ event, onClose, onResume, slots }: Sessi
         </div>
 
         {/* Pizza selections */}
-        {slots && slots.length > 0 && (
+        {localSlots.length > 0 && (
           <>
             <div style={{ height: '1px', background: 'var(--border)', margin: '16px 20px 0' }} />
             <div style={{ padding: '16px 20px 0' }}>
@@ -248,13 +256,13 @@ export default function SessionViewer({ event, onClose, onResume, slots }: Sessi
               }}>
                 {l === 'fr' ? 'Pizzas' : 'Pizzas'}
               </div>
-              {slots.map((slot, i) => (
+              {localSlots.map((slot, i) => (
                 <div key={slot.id ?? i} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   fontSize: '13px', color: 'var(--char)',
                   fontFamily: 'var(--font-dm-sans)',
                   padding: '6px 0',
-                  borderBottom: i < slots.length - 1 ? '1px solid var(--border)' : undefined,
+                  borderBottom: i < localSlots.length - 1 ? '1px solid var(--border)' : undefined,
                 }}>
                   <span>{slot.preset_id}</span>
                   {slot.qty && slot.qty > 1 && (
@@ -271,12 +279,14 @@ export default function SessionViewer({ event, onClose, onResume, slots }: Sessi
         {/* Spacer before action bar */}
         <div style={{ height: '24px' }} />
 
+      </div>{/* end scrollable content */}
+
         {/* Action bar */}
         <div style={{
-          position: 'sticky', bottom: 0,
           background: 'var(--warm)',
           borderTop: '1px solid var(--border)',
           padding: '14px 20px',
+          paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
         }}>
           <button
             onClick={onClose}
