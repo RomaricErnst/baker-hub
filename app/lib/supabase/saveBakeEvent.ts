@@ -143,16 +143,29 @@ export async function savePizzaPartySelections(
     const quantity = Object.values(qtys).reduce((a, b) => a + b, 0);
     if (quantity === 0) return null;
 
-    const { data: session, error: sessionError } = await supabase
+    // Select-first: get existing session or create new one
+    let { data: session } = await supabase
       .from('pizza_party_sessions')
-      .upsert(
-        { bake_event_id: bakeEventId, quantity, style },
-        { onConflict: 'bake_event_id' },
-      )
       .select('id')
+      .eq('bake_event_id', bakeEventId)
       .single();
 
-    if (sessionError || !session) return null;
+    if (!session) {
+      const { data: newSession, error: insertError } = await supabase
+        .from('pizza_party_sessions')
+        .insert({ bake_event_id: bakeEventId, quantity, style })
+        .select('id')
+        .single();
+      if (insertError || !newSession) return null;
+      session = newSession;
+    } else {
+      await supabase
+        .from('pizza_party_sessions')
+        .update({ quantity, style })
+        .eq('id', session.id);
+    }
+
+    if (!session) return null;
 
     const slots = Object.entries(qtys)
       .filter(([, qty]) => qty > 0)
