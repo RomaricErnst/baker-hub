@@ -3,7 +3,7 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale } from 'next-intl';
 import {
-  ALL_STYLES,
+  ALL_STYLES, computeBlendProfile,
   type MixerType, type StyleKey, type AnyOvenType,
   type FlourBlend, type PrefermentType, type YeastType,
 } from '@/app/data';
@@ -60,7 +60,7 @@ export default function SessionViewer({
   useEffect(() => {
     if (!event?.id) { setLocalSlots([]); return; }
     if (slots && slots.length > 0) { setLocalSlots(slots); return; }
-    fetchPizzaPartySlots([event.id]).then(function(map) {
+    fetchPizzaPartySlots([event.id]).then(map => {
       setLocalSlots(map[event.id] ?? []);
     });
   }, [event?.id, slots, event?.pizza_party_id, event?.status]);
@@ -133,6 +133,17 @@ export default function SessionViewer({
   const title = bakeEventTitle(event);
   const prefLabel = hasPref
     ? snap.prefermentType!.charAt(0).toUpperCase() + snap.prefermentType!.slice(1)
+    : null;
+  const doughBallSpec = snap.numItems && snap.itemWeight
+    ? `${snap.numItems} × ${snap.itemWeight}g`
+    : null;
+  const flourBlendName = snap.flourBlend
+    ? (() => {
+        try {
+          const profile = computeBlendProfile(snap.flourBlend as FlourBlend);
+          return profile.displayName || null;
+        } catch { return null; }
+      })()
     : null;
 
   const monoSm: React.CSSProperties = {
@@ -232,18 +243,19 @@ export default function SessionViewer({
             <div style={sectionLabel}>{l === 'fr' ? 'Pâte' : 'Dough'}</div>
 
             <div style={{ ...monoSm, marginBottom: '4px' }}>
-              {(() => {
-                const doughBallSpec = snap.numItems && snap.itemWeight
-                  ? `${snap.numItems} × ${snap.itemWeight}g`
-                  : null;
-                return [
-                  styleName,
-                  doughBallSpec,
-                  snap.manualHydration != null ? `${snap.manualHydration}%` : null,
-                  prefLabel,
-                ].filter(Boolean).join(' · ');
-              })()}
+              {[
+                styleName,
+                doughBallSpec,
+                snap.manualHydration != null ? `${snap.manualHydration}%` : null,
+                prefLabel,
+              ].filter(Boolean).join(' · ')}
             </div>
+
+            {flourBlendName && (
+              <div style={{ ...monoSm, marginBottom: '4px', opacity: 0.8 }}>
+                {flourBlendName}
+              </div>
+            )}
 
             <div style={{ ...monoSm, marginBottom: '4px' }}>
               {recipe
