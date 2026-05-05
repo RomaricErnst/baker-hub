@@ -15,6 +15,7 @@ import {
 } from '@/app/lib/supabase/fetchBakeEvents';
 import { saveComment, uploadBakePhoto, deleteBakePhoto } from '@/app/lib/supabase/saveBakeEvent';
 import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
+import ShareCard from '@/app/components/ShareCard';
 
 interface SessionViewerProps {
   event: BakeEvent | null;
@@ -540,38 +541,26 @@ export default function SessionViewer({
 
         </div>
 
-        {/* ── SHARE MODAL (placeholder) ── */}
         {showShareModal && (
-          <div style={{
-            position: 'absolute', inset: 0, background: 'var(--warm)',
-            borderRadius: '20px 20px 0 0', zIndex: 10,
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: '16px',
-            padding: '24px',
-          }}>
-            <p style={{
-              fontFamily: 'var(--font-playfair)', fontSize: '20px',
-              color: 'var(--char)', textAlign: 'center', margin: 0,
-            }}>
-              Share coming soon ✦
-            </p>
-            <p style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
-              color: 'var(--smoke)', textAlign: 'center', margin: 0,
-            }}>
-              IG card generator — Part C
-            </p>
-            <button
-              onClick={() => setShowShareModal(false)}
-              style={{
-                padding: '10px 24px', borderRadius: '10px',
-                background: 'var(--terra)', color: 'white', border: 'none',
-                fontFamily: 'var(--font-dm-mono)', cursor: 'pointer',
-              }}
-            >
-              Close
-            </button>
-          </div>
+          <ShareCard
+            styleName={styleName}
+            numItems={snap.numItems}
+            itemWeight={snap.itemWeight}
+            hydration={displayHydration}
+            prefLabel={prefLabel}
+            flourLine={flourBlendName}
+            recipeFlour={recipe?.flour ?? null}
+            recipeWater={recipe?.water ?? null}
+            recipeSalt={recipe?.salt ?? null}
+            coldH={coldH}
+            rtH={rtH}
+            bakedQtys={bakedQtys}
+            localSlots={localSlots}
+            sessionPhotos={photos}
+            locale={l}
+            status={event.status}
+            onClose={() => setShowShareModal(false)}
+          />
         )}
 
       </div>
