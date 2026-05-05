@@ -129,6 +129,12 @@ export default function SessionViewer({
     } catch { return null; }
   }, [snap, schedule]);
 
+  const displayHydration = snap?.manualHydration != null
+    ? snap.manualHydration
+    : recipe
+      ? Math.round((recipe.water / recipe.flour) * 100)
+      : null;
+
   if (!event || !snap) return null;
   if (typeof document === 'undefined') return null;
 
@@ -255,7 +261,7 @@ export default function SessionViewer({
               {[
                 styleName,
                 doughBallSpec,
-                snap.manualHydration != null ? `${snap.manualHydration}%` : null,
+                displayHydration != null ? `${displayHydration}%` : null,
                 prefLabel,
               ].filter(Boolean).join(' · ')}
             </div>
