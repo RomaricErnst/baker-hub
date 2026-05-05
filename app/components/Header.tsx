@@ -598,13 +598,21 @@ export default function Header({
                             setBakeEvents(prev => prev.filter(ev => ev.id !== event.id));
                           }}
                           style={{
-                            position: 'absolute', top: '6px', right: '6px',
+                            position: 'absolute', bottom: '8px', right: '10px',
                             background: 'none', border: 'none', cursor: 'pointer',
-                            color: 'rgba(255,255,255,0.35)', fontSize: '16px',
-                            padding: '4px 6px', lineHeight: 1, zIndex: 1,
+                            color: 'rgba(255,255,255,0.25)',
+                            padding: '2px', lineHeight: 1, zIndex: 1,
                           }}
                           title="Delete session"
-                        >🗑</button>
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14H6L5 6"/>
+                            <path d="M10 11v6M14 11v6"/>
+                            <path d="M9 6V4h6v2"/>
+                          </svg>
+                        </button>
                         <div
                           onClick={() => { setViewingEvent(event); setMenuOpen(false); }}
                           style={{ padding: '12px 12px 10px', cursor: 'pointer' }}
@@ -698,6 +706,11 @@ export default function Header({
               )}
             </div>
 
+          </div>{/* end scrollable body */}
+
+          {/* ── Pinned bottom: Language · Units + Auth ── */}
+          <div style={{ flexShrink: 0 }}>
+
             {/* ── Section 3: Language · Units ── */}
             {([
               {
@@ -717,10 +730,9 @@ export default function Header({
             ] as const).map((row, idx) => (
               <div key={row.label} style={{
                 padding: '10px 16px',
+                borderTop: idx === 0 ? '1px solid rgba(255,255,255,0.08)' : undefined,
                 borderBottom: '1px solid rgba(255,255,255,0.08)',
-                borderTop: idx === 0 ? 'none' : undefined,
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                flexShrink: 0,
               }}>
                 <span style={monoLabel}>{row.label}</span>
                 <div style={{ display: 'flex', gap: '.25rem' }}>
@@ -737,14 +749,11 @@ export default function Header({
               </div>
             ))}
 
-          </div>{/* end scrollable body */}
-
-          {/* ── Section 4: Auth — pinned to bottom ── */}
-          <div style={{
-            padding: '12px 16px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-            flexShrink: 0,
-          }}>
+            {/* ── Section 4: Auth ── */}
+            <div style={{
+              padding: '12px 16px',
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+            }}>
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.5rem' }}>
                 <span style={{
@@ -808,6 +817,8 @@ export default function Header({
               </div>
             )}
           </div>
+
+          </div>{/* end pinned bottom */}
 
         </div>
       </>,
