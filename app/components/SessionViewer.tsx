@@ -8,6 +8,7 @@ import {
 } from '@/app/data';
 import { buildSchedule, calculateRecipe } from '@/app/utils';
 import { fetchPizzaPartySlots, bakeEventTitle, bakeEventDoughSpec, type BakeEvent, type PizzaPartySlot } from '@/app/lib/supabase/fetchBakeEvents';
+import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
 
 interface SessionViewerProps {
   event: BakeEvent | null;
@@ -124,6 +125,15 @@ export default function SessionViewer({ event, onClose, onResume, onDelete, slot
         zIndex: 300, animation: 'slideUpSheet 0.3s ease',
         maxWidth: '680px', margin: '0 auto',
       }}>
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute', top: '16px', right: '16px',
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--smoke)', fontSize: '18px', lineHeight: 1,
+            padding: '4px', zIndex: 1,
+          }}
+        >✕</button>
       <div style={{ overflowY: 'auto', flex: 1 }}>
 
         {/* Drag handle */}
@@ -178,65 +188,28 @@ export default function SessionViewer({ event, onClose, onResume, onDelete, slot
             {l === 'fr' ? 'Pate' : 'Dough'}
           </div>
 
-          {/* Poolish / preferment block */}
-          {hasPref && (
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <span style={{
-                  display: 'inline-block', width: '3px', height: '16px',
-                  background: 'var(--terra)', borderRadius: '2px',
-                  marginRight: '8px', flexShrink: 0,
-                }} />
-                <span style={{
-                  fontFamily: 'var(--font-dm-sans)', fontSize: '14px',
-                  fontWeight: 600, color: 'var(--char)',
-                }}>
-                  {l === 'fr' ? `Préparer ${prefLabel}` : `Make ${prefLabel}`}
-                </span>
-              </div>
-              <div style={{ marginTop: '4px', marginLeft: '11px', ...monoSm }}>
-                {recipe?.preferment
-                  ? `${recipe.preferment.prefFlour}g flour · ${recipe.preferment.prefWater}g water${recipe.preferment.prefYeastGrams ? ` · ${recipe.preferment.prefYeastGrams}g yeast` : ''}`
-                  : `${snap.prefermentFlourPct ?? '—'}% of flour`}
-              </div>
-              <div style={{ marginTop: '2px', marginLeft: '11px', ...monoXs }}>
-                {snap.prefOffsetH}h {l === 'fr' ? 'avant la pate' : 'before dough'}
-              </div>
-            </div>
-          )}
+          {/* Settings row */}
+          <div style={{ ...monoSm, marginBottom: '4px' }}>
+            {[
+              styleName,
+              `${snap.numItems} ${snap.bakeType === 'bread' ? (snap.numItems === 1 ? 'loaf' : 'loaves') : (snap.numItems === 1 ? 'pizza' : 'pizzas')}`,
+              snap.ovenType ?? '',
+              snap.yeastType ?? '',
+            ].filter(Boolean).join(' · ')}
+          </div>
 
-          {/* Main dough block */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <span style={{
-                display: 'inline-block', width: '3px', height: '16px',
-                background: 'var(--sage)', borderRadius: '2px',
-                marginRight: '8px', flexShrink: 0,
-              }} />
-              <span style={{
-                fontFamily: 'var(--font-dm-sans)', fontSize: '14px',
-                fontWeight: 600, color: 'var(--char)',
-              }}>
-                {l === 'fr' ? 'Démarrer la pate' : 'Start Dough'}
-              </span>
-            </div>
-            <div style={{ marginTop: '4px', marginLeft: '11px', ...monoSm }}>
-              {recipe
-                ? hasPref && recipe.preferment
-                  ? `${recipe.preferment.finalFlour}g flour · ${recipe.preferment.finalWater}g water · ${recipe.salt}g salt`
-                  : `${recipe.flour}g flour · ${recipe.water}g water · ${recipe.salt}g salt`
-                : `${snap.numItems} × ${snap.itemWeight}g`}
-            </div>
-            {snap.yeastType && (
-              <div style={{ marginTop: '2px', marginLeft: '11px', ...monoXs }}>
-                {snap.yeastType}
-              </div>
-            )}
+          {/* Recipe row */}
+          <div style={{ ...monoSm, marginBottom: '4px' }}>
+            {recipe
+              ? hasPref && recipe.preferment
+                ? `${recipe.preferment.finalFlour}g flour · ${recipe.preferment.finalWater}g water · ${recipe.salt}g salt`
+                : `${recipe.flour}g flour · ${recipe.water}g water · ${recipe.salt}g salt`
+              : `${snap.numItems} × ${snap.itemWeight}g`}
           </div>
 
           {/* Fermentation summary */}
           {(coldH > 0 || rtH > 0) && (
-            <div style={{ marginTop: '12px', ...monoSm }}>
+            <div style={{ ...monoSm }}>
               {coldH > 0 && rtH > 0
                 ? `Cold ${formatHours(coldH)} · RT ${formatHours(rtH)}`
                 : coldH > 0
@@ -257,22 +230,23 @@ export default function SessionViewer({ event, onClose, onResume, onDelete, slot
               }}>
                 {l === 'fr' ? 'Pizzas' : 'Pizzas'}
               </div>
-              {localSlots.map((slot, i) => (
-                <div key={slot.id ?? i} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  fontSize: '13px', color: 'var(--char)',
-                  fontFamily: 'var(--font-dm-sans)',
-                  padding: '6px 0',
-                  borderBottom: i < localSlots.length - 1 ? '1px solid var(--border)' : undefined,
-                }}>
-                  <span>{slot.preset_id}</span>
-                  {slot.qty && slot.qty > 1 && (
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)' }}>
-                      ×{slot.qty}
-                    </span>
-                  )}
-                </div>
-              ))}
+              {localSlots.map((slot, i) => {
+                const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
+                const pizza = allPizzas.find(p => p.id === slot.preset_id);
+                const displayName = pizza
+                  ? ((pizza.name as Record<string, string>)[l] ?? pizza.name.en)
+                  : slot.preset_id;
+                return (
+                  <div key={slot.id ?? i} style={{
+                    fontSize: '13px', color: 'var(--char)',
+                    fontFamily: 'var(--font-dm-sans)',
+                    padding: '6px 0',
+                    borderBottom: i < localSlots.length - 1 ? '1px solid var(--border)' : undefined,
+                  }}>
+                    {slot.qty && slot.qty > 1 ? `${displayName} ×${slot.qty}` : displayName}
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
@@ -306,18 +280,6 @@ export default function SessionViewer({ event, onClose, onResume, onDelete, slot
             }}
           >
             {l === 'fr' ? 'Supprimer' : 'Delete session'}
-          </button>
-          <button
-            onClick={onClose}
-            style={{
-              display: 'block', width: '100%', textAlign: 'center',
-              marginBottom: '10px', fontFamily: 'var(--font-dm-mono)',
-              fontSize: '12px', color: 'var(--smoke)',
-              background: 'none', border: 'none', cursor: 'pointer',
-              textDecoration: 'underline',
-            }}
-          >
-            {l === 'fr' ? 'Fermer' : 'Close'}
           </button>
           <button
             onClick={() => { onResume(event); onClose(); }}

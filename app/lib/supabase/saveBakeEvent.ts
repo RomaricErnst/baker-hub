@@ -157,6 +157,26 @@ export async function savePizzaPartySelections(
   }
 }
 
+export async function updateBakeEvent(
+  id: string,
+  session: SessionData,
+): Promise<boolean> {
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('bake_events')
+      .update({
+        dough_snapshot: session,
+        bake_date: session.eatTime
+          ? new Date(session.eatTime).toISOString()
+          : new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+    return !error;
+  } catch { return false; }
+}
+
 export async function markBaked(bakeEventId: string): Promise<boolean> {
   try {
     const supabase = createClient();

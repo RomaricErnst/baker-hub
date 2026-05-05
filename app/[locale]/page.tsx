@@ -831,11 +831,13 @@ export default function Home() {
             };
             saveSession(sessionPayload);
             if (user) {
-              const { saveNamedSession, savePizzaPartySelections } = await import('../lib/supabase/saveBakeEvent');
+              const { saveNamedSession, savePizzaPartySelections, updateBakeEvent } = await import('../lib/supabase/saveBakeEvent');
               let id = bakeEventId;
               if (!id) {
                 id = await saveNamedSession(sessionPayload as SessionData);
                 if (id) setBakeEventId(id);
+              } else {
+                await updateBakeEvent(id, sessionPayload as SessionData);
               }
               if (id) {
                 if (Object.keys(pizzaPartyQtys).length > 0 && styleKey) {

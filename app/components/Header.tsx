@@ -577,7 +577,7 @@ export default function Header({
                   {locale === 'fr' ? 'Aucune session sauvegardee' : 'No saved sessions yet'}
                 </div>
               ) : (
-                <div style={{ maxHeight: '420px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ maxHeight: '380px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {bakeEvents.map(event => {
                     const title = bakeEventTitle(event);
                     const spec = bakeEventDoughSpec(event);
@@ -588,6 +588,7 @@ export default function Header({
                         border: '1px solid rgba(255,255,255,0.08)',
                         overflow: 'hidden',
                         position: 'relative',
+                        minHeight: '72px',
                       }}>
                         <button
                           onClick={async (e) => {
@@ -599,11 +600,11 @@ export default function Header({
                           style={{
                             position: 'absolute', top: '6px', right: '6px',
                             background: 'none', border: 'none', cursor: 'pointer',
-                            color: 'rgba(255,255,255,0.25)', fontSize: '14px',
+                            color: 'rgba(255,255,255,0.35)', fontSize: '16px',
                             padding: '4px 6px', lineHeight: 1, zIndex: 1,
                           }}
                           title="Delete session"
-                        >✕</button>
+                        >🗑</button>
                         <div
                           onClick={() => { setViewingEvent(event); setMenuOpen(false); }}
                           style={{ padding: '12px 12px 10px', cursor: 'pointer' }}
