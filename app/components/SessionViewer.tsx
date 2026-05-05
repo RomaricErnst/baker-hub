@@ -58,12 +58,12 @@ export default function SessionViewer({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!event?.pizza_party_id && event?.status !== 'pizza_planned') {
-      setLocalSlots([]); return;
-    }
+    if (!event?.id) { setLocalSlots([]); return; }
     if (slots && slots.length > 0) { setLocalSlots(slots); return; }
-    fetchPizzaPartySlots([event.id]).then(map => setLocalSlots(map[event.id] ?? []));
-  }, [event?.id, slots]);
+    fetchPizzaPartySlots([event.id]).then(function(map) {
+      setLocalSlots(map[event.id] ?? []);
+    });
+  }, [event?.id, slots, event?.pizza_party_id, event?.status]);
 
   useEffect(() => {
     if (!event?.id) return;
@@ -232,11 +232,17 @@ export default function SessionViewer({
             <div style={sectionLabel}>{l === 'fr' ? 'Pâte' : 'Dough'}</div>
 
             <div style={{ ...monoSm, marginBottom: '4px' }}>
-              {[
-                styleName,
-                snap.manualHydration != null ? `${snap.manualHydration}%` : null,
-                prefLabel,
-              ].filter(Boolean).join(' · ')}
+              {(() => {
+                const doughBallSpec = snap.numItems && snap.itemWeight
+                  ? `${snap.numItems} × ${snap.itemWeight}g`
+                  : null;
+                return [
+                  styleName,
+                  doughBallSpec,
+                  snap.manualHydration != null ? `${snap.manualHydration}%` : null,
+                  prefLabel,
+                ].filter(Boolean).join(' · ');
+              })()}
             </div>
 
             <div style={{ ...monoSm, marginBottom: '4px' }}>
