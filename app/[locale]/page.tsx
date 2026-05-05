@@ -859,6 +859,7 @@ export default function Home() {
               if (id) {
                 if (Object.keys(currentQtys).length > 0 && styleKey) {
                   await savePizzaPartySelections(id, currentQtys, styleKey);
+                  await new Promise(resolve => setTimeout(resolve, 500));
                 }
                 setSessionSaved(true);
               }
