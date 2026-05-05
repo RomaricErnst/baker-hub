@@ -137,10 +137,13 @@ export default function SessionViewer({
   const doughBallSpec = snap.numItems && snap.itemWeight
     ? `${snap.numItems} × ${snap.itemWeight}g`
     : null;
-  const flourBlendName = snap.flourBlend
+  const flourBlend = snap.flourBlend as FlourBlend | null | undefined;
+  const flourBlendName = flourBlend
     ? (() => {
         try {
-          const profile = computeBlendProfile(snap.flourBlend as FlourBlend);
+          const brandProduct = (flourBlend as unknown as Record<string, unknown>).brandProduct as string | undefined;
+          const profile = computeBlendProfile(flourBlend);
+          if (brandProduct) return brandProduct + ' · ' + profile.displayName;
           return profile.displayName || null;
         } catch { return null; }
       })()
