@@ -138,6 +138,20 @@ export async function fetchPizzaPartySlots(
   } catch { return {}; }
 }
 
+export async function fetchBakedQtys(
+  bakeEventId: string,
+): Promise<Record<string, number> | null> {
+  try {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from('pizza_party_sessions')
+      .select('baked_qtys')
+      .eq('bake_event_id', bakeEventId)
+      .single();
+    return (data?.baked_qtys as Record<string, number>) ?? null;
+  } catch { return null; }
+}
+
 export async function deleteBakeEvent(id: string): Promise<boolean> {
   try {
     const supabase = createClient();

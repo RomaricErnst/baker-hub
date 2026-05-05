@@ -214,6 +214,20 @@ export async function updateBakeEvent(
   } catch { return false; }
 }
 
+export async function saveBakedQtys(
+  bakeEventId: string,
+  bakedQtys: Record<string, number>,
+): Promise<boolean> {
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('pizza_party_sessions')
+      .update({ baked_qtys: bakedQtys })
+      .eq('bake_event_id', bakeEventId);
+    return !error;
+  } catch { return false; }
+}
+
 export async function markBaked(bakeEventId: string): Promise<boolean> {
   try {
     const supabase = createClient();

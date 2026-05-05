@@ -9,7 +9,7 @@ import {
 } from '@/app/data';
 import { buildSchedule, calculateRecipe } from '@/app/utils';
 import {
-  fetchPizzaPartySlots, fetchPhotosForEvents,
+  fetchPizzaPartySlots, fetchPhotosForEvents, fetchBakedQtys,
   bakeEventTitle, bakeEventDoughSpec,
   type BakeEvent, type PizzaPartySlot, type BakePhoto,
 } from '@/app/lib/supabase/fetchBakeEvents';
@@ -55,6 +55,7 @@ export default function SessionViewer({
   const [editingComment, setEditingComment] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [bakedQtys, setBakedQtys] = useState<Record<string, number> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -75,6 +76,11 @@ export default function SessionViewer({
 
   useEffect(() => {
     setComment(event?.comment ?? '');
+  }, [event?.id]);
+
+  useEffect(() => {
+    if (!event?.id) { setBakedQtys(null); return; }
+    fetchBakedQtys(event.id).then(setBakedQtys);
   }, [event?.id]);
 
   const snap = event?.dough_snapshot ?? null;
@@ -302,9 +308,8 @@ export default function SessionViewer({
                 return (
                   <div key={slot.id ?? i} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '6px 0', fontSize: '13px', color: 'var(--char)',
+                    padding: '3px 0', fontSize: '13px', color: 'var(--char)',
                     fontFamily: 'var(--font-dm-sans)',
-                    borderBottom: i < localSlots.length - 1 ? '1px solid var(--border)' : undefined,
                   }}>
                     <span>{name}</span>
                     {slot.qty && slot.qty > 1 && (
@@ -313,6 +318,33 @@ export default function SessionViewer({
                   </div>
                 );
               })}
+            </div>
+          </>)}
+
+          {/* ── PIZZAS BAKED SECTION ── */}
+          {bakedQtys && Object.values(bakedQtys).some(v => v > 0) && (<>
+            <div style={divider} />
+            <div style={{ padding: '16px 20px 0' }}>
+              <div style={sectionLabel}>{l === 'fr' ? 'Pizzas cuites' : 'Pizzas Baked'}</div>
+              {Object.entries(bakedQtys)
+                .filter(([, qty]) => qty > 0)
+                .map(([presetId, qty], i) => {
+                  const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
+                  const pizza = allPizzas.find(p => p.id === presetId);
+                  const name = pizza
+                    ? ((pizza.name as Record<string, string>)[l] ?? (pizza.name as Record<string, string>).en ?? presetId)
+                    : presetId;
+                  return (
+                    <div key={presetId} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '3px 0', fontSize: '13px', color: 'var(--char)',
+                      fontFamily: 'var(--font-dm-sans)',
+                    }}>
+                      <span>{name}</span>
+                      <span style={{ ...monoSm, color: 'var(--sage)' }}>×{qty}</span>
+                    </div>
+                  );
+                })}
             </div>
           </>)}
 

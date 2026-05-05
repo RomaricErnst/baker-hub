@@ -148,6 +148,18 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
   const [showTechSheet, setShowTechSheet] = useState(false);
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [doneCounts, setDoneCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (Object.values(doneCounts).every(v => v === 0)) return;
+    const save = async () => {
+      let id = bakeEventId;
+      if (!id && onEnsureBakeEvent) id = await onEnsureBakeEvent();
+      if (!id) return;
+      const { saveBakedQtys } = await import('@/app/lib/supabase/saveBakeEvent');
+      await saveBakedQtys(id, doneCounts);
+    };
+    save();
+  }, [doneCounts, bakeEventId, onEnsureBakeEvent]);
   const [user, setUser] = useState<User | null>(null);
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
   const [photoWarn, setPhotoWarn] = useState(false);
