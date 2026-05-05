@@ -413,61 +413,72 @@ export default function SessionViewer({
 
         </div>{/* end scrollable content */}
 
-        {/* ── ACTION BAR ── */}
+        {/* Action bar */}
         <div style={{
           background: 'var(--warm)',
           borderTop: '1px solid var(--border)',
           padding: '12px 20px',
           paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
-          display: 'flex', flexDirection: 'column', gap: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
         }}>
 
+          {/* PRIMARY: Resume */}
+          <button
+            onClick={() => { onResume(event); onClose(); }}
+            style={{
+              width: '100%', padding: '15px',
+              background: 'var(--terra)', color: 'white',
+              fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
+              borderRadius: '12px', border: 'none', cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(196,82,42,0.25)',
+              letterSpacing: '.01em',
+            }}
+          >
+            {l === 'fr' ? 'Reprendre la session' : 'Resume session'}
+          </button>
+
+          {/* SECONDARY: Share */}
           <button
             onClick={() => setShowShareModal(true)}
             style={{
               width: '100%', padding: '12px',
-              background: 'none',
-              border: '1px solid rgba(212,168,83,0.4)',
+              background: 'transparent',
+              border: '1px solid rgba(212,168,83,0.5)',
               color: 'var(--gold)',
               fontFamily: 'var(--font-dm-mono)', fontSize: '13px',
               borderRadius: '10px', cursor: 'pointer',
-              letterSpacing: '.04em',
+              letterSpacing: '.06em',
             }}
           >
-            {l === 'fr' ? '✦ Partager' : '✦ Share'}
+            {l === 'fr' ? '✦ Partager' : '✦ Share this bake'}
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button
-              onClick={async () => {
-                if (!window.confirm('Delete this session? This cannot be undone.')) return;
-                const { deleteBakeEvent } = await import('@/app/lib/supabase/fetchBakeEvents');
-                await deleteBakeEvent(event.id);
-                onDelete?.(event.id);
-                onClose();
-              }}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
-                color: 'var(--terra)', textDecoration: 'underline', opacity: 0.7,
-                padding: 0, flexShrink: 0,
-              }}
-            >
-              {l === 'fr' ? 'Supprimer' : 'Delete'}
-            </button>
-            <button
-              onClick={() => { onResume(event); onClose(); }}
-              style={{
-                flex: 1, padding: '14px',
-                background: 'var(--terra)', color: 'white',
-                fontFamily: 'var(--font-playfair)', fontSize: '16px', fontWeight: 700,
-                borderRadius: '12px', border: 'none', cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
-              }}
-            >
-              {l === 'fr' ? 'Reprendre la session' : 'Resume session'}
-            </button>
-          </div>
+          {/* DESTRUCTIVE: Delete — low prominence */}
+          <button
+            onClick={async () => {
+              if (!window.confirm(
+                l === 'fr'
+                  ? 'Supprimer cette session ? Cette action est irréversible.'
+                  : 'Delete this session? This cannot be undone.'
+              )) return;
+              const { deleteBakeEvent } = await import('@/app/lib/supabase/fetchBakeEvents');
+              await deleteBakeEvent(event.id);
+              onDelete?.(event.id);
+              onClose();
+            }}
+            style={{
+              width: '100%', padding: '6px',
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              color: 'var(--smoke)', opacity: 0.5,
+              textDecoration: 'underline', textUnderlineOffset: '2px',
+            }}
+          >
+            {l === 'fr' ? 'Supprimer la session' : 'Delete session'}
+          </button>
+
         </div>
 
         {/* ── SHARE MODAL (placeholder) ── */}
