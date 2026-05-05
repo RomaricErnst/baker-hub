@@ -21,6 +21,7 @@ interface PizzaPartyProps {
   bakeEventId?: string | null;
   initialQtys?: Record<string, number>;
   onQtysSnapshot?: (qtys: Record<string, number>) => void;
+  getQtysRef?: React.MutableRefObject<() => Record<string, number>>;
   onGoToMyDough?: () => void;
   ovenType?: string;
   onEnsureBakeEvent?: () => Promise<string | null>;
@@ -37,7 +38,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, onGoToMyDough, ovenType, onEnsureBakeEvent }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent }: PizzaPartyProps) {
   const [qtys, setQtys] = useState<Record<string, number>>(initialQtys ?? {});
   const [styleKey, setStyleKey] = useState<string | undefined>(initialStyleKey);
   const [pickStyleKey, setPickStyleKey] = useState<string | undefined>(initialStyleKey);
@@ -52,9 +53,12 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
   }, [qtys, onHasSelection]);
 
   useEffect(() => {
-    const t = setTimeout(() => onQtysSnapshot?.(qtys), 800);
-    return () => clearTimeout(t);
+    onQtysSnapshot?.(qtys);
   }, [qtys, onQtysSnapshot]);
+
+  useEffect(() => {
+    if (getQtysRef) getQtysRef.current = () => qtys;
+  }, [qtys, getQtysRef]);
 
   const showSelector = activeTab === 'pick' || activeTab === 'shop';
 

@@ -357,6 +357,7 @@ export default function Home() {
   const modeSelectorRef      = useRef<HTMLDivElement>(null);
   const suppressNextScrollRef = useRef(false);
   const isRestoringRef = useRef(false);
+  const pizzaPartyGetQtysRef = useRef<() => Record<string, number>>(() => ({}));
 
   // P5 — Custom-only state persistence
   const customOnlyStateRef = useRef<{
@@ -844,6 +845,7 @@ export default function Home() {
               pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
               bakedDone,
             };
+            const currentQtys = pizzaPartyGetQtysRef.current?.() ?? pizzaPartyQtys;
             saveSession(sessionPayload);
             if (user) {
               const { saveNamedSession, savePizzaPartySelections, updateBakeEvent } = await import('../lib/supabase/saveBakeEvent');
@@ -855,8 +857,8 @@ export default function Home() {
                 await updateBakeEvent(id, sessionPayload as SessionData);
               }
               if (id) {
-                if (Object.keys(pizzaPartyQtys).length > 0 && styleKey) {
-                  await savePizzaPartySelections(id, pizzaPartyQtys, styleKey);
+                if (Object.keys(currentQtys).length > 0 && styleKey) {
+                  await savePizzaPartySelections(id, currentQtys, styleKey);
                 }
                 setSessionSaved(true);
               }
@@ -1658,6 +1660,7 @@ export default function Home() {
                   bakeEventId={bakeEventId}
                   initialQtys={pizzaPartyQtys}
                   onQtysSnapshot={setPizzaPartyQtys}
+                  getQtysRef={pizzaPartyGetQtysRef}
                   onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
                   ovenType={ovenType ?? undefined}
                   onEnsureBakeEvent={async () => {
@@ -2708,6 +2711,7 @@ export default function Home() {
                   bakeEventId={bakeEventId}
                   initialQtys={pizzaPartyQtys}
                   onQtysSnapshot={setPizzaPartyQtys}
+                  getQtysRef={pizzaPartyGetQtysRef}
                   onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
                   ovenType={ovenType ?? undefined}
                   onEnsureBakeEvent={async () => {
