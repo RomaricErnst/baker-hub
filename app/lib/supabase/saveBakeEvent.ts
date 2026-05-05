@@ -69,7 +69,10 @@ export async function saveNamedSession(
       : new Date().toLocaleDateString('en-GB', {
           weekday: 'short', day: 'numeric', month: 'short',
         });
-    const name = `${style} · ${n} ${type} · ${date}`;
+    const time = new Date().toLocaleTimeString('en-GB', {
+      hour: '2-digit', minute: '2-digit',
+    });
+    const name = `${style} · ${n} ${type} · ${date} ${time}`;
 
     const { data, error } = await supabase
       .from('bake_events')
@@ -86,7 +89,28 @@ export async function saveNamedSession(
       .select('id')
       .single();
 
-    if (error) { console.error('saveNamedSession error:', error); return null; }
+    if (error) {
+      console.error('saveNamedSession error:', error);
+      if (error.code === '23505') {
+        const suffix = Math.floor(Math.random() * 1000);
+        const { data: retry, error: retryError } = await supabase
+          .from('bake_events')
+          .insert({
+            user_id: user.id,
+            bake_date: session.eatTime
+              ? new Date(session.eatTime).toISOString()
+              : new Date().toISOString(),
+            status: 'dough_planned',
+            recipe_id: recipeId ?? null,
+            dough_snapshot: session,
+            notes: name + ' (' + suffix + ')',
+          })
+          .select('id')
+          .single();
+        if (!retryError) return retry?.id ?? null;
+      }
+      return null;
+    }
     return data?.id ?? null;
   } catch (e) {
     console.error('saveNamedSession exception:', e);

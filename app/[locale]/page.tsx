@@ -342,14 +342,21 @@ export default function Home() {
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
   const [pizzaPartyQtys, setPizzaPartyQtys] = useState<Record<string, number>>({});
   useEffect(() => {
-    if (Object.keys(pizzaPartyQtys).length > 0) setSessionSaved(false);
-  }, [pizzaPartyQtys]);
+    if (isRestoringRef.current) return;
+    setSessionSaved(false);
+  }, [
+    styleKey, ovenType, mixerType, yeastType,
+    numItems, itemWeight, kitchenTemp, humidity,
+    fridgeTemp, manualHydration, prefermentType,
+    prefermentFlourPct, eatTime, pizzaPartyQtys,
+  ]);
   const [bakePhotoUrl, setBakePhotoUrl] = useState<string | null>(null);
   const [bakedDone, setBakedDone] = useState(false);
 
   const resultsRef           = useRef<HTMLDivElement>(null);
   const modeSelectorRef      = useRef<HTMLDivElement>(null);
   const suppressNextScrollRef = useRef(false);
+  const isRestoringRef = useRef(false);
 
   // P5 — Custom-only state persistence
   const customOnlyStateRef = useRef<{
@@ -416,8 +423,12 @@ export default function Home() {
 
   // Welcome back — hydrate full wizard state from localStorage on mount
   useEffect(() => {
+    isRestoringRef.current = true;
     const session = loadSession();
-    if (!session) return;
+    if (!session) {
+      isRestoringRef.current = false;
+      return;
+    }
 
     setTab(session.tab as 'simple' | 'custom');
     setBakeType(session.bakeType as BakeType | null);
@@ -462,7 +473,6 @@ export default function Home() {
       }
       setShowResults(true);
       setProtocolStale(false);
-      setSessionSaved(true);
     } else {
       if (session.tab === 'custom') {
         setAdvancedStep(session.ovenType ? 3 : 2);
@@ -475,6 +485,7 @@ export default function Home() {
     if (session.bakedDone) setBakedDone(true);
     setProtocolStale(false);
     setShowWelcomeBack(true);
+    setTimeout(() => { isRestoringRef.current = false; }, 200);
   }, []);
 
   // Scroll to results when they appear
@@ -858,6 +869,7 @@ export default function Home() {
           onNewSession={startOver}
           onResumeBakeEvent={async (event: BakeEvent) => {
             if (!event.dough_snapshot) return;
+            isRestoringRef.current = true;
             const snap = event.dough_snapshot;
             setTab(snap.tab as 'simple' | 'custom');
             setBakeType(snap.bakeType as BakeType | null);
@@ -902,6 +914,7 @@ export default function Home() {
               setSessionSaved(true);
               setReviewMode(true);
               setActiveTab('setup');
+              setTimeout(() => { isRestoringRef.current = false; }, 200);
             }
             // Restore pizza selections from DB if available
             if (event.pizza_party_id) {
