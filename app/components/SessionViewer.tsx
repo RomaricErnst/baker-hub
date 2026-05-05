@@ -1,13 +1,19 @@
 'use client';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale } from 'next-intl';
 import {
   ALL_STYLES,
-  type MixerType, type StyleKey, type AnyOvenType, type FlourBlend, type PrefermentType, type YeastType,
+  type MixerType, type StyleKey, type AnyOvenType,
+  type FlourBlend, type PrefermentType, type YeastType,
 } from '@/app/data';
 import { buildSchedule, calculateRecipe } from '@/app/utils';
-import { fetchPizzaPartySlots, bakeEventTitle, bakeEventDoughSpec, type BakeEvent, type PizzaPartySlot } from '@/app/lib/supabase/fetchBakeEvents';
+import {
+  fetchPizzaPartySlots, fetchPhotosForEvents,
+  bakeEventTitle, bakeEventDoughSpec,
+  type BakeEvent, type PizzaPartySlot, type BakePhoto,
+} from '@/app/lib/supabase/fetchBakeEvents';
+import { saveComment, uploadBakePhoto, deleteBakePhoto } from '@/app/lib/supabase/saveBakeEvent';
 import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
 
 interface SessionViewerProps {
@@ -25,16 +31,51 @@ function formatHours(h: number): string {
   return `${whole}h ${mins}m`;
 }
 
-export default function SessionViewer({ event, onClose, onResume, onDelete, slots }: SessionViewerProps) {
+const OVEN_LABEL: Record<string, string> = {
+  pizza_oven: 'Pizza oven', home_oven: 'Home oven',
+  ooni_karu: 'Ooni Karu', ooni_koda: 'Ooni Koda',
+  roccbox: 'Roccbox', gozney_dome: 'Gozney Dome',
+  cast_iron: 'Cast iron', bbq: 'BBQ',
+  ooni_volt: 'Ooni Volt', steel: 'Baking steel',
+};
+const MIXER_LABEL: Record<string, string> = {
+  hand: 'Hand kneaded', stand: 'Stand mixer',
+  no_knead: 'No-knead', spiral: 'Spiral mixer',
+};
+
+export default function SessionViewer({
+  event, onClose, onResume, onDelete, slots,
+}: SessionViewerProps) {
   const locale = useLocale();
   const l = locale === 'fr' ? 'fr' : 'en';
 
   const [localSlots, setLocalSlots] = useState<PizzaPartySlot[]>([]);
+  const [photos, setPhotos] = useState<BakePhoto[]>([]);
+  const [comment, setComment] = useState('');
+  const [editingComment, setEditingComment] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
-    if (!event?.pizza_party_id && event?.status !== 'pizza_planned') { setLocalSlots([]); return; }
+    if (!event?.pizza_party_id && event?.status !== 'pizza_planned') {
+      setLocalSlots([]); return;
+    }
     if (slots && slots.length > 0) { setLocalSlots(slots); return; }
     fetchPizzaPartySlots([event.id]).then(map => setLocalSlots(map[event.id] ?? []));
   }, [event?.id, slots]);
+
+  useEffect(() => {
+    if (!event?.id) return;
+    fetchPhotosForEvents([event.id]).then(map => {
+      const all = map[event.id] ?? [];
+      setPhotos(all.filter(p => p.slot_index === null));
+    });
+  }, [event?.id]);
+
+  useEffect(() => {
+    setComment(event?.comment ?? '');
+  }, [event?.id]);
 
   const snap = event?.dough_snapshot ?? null;
 
@@ -83,217 +124,386 @@ export default function SessionViewer({ event, onClose, onResume, onDelete, slot
   }, [snap, schedule]);
 
   if (!event || !snap) return null;
+  if (typeof document === 'undefined') return null;
 
   const hasPref = snap.prefermentType && snap.prefermentType !== 'none';
   const coldH = schedule?.totalColdHours ?? 0;
   const rtH = schedule?.totalRTHours ?? 0;
-
   const styleName = (ALL_STYLES as Record<string, { name: string }>)[snap.styleKey ?? '']?.name ?? snap.styleKey ?? '';
   const title = bakeEventTitle(event);
-  const spec = bakeEventDoughSpec(event);
-
-
   const prefLabel = hasPref
     ? snap.prefermentType!.charAt(0).toUpperCase() + snap.prefermentType!.slice(1)
-    : '';
+    : null;
 
   const monoSm: React.CSSProperties = {
     fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)',
   };
-  const monoXs: React.CSSProperties = {
-    fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'rgba(138,127,120,0.7)',
+  const sectionLabel: React.CSSProperties = {
+    fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--smoke)',
+    textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '10px',
   };
+  const divider = { height: '1px', background: 'var(--border)', margin: '16px 20px 0' };
 
-  if (typeof document === 'undefined') return null;
+  const handlePhotoUpload = async (file: File) => {
+    if (!event?.id || photos.length >= 6) return;
+    setUploading(true);
+    const supabase = (await import('@/app/lib/supabase/client')).createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setUploading(false); return; }
+    const result = await uploadBakePhoto(event.id, user.id, file);
+    if (result) {
+      setPhotos(prev => [...prev, {
+        id: result.id,
+        slot_index: null,
+        photo_url: result.url,
+        taken_at: new Date().toISOString(),
+      }]);
+    }
+    setUploading(false);
+  };
 
   return createPortal(
     <>
       {/* Scrim */}
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 299,
-        }}
-      />
+      <div onClick={onClose} style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 299,
+      }} />
 
       {/* Sheet */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        maxHeight: '88vh', overflowY: 'hidden',
+        maxHeight: '92vh', overflowY: 'hidden',
         display: 'flex', flexDirection: 'column',
         background: 'var(--warm)', borderRadius: '20px 20px 0 0',
         zIndex: 300, animation: 'slideUpSheet 0.3s ease',
         maxWidth: '680px', margin: '0 auto',
       }}>
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute', top: '16px', right: '16px',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--smoke)', fontSize: '18px', lineHeight: 1,
-            padding: '4px', zIndex: 1,
-          }}
-        >✕</button>
-      <div style={{ overflowY: 'auto', flex: 1 }}>
 
-        {/* Drag handle */}
-        <div style={{
-          width: '36px', height: '4px', background: 'rgba(0,0,0,0.15)',
-          borderRadius: '2px', margin: '14px auto 10px',
-        }} />
+        {/* X close button */}
+        <button onClick={onClose} style={{
+          position: 'absolute', top: '16px', right: '16px',
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: 'var(--smoke)', fontSize: '18px', lineHeight: 1,
+          padding: '4px', zIndex: 2,
+        }}>✕</button>
 
-        {/* Title block */}
-        <div style={{ padding: '0 20px 16px' }}>
-          <p style={{
-            fontFamily: 'var(--font-playfair)', fontSize: '20px', fontWeight: 700,
-            color: 'var(--char)', margin: '0 0 4px',
-          }}>{title}</p>
-          {spec && (
-            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)', margin: 0 }}>
-              {spec}
-            </p>
-          )}
-          <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
-            <span style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
-              padding: '3px 10px', borderRadius: '20px',
-              background: 'rgba(107,122,90,0.15)', color: 'var(--sage)',
-            }}>Dough</span>
-            {(event.pizza_party_id || event.status === 'pizza_planned') && (
-              <span style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
-                padding: '3px 10px', borderRadius: '20px',
-                background: 'rgba(212,168,83,0.15)', color: 'var(--gold)',
-              }}>Pizza</span>
-            )}
-            {event.status === 'baked' && (
-              <span style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
-                padding: '3px 10px', borderRadius: '20px',
-                background: 'rgba(196,82,42,0.15)', color: 'var(--terra)',
-              }}>Baked</span>
-            )}
-          </div>
-        </div>
+        {/* Scrollable content */}
+        <div style={{ overflowY: 'auto', flex: 1 }}>
 
-        {/* Divider */}
-        <div style={{ height: '1px', background: 'var(--border)', margin: '0 20px' }} />
-
-        {/* Dough section */}
-        <div style={{ padding: '16px 20px 0' }}>
+          {/* Drag handle */}
           <div style={{
-            fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--smoke)',
-            textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '12px',
-          }}>
-            {l === 'fr' ? 'Pate' : 'Dough'}
-          </div>
+            width: '36px', height: '4px', background: 'rgba(0,0,0,0.15)',
+            borderRadius: '2px', margin: '14px auto 10px',
+          }} />
 
-          {/* Settings row */}
-          <div style={{ ...monoSm, marginBottom: '4px' }}>
-            {[
-              styleName,
-              `${snap.numItems} ${snap.bakeType === 'bread' ? (snap.numItems === 1 ? 'loaf' : 'loaves') : (snap.numItems === 1 ? 'pizza' : 'pizzas')}`,
-              snap.ovenType ?? '',
-              snap.yeastType ?? '',
-            ].filter(Boolean).join(' · ')}
-          </div>
-
-          {/* Recipe row */}
-          <div style={{ ...monoSm, marginBottom: '4px' }}>
-            {recipe
-              ? hasPref && recipe.preferment
-                ? `${recipe.preferment.finalFlour}g flour · ${recipe.preferment.finalWater}g water · ${recipe.salt}g salt`
-                : `${recipe.flour}g flour · ${recipe.water}g water · ${recipe.salt}g salt`
-              : `${snap.numItems} × ${snap.itemWeight}g`}
-          </div>
-
-          {/* Fermentation summary */}
-          {(coldH > 0 || rtH > 0) && (
-            <div style={{ ...monoSm }}>
-              {coldH > 0 && rtH > 0
-                ? `Cold ${formatHours(coldH)} · RT ${formatHours(rtH)}`
-                : coldH > 0
-                ? `Cold ${formatHours(coldH)}`
-                : `RT ${formatHours(rtH)}`}
+          {/* Title + pills */}
+          <div style={{ padding: '0 20px 16px' }}>
+            <p style={{
+              fontFamily: 'var(--font-playfair)', fontSize: '20px', fontWeight: 700,
+              color: 'var(--char)', margin: '0 0 8px', paddingRight: '32px',
+            }}>{title}</p>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <span style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                padding: '3px 10px', borderRadius: '20px',
+                background: 'rgba(107,122,90,0.15)', color: 'var(--sage)',
+              }}>Dough</span>
+              {(event.pizza_party_id || event.status === 'pizza_planned') && (
+                <span style={{
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                  padding: '3px 10px', borderRadius: '20px',
+                  background: 'rgba(212,168,83,0.15)', color: 'var(--gold)',
+                }}>Pizza</span>
+              )}
+              {event.status === 'baked' && (
+                <span style={{
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                  padding: '3px 10px', borderRadius: '20px',
+                  background: 'rgba(196,82,42,0.15)', color: 'var(--terra)',
+                }}>Baked</span>
+              )}
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Pizza selections */}
-        {localSlots.length > 0 && (
-          <>
-            <div style={{ height: '1px', background: 'var(--border)', margin: '16px 20px 0' }} />
-            <div style={{ padding: '16px 20px 0' }}>
-              <div style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--smoke)',
-                textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '10px',
-              }}>
-                {l === 'fr' ? 'Pizzas' : 'Pizzas'}
+          <div style={divider} />
+
+          {/* ── DOUGH SECTION ── */}
+          <div style={{ padding: '16px 20px 0' }}>
+            <div style={sectionLabel}>{l === 'fr' ? 'Pâte' : 'Dough'}</div>
+
+            <div style={{ ...monoSm, marginBottom: '4px' }}>
+              {[
+                styleName,
+                snap.manualHydration != null ? `${snap.manualHydration}%` : null,
+                prefLabel,
+              ].filter(Boolean).join(' · ')}
+            </div>
+
+            <div style={{ ...monoSm, marginBottom: '4px' }}>
+              {recipe
+                ? `${recipe.flour}g flour · ${recipe.water}g water · ${recipe.salt}g salt`
+                : `${snap.numItems} × ${snap.itemWeight}g`}
+            </div>
+
+            <div style={{ ...monoSm, marginBottom: '4px' }}>
+              {[
+                OVEN_LABEL[snap.ovenType ?? ''] ?? snap.ovenType,
+                MIXER_LABEL[snap.mixerType ?? ''] ?? snap.mixerType,
+              ].filter(Boolean).join(' · ')}
+            </div>
+
+            {(coldH > 0 || rtH > 0) && (
+              <div style={{ ...monoSm }}>
+                {coldH > 0 && rtH > 0
+                  ? `Cold ${formatHours(coldH)} · RT ${formatHours(rtH)}`
+                  : coldH > 0
+                  ? `Cold ${formatHours(coldH)}`
+                  : `RT ${formatHours(rtH)}`}
               </div>
-              {localSlots.map((slot, i) => {
+            )}
+          </div>
+
+          {/* ── PIZZA PLAN SECTION ── */}
+          {(localSlots.length > 0 || event.pizza_party_id || event.status === 'pizza_planned') && (<>
+            <div style={divider} />
+            <div style={{ padding: '16px 20px 0' }}>
+              <div style={sectionLabel}>{l === 'fr' ? 'Plan Pizza' : 'Pizza Plan'}</div>
+              {localSlots.length === 0 ? (
+                <div style={{ ...monoSm, fontStyle: 'italic' }}>
+                  {l === 'fr' ? 'Sélections non disponibles' : 'Selections not available'}
+                </div>
+              ) : localSlots.map((slot, i) => {
                 const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
                 const pizza = allPizzas.find(p => p.id === slot.preset_id);
-                const displayName = pizza
-                  ? ((pizza.name as Record<string, string>)[l] ?? pizza.name.en)
+                const name = pizza
+                  ? ((pizza.name as Record<string, string>)[l] ?? (pizza.name as Record<string, string>).en ?? slot.preset_id)
                   : slot.preset_id;
                 return (
                   <div key={slot.id ?? i} style={{
-                    fontSize: '13px', color: 'var(--char)',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '6px 0', fontSize: '13px', color: 'var(--char)',
                     fontFamily: 'var(--font-dm-sans)',
-                    padding: '6px 0',
                     borderBottom: i < localSlots.length - 1 ? '1px solid var(--border)' : undefined,
                   }}>
-                    {slot.qty && slot.qty > 1 ? `${displayName} ×${slot.qty}` : displayName}
+                    <span>{name}</span>
+                    {slot.qty && slot.qty > 1 && (
+                      <span style={{ ...monoSm }}>×{slot.qty}</span>
+                    )}
                   </div>
                 );
               })}
             </div>
-          </>
-        )}
+          </>)}
 
-        {/* Spacer before action bar */}
-        <div style={{ height: '24px' }} />
+          {/* ── PHOTOS SECTION ── */}
+          <div style={divider} />
+          <div style={{ padding: '16px 20px 0' }}>
+            <div style={sectionLabel}>{l === 'fr' ? 'Photos' : 'Photos'}</div>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
 
-      </div>{/* end scrollable content */}
+              {photos.map(photo => (
+                <div key={photo.id} style={{ position: 'relative', width: '80px', height: '80px', flexShrink: 0 }}>
+                  <img
+                    src={photo.photo_url}
+                    alt="bake photo"
+                    style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '10px', display: 'block' }}
+                  />
+                  <button
+                    onClick={async () => {
+                      await deleteBakePhoto(photo.id, photo.photo_url);
+                      setPhotos(prev => prev.filter(p => p.id !== photo.id));
+                    }}
+                    style={{
+                      position: 'absolute', top: '-6px', right: '-6px',
+                      width: '20px', height: '20px', borderRadius: '50%',
+                      background: 'var(--terra)', border: 'none', cursor: 'pointer',
+                      color: 'white', fontSize: '11px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >✕</button>
+                </div>
+              ))}
 
-        {/* Action bar */}
+              {photos.length < 6 && (
+                <label style={{
+                  width: '80px', height: '80px', borderRadius: '10px',
+                  border: '1.5px dashed var(--border)',
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', gap: '4px', flexShrink: 0,
+                }}>
+                  <span style={{ fontSize: '22px', opacity: 0.35, lineHeight: 1 }}>+</span>
+                  <span style={{
+                    fontFamily: 'var(--font-dm-mono)', fontSize: '9px',
+                    color: 'var(--smoke)', textAlign: 'center', lineHeight: 1.3,
+                  }}>
+                    {uploading ? '...' : (l === 'fr' ? 'Ajouter' : 'Add photo')}
+                  </span>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    style={{ display: 'none' }}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) await handlePhotoUpload(file);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+            <p style={{
+              fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+              color: 'var(--smoke)', opacity: 0.6, marginTop: '8px',
+            }}>
+              {photos.length}/6 photos
+            </p>
+          </div>
+
+          {/* ── COMMENT SECTION ── */}
+          <div style={divider} />
+          <div style={{ padding: '16px 20px 24px' }}>
+            <div style={sectionLabel}>{l === 'fr' ? 'Note' : 'Note'}</div>
+            {editingComment ? (
+              <div>
+                <textarea
+                  value={comment}
+                  onChange={e => setComment(e.target.value)}
+                  autoFocus
+                  rows={3}
+                  placeholder={l === 'fr' ? 'Ajouter une note...' : 'Add a note...'}
+                  style={{
+                    width: '100%', padding: '10px', borderRadius: '8px',
+                    border: '1px solid var(--border)',
+                    fontFamily: 'var(--font-dm-sans)', fontSize: '13px',
+                    color: 'var(--char)', background: 'var(--cream)',
+                    resize: 'none', boxSizing: 'border-box', outline: 'none',
+                  }}
+                />
+                <button
+                  onClick={async () => {
+                    if (event?.id) await saveComment(event.id, comment);
+                    setEditingComment(false);
+                  }}
+                  style={{
+                    marginTop: '6px', padding: '6px 16px', borderRadius: '8px',
+                    background: 'var(--terra)', color: 'white', border: 'none',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: '12px', cursor: 'pointer',
+                  }}
+                >
+                  {l === 'fr' ? 'Sauvegarder' : 'Save'}
+                </button>
+              </div>
+            ) : (
+              <div
+                onClick={() => setEditingComment(true)}
+                style={{
+                  fontFamily: 'var(--font-dm-sans)', fontSize: '13px',
+                  color: comment ? 'var(--char)' : 'var(--smoke)',
+                  fontStyle: comment ? 'normal' : 'italic',
+                  cursor: 'pointer', minHeight: '36px', lineHeight: 1.5,
+                }}
+              >
+                {comment || (l === 'fr' ? 'Ajouter une note...' : 'Tap to add a note...')}
+              </div>
+            )}
+          </div>
+
+        </div>{/* end scrollable content */}
+
+        {/* ── ACTION BAR ── */}
         <div style={{
           background: 'var(--warm)',
           borderTop: '1px solid var(--border)',
-          padding: '14px 20px',
-          paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
+          padding: '12px 20px',
+          paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+          display: 'flex', flexDirection: 'column', gap: '8px',
         }}>
+
           <button
-            onClick={async () => {
-              if (!window.confirm('Delete this session? This cannot be undone.')) return;
-              const { deleteBakeEvent } = await import('@/app/lib/supabase/fetchBakeEvents');
-              await deleteBakeEvent(event.id);
-              onDelete?.(event.id);
-              onClose();
-            }}
+            onClick={() => setShowShareModal(true)}
             style={{
-              display: 'block', width: '100%', textAlign: 'center',
-              marginBottom: '8px', fontFamily: 'var(--font-dm-mono)',
-              fontSize: '12px', color: 'var(--terra)',
-              background: 'none', border: 'none', cursor: 'pointer',
-              textDecoration: 'underline', opacity: 0.7,
+              width: '100%', padding: '12px',
+              background: 'none',
+              border: '1px solid rgba(212,168,83,0.4)',
+              color: 'var(--gold)',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '13px',
+              borderRadius: '10px', cursor: 'pointer',
+              letterSpacing: '.04em',
             }}
           >
-            {l === 'fr' ? 'Supprimer' : 'Delete session'}
+            {l === 'fr' ? '✦ Partager' : '✦ Share'}
           </button>
-          <button
-            onClick={() => { onResume(event); onClose(); }}
-            style={{
-              width: '100%', padding: '14px',
-              background: 'var(--terra)', color: 'white',
-              fontFamily: 'var(--font-playfair)', fontSize: '16px', fontWeight: 700,
-              borderRadius: '12px', border: 'none', cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
-            }}
-          >
-            {l === 'fr' ? 'Reprendre la session' : 'Resume session'}
-          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={async () => {
+                if (!window.confirm('Delete this session? This cannot be undone.')) return;
+                const { deleteBakeEvent } = await import('@/app/lib/supabase/fetchBakeEvents');
+                await deleteBakeEvent(event.id);
+                onDelete?.(event.id);
+                onClose();
+              }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+                color: 'var(--terra)', textDecoration: 'underline', opacity: 0.7,
+                padding: 0, flexShrink: 0,
+              }}
+            >
+              {l === 'fr' ? 'Supprimer' : 'Delete'}
+            </button>
+            <button
+              onClick={() => { onResume(event); onClose(); }}
+              style={{
+                flex: 1, padding: '14px',
+                background: 'var(--terra)', color: 'white',
+                fontFamily: 'var(--font-playfair)', fontSize: '16px', fontWeight: 700,
+                borderRadius: '12px', border: 'none', cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
+              }}
+            >
+              {l === 'fr' ? 'Reprendre la session' : 'Resume session'}
+            </button>
+          </div>
         </div>
+
+        {/* ── SHARE MODAL (placeholder) ── */}
+        {showShareModal && (
+          <div style={{
+            position: 'absolute', inset: 0, background: 'var(--warm)',
+            borderRadius: '20px 20px 0 0', zIndex: 10,
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: '16px',
+            padding: '24px',
+          }}>
+            <p style={{
+              fontFamily: 'var(--font-playfair)', fontSize: '20px',
+              color: 'var(--char)', textAlign: 'center', margin: 0,
+            }}>
+              Share coming soon ✦
+            </p>
+            <p style={{
+              fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+              color: 'var(--smoke)', textAlign: 'center', margin: 0,
+            }}>
+              IG card generator — Part C
+            </p>
+            <button
+              onClick={() => setShowShareModal(false)}
+              style={{
+                padding: '10px 24px', borderRadius: '10px',
+                background: 'var(--terra)', color: 'white', border: 'none',
+                fontFamily: 'var(--font-dm-mono)', cursor: 'pointer',
+              }}
+            >
+              Close
+            </button>
+          </div>
+        )}
+
       </div>
     </>,
     document.body,

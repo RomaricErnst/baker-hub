@@ -7,6 +7,7 @@ export interface BakeEvent {
   bake_date: string;
   status: 'dough_planned' | 'pizza_planned' | 'baked';
   notes: string | null;
+  comment?: string | null;
   dough_snapshot: SessionData | null;
   recipe_id: string | null;
   pizza_party_id: string | null;
@@ -53,7 +54,7 @@ export async function fetchBakeEvents(): Promise<BakeEvent[]> {
     if (!user) return [];
     const { data, error } = await supabase
       .from('bake_events')
-      .select('id, bake_date, status, notes, dough_snapshot, recipe_id, pizza_party_id, created_at, updated_at')
+      .select('id, bake_date, status, notes, comment, dough_snapshot, recipe_id, pizza_party_id, created_at, updated_at')
       .eq('user_id', user.id)
       .order('updated_at', { ascending: false })
       .limit(20);

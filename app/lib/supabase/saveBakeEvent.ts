@@ -187,3 +187,70 @@ export async function markBaked(bakeEventId: string): Promise<boolean> {
     return !error;
   } catch { return false; }
 }
+
+export async function saveComment(
+  bakeEventId: string,
+  comment: string,
+): Promise<boolean> {
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('bake_events')
+      .update({ comment, updated_at: new Date().toISOString() })
+      .eq('id', bakeEventId);
+    return !error;
+  } catch { return false; }
+}
+
+export async function uploadBakePhoto(
+  bakeEventId: string,
+  userId: string,
+  file: File,
+): Promise<{ id: string; url: string } | null> {
+  try {
+    const supabase = createClient();
+    const ext = file.name.split('.').pop() ?? 'jpg';
+    const path = `${userId}/${bakeEventId}/${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('bake-photos')
+      .upload(path, file, { upsert: false });
+    if (uploadError) { console.error('upload error:', uploadError); return null; }
+
+    const { data: urlData } = supabase.storage
+      .from('bake-photos')
+      .getPublicUrl(path);
+
+    const { data: row, error: insertError } = await supabase
+      .from('bake_photos')
+      .insert({
+        bake_event_id: bakeEventId,
+        slot_index: null,
+        photo_url: urlData.publicUrl,
+        taken_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+
+    if (insertError || !row) return null;
+    return { id: row.id, url: urlData.publicUrl };
+  } catch (e) {
+    console.error('uploadBakePhoto error:', e);
+    return null;
+  }
+}
+
+export async function deleteBakePhoto(
+  photoId: string,
+  photoUrl: string,
+): Promise<boolean> {
+  try {
+    const supabase = createClient();
+    const urlObj = new URL(photoUrl);
+    const path = urlObj.pathname.split('/bake-photos/')[1];
+    if (path) await supabase.storage.from('bake-photos').remove([path]);
+    const { error } = await supabase
+      .from('bake_photos').delete().eq('id', photoId);
+    return !error;
+  } catch { return false; }
+}
