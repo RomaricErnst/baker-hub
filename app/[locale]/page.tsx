@@ -116,7 +116,7 @@ const FALLBACK_ZONE = { min: 50, classicMin: 60, classicMax: 70, advancedMax: 78
 
 // ── Step card ────────────────────────────────
 function StepCard({
-  num, title, activeStep, summary, onEdit, children, idPrefix = 'step', reviewMode = false,
+  num, title, activeStep, summary, onEdit, children, idPrefix = 'step', reviewMode = false, canComplete = true,
 }: {
   num: number;
   title: string;
@@ -126,9 +126,10 @@ function StepCard({
   children: React.ReactNode;
   idPrefix?: string;
   reviewMode?: boolean;
+  canComplete?: boolean;
 }) {
   const isActive    = activeStep === num || reviewMode;
-  const isCompleted = activeStep > num && !reviewMode;
+  const isCompleted = activeStep > num && !reviewMode && canComplete;
   const isLocked    = activeStep < num && !reviewMode;
 
   return (
@@ -625,7 +626,7 @@ export default function Home() {
   function selectBakeType(bt: BakeType) {
     setBakeType(bt);
     setStyleKey(null);
-    setOvenType(bt === 'bread' ? 'dutch_oven' : 'home_oven_steel');
+    setOvenType(null);
     setActiveStep(1);
     setModeChosen(true);
   }
@@ -1310,7 +1311,10 @@ export default function Home() {
               num={3} title={t('steps.4.title')}
               activeStep={activeStep}
               reviewMode={reviewMode}
-              summary={ovenData ? (locale === 'fr' && (ovenData as { nameFr?: string }).nameFr ? (ovenData as { nameFr: string }).nameFr : ovenData.name) : ''}
+              summary={ovenData
+                ? (locale === 'fr' && (ovenData as { nameFr?: string }).nameFr ? (ovenData as { nameFr: string }).nameFr : ovenData.name)
+                : <span style={{ color: 'var(--smoke)', opacity: 0.6 }}>{locale === 'fr' ? 'Choisir votre four' : 'Choose your oven'}</span>}
+              canComplete={!!ovenType}
               onEdit={() => setActiveStep(3)}
             >
               <OvenPicker
@@ -1344,7 +1348,10 @@ export default function Home() {
               num={5} title={t('steps.6.title')}
               activeStep={activeStep}
               reviewMode={reviewMode}
-              summary={mixerType ? (locale === 'fr' && (MIXER_TYPES[mixerType] as { nameFr?: string }).nameFr ? (MIXER_TYPES[mixerType] as { nameFr: string }).nameFr : MIXER_TYPES[mixerType].name) : undefined}
+              summary={mixerType
+                ? (locale === 'fr' && (MIXER_TYPES[mixerType] as { nameFr?: string }).nameFr ? (MIXER_TYPES[mixerType] as { nameFr: string }).nameFr : MIXER_TYPES[mixerType].name)
+                : <span style={{ color: 'var(--smoke)', opacity: 0.6 }}>{locale === 'fr' ? 'Choisir votre pétrissage' : 'Choose your mixer'}</span>}
+              canComplete={!!mixerType}
               onEdit={() => setActiveStep(5)}
             >
               <MixerPicker
@@ -1905,7 +1912,10 @@ export default function Home() {
               num={3} title={t('steps.4.title')}
               activeStep={advancedStep}
               reviewMode={reviewMode}
-              summary={ovenData ? (locale === 'fr' && (ovenData as { nameFr?: string }).nameFr ? (ovenData as { nameFr: string }).nameFr : ovenData.name) : ''}
+              summary={ovenData
+                ? (locale === 'fr' && (ovenData as { nameFr?: string }).nameFr ? (ovenData as { nameFr: string }).nameFr : ovenData.name)
+                : <span style={{ color: 'var(--smoke)', opacity: 0.6 }}>{locale === 'fr' ? 'Choisir votre four' : 'Choose your oven'}</span>}
+              canComplete={!!ovenType}
               onEdit={() => setAdvancedStep(3)}
             >
               <OvenPicker
@@ -1941,7 +1951,10 @@ export default function Home() {
               num={5} title={t('steps.6.title')}
               activeStep={advancedStep}
               reviewMode={reviewMode}
-              summary={mixerType ? (locale === 'fr' && (MIXER_TYPES[mixerType] as { nameFr?: string }).nameFr ? (MIXER_TYPES[mixerType] as { nameFr: string }).nameFr : MIXER_TYPES[mixerType].name) : undefined}
+              summary={mixerType
+                ? (locale === 'fr' && (MIXER_TYPES[mixerType] as { nameFr?: string }).nameFr ? (MIXER_TYPES[mixerType] as { nameFr: string }).nameFr : MIXER_TYPES[mixerType].name)
+                : <span style={{ color: 'var(--smoke)', opacity: 0.6 }}>{locale === 'fr' ? 'Choisir votre pétrissage' : 'Choose your mixer'}</span>}
+              canComplete={!!mixerType}
               onEdit={() => setAdvancedStep(5)}
             >
               <MixerPicker
