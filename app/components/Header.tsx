@@ -832,6 +832,9 @@ export default function Header({
       onClose={() => setViewingEvent(null)}
       onResume={(ev) => { onResumeBakeEvent?.(ev); setViewingEvent(null); }}
       onDelete={(id) => { setBakeEvents(prev => prev.filter(e => e.id !== id)); setViewingEvent(null); }}
+      onRename={(id, name) => {
+        setBakeEvents(prev => prev.map(e => e.id === id ? { ...e, notes: name } : e));
+      }}
       slots={eventSlots[viewingEvent?.id ?? ''] ?? []}
     />
     </>

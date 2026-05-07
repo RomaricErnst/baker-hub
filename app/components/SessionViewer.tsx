@@ -22,6 +22,7 @@ interface SessionViewerProps {
   onClose: () => void;
   onResume: (event: BakeEvent) => void;
   onDelete?: (id: string) => void;
+  onRename?: (id: string, newName: string) => void;
   slots?: PizzaPartySlot[];
 }
 
@@ -43,9 +44,15 @@ const MIXER_LABEL: Record<string, string> = {
   hand: 'Hand kneaded', stand: 'Stand mixer',
   no_knead: 'No-knead', spiral: 'Spiral mixer',
 };
+const YEAST_LABEL: Record<string, string> = {
+  instant: 'Instant dry yeast',
+  active_dry: 'Active dry yeast',
+  fresh: 'Fresh yeast',
+  sourdough: 'Sourdough',
+};
 
 export default function SessionViewer({
-  event, onClose, onResume, onDelete, slots,
+  event, onClose, onResume, onDelete, onRename, slots,
 }: SessionViewerProps) {
   const locale = useLocale();
   const l = locale === 'fr' ? 'fr' : 'en';
@@ -163,7 +170,7 @@ export default function SessionViewer({
           const blend = snap.flourBlend as FlourBlend;
           const brandProduct = (blend as unknown as Record<string, unknown>).brandProduct as string | undefined;
           const profile = computeBlendProfile(blend);
-          if (brandProduct) return `${brandProduct} · ${profile.displayName}`;
+          if (brandProduct) return brandProduct;
           return profile.displayName || null;
         } catch { return null; }
       })()
@@ -241,6 +248,7 @@ export default function SessionViewer({
                   setEditingTitle(false);
                   if (event?.id && sessionTitle !== (event.notes ?? bakeEventTitle(event))) {
                     await updateSessionName(event.id, sessionTitle);
+                    onRename?.(event.id, sessionTitle);
                   }
                 }}
                 onKeyDown={e => {
@@ -260,21 +268,27 @@ export default function SessionViewer({
                 }}
               />
             ) : (
-              <p
+              <div
                 onClick={() => setEditingTitle(true)}
                 style={{
-                  fontFamily: 'var(--font-playfair)', fontSize: '20px',
-                  fontWeight: 700, color: 'var(--char)',
-                  margin: '0 0 8px', paddingRight: '32px', cursor: 'text',
+                  cursor: 'text', display: 'flex', alignItems: 'flex-start',
+                  gap: '6px', marginBottom: '8px', paddingRight: '32px',
                 }}
               >
-                {sessionTitle || title}
+                <p style={{
+                  fontFamily: 'var(--font-playfair)', fontSize: '20px',
+                  fontWeight: 700, color: 'var(--char)', margin: 0,
+                  borderBottom: '1px dashed rgba(0,0,0,0.15)',
+                  paddingBottom: '1px',
+                }}>
+                  {sessionTitle || title}
+                </p>
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
-                  color: 'var(--smoke)', opacity: 0.35, marginLeft: '6px',
-                  fontWeight: 400,
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                  color: 'var(--smoke)', opacity: 0.4, marginTop: '4px',
+                  flexShrink: 0,
                 }}>✎</span>
-              </p>
+              </div>
             )}
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               <span style={{
@@ -325,6 +339,13 @@ export default function SessionViewer({
                 ? `${recipe.flour}g flour · ${recipe.water}g water · ${recipe.salt}g salt`
                 : `${snap.numItems} × ${snap.itemWeight}g`}
             </div>
+
+            {snap.yeastType && (
+              <div style={{ ...monoSm, marginBottom: '4px' }}>
+                {YEAST_LABEL[snap.yeastType] ?? snap.yeastType}
+                {recipe?.yeast ? ` · ${recipe.yeast}g` : ''}
+              </div>
+            )}
 
             <div style={{ ...monoSm, marginBottom: '4px' }}>
               {[
@@ -591,7 +612,7 @@ export default function SessionViewer({
         {showShareModal && (
           <ShareCard
             styleName={styleName}
-            sessionName={event.notes ?? null}
+            sessionName={sessionTitle || event?.notes || null}
             numItems={snap.numItems}
             itemWeight={snap.itemWeight}
             hydration={displayHydration}

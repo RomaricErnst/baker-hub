@@ -1554,7 +1554,7 @@ export default function Home() {
               )}
 
               {/* How did it go? card */}
-              {eatTime && new Date() > eatTime && (
+              {!(bakeTimeIsPast && sessionRestored) && eatTime && new Date() > eatTime && (
                 <div style={{ border: '1.5px solid var(--border)', borderRadius: '14px', background: 'var(--warm)', padding: '14px 16px', marginTop: '16px', marginBottom: '4px' }}>
                   <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>How did it go?</p>
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -2630,7 +2630,7 @@ export default function Home() {
               )}
 
               {/* How did it go? card */}
-              {eatTime && new Date() > eatTime && (
+              {!(bakeTimeIsPast && sessionRestored) && eatTime && new Date() > eatTime && (
                 <div style={{ border: '1.5px solid var(--border)', borderRadius: '14px', background: 'var(--warm)', padding: '14px 16px', marginTop: '16px', marginBottom: '4px' }}>
                   <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>How did it go?</p>
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>

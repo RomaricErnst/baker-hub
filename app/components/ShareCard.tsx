@@ -457,7 +457,15 @@ export default function ShareCard({
       <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
         {/* Live preview */}
-        <div style={{ width: '100%', aspectRatio: '1 / 1', position: 'relative', overflow: 'hidden', borderRadius: '12px', background: '#1A1612' }}>
+        <div style={{
+          width: '100%',
+          paddingTop: '100%',
+          position: 'relative',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          background: '#1A1612',
+          marginBottom: '4px',
+        }}>
           <div style={{ position: 'absolute', inset: 0 }}>
             <PreviewCard
               template={template}
@@ -637,7 +645,13 @@ export default function ShareCard({
 
         {/* Caption */}
         <div>
-          <div style={sectionLbl}>{l === 'fr' ? 'Légende' : 'Caption'}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+            <div style={{ ...sectionLbl, marginBottom: 0 }}>{l === 'fr' ? 'Légende' : 'Caption'}</div>
+            <span style={{
+              fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+              color: 'var(--smoke)', opacity: 0.4,
+            }}>✎ editable</span>
+          </div>
           <textarea
             value={editableCaption}
             onChange={e => setEditableCaption(e.target.value)}
