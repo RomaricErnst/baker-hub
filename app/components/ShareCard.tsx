@@ -39,8 +39,6 @@ function formatH(h: number): string {
 
 const LS_TITLE = 'bh_share_title';
 const LS_BAKER = 'bh_share_baker';
-const LS_OVEN  = 'bh_share_oven';
-const LS_MIXER = 'bh_share_mixer';
 
 const OVEN_LABEL: Record<string, string> = {
   pizza_oven: 'Pizza oven', home_oven: 'Home oven',
@@ -69,16 +67,6 @@ export default function ShareCard({
   const [bakerName, setBakerName] = useState<string>(
     () => (typeof window !== 'undefined' ? localStorage.getItem(LS_BAKER) ?? '' : '')
   );
-  const [ovenOverride, setOvenOverride] = useState<string>(
-    () => (typeof window !== 'undefined'
-      ? localStorage.getItem(LS_OVEN) ?? (ovenType ? (OVEN_LABEL[ovenType] ?? ovenType) : '')
-      : (ovenType ? (OVEN_LABEL[ovenType] ?? ovenType) : ''))
-  );
-  const [mixerOverride, setMixerOverride] = useState<string>(
-    () => (typeof window !== 'undefined'
-      ? localStorage.getItem(LS_MIXER) ?? (mixerType ? (MIXER_LABEL[mixerType] ?? mixerType) : '')
-      : (mixerType ? (MIXER_LABEL[mixerType] ?? mixerType) : ''))
-  );
   const [template, setTemplate] = useState<'full' | 'two' | 'four' | 'text'>('full');
   const [selectedPhotoUrls, setSelectedPhotoUrls] = useState<string[]>([]);
   const [cameraPhotoUrls, setCameraPhotoUrls] = useState<string[]>([]);
@@ -87,8 +75,6 @@ export default function ShareCard({
 
   useEffect(() => { localStorage.setItem(LS_TITLE, customTitle); }, [customTitle]);
   useEffect(() => { localStorage.setItem(LS_BAKER, bakerName); }, [bakerName]);
-  useEffect(() => { localStorage.setItem(LS_OVEN, ovenOverride); }, [ovenOverride]);
-  useEffect(() => { localStorage.setItem(LS_MIXER, mixerOverride); }, [mixerOverride]);
 
   // ── Content lines ──
   const specLine = [
@@ -108,7 +94,10 @@ export default function ShareCard({
     rtH > 0 ? `RT ${formatH(rtH)}` : null,
   ].filter(Boolean).join(' · ');
 
-  const gearLine = [ovenOverride, mixerOverride].filter(Boolean).join(' · ') || null;
+  const gearLine = [
+    ovenType ? (OVEN_LABEL[ovenType] ?? ovenType) : null,
+    mixerType ? (MIXER_LABEL[mixerType] ?? mixerType) : null,
+  ].filter(Boolean).join(' · ') || null;
 
   const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
   const pizzaEntries: [string, number][] =
@@ -166,6 +155,29 @@ export default function ShareCard({
       return [...prev, url];
     });
   }
+
+  // ── Editable caption ──
+  const defaultCaption = [
+    customTitle,
+    '',
+    specLine,
+    ...(flourLine ? [flourLine] : []),
+    ...(weightsLine ? [weightsLine] : []),
+    timingLine,
+    ...(gearLine ? [gearLine] : []),
+    '',
+    ...(pizzaLines.length > 0 ? [pizzaLines.join(' · ')] : []),
+    '',
+    ...(bakerName ? [`Baked by ${bakerName}`] : []),
+    'Planned with bakerhub.app',
+  ].join('\n');
+
+  const [editableCaption, setEditableCaption] = useState(defaultCaption);
+
+  useEffect(() => {
+    setEditableCaption(defaultCaption);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customTitle, bakerName, specLine, weightsLine, timingLine]);
 
   // ── Canvas draw ──
   async function drawCard(): Promise<HTMLCanvasElement | null> {
@@ -398,21 +410,6 @@ export default function ShareCard({
     setGenerating(false);
   }
 
-  const captionParts: string[] = [
-    customTitle,
-    '',
-    specLine,
-    ...(flourLine ? [flourLine] : []),
-    ...(weightsLine ? [weightsLine] : []),
-    timingLine,
-    ...(gearLine ? [gearLine] : []),
-    '',
-    ...(pizzaLines.length > 0 ? [pizzaLines.join(' · ')] : []),
-    '',
-    'Planned with bakerhub.app',
-  ];
-  const caption = captionParts.join('\n');
-
   const inputStyle: React.CSSProperties = {
     fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
     padding: '8px 10px', borderRadius: '8px',
@@ -452,27 +449,29 @@ export default function ShareCard({
       <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
         {/* Live preview */}
-        <div style={{ width: '100%', aspectRatio: '1/1', position: 'relative', overflow: 'hidden', borderRadius: '12px' }}>
-          <PreviewCard
-            template={template}
-            selectedPhotoUrls={selectedPhotoUrls}
-            customTitle={customTitle}
-            bakerName={bakerName}
-            specLine={specLine}
-            flourLine={flourLine}
-            weightsLine={weightsLine}
-            timingLine={timingLine}
-            gearLine={gearLine}
-            pizzaDisplayLines={pizzaDisplayLines}
-            cardDate={cardDate}
-            photoZoneRatio={photoZoneRatio}
-          />
+        <div style={{ width: '100%', aspectRatio: '1 / 1', position: 'relative', overflow: 'hidden', borderRadius: '12px', background: '#1A1612' }}>
+          <div style={{ position: 'absolute', inset: 0 }}>
+            <PreviewCard
+              template={template}
+              selectedPhotoUrls={selectedPhotoUrls}
+              customTitle={customTitle}
+              bakerName={bakerName}
+              specLine={specLine}
+              flourLine={flourLine}
+              weightsLine={weightsLine}
+              timingLine={timingLine}
+              gearLine={gearLine}
+              pizzaDisplayLines={pizzaDisplayLines}
+              cardDate={cardDate}
+              photoZoneRatio={photoZoneRatio}
+            />
+          </div>
         </div>
 
         {/* Editable fields */}
         <div>
           <div style={sectionLbl}>{l === 'fr' ? 'Personnaliser' : 'Customise'}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div>
               <label style={labelStyle}>{l === 'fr' ? 'Titre' : 'Title'}</label>
               <input
@@ -483,31 +482,21 @@ export default function ShareCard({
               />
             </div>
             <div>
-              <label style={labelStyle}>{l === 'fr' ? 'Boulanger' : 'Baked by'}</label>
+              <label style={labelStyle}>
+                {l === 'fr' ? 'PAR (optionnel)' : 'BAKED BY (optional)'}
+              </label>
               <input
                 value={bakerName}
                 onChange={e => setBakerName(e.target.value)}
                 placeholder={l === 'fr' ? 'Votre nom' : 'Your name'}
                 style={inputStyle}
               />
-            </div>
-            <div>
-              <label style={labelStyle}>{l === 'fr' ? 'Four' : 'Oven'}</label>
-              <input
-                value={ovenOverride}
-                onChange={e => setOvenOverride(e.target.value)}
-                placeholder="e.g. Ooni Koda 16"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>{l === 'fr' ? 'Pétrissage' : 'Mixer'}</label>
-              <input
-                value={mixerOverride}
-                onChange={e => setMixerOverride(e.target.value)}
-                placeholder="e.g. Ankarsrum"
-                style={inputStyle}
-              />
+              <div style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                color: 'var(--smoke)', opacity: 0.5, marginTop: '3px',
+              }}>
+                {l === 'fr' ? 'Apparaît en bas à gauche de la carte' : 'Appears bottom-left on the card'}
+              </div>
             </div>
           </div>
         </div>
@@ -640,23 +629,23 @@ export default function ShareCard({
 
         {/* Caption */}
         <div>
-          <div style={sectionLbl}>{l === 'fr' ? 'Légende FB / Reddit' : 'Caption for FB / Reddit'}</div>
+          <div style={sectionLbl}>{l === 'fr' ? 'Légende' : 'Caption'}</div>
           <textarea
-            readOnly
-            value={caption}
-            rows={7}
+            value={editableCaption}
+            onChange={e => setEditableCaption(e.target.value)}
+            rows={9}
             style={{
-              width: '100%', boxSizing: 'border-box',
+              width: '100%', padding: '10px 12px',
               fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-              color: 'var(--char)', background: 'var(--cream)',
-              border: '1px solid var(--border)', borderRadius: '8px',
-              padding: '10px', resize: 'none', outline: 'none',
-              lineHeight: 1.6,
+              color: 'var(--char)', lineHeight: 1.7,
+              background: 'var(--cream)', border: '1px solid var(--border)',
+              borderRadius: '8px', resize: 'none',
+              boxSizing: 'border-box', outline: 'none',
             }}
           />
           <button
             onClick={() => {
-              navigator.clipboard.writeText(caption).then(() => {
+              navigator.clipboard.writeText(editableCaption).then(() => {
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               });
