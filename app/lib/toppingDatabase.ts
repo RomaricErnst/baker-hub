@@ -2487,7 +2487,7 @@ export const PIZZAS: Pizza[] = [
     wine: ['lr', 'rw'],
     flavour: { richness: 4, boldness: 5, creative: 4, refined: 4 },
     ingredients: [ING.nduja, ING.fiordilatte, ING.burrata, ING.freshBasil],
-    compatibleStyles: ['neapolitan', 'sourdough'],
+    compatibleStyles: ['neapolitan', 'sourdough', 'pan'],
   },
 
   {
@@ -3214,21 +3214,6 @@ export const PIZZAS: Pizza[] = [
     ingredients: [ING.marinaraSauce, ING.mozzarellaLM, ING.salsiccia, ING.mushrooms, ING.oregano],
     compatibleStyles: ['pan'],
   },
-
-  {
-    id: 'nduja_burrata_pan',
-    name: { en: "'Nduja e Burrata (Pan)", fr: "'Nduja e Burrata (Pan)" },
-    story: { en: '\'Nduja (fiery spreadable salami), burrata, mozzarella on thick pan — spicy Calabrian heat cooled by creamy burrata', fr: '\'Nduja (salami tartinable ardent), burrata, mozzarella sur base pan — chaleur calabraise refroidie par la burrata crémeuse' },
-    category: 'gourmet', region: 'american',
-    base: 'nduja', season: ['all'],
-    occasion: ['impress', 'spicy'],
-    dietary: ['no_nuts', 'no_fish'], budget: 2, complexity: 1, prepMinutes: 5, ovenTemp: 'mid',
-    wine: ['lr', 'rw'],
-    flavour: { richness: 4, boldness: 5, creative: 4, refined: 3 },
-    ingredients: [ING.nduja, ING.mozzarellaLM, ING.burrata, ING.freshBasil],
-    compatibleStyles: ['pan'],
-  },
-
 
   // ── Spanish & Mediterranean ────────────────────────────────
 
