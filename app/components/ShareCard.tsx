@@ -5,6 +5,7 @@ import type { BakePhoto } from '@/app/lib/supabase/fetchBakeEvents';
 
 interface ShareCardProps {
   styleName: string;
+  sessionName?: string | null;
   numItems: number;
   itemWeight: number;
   hydration: number | null;
@@ -26,6 +27,10 @@ interface ShareCardProps {
   manualOil?: number | null;
   manualSugar?: number | null;
   onClose: () => void;
+}
+
+function stripTime(name: string): string {
+  return name.replace(/\s+\d{1,2}:\d{2}$/, '').trim();
 }
 
 function formatH(h: number): string {
@@ -53,7 +58,7 @@ const MIXER_LABEL: Record<string, string> = {
 };
 
 export default function ShareCard({
-  styleName, numItems, itemWeight, hydration, prefLabel, flourLine,
+  styleName, sessionName, numItems, itemWeight, hydration, prefLabel, flourLine,
   recipeFlour, recipeWater, recipeSalt, coldH, rtH,
   bakedQtys, localSlots, sessionPhotos, locale, status,
   ovenType, mixerType, manualOil, manualSugar, onClose,
@@ -61,9 +66,11 @@ export default function ShareCard({
   const l = locale === 'fr' ? 'fr' : 'en';
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [customTitle, setCustomTitle] = useState<string>(
-    () => (typeof window !== 'undefined' ? localStorage.getItem(LS_TITLE) ?? styleName : styleName)
-  );
+  const [customTitle, setCustomTitle] = useState<string>(() => {
+    const base = stripTime(sessionName ?? styleName);
+    if (typeof window === 'undefined') return base;
+    return localStorage.getItem(LS_TITLE) ?? base;
+  });
   const [bakerName, setBakerName] = useState<string>(
     () => (typeof window !== 'undefined' ? localStorage.getItem(LS_BAKER) ?? '' : '')
   );
@@ -75,6 +82,7 @@ export default function ShareCard({
 
   useEffect(() => { localStorage.setItem(LS_TITLE, customTitle); }, [customTitle]);
   useEffect(() => { localStorage.setItem(LS_BAKER, bakerName); }, [bakerName]);
+  useEffect(() => { setCustomTitle(stripTime(sessionName ?? styleName)); }, [sessionName]);
 
   // ── Content lines ──
   const specLine = [

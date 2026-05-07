@@ -305,3 +305,17 @@ export async function deleteBakePhoto(
     return !error;
   } catch { return false; }
 }
+
+export async function updateSessionName(
+  bakeEventId: string,
+  name: string,
+): Promise<boolean> {
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('bake_events')
+      .update({ notes: name, updated_at: new Date().toISOString() })
+      .eq('id', bakeEventId);
+    return !error;
+  } catch { return false; }
+}

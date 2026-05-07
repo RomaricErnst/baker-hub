@@ -13,7 +13,7 @@ import {
   bakeEventTitle, bakeEventDoughSpec,
   type BakeEvent, type PizzaPartySlot, type BakePhoto,
 } from '@/app/lib/supabase/fetchBakeEvents';
-import { saveComment, uploadBakePhoto, deleteBakePhoto } from '@/app/lib/supabase/saveBakeEvent';
+import { saveComment, uploadBakePhoto, deleteBakePhoto, updateSessionName } from '@/app/lib/supabase/saveBakeEvent';
 import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
 import ShareCard from '@/app/components/ShareCard';
 
@@ -57,6 +57,8 @@ export default function SessionViewer({
   const [uploading, setUploading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [bakedQtys, setBakedQtys] = useState<Record<string, number> | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [sessionTitle, setSessionTitle] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -77,6 +79,11 @@ export default function SessionViewer({
 
   useEffect(() => {
     setComment(event?.comment ?? '');
+  }, [event?.id]);
+
+  useEffect(() => {
+    if (!event) return;
+    setSessionTitle(event.notes ?? bakeEventTitle(event));
   }, [event?.id]);
 
   useEffect(() => {
@@ -225,10 +232,50 @@ export default function SessionViewer({
 
           {/* Title + pills */}
           <div style={{ padding: '0 20px 16px' }}>
-            <p style={{
-              fontFamily: 'var(--font-playfair)', fontSize: '20px', fontWeight: 700,
-              color: 'var(--char)', margin: '0 0 8px', paddingRight: '32px',
-            }}>{title}</p>
+            {editingTitle ? (
+              <input
+                autoFocus
+                value={sessionTitle}
+                onChange={e => setSessionTitle(e.target.value)}
+                onBlur={async () => {
+                  setEditingTitle(false);
+                  if (event?.id && sessionTitle !== (event.notes ?? bakeEventTitle(event))) {
+                    await updateSessionName(event.id, sessionTitle);
+                  }
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') e.currentTarget.blur();
+                  if (e.key === 'Escape') {
+                    setSessionTitle(event?.notes ?? bakeEventTitle(event!));
+                    setEditingTitle(false);
+                  }
+                }}
+                style={{
+                  fontFamily: 'var(--font-playfair)', fontSize: '20px',
+                  fontWeight: 700, color: 'var(--char)',
+                  border: 'none', borderBottom: '1px solid var(--border)',
+                  background: 'transparent', outline: 'none',
+                  width: '100%', paddingRight: '32px', paddingBottom: '2px',
+                  margin: '0 0 8px',
+                }}
+              />
+            ) : (
+              <p
+                onClick={() => setEditingTitle(true)}
+                style={{
+                  fontFamily: 'var(--font-playfair)', fontSize: '20px',
+                  fontWeight: 700, color: 'var(--char)',
+                  margin: '0 0 8px', paddingRight: '32px', cursor: 'text',
+                }}
+              >
+                {sessionTitle || title}
+                <span style={{
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                  color: 'var(--smoke)', opacity: 0.35, marginLeft: '6px',
+                  fontWeight: 400,
+                }}>✎</span>
+              </p>
+            )}
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               <span style={{
                 fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
@@ -544,6 +591,7 @@ export default function SessionViewer({
         {showShareModal && (
           <ShareCard
             styleName={styleName}
+            sessionName={event.notes ?? null}
             numItems={snap.numItems}
             itemWeight={snap.itemWeight}
             hydration={displayHydration}
