@@ -26,6 +26,8 @@ interface ShareCardProps {
   mixerType?: string | null;
   manualOil?: number | null;
   manualSugar?: number | null;
+  yeastType?: string | null;
+  yeastGrams?: number | null;
   onClose: () => void;
 }
 
@@ -57,11 +59,16 @@ const MIXER_LABEL: Record<string, string> = {
   no_knead: 'No-knead', spiral: 'Spiral mixer',
 };
 
+const YEAST_SHORT: Record<string, string> = {
+  instant: 'IDY', active_dry: 'ADY',
+  fresh: 'fresh yeast', sourdough: '',
+};
+
 export default function ShareCard({
   styleName, sessionName, numItems, itemWeight, hydration, prefLabel, flourLine,
   recipeFlour, recipeWater, recipeSalt, coldH, rtH,
   bakedQtys, localSlots, sessionPhotos, locale, status,
-  ovenType, mixerType, manualOil, manualSugar, onClose,
+  ovenType, mixerType, manualOil, manualSugar, yeastType, yeastGrams, onClose,
 }: ShareCardProps) {
   const l = locale === 'fr' ? 'fr' : 'en';
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -93,8 +100,11 @@ export default function ShareCard({
 
   const oilStr = manualOil && manualOil > 0 ? ` · ${manualOil}g oil` : '';
   const sugarStr = manualSugar && manualSugar > 0 ? ` · ${manualSugar}g sugar` : '';
+  const yeastStr = yeastGrams && yeastGrams > 0 && yeastType !== 'sourdough'
+    ? ` · ${yeastGrams}g ${YEAST_SHORT[yeastType ?? ''] ?? 'yeast'}`
+    : '';
   const weightsLine = recipeFlour && recipeWater && recipeSalt
-    ? `${recipeFlour}g flour · ${recipeWater}g water · ${recipeSalt}g salt${oilStr}${sugarStr}`
+    ? `${recipeFlour}g flour · ${recipeWater}g water · ${recipeSalt}g salt${oilStr}${sugarStr}${yeastStr}`
     : null;
 
   const timingLine = [
@@ -355,25 +365,24 @@ export default function ShareCard({
     ctx.stroke();
     y += 40;
 
-    function drawLine(text: string, color: string, size: number) {
-      ctx.font = `400 ${size}px "DM Mono", monospace`;
-      ctx.fillStyle = color;
+    function drawLine(text: string, opacity: number, size: number, italic = false) {
+      ctx.font = `${italic ? 'italic ' : ''}400 ${size}px "DM Mono", monospace`;
+      ctx.fillStyle = `rgba(255,255,255,${opacity})`;
       ctx.textAlign = 'left';
       ctx.fillText(text, 72, y);
       y += size + 18;
     }
 
-    drawLine(specLine, 'rgba(255,255,255,0.78)', 34);
-    if (flourLine) drawLine(flourLine, 'rgba(212,168,83,0.7)', 30);
-    if (weightsLine) drawLine(weightsLine, 'rgba(255,255,255,0.75)', 34);
-    if (timingLine) drawLine(timingLine, 'rgba(255,255,255,0.52)', 32);
-    if (gearLine) drawLine(gearLine, 'rgba(255,255,255,0.45)', 28);
+    drawLine(specLine, 0.80, 36);
+    if (flourLine) drawLine(flourLine, 0.60, 30);
+    if (weightsLine) drawLine(weightsLine, 0.80, 34);
+    if (timingLine) drawLine(timingLine, 0.50, 30);
 
     if (pizzaDisplayLines.length > 0) {
       y += 4;
       for (const pl of pizzaDisplayLines) {
         ctx.font = 'italic 400 30px "DM Sans", sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
         ctx.textAlign = 'left';
         ctx.fillText(pl, 72, y);
         y += 44;
@@ -807,16 +816,15 @@ function PreviewCard({
           {customTitle}
         </div>
         <div style={{ height: '1px', background: 'rgba(212,168,83,0.25)', marginBottom: '5px' }} />
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '7px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.8 }}>
-          {specLine}
-          {flourLine && <><br /><span style={{ color: 'rgba(212,168,83,0.7)' }}>{flourLine}</span></>}
-          {weightsLine && <><br />{weightsLine}</>}
-          {timingLine && <><br /><span style={{ color: 'rgba(255,255,255,0.5)' }}>{timingLine}</span></>}
-          {gearLine && <><br /><span style={{ color: 'rgba(255,255,255,0.4)' }}>{gearLine}</span></>}
+        <div style={{ lineHeight: 1.8 }}>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', color: 'rgba(255,255,255,0.80)' }}>{specLine}</div>
+          {flourLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '7px', color: 'rgba(255,255,255,0.60)' }}>{flourLine}</div>}
+          {weightsLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', color: 'rgba(255,255,255,0.80)' }}>{weightsLine}</div>}
+          {timingLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '7px', color: 'rgba(255,255,255,0.50)' }}>{timingLine}</div>}
         </div>
         {pizzaDisplayLines.length > 0 && (
-          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '7px', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic', marginTop: '4px', lineHeight: 1.6 }}>
-            {pizzaDisplayLines.join('\n')}
+          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '8px', color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', marginTop: '4px', lineHeight: 1.6 }}>
+            {pizzaDisplayLines.map((l, i) => <div key={i}>{l}</div>)}
           </div>
         )}
         <div style={{ position: 'absolute', bottom: '5px', left: '10px', right: '10px', display: 'flex', justifyContent: 'space-between' }}>

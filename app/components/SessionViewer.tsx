@@ -170,8 +170,13 @@ export default function SessionViewer({
           const blend = snap.flourBlend as FlourBlend;
           const brandProduct = (blend as unknown as Record<string, unknown>).brandProduct as string | undefined;
           const profile = computeBlendProfile(blend);
-          if (brandProduct) return brandProduct;
-          return profile.displayName || null;
+          const isBlend = blend.flour2 &&
+            (blend as unknown as Record<string, unknown>).ratio1 !== 100;
+          if (isBlend) {
+            return brandProduct ? `${brandProduct} · ${profile.displayName}` : (profile.displayName || null);
+          } else {
+            return brandProduct ?? profile.displayName ?? null;
+          }
         } catch { return null; }
       })()
     : null;
@@ -342,8 +347,12 @@ export default function SessionViewer({
 
             {snap.yeastType && (
               <div style={{ ...monoSm, marginBottom: '4px' }}>
-                {YEAST_LABEL[snap.yeastType] ?? snap.yeastType}
-                {recipe?.yeast ? ` · ${recipe.yeast}g` : ''}
+                {[
+                  YEAST_LABEL[snap.yeastType ?? ''] ?? snap.yeastType,
+                  recipe?.yeast?.convertedGrams
+                    ? `${recipe.yeast.convertedGrams}g`
+                    : null,
+                ].filter(Boolean).join(' · ')}
               </div>
             )}
 
@@ -633,6 +642,8 @@ export default function SessionViewer({
             mixerType={snap?.mixerType ?? null}
             manualOil={snap?.manualOil ?? null}
             manualSugar={snap?.manualSugar ?? null}
+            yeastType={snap?.yeastType ?? null}
+            yeastGrams={recipe?.yeast?.convertedGrams ?? null}
             onClose={() => setShowShareModal(false)}
           />
         )}
