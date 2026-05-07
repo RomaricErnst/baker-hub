@@ -487,6 +487,9 @@ export default function Home() {
     if (session.bakedDone) setBakedDone(true);
     setProtocolStale(false);
     setSessionRestored(true);
+    setReviewMode(true);
+    setActiveStep(99);
+    setAdvancedStep(99);
     setShowWelcomeBack(true);
     setTimeout(() => { isRestoringRef.current = false; }, 200);
   }, []);
@@ -612,6 +615,11 @@ export default function Home() {
   }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, manualSalt, targetDoughTemp, flourInFridge, wastePct]);
 
   const advancedDisplayRecipe = advancedRecipe;
+
+  const bakeTimeIsPast = useMemo(() => {
+    if (!eatTime) return false;
+    return new Date(eatTime) < new Date();
+  }, [eatTime]);
 
   // ── Handlers ──────────────────────────────
   function selectBakeType(bt: BakeType) {
@@ -1294,7 +1302,7 @@ export default function Home() {
                   </div>
                 );
               })()}
-              <ContinueBtn onClick={() => advance(2)} />
+              {!reviewMode && <ContinueBtn onClick={() => advance(2)} />}
             </StepCard>
 
             {/* ─── STEP 4: Oven ────────────────────── */}
@@ -1328,7 +1336,7 @@ export default function Home() {
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
 
-              <ContinueBtn onClick={() => advance(4)} />
+              {!reviewMode && <ContinueBtn onClick={() => advance(4)} />}
             </StepCard>
 
             {/* ─── STEP 6: Mixer ───────────────────── */}
@@ -1462,60 +1470,78 @@ export default function Home() {
               {/* Recipe + Timeline */}
               {recipeGenerated && (
                 <div ref={resultsRef} style={{ marginTop: '1rem' }}>
-
-                  {/* Results header now lives inside RecipeOutput */}
-
-                  {/* Recipe null-guard */}
-                  {!recipe ? (
-                    <div style={{
-                      background: '#FEF4EF', border: '1.5px solid #F5C4B0',
-                      borderRadius: '12px', padding: '1.25rem', textAlign: 'center',
-                      color: 'var(--terra)', fontSize: '.88rem',
-                    }}>
-                      {t('results.computeError')}
-                    </div>
+                  {bakeTimeIsPast && sessionRestored ? (
+                    <PostBakeLanding
+                      styleName={styleKey ? ALL_STYLES[styleKey as StyleKey]?.name ?? styleKey : ''}
+                      numItems={numItems}
+                      eatTime={eatTime}
+                      bakeEventId={bakeEventId}
+                      onReplan={() => {
+                        setEatTime(null);
+                        setRecipeGenerated(false);
+                        setActiveTab('setup');
+                        setShowWelcomeBack(false);
+                      }}
+                      onStartFresh={() => {
+                        startOver();
+                        setShowWelcomeBack(false);
+                      }}
+                      locale={locale}
+                    />
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                    <>
+                      {/* Recipe null-guard */}
+                      {!recipe ? (
+                        <div style={{
+                          background: '#FEF4EF', border: '1.5px solid #F5C4B0',
+                          borderRadius: '12px', padding: '1.25rem', textAlign: 'center',
+                          color: 'var(--terra)', fontSize: '.88rem',
+                        }}>
+                          {t('results.computeError')}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
 
-                      <RecipeOutput
-                        result={displayRecipe ?? recipe}
-                        numItems={numItems}
-                        itemWeight={itemWeight}
-                        styleName={ALL_STYLES[styleKey!].name}
-                        mixerType={mixerType!}
-                        kitchenTemp={kitchenTemp}
-                        fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
-                        totalColdHours={schedule ? schedule.totalColdHours : 0}
-                        mode={tab}
-                        bakeType={bakeType ?? 'pizza'}
-                        flourBlend={flourBlend}
-                        units={units}
-                      />
+                          <RecipeOutput
+                            result={displayRecipe ?? recipe}
+                            numItems={numItems}
+                            itemWeight={itemWeight}
+                            styleName={ALL_STYLES[styleKey!].name}
+                            mixerType={mixerType!}
+                            kitchenTemp={kitchenTemp}
+                            fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
+                            totalColdHours={schedule ? schedule.totalColdHours : 0}
+                            mode={tab}
+                            bakeType={bakeType ?? 'pizza'}
+                            flourBlend={flourBlend}
+                            units={units}
+                          />
 
-
-                      {schedule && (
-                        <Timeline
-                          schedule={schedule}
-                          blocks={blocks}
-                          preheatMin={preheatMin}
-                          startTime={startTime}
-                          eatTime={eatTime!}
-                          mixerType={mixerType!}
-                          styleKey={styleKey ?? ''}
-                          oil={recipe?.oil ?? 0}
-                          hydration={recipe?.hydration ?? 0}
-                          numItems={numItems}
-                          feedTime={feedTime}
-                          kitchenTemp={kitchenTemp}
-                          prefStartTime={prefStartTime}
-                          prefermentType={prefermentType}
-                          prefGoesInFridge={prefGoesInFridge}
-                          prefRemoveFromFridgeTime={prefRemoveFromFridgeTime}
-                          onStartBaking={() => setActiveTab('guide')}
-                          bakeType={bakeType ?? undefined}
-                        />
+                          {schedule && (
+                            <Timeline
+                              schedule={schedule}
+                              blocks={blocks}
+                              preheatMin={preheatMin}
+                              startTime={startTime}
+                              eatTime={eatTime!}
+                              mixerType={mixerType!}
+                              styleKey={styleKey ?? ''}
+                              oil={recipe?.oil ?? 0}
+                              hydration={recipe?.hydration ?? 0}
+                              numItems={numItems}
+                              feedTime={feedTime}
+                              kitchenTemp={kitchenTemp}
+                              prefStartTime={prefStartTime}
+                              prefermentType={prefermentType}
+                              prefGoesInFridge={prefGoesInFridge}
+                              prefRemoveFromFridgeTime={prefRemoveFromFridgeTime}
+                              onStartBaking={() => setActiveTab('guide')}
+                              bakeType={bakeType ?? undefined}
+                            />
+                          )}
+                        </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
               )}
@@ -1870,7 +1896,7 @@ export default function Home() {
                   </div>
                 );
               })()}
-              <ContinueBtn onClick={() => advanceAdv(2)} />
+              {!reviewMode && <ContinueBtn onClick={() => advanceAdv(2)} />}
             </StepCard>
 
             {/* ─── ADV STEP 4: Oven ────────────────── */}
@@ -1906,7 +1932,7 @@ export default function Home() {
                 units={units}
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
-              <ContinueBtn onClick={() => advanceAdv(4)} />
+              {!reviewMode && <ContinueBtn onClick={() => advanceAdv(4)} />}
             </StepCard>
 
             {/* ─── ADV STEP 6: Mixer ───────────────── */}
@@ -2052,7 +2078,7 @@ export default function Home() {
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onReady={() => {}}
               />
-              {eatTime && <ContinueBtn onClick={() => { setPrefermentFlourPct(undefined); advanceAdv(9); }} />}
+              {eatTime && !reviewMode && <ContinueBtn onClick={() => { setPrefermentFlourPct(undefined); advanceAdv(9); }} />}
             </StepCard>
 
             {/* ─── ADV STEP 11: Dial your dough ────── */}
@@ -2517,56 +2543,75 @@ export default function Home() {
               {/* Recipe + Timeline */}
               {recipeGenerated && (
                 <div style={{ marginTop: '1rem' }}>
-
-                  {/* Results header now lives inside RecipeOutput */}
-
-                  {!advancedRecipe ? (
-                    <div style={{ background: '#FEF4EF', border: '1.5px solid #F5C4B0', borderRadius: '12px', padding: '1.25rem', textAlign: 'center', color: 'var(--terra)', fontSize: '.88rem' }}>
-                      {t('results.computeError')}
-                    </div>
+                  {bakeTimeIsPast && sessionRestored ? (
+                    <PostBakeLanding
+                      styleName={styleKey ? ALL_STYLES[styleKey as StyleKey]?.name ?? styleKey : ''}
+                      numItems={numItems}
+                      eatTime={eatTime}
+                      bakeEventId={bakeEventId}
+                      onReplan={() => {
+                        setEatTime(null);
+                        setRecipeGenerated(false);
+                        setActiveTab('setup');
+                        setShowWelcomeBack(false);
+                      }}
+                      onStartFresh={() => {
+                        startOver();
+                        setShowWelcomeBack(false);
+                      }}
+                      locale={locale}
+                    />
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-                      <RecipeOutput
-                        result={advancedDisplayRecipe ?? advancedRecipe}
-                        numItems={numItems}
-                        itemWeight={itemWeight}
-                        styleName={ALL_STYLES[styleKey!].name}
-                        mixerType={mixerType!}
-                        kitchenTemp={kitchenTemp}
-                        fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
-                        totalColdHours={schedule ? schedule.totalColdHours : 0}
-                        mode={tab}
-                        bakeType={bakeType ?? 'pizza'}
-                        prefermentType={prefermentType}
-                        priorityOverride={priorityOverride}
-                        onPriorityOverride={v => setPriorityOverride(v)}
-                        flourBlend={flourBlend}
-                        units={units}
-                        wastePct={wastePct}
-                      />
-                      {schedule && (
-                        <Timeline
-                          schedule={schedule}
-                          blocks={blocks}
-                          preheatMin={preheatMin}
-                          startTime={startTime}
-                          eatTime={eatTime!}
-                          mixerType={mixerType!}
-                          styleKey={styleKey ?? ''}
-                          oil={advancedRecipe?.oil ?? 0}
-                          hydration={advancedRecipe?.hydration ?? 0}
-                          numItems={numItems}
-                          feedTime={feedTime}
-                          kitchenTemp={kitchenTemp}
-                          prefStartTime={prefStartTime}
-                          prefermentType={prefermentType}
-                          prefGoesInFridge={prefGoesInFridge}
-                          prefRemoveFromFridgeTime={prefRemoveFromFridgeTime}
-                          onStartBaking={() => setActiveTab('guide')}
-                          bakeType={bakeType ?? undefined}
-                        />
+                    <>
+                      {!advancedRecipe ? (
+                        <div style={{ background: '#FEF4EF', border: '1.5px solid #F5C4B0', borderRadius: '12px', padding: '1.25rem', textAlign: 'center', color: 'var(--terra)', fontSize: '.88rem' }}>
+                          {t('results.computeError')}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                          <RecipeOutput
+                            result={advancedDisplayRecipe ?? advancedRecipe}
+                            numItems={numItems}
+                            itemWeight={itemWeight}
+                            styleName={ALL_STYLES[styleKey!].name}
+                            mixerType={mixerType!}
+                            kitchenTemp={kitchenTemp}
+                            fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
+                            totalColdHours={schedule ? schedule.totalColdHours : 0}
+                            mode={tab}
+                            bakeType={bakeType ?? 'pizza'}
+                            prefermentType={prefermentType}
+                            priorityOverride={priorityOverride}
+                            onPriorityOverride={v => setPriorityOverride(v)}
+                            flourBlend={flourBlend}
+                            units={units}
+                            wastePct={wastePct}
+                          />
+                          {schedule && (
+                            <Timeline
+                              schedule={schedule}
+                              blocks={blocks}
+                              preheatMin={preheatMin}
+                              startTime={startTime}
+                              eatTime={eatTime!}
+                              mixerType={mixerType!}
+                              styleKey={styleKey ?? ''}
+                              oil={advancedRecipe?.oil ?? 0}
+                              hydration={advancedRecipe?.hydration ?? 0}
+                              numItems={numItems}
+                              feedTime={feedTime}
+                              kitchenTemp={kitchenTemp}
+                              prefStartTime={prefStartTime}
+                              prefermentType={prefermentType}
+                              prefGoesInFridge={prefGoesInFridge}
+                              prefRemoveFromFridgeTime={prefRemoveFromFridgeTime}
+                              onStartBaking={() => setActiveTab('guide')}
+                              bakeType={bakeType ?? undefined}
+                            />
+                          )}
+                        </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
               )}
@@ -3005,61 +3050,186 @@ export default function Home() {
 
       {/* ── Welcome back toast ── */}
       {showWelcomeBack && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: 24,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: 'var(--char)',
-            color: '#fff',
-            borderRadius: 10,
-            padding: '12px 20px',
-            fontSize: '14px',
-            fontWeight: 500,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            zIndex: 9999,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
-            animation: 'fadeInUp 0.3s ease',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <span>{locale === 'fr' ? 'Session precedente trouvee' : 'Previous session found'}</span>
-          <button
-            onClick={() => { startOver(); setShowWelcomeBack(false); }}
-            style={{
-              background: 'var(--terra)',
-              border: 'none',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '12px',
-              fontFamily: 'var(--font-dm-mono)',
-              padding: '4px 10px',
-              borderRadius: '6px',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {locale === 'fr' ? 'Nouveau' : 'New bake'}
-          </button>
-          <button
-            onClick={() => setShowWelcomeBack(false)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--smoke)',
-              cursor: 'pointer',
-              fontSize: '16px',
-              lineHeight: 1,
-              padding: 0,
-            }}
-          >
-            ×
-          </button>
+        <div style={{
+          position: 'fixed',
+          bottom: 24,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--char)',
+          borderRadius: 12,
+          padding: '12px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+          zIndex: 9999,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          animation: 'fadeInUp 0.3s ease',
+          minWidth: 260,
+          maxWidth: 320,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase',
+              letterSpacing: '.08em',
+            }}>
+              {locale === 'fr' ? 'Session précédente trouvée' : 'Previous session found'}
+            </span>
+            <button
+              onClick={() => setShowWelcomeBack(false)}
+              style={{
+                background: 'none', border: 'none',
+                color: 'rgba(255,255,255,0.3)', cursor: 'pointer',
+                fontSize: '14px', padding: '0 0 0 8px', lineHeight: 1,
+              }}
+            >✕</button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button
+              onClick={() => setShowWelcomeBack(false)}
+              style={{
+                flex: 1, background: 'var(--terra)', border: 'none',
+                color: 'white', cursor: 'pointer', fontSize: '13px',
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+                padding: '8px 14px', borderRadius: '8px', whiteSpace: 'nowrap',
+              }}
+            >
+              {locale === 'fr' ? 'Reprendre →' : 'Resume →'}
+            </button>
+            <button
+              onClick={() => { startOver(); setShowWelcomeBack(false); }}
+              style={{
+                background: 'none', border: 'none',
+                color: 'rgba(255,255,255,0.35)', cursor: 'pointer',
+                fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
+                padding: '4px 0', whiteSpace: 'nowrap',
+                textDecoration: 'underline', textUnderlineOffset: '2px',
+              }}
+            >
+              {locale === 'fr' ? 'Nouveau bake' : 'Start fresh'}
+            </button>
+          </div>
         </div>
       )}
 
+    </div>
+  );
+}
+
+interface PostBakeLandingProps {
+  styleName: string;
+  numItems: number;
+  eatTime: Date | null;
+  bakeEventId: string | null;
+  onReplan: () => void;
+  onStartFresh: () => void;
+  locale: string;
+}
+
+function PostBakeLanding({
+  styleName, numItems, eatTime, bakeEventId,
+  onReplan, onStartFresh, locale,
+}: PostBakeLandingProps) {
+  const l = locale === 'fr' ? 'fr' : 'en';
+  const [saved, setSaved] = useState(false);
+
+  const dateStr = eatTime
+    ? eatTime.toLocaleDateString(
+        l === 'fr' ? 'fr-FR' : 'en-GB',
+        { weekday: 'long', day: 'numeric', month: 'long' },
+      )
+    : '';
+
+  async function handleSaveAsBaked() {
+    if (bakeEventId) {
+      const { saveBakedStatus } = await import('../lib/supabase/saveBakeEvent');
+      await saveBakedStatus(bakeEventId);
+    }
+    setSaved(true);
+  }
+
+  return (
+    <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div>
+        <p style={{
+          fontFamily: 'var(--font-playfair)', fontSize: '22px',
+          fontWeight: 700, color: 'var(--char)', margin: '0 0 4px',
+        }}>
+          {l === 'fr' ? `Votre bake du ${dateStr}` : `Your bake from ${dateStr}`}
+        </p>
+        <p style={{
+          fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+          color: 'var(--smoke)', margin: 0,
+        }}>
+          {styleName} · {numItems} {l === 'fr' ? 'pizzas' : 'pizzas'}
+        </p>
+      </div>
+
+      <div style={{
+        background: 'white', borderRadius: '14px',
+        border: '1px solid var(--border)', padding: '20px',
+        display: 'flex', flexDirection: 'column', gap: '14px',
+      }}>
+        <p style={{
+          fontFamily: 'var(--font-dm-sans)', fontSize: '15px',
+          fontWeight: 600, color: 'var(--char)', margin: 0,
+        }}>
+          {saved
+            ? (l === 'fr' ? '✓ Session sauvegardée' : '✓ Session saved')
+            : (l === 'fr' ? 'Comment ça s\'est passé ?' : 'How did it go?')}
+        </p>
+
+        {!saved && (
+          <p style={{
+            fontFamily: 'var(--font-dm-sans)', fontSize: '13px',
+            color: 'var(--smoke)', margin: 0, lineHeight: 1.5,
+          }}>
+            {l === 'fr'
+              ? 'Sauvegardez cette session avant de repartir.'
+              : 'Save this session with a note or photo before you go.'}
+          </p>
+        )}
+
+        {!saved && (
+          <button
+            onClick={handleSaveAsBaked}
+            style={{
+              width: '100%', padding: '13px',
+              background: 'var(--sage)', color: 'white',
+              border: 'none', borderRadius: '10px', cursor: 'pointer',
+              fontFamily: 'var(--font-dm-sans)', fontSize: '14px',
+              fontWeight: 600,
+            }}
+          >
+            {l === 'fr' ? '✓ Sauvegarder comme cuit' : '✓ Save as baked'}
+          </button>
+        )}
+      </div>
+
+      <button
+        onClick={onReplan}
+        style={{
+          width: '100%', padding: '12px',
+          background: 'none', border: '1px solid var(--border)',
+          borderRadius: '10px', cursor: 'pointer',
+          fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+          color: 'var(--char)',
+        }}
+      >
+        {l === 'fr' ? '↩ Re-planifier ce bake' : '↩ Re-plan this bake'}
+      </button>
+
+      <button
+        onClick={onStartFresh}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+          color: 'var(--smoke)', textDecoration: 'underline',
+          textUnderlineOffset: '2px', padding: '4px 0',
+        }}
+      >
+        {l === 'fr' ? 'Nouveau bake from scratch' : 'New bake from scratch'}
+      </button>
     </div>
   );
 }
