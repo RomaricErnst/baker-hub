@@ -220,6 +220,7 @@ export default function Header({
   onLoadRecipe,
   recipeGenerated,
   sessionSaved,
+  sessionRestored,
   sessionSummary,
   sessionDoughSpec,
   onSaveSession,
@@ -232,6 +233,7 @@ export default function Header({
   onLoadRecipe?: (r: SavedRecipe) => void;
   recipeGenerated?: boolean;
   sessionSaved?: boolean;
+  sessionRestored?: boolean;
   sessionSummary?: string;
   sessionDoughSpec?: string;
   onSaveSession?: () => void;
@@ -383,7 +385,7 @@ export default function Header({
       </div>
 
       {/* Right: two-part Save / New bake button */}
-      {(recipeGenerated || sessionSaved) ? (
+      {(recipeGenerated || sessionSaved || sessionRestored) ? (
         <div style={{
           display: 'flex',
           border: sessionSaved

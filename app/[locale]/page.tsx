@@ -337,6 +337,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [reviewMode, setReviewMode] = useState(false);
   const [sessionSaved, setSessionSaved] = useState(false);
+  const [sessionRestored, setSessionRestored] = useState(false);
   const [showSignInForSave, setShowSignInForSave] = useState(false);
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
@@ -485,6 +486,7 @@ export default function Home() {
     if (session.pizzaParty?.qtys) setPizzaPartyQtys(session.pizzaParty.qtys);
     if (session.bakedDone) setBakedDone(true);
     setProtocolStale(false);
+    setSessionRestored(true);
     setShowWelcomeBack(true);
     setTimeout(() => { isRestoringRef.current = false; }, 200);
   }, []);
@@ -690,6 +692,7 @@ export default function Home() {
     customOnlyStateRef.current = null;
     clearSession();
     setSessionSaved(false);
+    setSessionRestored(false);
     setReviewMode(false);
     setShowWelcomeBack(false);
     setBakeEventId(null);
@@ -819,6 +822,7 @@ export default function Home() {
           onLoadRecipe={loadRecipe}
           recipeGenerated={recipeGenerated}
           sessionSaved={sessionSaved}
+          sessionRestored={sessionRestored}
           sessionSummary={(() => {
             if (!styleKey || !eatTime) return '';
             const styleName = (ALL_STYLES as Record<string, { name?: string }>)[styleKey]?.name ?? styleKey;
@@ -915,6 +919,7 @@ export default function Home() {
               setShowResults(true);
               setProtocolStale(false);
               setSessionSaved(true);
+              setSessionRestored(true);
               setReviewMode(true);
               setActiveTab('setup');
               setTimeout(() => { isRestoringRef.current = false; }, 200);
@@ -3022,6 +3027,22 @@ export default function Home() {
           }}
         >
           <span>{locale === 'fr' ? 'Session precedente trouvee' : 'Previous session found'}</span>
+          <button
+            onClick={() => { startOver(); setShowWelcomeBack(false); }}
+            style={{
+              background: 'var(--terra)',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontFamily: 'var(--font-dm-mono)',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {locale === 'fr' ? 'Nouveau' : 'New bake'}
+          </button>
           <button
             onClick={() => setShowWelcomeBack(false)}
             style={{
