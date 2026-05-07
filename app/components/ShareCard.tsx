@@ -31,8 +31,10 @@ interface ShareCardProps {
 function formatH(h: number): string {
   const whole = Math.floor(h);
   const mins = Math.round((h - whole) * 60);
-  if (mins === 0) return `${whole}h`;
-  return `${whole}h ${mins}m`;
+  const rounded = Math.round(mins / 15) * 15;
+  if (rounded === 0) return `${whole}h`;
+  if (rounded === 60) return `${whole + 1}h`;
+  return `${whole}h ${rounded}m`;
 }
 
 const LS_TITLE = 'bh_share_title';
@@ -396,19 +398,20 @@ export default function ShareCard({
     setGenerating(false);
   }
 
-  const caption = [
+  const captionParts: string[] = [
     customTitle,
     '',
     specLine,
-    flourLine ?? null,
-    weightsLine ?? null,
+    ...(flourLine ? [flourLine] : []),
+    ...(weightsLine ? [weightsLine] : []),
     timingLine,
-    gearLine ?? null,
+    ...(gearLine ? [gearLine] : []),
     '',
-    pizzaLines.length > 0 ? pizzaLines.join(' · ') : null,
+    ...(pizzaLines.length > 0 ? [pizzaLines.join(' · ')] : []),
     '',
     'Planned with bakerhub.app',
-  ].filter(line => line !== null).join('\n');
+  ];
+  const caption = captionParts.join('\n');
 
   const inputStyle: React.CSSProperties = {
     fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
@@ -449,7 +452,7 @@ export default function ShareCard({
       <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
         {/* Live preview */}
-        <div style={{ width: '100%', aspectRatio: '1', background: '#1A1612', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
+        <div style={{ width: '100%', aspectRatio: '1/1', position: 'relative', overflow: 'hidden', borderRadius: '12px' }}>
           <PreviewCard
             template={template}
             selectedPhotoUrls={selectedPhotoUrls}
@@ -734,7 +737,7 @@ function PreviewCard({
   const panelPct = `${(1 - photoZoneRatio) * 100}%`;
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', background: '#1A1612', overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', inset: 0, background: '#1A1612', overflow: 'hidden' }}>
 
       {/* Photo zone */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: `${photoZoneRatio * 100}%`, overflow: 'hidden' }}>
