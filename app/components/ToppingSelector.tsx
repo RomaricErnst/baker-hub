@@ -1358,7 +1358,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             display: 'flex',
             flexWrap: 'nowrap',
             gap: '6px',
-            padding: '4px 12px 8px',
+            padding: '4px 0 8px',
+            scrollPaddingInlineStart: '12px',
             background: '#FDFBF7',
             borderBottom: '1px solid #E0D8CF',
             overflowX: 'auto',
@@ -2322,7 +2323,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {/* ── Sticky bar — always visible when pizzas pill active ── */}
       {activePill === 'pizzas' && (
         <div style={{
-          position: 'fixed', bottom: '72px', left: 0, right: 0,
+          position: 'fixed', bottom: '69px', left: 0, right: 0,
           background: '#1A1612',
           borderTop: '1px solid #C4522A',
           padding: '10px 14px',
