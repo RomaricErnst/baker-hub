@@ -559,6 +559,11 @@ export default function SessionViewer({
             sessionPhotos={photos}
             locale={l}
             status={event.status}
+            bakeType={snap?.bakeType ?? 'pizza'}
+            ovenType={snap?.ovenType ?? null}
+            mixerType={snap?.mixerType ?? null}
+            manualOil={snap?.manualOil ?? null}
+            manualSugar={snap?.manualSugar ?? null}
             onClose={() => setShowShareModal(false)}
           />
         )}
