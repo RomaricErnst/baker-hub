@@ -491,7 +491,10 @@ export default function Home() {
     setReviewMode(true);
     setActiveStep(99);
     setAdvancedStep(99);
-    setShowWelcomeBack(true);
+    const restoredEatTimeIsPast = session.eatTime
+      ? new Date(session.eatTime) < new Date()
+      : false;
+    if (!restoredEatTimeIsPast) setShowWelcomeBack(true);
     setTimeout(() => { isRestoringRef.current = false; }, 200);
   }, []);
 
@@ -832,6 +835,7 @@ export default function Home() {
           recipeGenerated={recipeGenerated}
           sessionSaved={sessionSaved}
           sessionRestored={sessionRestored}
+          hideActionBar={bakeTimeIsPast && sessionRestored}
           sessionSummary={(() => {
             if (!styleKey || !eatTime) return '';
             const styleName = (ALL_STYLES as Record<string, { name?: string }>)[styleKey]?.name ?? styleKey;
@@ -1479,19 +1483,21 @@ export default function Home() {
                 <div ref={resultsRef} style={{ marginTop: '1rem' }}>
                   {bakeTimeIsPast && sessionRestored ? (
                     <PostBakeLanding
-                      styleName={styleKey ? ALL_STYLES[styleKey as StyleKey]?.name ?? styleKey : ''}
-                      numItems={numItems}
+                      styleName={ALL_STYLES[styleKey as StyleKey]?.name ?? styleKey ?? ''}
                       eatTime={eatTime}
                       bakeEventId={bakeEventId}
-                      onReplan={() => {
+                      onYes={() => {
+                        if (bakeEventId) {
+                          setSessionRestored(false);
+                        } else {
+                          startOver();
+                        }
+                      }}
+                      onNo={() => {
                         setEatTime(null);
                         setRecipeGenerated(false);
                         setActiveTab('setup');
-                        setShowWelcomeBack(false);
-                      }}
-                      onStartFresh={() => {
-                        startOver();
-                        setShowWelcomeBack(false);
+                        setSessionRestored(false);
                       }}
                       locale={locale}
                     />
@@ -2558,19 +2564,21 @@ export default function Home() {
                 <div style={{ marginTop: '1rem' }}>
                   {bakeTimeIsPast && sessionRestored ? (
                     <PostBakeLanding
-                      styleName={styleKey ? ALL_STYLES[styleKey as StyleKey]?.name ?? styleKey : ''}
-                      numItems={numItems}
+                      styleName={ALL_STYLES[styleKey as StyleKey]?.name ?? styleKey ?? ''}
                       eatTime={eatTime}
                       bakeEventId={bakeEventId}
-                      onReplan={() => {
+                      onYes={() => {
+                        if (bakeEventId) {
+                          setSessionRestored(false);
+                        } else {
+                          startOver();
+                        }
+                      }}
+                      onNo={() => {
                         setEatTime(null);
                         setRecipeGenerated(false);
                         setActiveTab('setup');
-                        setShowWelcomeBack(false);
-                      }}
-                      onStartFresh={() => {
-                        startOver();
-                        setShowWelcomeBack(false);
+                        setSessionRestored(false);
                       }}
                       locale={locale}
                     />
@@ -3129,22 +3137,18 @@ export default function Home() {
   );
 }
 
-interface PostBakeLandingProps {
+function PostBakeLanding({
+  styleName, eatTime, bakeEventId, onYes, onNo, locale,
+}: {
   styleName: string;
-  numItems: number;
   eatTime: Date | null;
   bakeEventId: string | null;
-  onReplan: () => void;
-  onStartFresh: () => void;
+  onYes: () => void;
+  onNo: () => void;
   locale: string;
-}
-
-function PostBakeLanding({
-  styleName, numItems, eatTime, bakeEventId,
-  onReplan, onStartFresh, locale,
-}: PostBakeLandingProps) {
+}) {
   const l = locale === 'fr' ? 'fr' : 'en';
-  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const dateStr = eatTime
     ? eatTime.toLocaleDateString(
@@ -3153,95 +3157,72 @@ function PostBakeLanding({
       )
     : '';
 
-  async function handleSaveAsBaked() {
+  async function handleYes() {
+    setSaving(true);
     if (bakeEventId) {
       const { saveBakedStatus } = await import('../lib/supabase/saveBakeEvent');
       await saveBakedStatus(bakeEventId);
     }
-    setSaved(true);
+    setSaving(false);
+    onYes();
   }
 
   return (
-    <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{
+      padding: '32px 20px',
+      display: 'flex', flexDirection: 'column', gap: '12px',
+      maxWidth: '480px', margin: '0 auto',
+    }}>
       <div>
         <p style={{
-          fontFamily: 'var(--font-playfair)', fontSize: '22px',
+          fontFamily: 'var(--font-playfair)', fontSize: '24px',
           fontWeight: 700, color: 'var(--char)', margin: '0 0 4px',
+          lineHeight: 1.2,
         }}>
-          {l === 'fr' ? `Votre bake du ${dateStr}` : `Your bake from ${dateStr}`}
+          {styleName}
         </p>
         <p style={{
           fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
           color: 'var(--smoke)', margin: 0,
         }}>
-          {styleName} · {numItems} {l === 'fr' ? 'pizzas' : 'pizzas'}
+          {dateStr}
         </p>
       </div>
 
-      <div style={{
-        background: 'white', borderRadius: '14px',
-        border: '1px solid var(--border)', padding: '20px',
-        display: 'flex', flexDirection: 'column', gap: '14px',
+      <p style={{
+        fontFamily: 'var(--font-dm-sans)', fontSize: '18px',
+        fontWeight: 600, color: 'var(--char)',
+        margin: '16px 0 8px',
       }}>
-        <p style={{
-          fontFamily: 'var(--font-dm-sans)', fontSize: '15px',
-          fontWeight: 600, color: 'var(--char)', margin: 0,
-        }}>
-          {saved
-            ? (l === 'fr' ? '✓ Session sauvegardée' : '✓ Session saved')
-            : (l === 'fr' ? 'Comment ça s\'est passé ?' : 'How did it go?')}
-        </p>
-
-        {!saved && (
-          <p style={{
-            fontFamily: 'var(--font-dm-sans)', fontSize: '13px',
-            color: 'var(--smoke)', margin: 0, lineHeight: 1.5,
-          }}>
-            {l === 'fr'
-              ? 'Sauvegardez cette session avant de repartir.'
-              : 'Save this session with a note or photo before you go.'}
-          </p>
-        )}
-
-        {!saved && (
-          <button
-            onClick={handleSaveAsBaked}
-            style={{
-              width: '100%', padding: '13px',
-              background: 'var(--sage)', color: 'white',
-              border: 'none', borderRadius: '10px', cursor: 'pointer',
-              fontFamily: 'var(--font-dm-sans)', fontSize: '14px',
-              fontWeight: 600,
-            }}
-          >
-            {l === 'fr' ? '✓ Sauvegarder comme cuit' : '✓ Save as baked'}
-          </button>
-        )}
-      </div>
+        {l === 'fr' ? 'Ce bake a-t-il eu lieu ?' : 'Did this bake happen?'}
+      </p>
 
       <button
-        onClick={onReplan}
+        onClick={handleYes}
+        disabled={saving}
         style={{
-          width: '100%', padding: '12px',
-          background: 'none', border: '1px solid var(--border)',
-          borderRadius: '10px', cursor: 'pointer',
-          fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
-          color: 'var(--char)',
+          width: '100%', padding: '15px',
+          background: saving ? 'var(--smoke)' : 'var(--terra)',
+          color: 'white', border: 'none', borderRadius: '12px',
+          fontFamily: 'var(--font-dm-sans)', fontSize: '16px',
+          fontWeight: 600, cursor: saving ? 'default' : 'pointer',
+          boxShadow: '0 2px 8px rgba(196,82,42,0.2)',
         }}
       >
-        {l === 'fr' ? '↩ Re-planifier ce bake' : '↩ Re-plan this bake'}
+        {saving ? '...' : (l === 'fr' ? 'Oui, je l\'ai fait ✓' : 'Yes, I baked it ✓')}
       </button>
 
       <button
-        onClick={onStartFresh}
+        onClick={onNo}
         style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-          color: 'var(--smoke)', textDecoration: 'underline',
-          textUnderlineOffset: '2px', padding: '4px 0',
+          width: '100%', padding: '13px',
+          background: 'none', border: '1px solid var(--border)',
+          borderRadius: '12px', cursor: 'pointer',
+          fontFamily: 'var(--font-dm-mono)', fontSize: '13px',
+          color: 'var(--smoke)',
         }}
       >
-        {l === 'fr' ? 'Nouveau bake from scratch' : 'New bake from scratch'}
+        {l === 'fr' ? 'Non, passer' : 'No, skip'}
       </button>
     </div>
   );
