@@ -51,6 +51,12 @@ const YEAST_LABEL: Record<string, string> = {
   fresh: 'Fresh yeast',
   sourdough: 'Sourdough',
 };
+const YEAST_SHORT: Record<string, string> = {
+  instant: 'IDY',
+  active_dry: 'ADY',
+  fresh: 'Fresh yeast',
+  sourdough: 'Levain',
+};
 
 export default function SessionViewer({
   event, onClose, onResume, onDelete, onRename, slots, defaultShowShare,
@@ -361,8 +367,8 @@ export default function SessionViewer({
                 ? [
                     `${displayFlour}g flour · ${displayWater}g water · ${displaySalt}g salt`,
                     snap.yeastType && snap.yeastType !== 'sourdough' && yeastRounded
-                      ? `${yeastRounded}g ${YEAST_LABEL[snap.yeastType] ?? snap.yeastType}`
-                      : snap.yeastType ? YEAST_LABEL[snap.yeastType] ?? snap.yeastType : null,
+                      ? `${yeastRounded}g ${YEAST_SHORT[snap.yeastType] ?? snap.yeastType}`
+                      : snap.yeastType ? YEAST_SHORT[snap.yeastType] ?? snap.yeastType : null,
                   ].filter(Boolean).join(' · ')
                 : `${snap.numItems} × ${snap.itemWeight}g`}
             </div>

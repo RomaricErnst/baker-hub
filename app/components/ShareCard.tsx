@@ -61,7 +61,7 @@ const MIXER_LABEL: Record<string, string> = {
 
 const YEAST_SHORT: Record<string, string> = {
   instant: 'IDY', active_dry: 'ADY',
-  fresh: 'fresh yeast', sourdough: '',
+  fresh: 'Fresh yeast', sourdough: '',
 };
 
 export default function ShareCard({
