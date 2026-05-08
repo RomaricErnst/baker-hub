@@ -307,11 +307,31 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           <FlourScan
             onResult={result => {
               const autoTile: FlourKey = result.w >= 270 ? 'strong00' : 'pizza00';
-              onBlendChange({ ...blend, flour1: autoTile, wOverride: result.w });
+              onBlendChange({ ...blend, flour1: autoTile, wOverride: result.w, brandProduct: result.name, brandKey: undefined });
               setScanOpen(false);
             }}
             onCancel={() => setScanOpen(false)}
           />
+        </div>
+      )}
+
+      {/* ── Selected flour confirmation pill ───────── */}
+      {blend.brandProduct && (
+        <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 12px',
+          background:'rgba(196,82,42,0.06)', borderRadius:'10px', marginBottom:'12px',
+          border:'1px solid rgba(196,82,42,0.2)' }}>
+          <span style={{ fontSize:'13px', color:'#C4522A', fontFamily:'DM Sans, sans-serif', fontWeight:600 }}>
+            ✓ {blend.brandProduct}
+          </span>
+          <span style={{ fontSize:'12px', color:'#8A7F78', fontFamily:'var(--font-dm-mono)' }}>
+            · W{blend.wOverride ?? '—'}
+          </span>
+          <button onClick={() => onBlendChange({ ...blend, brandProduct: undefined, brandKey: undefined })}
+            style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer',
+              color:'#8A7F78', fontSize:'12px', fontFamily:'DM Sans, sans-serif',
+              textDecoration:'underline', padding:0 }}>
+            clear
+          </button>
         </div>
       )}
 
