@@ -354,6 +354,9 @@ export default function Home() {
   ]);
   const [bakePhotoUrl, setBakePhotoUrl] = useState<string | null>(null);
   const [bakedDone, setBakedDone] = useState(false);
+  useEffect(() => {
+    if (bakedDone) setSessionSaved(false);
+  }, [bakedDone]);
   const [computedRecipe, setComputedRecipe] = useState<SessionData['computedRecipe']>(null);
   const [shareSessionId, setShareSessionId] = useState<string | null>(null);
 

@@ -365,10 +365,14 @@ export default function SessionViewer({
             <div style={{ ...monoSm, marginBottom: '4px' }}>
               {displayFlour && displayWater && displaySalt
                 ? [
-                    `${displayFlour}g flour · ${displayWater}g water · ${displaySalt}g salt`,
-                    snap.yeastType && snap.yeastType !== 'sourdough' && yeastRounded
-                      ? `${yeastRounded}g ${YEAST_SHORT[snap.yeastType] ?? snap.yeastType}`
-                      : snap.yeastType ? YEAST_SHORT[snap.yeastType] ?? snap.yeastType : null,
+                    `${displayFlour}g flour`,
+                    `${displayWater}g water`,
+                    snap.yeastType === 'sourdough'
+                      ? 'Levain'
+                      : snap.yeastType && yeastRounded
+                        ? `${yeastRounded}g ${YEAST_SHORT[snap.yeastType] ?? snap.yeastType}`
+                        : null,
+                    `${displaySalt}g salt`,
                   ].filter(Boolean).join(' · ')
                 : `${snap.numItems} × ${snap.itemWeight}g`}
             </div>
