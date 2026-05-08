@@ -159,6 +159,9 @@ export default function SessionViewer({
     ?? (snap?.manualHydration != null ? snap.manualHydration : null)
     ?? (recipe ? Math.round((recipe.water / recipe.flour) * 100) : null);
   const yeastGrams = cr?.yeastGrams ?? recipe?.yeast?.convertedGrams ?? null;
+  const yeastRounded = yeastGrams != null
+    ? Math.round(yeastGrams * 10) / 10
+    : null;
 
   if (!event || !snap) return null;
   if (typeof document === 'undefined') return null;
@@ -357,8 +360,8 @@ export default function SessionViewer({
               {displayFlour && displayWater && displaySalt
                 ? [
                     `${displayFlour}g flour · ${displayWater}g water · ${displaySalt}g salt`,
-                    snap.yeastType && snap.yeastType !== 'sourdough' && yeastGrams
-                      ? `${yeastGrams}g ${YEAST_LABEL[snap.yeastType] ?? snap.yeastType}`
+                    snap.yeastType && snap.yeastType !== 'sourdough' && yeastRounded
+                      ? `${yeastRounded}g ${YEAST_LABEL[snap.yeastType] ?? snap.yeastType}`
                       : snap.yeastType ? YEAST_LABEL[snap.yeastType] ?? snap.yeastType : null,
                   ].filter(Boolean).join(' · ')
                 : `${snap.numItems} × ${snap.itemWeight}g`}
@@ -649,7 +652,7 @@ export default function SessionViewer({
             manualOil={snap?.manualOil ?? null}
             manualSugar={snap?.manualSugar ?? null}
             yeastType={snap?.yeastType ?? null}
-            yeastGrams={yeastGrams}
+            yeastGrams={yeastRounded}
             onClose={() => setShowShareModal(false)}
           />
         )}

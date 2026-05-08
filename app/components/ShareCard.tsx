@@ -250,23 +250,6 @@ export default function ShareCard({
         ctx.fillStyle = g;
         ctx.fill();
       }
-      // Title ghost text
-      const words = customTitle.split(' ');
-      if (words.length === 1) {
-        ctx.font = `bold ${photoZoneHeight * 0.55}px "Playfair Display", Georgia, serif`;
-        ctx.fillStyle = 'rgba(212,168,83,0.05)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(customTitle, 540, photoZoneHeight / 2);
-      } else {
-        const mid = Math.ceil(words.length / 2);
-        ctx.font = `bold ${photoZoneHeight * 0.3}px "Playfair Display", Georgia, serif`;
-        ctx.fillStyle = 'rgba(212,168,83,0.05)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(words.slice(0, mid).join(' '), 540, photoZoneHeight * 0.38);
-        ctx.fillText(words.slice(mid).join(' '), 540, photoZoneHeight * 0.65);
-      }
       ctx.restore();
     } else if (template === 'full') {
       if (selectedPhotoUrls[0]) {
@@ -781,11 +764,10 @@ function PreviewCard({
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: `${photoZoneRatio * 100}%`, overflow: 'hidden' }}>
 
         {template === 'text' && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(ellipse at 30% 40%, rgba(212,168,83,0.06) 0%, transparent 60%), radial-gradient(ellipse at 75% 70%, rgba(212,168,83,0.04) 0%, transparent 50%)' }}>
-            <span style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(16px, 10vw, 36px)', fontWeight: 700, color: 'rgba(212,168,83,0.07)', textAlign: 'center', padding: '0 10%' }}>
-              {customTitle}
-            </span>
-          </div>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(ellipse at 30% 40%, rgba(212,168,83,0.06) 0%, transparent 60%), radial-gradient(ellipse at 75% 70%, rgba(212,168,83,0.04) 0%, transparent 50%)',
+          }} />
         )}
 
         {template === 'full' && selectedPhotoUrls[0] && (
