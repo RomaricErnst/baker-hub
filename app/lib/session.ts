@@ -45,6 +45,7 @@ export interface SessionData {
     yeastGrams: number | null;
     coldH: number;
     rtH: number;
+    hasPreferment?: boolean;
   } | null;
 }
 

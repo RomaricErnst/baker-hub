@@ -742,9 +742,12 @@ export default function Home() {
       oil: cr.oil ?? 0,
       sugar: cr.sugar ?? 0,
       hydration: cr.hydration ?? Math.round((cr.water / cr.flour) * 100),
-      yeastGrams: cr.yeast?.convertedGrams ?? null,
+      yeastGrams: cr.preferment?.prefYeastGrams != null
+        ? cr.preferment.prefYeastGrams
+        : cr.yeast?.convertedGrams ?? null,
       coldH: schedule?.totalColdHours ?? 0,
       rtH: schedule?.totalRTHours ?? 0,
+      hasPreferment: !!(cr.preferment?.prefYeastGrams),
     } : null;
     setComputedRecipe(computedRecipeSnapshot);
     if (user) {
