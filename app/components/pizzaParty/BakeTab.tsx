@@ -15,6 +15,7 @@ interface BakeTabProps {
   bakeEventId?: string | null;
   ovenType?: string;
   onEnsureBakeEvent?: () => Promise<string | null>;
+  onShare?: () => void;
 }
 
 function getAllPizzas(): Pizza[] {
@@ -141,7 +142,7 @@ function CoachButton({
   );
 }
 
-export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId, ovenType, onEnsureBakeEvent }: BakeTabProps) {
+export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId, ovenType, onEnsureBakeEvent, onShare }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
@@ -306,6 +307,22 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
                 transition: 'width 0.3s ease',
               }} />
             </div>
+            {totalDone >= totalOrdered && onShare && (
+              <button
+                onClick={onShare}
+                style={{
+                  marginTop: '10px', padding: '8px 16px',
+                  background: 'transparent',
+                  border: '1px solid rgba(212,168,83,0.5)',
+                  color: '#D4A853',
+                  fontFamily: 'DM Mono, monospace', fontSize: '11px',
+                  borderRadius: '8px', cursor: 'pointer',
+                  letterSpacing: '.06em',
+                }}
+              >
+                {l === 'fr' ? '✦ Partager ce bake' : '✦ Share this bake'}
+              </button>
+            )}
           </div>
         )}
       </div>

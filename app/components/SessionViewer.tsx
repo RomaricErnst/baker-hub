@@ -24,6 +24,7 @@ interface SessionViewerProps {
   onDelete?: (id: string) => void;
   onRename?: (id: string, newName: string) => void;
   slots?: PizzaPartySlot[];
+  defaultShowShare?: boolean;
 }
 
 function formatHours(h: number): string {
@@ -52,7 +53,7 @@ const YEAST_LABEL: Record<string, string> = {
 };
 
 export default function SessionViewer({
-  event, onClose, onResume, onDelete, onRename, slots,
+  event, onClose, onResume, onDelete, onRename, slots, defaultShowShare,
 }: SessionViewerProps) {
   const locale = useLocale();
   const l = locale === 'fr' ? 'fr' : 'en';
@@ -94,13 +95,19 @@ export default function SessionViewer({
   }, [event?.id]);
 
   useEffect(() => {
+    if (defaultShowShare && event) setShowShareModal(true);
+  }, [defaultShowShare, event?.id]);
+
+  useEffect(() => {
     if (!event?.id) { setBakedQtys(null); return; }
     fetchBakedQtys(event.id).then(setBakedQtys);
   }, [event?.id]);
 
   const snap = event?.dough_snapshot ?? null;
+  const cr = snap?.computedRecipe ?? null;
 
   const schedule = useMemo(() => {
+    if (cr) return null;
     if (!snap?.eatTime) return null;
     try {
       const eat = new Date(snap.eatTime);
@@ -112,9 +119,10 @@ export default function SessionViewer({
         (snap.styleKey ?? 'neapolitan') as StyleKey,
       );
     } catch { return null; }
-  }, [snap]);
+  }, [snap, cr]);
 
   const recipe = useMemo(() => {
+    if (cr) return null;
     if (!snap?.styleKey || !snap.ovenType || !snap.yeastType || !schedule) return null;
     try {
       return calculateRecipe(
@@ -142,20 +150,22 @@ export default function SessionViewer({
         snap.wastePct,
       );
     } catch { return null; }
-  }, [snap, schedule]);
+  }, [snap, schedule, cr]);
 
-  const displayHydration = snap?.manualHydration != null
-    ? snap.manualHydration
-    : recipe
-      ? Math.round((recipe.water / recipe.flour) * 100)
-      : null;
+  const displayFlour = cr?.flour ?? recipe?.flour ?? null;
+  const displayWater = cr?.water ?? recipe?.water ?? null;
+  const displaySalt = cr?.salt ?? recipe?.salt ?? null;
+  const displayHydration = cr?.hydration
+    ?? (snap?.manualHydration != null ? snap.manualHydration : null)
+    ?? (recipe ? Math.round((recipe.water / recipe.flour) * 100) : null);
+  const yeastGrams = cr?.yeastGrams ?? recipe?.yeast?.convertedGrams ?? null;
 
   if (!event || !snap) return null;
   if (typeof document === 'undefined') return null;
 
   const hasPref = snap.prefermentType && snap.prefermentType !== 'none';
-  const coldH = schedule?.totalColdHours ?? 0;
-  const rtH = schedule?.totalRTHours ?? 0;
+  const coldH = cr?.coldH ?? schedule?.totalColdHours ?? 0;
+  const rtH = cr?.rtH ?? schedule?.totalRTHours ?? 0;
   const styleName = (ALL_STYLES as Record<string, { name: string }>)[snap.styleKey ?? '']?.name ?? snap.styleKey ?? '';
   const title = bakeEventTitle(event);
   const prefLabel = hasPref
@@ -168,12 +178,16 @@ export default function SessionViewer({
     ? (() => {
         try {
           const blend = snap.flourBlend as FlourBlend;
-          const brandProduct = (blend as unknown as Record<string, unknown>).brandProduct as string | undefined;
+          const raw = blend as unknown as Record<string, unknown>;
+          const brandProduct = raw.brandProduct as string | undefined;
+          const ratio1 = typeof raw.ratio1 === 'number' ? raw.ratio1 : 100;
           const profile = computeBlendProfile(blend);
-          const isBlend = blend.flour2 &&
-            (blend as unknown as Record<string, unknown>).ratio1 !== 100;
+          const isBlend = blend.flour2 && ratio1 < 100;
           if (isBlend) {
-            return brandProduct ? `${brandProduct} · ${profile.displayName}` : (profile.displayName || null);
+            const flour2Part = `${100 - ratio1}% ${profile.displayName?.split(' + ')[1] ?? ''}`.trim();
+            return brandProduct
+              ? `${ratio1}% ${brandProduct} + ${flour2Part}`
+              : profile.displayName ?? null;
           } else {
             return brandProduct ?? profile.displayName ?? null;
           }
@@ -340,21 +354,15 @@ export default function SessionViewer({
             )}
 
             <div style={{ ...monoSm, marginBottom: '4px' }}>
-              {recipe
-                ? `${recipe.flour}g flour · ${recipe.water}g water · ${recipe.salt}g salt`
+              {displayFlour && displayWater && displaySalt
+                ? [
+                    `${displayFlour}g flour · ${displayWater}g water · ${displaySalt}g salt`,
+                    snap.yeastType && snap.yeastType !== 'sourdough' && yeastGrams
+                      ? `${yeastGrams}g ${YEAST_LABEL[snap.yeastType] ?? snap.yeastType}`
+                      : snap.yeastType ? YEAST_LABEL[snap.yeastType] ?? snap.yeastType : null,
+                  ].filter(Boolean).join(' · ')
                 : `${snap.numItems} × ${snap.itemWeight}g`}
             </div>
-
-            {snap.yeastType && (
-              <div style={{ ...monoSm, marginBottom: '4px' }}>
-                {[
-                  YEAST_LABEL[snap.yeastType ?? ''] ?? snap.yeastType,
-                  recipe?.yeast?.convertedGrams
-                    ? `${recipe.yeast.convertedGrams}g`
-                    : null,
-                ].filter(Boolean).join(' · ')}
-              </div>
-            )}
 
             <div style={{ ...monoSm, marginBottom: '4px' }}>
               {[
@@ -392,10 +400,9 @@ export default function SessionViewer({
                 return (
                   <div key={slot.id ?? i} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '3px 0', fontSize: '13px', color: 'var(--char)',
-                    fontFamily: 'var(--font-dm-sans)',
+                    padding: '3px 0',
                   }}>
-                    <span>{name}</span>
+                    <span style={{ ...monoSm }}>{name}</span>
                     {slot.qty && slot.qty > 1 && (
                       <span style={{ ...monoSm }}>×{slot.qty}</span>
                     )}
@@ -421,10 +428,9 @@ export default function SessionViewer({
                   return (
                     <div key={presetId} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '3px 0', fontSize: '13px', color: 'var(--char)',
-                      fontFamily: 'var(--font-dm-sans)',
+                      padding: '3px 0',
                     }}>
-                      <span>{name}</span>
+                      <span style={{ ...monoSm }}>{name}</span>
                       <span style={{ ...monoSm, color: 'var(--sage)' }}>×{qty}</span>
                     </div>
                   );
@@ -627,9 +633,9 @@ export default function SessionViewer({
             hydration={displayHydration}
             prefLabel={prefLabel}
             flourLine={flourBlendName}
-            recipeFlour={recipe?.flour ?? null}
-            recipeWater={recipe?.water ?? null}
-            recipeSalt={recipe?.salt ?? null}
+            recipeFlour={displayFlour}
+            recipeWater={displayWater}
+            recipeSalt={displaySalt}
             coldH={coldH}
             rtH={rtH}
             bakedQtys={bakedQtys}
@@ -643,7 +649,7 @@ export default function SessionViewer({
             manualOil={snap?.manualOil ?? null}
             manualSugar={snap?.manualSugar ?? null}
             yeastType={snap?.yeastType ?? null}
-            yeastGrams={recipe?.yeast?.convertedGrams ?? null}
+            yeastGrams={yeastGrams}
             onClose={() => setShowShareModal(false)}
           />
         )}

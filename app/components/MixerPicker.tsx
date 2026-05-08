@@ -59,16 +59,6 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
       )}
 
       {/* Contextual warnings — always visible after selection */}
-      {selected === 'spiral' && kitchenTemp !== undefined && kitchenTemp >= 26 && (
-        <div style={{
-          marginTop: '.75rem', background: '#EEF6FF', border: '1.5px solid #B0CDE8',
-          borderRadius: '10px', padding: '.7rem .9rem', fontSize: '.78rem',
-          color: '#3A5F80', lineHeight: 1.55, display: 'flex', gap: '.5rem', alignItems: 'flex-start',
-        }}>
-          <span>🧊</span>
-          <span>Use ice-cold water or add ice cubes to your mixing bowl at this temperature.</span>
-        </div>
-      )}
       {selected === 'no_knead' && bakeType === 'pizza' && styleKey && NO_KNEAD_WARNING[styleKey] && (
         <div style={{
           marginTop: '.75rem', background: '#FFF8E8', border: '1.5px solid #E8D080',

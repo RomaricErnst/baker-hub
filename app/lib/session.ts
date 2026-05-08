@@ -35,6 +35,17 @@ export interface SessionData {
   modeChosen: boolean;
   pizzaParty?: { qtys: Record<string, number> } | null;
   bakedDone?: boolean;
+  computedRecipe?: {
+    flour: number;
+    water: number;
+    salt: number;
+    oil: number;
+    sugar: number;
+    hydration: number;
+    yeastGrams: number | null;
+    coldH: number;
+    rtH: number;
+  } | null;
 }
 
 export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): void {

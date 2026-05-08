@@ -233,6 +233,24 @@ export default function ShareCard({
       ctx.beginPath();
       ctx.rect(0, 0, 1080, photoZoneHeight);
       ctx.clip();
+      // Bubble texture
+      const bubbleSeeds = [
+        [120, 180, 280], [380, 90, 200], [700, 250, 180], [950, 100, 240],
+        [200, 420, 160], [580, 380, 300], [870, 380, 190], [50, 600, 220],
+        [430, 580, 250], [780, 560, 170], [980, 500, 200], [270, 700, 140],
+        [650, 700, 260], [100, 820, 180], [500, 800, 140], [880, 750, 220],
+      ];
+      for (const [bx, by, br] of bubbleSeeds) {
+        const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+        g.addColorStop(0, 'rgba(212,168,83,0.045)');
+        g.addColorStop(0.6, 'rgba(212,168,83,0.02)');
+        g.addColorStop(1, 'rgba(212,168,83,0)');
+        ctx.beginPath();
+        ctx.arc(bx, by, br, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+      // Title ghost text
       const words = customTitle.split(' ');
       if (words.length === 1) {
         ctx.font = `bold ${photoZoneHeight * 0.55}px "Playfair Display", Georgia, serif`;
@@ -381,7 +399,7 @@ export default function ShareCard({
     if (pizzaDisplayLines.length > 0) {
       y += 4;
       for (const pl of pizzaDisplayLines) {
-        ctx.font = 'italic 400 30px "DM Sans", sans-serif';
+        ctx.font = 'italic 400 30px "DM Mono", monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.55)';
         ctx.textAlign = 'left';
         ctx.fillText(pl, 72, y);
@@ -763,7 +781,7 @@ function PreviewCard({
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: `${photoZoneRatio * 100}%`, overflow: 'hidden' }}>
 
         {template === 'text' && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(ellipse at 30% 40%, rgba(212,168,83,0.06) 0%, transparent 60%), radial-gradient(ellipse at 75% 70%, rgba(212,168,83,0.04) 0%, transparent 50%)' }}>
             <span style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(16px, 10vw, 36px)', fontWeight: 700, color: 'rgba(212,168,83,0.07)', textAlign: 'center', padding: '0 10%' }}>
               {customTitle}
             </span>
@@ -823,7 +841,7 @@ function PreviewCard({
           {timingLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '7px', color: 'rgba(255,255,255,0.50)' }}>{timingLine}</div>}
         </div>
         {pizzaDisplayLines.length > 0 && (
-          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '8px', color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', marginTop: '4px', lineHeight: 1.6 }}>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', marginTop: '4px', lineHeight: 1.6 }}>
             {pizzaDisplayLines.map((l, i) => <div key={i}>{l}</div>)}
           </div>
         )}

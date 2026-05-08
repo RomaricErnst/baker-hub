@@ -228,6 +228,8 @@ export default function Header({
   onNewSession,
   onLoadBakeEvent,
   onResumeBakeEvent,
+  openSessionId,
+  onShareSessionClose,
 }: {
   units?: UnitSystem;
   onUnitsChange?: (u: UnitSystem) => void;
@@ -242,6 +244,8 @@ export default function Header({
   onNewSession?: () => void;
   onLoadBakeEvent?: (event: BakeEvent) => void;
   onResumeBakeEvent?: (event: BakeEvent) => void;
+  openSessionId?: string | null;
+  onShareSessionClose?: () => void;
 }) {
   const t = useTranslations('header');
   const tS = useTranslations('session');
@@ -261,6 +265,7 @@ export default function Header({
   const [showEmailForm, setShowEmailForm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [viewingEvent, setViewingEvent] = useState<BakeEvent | null>(null);
+  const [viewingEventShowShare, setViewingEventShowShare] = useState(false);
   const [eventSlots, setEventSlots] = useState<Record<string, PizzaPartySlot[]>>({});
 
   useEffect(() => {
@@ -300,6 +305,17 @@ export default function Header({
       }
     });
   }, [sessionSaved, user]);
+
+  useEffect(() => {
+    if (!openSessionId) return;
+    fetchBakeEvents().then(events => {
+      const ev = events.find(e => e.id === openSessionId);
+      if (ev) {
+        setViewingEvent(ev);
+        setViewingEventShowShare(true);
+      }
+    });
+  }, [openSessionId]);
 
   async function signInWithGoogle() {
     const redirectTo = typeof window !== 'undefined'
@@ -831,13 +847,14 @@ export default function Header({
 
     <SessionViewer
       event={viewingEvent}
-      onClose={() => setViewingEvent(null)}
-      onResume={(ev) => { onResumeBakeEvent?.(ev); setViewingEvent(null); }}
-      onDelete={(id) => { setBakeEvents(prev => prev.filter(e => e.id !== id)); setViewingEvent(null); }}
+      onClose={() => { setViewingEvent(null); setViewingEventShowShare(false); onShareSessionClose?.(); }}
+      onResume={(ev) => { onResumeBakeEvent?.(ev); setViewingEvent(null); setViewingEventShowShare(false); }}
+      onDelete={(id) => { setBakeEvents(prev => prev.filter(e => e.id !== id)); setViewingEvent(null); setViewingEventShowShare(false); }}
       onRename={(id, name) => {
         setBakeEvents(prev => prev.map(e => e.id === id ? { ...e, notes: name } : e));
       }}
       slots={eventSlots[viewingEvent?.id ?? ''] ?? []}
+      defaultShowShare={viewingEventShowShare}
     />
     </>
   );

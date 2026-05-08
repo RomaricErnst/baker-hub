@@ -1133,7 +1133,7 @@
   },
   "session": {
     "saved": "Saved",
-    "saveSession": "Save session",
+    "saveSession": "Save",
     "newSession": "New session",
     "newSessionConfirm": "Start a new session? Your saved recipes are not affected."
   },
