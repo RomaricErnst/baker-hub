@@ -306,19 +306,44 @@ function CoachButton({
     setError(false);
 
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      let base64: string;
+      let mimeType: string;
+
+      if (file.type === 'image/heic' || file.type === 'image/heif') {
+        const objectUrl = URL.createObjectURL(file);
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) { reject(new Error('Canvas not available')); return; }
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/jpeg', 0.92));
+          };
+          img.onerror = reject;
+          img.src = objectUrl;
+        });
+        URL.revokeObjectURL(objectUrl);
+        base64 = dataUrl.split(',')[1];
+        mimeType = 'image/jpeg';
+      } else {
+        base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        mimeType = file.type;
+      }
 
       const res = await fetch('/api/bake-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           imageBase64: base64,
-          mimeType: (file.type === 'image/heic' || file.type === 'image/heif') ? 'image/jpeg' : file.type,
+          mimeType,
           stepId,
           styleKey,
           kitchenTemp,
