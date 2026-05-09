@@ -1535,10 +1535,7 @@ export default function Home() {
                         }
                       }}
                       onNo={() => {
-                        setEatTime(null);
-                        setRecipeGenerated(false);
-                        setActiveTab('setup');
-                        setSessionRestored(false);
+                        startOver();
                       }}
                       locale={locale}
                     />
@@ -2702,10 +2699,7 @@ export default function Home() {
                         }
                       }}
                       onNo={() => {
-                        setEatTime(null);
-                        setRecipeGenerated(false);
-                        setActiveTab('setup');
-                        setSessionRestored(false);
+                        startOver();
                       }}
                       locale={locale}
                     />
