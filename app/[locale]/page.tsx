@@ -364,8 +364,6 @@ export default function Home() {
   useEffect(() => {
     if (bakedDone) setSessionSaved(false);
   }, [bakedDone]);
-  const [computedRecipe, setComputedRecipe] = useState<SessionData['computedRecipe']>(null);
-  const computedRecipeRef = useRef<SessionData['computedRecipe']>(null);
   const [shareSessionId, setShareSessionId] = useState<string | null>(null);
 
   const resultsRef           = useRef<HTMLDivElement>(null);
@@ -557,7 +555,7 @@ export default function Home() {
       recipeGenerated, activeTab, modeChosen,
       pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
       bakedDone,
-      computedRecipe: computedRecipeRef.current,
+      computedRecipe: buildComputedRecipe(),
     },
     () => {}, // auto-save (localStorage only) — don't flip the Supabase save pill
   );
@@ -736,8 +734,30 @@ export default function Home() {
     setPizzaPartyQtys({});
     setBakePhotoUrl(null);
     setBakedDone(false);
-    setComputedRecipe(null);
-    computedRecipeRef.current = null;
+  }
+
+  function buildComputedRecipe(): SessionData['computedRecipe'] {
+    const cr = tab === 'custom' ? advancedRecipe : recipe;
+    if (!cr) return null;
+    return {
+      flour: cr.flour,
+      water: cr.water,
+      salt: cr.salt,
+      oil: cr.oil ?? 0,
+      sugar: cr.sugar ?? 0,
+      hydration: cr.hydration ?? Math.round((cr.water / cr.flour) * 100),
+      yeastGrams: cr.preferment != null
+        ? cr.preferment.prefYeastGrams
+        : (cr.yeast?.convertedGrams ?? null),
+      coldH: schedule?.totalColdHours ?? 0,
+      rtH: schedule?.totalRTHours ?? 0,
+      hasPreferment: !!(cr.preferment?.prefYeastGrams),
+      totalIngredients: {
+        yeast: cr.preferment != null
+          ? cr.preferment.prefYeastGrams
+          : (cr.yeast?.convertedGrams ?? undefined),
+      },
+    };
   }
 
   function handleGenerate() {
@@ -758,28 +778,6 @@ export default function Home() {
     setShowResults(true);
     setActiveTab('plan');
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
-    const cr = tab === 'custom' ? advancedRecipe : recipe;
-    const computedRecipeSnapshot: SessionData['computedRecipe'] = cr ? {
-      flour: cr.flour,
-      water: cr.water,
-      salt: cr.salt,
-      oil: cr.oil ?? 0,
-      sugar: cr.sugar ?? 0,
-      hydration: cr.hydration ?? Math.round((cr.water / cr.flour) * 100),
-      yeastGrams: cr.preferment != null
-        ? cr.preferment.prefYeastGrams
-        : (cr.yeast?.convertedGrams ?? null),
-      coldH: schedule?.totalColdHours ?? 0,
-      rtH: schedule?.totalRTHours ?? 0,
-      hasPreferment: !!(cr.preferment?.prefYeastGrams),
-      totalIngredients: {
-        yeast: (cr.preferment != null)
-          ? cr.preferment.prefYeastGrams
-          : cr.yeast?.convertedGrams ?? undefined,
-      },
-    } : null;
-    computedRecipeRef.current = computedRecipeSnapshot;
-    setComputedRecipe(computedRecipeSnapshot);
     if (user) {
       const sessionPayload = {
         tab, bakeType: bakeType ?? '', styleKey, numItems, itemWeight,
@@ -790,7 +788,7 @@ export default function Home() {
         eatTime: eatTime?.getTime() ?? null,
         blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
         recipeGenerated: true, activeTab: 'plan' as const, modeChosen,
-        computedRecipe: computedRecipeSnapshot,
+        computedRecipe: buildComputedRecipe(),
       };
       upsertBakeEvent({ session: sessionPayload as SessionData })
         .then(id => { if (id) setBakeEventId(id); });
@@ -978,7 +976,6 @@ export default function Home() {
             setRecipeGenerated(snap.recipeGenerated);
             setModeChosen(snap.modeChosen);
             setBakeEventId(event.id);
-            setComputedRecipe(snap.computedRecipe ?? null);
             if (snap.recipeGenerated) {
               setActiveTab(snap.activeTab as 'setup' | 'plan' | 'guide' | 'pizzaparty');
               setAdvancedStep(snap.tab === 'custom' ? 99 : 1);
@@ -1798,7 +1795,7 @@ export default function Home() {
                         blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                         pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
                         bakedDone,
-                        computedRecipe: computedRecipeRef.current,
+                        computedRecipe: buildComputedRecipe(),
                       } as SessionData);
                       if (id) { setBakeEventId(id); setSessionSaved(true); }
                     }
@@ -2959,7 +2956,7 @@ export default function Home() {
                         blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                         pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
                         bakedDone,
-                        computedRecipe: computedRecipeRef.current,
+                        computedRecipe: buildComputedRecipe(),
                       } as SessionData);
                       if (id) { setBakeEventId(id); setSessionSaved(true); }
                     }
