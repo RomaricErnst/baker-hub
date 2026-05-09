@@ -365,6 +365,7 @@ export default function Home() {
     if (bakedDone) setSessionSaved(false);
   }, [bakedDone]);
   const [computedRecipe, setComputedRecipe] = useState<SessionData['computedRecipe']>(null);
+  const computedRecipeRef = useRef<SessionData['computedRecipe']>(null);
   const [shareSessionId, setShareSessionId] = useState<string | null>(null);
 
   const resultsRef           = useRef<HTMLDivElement>(null);
@@ -556,7 +557,7 @@ export default function Home() {
       recipeGenerated, activeTab, modeChosen,
       pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
       bakedDone,
-      computedRecipe,
+      computedRecipe: computedRecipeRef.current,
     },
     () => {}, // auto-save (localStorage only) — don't flip the Supabase save pill
   );
@@ -736,6 +737,7 @@ export default function Home() {
     setBakePhotoUrl(null);
     setBakedDone(false);
     setComputedRecipe(null);
+    computedRecipeRef.current = null;
   }
 
   function handleGenerate() {
@@ -775,6 +777,7 @@ export default function Home() {
           : cr.yeast?.convertedGrams ?? undefined,
       },
     } : null;
+    computedRecipeRef.current = computedRecipeSnapshot;
     setComputedRecipe(computedRecipeSnapshot);
     if (user) {
       const sessionPayload = {
@@ -782,7 +785,7 @@ export default function Home() {
         pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
         fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
         manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-        flourInFridge, wastePct, priorityOverride,
+        flourInFridge, wastePct, priorityOverride, prefGoesInFridge,
         eatTime: eatTime?.getTime() ?? null,
         blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
         recipeGenerated: true, activeTab: 'plan' as const, modeChosen,
