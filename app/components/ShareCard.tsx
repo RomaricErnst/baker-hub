@@ -824,35 +824,35 @@ function PreviewCard({
         height: panelPct,
         background: '#1A1612',
         borderTop: '1px solid rgba(212,168,83,0.2)',
-        padding: '8px 10px 6px',
+        padding: '5% 5% 4%',
         overflow: 'hidden',
       }}>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', color: 'rgba(212,168,83,0.65)', marginBottom: '2px' }}>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(9px, 1.8vw, 14px)', color: 'rgba(212,168,83,0.65)', marginBottom: '2px' }}>
           {cardDate}
         </div>
-        <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 'clamp(12px, 3.5vw, 18px)', color: 'white', lineHeight: 1.1, marginBottom: '5px' }}>
+        <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 'clamp(14px, 4vw, 22px)', color: 'white', lineHeight: 1.1, marginBottom: '5px' }}>
           {customTitle}
         </div>
         <div style={{ height: '1px', background: 'rgba(212,168,83,0.25)', marginBottom: '5px' }} />
-        <div style={{ lineHeight: 1.8 }}>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', color: 'rgba(255,255,255,0.80)' }}>{specLine}</div>
-          {flourLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '7px', color: 'rgba(255,255,255,0.60)' }}>{flourLine}</div>}
-          {weightsLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', color: 'rgba(255,255,255,0.80)' }}>{weightsLine}</div>}
-          {pctLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '7px', color: 'rgba(255,255,255,0.50)', fontStyle: 'italic' }}>{pctLine}</div>}
-          {timingLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '7px', color: 'rgba(255,255,255,0.50)' }}>{timingLine}</div>}
+        <div style={{ lineHeight: 1.5 }}>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(10px, 2.2vw, 16px)', color: 'rgba(255,255,255,0.80)' }}>{specLine}</div>
+          {flourLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(9px, 1.9vw, 14px)', color: 'rgba(255,255,255,0.60)' }}>{flourLine}</div>}
+          {weightsLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(10px, 2.2vw, 16px)', color: 'rgba(255,255,255,0.80)' }}>{weightsLine}</div>}
+          {pctLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(9px, 1.9vw, 14px)', color: 'rgba(255,255,255,0.50)', fontStyle: 'italic' }}>{pctLine}</div>}
+          {timingLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(9px, 1.9vw, 14px)', color: 'rgba(255,255,255,0.50)' }}>{timingLine}</div>}
         </div>
         {pizzaDisplayLines.length > 0 && (
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', marginTop: '4px', lineHeight: 1.6 }}>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(9px, 2vw, 14px)', color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', marginTop: '4px', lineHeight: 1.6 }}>
             {pizzaDisplayLines.map((l, i) => <div key={i}>{l}</div>)}
           </div>
         )}
         <div style={{ position: 'absolute', bottom: '5px', left: '10px', right: '10px', display: 'flex', justifyContent: 'space-between' }}>
           {bakerName && (
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '6px', color: 'rgba(255,255,255,0.28)' }}>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(7px, 1.5vw, 11px)', color: 'rgba(255,255,255,0.28)' }}>
               Baked by {bakerName}
             </span>
           )}
-          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '6px', color: 'rgba(255,255,255,0.22)', marginLeft: 'auto' }}>
+          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(7px, 1.5vw, 11px)', color: 'rgba(255,255,255,0.22)', marginLeft: 'auto' }}>
             Planned with bakerhub.app
           </span>
         </div>
