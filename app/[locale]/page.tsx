@@ -541,25 +541,6 @@ export default function Home() {
     setScheduleReady(false);
   }, [bakeType, styleKey]);
 
-  // Auto-save session to localStorage
-  useSessionSave(
-    {
-      tab, bakeType, styleKey, numItems, itemWeight, pizzaDiameter,
-      ovenType, mixerType, yeastType,
-      kitchenTemp, humidity, fridgeTemp,
-      flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
-      manualHydration, manualOil, manualSugar, manualSalt,
-      targetDoughTemp, flourInFridge, wastePct, priorityOverride,
-      eatTime: eatTime?.getTime() ?? null,
-      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-      recipeGenerated, activeTab, modeChosen,
-      pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
-      bakedDone,
-      computedRecipe: buildComputedRecipe(),
-    },
-    () => {}, // auto-save (localStorage only) — don't flip the Supabase save pill
-  );
-
   // ── Computed ──────────────────────────────
   const ovenData = ovenType
     ? bakeType === 'bread'
@@ -642,6 +623,50 @@ export default function Home() {
   }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, wastePct, prefGoesInFridge]);
 
   const advancedDisplayRecipe = advancedRecipe;
+
+  // Builds the computedRecipe payload from the live recipe object — single source of truth
+  function buildComputedRecipe(): SessionData['computedRecipe'] {
+    const cr = tab === 'custom' ? advancedRecipe : recipe;
+    if (!cr) return null;
+    return {
+      flour: cr.flour,
+      water: cr.water,
+      salt: cr.salt,
+      oil: cr.oil ?? 0,
+      sugar: cr.sugar ?? 0,
+      hydration: cr.hydration ?? Math.round((cr.water / cr.flour) * 100),
+      yeastGrams: cr.preferment != null
+        ? cr.preferment.prefYeastGrams
+        : (cr.yeast?.convertedGrams ?? null),
+      coldH: schedule?.totalColdHours ?? 0,
+      rtH: schedule?.totalRTHours ?? 0,
+      hasPreferment: !!(cr.preferment?.prefYeastGrams),
+      totalIngredients: {
+        yeast: cr.preferment != null
+          ? cr.preferment.prefYeastGrams
+          : (cr.yeast?.convertedGrams ?? undefined),
+      },
+    };
+  }
+
+  // Auto-save session to localStorage — placed after computed values to avoid TDZ
+  useSessionSave(
+    {
+      tab, bakeType, styleKey, numItems, itemWeight, pizzaDiameter,
+      ovenType, mixerType, yeastType,
+      kitchenTemp, humidity, fridgeTemp,
+      flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+      manualHydration, manualOil, manualSugar, manualSalt,
+      targetDoughTemp, flourInFridge, wastePct, priorityOverride,
+      eatTime: eatTime?.getTime() ?? null,
+      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
+      recipeGenerated, activeTab, modeChosen,
+      pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+      bakedDone,
+      computedRecipe: buildComputedRecipe(),
+    },
+    () => {},
+  );
 
   const bakeTimeIsPast = useMemo(() => {
     if (!eatTime) return false;
@@ -734,30 +759,6 @@ export default function Home() {
     setPizzaPartyQtys({});
     setBakePhotoUrl(null);
     setBakedDone(false);
-  }
-
-  function buildComputedRecipe(): SessionData['computedRecipe'] {
-    const cr = tab === 'custom' ? advancedRecipe : recipe;
-    if (!cr) return null;
-    return {
-      flour: cr.flour,
-      water: cr.water,
-      salt: cr.salt,
-      oil: cr.oil ?? 0,
-      sugar: cr.sugar ?? 0,
-      hydration: cr.hydration ?? Math.round((cr.water / cr.flour) * 100),
-      yeastGrams: cr.preferment != null
-        ? cr.preferment.prefYeastGrams
-        : (cr.yeast?.convertedGrams ?? null),
-      coldH: schedule?.totalColdHours ?? 0,
-      rtH: schedule?.totalRTHours ?? 0,
-      hasPreferment: !!(cr.preferment?.prefYeastGrams),
-      totalIngredients: {
-        yeast: cr.preferment != null
-          ? cr.preferment.prefYeastGrams
-          : (cr.yeast?.convertedGrams ?? undefined),
-      },
-    };
   }
 
   function handleGenerate() {
