@@ -101,7 +101,7 @@ export default function ShareCard({
   const oilStr = manualOil && manualOil > 0 ? ` · ${manualOil}g oil` : '';
   const sugarStr = manualSugar && manualSugar > 0 ? ` · ${manualSugar}g sugar` : '';
   const yeastStr = yeastGrams && yeastGrams > 0 && yeastType !== 'sourdough'
-    ? ` · ${yeastGrams}g ${YEAST_SHORT[yeastType ?? ''] ?? 'yeast'}`
+    ? ` · ${Number(yeastGrams).toFixed(1)}g ${YEAST_SHORT[yeastType ?? ''] ?? 'yeast'}`
     : '';
   const weightsLine = recipeFlour && recipeWater && recipeSalt
     ? `${recipeFlour}g flour · ${recipeWater}g water${yeastStr} · ${recipeSalt}g salt${oilStr}${sugarStr}`
@@ -118,7 +118,7 @@ export default function ShareCard({
     : null;
   const pctLine = [
     hydPct != null ? `${hydPct}% hydration` : null,
-    yeastPct != null ? `${yeastPct}% yeast` : null,
+    yeastPct != null ? `${yeastPct.toFixed(1)}% yeast` : null,
     saltPct != null ? `${saltPct}% salt` : null,
   ].filter(Boolean).join(' · ') || null;
 
@@ -354,23 +354,31 @@ export default function ShareCard({
 
     // Title
     y += 16;
-    ctx.font = 'bold 88px "Playfair Display", Georgia, serif';
-    ctx.fillStyle = '#FFFFFF';
+    let titleFontSize = 88;
+    const minTitleSize = 60;
     const maxTitleW = 1080 - 144;
+    // Try to fit on one line first by shrinking
+    ctx.font = `bold ${titleFontSize}px "Playfair Display", Georgia, serif`;
+    while (ctx.measureText(customTitle).width > maxTitleW && titleFontSize > minTitleSize) {
+      titleFontSize -= 2;
+      ctx.font = `bold ${titleFontSize}px "Playfair Display", Georgia, serif`;
+    }
+    ctx.fillStyle = '#FFFFFF';
+    // If still too wide, wrap words
     const titleWords = customTitle.split(' ');
     let titleLine = '';
     for (const word of titleWords) {
       const test = titleLine ? titleLine + ' ' + word : word;
       if (ctx.measureText(test).width > maxTitleW && titleLine) {
-        ctx.fillText(titleLine, 72, y + 88);
-        y += 96;
+        ctx.fillText(titleLine, 72, y + titleFontSize);
+        y += titleFontSize + 8;
         titleLine = word;
       } else {
         titleLine = test;
       }
     }
-    ctx.fillText(titleLine, 72, y + 88);
-    y += 106;
+    ctx.fillText(titleLine, 72, y + titleFontSize);
+    y += titleFontSize + 18;
 
     // Thin gold divider
     ctx.strokeStyle = 'rgba(212,168,83,0.3)';
@@ -381,12 +389,20 @@ export default function ShareCard({
     ctx.stroke();
     y += 40;
 
+    const MAX_TEXT_W = 1080 - 144; // 72px margin each side
     function drawLine(text: string, opacity: number, size: number, italic = false) {
-      ctx.font = `${italic ? 'italic ' : ''}400 ${size}px "DM Mono", monospace`;
+      // Shrink font until text fits, minimum 60% of original size
+      let fontSize = size;
+      const minSize = Math.round(size * 0.6);
+      ctx.font = `${italic ? 'italic ' : ''}400 ${fontSize}px "DM Mono", monospace`;
+      while (ctx.measureText(text).width > MAX_TEXT_W && fontSize > minSize) {
+        fontSize -= 1;
+        ctx.font = `${italic ? 'italic ' : ''}400 ${fontSize}px "DM Mono", monospace`;
+      }
       ctx.fillStyle = `rgba(255,255,255,${opacity})`;
       ctx.textAlign = 'left';
       ctx.fillText(text, 72, y);
-      y += size + 18;
+      y += fontSize + 18;
     }
 
     drawLine(specLine, 0.80, 44);
