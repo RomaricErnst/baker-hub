@@ -96,12 +96,16 @@ export function recommendYeast(
   fridgeTemp: number,       // guided = 4, advanced = user input
   yeastType: YeastType,
   flour: number,            // grams — for absolute calculation
-  priority: string | null
+  priority: string | null,
+  styleKey?: string,        // used to suppress false warnings for RT-only styles
 ): YeastResult {
   const warnings: string[] = [];
   let notRecommended = false;
   let recommendPoolish = false;
   let rec: number;
+
+  const RT_ONLY_STYLES = new Set(['pan', 'roman', 'pain_seigle']);
+  const isRTOnlyStyle = RT_ONLY_STYLES.has(styleKey ?? '');
 
   if (totalColdHours > 0 && totalRTHours <= 4) {
     // Primarily cold fermentation
@@ -125,7 +129,7 @@ export function recommendYeast(
 
   } else {
     // Pure room temperature
-    if (totalRTHours > YEAST_RT_MAX_H) {
+    if (totalRTHours > YEAST_RT_MAX_H && !isRTOnlyStyle) {
       recommendPoolish = true;
       warnings.push(
         `Room temp fermentation over ${YEAST_RT_MAX_H}h is unpredictable. ` +
@@ -151,8 +155,8 @@ export function recommendYeast(
   rec = Math.min(1.5, rec);
   rec = Math.round(rec * 10000) / 10000;
 
-  // Hot climate warnings
-  if (kitchenTemp >= 28 && totalColdHours === 0 && totalRTHours > 4) {
+  // Hot climate warnings — suppressed for styles that are intentionally RT-only
+  if (kitchenTemp >= 28 && totalColdHours === 0 && totalRTHours > 4 && !isRTOnlyStyle) {
     warnings.push(
       `More than 4h at room temp in a ${kitchenTemp}°C kitchen is risky. ` +
       `Add a cold retard phase or use a Poolish.`
@@ -868,7 +872,8 @@ export function calculateRecipe(
       fridgeTemp,
       yeastType,
       flour,
-      effectivePriority
+      effectivePriority,
+      styleKey,
     );
 
     // STEP 4 — Apply fermentation tolerance from blend

@@ -523,6 +523,8 @@ export default function BakeGuide({
   const isBaguette    = styleKey === 'baguette';
   const isLoafTin     = ['brioche','pain_mie','pain_viennois','pain_seigle'].includes(styleKey);
   const isBoule       = ['pain_campagne','pain_levain','sourdough','pain_complet'].includes(styleKey);
+  const isPan         = styleKey === 'pan';
+  const isRoman       = styleKey === 'roman';
   // Shaping label: what we call the shaped piece
   const breadPieceLabel = isFougasse ? 'piece' : isBaguette ? 'baguette' : isLoafTin ? 'loaf' : 'loaf';
   const breadPiecePlural = numItems === 1 ? breadPieceLabel : (isBaguette ? 'baguettes' : isLoafTin ? 'loaves' : 'loaves');
@@ -850,11 +852,22 @@ export default function BakeGuide({
                 ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
               ]} />
             ) : (
-              <Steps items={[
-                { bold: `Weigh dough and divide into ${numItems} equal pieces`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
-                ...(t.raw('divide.pizza.steps') as { bold: string; note: string }[]).slice(1),
-                ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
-              ]} />
+              <>
+                <Steps items={[
+                  { bold: `Weigh dough and divide into ${numItems} equal pieces`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
+                  ...(t.raw('divide.pizza.steps') as { bold: string; note: string }[]).slice(1),
+                  ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
+                ]} />
+                {isPan && (
+                  <div style={{
+                    fontSize: '.75rem', color: 'var(--smoke)', fontStyle: 'italic',
+                    fontFamily: 'var(--font-dm-sans)', marginTop: '6px',
+                  }}>
+                    Pan pizza: press dough directly into your oiled pan rather than
+                    forming a round ball. Let it relax 10 min then stretch to the edges.
+                  </div>
+                )}
+              </>
             )}
           </Section>
 
@@ -1026,6 +1039,21 @@ export default function BakeGuide({
       <StepCard number={n()} {...sc()} icon={<IconBake />} title={t('stepTitles.bakeEat')} time={schedule.bakeStart} accent="#5A9A50">
 
         <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
+          {isPan && (
+            <div style={{
+              background: 'rgba(212,168,83,0.08)', border: '1px solid rgba(212,168,83,0.2)',
+              borderRadius: '10px', padding: '10px 12px', marginBottom: '12px',
+              fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)', color: 'var(--char)',
+              lineHeight: 1.5,
+            }}>
+              <strong>Pan / Detroit / Deep Dish</strong> — dough bakes IN the oiled pan.
+              No launching needed.{' '}
+              <strong>Detroit style:</strong> push cheese all the way to the edges for
+              caramelised crusts. Add sauce after baking.{' '}
+              <strong>Deep Dish:</strong> press dough up the sides, add cheese directly
+              on the dough, then toppings, then sauce on top — reverse order.
+            </div>
+          )}
           {isBread ? (
             <Steps items={(t.raw(
               ovenType === 'dutch_oven' ? 'bake.dutch.steps' :
