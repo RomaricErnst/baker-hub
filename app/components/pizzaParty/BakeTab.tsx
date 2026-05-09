@@ -294,7 +294,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
               marginBottom: '6px',
             }}>
               {totalDone >= totalOrdered
-                ? (l === 'fr' ? '🎉 Toutes les pizzas cuites !' : '🎉 All pizzas baked!')
+                ? (l === 'fr' ? 'Toutes les pizzas cuites !' : 'All pizzas baked!')
                 : (l === 'fr'
                   ? `${totalDone} / ${totalOrdered} cuites`
                   : `${totalDone} / ${totalOrdered} baked`)}

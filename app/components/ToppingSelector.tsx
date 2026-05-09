@@ -1137,6 +1137,12 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough }: Props) {
   const l = locale as 'en' | 'fr';
 
+  const handleWheelScroll = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.currentTarget.scrollLeft += e.deltaY;
+    }
+  };
+
   // Filter state
   const [filter, setFilter] = useState<FilterState>({
     ...DEFAULT_FILTER,
@@ -1354,7 +1360,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         <>
           {/* ── Chip row: 4 priority + More ── */}
           <style>{'.filter-scroll::-webkit-scrollbar { display: none; }'}</style>
-          <div className="filter-scroll" style={{
+          <div style={{ position: 'relative' }}>
+          <div className="filter-scroll" onWheel={handleWheelScroll} style={{
             display: 'flex',
             flexWrap: 'nowrap',
             gap: '6px',
@@ -1445,6 +1452,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 ) : null;
               })()}
             </button>
+          </div>
+          <div style={{
+            position: 'absolute', top: 0, right: 0, width: '32px', height: '100%',
+            background: 'linear-gradient(to right, transparent, #FDFBF7)',
+            pointerEvents: 'none',
+          }} />
           </div>
 
           {/* ── Active filter chips row ── */}
@@ -2093,7 +2106,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   <div style={{ padding: '6px 14px 4px', fontSize: '11px', color: '#8A7F78' }}>
                     {l === 'fr' ? 'Une finale sucrée pour votre soirée pizza' : 'A sweet finale for your pizza night'}
                   </div>
-                  <div style={{
+                  <div style={{ position: 'relative' }}>
+                  <div onWheel={handleWheelScroll} style={{
                     display: 'flex',
                     gap: '10px',
                     overflowX: 'auto',
@@ -2181,6 +2195,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         );
                       })
                     }
+                  </div>
+                  <div style={{
+                    position: 'absolute', top: 0, right: 0, width: '32px', height: '100%',
+                    background: 'linear-gradient(to right, transparent, var(--warm))',
+                    pointerEvents: 'none',
+                  }} />
                   </div>
                   <button
                     onClick={() => setDessertSheetOpen(false)}
