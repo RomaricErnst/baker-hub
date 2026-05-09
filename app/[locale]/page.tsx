@@ -750,6 +750,7 @@ export default function Home() {
       const timeDefault = prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20;
       setPrefermentFlourPct(timeDefault);
     }
+    console.log('GENERATE_PCT: prefermentFlourPct=' + prefermentFlourPct + ' timeDefault=' + (prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20) + ' effective=' + (prefermentFlourPct ?? (prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20)));
     justGeneratedRef.current = true;
     setReviewMode(false);
     setRecipeGenerated(true);
