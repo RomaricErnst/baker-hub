@@ -445,6 +445,16 @@ export default function Home() {
       return;
     }
 
+    // Discard expired sessions immediately — don't restore stale state
+    const restoredEatTimeIsPast = session.eatTime
+      ? new Date(session.eatTime) < new Date()
+      : false;
+    if (restoredEatTimeIsPast) {
+      clearSession();
+      isRestoringRef.current = false;
+      return;
+    }
+
     setTab(session.tab as 'simple' | 'custom');
     setBakeType(session.bakeType as BakeType | null);
     setStyleKey(session.styleKey as StyleKey | null);
@@ -503,10 +513,7 @@ export default function Home() {
     setReviewMode(true);
     setActiveStep(99);
     setAdvancedStep(99);
-    const restoredEatTimeIsPast = session.eatTime
-      ? new Date(session.eatTime) < new Date()
-      : false;
-    if (!restoredEatTimeIsPast) setShowWelcomeBack(true);
+    setShowWelcomeBack(true);
     setTimeout(() => { isRestoringRef.current = false; }, 200);
   }, []);
 
