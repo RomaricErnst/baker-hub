@@ -1003,7 +1003,7 @@ export default function Home() {
             {/* ── Journey bar ── */}
             <div style={{ display: 'flex' }}>
               <button
-                onClick={() => { setActiveTab('setup'); setNavHidden(false); }}
+                onClick={() => { setActiveTab(recipeGenerated ? 'plan' : 'setup'); setNavHidden(false); }}
                 style={{
                   flex: 1,
                   textAlign: 'center',
