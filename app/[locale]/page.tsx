@@ -1760,7 +1760,27 @@ export default function Home() {
                     if (id) setBakeEventId(id);
                     return id;
                   }}
-                  onShare={() => setShareSessionId(bakeEventId)}
+                  sessionSaved={sessionSaved}
+                  onShare={async () => {
+                    let id = bakeEventId;
+                    if (!id && user) {
+                      const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
+                      id = await saveNamedSession({
+                        tab, bakeType: bakeType ?? '', styleKey, numItems, itemWeight,
+                        pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+                        fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+                        manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
+                        flourInFridge, wastePct, priorityOverride,
+                        eatTime: eatTime?.getTime() ?? null,
+                        blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
+                        pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+                        bakedDone,
+                        computedRecipe,
+                      } as SessionData);
+                      if (id) { setBakeEventId(id); setSessionSaved(true); }
+                    }
+                    if (id) setShareSessionId(id);
+                  }}
                 />
               </div>
             )}
@@ -2840,7 +2860,27 @@ export default function Home() {
                     if (id) setBakeEventId(id);
                     return id;
                   }}
-                  onShare={() => setShareSessionId(bakeEventId)}
+                  sessionSaved={sessionSaved}
+                  onShare={async () => {
+                    let id = bakeEventId;
+                    if (!id && user) {
+                      const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
+                      id = await saveNamedSession({
+                        tab, bakeType: bakeType ?? '', styleKey, numItems, itemWeight,
+                        pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+                        fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+                        manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
+                        flourInFridge, wastePct, priorityOverride,
+                        eatTime: eatTime?.getTime() ?? null,
+                        blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
+                        pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+                        bakedDone,
+                        computedRecipe,
+                      } as SessionData);
+                      if (id) { setBakeEventId(id); setSessionSaved(true); }
+                    }
+                    if (id) setShareSessionId(id);
+                  }}
                 />
               </div>
             )}

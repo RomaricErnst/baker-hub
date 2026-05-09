@@ -16,6 +16,7 @@ interface BakeTabProps {
   ovenType?: string;
   onEnsureBakeEvent?: () => Promise<string | null>;
   onShare?: () => void;
+  sessionSaved?: boolean;
 }
 
 function getAllPizzas(): Pizza[] {
@@ -142,7 +143,7 @@ function CoachButton({
   );
 }
 
-export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId, ovenType, onEnsureBakeEvent, onShare }: BakeTabProps) {
+export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId, ovenType, onEnsureBakeEvent, onShare, sessionSaved }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
@@ -320,7 +321,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
                   letterSpacing: '.06em',
                 }}
               >
-                {l === 'fr' ? '✦ Partager ce bake' : '✦ Share this bake'}
+                {sessionSaved
+                  ? (l === 'fr' ? '✦ Partager ce bake' : '✦ Share this bake')
+                  : (l === 'fr' ? '✦ Sauvegarder & Partager' : '✦ Save & Share this bake')}
               </button>
             )}
           </div>
