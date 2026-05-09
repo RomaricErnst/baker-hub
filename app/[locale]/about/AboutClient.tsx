@@ -196,15 +196,18 @@ const CONTENT: Record<string, LocaleContent> = {
               borderRadius: '8px', padding: '12px', marginBottom: '12px',
               fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: SMOKE,
             }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {[
-                  'Classic Neapolitan & Roman — 60+ recipes',
-                  'American styles — New York, Detroit, Pan',
-                  'French regional — Normandie, Provence, Alsace, Basque, Savoie',
-                  'Italian regional — Sicilian, Ligurian, Venetian, Calabrian',
-                  'Modern & fusion — Japanese, Korean, Spanish, Middle Eastern',
-                ].map((t, i) => (
-                  <div key={i} style={{ padding: '3px 0', lineHeight: 1.45 }}>{t}</div>
+                  { cat: 'Classic Neapolitan & Roman', detail: '60+ recipes' },
+                  { cat: 'American styles', detail: 'New York, Detroit, Pan' },
+                  { cat: 'French regional', detail: 'Normandie, Provence, Alsace, Basque, Savoie' },
+                  { cat: 'Italian regional', detail: 'Sicilian, Ligurian, Venetian, Calabrian' },
+                  { cat: 'Modern & fusion', detail: 'Japanese, Korean, Spanish, Middle Eastern' },
+                ].map(({ cat, detail }) => (
+                  <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px' }}>
+                    <span style={{ color: CHAR, fontWeight: 500, flexShrink: 0 }}>{cat}</span>
+                    <span style={{ color: SMOKE, textAlign: 'right', fontSize: '11px', lineHeight: 1.4 }}>{detail}</span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -393,15 +396,18 @@ const CONTENT: Record<string, LocaleContent> = {
               borderRadius: '8px', padding: '12px', marginBottom: '12px',
               fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: SMOKE,
             }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {[
-                  'Napolitaine & Romaine classique — 60+ recettes',
-                  'Styles américains — New York, Detroit, Pan',
-                  'Régional français — Normandie, Provence, Alsace, Basque, Savoie',
-                  'Régional italien — Sicilien, Ligurien, Vénitien, Calabrais',
-                  'Moderne & fusion — Japonais, Coréen, Espagnol, Moyen-Oriental',
-                ].map((t, i) => (
-                  <div key={i} style={{ padding: '3px 0', lineHeight: 1.45 }}>{t}</div>
+                  { cat: 'Napolitaine & Romaine classique', detail: '60+ recettes' },
+                  { cat: 'Styles américains', detail: 'New York, Detroit, Pan' },
+                  { cat: 'Régional français', detail: 'Normandie, Provence, Alsace, Basque, Savoie' },
+                  { cat: 'Régional italien', detail: 'Sicilien, Ligurien, Vénitien, Calabrais' },
+                  { cat: 'Moderne & fusion', detail: 'Japonais, Coréen, Espagnol, Moyen-Oriental' },
+                ].map(({ cat, detail }) => (
+                  <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px' }}>
+                    <span style={{ color: CHAR, fontWeight: 500, flexShrink: 0 }}>{cat}</span>
+                    <span style={{ color: SMOKE, textAlign: 'right', fontSize: '11px', lineHeight: 1.4 }}>{detail}</span>
+                  </div>
                 ))}
               </div>
             </div>
