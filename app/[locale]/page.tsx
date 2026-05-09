@@ -1797,7 +1797,7 @@ export default function Home() {
                         blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                         pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
                         bakedDone,
-                        computedRecipe,
+                        computedRecipe: computedRecipeRef.current,
                       } as SessionData);
                       if (id) { setBakeEventId(id); setSessionSaved(true); }
                     }
@@ -2958,7 +2958,7 @@ export default function Home() {
                         blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                         pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
                         bakedDone,
-                        computedRecipe,
+                        computedRecipe: computedRecipeRef.current,
                       } as SessionData);
                       if (id) { setBakeEventId(id); setSessionSaved(true); }
                     }
