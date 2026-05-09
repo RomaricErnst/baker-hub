@@ -913,6 +913,7 @@ export default function Home() {
               recipeGenerated, activeTab, modeChosen,
               pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
               bakedDone,
+              computedRecipe: buildComputedRecipe(),
             };
             const currentQtys = pizzaPartyGetQtysRef.current?.() ?? pizzaPartyQtys;
             saveSession(sessionPayload);
