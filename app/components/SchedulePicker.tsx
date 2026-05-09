@@ -410,6 +410,8 @@ function findOptimalPosition(
     sweetCenter - minTotalRT + 1
   );
   const typicalBulkH = kitchenTemp >= 30 ? 0.5 : kitchenTemp >= 28 ? 0.75 : 1.5;
+  let bestScore = -1;
+  let bestResult: ReturnType<typeof findOptimalPosition> | null = null;
   for (let delta = 0; delta <= SEARCH_RANGE; delta += STEP) {
     for (const sign of [0, 1, -1]) {
       const candidate = sweetCenter + (sign * delta);
@@ -426,19 +428,34 @@ function findOptimalPosition(
         if (isInBlocker(removeHBF)) continue;
       }
       if (!hasPref) {
-        return {
-          mixHBF: candidate, prefHBF: candidate,
-          mixInZone: inSweet(candidate), prefInZone: true,
-          fallback: !inSweet(candidate), mixInBlocker: false, prefInBlocker: false,
-        };
+        // No preferment — score mix position only
+        const score = inSweet(candidate) ? 3 : 0;
+        if (score === 3) {
+          return {
+            mixHBF: candidate, prefHBF: candidate,
+            mixInZone: true, prefInZone: true,
+            fallback: false, mixInBlocker: false, prefInBlocker: false,
+          };
+        }
+        // Keep as best if better than anything seen
+        if (score > bestScore) {
+          bestScore = score;
+          bestResult = {
+            mixHBF: candidate, prefHBF: candidate,
+            mixInZone: inSweet(candidate), prefInZone: true,
+            fallback: !inSweet(candidate), mixInBlocker: false, prefInBlocker: false,
+          };
+        }
+        continue;
       }
-      // Science-aligned boundaries — match card status and graph zone exactly.
-      // prefOffsetH passed in IS getPrefOptH() from computeAndApplyRecommendation.
+
+      // ── Preferment placement for this mix candidate ──────────────────
       const prefZoneMax = prefermentType === 'biga' ? 72 : prefGoesInFridge ? 24 : prefOffsetH * 1.5;
       const prefZoneMin = prefermentType === 'biga' ? 12 : prefGoesInFridge ? 3 : 1;
       const prefOptH = prefOffsetH;
       const hardMax = Math.min(prefZoneMax, nowHBF - candidate - 0.25);
       let bestPrefOffset = 0;
+
       // Scan outward from optH in both directions, prefer closer positions
       for (let delta = 0; delta <= prefZoneMax; delta += STEP) {
         for (const dir of [0, 1, -1]) {
@@ -451,52 +468,66 @@ function findOptimalPosition(
         }
         if (bestPrefOffset >= prefZoneMin) break;
       }
-      if (bestPrefOffset >= prefZoneMin) {
-        // If we landed further back than optimal (e.g. 22h when 18h is optimal),
-        // try to find the most recent valid position at or before bestPrefOffset.
-        if (bestPrefOffset > prefOptH) {
-          for (let p = prefOptH; p <= bestPrefOffset; p += STEP) {
-            if (p >= prefZoneMin && p <= hardMax && !isInBlocker(candidate + p)) {
-              bestPrefOffset = p;
+
+      if (bestPrefOffset < prefZoneMin) continue; // no valid pref position for this mix candidate
+
+      // If we landed further back than optimal, try to find the most recent valid position
+      if (bestPrefOffset > prefOptH) {
+        for (let p = prefOptH; p <= bestPrefOffset; p += STEP) {
+          if (p >= prefZoneMin && p <= hardMax && !isInBlocker(candidate + p)) {
+            bestPrefOffset = p;
+            break;
+          }
+        }
+      }
+
+      // Comfort window: if fridge poolish start lands outside 18:00–21:00,
+      // scan for the EARLIEST slot whose clock time falls in 18:00–21:00.
+      // If no such slot exists, keep the original bestPrefOffset.
+      if (prefermentType === 'poolish' && prefGoesInFridge) {
+        const prefAbsMs = ms - (candidate + bestPrefOffset) * 3600000;
+        const prefHour = new Date(prefAbsMs).getHours();
+        if (prefHour < 18 || prefHour >= 21) {
+          let comfortOffset: number | null = null;
+          for (let p = prefZoneMin; p <= hardMax; p += STEP) {
+            if (isInBlocker(candidate + p)) continue;
+            const absMs = ms - (candidate + p) * 3600000;
+            const h = new Date(absMs).getHours();
+            if (h >= 18 && h < 21) {
+              comfortOffset = p;
               break;
             }
           }
+          if (comfortOffset !== null) bestPrefOffset = comfortOffset;
         }
-        // Comfort window: if poolish start lands outside 18:00–21:00,
-        // scan ALL valid offsets (prefZoneMin..hardMax) looking for the
-        // EARLIEST slot whose clock time falls in 18:00–21:00 (6pm–9pm).
-        // We never scan toward the afternoon — only toward the evening.
-        // If no such slot exists, keep the original bestPrefOffset.
-        // hardMax guards against past positions. isInBlocker skips blocked slots.
-        if (prefermentType === 'poolish' && prefGoesInFridge) {
-          const prefAbsMs = ms - (candidate + bestPrefOffset) * 3600000;
-          const prefHour = new Date(prefAbsMs).getHours();
-          if (prefHour < 18 || prefHour >= 21) {
-            // Scan all valid offsets from min to max, find first that lands 18-21h
-            // "first" = smallest offset = most recent = earliest evening slot
-            let comfortOffset: number | null = null;
-            for (let p = prefZoneMin; p <= hardMax; p += STEP) {
-              if (isInBlocker(candidate + p)) continue;
-              const absMs = ms - (candidate + p) * 3600000;
-              const h = new Date(absMs).getHours();
-              if (h >= 18 && h < 21) {
-                // Take the first hit — closest to now within 18-21h window
-                comfortOffset = p;
-                break;
-              }
-            }
-            if (comfortOffset !== null) bestPrefOffset = comfortOffset;
-          }
-        }
-        const prefInZone = bestPrefOffset >= prefZoneMin && bestPrefOffset <= prefZoneMax;
+      }
+
+      const prefInZone = bestPrefOffset >= prefZoneMin && bestPrefOffset <= prefZoneMax;
+      const mixInZone  = inSweet(candidate);
+      const score = (mixInZone ? 2 : 0) + (prefInZone ? 1 : 0);
+
+      if (score === 3) {
+        // Perfect — both in zone, return immediately
         return {
           mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
-          mixInZone: inSweet(candidate), prefInZone,
-          fallback: !inSweet(candidate), mixInBlocker: false, prefInBlocker: false,
+          mixInZone: true, prefInZone: true,
+          fallback: false, mixInBlocker: false, prefInBlocker: false,
+        };
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestResult = {
+          mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
+          mixInZone, prefInZone,
+          fallback: !mixInZone, mixInBlocker: false, prefInBlocker: false,
         };
       }
     }
   }
+
+  // Return best partial result found (if any)
+  if (bestResult) return bestResult;
   const fallbackPrefOffset = Math.min(prefOffsetH, nowHBF - sweetCenter - 0.25);
   return {
     mixHBF:        sweetCenter,
