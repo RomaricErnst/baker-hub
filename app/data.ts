@@ -704,10 +704,13 @@ export function computePrefermentRecipe(
   fridgeTemp?: number,        // default 4
   prefGoesInFridge?: boolean, // default false for poolish, true for biga
   flourPctOverride?: number,
+  yeastType?: string,         // for output conversion (default 'instant' = IDY)
 ): {
   prefFlour: number;
   prefWater: number;
   prefYeastGrams: number;
+  prefYeastGramsIDY: number;
+  prefYeastType: string;
   finalFlour: number;
   finalWater: number;
   fermentHoursMin: number;
@@ -745,11 +748,28 @@ export function computePrefermentRecipe(
     else                        prefFermentH = 14;
   }
 
-  const prefYeastPct = isInFridge
-    ? Math.max(YEAST_MIN_PCT_PREF, coldIDYPref(prefFermentH, effectiveFT))
-    : Math.max(YEAST_MIN_PCT_PREF, rtIDYPref(prefFermentH, effectiveKT));
+  // Environment correction factors — calibrated against Modernist Pizza Vol.4
+  // Craig's constants are for bulk dough (65% hydration, with salt).
+  // Preferments are different physical environments.
+  const rawPct = isInFridge
+    ? coldIDYPref(prefFermentH, effectiveFT)
+    : rtIDYPref(prefFermentH, effectiveKT);
 
-  const prefYeastGrams = Math.round(prefFlour * prefYeastPct / 100 * 10) / 10;
+  const correctionFactor = prefermentType === 'biga'
+    ? 2.2          // stiff dough, constrained yeast — needs more IDY
+    : isInFridge
+      ? 1.65       // fridge poolish: liquid, CO₂ escapes freely
+      : 1 / 3.1;   // RT poolish: no salt, 100% hydration (tropical already in rtIDYPref)
+
+  const idyPct = Math.max(YEAST_MIN_PCT_PREF, rawPct * correctionFactor);
+  const prefYeastGramsIDY = Math.round(prefFlour * idyPct / 100 * 10) / 10;
+
+  // Convert to baker's selected yeast type
+  const yeastConversion = yeastType === 'active_dry' ? 1.33
+    : yeastType === 'fresh' ? 3.00
+    : 1.00;
+  const prefYeastGrams = Math.round(prefFlour * idyPct * yeastConversion / 100 * 10) / 10;
+
   const finalWater = totalWaterGrams - prefWater;
 
   const cold = p.cold;
@@ -768,6 +788,8 @@ export function computePrefermentRecipe(
     prefFlour,
     prefWater,
     prefYeastGrams,
+    prefYeastGramsIDY,
+    prefYeastType: yeastType ?? 'instant',
     finalFlour,
     finalWater,
     fermentHoursMin,

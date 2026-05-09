@@ -737,6 +737,8 @@ export interface RecipeResult {
     prefFlour: number;
     prefWater: number;
     prefYeastGrams: number;
+    prefYeastGramsIDY: number;
+    prefYeastType: string;
     finalFlour: number;
     finalWater: number;
     fermentHoursMin: number;
@@ -924,6 +926,7 @@ export function calculateRecipe(
         prefermentType, flour, water,
         kitchenTemp, fridgeTemp, prefInFridge,
         flourPctOverride,
+        yeastType,
       )
     : null;
 

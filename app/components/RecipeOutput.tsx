@@ -640,7 +640,9 @@ export default function RecipeOutput({
                 sub={t('recipeOutput.atRoomTemp')} />
               {pf.prefYeastGrams > 0 && (
                 <IngRow
-                  label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem' }}>{t('recipeOutput.ingredientYeast', { type: 'IDY' })}<YeastTooltip /></span>}
+                  label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem' }}>{t('recipeOutput.ingredientYeast', {
+                    type: pf.prefYeastType ? ((YEAST_TYPES as Record<string, { shortName: string }>)[pf.prefYeastType]?.shortName ?? 'IDY') : 'IDY'
+                  })}<YeastTooltip /></span>}
                   grams={wStr(pf.prefYeastGrams)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
