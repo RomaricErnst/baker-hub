@@ -585,7 +585,7 @@ export default function RecipeOutput({
                     { label: 'Flour', pct: '100%', value: `${Math.round(totalFlour).toLocaleString()}g` },
                     { label: 'Water', pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: `${Math.round(totalWater).toLocaleString()}g` },
                     { label: 'Salt',  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: `${Math.round(totalSalt).toLocaleString()}g` },
-                    ...(totalYeast > 0 ? [{ label: 'Yeast (IDY)', pct: `${Math.round(totalYeast / totalFlour * 1000) / 10}%`, value: `${totalYeast}g` }] : []),
+                    ...(totalYeast > 0 ? [{ label: 'Yeast (IDY)', pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
                   ].map((row, i) => (
                     <div key={i} style={{
                       display: 'grid',
@@ -673,7 +673,7 @@ export default function RecipeOutput({
                 const f2Pct = Math.round(f2Weight / flour * 1000) / 10;
                 return (
                   <>
-                    <IngRow label={f1.name} grams={wStr(f1Weight)} noPct advancedPct={pctStr(f1Pct)} />
+                    <IngRow label={flourBlend.brandProduct ?? f1.name} grams={wStr(f1Weight)} noPct advancedPct={pctStr(f1Pct)} />
                     <IngRow label={flourBlend.customFlour2Name ?? f2.name} grams={wStr(f2Weight)} noPct advancedPct={pctStr(f2Pct)} />
                   </>
                 );
@@ -726,7 +726,7 @@ export default function RecipeOutput({
                         { label: t('recipe.flour'), pct: '100%', value: `${Math.round(totalFlour).toLocaleString()}g` },
                         { label: t('recipe.water'), pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: `${Math.round(totalWater).toLocaleString()}g` },
                         { label: t('recipe.salt'),  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: `${Math.round(totalSalt).toLocaleString()}g` },
-                        ...(totalYeast > 0 ? [{ label: t('recipeOutput.yeastIDY'), pct: `${Math.round(totalYeast / totalFlour * 1000) / 10}%`, value: `${totalYeast}g` }] : []),
+                        ...(totalYeast > 0 ? [{ label: t('recipeOutput.yeastIDY'), pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
                       ].map((row, i) => (
                         <div key={i} style={{
                           display: 'grid',

@@ -918,7 +918,7 @@ export function calculateRecipe(
   // Compute preferment recipe — climate-aware
   const prefInFridge = prefGoesInFridgeOverride !== undefined
     ? prefGoesInFridgeOverride
-    : prefermentType === 'biga' || (prefermentType === 'poolish' && (kitchenTemp >= 26 || true));
+    : prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26);
   const preferment = (prefermentType && prefermentType !== 'none')
     ? computePrefermentRecipe(
         prefermentType, flour, water,
