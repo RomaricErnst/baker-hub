@@ -104,8 +104,23 @@ export default function ShareCard({
     ? ` · ${yeastGrams}g ${YEAST_SHORT[yeastType ?? ''] ?? 'yeast'}`
     : '';
   const weightsLine = recipeFlour && recipeWater && recipeSalt
-    ? `${recipeFlour}g flour · ${recipeWater}g water · ${recipeSalt}g salt${oilStr}${sugarStr}${yeastStr}`
+    ? `${recipeFlour}g flour · ${recipeWater}g water${yeastStr} · ${recipeSalt}g salt${oilStr}${sugarStr}`
     : null;
+
+  const hydPct = recipeWater && recipeFlour
+    ? Math.round(recipeWater / recipeFlour * 100)
+    : null;
+  const saltPct = recipeSalt && recipeFlour
+    ? Math.round(recipeSalt / recipeFlour * 1000) / 10
+    : null;
+  const yeastPct = yeastGrams && recipeFlour && yeastType !== 'sourdough'
+    ? Math.round(yeastGrams / recipeFlour * 1000) / 10
+    : null;
+  const pctLine = [
+    hydPct != null ? `${hydPct}% hydration` : null,
+    yeastPct != null ? `${yeastPct}% yeast` : null,
+    saltPct != null ? `${saltPct}% salt` : null,
+  ].filter(Boolean).join(' · ') || null;
 
   const timingLine = [
     coldH > 0 ? `Cold ${formatH(coldH)}` : null,
@@ -374,25 +389,26 @@ export default function ShareCard({
       y += size + 18;
     }
 
-    drawLine(specLine, 0.80, 36);
-    if (flourLine) drawLine(flourLine, 0.60, 30);
-    if (weightsLine) drawLine(weightsLine, 0.80, 34);
-    if (timingLine) drawLine(timingLine, 0.50, 30);
+    drawLine(specLine, 0.80, 44);
+    if (flourLine) drawLine(flourLine, 0.60, 38);
+    if (weightsLine) drawLine(weightsLine, 0.85, 42);
+    if (pctLine) drawLine(pctLine, 0.50, 36, true);
+    if (timingLine) drawLine(timingLine, 0.50, 38);
 
     if (pizzaDisplayLines.length > 0) {
       y += 4;
       for (const pl of pizzaDisplayLines) {
-        ctx.font = 'italic 400 30px "DM Mono", monospace';
+        ctx.font = 'italic 400 38px "DM Mono", monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.55)';
         ctx.textAlign = 'left';
         ctx.fillText(pl, 72, y);
-        y += 44;
+        y += 54;
       }
     }
 
     // Branding
     const brandY = photoZoneHeight + panelHeight - 36;
-    ctx.font = '400 22px "DM Mono", monospace';
+    ctx.font = '400 26px "DM Mono", monospace';
     ctx.textAlign = 'left';
     if (bakerName) {
       ctx.fillStyle = 'rgba(255,255,255,0.28)';
@@ -485,6 +501,7 @@ export default function ShareCard({
               specLine={specLine}
               flourLine={flourLine}
               weightsLine={weightsLine}
+              pctLine={pctLine}
               timingLine={timingLine}
               gearLine={gearLine}
               pizzaDisplayLines={pizzaDisplayLines}
@@ -739,7 +756,7 @@ export default function ShareCard({
 // ── Live CSS preview ──────────────────────────────────────────────────────────
 function PreviewCard({
   template, selectedPhotoUrls, customTitle, bakerName,
-  specLine, flourLine, weightsLine, timingLine, gearLine,
+  specLine, flourLine, weightsLine, pctLine, timingLine, gearLine,
   pizzaDisplayLines, cardDate, photoZoneRatio,
 }: {
   template: 'full' | 'two' | 'four' | 'text';
@@ -749,6 +766,7 @@ function PreviewCard({
   specLine: string;
   flourLine: string | null;
   weightsLine: string | null;
+  pctLine: string | null;
   timingLine: string;
   gearLine: string | null;
   pizzaDisplayLines: string[];
@@ -820,6 +838,7 @@ function PreviewCard({
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', color: 'rgba(255,255,255,0.80)' }}>{specLine}</div>
           {flourLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '7px', color: 'rgba(255,255,255,0.60)' }}>{flourLine}</div>}
           {weightsLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', color: 'rgba(255,255,255,0.80)' }}>{weightsLine}</div>}
+          {pctLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '7px', color: 'rgba(255,255,255,0.50)', fontStyle: 'italic' }}>{pctLine}</div>}
           {timingLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '7px', color: 'rgba(255,255,255,0.50)' }}>{timingLine}</div>}
         </div>
         {pizzaDisplayLines.length > 0 && (
