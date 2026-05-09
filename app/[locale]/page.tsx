@@ -1658,46 +1658,50 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Start Bake Guide CTA */}
-              <button
-                onClick={() => setActiveTab('guide')}
-                style={{
-                  background: 'var(--terra)',
-                  border: 'none',
-                  color: 'var(--cream)',
-                  borderRadius: '12px',
-                  padding: '10px 0',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  width: '100%',
-                  marginTop: '12px',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-dm-sans)',
-                  letterSpacing: '.01em',
-                }}
-              >
-                {t('tabs.guide')} →
-              </button>
+              {!bakeTimeIsPast && (
+                <>
+                  {/* Start Bake Guide CTA */}
+                  <button
+                    onClick={() => setActiveTab('guide')}
+                    style={{
+                      background: 'var(--terra)',
+                      border: 'none',
+                      color: 'var(--cream)',
+                      borderRadius: '12px',
+                      padding: '10px 0',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      width: '100%',
+                      marginTop: '12px',
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-dm-sans)',
+                      letterSpacing: '.01em',
+                    }}
+                  >
+                    {t('tabs.guide')} →
+                  </button>
 
-              {/* Edit setup button */}
-              <button
-                onClick={() => setActiveTab('setup')}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--smoke)',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  width: '100%',
-                  marginTop: '10px',
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                  padding: '4px 0',
-                  fontFamily: 'var(--font-dm-sans)',
-                }}
-              >
-                {t('generate.editSetup')}
-              </button>
+                  {/* Edit setup button */}
+                  <button
+                    onClick={() => setActiveTab('setup')}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--smoke)',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      width: '100%',
+                      marginTop: '10px',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: '4px 0',
+                      fontFamily: 'var(--font-dm-sans)',
+                    }}
+                  >
+                    {t('generate.editSetup')}
+                  </button>
+                </>
+              )}
 
             </div>{/* end plan tab */}
 
@@ -2818,46 +2822,50 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Start Bake Guide CTA */}
-              <button
-                onClick={() => setActiveTab('guide')}
-                style={{
-                  background: 'var(--terra)',
-                  border: 'none',
-                  color: 'var(--cream)',
-                  borderRadius: '12px',
-                  padding: '10px 0',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  width: '100%',
-                  marginTop: '12px',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-dm-sans)',
-                  letterSpacing: '.01em',
-                }}
-              >
-                {t('tabs.guide')} →
-              </button>
+              {!bakeTimeIsPast && (
+                <>
+                  {/* Start Bake Guide CTA */}
+                  <button
+                    onClick={() => setActiveTab('guide')}
+                    style={{
+                      background: 'var(--terra)',
+                      border: 'none',
+                      color: 'var(--cream)',
+                      borderRadius: '12px',
+                      padding: '10px 0',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      width: '100%',
+                      marginTop: '12px',
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-dm-sans)',
+                      letterSpacing: '.01em',
+                    }}
+                  >
+                    {t('tabs.guide')} →
+                  </button>
 
-              {/* Edit setup button */}
-              <button
-                onClick={() => setActiveTab('setup')}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--smoke)',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  width: '100%',
-                  marginTop: '10px',
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                  padding: '4px 0',
-                  fontFamily: 'var(--font-dm-sans)',
-                }}
-              >
-                {t('generate.editSetup')}
-              </button>
+                  {/* Edit setup button */}
+                  <button
+                    onClick={() => setActiveTab('setup')}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--smoke)',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      width: '100%',
+                      marginTop: '10px',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: '4px 0',
+                      fontFamily: 'var(--font-dm-sans)',
+                    }}
+                  >
+                    {t('generate.editSetup')}
+                  </button>
+                </>
+              )}
 
             </div>{/* end plan tab */}
 
@@ -3364,7 +3372,7 @@ function PostBakeLanding({
           color: 'var(--smoke)',
         }}
       >
-        {l === 'fr' ? 'Non, passer' : 'No, skip'}
+        {l === 'fr' ? '← Nouvelle fournée' : '← Start a new bake'}
       </button>
     </div>
   );
