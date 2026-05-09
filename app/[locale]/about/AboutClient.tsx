@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { useLocale } from 'next-intl';
+import Link from 'next/link';
+import Header from '../../components/Header';
 
 // ── Shared style tokens ──────────────────────────
 const CHAR   = '#1A1612';
@@ -559,13 +561,24 @@ export default function AboutClient() {
 
   return (
     <div style={{ background: 'var(--cream)', minHeight: '100vh', paddingBottom: '48px' }}>
+      <Header hideActionBar />
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '24px 16px' }}>
 
         <h1 style={{
           fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 700,
           color: CHAR, marginBottom: '4px', marginTop: '0',
         }}>{c.pageTitle}</h1>
-        <p style={{ ...monoSm, marginBottom: '32px' }}>{c.pageSubtitle}</p>
+        <p style={{ ...monoSm, marginBottom: '12px' }}>{c.pageSubtitle}</p>
+        <Link
+          href={locale === 'fr' ? '/fr' : '/'}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+            color: SMOKE, textDecoration: 'none', marginBottom: '24px',
+          }}
+        >
+          ← {locale === 'fr' ? 'Retour' : 'Back to Baker Hub'}
+        </Link>
 
         {c.sections.map((s, i) => (
           <Accordion key={i} title={s.title} defaultOpen={s.defaultOpen}>

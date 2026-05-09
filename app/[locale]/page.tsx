@@ -331,6 +331,13 @@ export default function Home() {
   const [flourInFridge, setFlourInFridge]     = useState<boolean>(false);
   const [wastePct, setWastePct]               = useState<number | undefined>(undefined);
 
+  // Dial In tooltip visibility
+  const [oilTip, setOilTip]               = useState(false);
+  const [sugarTip, setSugarTip]           = useState(false);
+  const [ddtTip, setDdtTip]               = useState(false);
+  const [mixLossTip, setMixLossTip]       = useState(false);
+  const [flourFridgeTip, setFlourFridgeTip] = useState(false);
+
   // BakeType card hover state
   const [hoveredBakeType, setHoveredBakeType] = useState<BakeType | null>(null);
 
@@ -2332,15 +2339,26 @@ export default function Home() {
                           </div>
                         );
                       })()}
-                      {hydAdjustNote && (
-                        <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '.5rem' }}>
-                          {hydAdjustNote}{' '}
-                          <button
-                            onClick={() => setManualHydration(styleBaseHyd)}
-                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--smoke)', fontSize: '.72rem', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', textUnderlineOffset: '2px' }}
-                          >
-                            Use {styleBaseHyd}% instead ↩
-                          </button>
+                      {manualHydration === undefined && Math.abs(hydDiff) >= 0.5 && (
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)', marginTop: '4px', lineHeight: 1.4, marginBottom: '.5rem' }}>
+                          {(() => {
+                            const parts: string[] = [];
+                            const bp = flourBlend ? computeBlendProfile(flourBlend) : null;
+                            if (bp?.hydrationDelta) parts.push(`blend ${bp.hydrationDelta > 0 ? '+' : ''}${bp.hydrationDelta}%`);
+                            if (ovenData?.hydrationDelta) parts.push(`oven ${ovenData.hydrationDelta > 0 ? '+' : ''}${ovenData.hydrationDelta}%`);
+                            if (kitchenTemp >= 28 || humidity === 'very-humid') parts.push('climate −2%');
+                            else if (kitchenTemp <= 18) parts.push('climate +2%');
+                            if (parts.length === 0) return null;
+                            return (
+                              <>
+                                Adjusted from {styleBaseHyd}% · {parts.join(' · ')}{' · '}
+                                <span
+                                  onClick={() => setManualHydration(styleBaseHyd)}
+                                  style={{ color: 'var(--terra)', cursor: 'pointer', textDecoration: 'underline' }}
+                                >Use {styleBaseHyd}% ↩</span>
+                              </>
+                            );
+                          })()}
                         </div>
                       )}
                       {/* Zone pill + note: only shown when baker set value manually,
@@ -2412,9 +2430,22 @@ export default function Home() {
                     const v = manualOil ?? 0;
                     const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
                     const STEP = 0.5;
+                    const oilGuideText = oilGuidance(v, ovenType ?? '', styleKey ?? '', t);
                     return (
                       <div style={{ flex: 1 }}>
-                        <FieldLabel>{t('dialIn.oilPct')}</FieldLabel>
+                        <div style={{ position: 'relative', marginBottom: '.4rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>{t('dialIn.oilPct')}</span>
+                          <button
+                            onMouseEnter={() => setOilTip(true)} onMouseLeave={() => setOilTip(false)}
+                            onClick={() => setOilTip(p => !p)}
+                            style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '9px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
+                          >i</button>
+                          {oilTip && (
+                            <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: v > 0 && isHighTemp ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(26,22,18,0.08)' }}>
+                              {oilGuideText}
+                            </div>
+                          )}
+                        </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
                           <button
                             onClick={() => setManualOil(Math.max(0, Math.round((v - STEP) * 10) / 10))}
@@ -2428,9 +2459,6 @@ export default function Home() {
                             style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
                           >+</button>
                         </div>
-                        <div style={{ fontSize: '.72rem', color: v > 0 && isHighTemp ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
-                          {oilGuidance(v, ovenType ?? '', styleKey ?? '', t)}
-                        </div>
                       </div>
                     );
                   })()}
@@ -2441,7 +2469,19 @@ export default function Home() {
                     const STEP = 0.5;
                     return (
                       <div style={{ flex: 1 }}>
-                        <FieldLabel>{t('dialIn.sugarPct')}</FieldLabel>
+                        <div style={{ position: 'relative', marginBottom: '.4rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>{t('dialIn.sugarPct')}</span>
+                          <button
+                            onMouseEnter={() => setSugarTip(true)} onMouseLeave={() => setSugarTip(false)}
+                            onClick={() => setSugarTip(p => !p)}
+                            style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '9px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
+                          >i</button>
+                          {sugarTip && (
+                            <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: sg.warn ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(26,22,18,0.08)' }}>
+                              {sg.note}
+                            </div>
+                          )}
+                        </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
                           <button
                             onClick={() => setManualSugar(Math.max(0, Math.round((v - STEP) * 10) / 10))}
@@ -2455,17 +2495,14 @@ export default function Home() {
                             style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
                           >+</button>
                         </div>
-                        <div style={{ fontSize: '.72rem', color: sg.warn ? 'var(--terra)' : 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
-                          {sg.note}
-                        </div>
                       </div>
                     );
                   })()}
                 </div>
                 </div>
                 {/* Precision — 4th sub-section inside Dial In */}
-                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '1rem' }}>
+                <div style={{ marginTop: '.5rem', paddingTop: '.5rem', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem' }}>
                     Precision
                   </div>
                   <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -2478,7 +2515,19 @@ export default function Home() {
                       return (
                         <div style={{ flex: 1, minWidth: '120px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
-                            <FieldLabel>{t('dialIn.doughTemp')}</FieldLabel>
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>{t('dialIn.doughTemp')}</span>
+                              <button
+                                onMouseEnter={() => setDdtTip(true)} onMouseLeave={() => setDdtTip(false)}
+                                onClick={() => setDdtTip(p => !p)}
+                                style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '9px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
+                              >i</button>
+                              {ddtTip && (
+                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(26,22,18,0.08)' }}>
+                                  +{mixerFriction}°C friction from {mixerType === 'spiral' ? 'spiral' : mixerType === 'stand' ? 'stand' : 'hand'} mixer. Flour from fridge removes ~8°C.
+                                </div>
+                              )}
+                            </div>
                             {!isDefaultDDT && (
                               <button onClick={() => setTargetDoughTemp(undefined)}
                                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.65rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', padding: 0 }}>
@@ -2493,14 +2542,23 @@ export default function Home() {
                             <button onClick={() => setTargetDoughTemp(Math.min(28, v + 1))}
                               style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>+</button>
                           </div>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '.4rem', cursor: 'pointer', marginBottom: '.3rem' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '.4rem', cursor: 'pointer' }}>
                             <input type="checkbox" checked={flourInFridge} onChange={e => setFlourInFridge(e.target.checked)}
                               style={{ width: '13px', height: '13px', cursor: 'pointer', accentColor: 'var(--terra)', flexShrink: 0 }} />
                             <span style={{ fontSize: '.72rem', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>{t('dialIn.flourInFridge')}</span>
+                            <div style={{ position: 'relative', display: 'inline-flex' }}>
+                              <button
+                                onMouseEnter={() => setFlourFridgeTip(true)} onMouseLeave={() => setFlourFridgeTip(false)}
+                                onClick={e => { e.preventDefault(); setFlourFridgeTip(p => !p); }}
+                                style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '9px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
+                              >i</button>
+                              {flourFridgeTip && (
+                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(26,22,18,0.08)', whiteSpace: 'normal' }}>
+                                  Cold flour lowers FDT. Removes ~8°C, offset automatically in the water temp calculation.
+                                </div>
+                              )}
+                            </div>
                           </label>
-                          <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4 }}>
-                            +{mixerFriction}°C from {mixerType === 'spiral' ? 'spiral' : mixerType === 'stand' ? 'stand' : 'hand'} mixer.
-                          </div>
                         </div>
                       );
                     })()}
@@ -2511,7 +2569,19 @@ export default function Home() {
                       return (
                         <div style={{ flex: 1, minWidth: '120px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
-                            <FieldLabel>{t('dialIn.mixingLoss')}</FieldLabel>
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ fontSize: '.72rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>{t('dialIn.mixingLoss')}</span>
+                              <button
+                                onMouseEnter={() => setMixLossTip(true)} onMouseLeave={() => setMixLossTip(false)}
+                                onClick={() => setMixLossTip(p => !p)}
+                                style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '9px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
+                              >i</button>
+                              {mixLossTip && (
+                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(26,22,18,0.08)' }}>
+                                  Buffer for bowl residue and transfer losses. Schedule is unchanged — only ingredient quantities scale up.
+                                </div>
+                              )}
+                            </div>
                             {wastePct !== undefined && wastePct !== 1.5 && (
                               <button onClick={() => setWastePct(undefined)}
                                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.65rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline', padding: 0 }}>
@@ -2527,9 +2597,6 @@ export default function Home() {
                             </span>
                             <button onClick={() => setWastePct(Math.min(5, Math.round((v + STEP) * 10) / 10))}
                               style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '.85rem', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>+</button>
-                          </div>
-                          <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
-                            Buffer for bowl residue. Schedule unchanged.
                           </div>
                         </div>
                       );
