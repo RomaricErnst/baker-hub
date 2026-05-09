@@ -476,7 +476,7 @@ export default function Header({
         />
         {/* Drawer panel */}
         <div style={{
-          position: 'fixed', top: 0, left: 0, bottom: 0, width: '300px',
+          position: 'fixed', top: 0, left: 0, height: '100dvh', width: '300px',
           background: '#1A1612', borderRight: '1px solid rgba(255,255,255,0.12)',
           boxShadow: '4px 0 24px rgba(0,0,0,0.5)', zIndex: 200,
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
@@ -500,303 +500,308 @@ export default function Header({
             >x</button>
           </div>
 
-          {/* Scrollable body */}
-          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', maxHeight: 'calc(100dvh - 80px)' }}>
-
-            {/* ── Section 1: Current session ── */}
-            {recipeGenerated && (
-              <div style={{
-                padding: '12px 16px',
-                borderBottom: '1px solid rgba(255,255,255,0.08)',
-                flexShrink: 0,
-              }}>
-                <div style={{ ...monoLabel, marginBottom: '8px' }}>
-                  {locale === 'fr' ? 'Session en cours' : 'Current session'}
-                </div>
-
-                {/* Summary card */}
-                <div style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '10px',
-                  padding: '10px 12px',
-                }}>
-                  {sessionSummary && (
-                    <div style={{
-                      fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
-                      fontWeight: 600, color: 'var(--cream)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>{sessionSummary}</div>
-                  )}
-                  {sessionDoughSpec && (
-                    <div style={{
-                      fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
-                      color: 'var(--smoke)', marginTop: '2px',
-                    }}>{sessionDoughSpec}</div>
-                  )}
-                </div>
-
-                {/* Action row */}
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
-                  {sessionSaved ? (
-                    <span style={{
-                      fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
-                      color: 'var(--sage)', cursor: 'default',
-                    }}>
-                      {locale === 'fr' ? 'Session enregistree' : 'Session saved'}
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => { onSaveSession?.(); setMenuOpen(false); }}
-                      style={{
-                        fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
-                        color: 'var(--terra)',
-                        border: '1px solid rgba(196,82,42,0.4)',
-                        borderRadius: '6px',
-                        background: 'rgba(196,82,42,0.1)',
-                        padding: '3px 10px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {locale === 'fr' ? 'Enregistrer' : 'Save session'}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { onNewSession?.(); setMenuOpen(false); }}
-                    style={{
-                      fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
-                      color: 'var(--smoke)',
-                      background: 'none', border: 'none',
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                    }}
-                  >
-                    {locale === 'fr' ? 'Nouvelle session' : 'New session'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── Section 2: My sessions ── */}
+          {/* ── Current session — always visible ── */}
+          {recipeGenerated && (
             <div style={{
               padding: '12px 16px',
               borderBottom: '1px solid rgba(255,255,255,0.08)',
-              display: 'flex', flexDirection: 'column',
+              flexShrink: 0,
             }}>
-              <div style={{ ...monoLabel, marginBottom: '10px' }}>
-                {locale === 'fr' ? 'Mes sessions' : 'My sessions'}
+              <div style={{ ...monoLabel, marginBottom: '8px' }}>
+                {locale === 'fr' ? 'Session en cours' : 'Current session'}
               </div>
-              {!user ? (
-                <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
-                  {locale === 'fr' ? 'Connectez-vous pour sauvegarder vos sessions' : 'Sign in to save your sessions'}
-                </div>
-              ) : loadingRecipes ? (
-                <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>
-                  {locale === 'fr' ? 'Chargement...' : 'Loading...'}
-                </div>
-              ) : bakeEvents.length === 0 ? (
-                <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
-                  {locale === 'fr' ? 'Aucune session sauvegardee' : 'No saved sessions yet'}
-                </div>
-              ) : (
-                <div style={{ maxHeight: 'calc(100vh - 180px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {bakeEvents.map(event => {
-                    const title = bakeEventTitle(event);
-                    const spec = bakeEventDoughSpec(event);
-                    return (
-                      <div key={event.id} style={{
-                        borderRadius: '10px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        position: 'relative',
-                        minHeight: '96px',
-                      }}>
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (!window.confirm('Delete this session?')) return;
-                            await deleteBakeEvent(event.id);
-                            setBakeEvents(prev => prev.filter(ev => ev.id !== event.id));
-                          }}
-                          style={{
-                            position: 'absolute', bottom: '8px', right: '10px',
-                            background: 'none', border: 'none', cursor: 'pointer',
-                            color: 'rgba(255,255,255,0.25)',
-                            padding: '2px', lineHeight: 1, zIndex: 1,
-                          }}
-                          title="Delete session"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6l-1 14H6L5 6"/>
-                            <path d="M10 11v6M14 11v6"/>
-                            <path d="M9 6V4h6v2"/>
-                          </svg>
-                        </button>
-                        <div
-                          onClick={() => { setViewingEvent(event); setMenuOpen(false); }}
-                          style={{ padding: '12px 12px 10px', cursor: 'pointer' }}
-                        >
+
+              {/* Summary card */}
+              <div style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '10px',
+                padding: '10px 12px',
+              }}>
+                {sessionSummary && (
+                  <div style={{
+                    fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
+                    fontWeight: 600, color: 'var(--cream)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>{sessionSummary}</div>
+                )}
+                {sessionDoughSpec && (
+                  <div style={{
+                    fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
+                    color: 'var(--smoke)', marginTop: '2px',
+                  }}>{sessionDoughSpec}</div>
+                )}
+              </div>
+
+              {/* Action row */}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
+                {sessionSaved ? (
+                  <span style={{
+                    fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
+                    color: 'var(--sage)', cursor: 'default',
+                  }}>
+                    {locale === 'fr' ? 'Session enregistree' : 'Session saved'}
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => { onSaveSession?.(); setMenuOpen(false); }}
+                    style={{
+                      fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
+                      color: 'var(--terra)',
+                      border: '1px solid rgba(196,82,42,0.4)',
+                      borderRadius: '6px',
+                      background: 'rgba(196,82,42,0.1)',
+                      padding: '3px 10px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {locale === 'fr' ? 'Enregistrer' : 'Save session'}
+                  </button>
+                )}
+                <button
+                  onClick={() => { onNewSession?.(); setMenuOpen(false); }}
+                  style={{
+                    fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
+                    color: 'var(--smoke)',
+                    background: 'none', border: 'none',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  {locale === 'fr' ? 'Nouvelle session' : 'New session'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Language · Units — always visible ── */}
+          {([
+            {
+              label: locale === 'fr' ? 'Langue' : 'Language',
+              options: [
+                { key: 'en', display: 'EN', active: locale === 'en', onSelect: () => { router.replace(pathname, { locale: 'en' }); setMenuOpen(false); } },
+                { key: 'fr', display: 'FR', active: locale === 'fr', onSelect: () => { router.replace(pathname, { locale: 'fr' }); setMenuOpen(false); } },
+              ],
+            },
+            {
+              label: locale === 'fr' ? 'Unites' : 'Units',
+              options: [
+                { key: 'metric',   display: 'g/°C',   active: units === 'metric',   onSelect: () => onUnitsChange?.('metric') },
+                { key: 'imperial', display: 'oz/°F',  active: units === 'imperial', onSelect: () => onUnitsChange?.('imperial') },
+              ],
+            },
+          ] as const).map((row, idx) => (
+            <div key={row.label} style={{
+              padding: '10px 16px',
+              borderTop: idx === 0 ? '1px solid rgba(255,255,255,0.08)' : undefined,
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              flexShrink: 0,
+            }}>
+              <span style={monoLabel}>{row.label}</span>
+              <div style={{ display: 'flex', gap: '.25rem' }}>
+                {row.options.map(opt => (
+                  <button key={opt.key} onClick={opt.onSelect} style={{
+                    minWidth: '48px', padding: '.22rem .4rem', borderRadius: '5px',
+                    border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)',
+                    fontSize: '.75rem', fontWeight: 600, textAlign: 'center',
+                    background: opt.active ? 'var(--terra)' : 'transparent',
+                    color: opt.active ? '#fff' : 'var(--smoke)',
+                  }}>{opt.display}</button>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* ── My Sessions label — always visible ── */}
+          <div style={{
+            padding: '10px 16px 6px',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            flexShrink: 0,
+          }}>
+            <div style={{ ...monoLabel }}>
+              {locale === 'fr' ? 'Mes sessions' : 'My sessions'}
+            </div>
+          </div>
+
+          {/* ── My Sessions cards — scrollable ── */}
+          <div style={{ overflowY: 'auto', maxHeight: '240px', padding: '4px 16px 12px', flexShrink: 0 }}>
+            {!user ? (
+              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+                {locale === 'fr' ? 'Connectez-vous pour sauvegarder vos sessions' : 'Sign in to save your sessions'}
+              </div>
+            ) : loadingRecipes ? (
+              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>
+                {locale === 'fr' ? 'Chargement...' : 'Loading...'}
+              </div>
+            ) : bakeEvents.length === 0 ? (
+              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+                {locale === 'fr' ? 'Aucune session sauvegardee' : 'No saved sessions yet'}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {bakeEvents.map(event => {
+                  const title = bakeEventTitle(event);
+                  const spec = bakeEventDoughSpec(event);
+                  return (
+                    <div key={event.id} style={{
+                      borderRadius: '10px',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      position: 'relative',
+                      minHeight: '96px',
+                    }}>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!window.confirm('Delete this session?')) return;
+                          await deleteBakeEvent(event.id);
+                          setBakeEvents(prev => prev.filter(ev => ev.id !== event.id));
+                        }}
+                        style={{
+                          position: 'absolute', bottom: '8px', right: '10px',
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: 'rgba(255,255,255,0.25)',
+                          padding: '2px', lineHeight: 1, zIndex: 1,
+                        }}
+                        title="Delete session"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6"/>
+                          <path d="M19 6l-1 14H6L5 6"/>
+                          <path d="M10 11v6M14 11v6"/>
+                          <path d="M9 6V4h6v2"/>
+                        </svg>
+                      </button>
+                      <div
+                        onClick={() => { setViewingEvent(event); setMenuOpen(false); }}
+                        style={{ padding: '12px 12px 10px', cursor: 'pointer' }}
+                      >
+                        <div style={{
+                          fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
+                          fontWeight: 600, color: 'var(--cream)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>{title}</div>
+                        {spec && (
                           <div style={{
-                            fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
-                            fontWeight: 600, color: 'var(--cream)',
+                            fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
+                            color: 'var(--smoke)', marginTop: '2px',
+                          }}>{spec}</div>
+                        )}
+                        {(eventSlots[event.id] ?? []).length > 0 && (
+                          <div style={{
+                            fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+                            color: 'rgba(255,255,255,0.4)', marginTop: '2px',
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                          }}>{title}</div>
-                          {spec && (
-                            <div style={{
-                              fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
-                              color: 'var(--smoke)', marginTop: '2px',
-                            }}>{spec}</div>
-                          )}
-                          {(eventSlots[event.id] ?? []).length > 0 && (
-                            <div style={{
-                              fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-                              color: 'rgba(255,255,255,0.4)', marginTop: '2px',
-                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                            }}>
-                              {(eventSlots[event.id] ?? []).map(s => {
+                          }}>
+                            {(eventSlots[event.id] ?? []).map(s => {
                 const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
                 const pizza = allPizzas.find(p => p.id === s.preset_id);
                 return pizza
                   ? ((pizza.name as Record<string,string>)[locale] ?? (pizza.name as Record<string,string>).en ?? s.preset_id)
                   : s.preset_id;
               }).join(' · ')}
-                            </div>
-                          )}
-                          <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                          <span style={{
+                            fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                            padding: '2px 8px', borderRadius: '20px',
+                            background: 'rgba(107,122,90,0.15)', color: 'var(--sage)',
+                          }}>Dough</span>
+                          {event.pizza_party_id && (
                             <span style={{
                               fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
                               padding: '2px 8px', borderRadius: '20px',
-                              background: 'rgba(107,122,90,0.15)', color: 'var(--sage)',
-                            }}>Dough</span>
-                            {event.pizza_party_id && (
-                              <span style={{
-                                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
-                                padding: '2px 8px', borderRadius: '20px',
-                                background: 'rgba(212,168,83,0.15)', color: 'var(--gold)',
-                              }}>Pizza</span>
-                            )}
-                            {event.status === 'baked' && (
-                              <span style={{
-                                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
-                                padding: '2px 8px', borderRadius: '20px',
-                                background: 'rgba(196,82,42,0.15)', color: 'var(--terra)',
-                              }}>Baked</span>
-                            )}
-                          </div>
+                              background: 'rgba(212,168,83,0.15)', color: 'var(--gold)',
+                            }}>Pizza</span>
+                          )}
+                          {event.status === 'baked' && (
+                            <span style={{
+                              fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                              padding: '2px 8px', borderRadius: '20px',
+                              background: 'rgba(196,82,42,0.15)', color: 'var(--terra)',
+                            }}>Baked</span>
+                          )}
                         </div>
-                        {/* Photo thumbnails */}
-                        {(() => {
-                          const photos = eventPhotos[event.id] ?? [];
-                          if (photos.length === 0) return null;
-                          const bySlot = photos.reduce((acc, p) => {
-                            const key = p.slot_index ?? 'main';
-                            if (!acc[key]) acc[key] = [];
-                            acc[key].push(p);
-                            return acc;
-                          }, {} as Record<string | number, BakePhoto[]>);
-                          const slots = Object.values(bySlot);
-                          return (
-                            <div style={{
-                              display: 'flex', flexWrap: 'wrap', gap: '4px',
-                              padding: '0 12px 8px',
-                            }}>
-                              {slots.map((slot, si) => (
-                                <div key={si} style={{
-                                  width: '40px', height: '40px',
-                                  borderRadius: '6px', overflow: 'hidden',
-                                  position: 'relative', flexShrink: 0,
-                                }}>
-                                  <img
-                                    src={slot[0].photo_url}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                                    alt=""
-                                  />
-                                  {slot.length > 1 && (
-                                    <div style={{
-                                      position: 'absolute', bottom: '2px', right: '2px',
-                                      background: 'rgba(0,0,0,0.6)', borderRadius: '4px',
-                                      padding: '1px 4px',
-                                      fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: 'white',
-                                    }}>{`×${slot.length}`}</div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })()}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* ── About link ── */}
-            <div style={{ padding: '4px 16px 12px' }}>
-              <Link
-                href={locale === 'fr' ? '/fr/about' : '/about'}
-                onClick={() => setMenuOpen(false)}
-                style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-                  color: 'var(--smoke)', textDecoration: 'none',
-                  padding: '4px 0', display: 'block',
-                  letterSpacing: '.04em', marginTop: '8px',
-                }}
-              >
-                {locale === 'fr' ? 'À propos' : 'About'}
-              </Link>
-            </div>
-
-          </div>{/* end scrollable body */}
-
-          {/* ── Pinned bottom: Language · Units + Auth ── */}
-          <div style={{ flexShrink: 0 }}>
-
-            {/* ── Section 3: Language · Units ── */}
-            {([
-              {
-                label: locale === 'fr' ? 'Langue' : 'Language',
-                options: [
-                  { key: 'en', display: 'EN', active: locale === 'en', onSelect: () => { router.replace(pathname, { locale: 'en' }); setMenuOpen(false); } },
-                  { key: 'fr', display: 'FR', active: locale === 'fr', onSelect: () => { router.replace(pathname, { locale: 'fr' }); setMenuOpen(false); } },
-                ],
-              },
-              {
-                label: locale === 'fr' ? 'Unites' : 'Units',
-                options: [
-                  { key: 'metric',   display: 'g/°C',   active: units === 'metric',   onSelect: () => onUnitsChange?.('metric') },
-                  { key: 'imperial', display: 'oz/°F',  active: units === 'imperial', onSelect: () => onUnitsChange?.('imperial') },
-                ],
-              },
-            ] as const).map((row, idx) => (
-              <div key={row.label} style={{
-                padding: '10px 16px',
-                borderTop: idx === 0 ? '1px solid rgba(255,255,255,0.08)' : undefined,
-                borderBottom: '1px solid rgba(255,255,255,0.08)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}>
-                <span style={monoLabel}>{row.label}</span>
-                <div style={{ display: 'flex', gap: '.25rem' }}>
-                  {row.options.map(opt => (
-                    <button key={opt.key} onClick={opt.onSelect} style={{
-                      minWidth: '48px', padding: '.22rem .4rem', borderRadius: '5px',
-                      border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)',
-                      fontSize: '.75rem', fontWeight: 600, textAlign: 'center',
-                      background: opt.active ? 'var(--terra)' : 'transparent',
-                      color: opt.active ? '#fff' : 'var(--smoke)',
-                    }}>{opt.display}</button>
-                  ))}
-                </div>
+                      {/* Photo thumbnails */}
+                      {(() => {
+                        const photos = eventPhotos[event.id] ?? [];
+                        if (photos.length === 0) return null;
+                        const bySlot = photos.reduce((acc, p) => {
+                          const key = p.slot_index ?? 'main';
+                          if (!acc[key]) acc[key] = [];
+                          acc[key].push(p);
+                          return acc;
+                        }, {} as Record<string | number, BakePhoto[]>);
+                        const slots = Object.values(bySlot);
+                        return (
+                          <div style={{
+                            display: 'flex', flexWrap: 'wrap', gap: '4px',
+                            padding: '0 12px 8px',
+                          }}>
+                            {slots.map((slot, si) => (
+                              <div key={si} style={{
+                                width: '40px', height: '40px',
+                                borderRadius: '6px', overflow: 'hidden',
+                                position: 'relative', flexShrink: 0,
+                              }}>
+                                <img
+                                  src={slot[0].photo_url}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                  alt=""
+                                />
+                                {slot.length > 1 && (
+                                  <div style={{
+                                    position: 'absolute', bottom: '2px', right: '2px',
+                                    background: 'rgba(0,0,0,0.6)', borderRadius: '4px',
+                                    padding: '1px 4px',
+                                    fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: 'white',
+                                  }}>{`×${slot.length}`}</div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            )}
+          </div>
 
-            {/* ── Section 4: Auth ── */}
-            <div style={{
-              padding: '12px 16px',
-              borderTop: '1px solid rgba(255,255,255,0.08)',
-            }}>
+          {/* Spacer */}
+          <div style={{ flex: 1 }} />
+
+          {/* ── About link — pinned footer ── */}
+          <div style={{
+            padding: '4px 16px 8px',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            flexShrink: 0,
+          }}>
+            <Link
+              href={locale === 'fr' ? '/fr/about' : '/about'}
+              onClick={() => setMenuOpen(false)}
+              style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                color: 'var(--smoke)', textDecoration: 'none',
+                padding: '4px 0', display: 'block',
+                letterSpacing: '.04em', marginTop: '4px',
+              }}
+            >
+              {locale === 'fr' ? 'À propos' : 'About'}
+            </Link>
+          </div>
+
+          {/* ── Auth — pinned footer ── */}
+          <div style={{
+            padding: '12px 16px',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            flexShrink: 0,
+          }}>
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.5rem' }}>
                 <span style={{
@@ -860,8 +865,6 @@ export default function Header({
               </div>
             )}
           </div>
-
-          </div>{/* end pinned bottom */}
 
         </div>
       </>,

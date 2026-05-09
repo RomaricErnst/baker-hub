@@ -621,7 +621,9 @@ export default function Home() {
         kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom',
         mixerType as MixerType,
         manualHydration, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride,
-        prefermentFlourPct,
+        prefermentFlourPct ?? (
+          prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20
+        ),
         manualSalt,
         targetDoughTemp,
         flourInFridge,
@@ -631,7 +633,7 @@ export default function Home() {
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, manualSalt, targetDoughTemp, flourInFridge, wastePct, prefGoesInFridge]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, wastePct, prefGoesInFridge]);
 
   const advancedDisplayRecipe = advancedRecipe;
 
