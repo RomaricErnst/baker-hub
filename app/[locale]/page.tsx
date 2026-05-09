@@ -2392,7 +2392,7 @@ export default function Home() {
 
                 {/* Salt · Oil · Sugar — one row, wraps on mobile */}
                 <div style={{ paddingTop: '.25rem' }}>
-                <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                   {/* Salt stepper — first, most important */}
                   {(() => {
                     const styleSalt = styleKey ? (ALL_STYLES[styleKey]?.salt ?? 2.5) : 2.5;
