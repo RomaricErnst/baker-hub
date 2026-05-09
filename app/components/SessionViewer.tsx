@@ -164,7 +164,7 @@ export default function SessionViewer({
   const displayHydration = cr?.hydration
     ?? (snap?.manualHydration != null ? snap.manualHydration : null)
     ?? (recipe ? Math.round((recipe.water / recipe.flour) * 100) : null);
-  const yeastGrams = cr?.yeastGrams ?? recipe?.yeast?.convertedGrams ?? null;
+  const yeastGrams = snap?.computedRecipe?.totalIngredients?.yeast ?? snap?.computedRecipe?.yeastGrams ?? recipe?.yeast?.convertedGrams ?? null;
   const yeastRounded = yeastGrams != null
     ? Math.round(yeastGrams * 10) / 10
     : null;
@@ -379,7 +379,7 @@ export default function SessionViewer({
 
             <div style={{ ...monoSm, marginBottom: '4px' }}>
               {[
-                OVEN_LABEL[snap.ovenType ?? ''] ?? snap.ovenType,
+                OVEN_LABEL[snap.ovenType ?? ''] ?? (snap.ovenType ?? '').replace(/_/g, ' '),
                 MIXER_LABEL[snap.mixerType ?? ''] ?? snap.mixerType,
               ].filter(Boolean).join(' · ')}
             </div>

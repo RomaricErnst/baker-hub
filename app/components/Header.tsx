@@ -10,6 +10,7 @@ import { fetchBakeEvents, deleteBakeEvent, bakeEventTitle, bakeEventDoughSpec, f
 import type { User } from '@supabase/supabase-js';
 import { type UnitSystem } from '../utils/units';
 import SessionViewer from './SessionViewer';
+import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
 
 function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   r: SavedRecipe;
@@ -606,9 +607,8 @@ export default function Header({
                         borderRadius: '10px',
                         background: 'rgba(255,255,255,0.05)',
                         border: '1px solid rgba(255,255,255,0.08)',
-                        overflow: 'hidden',
                         position: 'relative',
-                        minHeight: '72px',
+                        minHeight: '96px',
                       }}>
                         <button
                           onClick={async (e) => {
@@ -654,7 +654,13 @@ export default function Header({
                               color: 'rgba(255,255,255,0.4)', marginTop: '2px',
                               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                             }}>
-                              {(eventSlots[event.id] ?? []).map(s => s.preset_id).join(' · ')}
+                              {(eventSlots[event.id] ?? []).map(s => {
+                const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
+                const pizza = allPizzas.find(p => p.id === s.preset_id);
+                return pizza
+                  ? ((pizza.name as Record<string,string>)[locale] ?? (pizza.name as Record<string,string>).en ?? s.preset_id)
+                  : s.preset_id;
+              }).join(' · ')}
                             </div>
                           )}
                           <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>

@@ -518,6 +518,7 @@ export default function Home() {
   useEffect(() => {
     if (!configMountedRef.current) { configMountedRef.current = true; return; }
     if (justGeneratedRef.current) { justGeneratedRef.current = false; return; }
+    if (isRestoringRef.current) return;
     if (recipeGenerated) {
       setProtocolStale(true);
     }
@@ -749,6 +750,7 @@ export default function Home() {
       coldH: schedule?.totalColdHours ?? 0,
       rtH: schedule?.totalRTHours ?? 0,
       hasPreferment: !!(cr.preferment?.prefYeastGrams),
+      totalIngredients: { yeast: cr.yeast?.convertedGrams ?? undefined },
     } : null;
     setComputedRecipe(computedRecipeSnapshot);
     if (user) {

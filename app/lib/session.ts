@@ -46,6 +46,7 @@ export interface SessionData {
     coldH: number;
     rtH: number;
     hasPreferment?: boolean;
+    totalIngredients?: { yeast?: number };
   } | null;
 }
 
