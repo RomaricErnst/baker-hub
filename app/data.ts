@@ -680,10 +680,29 @@ export const PREFERMENT_LABELS: Record<string, (pct: number) => string> = {
 
 export type PrefermentType = keyof typeof PREFERMENT_TYPES;
 
+// ── Preferment yeast helpers (reproduced from Craig's model) ─────
+// These are local to the preferment calculation and intentionally
+// kept separate from the main yeast engine in utils.ts.
+const YEAST_MIN_PCT_PREF = 0.05;
+
+function rtIDYPref(hours: number, temp: number): number {
+  const raw = 9.5 / (Math.pow(Math.max(0.5, hours), 1.65) * Math.pow(2.5, (temp - 25) / 10));
+  const tropical = temp >= 33 ? 1.25 : temp >= 30 ? 1.15 : 1.0;
+  return raw / tropical;
+}
+
+function coldIDYPref(hours: number, fridgeT: number): number {
+  const raw = 7.5 / Math.pow(Math.max(1, hours), 1.313);
+  return raw / Math.pow(2.0, (fridgeT - 4) / 10);
+}
+
 export function computePrefermentRecipe(
   prefermentType: PrefermentType,
   totalFlourGrams: number,
   totalWaterGrams: number,
+  kitchenTemp?: number,       // default 22 (standard temperate)
+  fridgeTemp?: number,        // default 4
+  prefGoesInFridge?: boolean, // default false for poolish, true for biga
   flourPctOverride?: number,
 ): {
   prefFlour: number;
@@ -703,8 +722,34 @@ export function computePrefermentRecipe(
   const flourPct = flourPctOverride ?? p.flourPct;
   const prefFlour = Math.round(totalFlourGrams * flourPct / 100);
   const prefWater = Math.round(prefFlour * p.hydration / 100);
-  const prefYeastGrams = Math.round(prefFlour * p.yeastPct / 100 * 10) / 10;
   const finalFlour = totalFlourGrams - prefFlour;
+
+  // Climate-aware preferment yeast calibrated to the preferment's own fermentation window
+  const effectiveKT = kitchenTemp ?? 22;
+  const effectiveFT = fridgeTemp ?? 4;
+  const isInFridge = prefermentType === 'biga' || (prefGoesInFridge ?? false);
+
+  let prefFermentH: number;
+  if (prefermentType === 'biga') {
+    prefFermentH = 48;
+  } else if (isInFridge) {
+    prefFermentH = 18; // fridge poolish optimal peak
+  } else {
+    // RT poolish peak hours, temp-dependent
+    if (effectiveKT >= 32)      prefFermentH = 3;
+    else if (effectiveKT >= 30) prefFermentH = 4;
+    else if (effectiveKT >= 28) prefFermentH = 5;
+    else if (effectiveKT >= 26) prefFermentH = 7;
+    else if (effectiveKT >= 24) prefFermentH = 9;
+    else if (effectiveKT >= 22) prefFermentH = 11;
+    else                        prefFermentH = 14;
+  }
+
+  const prefYeastPct = isInFridge
+    ? Math.max(YEAST_MIN_PCT_PREF, coldIDYPref(prefFermentH, effectiveFT))
+    : Math.max(YEAST_MIN_PCT_PREF, rtIDYPref(prefFermentH, effectiveKT));
+
+  const prefYeastGrams = Math.round(prefFlour * prefYeastPct / 100 * 10) / 10;
   const finalWater = totalWaterGrams - prefWater;
 
   const cold = p.cold;

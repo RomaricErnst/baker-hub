@@ -115,7 +115,12 @@ export function recommendYeast(
     if (rtRec === null) {
       rec = Math.max(YEAST_MIN_PCT, coldRec);
     } else {
-      rec = Math.max(YEAST_MIN_PCT, coldRec * 0.7 + rtRec * 0.15);
+      const rtWeight    = totalRTHours  / Math.max(rtRec ?? YEAST_MIN_PCT, YEAST_MIN_PCT);
+      const coldWeight  = totalColdHours / coldRec;
+      const totalWeight = rtWeight + coldWeight;
+      rec = Math.max(YEAST_MIN_PCT,
+        (coldRec * (coldWeight / totalWeight)) + ((rtRec ?? 0) * (rtWeight / totalWeight))
+      );
     }
 
   } else {
@@ -761,6 +766,7 @@ export function calculateRecipe(
   targetDoughTemp?: number,                // custom mode only — overrides TARGET_FDT
   flourInFridge?: boolean,                 // custom mode only — flour temp = 4°C vs kitchenTemp
   wastePct?: number,                       // custom mode only — mixing loss buffer
+  prefGoesInFridgeOverride?: boolean,      // custom mode only — from SchedulePicker
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = (ovenType in OVEN_TYPES)
@@ -904,9 +910,16 @@ export function calculateRecipe(
     }
   }
 
-  // Compute preferment recipe
+  // Compute preferment recipe — climate-aware
+  const prefInFridge = prefGoesInFridgeOverride !== undefined
+    ? prefGoesInFridgeOverride
+    : prefermentType === 'biga' || (prefermentType === 'poolish' && (kitchenTemp >= 26 || true));
   const preferment = (prefermentType && prefermentType !== 'none')
-    ? computePrefermentRecipe(prefermentType, flour, water, flourPctOverride)
+    ? computePrefermentRecipe(
+        prefermentType, flour, water,
+        kitchenTemp, fridgeTemp, prefInFridge,
+        flourPctOverride,
+      )
     : null;
 
   return {

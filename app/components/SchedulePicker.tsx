@@ -18,6 +18,7 @@ interface SchedulePickerProps {
   onFeedTimeChange?: (t: Date) => void;
   prefermentType?: string;
   onPrefOffsetChange?: (h: number) => void;
+  onPrefGoesInFridgeChange?: (inFridge: boolean) => void;
   mode?: 'simple' | 'custom';   // default 'custom'
   onReady?: () => void;
 }
@@ -882,7 +883,7 @@ function SimpleColourBar({
 }
 
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, mode = 'custom', onReady }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, mode = 'custom', onReady }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1232,6 +1233,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     prefermentType === 'biga'
     || (prefermentType === 'poolish' && (kitchenTemp >= 26 || enoughTimeForFridge))
   );
+  useEffect(() => {
+    onPrefGoesInFridgeChange?.(prefGoesInFridge);
+  }, [prefGoesInFridge, onPrefGoesInFridgeChange]);
   // "Remove poolish from fridge" time: rtWarmupH before mix, pushed out of blockers
   const prefRTWarmupH = prefGoesInFridge ? getPrefRTWarmupH(kitchenTemp) : 0;
   const prefRemoveFromFridgeHBF = prefGoesInFridge ? mixOffsetH + prefRTWarmupH : null;
