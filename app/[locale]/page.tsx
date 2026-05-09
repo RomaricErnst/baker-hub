@@ -751,7 +751,11 @@ export default function Home() {
       coldH: schedule?.totalColdHours ?? 0,
       rtH: schedule?.totalRTHours ?? 0,
       hasPreferment: !!(cr.preferment?.prefYeastGrams),
-      totalIngredients: { yeast: cr.yeast?.convertedGrams ?? undefined },
+      totalIngredients: {
+        yeast: (cr.preferment?.prefYeastGrams != null)
+          ? cr.preferment.prefYeastGrams
+          : cr.yeast?.convertedGrams ?? undefined,
+      },
     } : null;
     setComputedRecipe(computedRecipeSnapshot);
     if (user) {
@@ -2015,8 +2019,9 @@ export default function Home() {
                 }
                 const ratio2 = 100 - flourBlend.ratio1;
                 const flour1Name = flourBlend.brandProduct ?? computeBlendProfile({ ...flourBlend, flour2: null, ratio1: 100 }).displayName;
-                const flour2Name = flourBlend.customFlour2Name ?? computeBlendProfile(flourBlend).displayName.split('+')[1]?.trim() ?? '';
-                return `${flourBlend.ratio1}% ${flour1Name} · ${ratio2}% ${flour2Name}`;
+                const flour2NameRaw = flourBlend.customFlour2Name ?? computeBlendProfile(flourBlend).displayName.split('+')[1]?.trim() ?? '';
+                const flour2Name = flour2NameRaw.replace(/^\d+%\s*/, '');
+                return `${flourBlend.ratio1}% ${flour1Name} + ${flour2Name}`;
               })()}
               onEdit={() => setAdvancedStep(6)}
             >
