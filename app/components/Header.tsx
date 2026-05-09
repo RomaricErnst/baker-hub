@@ -8,6 +8,7 @@ import { fetchRecipes, recipeSubtitle, type SavedRecipe } from '@/app/lib/supaba
 import { updateRecipe, deleteRecipe } from '@/app/lib/supabase/saveRecipe';
 import { fetchBakeEvents, deleteBakeEvent, bakeEventTitle, bakeEventDoughSpec, fetchPhotosForEvents, fetchPizzaPartySlots, type BakeEvent, type BakePhoto, type PizzaPartySlot } from '@/app/lib/supabase/fetchBakeEvents';
 import type { User } from '@supabase/supabase-js';
+import Link from 'next/link';
 import { type UnitSystem } from '../utils/units';
 import SessionViewer from './SessionViewer';
 import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
@@ -730,6 +731,22 @@ export default function Header({
                   })}
                 </div>
               )}
+            </div>
+
+            {/* ── About link ── */}
+            <div style={{ padding: '4px 16px 12px' }}>
+              <Link
+                href={locale === 'fr' ? '/fr/about' : '/about'}
+                onClick={() => setMenuOpen(false)}
+                style={{
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                  color: 'var(--smoke)', textDecoration: 'none',
+                  padding: '4px 0', display: 'block',
+                  letterSpacing: '.04em', marginTop: '8px',
+                }}
+              >
+                {locale === 'fr' ? 'À propos' : 'About'}
+              </Link>
             </div>
 
           </div>{/* end scrollable body */}
