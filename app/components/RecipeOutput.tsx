@@ -579,13 +579,16 @@ export default function RecipeOutput({
               const totalWater = water;
               const totalSalt  = salt;
               const totalYeast = pf.prefYeastGrams;
+              const yeastLabel = pf.prefYeastType
+                ? `Yeast (${(YEAST_TYPES as Record<string,{shortName:string}>)[pf.prefYeastType]?.shortName ?? 'IDY'})`
+                : 'Yeast (IDY)';
               return (
                 <div style={{ marginTop: '.6rem' }}>
                   {[
                     { label: 'Flour', pct: '100%', value: `${Math.round(totalFlour).toLocaleString()}g` },
                     { label: 'Water', pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: `${Math.round(totalWater).toLocaleString()}g` },
                     { label: 'Salt',  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: `${Math.round(totalSalt).toLocaleString()}g` },
-                    ...(totalYeast > 0 ? [{ label: 'Yeast (IDY)', pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
+                    ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
                   ].map((row, i) => (
                     <div key={i} style={{
                       display: 'grid',
@@ -722,13 +725,16 @@ export default function RecipeOutput({
                   const totalWater = water;
                   const totalSalt  = salt;
                   const totalYeast = pf.prefYeastGrams;
+                  const yeastLabel = pf.prefYeastType
+                    ? `Yeast (${(YEAST_TYPES as Record<string,{shortName:string}>)[pf.prefYeastType]?.shortName ?? 'IDY'})`
+                    : t('recipeOutput.yeastIDY');
                   return (
                     <div style={{ marginTop: '.6rem' }}>
                       {[
                         { label: t('recipe.flour'), pct: '100%', value: `${Math.round(totalFlour).toLocaleString()}g` },
                         { label: t('recipe.water'), pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: `${Math.round(totalWater).toLocaleString()}g` },
                         { label: t('recipe.salt'),  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: `${Math.round(totalSalt).toLocaleString()}g` },
-                        ...(totalYeast > 0 ? [{ label: t('recipeOutput.yeastIDY'), pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
+                        ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
                       ].map((row, i) => (
                         <div key={i} style={{
                           display: 'grid',

@@ -752,7 +752,7 @@ export default function Home() {
       rtH: schedule?.totalRTHours ?? 0,
       hasPreferment: !!(cr.preferment?.prefYeastGrams),
       totalIngredients: {
-        yeast: (cr.preferment?.prefYeastGrams != null)
+        yeast: (cr.preferment != null)
           ? cr.preferment.prefYeastGrams
           : cr.yeast?.convertedGrams ?? undefined,
       },

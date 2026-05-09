@@ -193,7 +193,9 @@ export default function SessionViewer({
           const profile = computeBlendProfile(blend);
           const isBlend = blend.flour2 && ratio1 < 100;
           if (isBlend) {
-            const flour2Part = `${100 - ratio1}% ${profile.displayName?.split(' + ')[1] ?? ''}`.trim();
+            const raw2 = profile.displayName?.split(' + ')[1]?.trim() ?? '';
+            const flour2Name = raw2.replace(/^\d+%\s*/, '');
+            const flour2Part = `${100 - ratio1}% ${flour2Name}`.trim();
             return brandProduct
               ? `${ratio1}% ${brandProduct} + ${flour2Part}`
               : profile.displayName ?? null;
