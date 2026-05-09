@@ -14,6 +14,7 @@ export function useSessionSave(
 
   useEffect(() => {
     if (!data.bakeType) return;
+    if (!data.styleKey && !data.recipeGenerated) return;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       saveSession(dataRef.current);
