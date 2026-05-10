@@ -350,6 +350,7 @@ export default function Home() {
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
   const [pizzaPartyQtys, setPizzaPartyQtys] = useState<Record<string, number>>({});
+  const [bakedPartyQtys, setBakedPartyQtys] = useState<Record<string, number>>({});
   useEffect(() => {
     if (isRestoringRef.current) return;
     setSessionSaved(false);
@@ -357,7 +358,7 @@ export default function Home() {
     styleKey, ovenType, mixerType, yeastType,
     numItems, itemWeight, kitchenTemp, humidity,
     fridgeTemp, manualHydration, prefermentType,
-    prefermentFlourPct, eatTime, pizzaPartyQtys,
+    prefermentFlourPct, eatTime, pizzaPartyQtys, bakedPartyQtys,
   ]);
   const [bakePhotoUrl, setBakePhotoUrl] = useState<string | null>(null);
   const [bakedDone, setBakedDone] = useState(false);
@@ -1783,6 +1784,7 @@ export default function Home() {
                     return id;
                   }}
                   sessionSaved={sessionSaved}
+                  onBakedQtysChange={setBakedPartyQtys}
                   onShare={async () => {
                     let id = bakeEventId;
                     if (!id && user) {
@@ -1795,7 +1797,7 @@ export default function Home() {
                         flourInFridge, wastePct, priorityOverride,
                         eatTime: eatTime?.getTime() ?? null,
                         blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-                        pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+                        pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys, bakedQtys: Object.keys(bakedPartyQtys).length > 0 ? bakedPartyQtys : undefined } : null,
                         bakedDone,
                         computedRecipe: buildComputedRecipe(),
                       } as SessionData);
@@ -2944,6 +2946,7 @@ export default function Home() {
                     return id;
                   }}
                   sessionSaved={sessionSaved}
+                  onBakedQtysChange={setBakedPartyQtys}
                   onShare={async () => {
                     let id = bakeEventId;
                     if (!id && user) {
@@ -2956,7 +2959,7 @@ export default function Home() {
                         flourInFridge, wastePct, priorityOverride,
                         eatTime: eatTime?.getTime() ?? null,
                         blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-                        pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+                        pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys, bakedQtys: Object.keys(bakedPartyQtys).length > 0 ? bakedPartyQtys : undefined } : null,
                         bakedDone,
                         computedRecipe: buildComputedRecipe(),
                       } as SessionData);

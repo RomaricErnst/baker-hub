@@ -17,6 +17,7 @@ interface BakeTabProps {
   onEnsureBakeEvent?: () => Promise<string | null>;
   onShare?: () => void;
   sessionSaved?: boolean;
+  onBakedQtysChange?: (qtys: Record<string, number>) => void;
 }
 
 function getAllPizzas(): Pizza[] {
@@ -143,7 +144,7 @@ function CoachButton({
   );
 }
 
-export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId, ovenType, onEnsureBakeEvent, onShare, sessionSaved }: BakeTabProps) {
+export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
@@ -162,6 +163,11 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
     };
     save();
   }, [doneCounts, bakeEventId, onEnsureBakeEvent]);
+
+  useEffect(() => {
+    onBakedQtysChange?.(doneCounts);
+  }, [doneCounts, onBakedQtysChange]);
+
   const [user, setUser] = useState<User | null>(null);
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
   const [photoWarn, setPhotoWarn] = useState(false);
