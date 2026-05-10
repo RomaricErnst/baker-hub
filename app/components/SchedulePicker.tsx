@@ -29,7 +29,13 @@ type Scenario = 'plenty' | 'tight' | 'too_short';
 // ── Card date+time formatter ─────────────────
 // "Fri 28 Mar · 9pm" / "ven. 28 mars · 21h"
 function fmtCardHM(d: Date, isFr = false): string {
-  const h = d.getHours(), m = d.getMinutes();
+  // Always display in 15min increments
+  const rounded = new Date(d);
+  const raw = rounded.getMinutes();
+  const snap = Math.round(raw / 15) * 15;
+  if (snap === 60) { rounded.setHours(rounded.getHours() + 1); rounded.setMinutes(0); }
+  else rounded.setMinutes(snap);
+  const h = rounded.getHours(), m = rounded.getMinutes();
   if (isFr) return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
   const ap = h < 12 ? 'am' : 'pm';
   const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
@@ -45,8 +51,13 @@ function fmtCardDT(d: Date, isFr = false): string {
 // ── Time formatter ────────────────────────────
 // "4pm" / "4:30pm" — minutes omitted when zero
 function formatTimeShort(d: Date, isFr = false): string {
-  const h = d.getHours();
-  const m = d.getMinutes();
+  const rounded = new Date(d);
+  const raw = rounded.getMinutes();
+  const snap = Math.round(raw / 15) * 15;
+  if (snap === 60) { rounded.setHours(rounded.getHours() + 1); rounded.setMinutes(0); }
+  else rounded.setMinutes(snap);
+  const h = rounded.getHours();
+  const m = rounded.getMinutes();
   if (isFr) return m === 0 ? `${h}h` : `${h}h${m.toString().padStart(2, '0')}`;
   const ampm = h < 12 ? 'am' : 'pm';
   const h12  = h === 0 ? 12 : h > 12 ? h - 12 : h;
