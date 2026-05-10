@@ -318,6 +318,25 @@ const CONTENT: Record<string, LocaleContent> = {
         ),
       },
       {
+        title: 'How preferment timing works',
+        body: (
+          <>
+            <P>When your recipe includes a poolish or biga, Baker Hub looks for a schedule where both the preferment and the final dough are in their optimal fermentation windows at the same time. It's not enough for one to be ready — both need to align.</P>
+            <P>The fermentation chart shows two curves: one for the preferment (poolish or biga) and one for the final dough. Each curve shifts depending on your actual schedule — if your dough goes through a cold retard, the dough curve widens and flattens, reflecting slower, longer fermentation. If it's room temperature only, the curve is taller and narrower. The goal is always to have each curve near its peak at the moment it matters: the preferment at mix time, the dough at bake time.</P>
+            <P>Each preferment type has a different sweet spot:</P>
+            <BulletList items={[
+              'Fridge poolish: peaks around 18h in the cold, with about ±3h either side still producing excellent results.',
+              'Room-temperature poolish: peaks faster and has a narrower window — especially in warm kitchens where fermentation accelerates quickly.',
+              'Biga: the stiffest and most forgiving. Its cold, slow fermentation gives a wide plateau of 38–58h.',
+            ]} />
+            <P>If your schedule doesn't allow both to land in their sweet spots simultaneously, Baker Hub shows you the best available option honestly — and the status cards always reflect the actual fermentation quality, not just whether something is technically usable.</P>
+            <p style={{ margin: '14px 0 0', ...bodyText }}>
+              <strong style={{ color: CHAR }}>Evening start.</strong> For fridge poolish, Baker Hub also tries to suggest a start time between 6pm and 9pm — practical for mixing before bed. If that timing conflicts with fermentation quality, quality always wins.
+            </p>
+          </>
+        ),
+      },
+      {
         title: 'Maestro — help along the way',
         body: (
           <p style={{ margin: 0, ...bodyText }}>At key steps in the Bake Guide, you can photograph your dough or pizza and ask Maestro for feedback. Maestro knows your oven type, your style, and what stage you're at — so the guidance is contextual, not generic. Leoparding, crumb structure, crust colour, fermentation signs. A knowledgeable friend looking over your shoulder.</p>
@@ -514,6 +533,25 @@ const CONTENT: Record<string, LocaleContent> = {
               "Transmet les heures exactes de TA et de froid au moteur de levure — la quantité de levure correspond toujours à votre planning réel",
             ]} />
             <p style={{ marginTop: '14px', margin: '14px 0 0', ...bodyText }}>Deux boulangers avec la même recette mais des plannings différents et des réfrigérateurs différents obtiennent des quantités de levure différentes. C'est tout l'intérêt.</p>
+          </>
+        ),
+      },
+      {
+        title: 'Comment fonctionne le timing du préferment',
+        body: (
+          <>
+            <P>Quand votre recette inclut un poolish ou un biga, Baker Hub cherche un planning où le préferment et la pâte finale sont simultanément dans leurs fenêtres de fermentation optimales. Il ne suffit pas qu'un seul soit prêt — les deux doivent s'aligner.</P>
+            <P>Le graphique de fermentation affiche deux courbes : une pour le préferment (poolish ou biga) et une pour la pâte finale. Chaque courbe évolue en fonction de votre planning réel — si votre pâte passe par un repos au frigo, la courbe s'élargit et s'aplatit, reflétant une fermentation plus lente et longue. Si c'est uniquement à température ambiante, la courbe est plus haute et plus étroite. L'objectif est toujours que chaque courbe soit proche de son pic au bon moment : le préferment au moment du pétrissage, la pâte au moment de la cuisson.</P>
+            <P>Chaque type de préferment a sa propre fenêtre idéale :</P>
+            <BulletList items={[
+              'Poolish au frigo : pic vers 18h au froid, avec environ ±3h de chaque côté qui donnent d\'excellents résultats.',
+              'Poolish à température ambiante : pic plus rapide et fenêtre plus étroite — surtout dans les cuisines chaudes où la fermentation s\'accélère vite.',
+              'Biga : le plus rigide et le plus indulgent. Sa fermentation lente au froid offre un plateau large de 38 à 58h.',
+            ]} />
+            <P>Si votre planning ne permet pas aux deux d\'atterrir simultanément dans leur fenêtre idéale, Baker Hub vous montre honnêtement la meilleure option disponible — et les cartes reflètent toujours la qualité réelle de fermentation, pas seulement si quelque chose est techniquement utilisable.</P>
+            <p style={{ margin: '14px 0 0', ...bodyText }}>
+              <strong style={{ color: CHAR }}>Départ en soirée.</strong> Pour le poolish au frigo, Baker Hub essaie aussi de suggérer un démarrage entre 18h et 21h — pratique pour préparer avant de dormir. Si ce timing entre en conflit avec la qualité de fermentation, la qualité l'emporte toujours.
+            </p>
           </>
         ),
       },
