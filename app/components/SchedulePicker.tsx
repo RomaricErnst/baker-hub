@@ -502,7 +502,18 @@ function findOptimalPosition(
         }
       }
 
-      const prefInZone = bestPrefOffset >= prefZoneMin && bestPrefOffset <= prefZoneMax;
+      // Score using the same plateau logic as the card green pill —
+      // not the full technical zone (3–24h). This ensures the algorithm
+      // only claims score-3 when the card would actually show green.
+      // Climate-sensitive RT tolerance mirrors Fix 1 above.
+      const scorePlateauH   = prefermentType === 'biga' ? 10 : prefGoesInFridge ? 3 : 0;
+      const scoreRTPeakTol  = kitchenTemp >= 30 ? 0.5
+                            : kitchenTemp >= 28 ? 0.75
+                            : kitchenTemp >= 24 ? 1.0
+                            : 1.5;
+      const prefInZone = prefGoesInFridge
+        ? bestPrefOffset >= prefOptH - scorePlateauH && bestPrefOffset <= prefOptH + scorePlateauH
+        : bestPrefOffset >= prefOptH - scoreRTPeakTol && bestPrefOffset <= prefOptH + scoreRTPeakTol;
       const mixInZone  = inSweet(candidate);
       const score = (mixInZone ? 2 : 0) + (prefInZone ? 1 : 0);
 
@@ -2191,12 +2202,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // Green: at or just past peak (±1.5h window)
         // Developing: 3h → peak (still rising — valid but not optimal)
         // EarlyOk: peak+1.5h → maxH (just past peak — still usable)
-        const RT_PEAK_TOLERANCE = 1.5; // hours either side of peak = green
+        // Climate-sensitive: RT poolish curve is steeper at high temp → narrower
+        // safe window. Symmetric: a poolish 1h before peak is as usable as 1h after.
+        const RT_PEAK_TOLERANCE = kitchenTemp >= 30 ? 0.5
+                                : kitchenTemp >= 28 ? 0.75
+                                : kitchenTemp >= 24 ? 1.0
+                                : 1.5;
         // Green zone = plateau only: optH-plateauH → optH+plateauH (fridge) or optH → optH+1.5h (RT)
         // Developing zone = viable but not yet at peak: 3h → plateau start
         const cardPrefInZone = prefGoesInFridge
           ? (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard - cardPrefPlateauH && prefOffsetH <= prefOptHCard + cardPrefPlateauH
-          : (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard && prefOffsetH <= prefOptHCard + RT_PEAK_TOLERANCE;
+          : (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard - RT_PEAK_TOLERANCE && prefOffsetH <= prefOptHCard + RT_PEAK_TOLERANCE;
         const cardPrefEarlyOk = prefGoesInFridge
           ? (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + cardPrefPlateauH && prefOffsetH <= prefMaxHCard
           : (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + RT_PEAK_TOLERANCE && prefOffsetH <= prefMaxHCard;
