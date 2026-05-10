@@ -532,8 +532,13 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
                         {ing.name[l]}
                       </span>
                       {ing.qtyPerPizza && (
-                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)' }}>
-                          {ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}
+                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px' }}>
+                          <span>{ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}</span>
+                          {(l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN) && (
+                            <span style={{ fontSize: '11px', color: 'var(--smoke)', opacity: 0.75, fontStyle: 'italic' }}>
+                              {l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN}
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
@@ -559,8 +564,13 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
                         {ing.name[l]}
                       </span>
                       {ing.qtyPerPizza && (
-                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)' }}>
-                          {ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}
+                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px' }}>
+                          <span>{ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}</span>
+                          {(l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN) && (
+                            <span style={{ fontSize: '11px', color: 'var(--smoke)', opacity: 0.75, fontStyle: 'italic' }}>
+                              {l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN}
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>

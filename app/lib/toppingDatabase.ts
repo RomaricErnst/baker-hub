@@ -35,7 +35,7 @@ export const ING: Record<string, Ingredient> = {
       pan:        { en: 'For pan/Detroit: cook sauce 20 min to a thick concentrate — it goes on top of the cheese and needs to hold its shape.', fr: 'Pour le style pan/Detroit : cuire la sauce 20 min en concentré épais — elle va sur le fromage et doit tenir.', timing: 20 },
       roman:      { en: 'For Pizza Romana: a light cook (10 min) works well — the thin crispy base can\'t handle excess moisture.', fr: 'Pour la Pizza Romana : une cuisson légère (10 min) est idéale — la base fine et croustillante ne supporte pas l\'excès d\'humidité.', timing: 10 },
     },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '3–4 tbsp · thin layer, not a pool', noteFR: '3–4 c.à.s. · couche fine, pas trop' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
     bakeOrderByStyle: { pan: 'after' },
     hardToFind: true,
@@ -69,7 +69,7 @@ export const ING: Record<string, Ingredient> = {
       neapolitan: { en: 'For Neapolitan: use raw hand-crushed San Marzano instead — cooked sauce scorches at 450°C. Season with salt only.', fr: 'Pour le napolitain : utiliser des San Marzano écrasées à la main crues — la sauce cuite brûle à 450°C. Assaisonner avec du sel uniquement.', timing: 0 },
       sourdough:  { en: 'For sourdough: same as Neapolitan — use raw crushed tomatoes, do not cook.', fr: 'Pour le levain : même approche que le napolitain — tomates crues écrasées, ne pas cuire.', timing: 0 },
     },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '3–4 tbsp · spread to 1cm from edge', noteFR: '3–4 c.à.s. · étaler à 1cm du bord' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
     bakeOrderByStyle: { pan: 'after' },
     goodEnough: {
@@ -86,6 +86,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'olio_base', category: 'base', bakeOrder: 'before',
     name: { en: 'Olive oil base', fr: 'Base huile d\'olive' },
     isCommonPantry: true,
+    qtyPerPizza: { amount: 30, unit: 'ml', noteEN: '2–3 tbsp olive oil · brush evenly', noteFR: '2–3 c.à.s. huile d\'olive · badigeonner' },
     qtyMultiplierByStyle: { roman: 1.2, pan: 1.3 },
   },
 
@@ -97,7 +98,7 @@ export const ING: Record<string, Ingredient> = {
       newyork: { en: 'For NY style, low-moisture mozzarella is preferred. If using fresh fior di latte: dice small and drain very well — excess moisture makes NY crust soggy.', fr: 'Pour le style NY, la mozzarella faible humidité est préférable. Si vous utilisez de la fior di latte fraîche : couper en petits dés et bien égoutter.', timing: 10 },
       pan:     { en: 'Dice small for pan style — needs to melt into the thick base. Low-moisture preferred. Press to edges for frico crust.', fr: 'Couper en petits dés pour le style pan — doit fondre dans la base épaisse. Faible humidité préférable. Pousser jusqu\'aux bords pour la croûte frico.', timing: 5 },
     },
-    qtyPerPizza: { amount: 100, unit: 'g' },
+    qtyPerPizza: { amount: 100, unit: 'g', noteEN: '5mm slices or tear — drained', noteFR: 'tranches 5mm ou déchirer — bien égoutté' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.5 },
     hardToFind: true,
     goodEnough: { name: { en: 'Fresh mozzarella ball (any brand)', fr: 'Boule de mozzarella fraîche (toute marque)' }, note: { en: 'Slice 5mm and drain on paper towel. The difference from fior di latte is minimal for most home ovens.', fr: 'Trancher à 5mm et égoutter sur papier. La différence avec la fior di latte est minime pour la plupart des fours domestiques.' } },
@@ -153,7 +154,7 @@ export const ING: Record<string, Ingredient> = {
       fr: 'Doit être 35%+ MG — la "crème cuisine" est souvent 15% et tranche au four. Cherchez "entière" ou "fleurette".',
     },
     goodEnough: { name: { en: 'Crème fraîche — best choice, stable at high heat', fr: 'Crème fraîche — meilleur choix, stable à haute température' } },
-    qtyPerPizza: { amount: 80, unit: 'ml' },
+    qtyPerPizza: { amount: 80, unit: 'ml', noteEN: '5 tbsp · should just coat the base', noteFR: '5 c.à.s. · doit juste napper la base' },
     hardToFind: true,
     localSwap: {
       singapore: {
@@ -172,7 +173,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'creme_fraiche', category: 'base', bakeOrder: 'before',
     name: { en: 'Crème fraîche', fr: 'Crème fraîche' },
     prepNote: { en: 'Spread thinly — stable at high heat, slightly tangy', fr: 'Étaler finement — stable à haute chaleur, légèrement acidulée' },
-    qtyPerPizza: { amount: 60, unit: 'g', noteEN: 'per pizza', noteFR: 'par pizza' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: '3 tbsp · thin coat', noteFR: '3 c.à.s. · couche fine' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
     localSwap: {
       singapore: {
@@ -222,7 +223,7 @@ export const ING: Record<string, Ingredient> = {
       en: 'Use proper Raclette AOP — melts smoothly. Swiss Raclette also works. Avoid pre-sliced industrial versions.',
       fr: 'Utiliser du Raclette AOP — fond parfaitement. Le Raclette suisse convient aussi. Éviter les versions tranchées industrielles.',
     },
-    qtyPerPizza: { amount: 100, unit: 'g' },
+    qtyPerPizza: { amount: 100, unit: 'g', noteEN: '4–5 slices', noteFR: '4–5 tranches' },
     hardToFind: true,
     goodEnough: { name: { en: 'Gruyère or Emmental — same alpine family, melts well', fr: 'Gruyère ou Emmental — même famille alpine, fond bien' } },
     compromise: { name: { en: 'Fontina or Comté — firm, melts well but different character', fr: 'Fontina ou Comté — ferme, fond bien mais caractère différent' } },
@@ -260,7 +261,7 @@ export const ING: Record<string, Ingredient> = {
       sourdough:  { en: 'Dice or tear into small pieces — same approach as Neapolitan.', fr: 'Couper en dés ou déchirer — même approche que le napolitain.', timing: 5 },
       pizza_romana: { en: 'Slice thin or dice — do not grate for Pizza Romana.', fr: 'Trancher finement ou couper en dés — ne pas râper pour la Pizza Romana.', timing: 5 },
     },
-    qtyPerPizza: { amount: 100, unit: 'g', noteEN: 'low-moisture block', noteFR: 'bloc faible humidité' },
+    qtyPerPizza: { amount: 100, unit: 'g', noteEN: 'dice 1–2cm, tear or grate depending on style — see prep note', noteFR: 'dés 1–2cm, déchirer ou râper selon le style — voir prep' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.5 },
     goodEnough: {
       name: { en: 'Block mozzarella (any brand)', fr: 'Mozzarella en bloc (toute marque)' },
@@ -332,7 +333,7 @@ export const ING: Record<string, Ingredient> = {
       neapolitan: { en: 'Par-cook 1–2 min in a dry pan before adding — at 450°C the pizza bakes too fast for lardons to render on their own.', fr: 'Précuire 1–2 min à sec avant d\'ajouter — à 450°C la pizza cuit trop vite pour que les lardons fondent seuls.', timing: 5 },
       sourdough:  { en: 'Par-cook 1–2 min in a dry pan — sourdough Neapolitan bakes fast, lardons need a head start.', fr: 'Précuire 1–2 min à sec — le levain napolitain cuit vite, les lardons ont besoin d\'un coup de pouce.', timing: 5 },
     },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'a small handful', noteFR: 'une petite poignée' },
     goodEnough: { name: { en: 'Diced smoked bacon', fr: 'Bacon fumé en dés' } },
     compromise: { name: { en: 'Unsmoked lardons — less flavour', fr: 'Lardons non fumés — moins de goût' } },
   },
@@ -392,7 +393,7 @@ export const ING: Record<string, Ingredient> = {
   ham: {
     id: 'cooked_ham', category: 'meat', bakeOrder: 'before',
     name: { en: 'Cooked ham', fr: 'Jambon cuit' },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '3–4 slices · torn', noteFR: '3–4 tranches · déchirées' },
     goodEnough: {
       name: { en: 'Cooked ham (jambon cuit, any quality)', fr: 'Jambon cuit (toute qualité)' },
       note: { en: 'Any cooked ham works — Paris ham, honey ham, rosemary ham. Avoid overly watery supermarket ham.', fr: 'Tout jambon cuit convient — jambon de Paris, jambon au miel, au romarin. Éviter les jambons industriels trop aqueux.' },
@@ -407,7 +408,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'smoked_salmon', category: 'seafood', bakeOrder: 'after',
     name: { en: 'Smoked salmon', fr: 'Saumon fumé' },
     prepNote: { en: 'Always add after baking — never cook smoked salmon', fr: 'Toujours ajouter après cuisson — ne jamais cuire le saumon fumé' },
-    qtyPerPizza: { amount: 60, unit: 'g' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: '3–4 slices', noteFR: '3–4 tranches' },
     goodEnough: {
       name: { en: 'Hot-smoked salmon (flaked)', fr: 'Saumon fumé à chaud (émietté)' },
       note: { en: 'Different texture — flakier, meatier. Add after baking like cold-smoked.', fr: 'Texture différente — plus feuilletée, plus charnue. Ajouter après cuisson comme le saumon fumé à froid.' },
@@ -506,7 +507,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'black_olives', category: 'veg', bakeOrder: 'before',
     name: { en: 'Black olives', fr: 'Olives noires' },
     isCommonPantry: true,
-    qtyPerPizza: { amount: 30, unit: 'g' },
+    qtyPerPizza: { amount: 30, unit: 'g', noteEN: '8–10 olives', noteFR: '8–10 olives' },
   },
 
   capers: {
@@ -522,14 +523,14 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Red onion', fr: 'Oignon rouge' },
     prepNote: { en: 'Slice very thin, raw — caramelises in the oven', fr: 'Trancher très finement, cru — caramélise au four' },
     isCommonPantry: true,
-    qtyPerPizza: { amount: 50, unit: 'g' },
+    qtyPerPizza: { amount: 50, unit: 'g', noteEN: '½ onion · sliced thin', noteFR: '½ oignon · tranché fin' },
   },
 
   sweetcorn: {
     id: 'sweetcorn', category: 'veg', bakeOrder: 'before',
     name: { en: 'Sweetcorn', fr: 'Maïs doux' },
     isCommonPantry: true,
-    qtyPerPizza: { amount: 50, unit: 'g' },
+    qtyPerPizza: { amount: 50, unit: 'g', noteEN: 'a small handful', noteFR: 'une petite poignée' },
   },
 
   spinach: {
@@ -555,7 +556,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'courgette', category: 'veg', bakeOrder: 'before',
     name: { en: 'Courgette', fr: 'Courgette' },
     prepNote: { en: 'Slice thin', fr: 'Trancher finement' },
-    qtyPerPizza: { amount: 60, unit: 'g' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: '½ courgette · sliced', noteFR: '½ courgette · tranchée' },
   },
 
   courgFlower: {
@@ -572,7 +573,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'roasted_pepper', category: 'veg', bakeOrder: 'before',
     name: { en: 'Roasted red pepper', fr: 'Poivron rouge rôti' },
     isCommonPantry: true,
-    qtyPerPizza: { amount: 60, unit: 'g' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: '1 pepper · strips', noteFR: '1 poivron · en lanières' },
   },
 
   freshThyme: {
@@ -615,7 +616,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'taleggio', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Taleggio', fr: 'Taleggio' },
     prepNote: { en: 'Slice thin — melts beautifully and evenly', fr: 'Trancher finement — fond parfaitement' },
-    qtyPerPizza: { amount: 30, unit: 'g' },
+    qtyPerPizza: { amount: 30, unit: 'g', noteEN: '2 thin slices · remove rind', noteFR: '2 tranches fines · enlever la croûte' },
     qtyMultiplierByStyle: { roman: 1.2, pan: 1.3 },
     hardToFind: true,
     goodEnough: { name: { en: 'Young Fontina — same washed-rind family, melts identically', fr: 'Fontina jeune — même famille à croûte lavée, fond pareil' } },
@@ -638,7 +639,7 @@ export const ING: Record<string, Ingredient> = {
       neapolitan: { en: 'Use very sparingly — just a light dusting. Neapolitan style is not parmesan-heavy. Half before baking, half after.', fr: 'Utiliser très peu — juste un léger saupoudrage. Le style napolitain n\'est pas riche en parmesan. Moitié avant, moitié après cuisson.', timing: 3 },
       sourdough:  { en: 'Use sparingly — light dusting only. Add half before baking, half after.', fr: 'Utiliser avec parcimonie. Moitié avant, moitié après cuisson.', timing: 3 },
     },
-    qtyPerPizza: { amount: 30, unit: 'g' },
+    qtyPerPizza: { amount: 30, unit: 'g', noteEN: 'a small handful · grated', noteFR: 'une petite poignée · râpé' },
     qtyMultiplierByStyle: { roman: 1.2, pan: 1.3 },
     goodEnough: { name: { en: 'Grana Padano — slightly milder, works well', fr: 'Grana Padano — légèrement plus doux, fonctionne bien' } },
     compromise: { name: { en: 'Any hard aged cheese, finely grated', fr: 'Tout fromage à pâte dure affiné, finement râpé' } },
@@ -655,7 +656,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'brie', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Brie', fr: 'Brie' },
     prepNote: { en: 'Slice thin with rind on — melts beautifully', fr: 'Trancher finement avec la croûte — fond magnifiquement' },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '4–5 slices · remove rind', noteFR: '4–5 tranches · enlever la croûte' },
     goodEnough: {
       name: { en: 'Camembert', fr: 'Camembert' },
       note: { en: 'Same melt profile, slightly stronger flavour. Remove rind or leave on — both work.', fr: 'Même comportement à la fonte, goût légèrement plus fort. Avec ou sans croûte — les deux fonctionnent.' },
@@ -681,7 +682,7 @@ export const ING: Record<string, Ingredient> = {
       en: 'Use fresh ricotta — not dry or smoked. Should be creamy and spreadable.',
       fr: 'Utiliser de la ricotta fraîche — pas sèche ni fumée. Doit être crémeuse.',
     },
-    qtyPerPizza: { amount: 100, unit: 'g' },
+    qtyPerPizza: { amount: 100, unit: 'g', noteEN: '4 spoonfuls · dollop, not spread', noteFR: '4 cuillerées · en pointes, pas étalé' },
     qtyMultiplierByStyle: { roman: 1.2, pan: 1.3 },
     compromise: {
       name: { en: 'Mascarpone — richer, no tang', fr: 'Mascarpone — plus riche, sans acidité' },
@@ -727,7 +728,7 @@ export const ING: Record<string, Ingredient> = {
     name: { en: 'Walnuts', fr: 'Noix' },
     prepNote: { en: 'Roughly crush — toast lightly for more flavour', fr: 'Concasser grossièrement — légèrement torréfier pour plus de goût', timing: 10 },
     isCommonPantry: true,
-    qtyPerPizza: { amount: 30, unit: 'g' },
+    qtyPerPizza: { amount: 30, unit: 'g', noteEN: 'a small handful', noteFR: 'une petite poignée' },
     compromise: { name: { en: 'Pecans or hazelnuts', fr: 'Noix de pécan ou noisettes' } },
   },
 
@@ -747,7 +748,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'rocket', category: 'finish', bakeOrder: 'after',
     name: { en: 'Rocket (rucola)', fr: 'Roquette' },
     prepNote: { en: 'Add after baking — wilts immediately if added before', fr: 'Ajouter après cuisson — flétrit immédiatement si ajoutée avant' },
-    qtyPerPizza: { amount: 20, unit: 'g' },
+    qtyPerPizza: { amount: 20, unit: 'g', noteEN: 'a small handful', noteFR: 'une petite poignée' },
     compromise: { name: { en: 'Baby spinach — milder, less peppery', fr: "Jeunes pousses d'épinard — plus doux, moins poivré" } },
     localSwap: {
       singapore: { name: { en: 'Rocket — FairPrice Finest or Cold Storage', fr: 'Roquette — FairPrice Finest ou Cold Storage' } },
@@ -786,7 +787,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'parmigiano_shavings', category: 'cheese', bakeOrder: 'after',
     name: { en: 'Parmigiano shavings', fr: 'Copeaux de parmesan' },
     prepNote: { en: 'Use a peeler — add after baking', fr: 'Utiliser un économe — ajouter après cuisson' },
-    qtyPerPizza: { amount: 20, unit: 'g' },
+    qtyPerPizza: { amount: 20, unit: 'g', noteEN: '5–6 shavings', noteFR: '5–6 copeaux' },
   },
 
   chilli: {
@@ -813,7 +814,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'bbq_sauce', category: 'sauce', bakeOrder: 'before',
     name: { en: 'BBQ sauce', fr: 'Sauce BBQ' },
     isCommonPantry: true,
-    qtyPerPizza: { amount: 60, unit: 'g' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: '2–3 tbsp · spread to 1cm from edge', noteFR: '2–3 c.à.s. · étaler à 1cm du bord' },
   },
 
   freshCoriander: {
@@ -827,7 +828,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'pesto', category: 'sauce', bakeOrder: 'before',
     name: { en: 'Fresh basil pesto', fr: 'Pesto basilic frais' },
     prepNote: { en: 'Spread thinly — intense flavour', fr: 'Étaler finement — goût intense' },
-    qtyPerPizza: { amount: 40, unit: 'g' },
+    qtyPerPizza: { amount: 40, unit: 'g', noteEN: '1–2 tbsp · spread thin', noteFR: '1–2 c.à.s. · étaler finement' },
     goodEnough: { name: { en: 'Good quality jarred pesto', fr: 'Pesto en bocal de bonne qualité' } },
     compromise: { name: { en: 'Good quality jarred pesto', fr: 'Pesto en bocal de qualité' } },
   },
@@ -857,7 +858,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'strawberries', category: 'veg', bakeOrder: 'after',
     name: { en: 'Fresh strawberries', fr: 'Fraises fraîches' },
     prepNote: { en: 'Slice and add after baking', fr: 'Trancher et ajouter après cuisson' },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '5–6 strawberries · sliced', noteFR: '5–6 fraises · tranchées' },
   },
 
   icingSugar: {
@@ -899,14 +900,14 @@ export const ING: Record<string, Ingredient> = {
     id: 'almond_flakes', category: 'finish', bakeOrder: 'before',
     name: { en: 'Almond flakes', fr: 'Amandes effilées' },
     prepNote: { en: 'Toast lightly before adding', fr: 'Légèrement torréfier avant d\'ajouter', timing: 10 },
-    qtyPerPizza: { amount: 20, unit: 'g', noteEN: 'toasted', noteFR: 'grillées' },
+    qtyPerPizza: { amount: 20, unit: 'g', noteEN: 'a small handful · toasted', noteFR: 'une petite poignée · grillées' },
   },
 
   asparagus: {
     id: 'asparagus', category: 'veg', bakeOrder: 'before',
     name: { en: 'Asparagus', fr: 'Asperges' },
     prepNote: { en: 'Blanch 2 min, slice lengthways, add before baking', fr: 'Blanchir 2 min, couper en longueur, ajouter avant cuisson', timing: 10 },
-    qtyPerPizza: { amount: 60, unit: 'g' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: '3–4 spears', noteFR: '3–4 pointes' },
   },
 
   cornichons: {
@@ -948,7 +949,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'emmental', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Emmental', fr: 'Emmental' },
     prepNote: { en: 'Grate — melts evenly', fr: 'Râper — fond uniformément' },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'a good handful · grated', noteFR: 'une bonne poignée · râpé' },
     goodEnough: { name: { en: 'Gruyère or Comté', fr: 'Gruyère ou Comté' }, note: { en: 'Better flavour than emmental, same melt. Slightly more expensive but worth it.', fr: "Meilleur goût que l'emmental, même fonte. Légèrement plus cher mais ça vaut le coup." } },
     compromise: { name: { en: 'Any semi-hard melting cheese', fr: 'Tout fromage à pâte semi-dure fondant' }, note: { en: 'Edam, mild gouda, or raclette all work. Avoid anything too strong.', fr: 'Edam, gouda doux ou raclette conviennent. Éviter les fromages trop forts.' } },
   },
@@ -996,7 +997,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'maroilles', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Maroilles (washed-rind cheese)', fr: 'Maroilles' },
     prepNote: { en: 'Slice — strong aroma softens beautifully when baked', fr: 'Trancher — l\'arôme fort s\'adoucit magnifiquement à la cuisson' },
-    qtyPerPizza: { amount: 100, unit: 'g' },
+    qtyPerPizza: { amount: 100, unit: 'g', noteEN: '4–5 slices', noteFR: '4–5 tranches' },
     hardToFind: true,
     goodEnough: { name: { en: 'Munster or any washed-rind cheese', fr: 'Munster ou tout fromage à croûte lavée' } },
     compromise: { name: { en: "Any strong washed-rind cheese — Époisses, Pont-l'Évêque", fr: "Tout fromage à croûte lavée fort — Époisses, Pont-l'Évêque" } },
@@ -1021,7 +1022,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'camembert', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Camembert', fr: 'Camembert' },
     prepNote: { en: 'Slice and distribute — melts into rich pools', fr: 'Trancher et distribuer — fond en flaque crémeuse' },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '4–5 slices', noteFR: '4–5 tranches' },
     goodEnough: { name: { en: 'Brie — same soft-ripened family, melts the same way', fr: 'Brie — même famille à pâte molle, fond pareillement' } },
     compromise: { name: { en: 'Any soft melting cheese', fr: 'Tout fromage fondant à pâte molle' } },
     whereToFind: {
@@ -1043,7 +1044,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'reblochon', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Reblochon', fr: 'Reblochon' },
     prepNote: { en: 'Slice thin — melts into a creamy, rich layer', fr: 'Trancher finement — fond en couche crémeuse et riche' },
-    qtyPerPizza: { amount: 100, unit: 'g' },
+    qtyPerPizza: { amount: 100, unit: 'g', noteEN: '5–6 slices', noteFR: '5–6 tranches' },
     hardToFind: true,
     goodEnough: { name: { en: 'Brie or soft washed-rind cheese', fr: 'Brie ou fromage à croûte lavée moelleux' } },
     compromise: { name: { en: 'Soft Brie — different character but melts similarly', fr: 'Brie moelleux — caractère différent mais fond pareillement' } },
@@ -1061,7 +1062,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'merguez', category: 'meat', bakeOrder: 'before',
     name: { en: 'Merguez sausage', fr: 'Merguez' },
     prepNote: { en: 'Slice thin — spiced lamb sausage with harissa', fr: "Trancher finement — saucisse d'agneau épicée au harissa" },
-    qtyPerPizza: { amount: 100, unit: 'g' },
+    qtyPerPizza: { amount: 100, unit: 'g', noteEN: '2–3 merguez · sliced', noteFR: '2–3 merguez · tranchées' },
     goodEnough: { name: { en: 'Chorizo or spiced lamb sausage', fr: "Chorizo ou saucisse d'agneau épicée" } },
     compromise: { name: { en: 'Spicy Italian sausage — different spice profile', fr: "Saucisse italienne épicée — profil d'épices différent" } },
     localSwap: {
@@ -1079,7 +1080,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'chorizo', category: 'meat', bakeOrder: 'before',
     name: { en: 'Chorizo', fr: 'Chorizo' },
     prepNote: { en: 'Slice thin — Spanish cured pork with paprika', fr: 'Trancher finement — charcuterie espagnole au paprika' },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '10–12 slices', noteFR: '10–12 tranches' },
     goodEnough: { name: { en: 'Pepperoni — similar heat and fat render', fr: 'Pepperoni — chaleur et fonte similaires' } },
     localSwap: {
       singapore: { name: { en: 'Chorizo — Cold Storage or Marketplace', fr: 'Chorizo — Cold Storage ou Marketplace' } },
@@ -1097,7 +1098,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'mixed_peppers', category: 'veg', bakeOrder: 'before',
     name: { en: 'Mixed peppers (roasted)', fr: 'Poivrons mélangés (rôtis)' },
     prepNote: { en: 'Slice and roast at 200°C until soft — or use jarred roasted peppers', fr: "Couper et rôtir à 200°C jusqu'à tendreté — ou utiliser des poivrons en bocal", timing: 25 },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '1 pepper · strips', noteFR: '1 poivron · en lanières' },
     goodEnough: { name: { en: 'Jarred roasted red peppers — excellent substitute', fr: 'Poivrons rouges rôtis en bocal — excellent substitut' } },
   },
 
@@ -1125,7 +1126,7 @@ export const ING: Record<string, Ingredient> = {
       pan:        { en: 'Slice 3–4mm — the lower temperature (230°C) and longer bake give fat time to render. Thicker slices stay juicy.', fr: 'Trancher à 3–4mm — la température plus basse (230°C) et la cuisson plus longue laissent le temps au gras de fondre. Les tranches plus épaisses restent juteuses.', timing: 3 },
       roman:      { en: 'Slice 2–3mm — medium thickness works well for the intermediate oven temperature.', fr: 'Trancher à 2–3mm — l\'épaisseur moyenne convient à la température de four intermédiaire.', timing: 3 },
     },
-    qtyPerPizza: { amount: 60, unit: 'g' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: '6–8 thin slices', noteFR: '6–8 tranches fines' },
     hardToFind: true,
     goodEnough: { name: { en: 'Pancetta or smoked bacon', fr: 'Pancetta ou bacon fumé' } },
     compromise: { name: { en: 'Smoked lardons', fr: 'Lardons fumés' } },
@@ -1145,7 +1146,7 @@ export const ING: Record<string, Ingredient> = {
       neapolitan: { en: 'Add half before baking, half after — at 450°C pecorino browns quickly. The post-bake addition gives fresh sharpness.', fr: 'Ajouter moitié avant, moitié après cuisson — à 450°C le pecorino dore rapidement. L\'ajout après cuisson donne une note fraîche et tranchante.', timing: 3 },
       sourdough:  { en: 'Same as Neapolitan — split between before and after baking.', fr: 'Même que le napolitain — partager entre avant et après cuisson.', timing: 3 },
     },
-    qtyPerPizza: { amount: 30, unit: 'g' },
+    qtyPerPizza: { amount: 30, unit: 'g', noteEN: 'a small handful · grated', noteFR: 'une petite poignée · râpé' },
     goodEnough: { name: { en: 'Aged Pecorino or Parmigiano Reggiano', fr: 'Pecorino affiné ou Parmigiano Reggiano' } },
     whereToFind: {
       singapore: { shops: ['Cold Storage', 'Marketplace', "Ryan's Grocery"], note: 'Grated Pecorino Romano in most Cold Storage locations — DOP label preferred' },
@@ -1160,7 +1161,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'smoked_provola', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Provola affumicata (smoked)', fr: 'Provola affumicata (fumée)' },
     prepNote: { en: 'Slice thin — melts and adds deep smoky flavour', fr: 'Trancher finement — fond en apportant une profonde saveur fumée' },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '4–5 slices', noteFR: '4–5 tranches' },
     hardToFind: true,
     goodEnough: { name: { en: 'Scamorza affumicata', fr: 'Scamorza affumicata' } },
     compromise: { name: { en: 'Smoked mozzarella or smoked cheddar', fr: 'Mozzarella fumée ou cheddar fumé' } },
@@ -1170,7 +1171,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'salsiccia', category: 'meat', bakeOrder: 'before',
     name: { en: 'Italian sausage (salsiccia)', fr: 'Saucisse italienne (salsiccia)' },
     prepNote: { en: 'Remove casing, crumble over pizza before baking', fr: 'Retirer le boyau, émietter sur la pizza avant cuisson', timing: 5 },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'crumble or slice', noteFR: 'émietter ou trancher' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
     goodEnough: { name: { en: 'Any good pork sausage, casing removed', fr: 'Toute bonne saucisse de porc, sans boyau' } },
     whereToFind: {
@@ -1184,7 +1185,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'friarielli', category: 'veg', bakeOrder: 'before',
     name: { en: 'Friarielli (Neapolitan broccoli)', fr: 'Friarielli (brocoli napolitain)' },
     prepNote: { en: "Sauté with garlic and olive oil before adding — do not use raw", fr: "Faire revenir avec ail et huile d'olive avant d'ajouter — ne pas utiliser cru", timing: 15 },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'a small handful · pre-cooked', noteFR: 'une petite poignée · précuit' },
     hardToFind: true,
     goodEnough: { name: { en: 'Cime di rapa (rapini/broccoli rabe)', fr: 'Cime di rapa (brocoli rave)' } },
     compromise: { name: { en: 'Tenderstem broccoli sautéed with chilli and garlic', fr: 'Broccolini sauté avec piment et ail' } },
@@ -1200,7 +1201,7 @@ export const ING: Record<string, Ingredient> = {
     prepNoteByStyle: {
       pan: { en: 'Can add in last 3 min of baking — the thick pan base insulates it. Still best after baking.', fr: 'Peut être ajoutée les 3 dernières min de cuisson — la base épaisse l\'isole. Meilleure après cuisson.', timing: 0 },
     },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '3–4 spoonfuls', noteFR: '3–4 cuillerées' },
     qtyMultiplierByStyle: { roman: 1.2 },
     hardToFind: true,
     goodEnough: { name: { en: 'Burrata cream pulled apart', fr: 'Crème de burrata défaite' } },
@@ -1229,7 +1230,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'pistachios_pesto', category: 'base', bakeOrder: 'before',
     name: { en: 'Pistachio pesto', fr: 'Pesto de pistaches' },
     prepNote: { en: 'Blend pistachios, garlic, olive oil, parmesan — thick consistency', fr: "Mixer pistaches, ail, huile d'olive, parmesan — consistance épaisse", timing: 15 },
-    qtyPerPizza: { amount: 40, unit: 'g' },
+    qtyPerPizza: { amount: 40, unit: 'g', noteEN: '2 tbsp', noteFR: '2 c.à.s.' },
     goodEnough: { name: { en: 'Basil pesto with crushed pistachios added', fr: 'Pesto basilic avec pistaches concassées' } },
     whereToFind: {
       singapore: { shops: ['Phoon Huat', 'Cold Storage', 'Marketplace'], note: 'Raw pistachios for blending at Phoon Huat — make pesto fresh. Jarred pistachio pesto at Culina' },
@@ -1244,14 +1245,14 @@ export const ING: Record<string, Ingredient> = {
     id: 'pistachios_topped', category: 'finish', bakeOrder: 'after',
     name: { en: 'Crushed pistachios', fr: 'Pistaches concassées' },
     prepNote: { en: 'Add after baking for crunch', fr: 'Ajouter après cuisson pour le croquant' },
-    qtyPerPizza: { amount: 20, unit: 'g' },
+    qtyPerPizza: { amount: 20, unit: 'g', noteEN: 'a small handful', noteFR: 'une petite poignée' },
   },
 
   brickCheese: {
     id: 'brick_cheese', category: 'cheese', bakeOrder: 'before',
     name: { en: 'Wisconsin brick cheese', fr: 'Fromage brick du Wisconsin' },
     prepNote: { en: 'Spread to edges — caramelises against the pan for the frico crust', fr: "Étaler jusqu'aux bords — caramélise contre le moule pour le frico croustillant" },
-    qtyPerPizza: { amount: 150, unit: 'g' },
+    qtyPerPizza: { amount: 150, unit: 'g', noteEN: 'grate generously', noteFR: 'râper généreusement' },
     qtyMultiplierByStyle: { pan: 1.0 },
     hardToFind: true,
     goodEnough: { name: { en: 'Low-moisture mozzarella + mild cheddar 50/50', fr: 'Mozzarella faible humidité + cheddar doux 50/50' } },
@@ -1285,7 +1286,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'labneh', category: 'cheese', bakeOrder: 'after',
     name: { en: 'Labneh (strained yogurt)', fr: 'Labneh (yaourt égoutté)' },
     prepNote: { en: 'Dollop after baking — never cook it', fr: 'Déposer en petites boules après cuisson — ne jamais cuire' },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '3–4 dollops', noteFR: '3–4 cuillerées' },
     goodEnough: { name: { en: 'Thick Greek yogurt 10%+ fat', fr: 'Yaourt grec épais 10%+ MG' } },
     whereToFind: {
       singapore: { shops: ['Mustafa Centre', 'Al-Ansar grocery', 'Middle Eastern shops'], online: ['RedMart (Puck brand)'], note: 'Puck cream cheese labneh at Mustafa or online — thick Greek yogurt strained overnight is a great substitute' },
@@ -1336,7 +1337,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'sobrasada', category: 'meat', bakeOrder: 'before',
     name: { en: 'Sobrasada (Mallorcan sausage)', fr: 'Sobrasada (saucisse majorquine)' },
     prepNote: { en: 'Crumble or spread in small pieces — it melts into the dough', fr: 'Émietter ou déposer en petits morceaux — elle fond dans la pâte' },
-    qtyPerPizza: { amount: 50, unit: 'g' },
+    qtyPerPizza: { amount: 50, unit: 'g', noteEN: 'spread or small dollops', noteFR: 'étaler ou déposer en pointes' },
     hardToFind: true,
     goodEnough: { name: { en: 'Nduja — similar spreadable spicy format', fr: 'Nduja — format tartinable épicé similaire' } },
     compromise: { name: { en: 'Chorizo paste crumbled', fr: 'Pâte de chorizo émiettée' } },
@@ -1424,7 +1425,7 @@ export const ING: Record<string, Ingredient> = {
       neapolitan: { en: 'Add after baking only — 450°C will burn it instantly. Dollop while the pizza is still hot.', fr: 'Ajouter après cuisson uniquement — 450°C le brûlerait instantanément. Déposer pendant que la pizza est encore chaude.', timing: 0 },
       sourdough:  { en: 'Add after baking — high heat burns stracchino. Dollop on the hot pizza.', fr: 'Ajouter après cuisson — la chaleur brûle le stracchino. Déposer sur la pizza chaude.', timing: 0 },
     },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '4 dollops', noteFR: '4 cuillerées' },
     hardToFind: true,
     goodEnough: { name: { en: 'Taleggio — similar soft melting character', fr: 'Taleggio — même caractère fondant doux' } },
     compromise: { name: { en: 'Brie centre without rind + squeeze of lemon', fr: 'Intérieur de brie sans croûte + trait de citron' } },
@@ -1453,7 +1454,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'octopus', category: 'seafood', bakeOrder: 'before',
     name: { en: 'Octopus (cooked, sliced)', fr: 'Poulpe (cuit, tranché)' },
     prepNote: { en: 'Must be pre-cooked tender before adding — raw octopus will not cook through on pizza', fr: "Doit être précuit et tendre avant d'ajouter — le poulpe cru ne cuira pas assez sur la pizza", timing: 60 },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: '4–5 pieces', noteFR: '4–5 morceaux' },
     hardToFind: false,
     goodEnough: { name: { en: 'Calamari rings (pre-cooked)', fr: 'Rondelles de calamar (précuites)' } },
   },
@@ -1494,7 +1495,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'kimchi', category: 'veg', bakeOrder: 'after',
     name: { en: 'Kimchi', fr: 'Kimchi' },
     prepNote: { en: 'Add after baking — cooking kimchi loses its probiotic character and becomes too sour', fr: 'Ajouter après cuisson — cuire le kimchi perd son caractère probiotique et devient trop acide' },
-    qtyPerPizza: { amount: 60, unit: 'g' },
+    qtyPerPizza: { amount: 60, unit: 'g', noteEN: 'a small handful · drained', noteFR: 'une petite poignée · égouttée' },
     localSwap: {
       singapore: { name: { en: 'Korean kimchi widely available at NTUC FairPrice, Don Don Donki', fr: 'Kimchi coréen disponible chez NTUC FairPrice, Don Don Donki' } },
     },
@@ -1556,7 +1557,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'duck_confit', category: 'meat', bakeOrder: 'before',
     name: { en: 'Duck confit (shredded)', fr: 'Confit de canard (effiloché)' },
     prepNote: { en: "Shred and remove excess fat before adding", fr: "Effilocher et retirer l'excès de gras avant d'ajouter", timing: 10 },
-    qtyPerPizza: { amount: 80, unit: 'g' },
+    qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'shred by hand', noteFR: 'effilocher à la main' },
     hardToFind: false,
     compromise: { name: { en: 'Slow-cooked duck leg, shredded', fr: 'Cuisse de canard mijotée, effilochée' } },
     goodEnough: {
@@ -1575,7 +1576,7 @@ export const ING: Record<string, Ingredient> = {
     id: 'foie_gras', category: 'meat', bakeOrder: 'after',
     name: { en: 'Foie gras (sliced)', fr: 'Foie gras (tranché)' },
     prepNote: { en: 'Add immediately after baking — it just needs to warm through', fr: 'Ajouter immédiatement après cuisson — il a juste besoin de se réchauffer' },
-    qtyPerPizza: { amount: 40, unit: 'g' },
+    qtyPerPizza: { amount: 40, unit: 'g', noteEN: '2 thin slices', noteFR: '2 tranches fines' },
     hardToFind: true,
     compromise: { name: { en: 'Good duck liver pâté', fr: 'Bonne terrine de foie de canard' } },
     whereToFind: {
@@ -3657,7 +3658,7 @@ export const PIZZAS: Pizza[] = [
           fr: 'Déveiné et bien séché. Mariner 5 min dans sauce poisson + poivre blanc. Placer crus sur la pizza — ils cuisent parfaitement au four.',
           timing: 5,
         },
-        qtyPerPizza: { amount: 120, unit: 'g' },
+        qtyPerPizza: { amount: 120, unit: 'g', noteEN: '5–6 medium prawns', noteFR: '5–6 crevettes moyennes' },
         goodEnough: { name: { en: 'Frozen tiger prawns, thawed and patted dry', fr: 'Crevettes tigre surgelées, décongelées et séchées' } },
         whereToFind: {
           singapore: { shops: ['FairPrice', 'Sheng Siong', 'Wet market', 'Cold Storage'], note: 'Fresh tiger prawns at wet market — best quality and price' },
@@ -3793,7 +3794,7 @@ export const PIZZAS: Pizza[] = [
         id: 'red_onion_raw', category: 'finish', bakeOrder: 'after',
         name: { en: 'Red onion (thinly sliced)', fr: 'Oignon rouge (finement tranché)' },
         prepNote: { en: 'Add raw after baking for bite and colour.', fr: 'Ajouter cru après cuisson pour du croquant et de la couleur.' },
-        qtyPerPizza: { amount: 30, unit: 'g' },
+        qtyPerPizza: { amount: 30, unit: 'g', noteEN: 'a few rings', noteFR: 'quelques rondelles' },
         isCommonPantry: true,
       },
       {
@@ -3935,7 +3936,7 @@ export const PIZZAS: Pizza[] = [
           fr: 'Déveiné, sécher, assaisonner avec sauce poisson. Placer crus — cuisent parfaitement au four.',
           timing: 5,
         },
-        qtyPerPizza: { amount: 120, unit: 'g' },
+        qtyPerPizza: { amount: 120, unit: 'g', noteEN: '5–6 medium prawns', noteFR: '5–6 crevettes moyennes' },
         goodEnough: { name: { en: 'Frozen tiger prawns, thawed', fr: 'Crevettes tigre surgelées, décongelées' } },
         whereToFind: {
           singapore: { shops: ['Wet market', 'FairPrice', 'Sheng Siong'] },
