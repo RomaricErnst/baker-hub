@@ -22,6 +22,7 @@ interface BakeGuideProps {
   units?: UnitSystem;
   locale?: string;
   onNavigateToPizzaParty?: () => void;
+  recipe?: import('../utils').RecipeResult | null;
 }
 
 // ── Design tokens ────────────────────────────────────
@@ -500,7 +501,7 @@ const TERM_TO_STEPID: Record<string, string> = {
 export default function BakeGuide({
   schedule, mixerType, styleKey, kitchenTemp, numItems,
   prefermentType, oil, hydration, ovenType, prefStartTime, feedTime, units, locale,
-  onNavigateToPizzaParty,
+  onNavigateToPizzaParty, recipe,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
   const l = locale === 'fr' ? 'fr' : 'en';
@@ -536,6 +537,22 @@ export default function BakeGuide({
   const hasCold       = (schedule.coldRetardHours ?? 0) > 0;
   const extraBalls    = Math.max(0, numItems - 4);
   const divideMin     = 15 + 2 * extraBalls;
+
+  // Recipe quantity helpers — used in mixing order steps
+  const bgMainFlour = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalFlour : recipe.flour) : null;
+  const bgMainWater = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalWater : recipe.water) : null;
+  const bgWater90   = bgMainWater ? Math.round(bgMainWater * 0.9) : null;
+  const bgWater10   = bgMainWater ? bgMainWater - (bgWater90 ?? 0) : null;
+  const bgSaltG     = recipe ? Math.round(recipe.salt) : null;
+  const bgYeastG    = recipe?.yeast?.grams ? recipe.yeast.grams.toFixed(1) : null;
+  const bgPoolishG  = recipe?.preferment
+    ? Math.round((recipe.preferment.prefFlour ?? 0) + (recipe.preferment.prefWater ?? 0) + (recipe.preferment.prefYeastGrams ?? 0))
+    : null;
+  const bgFlour90Label = bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%)` : 'Flour + 90% of your water';
+  const bgSaltLabel    = bgSaltG ? `Add salt (${bgSaltG}g)` : 'Add salt';
+  const bgYeastLabel   = bgYeastG ? `Add yeast (${bgYeastG}g)` : 'Add yeast';
+  const bgWater10Label = bgWater10 ? `Add remaining water (${bgWater10}g)` : 'Add remaining 10% water';
+  const bgPoolishLabel = bgPoolishG ? `Add your ${prefermentType} (${bgPoolishG}g total)` : `Add your ${prefermentType} (all of it)`;
 
   let stepNum = 0;
   let lastStep = 0;
@@ -582,6 +599,20 @@ export default function BakeGuide({
         <StepCard number={n()} {...sc()} icon={<IconPreferment />}
           title={isPoolish ? t('stepTitles.makePoolish') : t('stepTitles.makeBiga')}
           time={prefStartTime} accent={D.gold}>
+
+          {recipe?.preferment && (() => {
+            const { prefFlour, prefWater, prefYeastGrams } = recipe.preferment!;
+            const parts = [
+              `${Math.round(prefFlour)}g flour`,
+              `${Math.round(prefWater)}g water`,
+              prefYeastGrams > 0 ? `${prefYeastGrams.toFixed(1)}g ${prefermentType ?? 'yeast'}` : null,
+            ].filter(Boolean).join(' · ');
+            return (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: D.smoke, marginBottom: '.5rem' }}>
+                {parts}
+              </div>
+            );
+          })()}
 
           <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
             {isPoolish ? (
@@ -633,23 +664,23 @@ export default function BakeGuide({
           {mixerType === 'hand' && !isSourdough && (
             <Steps items={hydration > 70 ? [
               // >70%: autolyse, then yeast+salt, brief knead, then bassinage, then full knead
-              { bold: 'Flour + 90% of your water', note: 'mix until no dry flour — ~2 min' },
+              { bold: bgFlour90Label, note: 'mix until no dry flour — ~2 min' },
               { bold: 'Cover and rest 20 min', note: 'autolyse — gluten forms without kneading' },
-              { bold: 'Add yeast', note: 'mix to combine — 2 min' },
-              { bold: 'Add salt', note: 'mix until absorbed — 2 min' },
-              ...(hasPref ? [{ bold: `Add your ${prefermentType} (all of it)`, note: 'mix until fully incorporated' }] : []),
+              { bold: bgYeastLabel, note: 'mix to combine — 2 min' },
+              { bold: bgSaltLabel, note: 'mix until absorbed — 2 min' },
+              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'mix until fully incorporated' }] : []),
               { bold: 'Knead 5 min to build base structure', note: 'dough should feel cohesive before adding remaining water' },
-              { bold: 'Add remaining 10% water gradually', note: 'bassinage — small splash at a time, knead until absorbed, repeat' },
+              { bold: bgWater10 ? `Add remaining water (${bgWater10}g) gradually` : 'Add remaining 10% water gradually', note: 'bassinage — small splash at a time, knead until absorbed, repeat' },
               ...(oil > 0 ? [{ bold: 'Add oil last', note: 'mix 1 min — oil added late preserves gluten' }] : []),
               { bold: 'Continue kneading until smooth and elastic', note: 'windowpane test — typically 5–8 min more' },
             ] : [
               // ≤70%: autolyse, yeast, salt, remaining water, then full knead
-              { bold: 'Flour + 90% of your water', note: 'mix until no dry flour — ~2 min' },
+              { bold: bgFlour90Label, note: 'mix until no dry flour — ~2 min' },
               { bold: 'Cover and rest 20 min', note: 'autolyse — gluten forms without kneading' },
-              { bold: 'Add yeast', note: 'mix to combine — 2 min' },
-              { bold: 'Add salt', note: 'mix until absorbed — 2 min' },
-              ...(hasPref ? [{ bold: `Add your ${prefermentType} (all of it)`, note: 'mix until fully incorporated' }] : []),
-              { bold: 'Add remaining 10% water', note: 'mix until absorbed — ~1 min' },
+              { bold: bgYeastLabel, note: 'mix to combine — 2 min' },
+              { bold: bgSaltLabel, note: 'mix until absorbed — 2 min' },
+              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'mix until fully incorporated' }] : []),
+              { bold: bgWater10Label, note: 'mix until absorbed — ~1 min' },
               ...(oil > 0 ? [{ bold: 'Add oil last', note: 'mix 1 min — oil added late preserves gluten' }] : []),
               { bold: 'Knead 8–12 min until smooth and elastic', note: 'windowpane test' },
             ]} />
@@ -657,21 +688,21 @@ export default function BakeGuide({
           {mixerType === 'stand' && !isSourdough && (
             <Steps items={hydration > 70 ? [
               // >70%: build structure first, then bassinage, then final Speed 2
-              { bold: 'Flour + 90% of water', note: 'Speed 1, 2 min to combine' },
-              ...(hasPref ? [{ bold: `Add ${prefermentType}`, note: 'Speed 1, mix until incorporated' }] : []),
-              { bold: 'Add yeast', note: 'Speed 1, 2 min' },
-              { bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
+              { bold: bgFlour90Label, note: 'Speed 1, 2 min to combine' },
+              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
+              { bold: bgYeastLabel, note: 'Speed 1, 2 min' },
+              { bold: bgSaltLabel, note: 'Speed 1, 2 min until absorbed' },
               { bold: 'Speed 2 — 4–5 min', note: 'build gluten structure before adding remaining water' },
-              { bold: 'Add remaining 10% water gradually at Speed 2', note: 'bassinage — small additions, wait for absorption between each' },
+              { bold: bgWater10 ? `Add remaining water (${bgWater10}g) gradually at Speed 2` : 'Add remaining 10% water gradually at Speed 2', note: 'bassinage — small additions, wait for absorption between each' },
               { bold: 'Continue Speed 2', note: 'until dough clears the bowl — windowpane test' },
               ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
             ] : [
               // ≤70%: remaining water before Speed 2
-              { bold: 'Flour + 90% of water', note: 'Speed 1, 2 min to combine' },
-              ...(hasPref ? [{ bold: `Add ${prefermentType}`, note: 'Speed 1, mix until incorporated' }] : []),
-              { bold: 'Add yeast', note: 'Speed 1, 2 min' },
-              { bold: 'Add salt', note: 'Speed 1, 2 min until absorbed' },
-              { bold: 'Add remaining 10% water', note: 'Speed 1, mix until absorbed — ~1 min' },
+              { bold: bgFlour90Label, note: 'Speed 1, 2 min to combine' },
+              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
+              { bold: bgYeastLabel, note: 'Speed 1, 2 min' },
+              { bold: bgSaltLabel, note: 'Speed 1, 2 min until absorbed' },
+              { bold: bgWater10Label, note: 'Speed 1, mix until absorbed — ~1 min' },
               { bold: 'Speed 2 — 6–10 min', note: 'until dough clears the bowl — windowpane test' },
               ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
             ]} />
@@ -680,18 +711,18 @@ export default function BakeGuide({
             <>
               <Steps items={hydration > 70 ? [
                 // >70%: pumpkin first, bassinage after
-                { bold: 'Flour + 90% water + yeast', note: 'Speed 1, 3 min to combine' },
-                ...(hasPref ? [{ bold: `Add ${prefermentType}`, note: 'Speed 1, mix until incorporated' }] : []),
-                { bold: 'Add salt', note: 'Speed 1, 2 min' },
+                { bold: bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%) + yeast` : 'Flour + 90% water + yeast', note: 'Speed 1, 3 min to combine' },
+                ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
+                { bold: bgSaltLabel, note: 'Speed 1, 2 min' },
                 { bold: 'Speed 2 until pumpkin shape forms', note: `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
-                { bold: 'Once pumpkin is stable — add remaining 10% water gradually', note: 'bassinage — small additions, wait for pumpkin to reform each time' },
+                { bold: bgWater10 ? `Once pumpkin is stable — add remaining water (${bgWater10}g) gradually` : 'Once pumpkin is stable — add remaining 10% water gradually', note: 'bassinage — small additions, wait for pumpkin to reform each time' },
                 ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
               ] : [
                 // ≤70%: remaining water before Speed 2
-                { bold: 'Flour + 90% water + yeast', note: 'Speed 1, 3 min to combine' },
-                ...(hasPref ? [{ bold: `Add ${prefermentType}`, note: 'Speed 1, mix until incorporated' }] : []),
-                { bold: 'Add salt', note: 'Speed 1, 2 min' },
-                { bold: 'Add remaining 10% water', note: 'Speed 1, mix until absorbed — ~1 min' },
+                { bold: bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%) + yeast` : 'Flour + 90% water + yeast', note: 'Speed 1, 3 min to combine' },
+                ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
+                { bold: bgSaltLabel, note: 'Speed 1, 2 min' },
+                { bold: bgWater10Label, note: 'Speed 1, mix until absorbed — ~1 min' },
                 { bold: 'Speed 2 until pumpkin shape forms', note: `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
                 ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
               ]} />
@@ -703,15 +734,15 @@ export default function BakeGuide({
           {mixerType === 'no_knead' && (
             <Steps items={[
               { bold: 'Combine all ingredients including salt', note: 'mix just until no dry flour remains — ~2 min' },
-              ...(hasPref ? [{ bold: `Add ${prefermentType}`, note: 'mix until incorporated' }] : []),
+              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'mix until incorporated' }] : []),
               { bold: 'Cover and rest', note: 'stretch & folds every 30 min for the first 2 hours' },
             ]} />
           )}
           {isSourdough && (
             <Steps items={[
-              { bold: 'Flour + 90% of water', note: 'mix 2 min until no dry flour' },
+              { bold: bgFlour90Label, note: 'mix 2 min until no dry flour' },
               { bold: 'Add your starter at peak', note: 'mix to combine' },
-              { bold: 'Add salt + remaining 10% water', note: 'mix until fully absorbed' },
+              { bold: bgSaltG && bgWater10 ? `Add salt (${bgSaltG}g) + remaining water (${bgWater10}g)` : 'Add salt + remaining 10% water', note: 'mix until fully absorbed' },
               ...(oil > 0 ? [{ bold: 'Add oil last', note: 'preserves gluten structure' }] : []),
             ]} />
           )}
@@ -719,6 +750,7 @@ export default function BakeGuide({
 
         <Section icon="🌡️" title={t('sectionTitles.waterTemp')}>
           <Bullets items={[
+            ...(recipe?.waterTemp != null ? [`Water temperature: ${Math.round(recipe.waterTemp)}°C`] : []),
             `Target Final Dough Temperature (FDT): ${isNeapolitan ? tempC(23, u) : tempC(24, u)}`,
             ...(t.raw('mix.waterTempBullets') as string[]),
             `FDT above ${tempC(28, u)}: refrigerate dough for 15 min before bulk fermentation`,
