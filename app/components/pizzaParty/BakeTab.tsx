@@ -525,21 +525,46 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
                   </div>
                   {beforeIngredients.map((ing, i) => (
                     <div key={ing.id} style={{
-                      display: 'flex', alignItems: 'center', minHeight: '48px', padding: '0 16px',
-                      borderBottom: i < beforeIngredients.length - 1 ? '1px solid var(--border)' : undefined,
+                      display: 'flex', flexDirection: 'column',
+                      padding: '10px 16px',
+                      borderBottom: i < beforeIngredients.length - 1
+                        ? '1px solid var(--border)' : undefined,
+                      gap: '2px',
                     }}>
-                      <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '15px', fontWeight: 600, color: 'var(--char)', flex: 1 }}>
+                      {/* Ingredient name — full width, no competition */}
+                      <span style={{
+                        fontFamily: 'Playfair Display, serif',
+                        fontSize: '15px', fontWeight: 600,
+                        color: 'var(--char)',
+                      }}>
                         {ing.name[l]}
                       </span>
+                      {/* Qty + hint — right-aligned below name */}
                       {ing.qtyPerPizza && (
-                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px' }}>
-                          <span>{ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}</span>
-                          {(l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN) && (
-                            <span style={{ fontSize: '11px', color: 'var(--smoke)', opacity: 0.75, fontStyle: 'italic' }}>
-                              {l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN}
+                        <div style={{
+                          display: 'flex', flexDirection: 'column',
+                          alignItems: 'flex-end', gap: '1px',
+                        }}>
+                          <span style={{
+                            fontFamily: 'var(--font-dm-mono)',
+                            fontSize: '12px', color: 'var(--smoke)',
+                          }}>
+                            {ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}
+                          </span>
+                          {(l === 'fr'
+                            ? ing.qtyPerPizza.noteFR
+                            : ing.qtyPerPizza.noteEN) && (
+                            <span style={{
+                              fontFamily: 'var(--font-dm-mono)',
+                              fontSize: '11px', color: 'var(--smoke)',
+                              opacity: 0.70, fontStyle: 'italic',
+                            }}>
+                              {l === 'fr'
+                                ? ing.qtyPerPizza.noteFR
+                                : ing.qtyPerPizza.noteEN}
                             </span>
                           )}
-                        </span>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -557,21 +582,46 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
                   </div>
                   {afterIngredients.map((ing, i) => (
                     <div key={ing.id} style={{
-                      display: 'flex', alignItems: 'center', minHeight: '48px', padding: '0 16px',
-                      borderBottom: i < afterIngredients.length - 1 ? '1px solid var(--border)' : undefined,
+                      display: 'flex', flexDirection: 'column',
+                      padding: '10px 16px',
+                      borderBottom: i < afterIngredients.length - 1
+                        ? '1px solid var(--border)' : undefined,
+                      gap: '2px',
                     }}>
-                      <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '15px', fontWeight: 600, color: 'var(--char)', flex: 1 }}>
+                      {/* Ingredient name — full width, no competition */}
+                      <span style={{
+                        fontFamily: 'Playfair Display, serif',
+                        fontSize: '15px', fontWeight: 600,
+                        color: 'var(--char)',
+                      }}>
                         {ing.name[l]}
                       </span>
+                      {/* Qty + hint — right-aligned below name */}
                       {ing.qtyPerPizza && (
-                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px' }}>
-                          <span>{ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}</span>
-                          {(l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN) && (
-                            <span style={{ fontSize: '11px', color: 'var(--smoke)', opacity: 0.75, fontStyle: 'italic' }}>
-                              {l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN}
+                        <div style={{
+                          display: 'flex', flexDirection: 'column',
+                          alignItems: 'flex-end', gap: '1px',
+                        }}>
+                          <span style={{
+                            fontFamily: 'var(--font-dm-mono)',
+                            fontSize: '12px', color: 'var(--smoke)',
+                          }}>
+                            {ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}
+                          </span>
+                          {(l === 'fr'
+                            ? ing.qtyPerPizza.noteFR
+                            : ing.qtyPerPizza.noteEN) && (
+                            <span style={{
+                              fontFamily: 'var(--font-dm-mono)',
+                              fontSize: '11px', color: 'var(--smoke)',
+                              opacity: 0.70, fontStyle: 'italic',
+                            }}>
+                              {l === 'fr'
+                                ? ing.qtyPerPizza.noteFR
+                                : ing.qtyPerPizza.noteEN}
                             </span>
                           )}
-                        </span>
+                        </div>
                       )}
                     </div>
                   ))}

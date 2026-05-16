@@ -261,7 +261,7 @@ export const ING: Record<string, Ingredient> = {
       sourdough:  { en: 'Dice or tear into small pieces — same approach as Neapolitan.', fr: 'Couper en dés ou déchirer — même approche que le napolitain.', timing: 5 },
       pizza_romana: { en: 'Slice thin or dice — do not grate for Pizza Romana.', fr: 'Trancher finement ou couper en dés — ne pas râper pour la Pizza Romana.', timing: 5 },
     },
-    qtyPerPizza: { amount: 100, unit: 'g', noteEN: 'dice 1–2cm, tear or grate depending on style — see prep note', noteFR: 'dés 1–2cm, déchirer ou râper selon le style — voir prep' },
+    qtyPerPizza: { amount: 100, unit: 'g', noteEN: 'dice 1–2cm, tear or grate depending on style', noteFR: 'dés 1–2cm, déchirer ou râper selon le style' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.5 },
     goodEnough: {
       name: { en: 'Block mozzarella (any brand)', fr: 'Mozzarella en bloc (toute marque)' },
