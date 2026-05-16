@@ -374,7 +374,7 @@ function CoachButton({
     <div style={{ marginTop: '14px' }}>
       <input
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         style={{ display: 'none' }}
         ref={fileInputRef}
         onChange={handleFile}

@@ -12,6 +12,8 @@ interface BakeTabProps {
   selectedPizzas: Record<string, number>;
   locale: string;
   styleKey?: string;
+  kitchenTemp?: number;
+  prefermentType?: string;
   bakeEventId?: string | null;
   ovenType?: string;
   onEnsureBakeEvent?: () => Promise<string | null>;
@@ -47,11 +49,12 @@ const MAESTRO_CONTENT_BT: Record<string, {
 };
 
 function CoachButton({
-  stepId, styleKey, kitchenTemp, locale, ovenType, pizzaName,
+  stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName,
 }: {
   stepId: string;
   styleKey: string;
   kitchenTemp: number;
+  prefermentType?: string;
   locale: string;
   ovenType?: string;
   pizzaName?: string;
@@ -66,8 +69,6 @@ function CoachButton({
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    const ALLOWED = ['image/jpeg','image/png','image/webp','image/heic','image/heif'];
-    if (!ALLOWED.includes(file.type)) return;
     setLoading(true); setFeedback(null); setError(false);
     try {
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -76,26 +77,33 @@ function CoachButton({
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
+      const mimeType = file.type;
+
       const res = await fetch('/api/bake-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           imageBase64: base64,
-          mimeType: (file.type === 'image/heic' || file.type === 'image/heif') ? 'image/jpeg' : file.type,
-          stepId, styleKey, kitchenTemp, locale, ovenType, pizzaName,
+          mimeType,
+          stepId, styleKey, kitchenTemp,
+          prefermentType, locale, ovenType, pizzaName,
         }),
       });
       const data = await res.json();
-      if (data.feedback) setFeedback(data.feedback); else setError(true);
-    } catch { setError(true); }
-    finally { setLoading(false); }
+      if (data.feedback) setFeedback(data.feedback);
+      else setError(true);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (!COACH_STEPS_BT.has(stepId)) return null;
 
   return (
     <div style={{ marginTop: '14px', marginBottom: '4px' }}>
-      <input type="file" accept="image/*"
+      <input type="file" accept="image/jpeg,image/png,image/webp"
         style={{ display: 'none' }} ref={fileInputRef} onChange={handleFile} />
 
       {MAESTRO_CONTENT_BT[stepId]?.question && (
@@ -144,7 +152,7 @@ function CoachButton({
   );
 }
 
-export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange }: BakeTabProps) {
+export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
@@ -723,7 +731,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, bakeEventId,
                         <CoachButton
                           stepId="pizza_maestro"
                           styleKey={styleKey ?? 'neapolitan'}
-                          kitchenTemp={22}
+                          kitchenTemp={kitchenTemp ?? 22}
+                          prefermentType={prefermentType}
                           locale={l}
                           ovenType={ovenType}
                           pizzaName={pizza.name[l]}
