@@ -71,13 +71,31 @@ function CoachButton({
     if (!file) return;
     setLoading(true); setFeedback(null); setError(false);
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+      // Resize to max 1024px before encoding — keeps payload
+      // under Vercel's 4.5MB limit regardless of photo size
+      const resized = await new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          const MAX = 1024;
+          const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('Canvas unavailable')); return; }
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.onerror = reject;
+        img.src = objectUrl;
       });
-      const mimeType = file.type;
+
+      const base64 = resized.split(',')[1];
+      const mimeType = 'image/jpeg';
 
       const res = await fetch('/api/bake-coach', {
         method: 'POST',
@@ -85,10 +103,16 @@ function CoachButton({
         body: JSON.stringify({
           imageBase64: base64,
           mimeType,
-          stepId, styleKey, kitchenTemp,
-          prefermentType, locale, ovenType, pizzaName,
+          stepId,
+          styleKey,
+          kitchenTemp,
+          prefermentType,
+          locale,
+          ovenType,
+          pizzaName,
         }),
       });
+
       const data = await res.json();
       if (data.feedback) setFeedback(data.feedback);
       else setError(true);

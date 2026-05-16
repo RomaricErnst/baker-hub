@@ -307,37 +307,31 @@ function CoachButton({
     setError(false);
 
     try {
-      let base64: string;
-      let mimeType: string;
-
-      if (file.type === 'image/heic' || file.type === 'image/heif') {
+      // Resize to max 1024px before encoding — keeps payload
+      // under Vercel's 4.5MB limit regardless of photo size
+      const resized = await new Promise<string>((resolve, reject) => {
+        const img = new Image();
         const objectUrl = URL.createObjectURL(file);
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) { reject(new Error('Canvas not available')); return; }
-            ctx.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL('image/jpeg', 0.92));
-          };
-          img.onerror = reject;
-          img.src = objectUrl;
-        });
-        URL.revokeObjectURL(objectUrl);
-        base64 = dataUrl.split(',')[1];
-        mimeType = 'image/jpeg';
-      } else {
-        base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve((reader.result as string).split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        mimeType = file.type;
-      }
+        img.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          const MAX = 1024;
+          const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('Canvas unavailable')); return; }
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.onerror = reject;
+        img.src = objectUrl;
+      });
+
+      const base64 = resized.split(',')[1];
+      const mimeType = 'image/jpeg';
 
       const res = await fetch('/api/bake-coach', {
         method: 'POST',
