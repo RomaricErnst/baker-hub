@@ -666,7 +666,7 @@ export default function BakeGuide({
               // >70%: autolyse, then yeast+salt, brief knead, then bassinage, then full knead
               { bold: bgFlour90Label, note: 'mix until no dry flour — ~2 min' },
               { bold: 'Cover and rest 20 min', note: 'autolyse — gluten forms without kneading' },
-              { bold: bgYeastLabel, note: 'mix to combine — 2 min' },
+              ...(!hasPref ? [{ bold: bgYeastLabel, note: 'mix to combine — 2 min' }] : []),
               { bold: bgSaltLabel, note: 'mix until absorbed — 2 min' },
               ...(hasPref ? [{ bold: bgPoolishLabel, note: 'mix until fully incorporated' }] : []),
               { bold: 'Knead 5 min to build base structure', note: 'dough should feel cohesive before adding remaining water' },
@@ -677,7 +677,7 @@ export default function BakeGuide({
               // ≤70%: autolyse, yeast, salt, remaining water, then full knead
               { bold: bgFlour90Label, note: 'mix until no dry flour — ~2 min' },
               { bold: 'Cover and rest 20 min', note: 'autolyse — gluten forms without kneading' },
-              { bold: bgYeastLabel, note: 'mix to combine — 2 min' },
+              ...(!hasPref ? [{ bold: bgYeastLabel, note: 'mix to combine — 2 min' }] : []),
               { bold: bgSaltLabel, note: 'mix until absorbed — 2 min' },
               ...(hasPref ? [{ bold: bgPoolishLabel, note: 'mix until fully incorporated' }] : []),
               { bold: bgWater10Label, note: 'mix until absorbed — ~1 min' },
@@ -689,9 +689,9 @@ export default function BakeGuide({
             <Steps items={hydration > 70 ? [
               // >70%: build structure first, then bassinage, then final Speed 2
               { bold: bgFlour90Label, note: 'Speed 1, 2 min to combine' },
-              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
-              { bold: bgYeastLabel, note: 'Speed 1, 2 min' },
+              ...(!hasPref ? [{ bold: bgYeastLabel, note: 'Speed 1, 2 min' }] : []),
               { bold: bgSaltLabel, note: 'Speed 1, 2 min until absorbed' },
+              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
               { bold: 'Speed 2 — 4–5 min', note: 'build gluten structure before adding remaining water' },
               { bold: bgWater10 ? `Add remaining water (${bgWater10}g) gradually at Speed 2` : 'Add remaining 10% water gradually at Speed 2', note: 'bassinage — small additions, wait for absorption between each' },
               { bold: 'Continue Speed 2', note: 'until dough clears the bowl — windowpane test' },
@@ -699,9 +699,9 @@ export default function BakeGuide({
             ] : [
               // ≤70%: remaining water before Speed 2
               { bold: bgFlour90Label, note: 'Speed 1, 2 min to combine' },
-              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
-              { bold: bgYeastLabel, note: 'Speed 1, 2 min' },
+              ...(!hasPref ? [{ bold: bgYeastLabel, note: 'Speed 1, 2 min' }] : []),
               { bold: bgSaltLabel, note: 'Speed 1, 2 min until absorbed' },
+              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
               { bold: bgWater10Label, note: 'Speed 1, mix until absorbed — ~1 min' },
               { bold: 'Speed 2 — 6–10 min', note: 'until dough clears the bowl — windowpane test' },
               ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
@@ -711,7 +711,7 @@ export default function BakeGuide({
             <>
               <Steps items={hydration > 70 ? [
                 // >70%: pumpkin first, bassinage after
-                { bold: bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%) + yeast` : 'Flour + 90% water + yeast', note: 'Speed 1, 3 min to combine' },
+                { bold: bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%)${!hasPref ? ' + yeast' : ''}` : 'Flour + 90% of your water', note: 'Speed 1, 3 min to combine' },
                 ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
                 { bold: bgSaltLabel, note: 'Speed 1, 2 min' },
                 { bold: 'Speed 2 until pumpkin shape forms', note: `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
@@ -719,7 +719,7 @@ export default function BakeGuide({
                 ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
               ] : [
                 // ≤70%: remaining water before Speed 2
-                { bold: bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%) + yeast` : 'Flour + 90% water + yeast', note: 'Speed 1, 3 min to combine' },
+                { bold: bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%)${!hasPref ? ' + yeast' : ''}` : 'Flour + 90% of your water', note: 'Speed 1, 3 min to combine' },
                 ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
                 { bold: bgSaltLabel, note: 'Speed 1, 2 min' },
                 { bold: bgWater10Label, note: 'Speed 1, mix until absorbed — ~1 min' },

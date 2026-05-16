@@ -614,7 +614,7 @@ export default function Timeline({
                   const parts = [
                     `${Math.round(prefFlour)}g flour`,
                     `${Math.round(prefWater)}g water`,
-                    prefYeastGrams > 0 ? `${prefYeastGrams.toFixed(1)}g ${prefermentType ?? 'yeast'}` : null,
+                    prefYeastGrams > 0 ? `${prefYeastGrams.toFixed(1)}g yeast` : null,
                   ].filter(Boolean).join(' · ');
                   return (
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)', marginBottom: '.4rem' }}>
@@ -658,6 +658,18 @@ export default function Timeline({
                   const yeastLabel = yeastG ? `Add yeast (${yeastG}g)` : 'Add yeast';
                   const water10Label = water10 ? `Add remaining water (${water10}g)` : 'Add remaining 10% water';
 
+                  const poolishG = recipe?.preferment
+                    ? Math.round(
+                        (recipe.preferment.prefFlour ?? 0) +
+                        (recipe.preferment.prefWater ?? 0) +
+                        (recipe.preferment.prefYeastGrams ?? 0)
+                      )
+                    : null;
+                  const poolishLabel = poolishG
+                    ? `Add ${prefermentType ?? 'poolish'} (${poolishG}g total)`
+                    : `Add ${prefermentType ?? 'poolish'} (all of it)`;
+                  const hasPref = !!recipe?.preferment;
+
                   type SeqItem =
                     | { kind: 'step'; iconKey: string; bold: string; note: string; noteNode?: React.ReactNode; term?: string }
                     | { kind: 'rest'; label: string; note: string; noteNode?: React.ReactNode; term?: string };
@@ -675,8 +687,9 @@ export default function Timeline({
                     sequence = [
                       { kind: 'step', iconKey: 'water', bold: flour90Label, note: 'mix until no dry flour remains, ~2 min' },
                       { kind: 'rest', label: 'Cover and rest 20 min', note: 'flour absorbs water naturally, reduces kneading time', term: 'autolyse' },
-                      { kind: 'step', iconKey: 'yeast', bold: yeastLabel, note: 'mix to combine, 2 min' },
+                      ...(!hasPref ? [{ kind: 'step' as const, iconKey: 'yeast', bold: yeastLabel, note: 'mix to combine, 2 min' }] : []),
                       { kind: 'step', iconKey: 'salt', bold: saltLabel, note: 'mix until absorbed, 2 min' },
+                      ...(hasPref ? [{ kind: 'step' as const, iconKey: 'starter', bold: poolishLabel, note: 'mix until fully incorporated' }] : []),
                       ...(showBassinage
                         ? [{ kind: 'step' as const, iconKey: 'water', bold: water10 ? `Add remaining water (${water10}g) gradually` : 'Add remaining 10% water gradually', note: 'bassinage — small additions, wait for absorption between each', term: 'bassinage' }]
                         : [{ kind: 'step' as const, iconKey: 'water', bold: water10Label, note: 'mix until absorbed, ~1 min' }]
@@ -688,8 +701,9 @@ export default function Timeline({
                     sequence = showBassinage ? [
                       // >70% hydration: build structure first, then bassinage at Speed 2
                       { kind: 'step', iconKey: 'water', bold: flour90Label, note: 'Speed 1, 2 min to combine' },
-                      { kind: 'step', iconKey: 'yeast', bold: yeastLabel, note: 'Speed 1, 2 min' },
+                      ...(!hasPref ? [{ kind: 'step' as const, iconKey: 'yeast', bold: yeastLabel, note: 'Speed 1, 2 min' }] : []),
                       { kind: 'step', iconKey: 'salt', bold: saltLabel, note: 'Speed 1, 2 min until absorbed' },
+                      ...(hasPref ? [{ kind: 'step' as const, iconKey: 'starter', bold: poolishLabel, note: 'mix until fully incorporated' }] : []),
                       { kind: 'step', iconKey: 'mix', bold: 'Speed 2 — 4–5 min', note: 'build gluten structure before adding remaining water' },
                       { kind: 'step', iconKey: 'water', bold: water10 ? `Add remaining water (${water10}g) gradually at Speed 2` : 'Add remaining 10% water gradually at Speed 2', note: 'bassinage — small additions, wait for absorption between each', term: 'bassinage' },
                       { kind: 'step', iconKey: 'mix', bold: 'Continue Speed 2', note: 'until dough clears the bowl and passes windowpane test', term: 'windowpane' },
@@ -697,8 +711,9 @@ export default function Timeline({
                     ] : [
                       // ≤70% hydration: remaining water before Speed 2
                       { kind: 'step', iconKey: 'water', bold: flour90Label, note: 'Speed 1, 2 min to combine' },
-                      { kind: 'step', iconKey: 'yeast', bold: yeastLabel, note: 'Speed 1, 2 min' },
+                      ...(!hasPref ? [{ kind: 'step' as const, iconKey: 'yeast', bold: yeastLabel, note: 'Speed 1, 2 min' }] : []),
                       { kind: 'step', iconKey: 'salt', bold: saltLabel, note: 'Speed 1, 2 min until absorbed' },
+                      ...(hasPref ? [{ kind: 'step' as const, iconKey: 'starter', bold: poolishLabel, note: 'mix until fully incorporated' }] : []),
                       { kind: 'step', iconKey: 'water', bold: water10Label, note: 'Speed 1, mix until absorbed, ~1 min' },
                       { kind: 'step', iconKey: 'mix', bold: 'Speed 2 — 6–10 min', note: 'until dough clears the bowl and passes windowpane test', term: 'windowpane' },
                       ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
@@ -706,15 +721,17 @@ export default function Timeline({
                   } else if (mixerType === 'spiral') {
                     sequence = showBassinage ? [
                       // >70% hydration: pumpkin first, then bassinage
-                      { kind: 'step', iconKey: 'water', bold: mainFlour && water90 ? `${mainFlour}g flour + ${water90}g water (90%) + yeast` : 'Flour + 90% of water + yeast', note: 'Speed 1, 3 min to combine' },
+                      { kind: 'step', iconKey: 'water', bold: mainFlour && water90 ? `${mainFlour}g flour + ${water90}g water (90%)${!hasPref ? ' + yeast' : ''}` : 'Flour + 90% of water', note: 'Speed 1, 3 min to combine' },
                       { kind: 'step', iconKey: 'salt', bold: saltLabel, note: 'Speed 1, 2 min until absorbed' },
+                      ...(!hasPref ? [] : [{ kind: 'step' as const, iconKey: 'starter', bold: poolishLabel, note: 'add whole — mix until fully incorporated' }]),
                       { kind: 'step', iconKey: 'mix', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if FDT exceeds 28°C', noteNode: <>typically 10–15 min, stop if final dough temperature (FDT)<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</> },
                       { kind: 'step', iconKey: 'water', bold: water10 ? `Once pumpkin is stable — add remaining water (${water10}g) gradually` : 'Once pumpkin is stable — add remaining 10% water gradually', note: 'bassinage — small additions, wait for pumpkin to reform each time', term: 'bassinage' },
                       ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
                     ] : [
                       // ≤70% hydration: remaining water before Speed 2
-                      { kind: 'step', iconKey: 'water', bold: mainFlour && water90 ? `${mainFlour}g flour + ${water90}g water (90%) + yeast` : 'Flour + 90% of water + yeast', note: 'Speed 1, 3 min to combine' },
+                      { kind: 'step', iconKey: 'water', bold: mainFlour && water90 ? `${mainFlour}g flour + ${water90}g water (90%)${!hasPref ? ' + yeast' : ''}` : 'Flour + 90% of water', note: 'Speed 1, 3 min to combine' },
                       { kind: 'step', iconKey: 'salt', bold: saltLabel, note: 'Speed 1, 2 min until absorbed' },
+                      ...(!hasPref ? [] : [{ kind: 'step' as const, iconKey: 'starter', bold: poolishLabel, note: 'add whole — mix until fully incorporated' }]),
                       { kind: 'step', iconKey: 'water', bold: water10Label, note: 'Speed 1, mix until absorbed, ~1 min' },
                       { kind: 'step', iconKey: 'mix', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if FDT exceeds 28°C', noteNode: <>typically 10–15 min, stop if final dough temperature (FDT)<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</> },
                       ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
