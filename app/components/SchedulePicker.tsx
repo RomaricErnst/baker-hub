@@ -1113,9 +1113,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const sweetFromRaw = hasColdLocal
       ? maxUsefulColdH + defaults.rtH           // max useful cold retard boundary
       : defaults.rtH + 4;                       // RT only: allow some flexibility
-    const sweetToRaw = hasColdLocal
-      ? Math.max(minColdH + defaults.rtH, minTotalRTLocal + 1)
-      : minTotalRTLocal + 1;
+    // Use minTotalFermH as the right boundary — matches the card's green zone
+    // and is the scientifically correct absolute minimum for acceptable results.
+    // This is style-sensitive: each style defines its own minTotalFermH.
+    const sweetToRaw = defaults.minTotalFermH ?? (minTotalRTLocal + 1);
 
     // Clip all to nowHBF — cannot start in the past
     const sweetCenter = Math.min(sweetCenterRaw, nowHBF - 0.5);
