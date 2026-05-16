@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
     if (locale === 'fr') contextParts.push('Reply in French.');
     const contextLine = contextParts.join('. ');
 
-    const model = process.env.ANTHROPIC_VISION_MODEL ?? 'claude-haiku-4-5';
+    const model = process.env.ANTHROPIC_VISION_MODEL ?? 'claude-haiku-4-5-20251001';
 
     const response = await client.messages.create({
       model,
@@ -163,10 +163,11 @@ export async function POST(req: NextRequest) {
       .join('');
 
     return NextResponse.json({ feedback: text });
-  } catch (err) {
-    console.error('bake-coach error:', err);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('bake-coach error:', msg);
     return NextResponse.json(
-      { error: 'Coach unavailable right now. Please try again.' },
+      { error: 'Coach unavailable right now. Please try again.', detail: msg },
       { status: 500 },
     );
   }
