@@ -722,6 +722,11 @@ export default function SessionViewer({
             manualSugar={snap?.manualSugar ?? null}
             yeastType={snap?.yeastType ?? null}
             yeastGrams={yeastRounded}
+            bakeDate={snap?.eatTime
+              ? new Date(snap.eatTime).toLocaleDateString('en-GB', {
+                  weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
+                })
+              : null}
             protocolLines={protocolLines}
             onClose={() => setShowShareModal(false)}
           />

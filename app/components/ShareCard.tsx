@@ -28,6 +28,7 @@ interface ShareCardProps {
   manualSugar?: number | null;
   yeastType?: string | null;
   yeastGrams?: number | null;
+  bakeDate?: string | null;
   protocolLines?: string[] | null;
   onClose: () => void;
 }
@@ -74,7 +75,7 @@ export default function ShareCard({
   styleName, sessionName, numItems, itemWeight, hydration, prefLabel, flourLine,
   recipeFlour, recipeWater, recipeSalt, coldH, rtH,
   bakedQtys, localSlots, sessionPhotos, locale, status,
-  ovenType, mixerType, manualOil, manualSugar, yeastType, yeastGrams, protocolLines, onClose,
+  ovenType, mixerType, manualOil, manualSugar, yeastType, yeastGrams, bakeDate, protocolLines, onClose,
 }: ShareCardProps) {
   const l = locale === 'fr' ? 'fr' : 'en';
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -166,24 +167,24 @@ export default function ShareCard({
           pizzaLines.slice(i * 2, i * 2 + 2).join('  ·  ')
         );
 
-  const cardDate = new Date().toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'long', year: 'numeric',
-  });
-
-  const contentLineCount = [
-    true,
-    flourLine,
-    weightsLine,
-    true,
-    gearLine,
-    ...pizzaDisplayLines,
+  const bodyLineCount = [
+    true,                    // specLine always
+    flourLine,               // optional
+    weightsLine,             // always
+    true,                    // timingLine always
+    gearLine,                // optional
+    ...pizzaDisplayLines,    // 0–n
   ].filter(Boolean).length;
 
-  const PANEL_MIN = 360;
-  const PANEL_MAX = 540;
-  const panelHeight = Math.min(PANEL_MAX, Math.max(PANEL_MIN,
-    100 + 110 + (contentLineCount * 52) + 60
-  ));
+  const LINE_H_CALC = 23 + 14; // 37px
+  const panelHeight = Math.max(340,
+    28 +                          // top pad
+    (bakeDate ? 34 : 0) +         // date line
+    44 + 20 +                     // title max + gap
+    18 + 18 +                     // divider + gap
+    bodyLineCount * LINE_H_CALC + // body lines
+    60                            // branding
+  );
   const photoZoneHeight = 1080 - panelHeight;
   const photoZoneRatio = photoZoneHeight / 1080;
 
@@ -235,92 +236,118 @@ export default function ShareCard({
     if (!ctxOrNull) return null;
     const ctx = ctxOrNull;
 
+    // Strip trailing bake date from title for canvas display only
+    // "Classic Neapolitan · 4 pizzas · Sun 17 May"
+    //   → "Classic Neapolitan · 4 pizzas"
+    // If baker renamed session ("Summer Party 2026"), nothing stripped.
+    const displayTitle = customTitle
+      .replace(/\s*·?\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+\d{1,2}\s+\w+\s*$/, '')
+      .trim() || customTitle;
+
     if (template === 'protocol') {
-      const lines = protocolLines ?? [customTitle, '', specLine,
-        ...(weightsLine ? [weightsLine] : []), timingLine];
-      const FONT = '"DM Mono", monospace';
-      const MARGIN = 72;
-      const BODY_SIZE = 38;
-      const W = 1080;
+      const lines: string[] = protocolLines?.length
+        ? protocolLines
+        : [
+            customTitle, '',
+            specLine,
+            ...(flourLine ? [flourLine] : []),
+            ...(weightsLine ? [weightsLine] : []),
+            timingLine,
+            ...(gearLine ? [gearLine] : []),
+          ];
+
+      const FONT         = '"DM Mono", monospace';
+      const MARGIN       = 72;
+      const CONTENT_W_P  = 1080 - MARGIN * 2;
+      const BODY_SIZE_P  = 23;
+      const INDENT_SIZE  = 21;
+      const LINE_GAP     = 14;
+      const W            = 1080;
 
       // Calculate total height
-      let totalH = 100; // top pad
-      totalH += 48 + 16;  // date line
-      totalH += 88 + 32;  // title
-      totalH += 40;        // top divider
+      let totalH = 60;          // top pad
+      totalH += bakeDate ? 34 : 0; // date line
+      totalH += 44 + 22;        // title + gap
+      totalH += 20 + 22;        // divider + gap
       for (const ln of lines) {
-        totalH += ln === '' ? 24 : ln.startsWith('  ') ? 50 : 56;
+        if (ln === '') { totalH += 16; continue; }
+        totalH += (ln.startsWith('  ') ? INDENT_SIZE : BODY_SIZE_P) + LINE_GAP;
       }
-      totalH += 60;  // bottom divider + branding
+      totalH += 60;             // bottom branding
       totalH = Math.max(1080, totalH);
 
-      canvas.width = W;
+      canvas.width  = W;
       canvas.height = totalH;
 
-      // Background
       ctx.fillStyle = '#1A1612';
       ctx.fillRect(0, 0, W, totalH);
 
-      let y = 72;
+      let y = 52;
 
-      // Date
-      ctx.font = `400 28px ${FONT}`;
-      ctx.fillStyle = 'rgba(212,168,83,0.7)';
-      ctx.textAlign = 'left';
-      ctx.fillText(cardDate, MARGIN, y);
-      y += 48;
-
-      // Title
-      let titleSize = 80;
-      const maxTW = W - MARGIN * 2;
-      ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
-      while (ctx.measureText(customTitle).width > maxTW && titleSize > 52) {
-        titleSize -= 2;
-        ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
+      // Bake date
+      if (bakeDate) {
+        ctx.font      = `400 22px ${FONT}`;
+        ctx.fillStyle = 'rgba(212,168,83,0.55)';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Bake: ${bakeDate}`, MARGIN, y);
+        y += 34;
       }
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(customTitle, MARGIN, y);
-      y += titleSize + 32;
+
+      // Title — single line, shrink to fit, never wrap
+      {
+        let titleSize = 44;
+        ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
+        while (ctx.measureText(displayTitle).width > CONTENT_W_P && titleSize > 20) {
+          titleSize--;
+          ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
+        }
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'left';
+        ctx.fillText(displayTitle, MARGIN, y + titleSize);
+        y += titleSize + 22;
+      }
 
       // Divider
       ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(MARGIN, y); ctx.lineTo(W - MARGIN, y); ctx.stroke();
-      y += 40;
+      ctx.lineWidth   = 1;
+      ctx.beginPath();
+      ctx.moveTo(MARGIN, y);
+      ctx.lineTo(W - MARGIN, y);
+      ctx.stroke();
+      y += 22;
 
-      // Lines
+      // Protocol lines
       for (const ln of lines) {
-        if (ln === '') { y += 24; continue; }
-        const isHeader = /^[A-Z][a-z]{1,2}\s\d{2}:\d{2}/.test(ln);
+        if (ln === '') { y += 16; continue; }
+
         const isIndented = ln.startsWith('  ');
-        const size = isIndented ? BODY_SIZE - 4 : BODY_SIZE;
-        const opacity = isHeader ? 0.92 : isIndented ? 0.60 : 0.78;
-        ctx.font = `${isHeader ? '600' : '400'} ${size}px ${FONT}`;
+        const isHeader   = !isIndented && /^\w{3}\s\d{2}:\d{2}/.test(ln);
+        const size       = isIndented ? INDENT_SIZE : BODY_SIZE_P;
+        const weight     = isHeader ? '600' : '400';
+        const opacity    = isHeader ? 0.92 : isIndented ? 0.60 : 0.80;
+
+        ctx.font      = `${weight} ${size}px ${FONT}`;
         ctx.fillStyle = `rgba(255,255,255,${opacity})`;
         ctx.textAlign = 'left';
-        // Shrink to fit
-        let fs = size;
-        while (ctx.measureText(ln.trim()).width > W - MARGIN * 2 && fs > 24) {
-          fs--;
-          ctx.font = `${isHeader ? '600' : '400'} ${fs}px ${FONT}`;
-        }
-        ctx.fillText(ln.trim(), MARGIN, y);
-        y += fs + (isHeader ? 16 : 12);
+        ctx.fillText(ln.trimStart(), MARGIN + (isIndented ? 24 : 0), y);
+        y += size + LINE_GAP;
       }
 
-      // Bottom divider + branding
-      y += 20;
-      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(MARGIN, y); ctx.lineTo(W - MARGIN, y); ctx.stroke();
-      y += 36;
-      ctx.font = `400 26px ${FONT}`;
-      if (bakerName) {
-        ctx.fillStyle = 'rgba(255,255,255,0.28)';
-        ctx.textAlign = 'left';
-        ctx.fillText(`Baked by ${bakerName}`, MARGIN, y);
-      }
-      ctx.fillStyle = 'rgba(255,255,255,0.20)';
+      // Bottom divider
+      y += 16;
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+      ctx.lineWidth   = 1;
+      ctx.beginPath();
+      ctx.moveTo(MARGIN, y);
+      ctx.lineTo(W - MARGIN, y);
+      ctx.stroke();
+      y += 28;
+
+      // Branding
+      ctx.font      = `400 20px ${FONT}`;
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.textAlign = 'left';
+      if (bakerName) ctx.fillText(`Baked by ${bakerName}`, MARGIN, y);
       ctx.textAlign = 'right';
       ctx.fillText('bakerhub.app', W - MARGIN, y);
 
@@ -422,102 +449,75 @@ export default function ShareCard({
     ctx.fillStyle = '#1A1612';
     ctx.fillRect(0, photoZoneHeight, 1080, panelHeight);
 
-    // Gold top border
-    ctx.strokeStyle = 'rgba(212,168,83,0.25)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(72, photoZoneHeight + 1);
-    ctx.lineTo(1080 - 72, photoZoneHeight + 1);
-    ctx.stroke();
+    // ── Panel content ───────────────────────────────────
+    const CONTENT_W  = 1080 - 144; // 936px
+    const BODY_SIZE  = 23;
+    const LINE_H     = BODY_SIZE + 14; // 37px
 
-    // Date
-    let y = photoZoneHeight + 42;
-    ctx.font = '400 26px "DM Mono", monospace';
-    ctx.fillStyle = 'rgba(212,168,83,0.65)';
-    ctx.textAlign = 'left';
-    ctx.fillText(cardDate, 72, y);
+    let y = photoZoneHeight + 28;
 
-    // Title
-    y += 16;
-    let titleFontSize = 88;
-    const minTitleSize = 60;
-    const maxTitleW = 1080 - 144;
-    // Try to fit on one line first by shrinking
-    ctx.font = `bold ${titleFontSize}px "Playfair Display", Georgia, serif`;
-    while (ctx.measureText(customTitle).width > maxTitleW && titleFontSize > minTitleSize) {
-      titleFontSize -= 2;
-      ctx.font = `bold ${titleFontSize}px "Playfair Display", Georgia, serif`;
+    // Bake date — gold, subtle
+    if (bakeDate) {
+      ctx.font      = '400 26px "DM Mono", monospace';
+      ctx.fillStyle = 'rgba(212,168,83,0.70)';
+      ctx.textAlign = 'left';
+      ctx.fillText(bakeDate, 72, y);
+      y += 34;
     }
-    ctx.fillStyle = '#FFFFFF';
-    // If still too wide, wrap words
-    const titleWords = customTitle.split(' ');
-    let titleLine = '';
-    for (const word of titleWords) {
-      const test = titleLine ? titleLine + ' ' + word : word;
-      if (ctx.measureText(test).width > maxTitleW && titleLine) {
-        ctx.fillText(titleLine, 72, y + titleFontSize);
-        y += titleFontSize + 8;
-        titleLine = word;
-      } else {
-        titleLine = test;
+
+    // Title — Playfair, single line, shrink to fit, NEVER wrap
+    {
+      let titleSize = 44;
+      ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
+      while (ctx.measureText(displayTitle).width > CONTENT_W && titleSize > 20) {
+        titleSize--;
+        ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
       }
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'left';
+      ctx.fillText(displayTitle, 72, y + titleSize);
+      y += titleSize + 20;
     }
-    ctx.fillText(titleLine, 72, y + titleFontSize);
-    y += titleFontSize + 18;
 
-    // Thin gold divider
-    ctx.strokeStyle = 'rgba(212,168,83,0.3)';
-    ctx.lineWidth = 1;
+    // Gold divider
+    ctx.strokeStyle = 'rgba(212,168,83,0.25)';
+    ctx.lineWidth   = 1;
     ctx.beginPath();
     ctx.moveTo(72, y);
     ctx.lineTo(1080 - 72, y);
     ctx.stroke();
-    y += 40;
+    y += 18;
 
-    const MAX_TEXT_W = 1080 - 144; // 72px margin each side
-    function drawLine(text: string, opacity: number, size: number, italic = false) {
-      // Shrink font until text fits, minimum 60% of original size
-      let fontSize = size;
-      const minSize = Math.round(size * 0.6);
-      ctx.font = `${italic ? 'italic ' : ''}400 ${fontSize}px "DM Mono", monospace`;
-      while (ctx.measureText(text).width > MAX_TEXT_W && fontSize > minSize) {
-        fontSize -= 1;
-        ctx.font = `${italic ? 'italic ' : ''}400 ${fontSize}px "DM Mono", monospace`;
-      }
+    // Body lines — all same font, same size, no italic
+    function drawBodyLine(text: string, opacity: number) {
+      ctx.font      = `400 ${BODY_SIZE}px "DM Mono", monospace`;
       ctx.fillStyle = `rgba(255,255,255,${opacity})`;
       ctx.textAlign = 'left';
       ctx.fillText(text, 72, y);
-      y += fontSize + 18;
+      y += LINE_H;
     }
 
-    drawLine(specLine, 0.80, 44);
-    if (flourLine) drawLine(flourLine, 0.60, 38);
-    if (weightsLine) drawLine(weightsLine, 0.85, 42);
-    if (timingLine) drawLine(timingLine, 0.50, 38);
-    if (gearLine) drawLine(gearLine, 0.50, 38);
+    drawBodyLine(specLine, 0.85);
+    if (flourLine) drawBodyLine(flourLine, 0.60);
+    if (weightsLine) drawBodyLine(weightsLine, 0.85);
+    drawBodyLine(timingLine, 0.70);
+    if (gearLine) drawBodyLine(gearLine, 0.70);
 
     if (pizzaDisplayLines.length > 0) {
       y += 4;
       for (const pl of pizzaDisplayLines) {
-        ctx.font = 'italic 400 38px "DM Mono", monospace';
-        ctx.fillStyle = 'rgba(255,255,255,0.55)';
-        ctx.textAlign = 'left';
-        ctx.fillText(pl, 72, y);
-        y += 54;
+        drawBodyLine(pl, 0.55);
       }
     }
 
-    // Branding
+    // Branding — pinned to bottom of panel
     const brandY = photoZoneHeight + panelHeight - 36;
-    ctx.font = '400 26px "DM Mono", monospace';
+    ctx.font      = '400 22px "DM Mono", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.textAlign = 'left';
-    if (bakerName) {
-      ctx.fillStyle = 'rgba(255,255,255,0.28)';
-      ctx.fillText(`Baked by ${bakerName}`, 72, brandY);
-    }
-    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    if (bakerName) ctx.fillText(`Baked by ${bakerName}`, 72, brandY);
     ctx.textAlign = 'right';
-    ctx.fillText('Planned with bakerhub.app', 1080 - 72, brandY);
+    ctx.fillText('bakerhub.app', 1080 - 72, brandY);
 
     return canvas;
   }
@@ -606,7 +606,7 @@ export default function ShareCard({
               timingLine={timingLine}
               gearLine={gearLine}
               pizzaDisplayLines={pizzaDisplayLines}
-              cardDate={cardDate}
+              bakeDate={bakeDate}
               photoZoneRatio={photoZoneRatio}
             />
           </div>
@@ -860,7 +860,7 @@ export default function ShareCard({
 function PreviewCard({
   template, selectedPhotoUrls, customTitle, bakerName,
   specLine, flourLine, weightsLine, pctLine, timingLine, gearLine,
-  pizzaDisplayLines, cardDate, photoZoneRatio,
+  pizzaDisplayLines, bakeDate, photoZoneRatio,
 }: {
   template: 'full' | 'two' | 'four' | 'protocol';
   selectedPhotoUrls: string[];
@@ -873,7 +873,7 @@ function PreviewCard({
   timingLine: string;
   gearLine: string | null;
   pizzaDisplayLines: string[];
-  cardDate: string;
+  bakeDate?: string | null;
   photoZoneRatio: number;
 }) {
   const panelPct = `${(1 - photoZoneRatio) * 100}%`;
@@ -930,9 +930,11 @@ function PreviewCard({
         padding: '5% 5% 4%',
         overflow: 'hidden',
       }}>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(9px, 1.8vw, 14px)', color: 'rgba(212,168,83,0.65)', marginBottom: '2px' }}>
-          {cardDate}
-        </div>
+        {bakeDate && (
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(9px, 1.8vw, 14px)', color: 'rgba(212,168,83,0.65)', marginBottom: '2px' }}>
+            {bakeDate}
+          </div>
+        )}
         <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 'clamp(14px, 4vw, 22px)', color: 'white', lineHeight: 1.1, marginBottom: '5px' }}>
           {customTitle}
         </div>
