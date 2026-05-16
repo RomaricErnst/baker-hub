@@ -625,7 +625,7 @@ export default function Header({
           </div>
 
           {/* ── My Sessions cards — scrollable ── */}
-          <div style={{ overflowY: 'auto', maxHeight: '240px', padding: '4px 16px 12px', flexShrink: 0 }}>
+          <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, padding: '4px 16px 12px' }}>
             {!user ? (
               <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
                 {locale === 'fr' ? 'Connectez-vous pour sauvegarder vos sessions' : 'Sign in to save your sessions'}
@@ -772,9 +772,6 @@ export default function Header({
               </div>
             )}
           </div>
-
-          {/* Spacer */}
-          <div style={{ flex: 1 }} />
 
           {/* ── About link — pinned footer ── */}
           <div style={{
