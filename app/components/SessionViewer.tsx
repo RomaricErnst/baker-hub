@@ -177,8 +177,9 @@ export default function SessionViewer({
   const rtH = cr?.rtH ?? schedule?.totalRTHours ?? 0;
   const styleName = (ALL_STYLES as Record<string, { name: string }>)[snap.styleKey ?? '']?.name ?? snap.styleKey ?? '';
   const title = bakeEventTitle(event);
-  const prefLabel = hasPref
-    ? snap.prefermentType!.charAt(0).toUpperCase() + snap.prefermentType!.slice(1)
+  const prefLabel = snap?.prefermentType &&
+      snap.prefermentType !== 'none' && snap.prefermentType !== 'direct'
+    ? snap.prefermentType.charAt(0).toUpperCase() + snap.prefermentType.slice(1)
     : null;
   const doughBallSpec = snap.numItems && snap.itemWeight
     ? `${snap.numItems} × ${snap.itemWeight}g`
@@ -246,9 +247,35 @@ export default function SessionViewer({
       lines.push(`${fmt(schedule.finalProofStart)}  Final proof`);
       lines.push(`${fmt(schedule.preheatStart)}  Preheat`);
       lines.push(`${fmt(schedule.bakeStart)}  Bake`);
+    } else if (snap?.eatTime) {
+      const bakeTime = new Date(snap.eatTime);
+      const fmt = (d: Date) => {
+        const day = d.toLocaleDateString('en-GB', { weekday: 'short' });
+        const hh  = String(d.getHours()).padStart(2, '0');
+        const mm  = String(d.getMinutes()).padStart(2, '0');
+        return `${day} ${hh}:${mm}`;
+      };
+      const subH = (base: Date, h: number) =>
+        new Date(base.getTime() - h * 3600000);
+
+      const totalFermH = (coldH ?? 0) + (rtH ?? 0);
+      const preheatStart = subH(bakeTime, 0.75);
+      const mixStart     = subH(bakeTime, totalFermH + 0.75);
+      const bulkStart    = new Date(mixStart.getTime() + 0.5 * 3600000);
+      const coldStart    = (coldH ?? 0) > 0
+        ? subH(bakeTime, (rtH ?? 0) + (coldH ?? 0))
+        : null;
+
+      lines.push(`${fmt(mixStart)}  Mix & Knead`);
+      lines.push(`${fmt(bulkStart)}  Bulk fermentation`);
+      if (coldStart) {
+        lines.push(`${fmt(coldStart)}  Cold retard (${coldH}h)`);
+      }
+      lines.push(`${fmt(preheatStart)}  Preheat`);
+      lines.push(`${fmt(bakeTime)}  Bake`);
     } else {
-      if (coldH > 0) lines.push(`  Cold ${formatHours(coldH)}`);
-      if (rtH > 0) lines.push(`  RT ${formatHours(rtH)}`);
+      if ((coldH ?? 0) > 0) lines.push(`  Cold ${formatHours(coldH ?? 0)}`);
+      if ((rtH ?? 0) > 0)   lines.push(`  RT ${formatHours(rtH ?? 0)}`);
     }
 
     const gearParts = [

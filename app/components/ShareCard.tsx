@@ -88,7 +88,7 @@ export default function ShareCard({
   const [bakerName, setBakerName] = useState<string>(
     () => (typeof window !== 'undefined' ? localStorage.getItem(LS_BAKER) ?? '' : '')
   );
-  const [template, setTemplate] = useState<'full' | 'two' | 'four' | 'protocol'>('full');
+  const [template, setTemplate] = useState<'full' | 'two' | 'four' | 'protocol'>('protocol');
   const [selectedPhotoUrls, setSelectedPhotoUrls] = useState<string[]>([]);
   const [cameraPhotoUrls, setCameraPhotoUrls] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -188,6 +188,13 @@ export default function ShareCard({
   const photoZoneHeight = 1080 - panelHeight;
   const photoZoneRatio = photoZoneHeight / 1080;
 
+  const displayTitle = (() => {
+    const stripped = customTitle
+      .replace(/\s*[·•\-]?\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b.*$/i, '')
+      .trim();
+    return stripped.length > 3 ? stripped : customTitle;
+  })();
+
   const allPhotos = [
     ...sessionPhotos.map(p => ({ url: p.photo_url })),
     ...cameraPhotoUrls.map(url => ({ url })),
@@ -235,14 +242,6 @@ export default function ShareCard({
     const ctxOrNull = canvas.getContext('2d');
     if (!ctxOrNull) return null;
     const ctx = ctxOrNull;
-
-    // Strip trailing bake date from title for canvas display only
-    // "Classic Neapolitan · 4 pizzas · Sun 17 May"
-    //   → "Classic Neapolitan · 4 pizzas"
-    // If baker renamed session ("Summer Party 2026"), nothing stripped.
-    const displayTitle = customTitle
-      .replace(/\s*·?\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+\d{1,2}\s+\w+\s*$/, '')
-      .trim() || customTitle;
 
     if (template === 'protocol') {
       const lines: string[] = protocolLines?.length
@@ -597,17 +596,17 @@ export default function ShareCard({
             <PreviewCard
               template={template}
               selectedPhotoUrls={selectedPhotoUrls}
-              customTitle={customTitle}
+              displayTitle={displayTitle}
               bakerName={bakerName}
               specLine={specLine}
               flourLine={flourLine}
               weightsLine={weightsLine}
-              pctLine={pctLine}
               timingLine={timingLine}
               gearLine={gearLine}
               pizzaDisplayLines={pizzaDisplayLines}
               bakeDate={bakeDate}
               photoZoneRatio={photoZoneRatio}
+              protocolLines={protocolLines}
             />
           </div>
         </div>
@@ -649,7 +648,7 @@ export default function ShareCard({
         <div>
           <div style={sectionLbl}>{l === 'fr' ? 'Format' : 'Template'}</div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            {(['full', 'two', 'four', 'protocol'] as const).map(t => (
+            {(['protocol', 'full', 'two', 'four'] as const).map(t => (
               <div key={t} onClick={() => setTemplate(t)} style={{ flex: 1, cursor: 'pointer' }}>
                 <div style={{
                   aspectRatio: '1', background: '#1A1612', borderRadius: '8px',
@@ -858,110 +857,194 @@ export default function ShareCard({
 
 // ── Live CSS preview ──────────────────────────────────────────────────────────
 function PreviewCard({
-  template, selectedPhotoUrls, customTitle, bakerName,
-  specLine, flourLine, weightsLine, pctLine, timingLine, gearLine,
-  pizzaDisplayLines, bakeDate, photoZoneRatio,
+  template, selectedPhotoUrls, displayTitle, bakerName,
+  specLine, flourLine, weightsLine, timingLine, gearLine,
+  pizzaDisplayLines, bakeDate, photoZoneRatio, protocolLines,
 }: {
   template: 'full' | 'two' | 'four' | 'protocol';
   selectedPhotoUrls: string[];
-  customTitle: string;
+  displayTitle: string;
   bakerName: string;
   specLine: string;
   flourLine: string | null;
   weightsLine: string | null;
-  pctLine: string | null;
   timingLine: string;
   gearLine: string | null;
   pizzaDisplayLines: string[];
   bakeDate?: string | null;
   photoZoneRatio: number;
+  protocolLines?: string[] | null;
 }) {
   const panelPct = `${(1 - photoZoneRatio) * 100}%`;
+  const MONO = 'var(--font-dm-mono)';
+  const SERIF = 'var(--font-playfair)';
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: '#1A1612', overflow: 'hidden' }}>
 
-      {/* Photo zone */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: `${photoZoneRatio * 100}%`, overflow: 'hidden' }}>
-
-        {template === 'protocol' && (
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'radial-gradient(ellipse at 30% 40%, rgba(212,168,83,0.06) 0%, transparent 60%), radial-gradient(ellipse at 75% 70%, rgba(212,168,83,0.04) 0%, transparent 50%)',
-          }} />
-        )}
-
-        {template === 'full' && selectedPhotoUrls[0] && (
-          <img src={selectedPhotoUrls[0]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-        )}
-
-        {template === 'two' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px', height: '100%' }}>
-            {[0, 1].map(i => (
-              <div key={i} style={{ background: '#2D2420', overflow: 'hidden' }}>
-                {selectedPhotoUrls[i] && <img src={selectedPhotoUrls[i]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {template === 'four' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '2px', height: '100%' }}>
-            {[0, 1, 2, 3].map(i => (
-              <div key={i} style={{ background: '#2D2420', overflow: 'hidden' }}>
-                {selectedPhotoUrls[i] && <img src={selectedPhotoUrls[i]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Gradient fade into panel */}
-        {template !== 'protocol' && (
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(to bottom, transparent, #1A1612)' }} />
-        )}
-      </div>
-
-      {/* Panel */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        height: panelPct,
-        background: '#1A1612',
-        borderTop: '1px solid rgba(212,168,83,0.2)',
-        padding: '5% 5% 4%',
-        overflow: 'hidden',
-      }}>
-        {bakeDate && (
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(9px, 1.8vw, 14px)', color: 'rgba(212,168,83,0.65)', marginBottom: '2px' }}>
-            {bakeDate}
-          </div>
-        )}
-        <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 'clamp(14px, 4vw, 22px)', color: 'white', lineHeight: 1.1, marginBottom: '5px' }}>
-          {customTitle}
-        </div>
-        <div style={{ height: '1px', background: 'rgba(212,168,83,0.25)', marginBottom: '5px' }} />
-        <div style={{ lineHeight: 1.5 }}>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(10px, 2.2vw, 16px)', color: 'rgba(255,255,255,0.80)' }}>{specLine}</div>
-          {flourLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(9px, 1.9vw, 14px)', color: 'rgba(255,255,255,0.60)' }}>{flourLine}</div>}
-          {weightsLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(10px, 2.2vw, 16px)', color: 'rgba(255,255,255,0.80)' }}>{weightsLine}</div>}
-          {pctLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(9px, 1.9vw, 14px)', color: 'rgba(255,255,255,0.50)', fontStyle: 'italic' }}>{pctLine}</div>}
-          {timingLine && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(9px, 1.9vw, 14px)', color: 'rgba(255,255,255,0.50)' }}>{timingLine}</div>}
-        </div>
-        {pizzaDisplayLines.length > 0 && (
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(9px, 2vw, 14px)', color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', marginTop: '4px', lineHeight: 1.6 }}>
-            {pizzaDisplayLines.map((l, i) => <div key={i}>{l}</div>)}
-          </div>
-        )}
-        <div style={{ position: 'absolute', bottom: '5px', left: '10px', right: '10px', display: 'flex', justifyContent: 'space-between' }}>
-          {bakerName && (
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(7px, 1.5vw, 11px)', color: 'rgba(255,255,255,0.28)' }}>
-              Baked by {bakerName}
-            </span>
+      {/* Photo zone — hidden for protocol */}
+      {template !== 'protocol' && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: `${photoZoneRatio * 100}%`, overflow: 'hidden' }}>
+          {template === 'full' && selectedPhotoUrls[0] && (
+            <img src={selectedPhotoUrls[0]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
           )}
-          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 'clamp(7px, 1.5vw, 11px)', color: 'rgba(255,255,255,0.22)', marginLeft: 'auto' }}>
-            Planned with bakerhub.app
-          </span>
+          {template === 'two' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px', height: '100%' }}>
+              {[0, 1].map(i => (
+                <div key={i} style={{ background: '#2D2420', overflow: 'hidden' }}>
+                  {selectedPhotoUrls[i] && <img src={selectedPhotoUrls[i]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />}
+                </div>
+              ))}
+            </div>
+          )}
+          {template === 'four' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '2px', height: '100%' }}>
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} style={{ background: '#2D2420', overflow: 'hidden' }}>
+                  {selectedPhotoUrls[i] && <img src={selectedPhotoUrls[i]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />}
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(to bottom, transparent, #1A1612)' }} />
         </div>
-      </div>
+      )}
+
+      {template === 'protocol' ? (
+        <div style={{
+          position: 'absolute', inset: 0, background: '#1A1612',
+          padding: '6% 7%', display: 'flex', flexDirection: 'column',
+          gap: '0px', overflow: 'hidden',
+        }}>
+          {bakeDate && (
+            <div style={{
+              fontFamily: MONO, fontSize: 'clamp(7px, 1.5vw, 10px)',
+              color: 'rgba(212,168,83,0.55)', marginBottom: '3px',
+            }}>Bake: {bakeDate}</div>
+          )}
+          <div style={{
+            fontFamily: SERIF, fontWeight: 700,
+            fontSize: 'clamp(10px, 2.8vw, 17px)', color: 'white',
+            lineHeight: 1.1, marginBottom: '4px',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>{displayTitle}</div>
+          <div style={{
+            height: '1px', background: 'rgba(255,255,255,0.12)',
+            marginBottom: '4px',
+          }} />
+          {(protocolLines ?? [
+            specLine, flourLine, weightsLine, timingLine, gearLine,
+          ].filter(Boolean) as string[])
+            .slice(0, 22)
+            .map((ln, i) => {
+              if (!ln || ln === '') return <div key={i} style={{ height: '5px' }} />;
+              const isHeader  = /^\w{3}\s\d{2}:\d{2}/.test(ln);
+              const isIndented = ln.startsWith('  ');
+              return (
+                <div key={i} style={{
+                  fontFamily: MONO,
+                  fontSize: isIndented
+                    ? 'clamp(6px, 1.2vw, 8px)'
+                    : 'clamp(7px, 1.4vw, 10px)',
+                  fontWeight: isHeader ? 600 : 400,
+                  color: `rgba(255,255,255,${
+                    isHeader ? 0.90 : isIndented ? 0.55 : 0.75
+                  })`,
+                  lineHeight: 1.35,
+                  whiteSpace: 'nowrap', overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  paddingLeft: isIndented ? '10px' : '0',
+                  marginBottom: '1px',
+                }}>{ln.trimStart()}</div>
+              );
+            })}
+          <div style={{
+            position: 'absolute', bottom: '5px', left: '7%', right: '7%',
+            display: 'flex', justifyContent: 'space-between',
+          }}>
+            {bakerName && (
+              <span style={{
+                fontFamily: MONO, fontSize: 'clamp(6px, 1.1vw, 8px)',
+                color: 'rgba(255,255,255,0.22)',
+              }}>Baked by {bakerName}</span>
+            )}
+            <span style={{
+              fontFamily: MONO, fontSize: 'clamp(6px, 1.1vw, 8px)',
+              color: 'rgba(255,255,255,0.18)',
+            }}>bakerhub.app</span>
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          height: panelPct, background: '#1A1612',
+          borderTop: '1px solid rgba(212,168,83,0.2)',
+          padding: '5% 5% 4%', overflow: 'hidden',
+        }}>
+          {bakeDate && (
+            <div style={{
+              fontFamily: MONO,
+              fontSize: 'clamp(9px, 1.8vw, 13px)',
+              color: 'rgba(212,168,83,0.70)',
+              marginBottom: '3px',
+            }}>
+              {bakeDate}
+            </div>
+          )}
+          <div style={{
+            fontFamily: SERIF,
+            fontWeight: 700,
+            fontSize: 'clamp(12px, 3.5vw, 20px)',
+            color: 'white',
+            lineHeight: 1.1,
+            marginBottom: '5px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {displayTitle}
+          </div>
+          <div style={{ height: '1px', background: 'rgba(212,168,83,0.25)', marginBottom: '5px' }} />
+          {[
+            { text: specLine,   opacity: 0.85 },
+            flourLine   ? { text: flourLine,   opacity: 0.60 } : null,
+            weightsLine ? { text: weightsLine, opacity: 0.85 } : null,
+            { text: timingLine, opacity: 0.70 },
+            gearLine    ? { text: gearLine,    opacity: 0.70 } : null,
+            ...pizzaDisplayLines.map(l => ({ text: l, opacity: 0.55 })),
+          ].filter(Boolean).map((item, i) => (
+            <div key={i} style={{
+              fontFamily: MONO,
+              fontSize: 'clamp(9px, 1.9vw, 13px)',
+              color: `rgba(255,255,255,${(item as {text:string;opacity:number}).opacity})`,
+              lineHeight: 1.45,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              fontStyle: 'normal',
+            }}>
+              {(item as {text:string;opacity:number}).text}
+            </div>
+          ))}
+          <div style={{
+            position: 'absolute', bottom: '5px', left: '10px', right: '10px',
+            display: 'flex', justifyContent: 'space-between',
+          }}>
+            {bakerName && (
+              <span style={{
+                fontFamily: MONO,
+                fontSize: 'clamp(7px, 1.5vw, 11px)',
+                color: 'rgba(255,255,255,0.28)',
+              }}>Baked by {bakerName}</span>
+            )}
+            <span style={{
+              fontFamily: MONO,
+              fontSize: 'clamp(7px, 1.5vw, 11px)',
+              color: 'rgba(255,255,255,0.20)',
+            }}>bakerhub.app</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
