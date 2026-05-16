@@ -206,6 +206,63 @@ export default function SessionViewer({
       })()
     : null;
 
+  const protocolLines: string[] | null = (() => {
+    const lines: string[] = [];
+
+    // Style · spec · hydration · pref
+    const specParts = [
+      styleName,
+      snap.numItems && snap.itemWeight ? `${snap.numItems} × ${snap.itemWeight}g` : null,
+      displayHydration != null ? `${displayHydration}%` : null,
+      prefLabel,
+    ].filter((x): x is string => x != null && x !== '');
+    lines.push(specParts.join(' · '));
+
+    if (flourBlendName) lines.push(`  ${flourBlendName}`);
+
+    if (displayFlour && displayWater && displaySalt) {
+      const yeastPart = snap.yeastType !== 'sourdough' && yeastRounded != null
+        ? ` · ${yeastRounded}g ${YEAST_SHORT[snap.yeastType ?? ''] ?? 'yeast'}`
+        : '';
+      lines.push(`${displayFlour}g flour · ${displayWater}g water${yeastPart} · ${displaySalt}g salt`);
+    }
+
+    lines.push('');
+
+    if (schedule) {
+      const fmt = (d: Date) => {
+        const day = d.toLocaleDateString('en-GB', { weekday: 'short' });
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return `${day} ${hh}:${mm}`;
+      };
+      const mixStart = new Date(schedule.bulkFermStart.getTime() - schedule.mixingDurationH * 3600000);
+      lines.push(`${fmt(mixStart)}  Mix`);
+      lines.push(`${fmt(schedule.bulkFermStart)}  Bulk ferment`);
+      if (schedule.totalColdHours > 0 && schedule.coldRetardStart) {
+        lines.push(`${fmt(schedule.coldRetardStart)}  Cold retard (${formatHours(schedule.totalColdHours)})`);
+      }
+      lines.push(`${fmt(schedule.divideBallTime)}  Divide & ball`);
+      lines.push(`${fmt(schedule.finalProofStart)}  Final proof`);
+      lines.push(`${fmt(schedule.preheatStart)}  Preheat`);
+      lines.push(`${fmt(schedule.bakeStart)}  Bake`);
+    } else {
+      if (coldH > 0) lines.push(`  Cold ${formatHours(coldH)}`);
+      if (rtH > 0) lines.push(`  RT ${formatHours(rtH)}`);
+    }
+
+    const gearParts = [
+      snap.ovenType ? (OVEN_LABEL[snap.ovenType] ?? snap.ovenType.replace(/_/g, ' ')) : null,
+      snap.mixerType ? (MIXER_LABEL[snap.mixerType] ?? snap.mixerType) : null,
+    ].filter((x): x is string => x != null && x !== '');
+    if (gearParts.length > 0) {
+      lines.push('');
+      lines.push(`  ${gearParts.join(' · ')}`);
+    }
+
+    return lines;
+  })();
+
   const monoSm: React.CSSProperties = {
     fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)',
   };
@@ -665,6 +722,7 @@ export default function SessionViewer({
             manualSugar={snap?.manualSugar ?? null}
             yeastType={snap?.yeastType ?? null}
             yeastGrams={yeastRounded}
+            protocolLines={protocolLines}
             onClose={() => setShowShareModal(false)}
           />
         )}

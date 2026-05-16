@@ -28,6 +28,7 @@ interface ShareCardProps {
   manualSugar?: number | null;
   yeastType?: string | null;
   yeastGrams?: number | null;
+  protocolLines?: string[] | null;
   onClose: () => void;
 }
 
@@ -48,11 +49,16 @@ const LS_TITLE = 'bh_share_title';
 const LS_BAKER = 'bh_share_baker';
 
 const OVEN_LABEL: Record<string, string> = {
-  pizza_oven: 'Pizza oven', home_oven: 'Home oven',
-  ooni_karu: 'Ooni Karu', ooni_koda: 'Ooni Koda',
-  roccbox: 'Roccbox', gozney_dome: 'Gozney Dome',
-  cast_iron: 'Cast iron', bbq: 'BBQ',
-  ooni_volt: 'Ooni Volt', steel: 'Baking steel',
+  // Pizza ovens — matches OVEN_TYPES keys in data.ts
+  pizza_oven:         'Pizza oven',
+  home_oven_steel:    'Home oven + stone',
+  home_oven_standard: 'Home oven',
+  electric_pizza:     'Electric pizza oven',
+  // Bread ovens — matches BREAD_OVEN_TYPES keys in data.ts
+  wood_fired:         'Wood-fired oven',
+  dutch_oven:         'Dutch oven',
+  home_oven_bread:    'Home oven',
+  combo_cooker:       'Combo cooker',
 };
 const MIXER_LABEL: Record<string, string> = {
   hand: 'Hand kneaded', stand: 'Stand mixer',
@@ -68,7 +74,7 @@ export default function ShareCard({
   styleName, sessionName, numItems, itemWeight, hydration, prefLabel, flourLine,
   recipeFlour, recipeWater, recipeSalt, coldH, rtH,
   bakedQtys, localSlots, sessionPhotos, locale, status,
-  ovenType, mixerType, manualOil, manualSugar, yeastType, yeastGrams, onClose,
+  ovenType, mixerType, manualOil, manualSugar, yeastType, yeastGrams, protocolLines, onClose,
 }: ShareCardProps) {
   const l = locale === 'fr' ? 'fr' : 'en';
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -81,7 +87,7 @@ export default function ShareCard({
   const [bakerName, setBakerName] = useState<string>(
     () => (typeof window !== 'undefined' ? localStorage.getItem(LS_BAKER) ?? '' : '')
   );
-  const [template, setTemplate] = useState<'full' | 'two' | 'four' | 'text'>('full');
+  const [template, setTemplate] = useState<'full' | 'two' | 'four' | 'protocol'>('full');
   const [selectedPhotoUrls, setSelectedPhotoUrls] = useState<string[]>([]);
   const [cameraPhotoUrls, setCameraPhotoUrls] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -100,27 +106,34 @@ export default function ShareCard({
 
   const oilStr = manualOil && manualOil > 0 ? ` · ${manualOil}g oil` : '';
   const sugarStr = manualSugar && manualSugar > 0 ? ` · ${manualSugar}g sugar` : '';
-  const yeastStr = yeastGrams && yeastGrams > 0 && yeastType !== 'sourdough'
-    ? ` · ${Number(yeastGrams).toFixed(1)}g ${YEAST_SHORT[yeastType ?? ''] ?? 'yeast'}`
-    : '';
-  const weightsLine = recipeFlour && recipeWater && recipeSalt
-    ? `${recipeFlour}g flour · ${recipeWater}g water${yeastStr} · ${recipeSalt}g salt${oilStr}${sugarStr}`
-    : null;
-
+  // Inline percentages — merged into weightsLine, no separate pctLine
   const hydPct = recipeWater && recipeFlour
     ? Math.round(recipeWater / recipeFlour * 100)
     : null;
   const saltPct = recipeSalt && recipeFlour
-    ? Math.round(recipeSalt / recipeFlour * 1000) / 10
+    ? (Math.round(recipeSalt / recipeFlour * 1000) / 10).toFixed(1)
     : null;
   const yeastPct = yeastGrams && recipeFlour && yeastType !== 'sourdough'
-    ? Math.round(yeastGrams / recipeFlour * 1000) / 10
+    ? (() => {
+        const pct = (yeastGrams / recipeFlour) * 100;
+        return pct < 0.1 ? pct.toFixed(2) : pct.toFixed(1);
+      })()
     : null;
-  const pctLine = [
-    hydPct != null ? `${hydPct}% hydration` : null,
-    yeastPct != null ? `${yeastPct.toFixed(1)}% yeast` : null,
-    saltPct != null ? `${saltPct}% salt` : null,
-  ].filter(Boolean).join(' · ') || null;
+
+  const waterIngStr = recipeWater
+    ? `${recipeWater}g water${hydPct != null ? ` (${hydPct}%)` : ''}`
+    : null;
+  const yeastIngStr = yeastGrams && yeastGrams > 0 && yeastType !== 'sourdough'
+    ? ` · ${Number(yeastGrams).toFixed(1)}g ${YEAST_SHORT[yeastType ?? ''] ?? 'yeast'}${yeastPct != null ? ` (${yeastPct}%)` : ''}`
+    : '';
+  const saltIngStr = recipeSalt
+    ? `${recipeSalt}g salt${saltPct != null ? ` (${saltPct}%)` : ''}`
+    : null;
+
+  const weightsLine = recipeFlour && waterIngStr && saltIngStr
+    ? `${recipeFlour}g flour · ${waterIngStr}${yeastIngStr} · ${saltIngStr}${oilStr}${sugarStr}`
+    : null;
+  const pctLine = null; // merged inline above
 
   const timingLine = [
     coldH > 0 ? `Cold ${formatH(coldH)}` : null,
@@ -190,20 +203,22 @@ export default function ShareCard({
   }
 
   // ── Editable caption ──
-  const defaultCaption = [
-    customTitle,
-    '',
-    specLine,
-    ...(flourLine ? [flourLine] : []),
-    ...(weightsLine ? [weightsLine] : []),
-    timingLine,
-    ...(gearLine ? [gearLine] : []),
-    '',
-    ...(pizzaLines.length > 0 ? [pizzaLines.join(' · ')] : []),
-    '',
-    ...(bakerName ? [`Baked by ${bakerName}`] : []),
-    'Planned with bakerhub.app',
-  ].join('\n');
+  const defaultCaption = template === 'protocol' && protocolLines?.length
+    ? protocolLines.join('\n')
+    : [
+        customTitle,
+        '',
+        specLine,
+        ...(flourLine ? [flourLine] : []),
+        ...(weightsLine ? [weightsLine] : []),
+        timingLine,
+        ...(gearLine ? [gearLine] : []),
+        '',
+        ...(pizzaLines.length > 0 ? [pizzaLines.join(' · ')] : []),
+        '',
+        ...(bakerName ? [`Baked by ${bakerName}`] : []),
+        'Planned with bakerhub.app',
+      ].join('\n');
 
   const [editableCaption, setEditableCaption] = useState(defaultCaption);
 
@@ -216,11 +231,104 @@ export default function ShareCard({
   async function drawCard(): Promise<HTMLCanvasElement | null> {
     const canvas = canvasRef.current;
     if (!canvas) return null;
-    canvas.width = 1080;
-    canvas.height = 1080;
     const ctxOrNull = canvas.getContext('2d');
     if (!ctxOrNull) return null;
     const ctx = ctxOrNull;
+
+    if (template === 'protocol') {
+      const lines = protocolLines ?? [customTitle, '', specLine,
+        ...(weightsLine ? [weightsLine] : []), timingLine];
+      const FONT = '"DM Mono", monospace';
+      const MARGIN = 72;
+      const BODY_SIZE = 38;
+      const W = 1080;
+
+      // Calculate total height
+      let totalH = 100; // top pad
+      totalH += 48 + 16;  // date line
+      totalH += 88 + 32;  // title
+      totalH += 40;        // top divider
+      for (const ln of lines) {
+        totalH += ln === '' ? 24 : ln.startsWith('  ') ? 50 : 56;
+      }
+      totalH += 60;  // bottom divider + branding
+      totalH = Math.max(1080, totalH);
+
+      canvas.width = W;
+      canvas.height = totalH;
+
+      // Background
+      ctx.fillStyle = '#1A1612';
+      ctx.fillRect(0, 0, W, totalH);
+
+      let y = 72;
+
+      // Date
+      ctx.font = `400 28px ${FONT}`;
+      ctx.fillStyle = 'rgba(212,168,83,0.7)';
+      ctx.textAlign = 'left';
+      ctx.fillText(cardDate, MARGIN, y);
+      y += 48;
+
+      // Title
+      let titleSize = 80;
+      const maxTW = W - MARGIN * 2;
+      ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
+      while (ctx.measureText(customTitle).width > maxTW && titleSize > 52) {
+        titleSize -= 2;
+        ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
+      }
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(customTitle, MARGIN, y);
+      y += titleSize + 32;
+
+      // Divider
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(MARGIN, y); ctx.lineTo(W - MARGIN, y); ctx.stroke();
+      y += 40;
+
+      // Lines
+      for (const ln of lines) {
+        if (ln === '') { y += 24; continue; }
+        const isHeader = /^[A-Z][a-z]{1,2}\s\d{2}:\d{2}/.test(ln);
+        const isIndented = ln.startsWith('  ');
+        const size = isIndented ? BODY_SIZE - 4 : BODY_SIZE;
+        const opacity = isHeader ? 0.92 : isIndented ? 0.60 : 0.78;
+        ctx.font = `${isHeader ? '600' : '400'} ${size}px ${FONT}`;
+        ctx.fillStyle = `rgba(255,255,255,${opacity})`;
+        ctx.textAlign = 'left';
+        // Shrink to fit
+        let fs = size;
+        while (ctx.measureText(ln.trim()).width > W - MARGIN * 2 && fs > 24) {
+          fs--;
+          ctx.font = `${isHeader ? '600' : '400'} ${fs}px ${FONT}`;
+        }
+        ctx.fillText(ln.trim(), MARGIN, y);
+        y += fs + (isHeader ? 16 : 12);
+      }
+
+      // Bottom divider + branding
+      y += 20;
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(MARGIN, y); ctx.lineTo(W - MARGIN, y); ctx.stroke();
+      y += 36;
+      ctx.font = `400 26px ${FONT}`;
+      if (bakerName) {
+        ctx.fillStyle = 'rgba(255,255,255,0.28)';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Baked by ${bakerName}`, MARGIN, y);
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.20)';
+      ctx.textAlign = 'right';
+      ctx.fillText('bakerhub.app', W - MARGIN, y);
+
+      return canvas;
+    }
+
+    canvas.width = 1080;
+    canvas.height = 1080;
 
     ctx.fillStyle = '#1A1612';
     ctx.fillRect(0, 0, 1080, 1080);
@@ -243,30 +351,7 @@ export default function ShareCard({
     }
 
     // Photo zone
-    if (template === 'text') {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, 0, 1080, photoZoneHeight);
-      ctx.clip();
-      // Bubble texture
-      const bubbleSeeds = [
-        [120, 180, 280], [380, 90, 200], [700, 250, 180], [950, 100, 240],
-        [200, 420, 160], [580, 380, 300], [870, 380, 190], [50, 600, 220],
-        [430, 580, 250], [780, 560, 170], [980, 500, 200], [270, 700, 140],
-        [650, 700, 260], [100, 820, 180], [500, 800, 140], [880, 750, 220],
-      ];
-      for (const [bx, by, br] of bubbleSeeds) {
-        const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-        g.addColorStop(0, 'rgba(212,168,83,0.045)');
-        g.addColorStop(0.6, 'rgba(212,168,83,0.02)');
-        g.addColorStop(1, 'rgba(212,168,83,0)');
-        ctx.beginPath();
-        ctx.arc(bx, by, br, 0, Math.PI * 2);
-        ctx.fillStyle = g;
-        ctx.fill();
-      }
-      ctx.restore();
-    } else if (template === 'full') {
+    if (template === 'full') {
       if (selectedPhotoUrls[0]) {
         const img = await loadImg(selectedPhotoUrls[0]);
         if (img) {
@@ -408,8 +493,8 @@ export default function ShareCard({
     drawLine(specLine, 0.80, 44);
     if (flourLine) drawLine(flourLine, 0.60, 38);
     if (weightsLine) drawLine(weightsLine, 0.85, 42);
-    if (pctLine) drawLine(pctLine, 0.50, 36, true);
     if (timingLine) drawLine(timingLine, 0.50, 38);
+    if (gearLine) drawLine(gearLine, 0.50, 38);
 
     if (pizzaDisplayLines.length > 0) {
       y += 4;
@@ -564,7 +649,7 @@ export default function ShareCard({
         <div>
           <div style={sectionLbl}>{l === 'fr' ? 'Format' : 'Template'}</div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            {(['full', 'two', 'four', 'text'] as const).map(t => (
+            {(['full', 'two', 'four', 'protocol'] as const).map(t => (
               <div key={t} onClick={() => setTemplate(t)} style={{ flex: 1, cursor: 'pointer' }}>
                 <div style={{
                   aspectRatio: '1', background: '#1A1612', borderRadius: '8px',
@@ -599,14 +684,16 @@ export default function ShareCard({
                       </div>
                     </div>
                   )}
-                  {t === 'text' && (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: '16px', opacity: 0.3, color: 'white' }}>Aa</span>
+                  {t === 'protocol' && (
+                    <div style={{ position: 'absolute', inset: 0, padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', justifyContent: 'center' }}>
+                      {[100, 70, 85, 55].map((w, i) => (
+                        <div key={i} style={{ height: '3px', background: 'rgba(255,255,255,0.18)', borderRadius: '2px', width: `${w}%` }} />
+                      ))}
                     </div>
                   )}
                 </div>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: 'var(--smoke)', textAlign: 'center', marginTop: '4px' }}>
-                  {t === 'full' ? '1 photo' : t === 'two' ? '2 photos' : t === 'four' ? '4 photos' : (l === 'fr' ? 'Texte' : 'Text only')}
+                  {t === 'full' ? '1 photo' : t === 'two' ? '2 photos' : t === 'four' ? '4 photos' : (l === 'fr' ? 'Protocole' : 'Protocol')}
                 </div>
               </div>
             ))}
@@ -614,7 +701,7 @@ export default function ShareCard({
         </div>
 
         {/* Photo picker */}
-        {template !== 'text' && (
+        {template !== 'protocol' && (
           <div>
             <div style={sectionLbl}>
               {l === 'fr' ? 'Photos' : 'Photos'}
@@ -775,7 +862,7 @@ function PreviewCard({
   specLine, flourLine, weightsLine, pctLine, timingLine, gearLine,
   pizzaDisplayLines, cardDate, photoZoneRatio,
 }: {
-  template: 'full' | 'two' | 'four' | 'text';
+  template: 'full' | 'two' | 'four' | 'protocol';
   selectedPhotoUrls: string[];
   customTitle: string;
   bakerName: string;
@@ -797,7 +884,7 @@ function PreviewCard({
       {/* Photo zone */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: `${photoZoneRatio * 100}%`, overflow: 'hidden' }}>
 
-        {template === 'text' && (
+        {template === 'protocol' && (
           <div style={{
             position: 'absolute', inset: 0,
             background: 'radial-gradient(ellipse at 30% 40%, rgba(212,168,83,0.06) 0%, transparent 60%), radial-gradient(ellipse at 75% 70%, rgba(212,168,83,0.04) 0%, transparent 50%)',
@@ -829,7 +916,7 @@ function PreviewCard({
         )}
 
         {/* Gradient fade into panel */}
-        {template !== 'text' && (
+        {template !== 'protocol' && (
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(to bottom, transparent, #1A1612)' }} />
         )}
       </div>
