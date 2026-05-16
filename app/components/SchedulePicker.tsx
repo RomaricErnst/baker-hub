@@ -492,6 +492,14 @@ function findOptimalPosition(
         }
       }
 
+      // Score plateau constants — declared here so they're in scope for both
+      // the comfort window guard and the scoring block below.
+      const scorePlateauH   = prefermentType === 'biga' ? 10 : prefGoesInFridge ? 3 : 0;
+      const scoreRTPeakTol  = kitchenTemp >= 30 ? 0.5
+                            : kitchenTemp >= 28 ? 0.75
+                            : kitchenTemp >= 24 ? 1.0
+                            : 1.5;
+
       // Comfort window: if fridge poolish start lands outside 18:00–21:00,
       // scan for the EARLIEST slot whose clock time falls in 18:00–21:00.
       // If no such slot exists, keep the original bestPrefOffset.
@@ -509,41 +517,65 @@ function findOptimalPosition(
               break;
             }
           }
-          if (comfortOffset !== null) bestPrefOffset = comfortOffset;
+          if (comfortOffset !== null) {
+            // Only apply comfort if the poolish stays in the green zone.
+            // Comfort is a preference, not a reason to leave green zone.
+            const comfortInZone = comfortOffset >= prefOptH - scorePlateauH
+                                && comfortOffset <= prefOptH + scorePlateauH;
+            if (comfortInZone) bestPrefOffset = comfortOffset;
+          }
         }
       }
-
-      // Score using the same plateau logic as the card green pill —
-      // not the full technical zone (3–24h). This ensures the algorithm
-      // only claims score-3 when the card would actually show green.
-      // Climate-sensitive RT tolerance mirrors Fix 1 above.
-      const scorePlateauH   = prefermentType === 'biga' ? 10 : prefGoesInFridge ? 3 : 0;
-      const scoreRTPeakTol  = kitchenTemp >= 30 ? 0.5
-                            : kitchenTemp >= 28 ? 0.75
-                            : kitchenTemp >= 24 ? 1.0
-                            : 1.5;
       const prefInZone = prefGoesInFridge
         ? bestPrefOffset >= prefOptH - scorePlateauH && bestPrefOffset <= prefOptH + scorePlateauH
         : bestPrefOffset >= prefOptH - scoreRTPeakTol && bestPrefOffset <= prefOptH + scoreRTPeakTol;
       const mixInZone  = inSweet(candidate);
       const score = (mixInZone ? 2 : 0) + (prefInZone ? 1 : 0);
 
+      const result3 = {
+        mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
+        mixInZone: score === 3 ? true : mixInZone,
+        prefInZone: score === 3 ? true : prefInZone,
+        fallback: score < 2, mixInBlocker: false, prefInBlocker: false,
+      };
+
       if (score === 3) {
-        // Perfect — both in zone, return immediately
-        return {
-          mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
-          mixInZone: true, prefInZone: true,
-          fallback: false, mixInBlocker: false, prefInBlocker: false,
-        };
+        // Among score-3 results, prefer reasonable dough hours (7am–10pm).
+        // If current best is already score-3 at a reasonable hour, keep it.
+        // Otherwise update if: this is first score-3, OR current best is
+        // unreasonable and this is reasonable, OR both reasonable and this
+        // has a more convenient poolish hour (closer to 19h = 7pm).
+        const doughHour = new Date(ms - candidate * 3600000).getHours();
+        const isDoughReasonable = doughHour >= 7 && doughHour <= 22;
+        const poolishHour = new Date(ms - (candidate + bestPrefOffset) * 3600000).getHours();
+        const poolishComfort = Math.abs(poolishHour - 19); // closer to 7pm = better
+
+        if (bestScore < 3) {
+          // First score-3 found — take it
+          bestScore = 3;
+          bestResult = result3;
+          (bestResult as Record<string, unknown>)._doughReasonable = isDoughReasonable;
+          (bestResult as Record<string, unknown>)._poolishComfort = poolishComfort;
+        } else {
+          // Already have a score-3 — upgrade only if better comfort
+          const prevReasonable = (bestResult as Record<string, unknown>)._doughReasonable ?? false;
+          const prevComfort = ((bestResult as Record<string, unknown>)._poolishComfort as number | undefined) ?? 999;
+          const upgrade =
+            (!prevReasonable && isDoughReasonable) ||
+            (isDoughReasonable && prevReasonable && poolishComfort < prevComfort);
+          if (upgrade) {
+            bestResult = result3;
+            (bestResult as Record<string, unknown>)._doughReasonable = isDoughReasonable;
+            (bestResult as Record<string, unknown>)._poolishComfort = poolishComfort;
+          }
+        }
+        // Never return early — keep scanning for a better score-3
+        continue;
       }
 
       if (score > bestScore) {
         bestScore = score;
-        bestResult = {
-          mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
-          mixInZone, prefInZone,
-          fallback: !mixInZone, mixInBlocker: false, prefInBlocker: false,
-        };
+        bestResult = result3;
       }
     }
   }
