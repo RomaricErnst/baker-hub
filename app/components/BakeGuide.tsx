@@ -711,7 +711,7 @@ export default function BakeGuide({
             <>
               <Steps items={hydration > 70 ? [
                 // >70%: pumpkin first, bassinage after
-                { bold: bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%)${!hasPref ? ' + yeast' : ''}` : 'Flour + 90% of your water', note: 'Speed 1, 3 min to combine' },
+                { bold: bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%)${!isSourdough && !hasPref ? ' + yeast' : ''}` : 'Flour + 90% of your water', note: 'Speed 1, 3 min to combine' },
                 ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
                 { bold: bgSaltLabel, note: 'Speed 1, 2 min' },
                 { bold: 'Speed 2 until pumpkin shape forms', note: `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
@@ -719,7 +719,7 @@ export default function BakeGuide({
                 ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
               ] : [
                 // ≤70%: remaining water before Speed 2
-                { bold: bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%)${!hasPref ? ' + yeast' : ''}` : 'Flour + 90% of your water', note: 'Speed 1, 3 min to combine' },
+                { bold: bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%)${!isSourdough && !hasPref ? ' + yeast' : ''}` : 'Flour + 90% of your water', note: 'Speed 1, 3 min to combine' },
                 ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
                 { bold: bgSaltLabel, note: 'Speed 1, 2 min' },
                 { bold: bgWater10Label, note: 'Speed 1, mix until absorbed — ~1 min' },
