@@ -754,7 +754,7 @@ export default function Home() {
     setStartTime(now);
     setEatTime(null);
     setBlocks([]); setYeastType(null);
-    setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(4);
+    setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(6);
     setShowResults(false); setActiveStep(1); setHighestStep(1);
     setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
@@ -822,7 +822,7 @@ export default function Home() {
     setYeastType((r.yeast_type ?? 'instant') as YeastType);
     setKitchenTemp(r.kitchen_temp);
     setHumidity(r.humidity ?? 'normal');
-    setFridgeTemp(r.fridge_temp ?? 4);
+    setFridgeTemp(r.fridge_temp ?? 6);
 
     // Custom mode fields
     if (isCustom) {
@@ -1594,6 +1594,7 @@ export default function Home() {
                             styleName={ALL_STYLES[styleKey!].name}
                             mixerType={mixerType!}
                             kitchenTemp={kitchenTemp}
+                            fridgeTemp={fridgeTemp}
                             fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
                             totalColdHours={schedule ? schedule.totalColdHours : 0}
                             mode={tab}
@@ -2766,6 +2767,7 @@ export default function Home() {
                             styleName={ALL_STYLES[styleKey!].name}
                             mixerType={mixerType!}
                             kitchenTemp={kitchenTemp}
+                            fridgeTemp={fridgeTemp}
                             fermEquivHours={schedule ? schedule.totalRTHours + schedule.totalColdHours * 0.18 : 0}
                             totalColdHours={schedule ? schedule.totalColdHours : 0}
                             mode={tab}

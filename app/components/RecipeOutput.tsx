@@ -12,6 +12,7 @@ interface RecipeOutputProps {
   styleName: string;
   mixerType: string;
   kitchenTemp: number;
+  fridgeTemp?: number;
   fermEquivHours: number;
   totalColdHours?: number;
   mode?: 'simple' | 'custom';
@@ -372,7 +373,7 @@ function StarterPrepCard({ sourdough }: { sourdough: { starterGramsMin: number; 
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
+  result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
 }: RecipeOutputProps) {
   const t = useTranslations();

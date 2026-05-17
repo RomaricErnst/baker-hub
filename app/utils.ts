@@ -850,7 +850,7 @@ export function calculateRecipe(
     ? targetDoughTemp
     : TARGET_FDT[styleKey] ?? 24;
   const flourTemp = (mode === 'custom' && flourInFridge)
-    ? 4
+    ? fridgeTemp
     : kitchenTemp;
   const frictionFactor = MIXER_TYPES[mixerType]?.frictionFactor ?? 3;
   const waterTemp = Math.max(2, Math.min(40,
