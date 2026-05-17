@@ -446,7 +446,7 @@ export default function ClimatePicker({
             fontFamily: 'var(--font-dm-mono)', marginTop: '.25rem',
           }}>
             <span>{tempC(1, u)}</span>
-            <span>{tempC(4, u)} standard</span>
+            <span>{tempC(6, u)} standard</span>
             <span>{tempC(8, u)} warm</span>
             <span>{tempC(15, u)}</span>
           </div>
@@ -458,7 +458,7 @@ export default function ClimatePicker({
               background: '#EEF2FA', border: '1px solid #C4CDE0',
               borderRadius: '8px', padding: '.45rem .8rem',
             }}>
-              Fridge at <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> is warmer than the standard {tempC(4, u)} — yeast will be more active during cold retard.
+              Fridge at <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> is warmer than the standard {tempC(6, u)} — yeast will be more active during cold retard.
             </div>
           )}
 
