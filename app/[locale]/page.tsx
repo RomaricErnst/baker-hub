@@ -719,8 +719,8 @@ export default function Home() {
   function advance(from: number) {
     const next = from + 1;
     const target = next > highestStep ? next : highestStep;
+    setHighestStep(target);
     setActiveStep(target);
-    setHighestStep(h => Math.max(h, target));
     setTimeout(() => {
       if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
       const el = document.getElementById(`step-${target}`);
@@ -734,8 +734,8 @@ export default function Home() {
   function advanceAdv(from: number) {
     const next = from + 1;
     const target = next > advancedHighestStep ? next : advancedHighestStep;
+    setAdvancedHighestStep(target);
     setAdvancedStep(target);
-    setAdvancedHighestStep(h => Math.max(h, target));
     setTimeout(() => {
       if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
       const el = document.getElementById(`adv-step-${target}`);
