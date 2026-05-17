@@ -1546,8 +1546,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Phase 2 content — only once bake time is set */}
       {eatTimeSet && (<div>
 
-      {/* too_short compact note */}
-      {scenario === 'too_short' && (
+      {/* too_short compact note — only when bake is in future */}
+      {scenario === 'too_short' && !guardNote && (
         <div style={{ fontSize: '.78rem', color: 'var(--terra)', marginBottom: '.9rem', lineHeight: 1.5 }}>
           ⚡ {t('scenario.tooShort')}
         </div>
