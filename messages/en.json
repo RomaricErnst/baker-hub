@@ -492,6 +492,7 @@
     "prefTooEarly": "🔴 Past its peak — over-fermentation risk",
     "prefLateOk": "🟡 Still developing — use it, it'll be fine",
     "prefTooLate": "🔴 Not ready — under-fermentation risk",
+    "prefTooShortTime": "🔴 Not enough time — skip poolish for better results",
     "prefInFridgeReady": "🧊 In fridge → ready at Start Dough",
     "prefReadyWhenDoughStarts": "🟢 Ready when dough starts"
   },

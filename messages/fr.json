@@ -492,6 +492,7 @@
     "prefTooEarly": "🔴 Passé son pic — risque de surfermentation",
     "prefLateOk": "🟡 En développement — utilisez-le, ça ira",
     "prefTooLate": "🔴 Pas prêt — risque de sous-fermentation",
+    "prefTooShortTime": "🔴 Pas assez de temps — pâte directe recommandée",
     "prefInFridgeReady": "🧊 Au frigo → prêt au démarrage",
     "prefReadyWhenDoughStarts": "🟢 Prêt au démarrage de la pâte"
   },

@@ -529,53 +529,38 @@ function findOptimalPosition(
       const prefInZone = prefGoesInFridge
         ? bestPrefOffset >= prefOptH - scorePlateauH && bestPrefOffset <= prefOptH + scorePlateauH
         : bestPrefOffset >= prefOptH - scoreRTPeakTol && bestPrefOffset <= prefOptH + scoreRTPeakTol;
-      const mixInZone  = inSweet(candidate);
-      const score = (mixInZone ? 2 : 0) + (prefInZone ? 1 : 0);
+      // Pref yellow = developing but viable (below green floor, above minimum)
+      const prefYellow = !prefInZone && (
+        prefGoesInFridge
+          ? bestPrefOffset >= prefZoneMin && bestPrefOffset < prefOptH - scorePlateauH
+          : bestPrefOffset >= 1 && bestPrefOffset < prefOptH - scoreRTPeakTol
+      );
+      const mixInZone = inSweet(candidate);
+      const score = (mixInZone ? 2 : 0) + (prefInZone ? 2 : prefYellow ? 1 : 0);
+      // score 4 = both green, score 3 = mix green + pref yellow,
+      // score 2 = mix green only, score 1 = pref yellow only, score 0 = neither
 
-      const result3 = {
-        mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
-        mixInZone: score === 3 ? true : mixInZone,
-        prefInZone: score === 3 ? true : prefInZone,
-        fallback: score < 2, mixInBlocker: false, prefInBlocker: false,
-      };
-
-      if (score === 3) {
-        // Among score-3 results, prefer reasonable dough hours (7am–10pm).
-        // If current best is already score-3 at a reasonable hour, keep it.
-        // Otherwise update if: this is first score-3, OR current best is
-        // unreasonable and this is reasonable, OR both reasonable and this
-        // has a more convenient poolish hour (closer to 19h = 7pm).
-        const doughHour = new Date(ms - candidate * 3600000).getHours();
-        const isDoughReasonable = doughHour >= 7 && doughHour <= 22;
-        const poolishHour = new Date(ms - (candidate + bestPrefOffset) * 3600000).getHours();
-        const poolishComfort = Math.abs(poolishHour - 19); // closer to 7pm = better
-
-        if (bestScore < 3) {
-          // First score-3 found — take it
-          bestScore = 3;
-          bestResult = result3;
-          (bestResult as Record<string, unknown>)._doughReasonable = isDoughReasonable;
-          (bestResult as Record<string, unknown>)._poolishComfort = poolishComfort;
-        } else {
-          // Already have a score-3 — upgrade only if better comfort
-          const prevReasonable = (bestResult as Record<string, unknown>)._doughReasonable ?? false;
-          const prevComfort = ((bestResult as Record<string, unknown>)._poolishComfort as number | undefined) ?? 999;
-          const upgrade =
-            (!prevReasonable && isDoughReasonable) ||
-            (isDoughReasonable && prevReasonable && poolishComfort < prevComfort);
-          if (upgrade) {
-            bestResult = result3;
-            (bestResult as Record<string, unknown>)._doughReasonable = isDoughReasonable;
-            (bestResult as Record<string, unknown>)._poolishComfort = poolishComfort;
-          }
-        }
-        // Never return early — keep scanning for a better score-3
-        continue;
+      if (score === 4) {
+        return {
+          mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
+          mixInZone: true, prefInZone: true,
+          fallback: false, mixInBlocker: false, prefInBlocker: false,
+        };
       }
-
       if (score > bestScore) {
         bestScore = score;
-        bestResult = result3;
+        bestResult = {
+          mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
+          mixInZone,
+          prefInZone: prefInZone || prefYellow, // yellow counts as "viable"
+          fallback: !mixInZone, mixInBlocker: false, prefInBlocker: false,
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (bestResult as any)._doughReasonable = new Date(ms - candidate * 3600000).getHours() >= 7;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (bestResult as any)._poolishComfort = Math.abs(
+          new Date(ms - (candidate + bestPrefOffset) * 3600000).getHours() - 19
+        );
       }
     }
   }
@@ -1050,6 +1035,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [zonesOpen, setZonesOpen] = useState(false);
+  const [skipPoolishNote, setSkipPoolishNote] = useState(false);
   const [editingMix, setEditingMix]   = useState(false);
   const [editingPref, setEditingPref] = useState(false);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
@@ -1170,12 +1156,27 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       onPrefOffsetChange?.(optimalPrefOffset);
     }
 
+    // Skip poolish if window too short for even a yellow result.
+    // Yellow requires at least poolishMinH + minTotalRTLocal.
+    // This is style + temperature sensitive via poolishMinH and minTotalRTLocal.
+    const minWindowForYellowPoolish = poolishMinH + minTotalRTLocal;
+    const skipPoolishDueToTime = hasPrefActive && totalWindowH < minWindowForYellowPoolish;
+    if (skipPoolishDueToTime) {
+      // Suppress preferment — direct dough gives better result than underdeveloped poolish
+      setSkipPoolishNote(true);
+    } else {
+      setSkipPoolishNote(false);
+    }
+
+    // Pass hasPref=false to findOptimalPosition when skipping poolish
+    const effectiveHasPref = hasPrefActive && !skipPoolishDueToTime;
+
     // Minimum viable poolish: 3h RT, 12h fridge
     const prefMinViableH = poolishMinH;
     const result = findOptimalPosition(
       sweetCenter, sweetFrom, sweetTo,
       currentBlocks, et,
-      hasPrefActive, optimalPrefOffset,
+      effectiveHasPref, optimalPrefOffset,
       kitchenTemp,
       nowHBF,
       prefermentType,
@@ -1550,6 +1551,24 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {scenario === 'too_short' && !guardNote && (
         <div style={{ fontSize: '.78rem', color: 'var(--terra)', marginBottom: '.9rem', lineHeight: 1.5 }}>
           ⚡ {t('scenario.tooShort')}
+        </div>
+      )}
+
+      {/* Skip poolish note — window too short for viable preferment */}
+      {hasPrefActive && skipPoolishNote && (
+        <div style={{
+          fontSize: '.78rem',
+          color: 'var(--smoke)',
+          background: 'rgba(212,168,83,0.08)',
+          border: '1px solid rgba(212,168,83,0.25)',
+          borderRadius: 8,
+          padding: '8px 12px',
+          marginBottom: '.9rem',
+          lineHeight: 1.5,
+        }}>
+          {locale === 'fr'
+            ? `⏱ Pas assez de temps pour un ${prefermentType} efficace — pâte directe recommandée.`
+            : `⏱ Not enough time for a useful ${prefermentType} — direct dough recommended.`}
         </div>
       )}
 
@@ -2275,6 +2294,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           : cardPrefEarlyOk                        ? tRoot('schedulePicker.prefEarlyOk')
           : cardPrefDeveloping                     ? tRoot('schedulePicker.prefLateOk')
           : cardPrefLateOk                         ? tRoot('schedulePicker.prefTooLate')
+          : cardPrefTooShort                        ? tRoot('schedulePicker.prefTooShortTime')
           :                                          tRoot('schedulePicker.prefTooEarly');
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
