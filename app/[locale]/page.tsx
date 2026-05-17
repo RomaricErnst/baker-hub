@@ -298,7 +298,7 @@ export default function Home() {
   // Step 6 — climate
   const [kitchenTemp, setKitchenTemp] = useState(22);
   const [humidity, setHumidity] = useState('normal');
-  const [fridgeTemp, setFridgeTemp] = useState(4);
+  const [fridgeTemp, setFridgeTemp] = useState(6);
   const [units, setUnits] = useState<UnitSystem>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('bh_units') as UnitSystem) ?? 'metric';
@@ -1453,6 +1453,7 @@ export default function Home() {
                 preheatMin={preheatMin}
                 styleKey={styleKey ?? ''}
                 kitchenTemp={kitchenTemp}
+                fridgeTemp={fridgeTemp}
                 schedule={schedule}
                 bakeType={bakeType ?? 'pizza'}
                 isSourdough={yeastType === 'sourdough'}
@@ -2171,6 +2172,7 @@ export default function Home() {
                 preheatMin={preheatMin}
                 styleKey={styleKey ?? ''}
                 kitchenTemp={kitchenTemp}
+                fridgeTemp={fridgeTemp}
                 schedule={schedule}
                 bakeType={bakeType ?? 'pizza'}
                 isSourdough={yeastType === 'sourdough'}

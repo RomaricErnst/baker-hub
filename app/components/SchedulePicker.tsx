@@ -21,6 +21,7 @@ interface SchedulePickerProps {
   onPrefGoesInFridgeChange?: (inFridge: boolean) => void;
   mode?: 'simple' | 'custom';   // default 'custom'
   onReady?: () => void;
+  fridgeTemp?: number;
 }
 
 type PickerPhase = 'bake_time' | 'start_confirm';
@@ -392,6 +393,7 @@ function findOptimalPosition(
   minTotalRT: number = 3,
   prefRTWarmupH: number = 0,
   prefGoesInFridge: boolean = false,
+  fridgeTemp: number = 6,
 ): {
   mixHBF: number;
   prefHBF: number;
@@ -494,11 +496,17 @@ function findOptimalPosition(
 
       // Score plateau constants — declared here so they're in scope for both
       // the comfort window guard and the scoring block below.
-      const scorePlateauH   = prefermentType === 'biga' ? 10 : prefGoesInFridge ? 3 : 0;
+      const fridgePlateauH  = prefermentType === 'biga' ? 10 : prefGoesInFridge ? 3 : 0;
+      const scorePlateauH   = fridgePlateauH; // upper bound (over-fermented side)
+      const scorePlateauH_LOW = prefGoesInFridge && prefermentType === 'poolish' ? 5 : fridgePlateauH; // lower bound (wider — underdeveloped is safer)
       const scoreRTPeakTol  = kitchenTemp >= 30 ? 0.5
                             : kitchenTemp >= 28 ? 0.75
                             : kitchenTemp >= 24 ? 1.0
                             : 1.5;
+      const scoreRTPeakTolUpper = kitchenTemp >= 30 ? 0.75
+                                : kitchenTemp >= 28 ? 1.0
+                                : kitchenTemp >= 24 ? 1.5
+                                : 2.0;
 
       // Comfort window: if fridge poolish start lands outside 18:00–21:00,
       // scan for the EARLIEST slot whose clock time falls in 18:00–21:00.
@@ -520,19 +528,19 @@ function findOptimalPosition(
           if (comfortOffset !== null) {
             // Only apply comfort if the poolish stays in the green zone.
             // Comfort is a preference, not a reason to leave green zone.
-            const comfortInZone = comfortOffset >= prefOptH - scorePlateauH
+            const comfortInZone = comfortOffset >= prefOptH - scorePlateauH_LOW
                                 && comfortOffset <= prefOptH + scorePlateauH;
             if (comfortInZone) bestPrefOffset = comfortOffset;
           }
         }
       }
       const prefInZone = prefGoesInFridge
-        ? bestPrefOffset >= prefOptH - scorePlateauH && bestPrefOffset <= prefOptH + scorePlateauH
-        : bestPrefOffset >= prefOptH - scoreRTPeakTol && bestPrefOffset <= prefOptH + scoreRTPeakTol;
+        ? bestPrefOffset >= prefOptH - scorePlateauH_LOW && bestPrefOffset <= prefOptH + scorePlateauH
+        : bestPrefOffset >= prefOptH - scoreRTPeakTol && bestPrefOffset <= prefOptH + scoreRTPeakTolUpper;
       // Pref yellow = developing but viable (below green floor, above minimum)
       const prefYellow = !prefInZone && (
         prefGoesInFridge
-          ? bestPrefOffset >= prefZoneMin && bestPrefOffset < prefOptH - scorePlateauH
+          ? bestPrefOffset >= prefZoneMin && bestPrefOffset < prefOptH - scorePlateauH_LOW
           : bestPrefOffset >= 1 && bestPrefOffset < prefOptH - scoreRTPeakTol
       );
       const mixInZone = inSweet(candidate);
@@ -953,7 +961,7 @@ function SimpleColourBar({
 }
 
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, mode = 'custom', onReady }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, mode = 'custom', onReady, fridgeTemp = 6 }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1115,7 +1123,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       || (prefermentType === 'poolish' && (kitchenTemp >= 26 || localEnoughTimeForFridge))
     );
     // fridge-aware poolish offset — pass directly, per-candidate clamp happens in findOptimalPosition
-    const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp, localPrefGoesInFridge) : prefOffsetH;
+    const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp, localPrefGoesInFridge, styleKey ?? 'neapolitan', fridgeTemp) : prefOffsetH;
     // fridge-aware minimum: 12h for fridge poolish/biga, 3h for RT poolish
     const poolishMinH = localPrefGoesInFridge ? 12 : 3;
 
@@ -1184,6 +1192,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       minTotalRTLocal,
       localPrefGoesInFridge ? getPrefRTWarmupH(kitchenTemp) : 0,
       localPrefGoesInFridge,
+      fridgeTemp,
     );
 
     if (result.mixInBlocker) {
@@ -2255,11 +2264,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const isLevainType = prefermentType === 'levain' || isSourdough;
         const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
         // Single source of truth — same functions used by graph zone and recommendation
-        const prefOptHCard  = getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridge, styleKey ?? 'neapolitan');
+        const prefOptHCard  = getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridge, styleKey ?? 'neapolitan', fridgeTemp);
         const prefMaxHCard  = prefermentType === 'biga' ? 72 : prefGoesInFridge ? 24 : prefRTPeakH * 1.5;
         const prefMinHCard  = 3;
-        // Plateau half-width: poolish fridge ±3h, biga ±10h, RT ±0
-        const cardPrefPlateauH  = prefGoesInFridge ? (prefermentType === 'biga' ? 10 : 3) : 0;
+        // Plateau half-width: poolish fridge ±3h upper / +5h lower (asymmetric), biga ±10h, RT ±0
+        const fridgePlateauH    = prefGoesInFridge ? (prefermentType === 'biga' ? 10 : 3) : 0;
+        const cardPrefPlateauH_LOW = prefGoesInFridge && prefermentType === 'poolish' ? 5 : fridgePlateauH;
         // Climate-aware RT zones — absolute hour offsets, not percentages.
         // rtPeakH is already climate-sensitive (4h at 30°C, 11h at 18°C).
         // Green: at or just past peak (±1.5h window)
@@ -2271,19 +2281,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                                 : kitchenTemp >= 28 ? 0.75
                                 : kitchenTemp >= 24 ? 1.0
                                 : 1.5;
-        // Green zone = plateau only: optH-plateauH → optH+plateauH (fridge) or optH → optH+1.5h (RT)
+        // Green zone = plateau only: optH-plateauH_LOW → optH+plateauH (fridge, asymmetric) or optH-tol → optH+tolUpper (RT)
         // Developing zone = viable but not yet at peak: 3h → plateau start
+        const RT_PEAK_TOLERANCE_UPPER = kitchenTemp >= 30 ? 0.75
+                                      : kitchenTemp >= 28 ? 1.0
+                                      : kitchenTemp >= 24 ? 1.5
+                                      : 2.0;
         const cardPrefInZone = prefGoesInFridge
-          ? (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard - cardPrefPlateauH && prefOffsetH <= prefOptHCard + cardPrefPlateauH
-          : (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard - RT_PEAK_TOLERANCE && prefOffsetH <= prefOptHCard + RT_PEAK_TOLERANCE;
+          ? (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard - cardPrefPlateauH_LOW && prefOffsetH <= prefOptHCard + fridgePlateauH
+          : (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard - RT_PEAK_TOLERANCE && prefOffsetH <= prefOptHCard + RT_PEAK_TOLERANCE_UPPER;
         const cardPrefEarlyOk = prefGoesInFridge
-          ? (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + cardPrefPlateauH && prefOffsetH <= prefMaxHCard
-          : (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + RT_PEAK_TOLERANCE && prefOffsetH <= prefMaxHCard;
+          ? (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + fridgePlateauH && prefOffsetH <= prefMaxHCard
+          : (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + RT_PEAK_TOLERANCE_UPPER && prefOffsetH <= prefMaxHCard;
         // Developing = viable but not yet at peak (both fridge and RT)
         const cardPrefDeveloping = (hasPrefActive || isSourdough)
           && prefOffsetH >= prefMinHCard
           && (prefGoesInFridge
-            ? prefOffsetH < prefOptHCard - cardPrefPlateauH
+            ? prefOffsetH < prefOptHCard - cardPrefPlateauH_LOW
             : prefOffsetH < prefOptHCard);
         const cardPrefTooEarly  = (hasPrefActive || isSourdough) && prefOffsetH > prefMaxHCard;
         const cardPrefLateOk    = (hasPrefActive || isSourdough) && prefOffsetH >= 1 && prefOffsetH < prefMinHCard;
