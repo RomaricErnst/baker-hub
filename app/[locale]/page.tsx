@@ -116,11 +116,12 @@ const FALLBACK_ZONE = { min: 50, classicMin: 60, classicMax: 70, advancedMax: 78
 
 // ── Step card ────────────────────────────────
 function StepCard({
-  num, title, activeStep, summary, onEdit, children, idPrefix = 'step', reviewMode = false, canComplete = true,
+  num, title, activeStep, highestStep, summary, onEdit, children, idPrefix = 'step', reviewMode = false, canComplete = true,
 }: {
   num: number;
   title: string;
   activeStep: number;
+  highestStep: number;
   summary?: React.ReactNode;
   onEdit: () => void;
   children: React.ReactNode;
@@ -129,8 +130,8 @@ function StepCard({
   canComplete?: boolean;
 }) {
   const isActive    = activeStep === num || reviewMode;
-  const isCompleted = activeStep > num && !reviewMode && canComplete;
-  const isLocked    = activeStep < num && !reviewMode;
+  const isCompleted = highestStep >= num && activeStep !== num && !reviewMode && canComplete;
+  const isLocked    = highestStep < num && !reviewMode;
 
   return (
     <div id={`${idPrefix}-${num}`} className={isActive ? 'step-card-active' : undefined} style={{
@@ -267,7 +268,9 @@ export default function Home() {
   };
   const [tab, setTab] = useState<'simple' | 'custom'>('simple');
   const [activeStep, setActiveStep] = useState(1);
+  const [highestStep, setHighestStep] = useState(1);
   const [advancedStep, setAdvancedStep] = useState(1);
+  const [advancedHighestStep, setAdvancedHighestStep] = useState(1);
   const [flourBlend, setFlourBlend] = useState<FlourBlend>({ flour1: 'pizza00', flour2: null, ratio1: 100 });
 
   // Step 1 — bake type
@@ -682,6 +685,7 @@ export default function Home() {
     setStyleKey(null);
     setOvenType(null);
     setActiveStep(1);
+    setHighestStep(1);
     setModeChosen(true);
   }
 
@@ -713,10 +717,13 @@ export default function Home() {
   }
 
   function advance(from: number) {
-    setActiveStep(from + 1);
+    const next = from + 1;
+    const target = next > highestStep ? next : highestStep;
+    setActiveStep(target);
+    setHighestStep(h => Math.max(h, target));
     setTimeout(() => {
       if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
-      const el = document.getElementById(`step-${from + 1}`);
+      const el = document.getElementById(`step-${target}`);
       if (el) {
         const top = el.getBoundingClientRect().top + window.scrollY - 70;
         window.scrollTo({ top, behavior: 'smooth' });
@@ -725,10 +732,13 @@ export default function Home() {
   }
 
   function advanceAdv(from: number) {
-    setAdvancedStep(from + 1);
+    const next = from + 1;
+    const target = next > advancedHighestStep ? next : advancedHighestStep;
+    setAdvancedStep(target);
+    setAdvancedHighestStep(h => Math.max(h, target));
     setTimeout(() => {
       if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
-      const el = document.getElementById(`adv-step-${from + 1}`);
+      const el = document.getElementById(`adv-step-${target}`);
       if (el) {
         const top = el.getBoundingClientRect().top + window.scrollY - 70;
         window.scrollTo({ top, behavior: 'smooth' });
@@ -745,8 +755,8 @@ export default function Home() {
     setEatTime(null);
     setBlocks([]); setYeastType(null);
     setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(4);
-    setShowResults(false); setActiveStep(1);
-    setAdvancedStep(1); setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
+    setShowResults(false); setActiveStep(1); setHighestStep(1);
+    setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
     setModeChosen(false);
@@ -1237,6 +1247,7 @@ export default function Home() {
             <StepCard
               num={1} title={t('steps.2.title')}
               activeStep={activeStep}
+              highestStep={highestStep}
               reviewMode={reviewMode}
               summary={styleKey ? (locale === 'fr' && (ALL_STYLES[styleKey] as { nameFr?: string }).nameFr ? (ALL_STYLES[styleKey] as { nameFr: string }).nameFr : ALL_STYLES[styleKey].name) : undefined}
               onEdit={() => setActiveStep(1)}
@@ -1250,6 +1261,7 @@ export default function Home() {
             <StepCard
               num={2} title={t('steps.3.title')}
               activeStep={activeStep}
+              highestStep={highestStep}
               reviewMode={reviewMode}
               summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
               onEdit={() => setActiveStep(2)}
@@ -1371,6 +1383,7 @@ export default function Home() {
             <StepCard
               num={3} title={t('steps.4.title')}
               activeStep={activeStep}
+              highestStep={highestStep}
               reviewMode={reviewMode}
               summary={ovenData
                 ? (locale === 'fr' && (ovenData as { nameFr?: string }).nameFr ? (ovenData as { nameFr: string }).nameFr : ovenData.name)
@@ -1390,6 +1403,7 @@ export default function Home() {
             <StepCard
               num={4} title={t('steps.5.title')}
               activeStep={activeStep}
+              highestStep={highestStep}
               reviewMode={reviewMode}
               summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
               onEdit={() => setActiveStep(4)}
@@ -1408,6 +1422,7 @@ export default function Home() {
             <StepCard
               num={5} title={t('steps.6.title')}
               activeStep={activeStep}
+              highestStep={highestStep}
               reviewMode={reviewMode}
               summary={mixerType
                 ? (locale === 'fr' && (MIXER_TYPES[mixerType] as { nameFr?: string }).nameFr ? (MIXER_TYPES[mixerType] as { nameFr: string }).nameFr : MIXER_TYPES[mixerType].name)
@@ -1428,6 +1443,7 @@ export default function Home() {
             <StepCard
               num={6} title={t('steps.7.title')}
               activeStep={activeStep}
+              highestStep={highestStep}
               reviewMode={reviewMode}
               summary={yeastType ? (locale === 'fr' && (YEAST_TYPES[yeastType] as { nameFr?: string }).nameFr ? (YEAST_TYPES[yeastType] as { nameFr: string }).nameFr : YEAST_TYPES[yeastType].name) : undefined}
               onEdit={() => setActiveStep(6)}
@@ -1443,6 +1459,7 @@ export default function Home() {
             <StepCard
               num={7} title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
               activeStep={activeStep}
+              highestStep={highestStep}
               reviewMode={reviewMode}
               summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : undefined}
               onEdit={() => setActiveStep(7)}
@@ -1846,6 +1863,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={1} title={t('steps.2.title')}
               activeStep={advancedStep}
+              highestStep={advancedHighestStep}
               reviewMode={reviewMode}
               summary={styleKey ? (locale === 'fr' && (ALL_STYLES[styleKey] as { nameFr?: string }).nameFr ? (ALL_STYLES[styleKey] as { nameFr: string }).nameFr : ALL_STYLES[styleKey].name) : undefined}
               onEdit={() => setAdvancedStep(1)}
@@ -1879,6 +1897,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={2} title={t('steps.3.title')}
               activeStep={advancedStep}
+              highestStep={advancedHighestStep}
               reviewMode={reviewMode}
               summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
               onEdit={() => setAdvancedStep(2)}
@@ -2000,6 +2019,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={3} title={t('steps.4.title')}
               activeStep={advancedStep}
+              highestStep={advancedHighestStep}
               reviewMode={reviewMode}
               summary={ovenData
                 ? (locale === 'fr' && (ovenData as { nameFr?: string }).nameFr ? (ovenData as { nameFr: string }).nameFr : ovenData.name)
@@ -2021,6 +2041,7 @@ export default function Home() {
               num={4}
               title={t('steps.5.title')}
               activeStep={advancedStep}
+              highestStep={advancedHighestStep}
               reviewMode={reviewMode}
               summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
               onEdit={() => setAdvancedStep(4)}
@@ -2039,6 +2060,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={5} title={t('steps.6.title')}
               activeStep={advancedStep}
+              highestStep={advancedHighestStep}
               reviewMode={reviewMode}
               summary={mixerType
                 ? (locale === 'fr' && (MIXER_TYPES[mixerType] as { nameFr?: string }).nameFr ? (MIXER_TYPES[mixerType] as { nameFr: string }).nameFr : MIXER_TYPES[mixerType].name)
@@ -2060,6 +2082,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={6} title={t('steps.flour.title')}
               activeStep={advancedStep}
+              highestStep={advancedHighestStep}
               reviewMode={reviewMode}
               summary={(() => {
                 if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
@@ -2104,6 +2127,7 @@ export default function Home() {
               idPrefix="adv-step"
               num={7} title={t('steps.7.title')}
               activeStep={advancedStep}
+              highestStep={advancedHighestStep}
               reviewMode={reviewMode}
               summary={yeastType ? <>{locale === 'fr' && (YEAST_TYPES[yeastType] as { nameFr?: string }).nameFr ? (YEAST_TYPES[yeastType] as { nameFr: string }).nameFr : YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{locale === 'fr' && (YEAST_TYPES[yeastType] as { shortNameFr?: string }).shortNameFr ? (YEAST_TYPES[yeastType] as { shortNameFr: string }).shortNameFr : YEAST_TYPES[yeastType].shortName}</span></> : undefined}
               onEdit={() => setAdvancedStep(7)}
@@ -2137,6 +2161,7 @@ export default function Home() {
                 idPrefix="adv-step"
                 num={8} title={t('preferment.stepTitle')}
                 activeStep={advancedStep}
+                highestStep={advancedHighestStep}
                 reviewMode={reviewMode}
                 summary={prefermentType !== 'none' ? (locale === 'fr' && (PREFERMENT_TYPES[prefermentType] as { nameFr?: string }).nameFr ? (PREFERMENT_TYPES[prefermentType] as { nameFr: string }).nameFr : PREFERMENT_TYPES[prefermentType].name) : t('preferment.direct')}
                 onEdit={() => setAdvancedStep(8)}
@@ -2162,6 +2187,7 @@ export default function Home() {
               num={9}
               title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
               activeStep={advancedStep}
+              highestStep={advancedHighestStep}
               reviewMode={reviewMode}
               summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : undefined}
               onEdit={() => setAdvancedStep(9)}
@@ -2191,6 +2217,7 @@ export default function Home() {
               num={10}
               title={t('dialIn.title')}
               activeStep={advancedStep}
+              highestStep={advancedHighestStep}
               reviewMode={reviewMode}
               summary={manualHydration !== undefined ? `${manualHydration}% ${t('dialIn.hydrationSuffix')}` : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : undefined}
               onEdit={() => setAdvancedStep(10)}
