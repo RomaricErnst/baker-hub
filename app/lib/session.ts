@@ -28,6 +28,7 @@ export interface SessionData {
   flourInFridge: boolean;
   wastePct: number | undefined;
   priorityOverride: string | null | undefined;
+  startTime?: number | null;
   eatTime: number | null;
   blocks: unknown[];
   recipeGenerated: boolean;

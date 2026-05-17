@@ -480,6 +480,7 @@ export default function Home() {
     setWastePct(session.wastePct);
     setPriorityOverride(session.priorityOverride);
     if (session.eatTime) setEatTime(new Date(session.eatTime));
+    if (session.startTime) setStartTime(new Date(session.startTime));
     if (session.blocks && session.blocks.length > 0) {
       setBlocks(session.blocks.map((b: unknown) => {
         const block = b as { label: string; from: number; to: number };
@@ -659,6 +660,7 @@ export default function Home() {
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
       manualHydration, manualOil, manualSugar, manualSalt,
       targetDoughTemp, flourInFridge, wastePct, priorityOverride,
+      startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
       recipeGenerated, activeTab, modeChosen,
@@ -970,6 +972,7 @@ export default function Home() {
             setWastePct(snap.wastePct);
             setPriorityOverride(snap.priorityOverride);
             if (snap.eatTime) setEatTime(new Date(snap.eatTime));
+            if (snap.startTime) setStartTime(new Date(snap.startTime));
             if (snap.blocks?.length) {
               setBlocks((snap.blocks as unknown[]).map((b) => {
                 const bl = b as { label: string; from: number; to: number };
