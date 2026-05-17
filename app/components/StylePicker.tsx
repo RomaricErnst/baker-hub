@@ -127,7 +127,7 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
     { id: 'newyork', image: '/pizzas/ny_pepperoni_slice.webp', title: t('newyork.title'), tagline: t('newyork.tagline') },
     { id: 'pizza_romana', image: '/pizzas/carciofi_romana.webp', title: t('pizza_romana.title'), tagline: t('pizza_romana.tagline') },
     { id: 'roman', image: '/pizzas/teglia_patata_provola.webp', title: t('roman.title'), tagline: t('roman.tagline') },
-    { id: 'pan', image: '/pizzas/detroit_red_top.webp', title: t('pan.title'), tagline: t('pan.tagline') },
+    { id: 'pan', image: '/pizzas/detroit_red_top_pan.webp', title: t('pan.title'), tagline: t('pan.tagline') },
     { id: 'sourdough', image: '/pizzas/diavola.webp', title: t('sourdough.title'), tagline: t('sourdough.tagline') },
   ];
 
