@@ -302,6 +302,37 @@ export default function SessionViewer({
       lines.push(`  ${gearParts.join(' · ')}`);
     }
 
+    // Pizza selections — show what was baked (bakedQtys) or planned (localSlots)
+    const allPizzasForShare = [...PIZZAS, ...DESSERT_PIZZAS];
+    const resolvePizzaName = (id: string) => {
+      const p = allPizzasForShare.find(x => x.id === id);
+      return p ? ((p.name as Record<string, string>).en ?? id) : id;
+    };
+    const pizzaSource: Array<[string, number]> = (() => {
+      if (bakedQtys && Object.keys(bakedQtys).length > 0) {
+        return Object.entries(bakedQtys)
+          .filter(([, qty]) => (qty as number) > 0)
+          .map(([id, qty]) => [resolvePizzaName(id), qty as number] as [string, number]);
+      }
+      if (localSlots && localSlots.length > 0) {
+        const counts: Record<string, number> = {};
+        for (const s of localSlots) {
+          const name = resolvePizzaName(s.preset_id);
+          counts[name] = (counts[name] ?? 0) + 1;
+        }
+        return Object.entries(counts) as Array<[string, number]>;
+      }
+      return [];
+    })();
+
+    if (pizzaSource.length > 0) {
+      lines.push('');
+      lines.push('  Pizzas:');
+      for (const [name, qty] of pizzaSource) {
+        lines.push(`    ${name}${qty > 1 ? ` ×${qty}` : ''}`);
+      }
+    }
+
     return lines;
   })();
 
