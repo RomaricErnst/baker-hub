@@ -370,7 +370,7 @@ export default function ShareCard({
       ctx.textAlign = 'left';
       if (bakerName) ctx.fillText(`Baked by ${bakerName}`, MARGIN, y);
       ctx.textAlign = 'right';
-      ctx.fillText('bakerhub.app', W - MARGIN, y);
+      ctx.fillText('Planned with bakerhub.app', W - MARGIN, y);
 
       return canvas;
     }
@@ -538,7 +538,7 @@ export default function ShareCard({
     ctx.textAlign = 'left';
     if (bakerName) ctx.fillText(`Baked by ${bakerName}`, 72, brandY);
     ctx.textAlign = 'right';
-    ctx.fillText('bakerhub.app', 1080 - 72, brandY);
+    ctx.fillText('Planned with bakerhub.app', 1080 - 72, brandY);
 
     return canvas;
   }
