@@ -1891,6 +1891,7 @@ export default function Home() {
                     } else {
                       setItemWeight(ALL_STYLES[sk].ballW);
                     }
+                    setAdvancedHighestStep(s => Math.max(s, 2));
                     setAdvancedStep(2);
                   }}
                 />
