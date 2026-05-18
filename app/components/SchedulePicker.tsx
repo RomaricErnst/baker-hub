@@ -434,11 +434,17 @@ function findOptimalPosition(
       const bulkEndHBF = candidate - typicalBulkH;
       const bulkClear = bulkEndHBF > 0 && !isInBlocker(bulkEndHBF);
       if (!bulkClear) continue;
-      // Poolish fridge: removal time (mixHBF + rtWarmupH) must also be clear.
-      // If removal falls in a blocker, skip this candidate and try a later mix time.
+      // Poolish fridge: ensure at least 30min warmup before mix is available.
+      // Full warmup (prefRTWarmupH) is ideal but not a hard requirement —
+      // 30min minimum is scientifically sufficient for yeast to resume activity.
       if (hasPref && prefermentType === 'poolish' && prefGoesInFridge && prefRTWarmupH > 0) {
+        const MIN_WARMUP_H = 0.5;
         const removeHBF = candidate + prefRTWarmupH;
-        if (isInBlocker(removeHBF)) continue;
+        if (isInBlocker(removeHBF)) {
+          // Full warmup slot blocked — find the latest unblocked slot >= 30min before mix
+          const fallbackRemove = candidate + MIN_WARMUP_H;
+          if (isInBlocker(fallbackRemove)) continue; // even 30min warmup impossible — skip
+        }
       }
       if (!hasPref) {
         // No preferment — score mix position only
