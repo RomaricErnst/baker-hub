@@ -28,8 +28,9 @@ interface SessionViewerProps {
 }
 
 function formatHours(h: number): string {
-  const whole = Math.floor(h);
-  const mins = Math.round((h - whole) * 60);
+  const snapped = Math.round(h * 4) / 4;
+  const whole = Math.floor(snapped);
+  const mins = Math.round((snapped - whole) * 60);
   if (mins === 0) return `${whole}h`;
   return `${whole}h ${mins}m`;
 }
@@ -231,10 +232,17 @@ export default function SessionViewer({
     lines.push('');
 
     if (schedule) {
+      const snap15 = (d: Date): Date => {
+        const r = new Date(d);
+        r.setMinutes(Math.round(r.getMinutes() / 15) * 15, 0, 0);
+        if (r.getMinutes() === 60) { r.setMinutes(0); r.setHours(r.getHours() + 1); }
+        return r;
+      };
       const fmt = (d: Date) => {
-        const day = d.toLocaleDateString('en-GB', { weekday: 'short' });
-        const hh = String(d.getHours()).padStart(2, '0');
-        const mm = String(d.getMinutes()).padStart(2, '0');
+        const s = snap15(d);
+        const day = s.toLocaleDateString('en-GB', { weekday: 'short' });
+        const hh = String(s.getHours()).padStart(2, '0');
+        const mm = String(s.getMinutes()).padStart(2, '0');
         return `${day} ${hh}:${mm}`;
       };
       const mixStart = new Date(schedule.bulkFermStart.getTime() - schedule.mixingDurationH * 3600000);
@@ -249,10 +257,17 @@ export default function SessionViewer({
       lines.push(`${fmt(schedule.bakeStart)}  Bake`);
     } else if (snap?.eatTime) {
       const bakeTime = new Date(snap.eatTime);
+      const snap15 = (d: Date): Date => {
+        const r = new Date(d);
+        r.setMinutes(Math.round(r.getMinutes() / 15) * 15, 0, 0);
+        if (r.getMinutes() === 60) { r.setMinutes(0); r.setHours(r.getHours() + 1); }
+        return r;
+      };
       const fmt = (d: Date) => {
-        const day = d.toLocaleDateString('en-GB', { weekday: 'short' });
-        const hh  = String(d.getHours()).padStart(2, '0');
-        const mm  = String(d.getMinutes()).padStart(2, '0');
+        const s = snap15(d);
+        const day = s.toLocaleDateString('en-GB', { weekday: 'short' });
+        const hh  = String(s.getHours()).padStart(2, '0');
+        const mm  = String(s.getMinutes()).padStart(2, '0');
         return `${day} ${hh}:${mm}`;
       };
       const subH = (base: Date, h: number) =>
@@ -269,7 +284,7 @@ export default function SessionViewer({
       lines.push(`${fmt(mixStart)}  Mix & Knead`);
       lines.push(`${fmt(bulkStart)}  Bulk fermentation`);
       if (coldStart) {
-        lines.push(`${fmt(coldStart)}  Cold retard (${coldH}h)`);
+        lines.push(`${fmt(coldStart)}  Cold retard (${formatHours(coldH ?? 0)})`);
       }
       lines.push(`${fmt(preheatStart)}  Preheat`);
       lines.push(`${fmt(bakeTime)}  Bake`);
