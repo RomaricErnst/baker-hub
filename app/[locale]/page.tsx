@@ -713,7 +713,11 @@ export default function Home() {
     } else {
       setItemWeight(ALL_STYLES[sk].ballW);
     }
-    advance(1);
+    if (tab === 'custom') {
+      advanceAdv(1);
+    } else {
+      advance(1);
+    }
   }
 
   function advance(from: number) {
