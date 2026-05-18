@@ -1591,23 +1591,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
-      {/* Skip poolish note — window too short for viable preferment */}
-      {hasPrefActive && skipPoolishNote && (
-        <div style={{
-          fontSize: '.78rem',
-          color: 'var(--smoke)',
-          background: 'rgba(212,168,83,0.08)',
-          border: '1px solid rgba(212,168,83,0.25)',
-          borderRadius: 8,
-          padding: '8px 12px',
-          marginBottom: '.9rem',
-          lineHeight: 1.5,
-        }}>
-          {locale === 'fr'
-            ? `⏱ Pas assez de temps pour un ${prefermentType} efficace — pâte directe recommandée.`
-            : `⏱ Not enough time for a useful ${prefermentType} — direct dough recommended.`}
-        </div>
-      )}
 
       {/* Sourdough starter section */}
       {isSourdough && (
@@ -1935,7 +1918,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           ) : (
             <FermentChart
               eatTime={pendingEatTime}
-              prefermentType={isSourdough ? 'sourdough' : prefermentType}
+              prefermentType={skipPoolishNote ? 'none' : (isSourdough ? 'sourdough' : prefermentType)}
               kitchenTemp={kitchenTemp}
               mixOffsetH={Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)}
               prefOffsetH={
@@ -2355,11 +2338,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         return (
           <div style={{ display: 'flex', gap: '6px', marginTop: '1rem', flexWrap: 'wrap', justifyContent: cardPrefTime ? 'flex-start' : 'center' }}>
             {/* Pref card */}
-            {cardPrefTime && (
+            {(cardPrefTime || (hasPrefActive && skipPoolishNote)) && (
               <div style={{
                 flex: 1, minWidth: '120px',
                 background: 'var(--cream)', border: '1.5px solid var(--border)',
                 borderRadius: '10px', padding: '14px 16px',
+                opacity: skipPoolishNote ? 0.7 : 1,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
                   <div style={{ width: 8, height: 8, background: cardPrefColor, transform: 'rotate(45deg)', flexShrink: 0 }} />
@@ -2368,10 +2352,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
                   }}>{prefLabel}</div>
                 </div>
-                {editingPref ? (
+                {skipPoolishNote ? (
+                  <div style={{ fontSize: '12px', color: 'var(--smoke)', lineHeight: 1.5, marginTop: '6px' }}>
+                    {locale === 'fr'
+                      ? `Pas assez de temps pour un ${prefermentType} efficace — pâte directe.`
+                      : `Not enough time for a useful ${prefermentType} — going direct.`}
+                  </div>
+                ) : editingPref ? (
                   <input
                     type="datetime-local"
-                    defaultValue={cardPrefTime.toISOString().slice(0,16)}
+                    defaultValue={cardPrefTime!.toISOString().slice(0,16)}
                     autoFocus
                     onBlur={e => {
                       const t = new Date(e.target.value);
@@ -2394,10 +2384,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     onClick={() => setEditingPref(true)}
                     style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', cursor: 'text' }}
                   >
-                    {fmtCardDT(cardPrefTime, isFr)}
+                    {fmtCardDT(cardPrefTime!, isFr)}
                   </div>
                 )}
-                {(() => {
+                {!skipPoolishNote && (() => {
                   const isGreen  = cardPrefInZone;
                   const isGold   = cardPrefEarlyOk || cardPrefLateOk;
                   const isRed    = cardPrefTooEarly || cardPrefTooShort;

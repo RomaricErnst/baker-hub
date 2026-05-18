@@ -1487,7 +1487,7 @@ export default function Home() {
             </StepCard>
 
             {/* ── Generate button (setup tab) ── */}
-            {canGenerate && (
+            {canGenerate && !(sessionRestored && recipeGenerated) && (
               <div style={{ margin: '8px 0 0' }}>
                 <button
                   onClick={handleGenerate}
@@ -1723,7 +1723,7 @@ export default function Home() {
 
                   {/* Edit setup button */}
                   <button
-                    onClick={() => setActiveTab('setup')}
+                    onClick={() => { setActiveTab('setup'); setReviewMode(true); }}
                     style={{
                       background: 'transparent',
                       border: 'none',
@@ -2668,7 +2668,7 @@ export default function Home() {
             {/* Precision section removed — merged into StepCard below */}
 
             {/* ── Generate button (setup tab) ── */}
-            {canGenerate && eatTime && advancedStep > 9 && (
+            {canGenerate && eatTime && advancedStep > 9 && !(sessionRestored && recipeGenerated) && (
               <div style={{ marginTop: '1rem' }}>
                 <button
                   onClick={handleGenerate}
@@ -2901,7 +2901,7 @@ export default function Home() {
 
                   {/* Edit setup button */}
                   <button
-                    onClick={() => setActiveTab('setup')}
+                    onClick={() => { setActiveTab('setup'); setReviewMode(true); }}
                     style={{
                       background: 'transparent',
                       border: 'none',

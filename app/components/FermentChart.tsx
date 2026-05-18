@@ -365,6 +365,7 @@ export default function FermentChart({
   }
 
   function onPointerDown(e: React.PointerEvent, which: 'mix' | 'pref') {
+    if (which === 'pref' && prefStartAbsHBF > nowHBF) return;
     e.preventDefault();
     e.stopPropagation();
     setDragging(which);
@@ -495,7 +496,7 @@ export default function FermentChart({
   // ── Diamond renderer ─────────────────────────────────────
   function renderDiamond(
     cx: number, fill: string, stroke: string, warn: boolean,
-    which: 'mix' | 'pref',
+    which: 'mix' | 'pref', disabled = false,
   ) {
     const shouldGlow = showZoneLabels && (
       (which === 'mix' && glowState === 'mix')
@@ -503,7 +504,7 @@ export default function FermentChart({
     );
     return (
       <g
-        style={{ cursor: dragging === which ? 'grabbing' : 'grab' }}
+        style={{ cursor: disabled ? 'not-allowed' : dragging === which ? 'grabbing' : 'grab' }}
         onPointerDown={e => onPointerDown(e, which)}
       >
         <polygon
@@ -766,10 +767,11 @@ export default function FermentChart({
         {/* ── Pref diamond ── */}
         {hasPref && renderDiamond(
           prefX,
-          inBlocker(prefStartAbsHBF) ? '#aaaaaa' : prefColor,
-          inBlocker(prefStartAbsHBF) ? '#999999' : prefStroke,
+          (prefStartAbsHBF > nowHBF || inBlocker(prefStartAbsHBF)) ? '#BBBBBB' : prefColor,
+          (prefStartAbsHBF > nowHBF || inBlocker(prefStartAbsHBF)) ? '#999999' : prefStroke,
           inBlocker(prefStartAbsHBF),
           'pref',
+          prefStartAbsHBF > nowHBF,
         )}
         {hasPref && (
           <>
