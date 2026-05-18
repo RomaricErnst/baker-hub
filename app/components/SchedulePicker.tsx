@@ -426,6 +426,7 @@ function findOptimalPosition(
   );
   const typicalBulkH = kitchenTemp >= 30 ? 0.5 : kitchenTemp >= 28 ? 0.75 : 1.5;
   let bestScore = -1;
+  let bestCombinedScore = -1;
   let bestResult: ReturnType<typeof findOptimalPosition> | null = null;
   for (let delta = 0; delta <= SEARCH_RANGE; delta += STEP) {
     for (const sign of [0, 1, -1]) {
@@ -558,16 +559,15 @@ function findOptimalPosition(
       // score 4 = both green, score 3 = mix green + pref yellow,
       // score 2 = mix green only, score 1 = pref yellow only, score 0 = neither
 
-      if (score === 4) {
-        return {
-          mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
-          mixInZone: true, prefInZone: true,
-          fallback: false, mixInBlocker: false, prefInBlocker: false,
-          score: 4,
-        };
-      }
-      if (score > bestScore) {
+      const mixHour = new Date(ms - candidate * 3600000).getHours();
+      const prefHour = new Date(ms - (candidate + bestPrefOffset) * 3600000).getHours();
+      const doughReasonable = mixHour >= 7 && mixHour <= 22 ? 1 : 0;
+      const poolishComfort = Math.max(0, 8 - Math.abs(prefHour - 19));
+      const combinedScore = score * 100 + doughReasonable * 10 + poolishComfort;
+
+      if (combinedScore > bestCombinedScore) {
         bestScore = score;
+        bestCombinedScore = combinedScore;
         bestResult = {
           mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
           mixInZone,
@@ -575,12 +575,6 @@ function findOptimalPosition(
           fallback: !mixInZone, mixInBlocker: false, prefInBlocker: false,
           score,
         };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (bestResult as any)._doughReasonable = new Date(ms - candidate * 3600000).getHours() >= 7;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (bestResult as any)._poolishComfort = Math.abs(
-          new Date(ms - (candidate + bestPrefOffset) * 3600000).getHours() - 19
-        );
       }
     }
   }
