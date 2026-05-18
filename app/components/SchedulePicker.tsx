@@ -2197,18 +2197,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
-      {blockerNote && (
-        <div style={{
-          background: 'var(--cream)', borderLeft: '4px solid var(--terra)',
-          borderRadius: '10px', padding: '.75rem 1rem',
-          marginBottom: '.75rem', fontFamily: 'var(--font-dm-sans)',
-        }}>
-          <div style={{ fontSize: '.82rem', color: 'var(--char)', lineHeight: 1.5 }}>
-            {blockerNote}
-          </div>
-        </div>
-      )}
-
       {bulkConflict && !dismissedConflict && (() => {
         const MIN_REASONABLE_HOUR = 7;
         const earlierStart = bulkConflict.suggestedEarlierStart;
@@ -2491,7 +2479,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               </div>
               {mixInBlocker && (
                 <div style={{ fontSize: '11px', color: '#7A5A10', marginTop: '4px', lineHeight: 1.4 }}>
-                  ⚠️ Within a blocked window — intentional?
+                  Within a blocked window — intentional?
+                </div>
+              )}
+              {blockerNote && !mixInBlocker && (
+                <div style={{ fontSize: '11px', color: '#7A5A10', marginTop: '5px', lineHeight: 1.5 }}>
+                  {blockerNote}
                 </div>
               )}
               {/* scheduleNote removed — info available in timeline */}
