@@ -21,6 +21,7 @@ interface SchedulePickerProps {
   onPrefGoesInFridgeChange?: (inFridge: boolean) => void;
   mode?: 'simple' | 'custom';   // default 'custom'
   onReady?: () => void;
+  sessionRestored?: boolean;
   fridgeTemp?: number;
 }
 
@@ -967,7 +968,7 @@ function SimpleColourBar({
 }
 
 // ── Component ─────────────────────────────────
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, mode = 'custom', onReady, fridgeTemp = 6 }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1250,7 +1251,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   useEffect(() => {
     if (!alreadySet) return;
     if (hasManuallyDragged.current) return;
-    // Small delay so parent onChange resets scheduleReady first, then we set it back
+    // If a session was restored, trust the saved times — do not recompute.
+    // Baker already planned this; engine would overwrite their schedule.
+    if (sessionRestored) {
+      setStartComputed(true);
+      onReady?.();
+      return;
+    }
     setTimeout(() => {
       computeAndApplyRecommendation(blocks, pendingEatTime);
       setStartComputed(true);

@@ -1482,6 +1482,7 @@ export default function Home() {
                 onFeedTimeChange={setFeedTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                sessionRestored={sessionRestored}
               />
             </StepCard>
 
@@ -2213,6 +2214,7 @@ export default function Home() {
                 onPrefOffsetChange={setPrefOffsetH}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onReady={() => {}}
+                sessionRestored={sessionRestored}
               />
               {eatTime && !reviewMode && <ContinueBtn onClick={() => { setPrefermentFlourPct(undefined); advanceAdv(9); }} />}
             </StepCard>

@@ -290,10 +290,7 @@ export default function FermentChart({
   // During drag, use local position for all mix-derived values
   const effectiveMixHBF = localMixHBF !== null ? localMixHBF : mixOffsetH;
 
-  const prefStartAbsHBF = Math.min(
-    effectiveMixHBF + prefOffsetH,
-    nowHBF - 0.25
-  );
+  const prefStartAbsHBF = effectiveMixHBF + prefOffsetH;
   const doughPeakHBF = effectiveMixHBF - DOUGH_SWEET_CENTER;
   // Both fridge and RT: peak relative to prefStartAbsHBF so curve slides with diamond.
   // Fridge: peak is optH hours after start (at optimal → peaks at mix, earlier/later → shifts).
@@ -383,8 +380,7 @@ export default function FermentChart({
       const h = Math.max(1, Math.min(nowHBF - 0.25, snap15(xToHBF(x, W, WH))));
       setLocalMixHBF(h);
     } else {
-      const maxAbs = Math.min(WH - 2, nowHBF - 0.25);
-      const abs = Math.min(maxAbs, snap15(xToHBF(x, W, WH)));
+      const abs = Math.min(WH - 2, snap15(xToHBF(x, W, WH)));
       onPrefChange(abs - effectiveMixHBF);
     }
   }
