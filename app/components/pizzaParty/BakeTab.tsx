@@ -672,7 +672,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     display: 'inline-flex', alignItems: 'center', gap: '5px',
                   }}
                 >
-                  ✦ {l === 'fr' ? 'Technique & conseils' : 'Technique & tips'}
+                  {l === 'fr' ? 'Technique & conseils ✦' : 'Technique & tips ✦'}
                 </button>
               </div>
 
@@ -814,6 +814,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 <input
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   style={{ display: 'none' }}
                   id={`photo-${sheetPizzaId}`}
                   onChange={handlePhotoCapture}
