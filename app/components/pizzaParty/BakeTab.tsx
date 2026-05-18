@@ -49,7 +49,7 @@ const MAESTRO_CONTENT_BT: Record<string, {
 };
 
 function CoachButton({
-  stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName,
+  stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName, imageBase64,
 }: {
   stepId: string;
   styleKey: string;
@@ -58,6 +58,7 @@ function CoachButton({
   locale: string;
   ovenType?: string;
   pizzaName?: string;
+  imageBase64?: string;
 }) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [loading, setLoading]   = useState(false);
@@ -123,6 +124,21 @@ function CoachButton({
     }
   }
 
+  async function handleImageBase64(base64: string) {
+    setLoading(true); setFeedback(null); setError(false);
+    try {
+      const res = await fetch('/api/bake-coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mimeType: 'image/jpeg', stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName }),
+      });
+      const data = await res.json();
+      if (data.feedback) setFeedback(data.feedback);
+      else setError(true);
+    } catch { setError(true); }
+    finally { setLoading(false); }
+  }
+
   if (!COACH_STEPS_BT.has(stepId)) return null;
 
   return (
@@ -135,7 +151,7 @@ function CoachButton({
           {MAESTRO_CONTENT_BT[stepId].question[l]}
         </div>
       )}
-      {MAESTRO_CONTENT_BT[stepId]?.instruction && (
+      {MAESTRO_CONTENT_BT[stepId]?.instruction && !imageBase64 && (
         <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)', fontStyle: 'italic', marginBottom: '8px' }}>
           {MAESTRO_CONTENT_BT[stepId].instruction![l]}
         </div>
@@ -157,7 +173,7 @@ function CoachButton({
       )}
       {!feedback && (
         <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-          <button onClick={() => fileInputRef.current?.click()} disabled={loading}
+          <button onClick={() => { if (imageBase64) { handleImageBase64(imageBase64); } else { fileInputRef.current?.click(); } }} disabled={loading}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#1A1612', border: '1px solid rgba(245,240,232,0.15)', borderRadius: '20px', padding: '4px 12px', cursor: loading ? 'default' : 'pointer', height: '28px', opacity: loading ? 0.7 : 1 }}>
             {loading ? (
               <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '1.5px solid rgba(245,240,232,0.3)', borderTop: '1.5px solid #F5F0E8', borderRadius: '50%', animation: 'bh-spin 0.7s linear infinite', flexShrink: 0 }} />
@@ -202,8 +218,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
 
   const [user, setUser] = useState<User | null>(null);
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
+  const [photoBase64, setPhotoBase64] = useState<Record<string, string>>({});
   const [photoWarn, setPhotoWarn] = useState(false);
-  const [showSignInNudge, setShowSignInNudge] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -238,16 +254,33 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
 
     if (!ALLOWED_MIME_TYPES.includes(file.type)) return;
 
+    // Encode to base64 for Maestro reuse (both logged-in and anonymous)
+    const encodeBase64 = (f: File): Promise<string> => new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(f);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const MAX = 1024;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas unavailable')); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+      };
+      img.onerror = reject;
+      img.src = objectUrl;
+    });
+
+    const b64 = await encodeBase64(file).catch(() => null);
+    if (b64) setPhotoBase64(prev => ({ ...prev, [sheetPizzaId]: b64 }));
+
     if (!user) {
       const url = URL.createObjectURL(file);
       setPhotos(prev => ({ ...prev, [sheetPizzaId]: url }));
-      try {
-        if (navigator.share && navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], title: 'My pizza' });
-        }
-      } catch { /* user cancelled */ }
-      setShowSignInNudge(true);
-      setTimeout(() => setShowSignInNudge(false), 5000);
       return;
     }
 
@@ -814,7 +847,6 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   style={{ display: 'none' }}
                   id={`photo-${sheetPizzaId}`}
                   onChange={handlePhotoCapture}
@@ -896,28 +928,45 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   >+</button>
                 </div>
               </div>
+
+              {/* Inline Maestro assessment — appears after photo taken */}
+              {photos[sheetPizzaId] && (
+                <div style={{ padding: '12px 16px 4px' }}>
+                  <CoachButton
+                    stepId="pizza_maestro"
+                    styleKey={styleKey ?? 'neapolitan'}
+                    kitchenTemp={kitchenTemp ?? 22}
+                    prefermentType={prefermentType}
+                    locale={l}
+                    ovenType={ovenType}
+                    pizzaName={pizza.name[l]}
+                    imageBase64={photoBase64[sheetPizzaId]}
+                  />
+                </div>
+              )}
+
+              {/* Sign-in nudge — persistent inline, not a toast */}
+              {!user && photos[sheetPizzaId] && (
+                <div style={{
+                  margin: '4px 16px 12px',
+                  padding: '10px 14px',
+                  background: 'rgba(26,22,18,0.04)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '10px',
+                  fontSize: '12px',
+                  color: 'var(--smoke)',
+                  fontFamily: 'var(--font-dm-sans)',
+                  lineHeight: 1.5,
+                }}>
+                  {l === 'fr'
+                    ? 'Connectez-vous pour sauvegarder cette photo — retrouvez-la dans ☰ Mes sessions.'
+                    : 'Sign in to save this photo — find it in ☰ My Sessions.'}
+                </div>
+              )}
             </div>
           </>
         );
       })()}
-
-      {/* Sign-in nudge toast */}
-      {showSignInNudge && (
-        <div style={{
-          position: 'fixed', bottom: '80px', left: '50%',
-          transform: 'translateX(-50%)',
-          background: '#1A1612', color: 'var(--cream)',
-          fontSize: '13px', borderRadius: '10px',
-          padding: '10px 16px', zIndex: 999,
-          whiteSpace: 'nowrap',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-          fontFamily: 'DM Sans, sans-serif',
-        }}>
-          {l === 'fr'
-            ? 'Connectez-vous pour sauvegarder vos photos'
-            : 'Sign in to save photos to your session'}
-        </div>
-      )}
     </div>
   );
 }
