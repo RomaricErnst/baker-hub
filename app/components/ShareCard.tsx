@@ -79,6 +79,7 @@ export default function ShareCard({
 }: ShareCardProps) {
   const l = locale === 'fr' ? 'fr' : 'en';
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const [customTitle, setCustomTitle] = useState<string>(() => {
     const base = stripTime(sessionName ?? styleName);
@@ -234,6 +235,27 @@ export default function ShareCard({
     setEditableCaption(defaultCaption);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customTitle, bakerName, specLine, weightsLine, timingLine]);
+
+  // Re-render preview canvas whenever any input changes
+  useEffect(() => {
+    let cancelled = false;
+    drawCard().then(canvas => {
+      if (cancelled || !canvas || !previewCanvasRef.current) return;
+      const preview = previewCanvasRef.current;
+      const scale = preview.clientWidth / canvas.width;
+      preview.width = preview.clientWidth;
+      preview.height = Math.round(canvas.height * scale);
+      const ctx = preview.getContext('2d');
+      if (!ctx) return;
+      ctx.save();
+      ctx.scale(scale, scale);
+      ctx.drawImage(canvas, 0, 0);
+      ctx.restore();
+    });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [template, selectedPhotoUrls, customTitle, bakerName, editableCaption, protocolLines,
+      specLine, flourLine, weightsLine, timingLine, gearLine, pizzaDisplayLines, bakeDate]);
 
   // ── Canvas draw ──
   async function drawCard(): Promise<HTMLCanvasElement | null> {
@@ -582,33 +604,12 @@ export default function ShareCard({
       {/* Scrollable body */}
       <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-        {/* Live preview */}
-        <div style={{
-          width: '100%',
-          paddingTop: '100%',
-          position: 'relative',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          background: '#1A1612',
-          marginBottom: '4px',
-        }}>
-          <div style={{ position: 'absolute', inset: 0 }}>
-            <PreviewCard
-              template={template}
-              selectedPhotoUrls={selectedPhotoUrls}
-              displayTitle={displayTitle}
-              bakerName={bakerName}
-              specLine={specLine}
-              flourLine={flourLine}
-              weightsLine={weightsLine}
-              timingLine={timingLine}
-              gearLine={gearLine}
-              pizzaDisplayLines={pizzaDisplayLines}
-              bakeDate={bakeDate}
-              photoZoneRatio={photoZoneRatio}
-              protocolLines={protocolLines}
-            />
-          </div>
+        {/* Live preview — exact scaled render of export canvas */}
+        <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', background: '#1A1612' }}>
+          <canvas
+            ref={previewCanvasRef}
+            style={{ width: '100%', display: 'block', borderRadius: '12px' }}
+          />
         </div>
 
         {/* Editable fields */}
@@ -855,196 +856,3 @@ export default function ShareCard({
   );
 }
 
-// ── Live CSS preview ──────────────────────────────────────────────────────────
-function PreviewCard({
-  template, selectedPhotoUrls, displayTitle, bakerName,
-  specLine, flourLine, weightsLine, timingLine, gearLine,
-  pizzaDisplayLines, bakeDate, photoZoneRatio, protocolLines,
-}: {
-  template: 'full' | 'two' | 'four' | 'protocol';
-  selectedPhotoUrls: string[];
-  displayTitle: string;
-  bakerName: string;
-  specLine: string;
-  flourLine: string | null;
-  weightsLine: string | null;
-  timingLine: string;
-  gearLine: string | null;
-  pizzaDisplayLines: string[];
-  bakeDate?: string | null;
-  photoZoneRatio: number;
-  protocolLines?: string[] | null;
-}) {
-  const panelPct = `${(1 - photoZoneRatio) * 100}%`;
-  const MONO = 'var(--font-dm-mono)';
-  const SERIF = 'var(--font-playfair)';
-
-  return (
-    <div style={{ position: 'absolute', inset: 0, background: '#1A1612', overflow: 'hidden' }}>
-
-      {/* Photo zone — hidden for protocol */}
-      {template !== 'protocol' && (
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: `${photoZoneRatio * 100}%`, overflow: 'hidden' }}>
-          {template === 'full' && selectedPhotoUrls[0] && (
-            <img src={selectedPhotoUrls[0]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-          )}
-          {template === 'two' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px', height: '100%' }}>
-              {[0, 1].map(i => (
-                <div key={i} style={{ background: '#2D2420', overflow: 'hidden' }}>
-                  {selectedPhotoUrls[i] && <img src={selectedPhotoUrls[i]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />}
-                </div>
-              ))}
-            </div>
-          )}
-          {template === 'four' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '2px', height: '100%' }}>
-              {[0, 1, 2, 3].map(i => (
-                <div key={i} style={{ background: '#2D2420', overflow: 'hidden' }}>
-                  {selectedPhotoUrls[i] && <img src={selectedPhotoUrls[i]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />}
-                </div>
-              ))}
-            </div>
-          )}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(to bottom, transparent, #1A1612)' }} />
-        </div>
-      )}
-
-      {template === 'protocol' ? (
-        <div style={{
-          position: 'absolute', inset: 0, background: '#1A1612',
-          padding: '6% 7%', display: 'flex', flexDirection: 'column',
-          gap: '0px', overflow: 'hidden',
-        }}>
-          {bakeDate && (
-            <div style={{
-              fontFamily: MONO, fontSize: 'clamp(7px, 1.5vw, 10px)',
-              color: 'rgba(212,168,83,0.55)', marginBottom: '3px',
-            }}>Bake: {bakeDate}</div>
-          )}
-          <div style={{
-            fontFamily: SERIF, fontWeight: 700,
-            fontSize: 'clamp(10px, 2.8vw, 17px)', color: 'white',
-            lineHeight: 1.1, marginBottom: '4px',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>{displayTitle}</div>
-          <div style={{
-            height: '1px', background: 'rgba(255,255,255,0.12)',
-            marginBottom: '4px',
-          }} />
-          {(protocolLines ?? [
-            specLine, flourLine, weightsLine, timingLine, gearLine,
-          ].filter(Boolean) as string[])
-            .slice(0, 22)
-            .map((ln, i) => {
-              if (!ln || ln === '') return <div key={i} style={{ height: '5px' }} />;
-              const isHeader  = /^\w{3}\s\d{2}:\d{2}/.test(ln);
-              const isIndented = ln.startsWith('  ');
-              return (
-                <div key={i} style={{
-                  fontFamily: MONO,
-                  fontSize: isIndented
-                    ? 'clamp(6px, 1.2vw, 8px)'
-                    : 'clamp(7px, 1.4vw, 10px)',
-                  fontWeight: isHeader ? 600 : 400,
-                  color: `rgba(255,255,255,${
-                    isHeader ? 0.90 : isIndented ? 0.55 : 0.75
-                  })`,
-                  lineHeight: 1.35,
-                  whiteSpace: 'nowrap', overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  paddingLeft: isIndented ? '10px' : '0',
-                  marginBottom: '1px',
-                }}>{ln.trimStart()}</div>
-              );
-            })}
-          <div style={{
-            position: 'absolute', bottom: '5px', left: '7%', right: '7%',
-            display: 'flex', justifyContent: 'space-between',
-          }}>
-            {bakerName && (
-              <span style={{
-                fontFamily: MONO, fontSize: 'clamp(6px, 1.1vw, 8px)',
-                color: 'rgba(255,255,255,0.22)',
-              }}>Baked by {bakerName}</span>
-            )}
-            <span style={{
-              fontFamily: MONO, fontSize: 'clamp(6px, 1.1vw, 8px)',
-              color: 'rgba(255,255,255,0.18)',
-            }}>bakerhub.app</span>
-          </div>
-        </div>
-      ) : (
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: panelPct, background: '#1A1612',
-          borderTop: '1px solid rgba(212,168,83,0.2)',
-          padding: '5% 5% 4%', overflow: 'hidden',
-        }}>
-          {bakeDate && (
-            <div style={{
-              fontFamily: MONO,
-              fontSize: 'clamp(9px, 1.8vw, 13px)',
-              color: 'rgba(212,168,83,0.70)',
-              marginBottom: '3px',
-            }}>
-              {bakeDate}
-            </div>
-          )}
-          <div style={{
-            fontFamily: SERIF,
-            fontWeight: 700,
-            fontSize: 'clamp(12px, 3.5vw, 20px)',
-            color: 'white',
-            lineHeight: 1.1,
-            marginBottom: '5px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
-            {displayTitle}
-          </div>
-          <div style={{ height: '1px', background: 'rgba(212,168,83,0.25)', marginBottom: '5px' }} />
-          {[
-            { text: specLine,   opacity: 0.85 },
-            flourLine   ? { text: flourLine,   opacity: 0.60 } : null,
-            weightsLine ? { text: weightsLine, opacity: 0.85 } : null,
-            { text: timingLine, opacity: 0.70 },
-            gearLine    ? { text: gearLine,    opacity: 0.70 } : null,
-            ...pizzaDisplayLines.map(l => ({ text: l, opacity: 0.55 })),
-          ].filter(Boolean).map((item, i) => (
-            <div key={i} style={{
-              fontFamily: MONO,
-              fontSize: 'clamp(9px, 1.9vw, 13px)',
-              color: `rgba(255,255,255,${(item as {text:string;opacity:number}).opacity})`,
-              lineHeight: 1.45,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              fontStyle: 'normal',
-            }}>
-              {(item as {text:string;opacity:number}).text}
-            </div>
-          ))}
-          <div style={{
-            position: 'absolute', bottom: '5px', left: '10px', right: '10px',
-            display: 'flex', justifyContent: 'space-between',
-          }}>
-            {bakerName && (
-              <span style={{
-                fontFamily: MONO,
-                fontSize: 'clamp(7px, 1.5vw, 11px)',
-                color: 'rgba(255,255,255,0.28)',
-              }}>Baked by {bakerName}</span>
-            )}
-            <span style={{
-              fontFamily: MONO,
-              fontSize: 'clamp(7px, 1.5vw, 11px)',
-              color: 'rgba(255,255,255,0.20)',
-            }}>bakerhub.app</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
