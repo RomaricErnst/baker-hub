@@ -403,6 +403,7 @@ function findOptimalPosition(
   fallback: boolean;
   mixInBlocker: boolean;
   prefInBlocker: boolean;
+  score: number;
 } {
   const ms = et.getTime();
   function isInBlocker(hbf: number): boolean {
@@ -455,6 +456,7 @@ function findOptimalPosition(
             mixHBF: candidate, prefHBF: candidate,
             mixInZone: true, prefInZone: true,
             fallback: false, mixInBlocker: false, prefInBlocker: false,
+            score: 3,
           };
         }
         // Keep as best if better than anything seen
@@ -464,6 +466,7 @@ function findOptimalPosition(
             mixHBF: candidate, prefHBF: candidate,
             mixInZone: inSweet(candidate), prefInZone: true,
             fallback: !inSweet(candidate), mixInBlocker: false, prefInBlocker: false,
+            score,
           };
         }
         continue;
@@ -560,6 +563,7 @@ function findOptimalPosition(
           mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
           mixInZone: true, prefInZone: true,
           fallback: false, mixInBlocker: false, prefInBlocker: false,
+          score: 4,
         };
       }
       if (score > bestScore) {
@@ -567,8 +571,9 @@ function findOptimalPosition(
         bestResult = {
           mixHBF: candidate, prefHBF: candidate + bestPrefOffset,
           mixInZone,
-          prefInZone: prefInZone || prefYellow, // yellow counts as "viable"
+          prefInZone: prefInZone || prefYellow,
           fallback: !mixInZone, mixInBlocker: false, prefInBlocker: false,
+          score,
         };
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (bestResult as any)._doughReasonable = new Date(ms - candidate * 3600000).getHours() >= 7;
@@ -591,6 +596,7 @@ function findOptimalPosition(
     fallback:      true,
     mixInBlocker:  isInBlocker(sweetCenter),
     prefInBlocker: hasPref && isInBlocker(sweetCenter + Math.max(0, fallbackPrefOffset)),
+    score:         0,
   };
 }
 
@@ -1202,9 +1208,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       fridgeTemp,
     );
 
-    if (result.mixInBlocker) {
+    // Unified decision tree — single source of truth for all scheduler states.
+    // score 4: both green  → silent success
+    // score 3: mix green, poolish yellow  → success, subtle note shown in poolish card
+    // score 2: mix green, no poolish (RT-only styles)  → silent success
+    // score 1: poolish yellow only  → success, subtle note in poolish card
+    // score 0, slot found outside zone  → success with tight-window note in mix card
+    // score 0, no slot, sweetCenter free  → guard note (window too tight)
+    // score 0, no slot, sweetCenter blocked  → popup (genuine full conflict)
+    if (result.score === 0 && result.fallback && result.mixInBlocker) {
+      // Genuine conflict — every valid position is blocked
       const outsideHBF = result.mixHBF;
-      const maxDist = sweetFrom - sweetCenter;
+      const maxDist = Math.max(1, sweetFrom - sweetCenter);
       const dist = Math.abs(outsideHBF - sweetCenter);
       const qualityPct = Math.max(50, Math.round(100 - (dist / maxDist) * 40));
       const overlapMin = (() => {
@@ -1225,8 +1240,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setRecommendedHBF(null);
       setShowFallbackPopup(true);
     } else {
+      // Valid slot found (score 1–4) or score 0 with sweetCenter free
       const newStart = new Date(et.getTime() - result.mixHBF * 3600000);
-      setBlockerNote(null);
       setRecommendedHBF(result.mixHBF);
       setShowFallbackPopup(false);
       setPendingStart(newStart);
@@ -1235,6 +1250,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       if (hasPrefActive) {
         setPrefOffsetH(result.prefHBF - result.mixHBF);
         onPrefOffsetChange?.(result.prefHBF - result.mixHBF);
+      }
+      // Score 0 with sweetCenter free: tight window note via existing guardShort path
+      if (result.score === 0 && !result.mixInBlocker) {
+        setGuardNote(tRoot('schedulePicker.guardShort'));
+      } else {
+        setBlockerNote(null);
       }
     }
   }
