@@ -794,11 +794,23 @@ export function calculateRecipe(
     baguette: 65, pain_complet: 68, pain_seigle: 70,
     fougasse: 68, brioche: 52, pain_mie: 55, pain_viennois: 52,
   };
+  // Enriched or high-oil styles: fat retains moisture, so oven environment
+  // matters less. Apply half the oven hydration delta, rounded to nearest integer.
+  // Scientific basis: Modernist Bread Vol. 6 — fat coats gluten strands and
+  // reduces water absorption sensitivity to baking environment.
+  const ENRICHED_STYLES = new Set([
+    'pan', 'fougasse', 'brioche', 'pain_mie', 'pain_viennois',
+  ]);
+  const isEnriched = ENRICHED_STYLES.has(styleKey);
+
   let hydration: number;
   if (mode === 'custom' && manualHydration !== undefined) {
     hydration = manualHydration;
   } else {
-    hydration = s.hydration + oven.hydrationDelta;
+    const effectiveDelta = isEnriched
+      ? Math.round(oven.hydrationDelta / 2)
+      : oven.hydrationDelta;
+    hydration = s.hydration + effectiveDelta;
     if (kitchenTemp >= 28 || humidity === 'very-humid') hydration -= 2;
     else if (kitchenTemp <= 18) hydration += 2;
     if (blendProfile) {
