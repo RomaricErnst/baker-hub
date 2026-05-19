@@ -186,8 +186,8 @@ export default function ShareCard({
     bodyLineCount * LINE_H_CALC + // body lines
     60                            // branding
   );
-  const photoZoneHeight = 1080 - panelHeight;
-  const photoZoneRatio = photoZoneHeight / 1080;
+  const photoZoneHeight = 1350 - panelHeight;
+  const photoZoneRatio = photoZoneHeight / 1350;
 
   const displayTitle = (() => {
     const stripped = customTitle
@@ -239,11 +239,16 @@ export default function ShareCard({
   // Re-render preview canvas whenever any input changes
   useEffect(() => {
     let cancelled = false;
-    drawCard().then(canvas => {
+    const run = async () => {
+      try { await document.fonts.ready; } catch { /* ok */ }
+      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      if (cancelled) return;
+      const canvas = await drawCard();
       if (cancelled || !canvas || !previewCanvasRef.current) return;
       const preview = previewCanvasRef.current;
-      const scale = preview.clientWidth / canvas.width;
-      preview.width = preview.clientWidth;
+      const w = preview.clientWidth || 300;
+      const scale = w / canvas.width;
+      preview.width = w;
       preview.height = Math.round(canvas.height * scale);
       const ctx = preview.getContext('2d');
       if (!ctx) return;
@@ -251,7 +256,8 @@ export default function ShareCard({
       ctx.scale(scale, scale);
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
-    });
+    };
+    run();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [template, selectedPhotoUrls, customTitle, bakerName, editableCaption, protocolLines,
@@ -295,7 +301,7 @@ export default function ShareCard({
         totalH += (ln.startsWith('  ') ? INDENT_SIZE : BODY_SIZE_P) + LINE_GAP;
       }
       totalH += 60;             // bottom branding
-      totalH = Math.max(1080, totalH);
+      totalH = Math.max(600, totalH);
 
       canvas.width  = W;
       canvas.height = totalH;
@@ -376,19 +382,22 @@ export default function ShareCard({
     }
 
     canvas.width = 1080;
-    canvas.height = 1080;
+    canvas.height = 1350;
 
     ctx.fillStyle = '#1A1612';
-    ctx.fillRect(0, 0, 1080, 1080);
+    ctx.fillRect(0, 0, 1080, 1350);
 
     async function loadImg(url: string): Promise<HTMLImageElement | null> {
-      return new Promise(resolve => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => resolve(img);
-        img.onerror = () => resolve(null);
-        img.src = url;
-      });
+      try {
+        const blob = await fetch(url).then(r => r.blob());
+        const blobUrl = URL.createObjectURL(blob);
+        return new Promise(resolve => {
+          const img = new Image();
+          img.onload = () => { URL.revokeObjectURL(blobUrl); resolve(img); };
+          img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(null); };
+          img.src = blobUrl;
+        });
+      } catch { return null; }
     }
 
     function drawCover(img: HTMLImageElement, x: number, y: number, w: number, h: number) {

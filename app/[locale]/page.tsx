@@ -32,6 +32,7 @@ import {
   buildSchedule, calculateRecipe, formatTime,
   type AvailabilityBlock,
 } from '../utils';
+import { buildItems } from '@/app/components/Timeline';
 
 // ── Constants ────────────────────────────────
 
@@ -633,6 +634,42 @@ export default function Home() {
   function buildComputedRecipe(): SessionData['computedRecipe'] {
     const cr = tab === 'custom' ? advancedRecipe : recipe;
     if (!cr) return null;
+
+    // Serialize timeline steps at generation time — single source of truth.
+    // SessionViewer reads these directly; no reconstruction needed.
+    const timelineSteps: Array<{ id: string; time: number; label: string }> = [];
+    if (schedule && startTime && eatTime) {
+      try {
+        const steps = buildItems(
+          schedule,
+          blocks,
+          startTime,
+          eatTime,
+          preheatMin,
+          (mixerType ?? 'hand') as import('@/app/data').MixerType,
+          numItems,
+          feedTime ?? null,
+          kitchenTemp,
+          yeastType === 'sourdough',
+          prefStartTime ?? null,
+          prefermentType ?? 'none',
+          prefGoesInFridge,
+          prefRemoveFromFridgeTime ?? null,
+          cr.hydration ?? undefined,
+          cr.oil ?? undefined,
+        );
+        for (const step of steps) {
+          if (step.kind === 'step') {
+            timelineSteps.push({
+              id: step.id,
+              time: step.time.getTime(),
+              label: step.label,
+            });
+          }
+        }
+      } catch { /* leave timelineSteps empty */ }
+    }
+
     return {
       flour: cr.flour,
       water: cr.water,
@@ -651,6 +688,7 @@ export default function Home() {
           ? cr.preferment.prefYeastGrams
           : (cr.yeast?.convertedGrams ?? undefined),
       },
+      timelineSteps,
     };
   }
 

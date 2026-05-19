@@ -49,6 +49,7 @@ export interface SessionData {
     rtH: number;
     hasPreferment?: boolean;
     totalIngredients?: { yeast?: number };
+    timelineSteps?: Array<{ id: string; time: number; label: string }>;
   } | null;
 }
 

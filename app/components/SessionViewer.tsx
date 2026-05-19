@@ -3,7 +3,7 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale } from 'next-intl';
 import {
-  ALL_STYLES, computeBlendProfile,
+  ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, computeBlendProfile,
   type MixerType, type StyleKey, type AnyOvenType,
   type FlourBlend, type PrefermentType, type YeastType,
 } from '@/app/data';
@@ -35,13 +35,10 @@ function formatHours(h: number): string {
   return `${whole}h ${mins}m`;
 }
 
-const OVEN_LABEL: Record<string, string> = {
-  pizza_oven: 'Pizza oven', home_oven: 'Home oven',
-  ooni_karu: 'Ooni Karu', ooni_koda: 'Ooni Koda',
-  roccbox: 'Roccbox', gozney_dome: 'Gozney Dome',
-  cast_iron: 'Cast iron', bbq: 'BBQ',
-  ooni_volt: 'Ooni Volt', steel: 'Baking steel',
-};
+const OVEN_LABEL: Record<string, string> = Object.fromEntries([
+  ...Object.entries(OVEN_TYPES).map(([k, v]) => [k, v.name]),
+  ...Object.entries(BREAD_OVEN_TYPES).map(([k, v]) => [k, v.name]),
+]);
 const MIXER_LABEL: Record<string, string> = {
   hand: 'Hand kneaded', stand: 'Stand mixer',
   no_knead: 'No-knead', spiral: 'Spiral mixer',
@@ -208,113 +205,78 @@ export default function SessionViewer({
       })()
     : null;
 
-  const protocolLines: string[] | null = (() => {
+  const protocolLines: string[] | null = useMemo(() => {
+    if (!snap?.eatTime) return null;
+
+    // Format times snapped to 15min
+    const snap15 = (d: Date): Date => {
+      const r = new Date(d);
+      r.setMinutes(Math.round(r.getMinutes() / 15) * 15, 0, 0);
+      if (r.getMinutes() === 60) { r.setMinutes(0); r.setHours(r.getHours() + 1); }
+      return r;
+    };
+    const fmt = (d: Date) => {
+      const s = snap15(d);
+      const day = s.toLocaleDateString('en-GB', { weekday: 'short' });
+      const hh  = String(s.getHours()).padStart(2, '0');
+      const mm  = String(s.getMinutes()).padStart(2, '0');
+      return `${day} ${hh}:${mm}`;
+    };
+
     const lines: string[] = [];
 
-    // Style · spec · hydration · pref
+    // Header: spec · hydration · pref
     const specParts = [
       styleName,
-      snap.numItems && snap.itemWeight ? `${snap.numItems} × ${snap.itemWeight}g` : null,
+      snap?.numItems && snap?.itemWeight
+        ? `${snap.numItems} × ${snap.itemWeight}g` : null,
       displayHydration != null ? `${displayHydration}%` : null,
       prefLabel,
     ].filter((x): x is string => x != null && x !== '');
     lines.push(specParts.join(' · '));
-
     if (flourBlendName) lines.push(`  ${flourBlendName}`);
-
     if (displayFlour && displayWater && displaySalt) {
-      const yeastPart = snap.yeastType !== 'sourdough' && yeastRounded != null
-        ? ` · ${yeastRounded}g ${YEAST_SHORT[snap.yeastType ?? ''] ?? 'yeast'}`
-        : '';
+      const yeastPart = snap?.yeastType !== 'sourdough' && yeastRounded != null
+        ? ` · ${yeastRounded}g ${YEAST_SHORT[snap?.yeastType ?? ''] ?? 'yeast'}` : '';
       lines.push(`${displayFlour}g flour · ${displayWater}g water${yeastPart} · ${displaySalt}g salt`);
     }
-
     lines.push('');
 
-    if (schedule) {
-      const snap15 = (d: Date): Date => {
-        const r = new Date(d);
-        r.setMinutes(Math.round(r.getMinutes() / 15) * 15, 0, 0);
-        if (r.getMinutes() === 60) { r.setMinutes(0); r.setHours(r.getHours() + 1); }
-        return r;
-      };
-      const fmt = (d: Date) => {
-        const s = snap15(d);
-        const day = s.toLocaleDateString('en-GB', { weekday: 'short' });
-        const hh = String(s.getHours()).padStart(2, '0');
-        const mm = String(s.getMinutes()).padStart(2, '0');
-        return `${day} ${hh}:${mm}`;
-      };
-      const mixStart = new Date(schedule.bulkFermStart.getTime() - schedule.mixingDurationH * 3600000);
-      lines.push(`${fmt(mixStart)}  Mix`);
-      lines.push(`${fmt(schedule.bulkFermStart)}  Bulk ferment`);
-      if (schedule.totalColdHours > 0 && schedule.coldRetardStart) {
-        lines.push(`${fmt(schedule.coldRetardStart)}  Cold retard (${formatHours(schedule.totalColdHours)})`);
+    // Use saved timelineSteps — exact steps the baker saw, no reconstruction
+    const savedSteps = cr?.timelineSteps;
+    if (savedSteps?.length) {
+      for (const step of savedSteps) {
+        const isSubStep = step.id === 'remove_pref_fridge';
+        const label = step.label
+          .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
+          .replace(/[^\x00-\x7F]/g, '')
+          .trim();
+        lines.push(`${isSubStep ? '  ' : ''}${fmt(new Date(step.time))}  ${label}`);
       }
-      lines.push(`${fmt(schedule.divideBallTime)}  Divide & ball`);
-      lines.push(`${fmt(schedule.finalProofStart)}  Final proof`);
-      lines.push(`${fmt(schedule.preheatStart)}  Preheat`);
-      lines.push(`${fmt(schedule.bakeStart)}  Bake`);
-    } else if (snap?.eatTime) {
-      const bakeTime = new Date(snap.eatTime);
-      const snap15 = (d: Date): Date => {
-        const r = new Date(d);
-        r.setMinutes(Math.round(r.getMinutes() / 15) * 15, 0, 0);
-        if (r.getMinutes() === 60) { r.setMinutes(0); r.setHours(r.getHours() + 1); }
-        return r;
-      };
-      const fmt = (d: Date) => {
-        const s = snap15(d);
-        const day = s.toLocaleDateString('en-GB', { weekday: 'short' });
-        const hh  = String(s.getHours()).padStart(2, '0');
-        const mm  = String(s.getMinutes()).padStart(2, '0');
-        return `${day} ${hh}:${mm}`;
-      };
-      const subH = (base: Date, h: number) =>
-        new Date(base.getTime() - h * 3600000);
-
-      const totalFermH = (coldH ?? 0) + (rtH ?? 0);
-      const preheatStart = subH(bakeTime, 0.75);
-      const mixStart     = subH(bakeTime, totalFermH + 0.75);
-      const bulkStart    = new Date(mixStart.getTime() + 0.5 * 3600000);
-      const coldStart    = (coldH ?? 0) > 0
-        ? subH(bakeTime, (rtH ?? 0) + (coldH ?? 0))
-        : null;
-
-      lines.push(`${fmt(mixStart)}  Mix & Knead`);
-      lines.push(`${fmt(bulkStart)}  Bulk fermentation`);
-      if (coldStart) {
-        lines.push(`${fmt(coldStart)}  Cold retard (${formatHours(coldH ?? 0)})`);
-      }
-      lines.push(`${fmt(preheatStart)}  Preheat`);
-      lines.push(`${fmt(bakeTime)}  Bake`);
-    } else {
-      if ((coldH ?? 0) > 0) lines.push(`  Cold ${formatHours(coldH ?? 0)}`);
-      if ((rtH ?? 0) > 0)   lines.push(`  RT ${formatHours(rtH ?? 0)}`);
     }
 
+    // Gear — derived from data.ts, no dead brand keys
     const gearParts = [
-      snap.ovenType ? (OVEN_LABEL[snap.ovenType] ?? snap.ovenType.replace(/_/g, ' ')) : null,
-      snap.mixerType ? (MIXER_LABEL[snap.mixerType] ?? snap.mixerType) : null,
+      snap?.ovenType ? (OVEN_LABEL[snap.ovenType] ?? snap.ovenType.replace(/_/g, ' ')) : null,
+      snap?.mixerType ? (MIXER_LABEL[snap.mixerType] ?? snap.mixerType) : null,
     ].filter((x): x is string => x != null && x !== '');
     if (gearParts.length > 0) {
       lines.push('');
       lines.push(`  ${gearParts.join(' · ')}`);
     }
 
-    // Pizza selections — show what was baked (bakedQtys) or planned (localSlots)
-    const allPizzasForShare = [...PIZZAS, ...DESSERT_PIZZAS];
+    // Pizza selections
+    const allPizzasForProtocol = [...PIZZAS, ...DESSERT_PIZZAS];
     const resolvePizzaName = (id: string) => {
-      const p = allPizzasForShare.find(x => x.id === id);
+      const p = allPizzasForProtocol.find(x => x.id === id);
       return p ? ((p.name as Record<string, string>).en ?? id) : id;
     };
     const pizzaSource: Array<[string, number]> = (() => {
-      if (bakedQtys && Object.keys(bakedQtys).length > 0) {
+      if (bakedQtys && Object.keys(bakedQtys).length > 0)
         return Object.entries(bakedQtys)
           .filter(([, qty]) => (qty as number) > 0)
           .map(([id, qty]) => [resolvePizzaName(id), qty as number] as [string, number]);
-      }
-      if (localSlots && localSlots.length > 0) {
+      if (localSlots?.length) {
         const counts: Record<string, number> = {};
         for (const s of localSlots) {
           const name = resolvePizzaName(s.preset_id);
@@ -324,17 +286,17 @@ export default function SessionViewer({
       }
       return [];
     })();
-
     if (pizzaSource.length > 0) {
       lines.push('');
       lines.push('  Pizzas:');
-      for (const [name, qty] of pizzaSource) {
+      for (const [name, qty] of pizzaSource)
         lines.push(`    ${name}${qty > 1 ? ` ×${qty}` : ''}`);
-      }
     }
 
     return lines;
-  })();
+  }, [cr, snap, styleName, flourBlendName, displayFlour, displayWater,
+      displaySalt, displayHydration, yeastRounded, prefLabel,
+      bakedQtys, localSlots]);
 
   const monoSm: React.CSSProperties = {
     fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)',

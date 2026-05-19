@@ -69,7 +69,7 @@ const THEME: Record<StepKind, {
 };
 
 // ── Build timeline steps ──────────────────────
-function buildItems(
+export function buildItems(
   schedule: ScheduleResult,
   blocks: AvailabilityBlock[],
   startTime: Date,
