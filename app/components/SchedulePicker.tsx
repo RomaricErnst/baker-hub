@@ -483,7 +483,10 @@ function findOptimalPosition(
       const prefOptH = getPrefOptH(
         prefermentType, kitchenTemp, prefGoesInFridge, styleKey, fridgeTemp
       );
-      const hardMax = Math.min(prefZoneMax, nowHBF - candidate - 0.25);
+      // Fridge poolish/biga needs 0.25h buffer for warmup slot.
+      // RT poolish needs no buffer — used directly at mix time.
+      const fridgeBuffer = prefGoesInFridge ? 0.25 : 0;
+      const hardMax = Math.min(prefZoneMax, nowHBF - candidate - fridgeBuffer);
       let bestPrefOffset = 0;
 
       // Scan outward from optH in both directions, prefer closer positions
@@ -1061,6 +1064,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [zonesOpen, setZonesOpen] = useState(false);
   const [skipPoolishNote, setSkipPoolishNote] = useState(false);
+  // True when algo found a poolish slot but scored red (under-fermentation risk).
+  // Distinct from skipPoolishNote (window too short). Hides poolish from graph.
+  const [prefAlgoRed, setPrefAlgoRed] = useState(false);
   const [editingMix, setEditingMix]   = useState(false);
   const [editingPref, setEditingPref] = useState(false);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
@@ -1191,6 +1197,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (skipPoolishDueToTime) {
       // Suppress preferment — direct dough gives better result than underdeveloped poolish
       setSkipPoolishNote(true);
+      setPrefAlgoRed(false);
     } else {
       setSkipPoolishNote(false);
     }
@@ -1292,6 +1299,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       if (hasPrefActive) {
         setPrefOffsetH(result.prefHBF - result.mixHBF);
         onPrefOffsetChange?.(result.prefHBF - result.mixHBF);
+        // Red = valid slot found but score=0 (under-fermentation risk, not a blocker issue)
+        setPrefAlgoRed(effectiveHasPref && result.score === 0 && !result.mixInBlocker);
       }
       // Score 0 with sweetCenter free: tight window note via existing guardShort path
       if (result.score === 0 && !result.mixInBlocker) {
@@ -1966,7 +1975,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           ) : (
             <FermentChart
               eatTime={pendingEatTime}
-              prefermentType={skipPoolishNote ? 'none' : (isSourdough ? 'sourdough' : prefermentType)}
+              prefermentType={(skipPoolishNote || prefAlgoRed) ? 'none' : (isSourdough ? 'sourdough' : prefermentType)}
               kitchenTemp={kitchenTemp}
               mixOffsetH={Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)}
               prefOffsetH={
@@ -2021,6 +2030,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               onPrefChange={(offsetH) => {
                 hasManuallyDragged.current = true;
                 setHasDragged(true);
+                setPrefAlgoRed(false);
                 if (isSourdough) {
                   const newFeed = new Date(pendingStart.getTime() - offsetH * 3600000);
                   setFeedTime(newFeed);
