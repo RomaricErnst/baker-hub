@@ -318,7 +318,10 @@ function getNightsInWindow(
   if (end <= start) return [];
 
   const nights: Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> = [];
+  // Start one day before windowStart to catch nights that began before midnight
+  // e.g. at 1am, tonight's 10pm start was yesterday — cursor must go back one day
   const cursor = new Date(start); cursor.setHours(0, 0, 0, 0);
+  cursor.setDate(cursor.getDate() - 1);
 
   for (let i = 0; i < 14 && nights.length < 7; i++) {
     const nightStart = new Date(cursor); nightStart.setHours(22, 0, 0, 0);
