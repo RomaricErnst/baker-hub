@@ -572,7 +572,18 @@ function findOptimalPosition(
       const prefHour = new Date(ms - (candidate + bestPrefOffset) * 3600000).getHours();
       const doughReasonable = mixHour >= 7 && mixHour <= 22 ? 1 : 0;
       const poolishComfort = Math.max(0, 8 - Math.abs(prefHour - 19));
-      const combinedScore = score * 100 + doughReasonable * 10 + poolishComfort;
+      // Prefer longer cold retard — scientifically better flavour development.
+      // Uses params already in scope: sweetFrom (max useful window), minTotalRT (RT floor).
+      // Candidate further from bake = more cold retard time = better result.
+      const hasColdRetardLocal = sweetCenter > minTotalRT + 2;
+      const retardBonus = hasColdRetardLocal
+        ? Math.min(8, Math.round(
+            Math.min(candidate - minTotalRT, sweetFrom - minTotalRT) /
+            Math.max(1, sweetFrom - minTotalRT) * 8
+          ))
+        : 0;
+      // Priority: score → cold retard → reasonable hour → poolish convenience
+      const combinedScore = score * 100 + retardBonus * 10 + doughReasonable * 5 + poolishComfort;
 
       if (combinedScore > bestCombinedScore) {
         bestScore = score;
