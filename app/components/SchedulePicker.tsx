@@ -1167,7 +1167,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // but using fresh values to avoid stale closure
     // Never use mixOffsetH (stale UI state) to compute the recommendation.
     // Fridge is viable if total window allows: poolish min 12h + RT fermentation.
-    const localEnoughTimeForFridge = nowHBF >= (14 + minTotalRTLocal);
+    // Exclude preheat from fridge viability — preheat is post-load, irrelevant to poolish window.
+    const minTotalRT_noPreheat = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0;
+    const localEnoughTimeForFridge = nowHBF >= (14 + minTotalRT_noPreheat);
     const localPrefGoesInFridge = hasPrefActive && (
       prefermentType === 'biga'
       || (prefermentType === 'poolish' && (kitchenTemp >= 26 || localEnoughTimeForFridge))
@@ -1217,7 +1219,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Skip poolish if window too short for even a yellow result.
     // Yellow requires at least poolishMinH + minTotalRTLocal.
     // This is style + temperature sensitive via poolishMinH and minTotalRTLocal.
-    const minWindowForYellowPoolish = poolishMinH + minTotalRTLocal;
+    // Consistent with localEnoughTimeForFridge — exclude preheat
+    const minWindowForYellowPoolish = poolishMinH + minTotalRT_noPreheat;
     const skipPoolishDueToTime = hasPrefActive && totalWindowH < minWindowForYellowPoolish;
     if (skipPoolishDueToTime) {
       // Suppress preferment — direct dough gives better result than underdeveloped poolish
