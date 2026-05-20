@@ -1130,7 +1130,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const minColdH = defaults.minColdH ?? 0;
     // Compute fridge decision locally — same logic as render-time prefGoesInFridge
     // but using fresh values to avoid stale closure
-    const localEnoughTimeForFridge = (nowHBF - mixOffsetH) >= 14;
+    // Never use mixOffsetH (stale UI state) to compute the recommendation.
+    // Fridge is viable if total window allows: poolish min 12h + RT fermentation.
+    const localEnoughTimeForFridge = nowHBF >= (14 + minTotalRTLocal);
     const localPrefGoesInFridge = hasPrefActive && (
       prefermentType === 'biga'
       || (prefermentType === 'poolish' && (kitchenTemp >= 26 || localEnoughTimeForFridge))
