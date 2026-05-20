@@ -167,22 +167,12 @@ export default function SessionViewer({
     ? Math.round(yeastGrams * 10) / 10
     : null;
 
-  if (!event || !snap) return null;
-  if (typeof document === 'undefined') return null;
-
-  const hasPref = snap.prefermentType && snap.prefermentType !== 'none';
-  const coldH = cr?.coldH ?? schedule?.totalColdHours ?? 0;
-  const rtH = cr?.rtH ?? schedule?.totalRTHours ?? 0;
-  const styleName = (ALL_STYLES as Record<string, { name: string }>)[snap.styleKey ?? '']?.name ?? snap.styleKey ?? '';
-  const title = bakeEventTitle(event);
+  const styleName = (ALL_STYLES as Record<string, { name: string }>)[snap?.styleKey ?? '']?.name ?? snap?.styleKey ?? '';
   const prefLabel = snap?.prefermentType &&
       snap.prefermentType !== 'none' && snap.prefermentType !== 'direct'
     ? snap.prefermentType.charAt(0).toUpperCase() + snap.prefermentType.slice(1)
     : null;
-  const doughBallSpec = snap.numItems && snap.itemWeight
-    ? `${snap.numItems} × ${snap.itemWeight}g`
-    : null;
-  const flourBlendName = snap.tab === 'custom' && snap.flourBlend
+  const flourBlendName = snap && snap.tab === 'custom' && snap.flourBlend
     ? (() => {
         try {
           const blend = snap.flourBlend as FlourBlend;
@@ -205,8 +195,9 @@ export default function SessionViewer({
       })()
     : null;
 
+  // protocolLines must be declared before any conditional returns (Rules of Hooks)
   const protocolLines: string[] | null = useMemo(() => {
-    if (!snap?.eatTime) return null;
+    if (!snap?.eatTime || !event) return null;
 
     // Format times snapped to 15min
     const snap15 = (d: Date): Date => {
@@ -296,6 +287,17 @@ export default function SessionViewer({
   }, [cr, snap, styleName, flourBlendName, displayFlour, displayWater,
       displaySalt, displayHydration, yeastRounded, prefLabel,
       bakedQtys, localSlots]);
+
+  if (!event || !snap) return null;
+  if (typeof document === 'undefined') return null;
+
+  const hasPref = snap.prefermentType && snap.prefermentType !== 'none';
+  const coldH = cr?.coldH ?? schedule?.totalColdHours ?? 0;
+  const rtH = cr?.rtH ?? schedule?.totalRTHours ?? 0;
+  const title = bakeEventTitle(event);
+  const doughBallSpec = snap.numItems && snap.itemWeight
+    ? `${snap.numItems} × ${snap.itemWeight}g`
+    : null;
 
   const monoSm: React.CSSProperties = {
     fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)',

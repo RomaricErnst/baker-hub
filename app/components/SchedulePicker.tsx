@@ -395,6 +395,7 @@ function findOptimalPosition(
   prefRTWarmupH: number = 0,
   prefGoesInFridge: boolean = false,
   fridgeTemp: number = 6,
+  styleKey: string = 'neapolitan',
 ): {
   mixHBF: number;
   prefHBF: number;
@@ -476,7 +477,12 @@ function findOptimalPosition(
       // ── Preferment placement for this mix candidate ──────────────────
       const prefZoneMax = prefermentType === 'biga' ? 72 : prefGoesInFridge ? 24 : prefOffsetH * 1.5;
       const prefZoneMin = prefermentType === 'biga' ? 12 : prefGoesInFridge ? 3 : 1;
-      const prefOptH = prefOffsetH;
+      // Use scientific optimum, not current drag position.
+      // prefOffsetH is UI state — using it as search target causes
+      // different results on first load vs after drag+reset.
+      const prefOptH = getPrefOptH(
+        prefermentType, kitchenTemp, prefGoesInFridge, styleKey, fridgeTemp
+      );
       const hardMax = Math.min(prefZoneMax, nowHBF - candidate - 0.25);
       let bestPrefOffset = 0;
 
@@ -1200,6 +1206,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       localPrefGoesInFridge ? getPrefRTWarmupH(kitchenTemp) : 0,
       localPrefGoesInFridge,
       fridgeTemp,
+      styleKey ?? 'neapolitan',
     );
 
     // Unified decision tree — single source of truth for all scheduler states.
