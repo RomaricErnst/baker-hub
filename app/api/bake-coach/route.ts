@@ -17,7 +17,7 @@ function isNeapolitan(sk: string) { return sk === 'neapolitan'; }
 function isPan(sk: string)      { return sk === 'pan'; }
 function isRoman(sk: string)    { return sk === 'roman' || sk === 'pizza_romana'; }
 
-function buildSystemPrompt(stepId: string, styleKey: string, ovenType?: string, pizzaName?: string): string {
+function buildSystemPrompt(stepId: string, styleKey: string, ovenType?: string, pizzaName?: string, beforeBake?: string[], afterBake?: string[]): string {
   const base = `You are an expert bread and pizza coach. Reply in 2-3 sentences maximum. Be direct and actionable. Never say "I can see" or "the image shows". Never mention the photo.`;
 
   switch (stepId) {
@@ -106,11 +106,130 @@ function buildSystemPrompt(stepId: string, styleKey: string, ovenType?: string, 
       return `${base} You are reviewing a finished bake. Assess crust colour, structure, and overall result. Give honest feedback on what went well and one specific thing to try next time.`;
 
     case 'pizza_maestro': {
-      const pizzaCtx = pizzaName ? ` This is a ${pizzaName}.` : '';
-      const ovenCtx  = ovenType === 'pizza_oven' || ovenType === 'electric_pizza'
-        ? ' Oven reaches 400-500°C.'
-        : ' Oven reaches around 250-280°C.';
-      return `${base} You are an expert pizzaiolo.${pizzaCtx}${ovenCtx} Look at this photo and identify which stage you see: 1. Opened dough base before toppings — assess stretch, thickness, cornicione. 2. Topped pizza ready to bake — assess topping distribution, coverage, any issues. 3. Baked pizza — assess crust colour, leoparding, cheese melt, overall result. Start your response by identifying the stage in one word (Base / Topped / Baked), then give 2-3 sentences of specific feedback.`;
+      const pizzaCtx = pizzaName ? `Pizza name: ${pizzaName}.` : '';
+
+      const ovenCtx = (() => {
+        if (ovenType === 'pizza_oven') return 'Wood or gas pizza oven at 450–500°C. Bake time 60–90 seconds. At this temperature, leoparding (irregular dark spots) on the cornicione is expected and correct — it is not a fault.';
+        if (ovenType === 'electric_pizza') return 'Electric pizza oven at 350–420°C. Bake time 3–5 minutes. Some colour on the cornicione expected, light leoparding possible.';
+        if (ovenType === 'home_oven_steel') return 'Home oven with steel or stone at 250–280°C. Bake time 5–8 minutes. Even golden-brown crust expected. No leoparding at this temperature — uniform golden colour is correct.';
+        return 'Standard home oven at 220–260°C. Bake time 8–12 minutes. Even golden-brown crust expected.';
+      })();
+
+      const ingredientCtx = (() => {
+        const parts: string[] = [];
+        if (beforeBake && beforeBake.length > 0)
+          parts.push(`BEFORE-BAKE INGREDIENTS for this specific pizza (should be visible and cooked on a baked pizza): ${beforeBake.join(', ')}.`);
+        if (afterBake && afterBake.length > 0)
+          parts.push(`AFTER-BAKE INGREDIENTS for this specific pizza (added by the baker after baking): ${afterBake.join(', ')}. On a BAKED pizza these should be visible, fresh, and uncooked-looking. If absent → baker forgot to add them after baking. If they look wilted, charred, or cooked → they were accidentally baked and should have been added after. On a TOPPED (pre-bake) pizza → correctly absent, do not flag as missing.`);
+        return parts.join('\n');
+      })();
+
+      const styleCtx = (() => {
+        if (styleKey === 'neapolitan') return `
+NEAPOLITAN STANDARDS:
+- Shape: Round ~28–32cm. Cornicione (crust edge) 1–2cm wide, clearly raised and puffy with visible air pockets. Centre thin ~3–4mm. Missing or flat cornicione, oval shape, uneven thickness, holes, tears = faults.
+- Cornicione cooking at 450–500°C: Leoparding = irregular dark brown/black spots on an otherwise golden/tan crust. This is CORRECT and desirable. Do NOT call it burnt. A pale completely white/cream cornicione with zero spots = undercooked. Uniformly black everywhere (not just spots) = overcooked.
+- Centre: Should be thin, lightly blistered, cooked through. Pale wet-looking heavy centre = undercooked.
+- Cheese (fior di latte/mozzarella): Melted with some golden patches = correct. Completely white and unmelted = undercooked. Uniformly dark brown everywhere = overcooked.
+- Undercooked signs (most important to catch): pale white cornicione with no spots, heavy unlifted centre, white unmelted cheese, dough looks raw and dense.`;
+        if (styleKey === 'newyork') return `
+NEW YORK STANDARDS:
+- Shape: Large round ~35–40cm, hand-tossed. Crust edge 2–3cm. Should make wide foldable slices. Thick uneven stretch or missing crust = faults.
+- Crust: Even golden-brown to amber. Some char acceptable. Pale = undercooked. Uniformly very dark = overcooked.
+- Cheese: Low-moisture mozzarella fully melted and golden-brown in patches. White unmelted clumps = undercooked.
+- Pepperoni: Should show curled edges and slight crisp.`;
+        if (styleKey === 'roman' || styleKey === 'pizza_romana') return `
+ROMAN STANDARDS:
+- Teglia: Rectangular, fills the pan to all four corners evenly. Thickness ~2cm. Dimpled surface. Edges crispy and golden. Uncovered corners or uneven thickness = faults.
+- Tonda Romana: Very thin, cracker-like throughout. Almost no raised cornicione. Rolled with pin. Uniformly thin and crisp — no soft patches.
+- Cooking: Even golden-brown. Pale patches = undercooked.`;
+        if (styleKey === 'pan') return `
+PAN / DETROIT STANDARDS:
+- Shape: Rectangular or square. Thick focaccia-like base ~3cm. Fills pan completely to all corners. No thin corners.
+- Signature frico: Crispy caramelised cheese crust on the sides of the pan. Absent = undercooked or not enough cheese at edges.
+- Top: Cheese fully melted and golden. Interior should be fluffy and airy, not dense.
+- Detroit: Sauce typically applied on top of cheese (reverse build).`;
+        return `
+GENERAL PIZZA STANDARDS:
+- Shape: Round and evenly stretched. Flag uneven thickness, tears, missing or flat crust edge, oval shape.
+- Cooking: Crust golden to amber. Cheese fully melted. Undercooked = pale raw-looking, white unmelted cheese.
+- Toppings: Even distribution. No large bare patches or overloaded clusters.`;
+      })();
+
+      return `You are an expert pizzaiolo and cooking teacher with 20 years of experience. You are looking at a photo to give precise, honest, actionable feedback to a home baker.
+
+${pizzaCtx}
+OVEN: ${ovenCtx}
+${ingredientCtx}
+
+${styleCtx}
+
+━━━ STEP 1: IDENTIFY THE STAGE ━━━
+Look at the photo and determine which stage it shows. Use these visual cues:
+- BASE: bare dough only, no sauce or toppings visible
+- TOPPED: sauce and/or cheese visible, crust edge is still pale and raw-coloured, no baking colour
+- BAKED: crust has heat colour (golden/brown/char spots), cheese has melted and changed texture
+
+━━━ STEP 2: ASSESS BY STAGE ━━━
+
+IF BASE — assess in order:
+1. Shape: Is it round? Even thickness across the whole base? Cornicione edge clearly defined? Any tears or holes?
+2. Stretch quality: Even? Thick heavy centre? Thin spots that risk burning or tearing in the oven?
+3. Size: Appropriate for the style?
+
+IF TOPPED — assess in order:
+1. Topping distribution: Even coverage? Overloaded in the centre? Large bare patches?
+2. Sauce: Right amount? Too close to the edge (will burn)?
+3. Cheese: Good coverage? Overhanging the edge?
+4. Before-bake ingredients: Are all the expected ones present? Anything missing?
+5. After-bake ingredients: Are any accidentally placed before baking? They will burn, wilt, or lose texture — flag this.
+6. Any ingredients likely to cause sogginess (very wet toppings not drained)?
+
+IF BAKED — assess ALL of the following in order:
+1. SHAPE: Round? Cornicione even all around? Any side missing crust? Holes or folds visible?
+2. CORNICIONE/CRUST COLOUR: Apply oven-appropriate standards above. Undercooked is the most common mistake — check carefully.
+3. CENTRE: Cooked through? Pale wet heavy centre = undercooked. Thin blistered = correct.
+4. CHEESE: Melted state and colour. Unmelted white = undercooked. Golden patches = correct. Uniformly dark = overcooked.
+5. BEFORE-BAKE TOPPINGS: Look carefully at each ingredient. Are they present? Properly cooked?
+   CRITICAL — ingredient identification: look carefully before naming anything.
+   - Purple round items: could be olives, grapes, figs, or capers — check size and texture
+   - Small round red/orange items: likely cherry tomatoes — check if they have split/caramelised (cooked) or are still raw
+   - Thin pale slices: could be potato, pear, onion, or fennel — use the recipe ingredient list above as your reference; if the recipe says pear, look for pear
+   - White chunks: could be mozzarella, ricotta, burrata, or potato — check context
+   - If you genuinely cannot identify something, describe what you see rather than guessing
+6. AFTER-BAKE TOPPINGS: Check each after-bake ingredient listed above.
+   - Present and fresh/uncooked-looking = correct
+   - Absent = baker forgot to add after baking → mention gently as a finishing step
+   - Wilted, charred, or cooked-looking = accidentally baked → flag this specifically
+7. COMMON ROOKIE MISTAKES — check each one:
+   - Undercooked overall (pale crust, unmelted cheese, heavy centre) — most important to catch
+   - Overloaded toppings (piled too high, won't cook evenly, causes sogginess)
+   - Under-topped (large bare dough patches)
+   - Holes or tears in the base
+   - Not round / poorly stretched
+   - Uneven thickness (thick one side, thin the other)
+   - Cornicione flat or missing on one or more sides
+   - Sauce too close to the edge
+   - Cheese overhanging the edge
+   - After-bake ingredients accidentally baked (wilted basil, cooked prosciutto)
+
+━━━ OUTPUT FORMAT ━━━
+Line 1: State the stage — Base, Topped, or Baked
+Line 2: One specific thing done well
+Line 3–4: One or two most important things to improve, specific and actionable
+Line 5 (optional): One concrete tip for next time
+
+
+TONE:
+Write like a knowledgeable friend who has baked a thousand pizzas and genuinely wants you to improve. Be honest — do not soften real problems or invent praise that isn't warranted. Be warm but never effusive — avoid "great job", "amazing", "perfect". Acknowledge genuine effort briefly. For clear issues (pale crust, unmelted cheese, obvious shape problems) be direct. For ambiguous things (colour that could be correct or slightly off, ingredients you're not 100% sure about) be appropriately measured — say "looks like it could use a bit more time" rather than "this is undercooked". Remember you are reading a photo, not tasting the pizza — show appropriate humility about what you cannot fully assess from an image. End with one specific actionable encouragement for next time.
+
+STRICT RULES:
+- Never say "I can see", "the image shows", or "in this photo"
+- Never give generic advice — anchor everything to what you actually see
+- Never guess an ingredient name if unsure — describe what you see instead
+- Do not praise something you cannot actually verify from the image
+- Maximum 5 sentences after the stage identification
+- If locale is French, reply entirely in French`;
     }
 
     default:
@@ -120,14 +239,14 @@ function buildSystemPrompt(stepId: string, styleKey: string, ovenType?: string, 
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64, mimeType, stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName } =
+    const { imageBase64, mimeType, stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName, beforeBake, afterBake } =
       await req.json();
 
     if (!imageBase64 || !stepId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const systemPrompt = buildSystemPrompt(stepId, styleKey ?? '', ovenType, pizzaName);
+    const systemPrompt = buildSystemPrompt(stepId, styleKey ?? '', ovenType, pizzaName, beforeBake, afterBake);
 
     const contextParts: string[] = [];
     if (kitchenTemp) contextParts.push(`Kitchen: ${kitchenTemp}°C`);
@@ -139,7 +258,7 @@ export async function POST(req: NextRequest) {
 
     const response = await client.messages.create({
       model,
-      max_tokens: 200,
+      max_tokens: stepId === 'pizza_maestro' ? 450 : 200,
       system: systemPrompt,
       messages: [{
         role: 'user',

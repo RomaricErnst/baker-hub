@@ -50,6 +50,7 @@ const MAESTRO_CONTENT_BT: Record<string, {
 
 function CoachButton({
   stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName, imageBase64,
+  photoOverlay, beforeBake, afterBake,
 }: {
   stepId: string;
   styleKey: string;
@@ -59,6 +60,9 @@ function CoachButton({
   ovenType?: string;
   pizzaName?: string;
   imageBase64?: string;
+  photoOverlay?: boolean;
+  beforeBake?: string[];
+  afterBake?: string[];
 }) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [loading, setLoading]   = useState(false);
@@ -111,6 +115,8 @@ function CoachButton({
           locale,
           ovenType,
           pizzaName,
+          beforeBake,
+          afterBake,
         }),
       });
 
@@ -130,7 +136,7 @@ function CoachButton({
       const res = await fetch('/api/bake-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: base64, mimeType: 'image/jpeg', stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName }),
+        body: JSON.stringify({ imageBase64: base64, mimeType: 'image/jpeg', stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName, beforeBake, afterBake }),
       });
       const data = await res.json();
       if (data.feedback) setFeedback(data.feedback);
@@ -140,6 +146,62 @@ function CoachButton({
   }
 
   if (!COACH_STEPS_BT.has(stepId)) return null;
+
+  // Photo overlay mode — button sits on top of the photo, feedback appears below
+  if (photoOverlay) {
+    return (
+      <div>
+        {!feedback && (
+          <div style={{
+            position: 'absolute', bottom: '14px', left: 0, right: 0,
+            display: 'flex', justifyContent: 'center',
+          }}>
+            <button
+              onClick={() => { if (imageBase64) { handleImageBase64(imageBase64); } else { fileInputRef.current?.click(); } }}
+              disabled={loading}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                background: 'rgba(26,22,18,0.82)',
+                backdropFilter: 'blur(4px)',
+                border: '1px solid rgba(245,240,232,0.22)',
+                borderRadius: '20px', padding: '8px 18px',
+                cursor: loading ? 'default' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
+              {loading ? (
+                <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '1.5px solid rgba(245,240,232,0.3)', borderTop: '1.5px solid #F5F0E8', borderRadius: '50%', animation: 'bh-spin 0.7s linear infinite' }} />
+              ) : (
+                <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="#F5F0E8" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 1v3M8 12v3M1 8h3M12 8h3M3.05 3.05l2.12 2.12M10.83 10.83l2.12 2.12M3.05 12.95l2.12-2.12M10.83 5.17l2.12-2.12"/>
+                </svg>
+              )}
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: loading ? 'rgba(245,240,232,0.6)' : '#F5F0E8', whiteSpace: 'nowrap' }}>
+                {loading
+                  ? (l === 'fr' ? 'Le Maestro regarde...' : 'Maestro is looking...')
+                  : (l === 'fr' ? 'Demander au Maestro ✦' : 'Ask Maestro ✦')}
+              </span>
+            </button>
+          </div>
+        )}
+        {feedback && (
+          <div style={{ background: '#1A1612', borderLeft: '3px solid #C4522A', borderRadius: '10px', padding: '12px 14px', margin: '0 16px 10px', position: 'relative' }}>
+            <div style={{ color: '#F5F0E8', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>{feedback}</div>
+            <button onClick={() => { setFeedback(null); setError(false); }}
+              style={{ position: 'absolute', bottom: '8px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: 0 }}>
+              {l === 'fr' ? 'Reprendre' : 'Retake'}
+            </button>
+          </div>
+        )}
+        {error && !feedback && (
+          <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', padding: '8px 16px' }}>
+            {l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.'}
+          </div>
+        )}
+        <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFile} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginTop: '14px', marginBottom: '4px' }}>
@@ -929,9 +991,19 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 </div>
               </div>
 
-              {/* Inline Maestro assessment — appears after photo taken */}
+              {/* Full-width photo hero with Maestro button overlaid */}
               {photos[sheetPizzaId] && (
-                <div style={{ padding: '12px 16px 4px' }}>
+                <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', overflow: 'hidden' }}>
+                  <img
+                    src={photos[sheetPizzaId]}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    alt=""
+                  />
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%',
+                    background: 'linear-gradient(to bottom, transparent, rgba(26,22,18,0.75))',
+                    pointerEvents: 'none',
+                  }} />
                   <CoachButton
                     stepId="pizza_maestro"
                     styleKey={styleKey ?? 'neapolitan'}
@@ -941,6 +1013,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     ovenType={ovenType}
                     pizzaName={pizza.name[l]}
                     imageBase64={photoBase64[sheetPizzaId]}
+                    photoOverlay={true}
+                    beforeBake={beforeIngredients.map(i => i.name.en)}
+                    afterBake={afterIngredients.map(i => i.name.en)}
                   />
                 </div>
               )}
