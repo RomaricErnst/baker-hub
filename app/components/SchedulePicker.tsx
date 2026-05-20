@@ -1112,6 +1112,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     currentBlocks: AvailabilityBlock[],
     et: Date,
   ) {
+    // Reset prefAlgoRed at start — prevents stale state from previous run
+    setPrefAlgoRed(false);
     const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
     const isTrop = kitchenTemp >= 28;
     const minBulkRTLocal = isTrop ? 0.5 : 1.5;
