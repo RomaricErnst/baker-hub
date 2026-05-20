@@ -326,6 +326,8 @@ export default function Home() {
   const [prefermentType, setPrefermentType] = useState<PrefermentType>('none');
   const [prefermentFlourPct, setPrefermentFlourPct] = useState<number | undefined>(undefined);
   const [prefOffsetH, setPrefOffsetH] = useState<number>(0);
+  // Driven by SchedulePicker algo result — single source of truth for fridge/RT decision
+  const [prefGoesInFridgeState, setPrefGoesInFridgeState] = useState<boolean>(true);
 
   const [manualHydration, setManualHydration] = useState<number | undefined>(undefined);
   const [manualOil, setManualOil]             = useState<number | undefined>(undefined);
@@ -572,12 +574,15 @@ export default function Home() {
     return new Date(startTime.getTime() - prefOffsetH * 3600000);
   }, [startTime, prefOffsetH, prefermentType]);
 
-  // Two-temperature poolish protocol — fridge flag and remove-from-fridge time
-  const prefGoesInFridge = useMemo(() => {
-    if (!prefermentType || prefermentType === 'none' || prefermentType === 'levain') return false;
-    const rtPeakH = getPrefPeakH_RT(prefermentType, kitchenTemp, styleKey ?? 'neapolitan');
-    return prefermentType === 'biga' || prefOffsetH > rtPeakH;
-  }, [prefermentType, kitchenTemp, styleKey, prefOffsetH]);
+  // prefGoesInFridge is the algo's decision reported via onPrefGoesInFridgeChange.
+  // Biga always fridge (scientifically correct — no RT biga).
+  // Poolish: algo decides fridge or RT based on dual search result.
+  // This single value flows to Timeline, RecipeOutput, and buildComputedRecipe.
+  const prefGoesInFridge = !prefermentType || prefermentType === 'none' || prefermentType === 'levain'
+    ? false
+    : prefermentType === 'biga'
+      ? true
+      : prefGoesInFridgeState;
 
   const prefRemoveFromFridgeTime = useMemo(() => {
     if (!prefGoesInFridge || !eatTime) return null;
@@ -1519,6 +1524,7 @@ export default function Home() {
                 prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
                 onPrefOffsetChange={setPrefOffsetH}
+                onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 sessionRestored={sessionRestored}
               />
@@ -2250,6 +2256,7 @@ export default function Home() {
                 prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
                 onPrefOffsetChange={setPrefOffsetH}
+                onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onReady={() => {}}
                 sessionRestored={sessionRestored}
