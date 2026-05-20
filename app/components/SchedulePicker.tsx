@@ -1361,7 +1361,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   //          or when kitchen >= 26°C regardless of time (RT window too narrow/fragile).
   //          Falls back to RT only when window is short AND kitchen is cool (< 26°C).
   const prefRTPeakH = hasPrefActive ? getPrefPeakH_RT(prefermentType, kitchenTemp, styleKey ?? 'neapolitan') : 0;
-  const enoughTimeForFridge = (_nowHBF - mixOffsetH) >= 14;
+  // Use total window (nowHBF) not mixOffsetH (stale UI state).
+  // Matches the logic inside computeAndApplyRecommendation.
+  const enoughTimeForFridge = _nowHBF >= (14 + (kitchenTemp >= 30 ? 1.5 : 2.5));
   const prefGoesInFridge = hasPrefActive && (
     prefermentType === 'biga'
     || (prefermentType === 'poolish' && (kitchenTemp >= 26 || enoughTimeForFridge))
