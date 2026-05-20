@@ -1,4 +1,3 @@
-// cache-bust: 1779290887
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
@@ -978,6 +977,7 @@ function SimpleColourBar({
 }
 
 // ── Component ─────────────────────────────────
+// v1779291581473456000
 export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
@@ -2580,5 +2580,3 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     </div>
   );
 }
-
-export const _cacheBust = 1779291108;
