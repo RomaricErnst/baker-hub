@@ -248,7 +248,6 @@ export default function SessionViewer({
       for (const step of savedSteps) {
         const isSubStep = step.id === 'remove_pref_fridge';
         const label = step.label
-          .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
           .replace(/[^\x00-\x7F]/g, '')
           .trim();
         lines.push(`${isSubStep ? '  ' : ''}${fmt(new Date(step.time))}  ${label}`);
