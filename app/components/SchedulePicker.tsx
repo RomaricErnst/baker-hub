@@ -439,7 +439,15 @@ function findOptimalPosition(
       const mixClear = !isInBlocker(candidate);
       if (!mixClear) continue;
       const bulkEndHBF = candidate - typicalBulkH;
-      const bulkClear = bulkEndHBF > 0 && !isInBlocker(bulkEndHBF);
+      // Allow bulk to start up to 30min before a blocker begins —
+      // baker can start bulk then refrigerate when they leave.
+      const bulkBlockedDeep = isInBlocker(bulkEndHBF) && activeBlocks.every(b => {
+        const s = (et.getTime() - b.from.getTime()) / 3600000;
+        const e2 = (et.getTime() - b.to.getTime()) / 3600000;
+        const lo = Math.min(s, e2); const hi = Math.max(s, e2);
+        return !(bulkEndHBF > lo && bulkEndHBF < hi) || (bulkEndHBF - lo < 0.5);
+      });
+      const bulkClear = bulkEndHBF > 0 && (!isInBlocker(bulkEndHBF) || !bulkBlockedDeep);
       if (!bulkClear) continue;
       // Poolish fridge: ensure at least 30min warmup before mix is available.
       // Full warmup (prefRTWarmupH) is ideal but not a hard requirement —
@@ -1305,6 +1313,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       });
       setRecommendedHBF(null);
       setShowFallbackPopup(true);
+      if (hasPrefActive) setPrefAlgoRed(true);
     } else {
       // Valid slot found (score 1–4) or score 0 with sweetCenter free
       const newStart = new Date(et.getTime() - result.mixHBF * 3600000);
