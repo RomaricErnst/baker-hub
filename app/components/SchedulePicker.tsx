@@ -1052,6 +1052,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   } | null>(null);
   const hasManuallyDragged = useRef(false);
   const [hasDragged, setHasDragged] = useState(false);
+  // Tracks whether the recommendation algo chose fridge or RT poolish.
+  // This is the single source of truth — render-time display reads this,
+  // not an independent re-computation from mixOffsetH.
+  const [algoChoseFridge, setAlgoChoseFridge] = useState<boolean>(true);
   const suppressStartReset = useRef(false);
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
@@ -1196,7 +1200,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     // Minimum viable poolish: 3h RT, 12h fridge
     const prefMinViableH = poolishMinH;
-    const result = findOptimalPosition(
+    // Always try both fridge and RT poolish modes when poolish is active.
+    // Pick the mode with the highest score. Fridge wins ties (better flavour development).
+    // This makes the recommendation style-sensitive and temperature-sensitive
+    // while always maximising fermentation quality.
+    let result = findOptimalPosition(
       sweetCenter, sweetFrom, sweetTo,
       currentBlocks, et,
       effectiveHasPref, optimalPrefOffset,
@@ -1210,6 +1218,37 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       fridgeTemp,
       styleKey ?? 'neapolitan',
     );
+    let resultChoseFridge = localPrefGoesInFridge;
+
+    if (effectiveHasPref && prefermentType === 'poolish' && localPrefGoesInFridge) {
+      // Also try RT mode — RT poolish peaks earlier and may score higher
+      // when the window is too short for a full fridge poolish
+      const rtPrefOptH = getPrefOptH(prefermentType, kitchenTemp, false, styleKey ?? 'neapolitan', fridgeTemp);
+      const rtResult = findOptimalPosition(
+        sweetCenter, sweetFrom, sweetTo,
+        currentBlocks, et,
+        effectiveHasPref, rtPrefOptH,
+        kitchenTemp,
+        nowHBF,
+        prefermentType,
+        3,           // RT minimum 3h
+        minTotalRTLocal,
+        0,           // no warmup needed for RT poolish
+        false,       // RT mode
+        fridgeTemp,
+        styleKey ?? 'neapolitan',
+      );
+      // RT wins only if strictly better score — fridge wins all ties
+      if (rtResult.score > result.score) {
+        result = rtResult;
+        resultChoseFridge = false;
+      }
+    }
+
+    // Report which mode won — display reads this as single source of truth
+    if (effectiveHasPref && prefermentType === 'poolish') {
+      setAlgoChoseFridge(resultChoseFridge);
+    }
 
     // Unified decision tree — single source of truth for all scheduler states.
     // score 4: both green  → silent success
@@ -1361,12 +1400,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   //          or when kitchen >= 26°C regardless of time (RT window too narrow/fragile).
   //          Falls back to RT only when window is short AND kitchen is cool (< 26°C).
   const prefRTPeakH = hasPrefActive ? getPrefPeakH_RT(prefermentType, kitchenTemp, styleKey ?? 'neapolitan') : 0;
-  // Use total window (nowHBF) not mixOffsetH (stale UI state).
-  // Matches the logic inside computeAndApplyRecommendation.
-  const enoughTimeForFridge = _nowHBF >= (14 + (kitchenTemp >= 30 ? 1.5 : 2.5));
+  // prefGoesInFridge is set by the algo after trying both fridge and RT modes.
+  // Never recompute independently — algo result is the single source of truth.
   const prefGoesInFridge = hasPrefActive && (
-    prefermentType === 'biga'
-    || (prefermentType === 'poolish' && (kitchenTemp >= 26 || enoughTimeForFridge))
+    prefermentType === 'biga' || (prefermentType === 'poolish' && algoChoseFridge)
   );
   useEffect(() => {
     onPrefGoesInFridgeChange?.(prefGoesInFridge);
