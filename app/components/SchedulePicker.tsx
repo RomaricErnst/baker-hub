@@ -1301,7 +1301,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         setPrefOffsetH(result.prefHBF - result.mixHBF);
         onPrefOffsetChange?.(result.prefHBF - result.mixHBF);
         // Red = valid slot found but score=0 (under-fermentation risk, not a blocker issue)
-        setPrefAlgoRed(effectiveHasPref && result.score === 0 && !result.mixInBlocker);
+        // Hide poolish graph if: score=0 (no viable slot found) OR
+        // RT poolish is below climate-sensitive minimum (no meaningful fermentation).
+        const minViableRT = Math.max(1, Math.round(prefRTPeakH * 0.25));
+        setPrefAlgoRed(effectiveHasPref && (
+          (result.score === 0 && !result.mixInBlocker) ||
+          (!resultChoseFridge && (result.prefHBF - result.mixHBF) < minViableRT)
+        ));
       }
       // Score 0 with sweetCenter free: tight window note via existing guardShort path
       if (result.score === 0 && !result.mixInBlocker) {
@@ -2324,7 +2330,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // Single source of truth — same functions used by graph zone and recommendation
         const prefOptHCard  = getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridge, styleKey ?? 'neapolitan', fridgeTemp);
         const prefMaxHCard  = prefermentType === 'biga' ? 72 : prefGoesInFridge ? 24 : prefRTPeakH * 1.5;
-        const prefMinHCard  = 3;
+        // Fridge: 3h regardless of temp (needs time to cool then start fermenting).
+        // RT: ~25% of peak time — climate-sensitive minimum for meaningful fermentation.
+        // e.g. 30°C peak=4h → min=1h, 22°C peak=9h → min=2h, 18°C peak=13h → min=3h
+        const prefMinHCard = prefGoesInFridge ? 3 : Math.max(1, Math.round(prefRTPeakH * 0.25));
         // Plateau half-width: poolish fridge ±3h upper / +5h lower (asymmetric), biga ±10h, RT ±0
         const fridgePlateauH    = prefGoesInFridge ? (prefermentType === 'biga' ? 10 : 3) : 0;
         const cardPrefPlateauH_LOW = prefGoesInFridge && prefermentType === 'poolish' ? 5 : fridgePlateauH;
@@ -2358,7 +2367,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             ? prefOffsetH < prefOptHCard - cardPrefPlateauH_LOW
             : prefOffsetH < prefOptHCard);
         const cardPrefTooEarly  = (hasPrefActive || isSourdough) && prefOffsetH > prefMaxHCard;
-        const cardPrefLateOk    = (hasPrefActive || isSourdough) && prefOffsetH >= 1 && prefOffsetH < prefMinHCard;
+        const cardPrefLateOk    = (hasPrefActive || isSourdough) && prefOffsetH >= 0.25 && prefOffsetH < prefMinHCard;
         // For RT: use cardPrefDeveloping instead of cardPrefLateOk for 3h→peak*0.8 range
         const cardPrefTooShort  = (hasPrefActive || isSourdough) && prefOffsetH < 1;
         // Protocol already shown via ❄/🌡 indicator below diamond — not repeated in pill
@@ -2397,12 +2406,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         return (
           <div style={{ display: 'flex', gap: '6px', marginTop: '1rem', flexWrap: 'wrap', justifyContent: cardPrefTime ? 'flex-start' : 'center' }}>
             {/* Pref card */}
-            {(cardPrefTime || (hasPrefActive && skipPoolishNote)) && (
+            {(cardPrefTime || (hasPrefActive && (skipPoolishNote || prefAlgoRed))) && (
               <div style={{
                 flex: 1, minWidth: '120px',
                 background: 'var(--cream)', border: '1.5px solid var(--border)',
                 borderRadius: '10px', padding: '14px 16px',
-                opacity: skipPoolishNote ? 0.7 : 1,
+                opacity: (skipPoolishNote || prefAlgoRed) ? 0.7 : 1,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
                   <div style={{ width: 8, height: 8, background: cardPrefColor, transform: 'rotate(45deg)', flexShrink: 0 }} />
@@ -2411,7 +2420,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
                   }}>{prefLabel}</div>
                 </div>
-                {skipPoolishNote ? (
+                {(skipPoolishNote || prefAlgoRed) ? (
                   <div style={{ fontSize: '12px', color: 'var(--smoke)', lineHeight: 1.5, marginTop: '6px' }}>
                     {locale === 'fr'
                       ? `Pas assez de temps pour un ${prefermentType} efficace — pâte directe.`
@@ -2446,7 +2455,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     {fmtCardDT(cardPrefTime!, isFr)}
                   </div>
                 )}
-                {!skipPoolishNote && (() => {
+                {!(skipPoolishNote || prefAlgoRed) && (() => {
                   const isGreen  = cardPrefInZone;
                   const isGold   = cardPrefEarlyOk || cardPrefLateOk;
                   const isRed    = cardPrefTooEarly || cardPrefTooShort;
