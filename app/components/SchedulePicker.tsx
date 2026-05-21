@@ -2451,8 +2451,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 {(skipPoolishNote || prefAlgoRed) ? (
                   <div style={{ fontSize: '12px', color: 'var(--smoke)', lineHeight: 1.5, marginTop: '6px' }}>
                     {locale === 'fr'
-                      ? `Pas assez de temps pour un ${prefermentType} efficace — pâte directe.`
-                      : `Not enough time for a useful ${prefermentType} — going direct.`}
+                      ? `Fenêtre trop courte pour un ${prefermentType} — votre pâte fermentera directement et sera délicieuse.`
+                      : `Window too short for ${prefermentType} — your dough will ferment directly and still taste great.`}
                   </div>
                 ) : editingPref ? (
                   <input
