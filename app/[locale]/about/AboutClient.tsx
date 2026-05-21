@@ -163,231 +163,281 @@ const CONTENT: Record<string, LocaleContent> = {
     pageSubtitle: 'How it works · Why it exists',
     footer: 'Baker Hub Beta',
     sections: [
-      {
-        title: 'Why Baker Hub exists',
-        defaultOpen: true,
-        body: (
-          <>
-            <P>Most baking recipes assume you have a free afternoon, a 20°C kitchen, and nothing else to do. Most of us don't have any of those things.</P>
-            <P>Baker Hub was built for the serious home baker who bakes around real life — a day job, a family dinner, a pizza night that needs to happen on Saturday at 7pm, not whenever the dough feels like being ready. You tell Baker Hub when you want to eat. It works out when to start, how much yeast to use, and what to do at each step.</P>
-            <P>It's also built for hot kitchens. Every fermentation formula in every book was developed in a temperate kitchen at 18–22°C. In a hotter climate, those formulas consistently over-ferment your dough. Baker Hub's tropical fermentation engine corrects for this from first principles.</P>
-            <P>And it's built for the full pizza night — not just the dough, but the whole evening. Choosing what to make, scaling toppings for a group, building a shopping list, tracking what gets baked. The Pizza Party feature turns a complex multi-pizza evening into something you can actually plan — and share.</P>
-            <p style={{ margin: 0, ...bodyText }}>An honest note: Baker Hub is a side project, built by someone who codes with AI assistance and tests recipes in a real kitchen. The AI writes the code. The science, the product decisions, and the baking happen in the real world. This means the app moves fast, breaks occasionally, and gets better with every bake.</p>
-          </>
-        ),
-      },
-      {
-        title: 'Share your bakes',
-        body: (
-          <>
-            <P>Baker Hub lets you share your session — recipe, schedule, and pizza selections — as a card you can post on Instagram or send to friends. If you make something you're proud of, we'd love to see it.</P>
-            <p style={{ margin: 0, ...bodyText }}>Tag <strong style={{ color: CHAR }}>@bakerhub</strong> and <strong style={{ color: CHAR }}>#BakerHub</strong>.</p>
-          </>
-        ),
-      },
-      {
-        title: 'Pizza Party — from dough to table',
-        body: (
-          <>
-            <P>The Pizza Party feature is built around a simple idea: once you've planned your dough, the rest of the evening should plan itself too.</P>
-            <P><strong style={{ color: CHAR }}>212 curated recipes.</strong> Baker Hub's pizza database covers 200 savoury pizzas and 12 dessert finales — each handpicked, not generated. Organised by tradition, occasion, taste, and dietary need so you can find the right pizza for the right moment.</P>
-            <div style={{
-              background: 'rgba(212,168,83,0.06)', borderLeft: `2px solid ${GOLD}`,
-              borderRadius: '8px', padding: '12px', marginBottom: '12px',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: SMOKE,
-            }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {[
-                  { cat: 'Classic Neapolitan & Roman', detail: '60+ recipes' },
-                  { cat: 'American styles', detail: 'New York, Detroit, Pan' },
-                  { cat: 'French regional', detail: 'Normandie, Provence, Alsace, Basque, Savoie' },
-                  { cat: 'Italian regional', detail: 'Sicilian, Ligurian, Venetian, Calabrian' },
-                  { cat: 'Modern & fusion', detail: 'Japanese, Korean, Spanish, Middle Eastern' },
-                ].map(({ cat, detail }) => (
-                  <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px' }}>
-                    <span style={{ color: CHAR, fontWeight: 500, flexShrink: 0 }}>{cat}</span>
-                    <span style={{ color: SMOKE, textAlign: 'right', fontSize: '11px', lineHeight: 1.4 }}>{detail}</span>
-                  </div>
+        {
+          title: 'Why Baker Hub exists',
+          defaultOpen: true,
+          body: (
+            <>
+              <P>Most baking recipes assume you have a free afternoon, a 20°C kitchen, and nothing else to do. Most of us don't.</P>
+              <P>Baker Hub was built for the serious home baker who bakes around real life — a day job, a family dinner, a pizza night that needs to happen Saturday at 7pm, not whenever the dough feels ready. You set the bake time. Baker Hub works backwards from there: when to start, how much yeast to use, what to do at each step.</P>
+              <P>It's also built for hot kitchens. Every fermentation formula in every baking book was developed in a temperate kitchen at 18–22°C. In warmer climates those formulas consistently over-ferment. Baker Hub corrects from first principles — not a "hot weather" button, but actual biology recalculated at your kitchen temperature.</P>
+              <P>And it's built to be honest. Every status indicator reflects actual fermentation quality — not just whether something is technically possible.</P>
+            </>
+          ),
+        },
+        {
+          title: 'Simple mode vs Custom mode',
+          body: (
+            <>
+              <P>Baker Hub has two modes, selectable at the start of every session.</P>
+              <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Simple mode</strong> — guided from start to finish. You pick a style (Neapolitan, baguette, pan pizza...), an oven, a kitchen temperature, and a bake time. Baker Hub fills in the rest: flour type assumed standard for the style, hydration at style baseline, preferment recommended automatically. The output is a horizontal step-by-step timeline — kneading, bulk rise, cold retard, balling, final proof, bake.</p>
+              <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Custom mode</strong> — every variable exposed. Choose your exact flour (or blend two flours by ratio), enter your fridge temperature, override preferment type, adjust hydration, enter W value manually. The scheduler actively searches for the optimal mix time and shows a live fermentation quality chart. The same scientific engine runs in both modes — Custom just exposes all of its inputs and shows the quality score.</p>
+            </>
+          ),
+        },
+        {
+          title: 'Availability blockers',
+          body: (
+            <>
+              <P>Both Simple and Custom modes respect your blocked hours. Mark time windows when you're unavailable — weekday work hours, overnight, or any custom period — and the scheduler plans around them.</P>
+              <P>In Simple mode, the timeline avoids placing steps during blocked windows. In Custom mode, the search engine excludes blocked hours from both preferment start and mix time candidates.</P>
+              <p style={{ margin: 0, ...bodyText }}>One practical exception: <strong style={{ color: CHAR }}>bulk fermentation</strong> (the initial room-temperature rise after mixing) can begin up to 30 minutes before a blocked window. The dough retards itself in the fridge once you step away — you don't need to be home when bulk ends.</p>
+            </>
+          ),
+        },
+        {
+          title: 'How the engines connect',
+          body: (
+            <>
+              <P>Baker Hub's engines form a chain where each output feeds the next.</P>
+              <P><strong style={{ color: CHAR }}>Style and oven</strong> set the fermentation blueprint — target cold retard duration, RT (room-temperature) window, and baseline hydration. <strong style={{ color: CHAR }}>Flour strength</strong> (W value) scales that blueprint — stronger flour tolerates longer fermentation and benefits from more cold retard. <strong style={{ color: CHAR }}>Kitchen temperature</strong> determines how fast fermentation moves and compresses or expands the usable window.</P>
+              <P>With those constraints established, the <strong style={{ color: CHAR }}>scheduler</strong> finds the best mix time given your real availability, outputting exact hours for RT and cold fermentation. The <strong style={{ color: CHAR }}>yeast engine</strong> receives those hours and computes the precise quantity — yeast is always an output, never an input. Finally, <strong style={{ color: CHAR }}>hydration</strong> is layered on: style baseline, oven type, climate, flour absorption — each factor independent and auditable.</P>
+              <p style={{ margin: 0, ...bodyText }}>Change any input and everything downstream recalculates automatically.</p>
+            </>
+          ),
+        },
+        {
+          title: 'Style & oven',
+          body: (
+            <>
+              <P>Every style carries a fermentation blueprint. Neapolitan targets 24h cold retard (refrigerator fermentation) + 2h RT before baking. Baguette targets 12h cold + 2h RT. Roman and pan pizza are pure RT styles — no cold retard. These reflect the gluten development, flavour compounds, and texture each style requires.</P>
+              <P>The oven shapes the recipe independently. A pizza oven at 400–500°C runs slightly drier dough (−2% hydration) with no oil or sugar — intense heat caramelises naturally. A home oven with a baking stone benefits from +3% hydration. A standard home oven +4%. A cast iron pan +6%. Baker Hub applies these corrections automatically; each is overridable in Custom mode.</P>
+              <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Oven preheat</strong> also matters for scheduling. A wood-fired oven needs 45–60 minutes of preheat that sits at the end of the timeline. The scheduler accounts for this when computing available fermentation time — preheat is excluded from the fermentation window calculation.</p>
+            </>
+          ),
+        },
+        {
+          title: 'Climate & kitchen temperature',
+          body: (
+            <>
+              <P>Kitchen temperature is the most sensitive variable in fermentation. A 5°C difference roughly halves or doubles the fermentation rate. Baker Hub recalculates every threshold dynamically.</P>
+              <BulletList items={[
+                <>In a <strong style={{color:CHAR}}>tropical kitchen</strong> (≥28°C), the engine applies a full recalibration: shorter minimum bulk time (30min vs 90min in temperate conditions), compressed RT windows, and higher yeast correction. Above 30°C, an additional tropical factor is applied to the RT formula.</>,
+                <>The <strong style={{color:CHAR}}>RT poolish</strong> peak shifts from ~13h at 18°C to ~5h at 30°C — the usable window narrows dramatically in warm kitchens. Plan poolish timing accordingly.</>,
+                <><strong style={{color:CHAR}}>Fridge temperature</strong> matters too. The cold retard formula includes a Q10 correction: <Code>Q10 = 2^((fridgeTemp − 4) / 10)</Code>, where 4°C is the calibration reference. A 6°C fridge (typical home fridge) is slightly more active than 4°C — slightly less yeast needed. A 2°C fridge needs slightly more. Any fridge temperature is handled correctly; the exponent can be negative without any mathematical issue.</>,
+                <>For <strong style={{color:CHAR}}>hydration handling</strong>: hot (≥28°C) or very humid kitchens get −2% hydration — a handling correction, not a fermentation one. At baking hydration ranges (55–80%), ambient humidity does not meaningfully affect fermentation speed. Cold kitchens (≤18°C) get +2%.</>,
+              ]} />
+            </>
+          ),
+        },
+        {
+          title: 'Flour engine',
+          body: (
+            <>
+              <P>Baker Hub's flour database contains 285+ entries. Each flour carries three properties that cascade through the recipe and schedule.</P>
+              <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>W value (Force W)</strong> — the alveograph strength index, measuring gluten extensibility and tenacity. Ranges from ~80 (weak cake flour) to 400+ (Manitoba strong flour). Higher W = stronger gluten = longer fermentation needed to relax it and develop flavour. A W220 flour peaks at 4–6h RT. A W370 flour needs 48–96h cold to reach its best. Scan a flour bag with the AI scanner to extract W automatically (or estimate from protein %), or enter it manually in Custom mode.</p>
+              <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation tolerance (ftm)</strong> — a multiplier derived from W value that scales the scheduler's quality plateau. At W250 (baseline), ftm = 1.0. At W300+, ftm ≈ 1.2 — the optimal cold retard window extends by 20%. At W220, ftm ≈ 0.85 — the window is narrower and the dough more fragile. Two bakers using the same style but different flours get different recommended schedules in Custom mode.</p>
+              <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Hydration delta</strong> — how much to shift baseline hydration for this flour. Strong, high-protein flours absorb more water; weak flours need less. For blends, deltas are weighted proportionally by ratio. In practice, corrections range from −2% to +6%. Applied after scheduling — hydration does not affect fermentation speed, only texture, extensibility, and crust character.</p>
+              <p style={{ margin: 0, ...bodyText }}>Yeast quantity is always computed from your schedule — the flour's fermentation tolerance scales the timing, but yeast itself adjusts automatically through the hours change.</p>
+            </>
+          ),
+        },
+        {
+          title: 'Schedule engine',
+          body: (
+            <>
+              <P>The scheduler works backwards from your bake time, evaluating the available planning window against your kitchen temperature, oven preheat, flour strength (Custom mode), and fermentation style.</P>
+              <p style={{ margin: '0 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Simple mode</p>
+              <P>You confirm when to start; the scheduler allocates fermentation phases to fill the available window. It maximises cold retard up to the style's preferred duration, then places bulk RT, rest, and final proof. Availability blockers are respected — steps are pushed to after blocked windows automatically.</P>
+              <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Custom mode — scoring</p>
+              <P>The scheduler actively searches for the optimal mix time. Each candidate is scored on two axes:</P>
+              <BulletList items={[
+                <><strong style={{color:CHAR}}>Preferment quality</strong> — is the poolish or biga at its peak at mix time? Green = optimal plateau. Yellow = developing or slightly past peak, still usable. Red = under-fermentation risk, direct dough recommended.</>,
+                <><strong style={{color:CHAR}}>Dough quality</strong> — does total fermentation land with the dough peaking at bake? The quality plateau is style and flour-dependent: wide for strong flours and cold-retard styles (Neapolitan, baguette), narrow for weak flours and pure RT styles (Roman, pan pizza).</>,
+              ]} />
+              <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Mode selection & tiebreaker</p>
+              <P>For poolish, the scheduler always tries both fridge and RT (room-temperature) poolish, picks the higher-scoring result. Fridge wins ties — cold fermentation develops more flavour complexity. Within fridge mode, longer cold retard scores higher, up to the dough's quality plateau. Flour strength (W value) scales where that plateau sits.</P>
+              <p style={{ margin: 0, ...bodyText }}>When no mix time fits within available hours, a fallback dialog explains your options: mix just before or after your blocked window, or inside it.</p>
+            </>
+          ),
+        },
+        {
+          title: 'Reading the fermentation chart',
+          body: (
+            <>
+              <P>The Custom mode fermentation chart is a live visualisation of quality — not a schedule, but a picture of how close each stage is to its biological optimum.</P>
+
+              {/* Inline illustration */}
+              <div style={{ margin: '16px 0', borderRadius: '10px', background: 'rgba(26,22,18,0.03)', padding: '16px' }}>
+                <svg viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto' }}>
+                  {/* RT poolish bell - narrow */}
+                  <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(212,168,83,0.25)" stroke="#D4A853" strokeWidth="1.5" />
+                  <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">RT poolish</text>
+                  <text x="85" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">narrow peak</text>
+                  {/* Fridge poolish bell - wide plateau */}
+                  <path d="M 155 120 Q 175 120 185 114 Q 195 105 198 90 Q 200 70 202 55 L 218 55 Q 220 70 222 90 Q 225 105 235 114 Q 245 120 265 120 Z" fill="rgba(212,168,83,0.25)" stroke="#D4A853" strokeWidth="1.5" />
+                  <line x1="202" y1="55" x2="218" y2="55" stroke="#D4A853" strokeWidth="1.5" />
+                  <text x="210" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Fridge poolish</text>
+                  <text x="210" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">wide plateau</text>
+                  {/* Plateau annotation */}
+                  <line x1="202" y1="48" x2="218" y2="48" stroke="#D4A853" strokeWidth="1" strokeDasharray="2,2" />
+                  <text x="210" y="46" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="7" fill="#D4A853">plateau</text>
+                  {/* Dough bell - wide plateau, right side */}
+                  <path d="M 285 120 Q 295 120 300 115 Q 305 108 308 95 Q 310 80 312 65 L 330 65 Q 332 80 334 95 Q 337 108 342 115 Q 350 120 390 120 Z" fill="rgba(107,122,90,0.2)" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
+                  <line x1="312" y1="65" x2="330" y2="65" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
+                  <text x="335" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Dough</text>
+                  <text x="335" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">peaks at bake</text>
+                  {/* Mix diamond */}
+                  <rect x="279" y="113" width="8" height="8" transform="rotate(45 283 117)" fill="#D4A853" />
+                  <text x="283" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#D4A853">mix ◆</text>
+                  {/* Bake triangle */}
+                  <polygon points="390,120 386,108 394,108" fill="#C4522A" />
+                  <text x="390" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#C4522A">bake ▲</text>
+                  {/* Time axis */}
+                  <line x1="30" y1="120" x2="400" y2="120" stroke="#E8E0D5" strokeWidth="1" />
+                  <text x="215" y="138" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#8A7F78">← earlier ——————————— time ——————————— bake →</text>
+                </svg>
+              </div>
+
+              <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Two curves, two stories.</strong> The gold curve is the preferment (poolish or biga) — it should peak at mix time (gold ◆). The grey-green curve is the final dough — it should peak at bake (red ▲). When both align, you get the best possible result from your schedule.</p>
+              <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Curve shapes reflect the biology.</strong> RT fermentation produces a tall, narrow bell — yeast peaks fast and declines rapidly. Small timing errors have large quality effects. Cold retard produces a wide plateau bell — slower biology, much wider quality window. This is why cold retard is preferred: it's forgiving.</p>
+              <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation windows</strong> (shown when "Show timing guide" is checked) are the horizontal arrows above the curves — the range where each stage should ideally sit. The left arrow marks the earliest viable start; the right arrow marks where quality begins to decline. Landing within the arrows = green pill.</p>
+              <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Status pills.</strong> 🟢 Ready = on the plateau. 🟡 Still developing = approaching peak, usable but not optimal. 🔴 Not ready = under-fermentation risk. When no viable preferment window exists, the gold curve disappears entirely — the card recommends going direct.</p>
+              <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Interact with the chart.</strong> Drag the gold diamond to adjust preferment start. Drag the green diamond to adjust mix time. Both curves update in real time. <em>Reset to recommendation</em> snaps back to the engine's optimal placement.</p>
+            </>
+          ),
+        },
+        {
+          title: 'Preferment timing',
+          body: (
+            <>
+              <P>A preferment — poolish, biga, or sourdough starter — is a portion of the flour fermented separately before the final mix. It adds flavour compounds and gluten conditioning that straight doughs can't match in the same timeframe.</P>
+              <BulletList items={[
+                <><strong style={{color:CHAR}}>Fridge poolish</strong> (100% hydration, cold-fermented) — develops slowly over a wide quality plateau. The engine targets roughly 10–16h at 6°C for standard flour, scaled by W value: stronger flour benefits from a longer poolish. Requires a minimum planning window of ~16–17h depending on oven preheat. Longer cold retard within the plateau = more flavour complexity.</>,
+                <><strong style={{color:CHAR}}>RT poolish</strong> (room-temperature) — peaks faster, narrower window. The scheduler uses RT poolish when the planning window is too short for fridge, or when RT genuinely scores higher. At 22°C, RT poolish peaks around 9h — compressing to ~5h in a tropical kitchen.</>,
+                <><strong style={{color:CHAR}}>Biga</strong> (50% hydration, always cold-fermented) — the stiffest preferment. Cold, slow fermentation gives a very wide quality plateau (~38–58h). Never RT — a room-temperature biga over-acidifies within hours and produces unworkable dough.</>,
+                <><strong style={{color:CHAR}}>Sourdough starter</strong> — the most demanding to time. Unlike commercial yeast preferments, the starter's activity depends on its maturity (young vs established), feeding schedule, and kitchen temperature. The peak window is narrower than poolish — a well-fed mature starter at 22°C peaks roughly 6–9h after feeding. The engine computes the recommended feed time based on your mix time and climate. Missing the window by 1–2h in either direction has more impact than with poolish or biga.</>,
+              ]} />
+              <p style={{ margin: '14px 0 0', ...bodyText }}>When the planning window is too short for any preferment, the gold curve disappears and the card reads: <em>{"Window too short — your dough will ferment directly and still taste great."}</em></p>
+            </>
+          ),
+        },
+        {
+          title: 'The yeast engine',
+          body: (
+            <>
+              <P>Baker Hub's fermentation engine is built on two validated sources: Craig's empirical yeast formula (developed by the pizzamaking.com community) and Modernist Pizza Vol. 4 (Myhrvold et al.) — the most comprehensive empirical fermentation dataset available in print.</P>
+              <P>The formulas compute <strong style={{color:CHAR}}>IDY%</strong> — Instant Dry Yeast (IDY) as a percentage of flour weight. Baker Hub supports IDY, fresh yeast, and active dry yeast (ADY); each is converted from IDY using validated ratios (fresh yeast = IDY × 3, ADY = IDY × 1.25).</P>
+              <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Room-temperature (RT) fermentation</strong></p>
+              <p style={{ marginBottom: '14px' }}><Code>IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))</Code></p>
+              <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Cold retard fermentation</strong></p>
+              <p style={{ marginBottom: '6px' }}><Code>IDY% = (7.5 / hours^1.313) ÷ Q10</Code></p>
+              <P>where <Code>Q10 = 2^((fridgeTemp − 4) / 10)</Code>. Q10 expresses how yeast activity scales with fridge temperature, calibrated at 4°C (standard reference). At 6°C (typical home fridge), Q10 = 1.15 — slightly more active, slightly less yeast needed. At 2°C, Q10 = 0.87 — slower fermentation, more yeast. The formula handles any fridge temperature correctly.</P>
+              <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Mixed RT + cold</strong></p>
+              <P>An activity-weighted combination accounts for the transition between phases — not a simple sum, but a biological equivalence calculation.</P>
+              <p style={{ margin: 0, ...bodyText }}>Yeast is always an output. Change your schedule and it recalculates automatically. Two bakers with the same recipe but different schedules, kitchens, and fridges get different yeast quantities. That's the point.</p>
+            </>
+          ),
+        },
+        {
+          title: 'Hydration engine',
+          body: (
+            <>
+              <P>Hydration is never a single number. Baker Hub builds it in five stacked layers, each independent and auditable in Custom mode:</P>
+              <NumberedList items={[
+                <><strong style={{ color: CHAR }}>Style baseline</strong> — Neapolitan 62%, baguette 72%, brioche 52%, pan 70%</>,
+                <><strong style={{ color: CHAR }}>Oven correction</strong> — pizza oven: −2%; home oven + stone: +3%; standard home oven: +4%; cast iron: +6%</>,
+                <><strong style={{ color: CHAR }}>Climate correction</strong> — hot kitchen (≥28°C) or very humid: −2% (handling ease, not fermentation) · cold kitchen (≤18°C): +2%</>,
+                <><strong style={{ color: CHAR }}>Flour correction</strong> — hydration delta from W value and protein content (−2% to +6% in practice)</>,
+                <><strong style={{ color: CHAR }}>Style floor</strong> — minimum hydration per style enforced regardless of corrections</>,
+              ]} />
+              <p style={{ margin: '14px 0 0', ...bodyText }}>Hydration is computed after scheduling. At baking ranges (55–80%), dough hydration does not meaningfully affect fermentation rate — it governs texture, extensibility, crust char, and crumb structure.</p>
+            </>
+          ),
+        },
+        {
+          title: 'Mixer sensitivity',
+          body: (
+            <>
+              <P>Your mixer changes the recipe in two ways.</P>
+              <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Water temperature — DDT method</strong></p>
+              <p style={{ marginBottom: '10px' }}><Code>Water temp = (Target FDT × 3) − flour temp − kitchen temp − friction</Code></p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
+                {['Spiral +7°C', 'Stand +4°C', 'By hand +1°C', 'No-knead 0°C'].map(l => (
+                  <span key={l} style={{ ...monoSm, padding: '3px 10px', borderRadius: '20px', background: 'rgba(26,22,18,0.06)' }}>{l}</span>
                 ))}
               </div>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-              {[
-                { label: 'Impress (109)',    bg: 'rgba(26,22,18,0.06)', color: CHAR },
-                { label: 'Party (50)',       bg: 'rgba(26,22,18,0.06)', color: CHAR },
-                { label: 'Classic (75)',     bg: 'rgba(26,22,18,0.06)', color: CHAR },
-                { label: 'Quick prep (33)', bg: 'rgba(26,22,18,0.06)', color: CHAR },
-                { label: 'Kids (28)',        bg: 'rgba(26,22,18,0.06)', color: CHAR },
-                { label: 'Spicy (11)',       bg: 'rgba(26,22,18,0.06)', color: CHAR },
-              ].map(p => <Pill key={p.label} bg={p.bg} color={p.color}>{p.label}</Pill>)}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
-              {['Vegetarian (64)', 'No pork (75)', 'Halal (73)', 'Kosher (62)', 'Pescatarian (16)', 'No nuts (127)'].map(l => (
-                <Pill key={l} bg="rgba(107,122,90,0.12)" color={SAGE}>{l}</Pill>
-              ))}
-            </div>
-            <P>Each pizza is matched to compatible dough styles — a Marinara won't appear for pan pizza, a Detroit won't show for Neapolitan. Suggestions always match what your dough can actually do.</P>
-            <P><strong style={{ color: CHAR }}>Prep guidance, scaled to your group.</strong> The Prep tab generates a full ingredient preparation timeline working backwards from your bake time — drain the mozzarella 30 minutes before, slice the charcuterie 15 minutes before, tear the basil just before serving. Quantities scale automatically to your pizza count.</P>
-            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Shopping list.</strong> Combined dough ingredients and toppings in one list. Check items off as you go.</p>
-          </>
-        ),
-      },
-      {
-        title: 'The yeast engine',
-        body: (
-          <>
-            <P>Baker Hub's fermentation engine is built on two validated sources: Craig's empirical yeast formula, developed and refined by the pizzamaking.com community, and Modernist Pizza Vol. 4 (Nathan Myhrvold et al.), which provides the most comprehensive empirical fermentation dataset available in print.</P>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Room temperature fermentation</strong></p>
-            <p style={{ marginBottom: '14px' }}><Code>IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))</Code></p>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Cold retard fermentation</strong></p>
-            <p style={{ marginBottom: '6px' }}><Code>IDY% = 7.5 / hours^1.313 ÷ Q10(fridgeTemp)</Code></p>
-            <P>where Q10 = 2^((fridgeTemp−4)/10). A warmer fridge is more active — the engine accounts for your actual fridge temperature in Custom mode. Default: 4°C.</P>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Mixed RT + cold</strong></p>
-            <P>An activity-weighted combination where each phase is weighted by its fermentation contribution. Validated against Modernist Pizza bulk dough tables; agreement within 0–11%.</P>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Yeast type conversion</strong></p>
-            <P>All calculations use IDY as the internal reference. Active Dry Yeast = IDY × 1.33 · Fresh yeast = IDY × 3.0.</P>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Tropical climate correction</strong></p>
-            <P>30–32°C: ÷1.15 · 33–35°C: ÷1.25. Applies to both main dough RT phases and RT poolish fermentation.</P>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Preferment calibration</strong></p>
-            <P>Craig's formula was calibrated for bulk dough — 65% hydration, with salt. Preferments require correction:</P>
-            <DataTable rows={PREF_TABLE_ROWS} />
-            <p style={{ marginTop: '10px', ...bodyText }}>Validated against Modernist Pizza preferment tables; all values within ±20% of empirical data.</p>
-            <p style={{ marginTop: '14px', marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Sourdough</strong></p>
-            <p style={{ margin: 0, ...bodyText }}>Starter activity varies too much between cultures for a precise gram quantity to be meaningful. Baker Hub gives a percentage range (10–25% of flour, climate-adjusted) and visual readiness cues.</p>
-          </>
-        ),
-      },
-      {
-        title: 'Flour engine',
-        body: (
-          <>
-            <P>Baker Hub's flour database contains 285+ entries. Each flour carries three properties that cascade through the recipe and schedule:</P>
-            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>W value (Force W)</strong> — alveograph strength index measuring gluten extensibility and tenacity. Ranges from ~80 (weak cake flour) to 400+ (Manitoba strong flour). Higher W = stronger gluten = longer fermentation needed to relax it and develop flavour. W220 flour peaks at 4–6h RT. W370 flour needs 48–96h cold to reach its best. Scan a flour bag with the AI scanner to extract W automatically, or enter it manually in Custom mode.</p>
-            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Hydration delta</strong> — how much to shift the baseline hydration. Strong, high-protein flours absorb more water; weak flours need less. For blends, deltas are weighted by ratio. Note: hydration is set after scheduling — it does not affect fermentation speed at normal baking ranges (55–80%), only dough texture, extensibility, and crust character.</p>
-            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation tolerance (ftm)</strong> — a multiplier applied to the scheduler's sweet zone. ftm = 1.0 for W250 (baseline), 1.2 for W300+, 0.85 for W220. This scales the optimal cold retard duration, the poolish sweet spot, and the maximum useful fermentation window. Two bakers using the same style but different flour get different recommended schedules — the W370 baker is nudged toward a longer cold retard, the W220 baker toward a shorter one.</p>
-            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Yeast is an output, not an input.</strong> Baker Hub never asks for yeast percentage. It computes it from your actual fermentation hours and temperature using the formula IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10)) for RT, and IDY% = 7.5 / hours^1.313 for cold. Change your schedule and yeast updates automatically. The flour's fermentation tolerance scales the sweet zone but does not directly affect yeast — the yeast formula already adjusts through the timing.</p>
-          </>
-        ),
-      },
-      {
-        title: 'Hydration engine',
-        body: (
-          <>
-            <P>Hydration is never a single fixed number. Baker Hub builds it in layers:</P>
-            <NumberedList items={[
-              <><strong style={{ color: CHAR }}>Style baseline</strong> — each style has a target (Neapolitan 62%, baguette 72%, brioche 52%, pan 70%)</>,
-              <><strong style={{ color: CHAR }}>Oven correction</strong> — high-heat ovens handle a drier dough (−1 to −3%); a standard home oven benefits from more moisture (+5%)</>,
-              <><strong style={{ color: CHAR }}>Oven recipe adjustments</strong> — oven type affects oil and sugar too. A wood-fired or electric pizza oven at high heat needs no oil or sugar. A home oven benefits from oil (browning, extensibility) and a touch of sugar (colour). Set automatically, overridable in Custom mode.</>,
-              <><strong style={{ color: CHAR }}>Climate correction</strong> — hot or very humid: −2% · Cold kitchen: +2%</>,
-              <><strong style={{ color: CHAR }}>Flour correction</strong> — flour hydration delta applied (−5% to +8%)</>,
-              <><strong style={{ color: CHAR }}>Style floor</strong> — minimum enforced regardless (Neapolitan: 56%)</>,
-            ]} />
-            <p style={{ marginTop: '12px', margin: '12px 0 0', ...bodyText }}>In Custom mode, you can override hydration entirely.</p>
-          </>
-        ),
-      },
-      {
-        title: 'Mixer sensitivity',
-        body: (
-          <>
-            <P>Your mixer changes the recipe in two ways.</P>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Water temperature — DDT method</strong></p>
-            <p style={{ marginBottom: '10px' }}><Code>Water temp = (Target FDT × 3) − flour temp − kitchen temp − friction</Code></p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
-              {['Spiral +7°C', 'Stand +4°C', 'By hand +1°C', 'No-knead 0°C'].map(l => (
-                <span key={l} style={{ ...monoSm, padding: '3px 10px', borderRadius: '20px', background: 'rgba(26,22,18,0.06)' }}>{l}</span>
-              ))}
-            </div>
-            <P>Target FDT varies by style (Neapolitan 23°C, enriched doughs 22°C). In hot kitchens the formula often requires water below 10°C — which is why Baker Hub sometimes recommends ice.</P>
-            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Technique and timing:</strong> each mixer has its own kneading time, fold count, and max dough weight. Baker Hub's step-by-step Bake Guide is calibrated to your specific mixer — including the professional technique of adding ice directly to the bowl in a spiral mixer for hot kitchen sessions.</p>
-          </>
-        ),
-      },
-      {
-        title: 'Schedule engine',
-        body: (
-          <>
-            <P>The scheduler works backwards from your target bake time. For each scenario it evaluates whether a poolish, biga, or direct dough produces the best result given your available window.</P>
-            <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: TERRA, letterSpacing: '.04em' }}>FERMENTATION WINDOWS AT 22°C</p>
-            <BulletList items={[
-              <><strong style={{color:CHAR}}>{'< 5.5h'}</strong> — window too short for preferment. Direct dough only, same-day bake.</>,
-              <><strong style={{color:CHAR}}>5.5h – 9h</strong> — direct dough. No room for meaningful poolish fermentation.</>,
-              <><strong style={{color:CHAR}}>9h – 15.5h</strong> — room-temperature poolish (yellow). Developing, usable, flavour building.</>,
-              <><strong style={{color:CHAR}}>15.5h – 16.5h</strong> — RT poolish double green. Peak RT fermentation zone.</>,
-              <><strong style={{color:CHAR}}>16.5h – 26.5h</strong> — fridge poolish double green. Cold retard for complex flavour.</>,
-              <><strong style={{color:CHAR}}>{'> 26.5h'}</strong> — fridge poolish + full 24h dough cold retard. Best possible quality.</>,
-            ]} />
-            <p style={{ marginTop: '14px', ...bodyText }}>These boundaries shift with kitchen temperature (hotter = faster fermentation, shorter windows) and oven type (longer preheat shifts the minimum window). Your flour strength also scales the sweet spot — a W370 flour benefits from a longer cold retard than a W250.</p>
-            <p style={{ margin: '14px 0 10px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: TERRA, letterSpacing: '.04em' }}>HOW MIX TIME IS CHOSEN</p>
-            <BulletList items={[
-              'The engine tries both fridge poolish and RT poolish, picks the mode with the highest score. Fridge wins ties — cold fermentation develops more complex flavour.',
-              'Within each mode it searches for the mix time that maximises cold retard duration (better flavour) while respecting your blocked hours.',
-              'If no slot scores double green, the best available yellow+green is returned with honest status cards.',
-              'If all slots fall inside blockers, a fallback popup explains your options — mix just before/after your busy window, or inside it.',
-              'Blocker tolerance: bulk fermentation can start up to 30min before a blocker begins — the dough retards itself once you leave.',
-            ]} />
-            <p style={{ margin: '14px 0 0', ...bodyText }}>Two bakers with the same recipe but different schedules, kitchens, and flour get different yeast quantities and different recommended timings. That's the point.</p>
-          </>
-        ),
-      },
-      {
-        title: 'How preferment timing works',
-        body: (
-          <>
-            <P>When your recipe includes a poolish or biga, Baker Hub looks for a schedule where both the preferment and the final dough are in their optimal fermentation windows simultaneously. It's not enough for one to be ready — both need to align.</P>
-            <P>The fermentation chart shows two bell curves. The preferment curve peaks at mix time; the dough curve peaks at bake time. Green pills mean both are on target. Yellow means developing but usable. The graph disappears when no viable preferment window exists — the baker is told clearly to go direct.</P>
-            <P>Each preferment type has a different sweet spot, shaped by temperature and flour strength:</P>
-            <BulletList items={[
-              <><strong style={{color:CHAR}}>Fridge poolish</strong> — optimal around 13h cold at 6°C (±5h plateau). Requires at least 16.5h total planning window. Longer cold retard = more complex flavour. Flour W scales this: W370 flour benefits from a longer poolish than W250.</>,
-              <><strong style={{color:CHAR}}>Room-temperature poolish</strong> — peaks in ~9h at 22°C, faster in hot kitchens, slower in cold ones. Narrower window (±1.5h). The engine tries RT poolish as a fallback when the fridge window is too short — if RT scores higher, RT wins.</>,
-              <><strong style={{color:CHAR}}>Biga</strong> — always cold. Stiff dough (50% hydration) ferments slowly over 38–58h. Wide plateau, most forgiving. Never RT — a room-temperature biga over-acidifies within hours.</>,
-            ]} />
-            <P>Scoring is transparent: score 4 = both green (optimal), score 3 = one green + one yellow (good), score 2 or below = direct dough recommended. The engine always picks the highest available score, then uses cold retard duration as the tiebreaker — more retard = better flavour when everything else is equal.</P>
-            <p style={{ margin: '14px 0 0', ...bodyText }}>
-              <strong style={{ color: CHAR }}>Blocker awareness.</strong> The engine respects your blocked hours when placing both poolish start and mix time. If your Nights blocker (10pm–7am) is active, mix is pushed to just after 7am. Bulk fermentation can start up to 30min before a blocker begins — the dough retards itself once you step away.
-            </p>
-          </>
-        ),
-      },
-      {
-        title: 'Maestro — help along the way',
-        body: (
-          <p style={{ margin: 0, ...bodyText }}>At key steps in the Bake Guide, you can photograph your dough or pizza and ask Maestro for feedback. Maestro knows your oven type, your style, and what stage you're at — so the guidance is contextual, not generic. Leoparding, crumb structure, crust colour, fermentation signs. A knowledgeable friend looking over your shoulder.</p>
-        ),
-      },
-      {
-        title: "What we don't model",
-        body: (
-          <>
-            <p style={{ marginBottom: '8px', ...bodyText }}>Honest about limits:</p>
-            <BulletList items={[
-              'Flour protein variation between bags of the same brand (W can vary ±15%)',
-              'Sourdough starter activity differences between cultures',
-              'Altitude effects on fermentation',
-              'Water hardness and mineral content effects on yeast',
-              'Thermal mass variation between specific home oven models',
-            ]} />
-          </>
-        ),
-      },
-      {
-        title: 'Beta & feedback',
-        body: (
-          <>
-            <P>Baker Hub is actively developed as a side project. Things will occasionally break. If a yeast quantity seems wrong, the schedule doesn't fit, or something is just confusing — please tell us. Every piece of feedback makes the engine better.</P>
-            <div style={{ background: 'rgba(26,22,18,0.04)', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
-              <p style={{ margin: '0 0 4px', fontFamily: 'DM Sans, sans-serif', fontSize: '14px', fontWeight: 600, color: CHAR }}>Built by Rom</p>
-              <p style={{ margin: '0 0 12px' }}>
-                <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'DM Sans, sans-serif', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
-              </p>
-              <p style={{ margin: 0, fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: SMOKE, fontStyle: 'italic' }}>
-                &ldquo;What would make Baker Hub more useful for you? One line is enough.&rdquo;
-              </p>
-            </div>
-          </>
-        ),
-      },
-    ],
+              <P>FDT (Final Dough Temperature) is the temperature of your dough immediately after mixing — it directly controls how fast fermentation begins. Target FDT varies by style (Neapolitan 23°C, enriched doughs 22°C). In hot kitchens the formula often calls for water below 10°C — which is why Baker Hub sometimes recommends ice.</P>
+              <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Technique and timing:</strong> each mixer type has its own kneading time, fold count, and maximum dough weight. Baker Hub's step-by-step Bake Guide is calibrated per mixer — a spiral mixer user and a hand-kneader get different instructions for the same recipe.</p>
+            </>
+          ),
+        },
+        {
+          title: 'Maestro — help along the way',
+          body: (
+            <>
+              <P>Maestro is Baker Hub's AI coaching layer, available at key moments in the bake.</P>
+              <BulletList items={[
+                'Before baking: Maestro reviews your recipe and schedule and flags anything worth watching — e.g. if your poolish is slightly early, or your fridge is warmer than optimal.',
+                'During baking: take a photo of your dough and Maestro assesses fermentation visually — bubble structure, surface tension, colour. It cross-references your actual ingredients and schedule to give contextual feedback, not generic advice.',
+                'After baking: photo assessment of your finished pizza or bread. Maestro evaluates leoparding, crust colour, cornicione structure, and crumb against the style you aimed for.',
+              ]} />
+              <p style={{ margin: '14px 0 0', ...bodyText }}>Maestro is honest about the limits of photo-based assessment. It tells you what it can and can't see, and never overstates confidence.</p>
+            </>
+          ),
+        },
+        {
+          title: 'Pizza Party — from dough to table',
+          body: (
+            <>
+              <P>The Pizza Party feature is built around one idea: once you've planned your dough, the rest of the evening should plan itself too.</P>
+              <P><strong style={{ color: CHAR }}>212 curated recipes.</strong> Baker Hub's pizza database covers 200 savoury pizzas and 12 dessert finales — each handpicked, not generated. Organised by tradition, occasion, taste, and dietary need.</P>
+              <P><strong style={{ color: CHAR }}>Scaling.</strong> Select your pizzas, set your guest count, and Baker Hub scales every topping quantity automatically — with waste percentage and serving size per pizza factored in.</P>
+              <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Bake tracking.</strong> The Bake tab tracks what's been fired and what's next. Maestro can assess each pizza as it comes out of the oven.</p>
+            </>
+          ),
+        },
+        {
+          title: 'Share your bakes',
+          body: (
+            <>
+              <P>Baker Hub lets you share your session — recipe, schedule, and pizza selections — as a card you can post or send to friends. If you make something you're proud of, we'd love to see it.</P>
+              <p style={{ margin: 0, ...bodyText }}>Tag <strong style={{ color: CHAR }}>@bakerhub</strong> and <strong style={{ color: CHAR }}>#BakerHub</strong>.</p>
+            </>
+          ),
+        },
+        {
+          title: "What we don't model",
+          body: (
+            <>
+              <P>Baker Hub models fermentation from first principles, but some variables are outside the current scope:</P>
+              <BulletList items={[
+                'Starter health and hydration for sourdough — the engine assumes a well-fed, active starter at the stated maturity level',
+                'Altitude — lower atmospheric pressure slightly affects fermentation rate and oven behaviour',
+                'Humidity effects on flour absorption beyond the ±2% hydration correction',
+                'Dough temperature changes during cold retard (assumes fridge reaches target temperature within 1h)',
+                'Preferment hydration variations — poolish is modelled at 100% hydration, biga at 50%',
+              ]} />
+              <p style={{ margin: '14px 0 0', ...bodyText }}>These limits are why Maestro exists — photo assessment and real-time coaching fills the gap between the model and your specific kitchen reality.</p>
+            </>
+          ),
+        },
+        {
+          title: 'Beta & feedback',
+          body: (
+            <>
+              <P>Baker Hub is actively developed. Things will occasionally break. If a yeast quantity seems wrong, the schedule doesn't fit, or something is confusing — please tell us. Every piece of feedback makes the engine better.</P>
+              <div style={{ background: 'rgba(26,22,18,0.04)', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
+                <p style={{ margin: '0 0 4px', fontFamily: 'DM Sans, sans-serif', fontSize: '14px', fontWeight: 600, color: CHAR }}>Built by Rom</p>
+                <p style={{ margin: '0 0 12px' }}>
+                  <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'DM Sans, sans-serif', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
+                </p>
+                <p style={{ margin: 0, fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: SMOKE }}>Baker Hub is a solo side project — feedback goes directly to the person who built the engine.</p>
+              </div>
+            </>
+          ),
+        },
+      ],
   },
 
   fr: {
