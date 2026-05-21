@@ -261,10 +261,11 @@ const CONTENT: Record<string, LocaleContent> = {
         title: 'Flour engine',
         body: (
           <>
-            <P>Baker Hub's flour database contains 285+ entries. Each flour carries three properties that directly affect your recipe:</P>
-            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>W value</strong> — alveograph strength index (gluten extensibility and tenacity). Ranges from ~80 (weak cake flour) to 400+ (Manitoba). Higher W means stronger gluten structure and longer fermentation tolerance. When you scan a flour bag with the AI scanner, Baker Hub extracts the W value (or estimates it from protein %) and applies it automatically. You can also enter W manually in Custom mode.</p>
-            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Hydration delta</strong> — how much to shift the baseline hydration for this flour. Strong flours absorb more water; weak flours need less. For blends, deltas are interpolated proportionally by ratio.</p>
-            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Fermentation tolerance</strong> — how long the dough can ferment without degrading. A W300+ flour tolerates a 48h cold retard that would destroy a W130 flour. The yeast engine applies this as a multiplier to IDY%.</p>
+            <P>Baker Hub's flour database contains 285+ entries. Each flour carries three properties that cascade through the recipe and schedule:</P>
+            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>W value (Force W)</strong> — alveograph strength index measuring gluten extensibility and tenacity. Ranges from ~80 (weak cake flour) to 400+ (Manitoba strong flour). Higher W = stronger gluten = longer fermentation needed to relax it and develop flavour. W220 flour peaks at 4–6h RT. W370 flour needs 48–96h cold to reach its best. Scan a flour bag with the AI scanner to extract W automatically, or enter it manually in Custom mode.</p>
+            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Hydration delta</strong> — how much to shift the baseline hydration. Strong, high-protein flours absorb more water; weak flours need less. For blends, deltas are weighted by ratio. Note: hydration is set after scheduling — it does not affect fermentation speed at normal baking ranges (55–80%), only dough texture, extensibility, and crust character.</p>
+            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation tolerance (ftm)</strong> — a multiplier applied to the scheduler's sweet zone. ftm = 1.0 for W250 (baseline), 1.2 for W300+, 0.85 for W220. This scales the optimal cold retard duration, the poolish sweet spot, and the maximum useful fermentation window. Two bakers using the same style but different flour get different recommended schedules — the W370 baker is nudged toward a longer cold retard, the W220 baker toward a shorter one.</p>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Yeast is an output, not an input.</strong> Baker Hub never asks for yeast percentage. It computes it from your actual fermentation hours and temperature using the formula IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10)) for RT, and IDY% = 7.5 / hours^1.313 for cold. Change your schedule and yeast updates automatically. The flour's fermentation tolerance scales the sweet zone but does not directly affect yeast — the yeast formula already adjusts through the timing.</p>
           </>
         ),
       },
@@ -306,14 +307,26 @@ const CONTENT: Record<string, LocaleContent> = {
         title: 'Schedule engine',
         body: (
           <>
-            <P>The scheduler works backwards from your target bake time:</P>
+            <P>The scheduler works backwards from your target bake time. For each scenario it evaluates whether a poolish, biga, or direct dough produces the best result given your available window.</P>
+            <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: TERRA, letterSpacing: '.04em' }}>FERMENTATION WINDOWS AT 22°C</p>
             <BulletList items={[
-              "Allocates cold retard to the style's preferred window (Neapolitan 24h, baguette 12h, pan pizza zero — pure RT)",
-              'Maximises cold retard within your daily availability, respecting busy windows',
-              'In hot kitchens with a long window, applies a two-phase cold retard (bulk cold → divide and ball → ball cold) for maximum control',
-              'Passes the exact RT and cold hours to the yeast engine — yeast quantity always matches your actual schedule',
+              <><strong style={{color:CHAR}}>{'< 5.5h'}</strong> — window too short for preferment. Direct dough only, same-day bake.</>,
+              <><strong style={{color:CHAR}}>5.5h – 9h</strong> — direct dough. No room for meaningful poolish fermentation.</>,
+              <><strong style={{color:CHAR}}>9h – 15.5h</strong> — room-temperature poolish (yellow). Developing, usable, flavour building.</>,
+              <><strong style={{color:CHAR}}>15.5h – 16.5h</strong> — RT poolish double green. Peak RT fermentation zone.</>,
+              <><strong style={{color:CHAR}}>16.5h – 26.5h</strong> — fridge poolish double green. Cold retard for complex flavour.</>,
+              <><strong style={{color:CHAR}}>{'> 26.5h'}</strong> — fridge poolish + full 24h dough cold retard. Best possible quality.</>,
             ]} />
-            <p style={{ marginTop: '14px', margin: '14px 0 0', ...bodyText }}>Two bakers with the same recipe but different schedules and different fridges get different yeast quantities. That's the point.</p>
+            <p style={{ marginTop: '14px', ...bodyText }}>These boundaries shift with kitchen temperature (hotter = faster fermentation, shorter windows) and oven type (longer preheat shifts the minimum window). Your flour strength also scales the sweet spot — a W370 flour benefits from a longer cold retard than a W250.</p>
+            <p style={{ margin: '14px 0 10px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: TERRA, letterSpacing: '.04em' }}>HOW MIX TIME IS CHOSEN</p>
+            <BulletList items={[
+              'The engine tries both fridge poolish and RT poolish, picks the mode with the highest score. Fridge wins ties — cold fermentation develops more complex flavour.',
+              'Within each mode it searches for the mix time that maximises cold retard duration (better flavour) while respecting your blocked hours.',
+              'If no slot scores double green, the best available yellow+green is returned with honest status cards.',
+              'If all slots fall inside blockers, a fallback popup explains your options — mix just before/after your busy window, or inside it.',
+              'Blocker tolerance: bulk fermentation can start up to 30min before a blocker begins — the dough retards itself once you leave.',
+            ]} />
+            <p style={{ margin: '14px 0 0', ...bodyText }}>Two bakers with the same recipe but different schedules, kitchens, and flour get different yeast quantities and different recommended timings. That's the point.</p>
           </>
         ),
       },
@@ -321,17 +334,17 @@ const CONTENT: Record<string, LocaleContent> = {
         title: 'How preferment timing works',
         body: (
           <>
-            <P>When your recipe includes a poolish or biga, Baker Hub looks for a schedule where both the preferment and the final dough are in their optimal fermentation windows at the same time. It's not enough for one to be ready — both need to align.</P>
-            <P>The fermentation chart shows two curves: one for the preferment (poolish or biga) and one for the final dough. Each curve shifts depending on your actual schedule — if your dough goes through a cold retard, the dough curve widens and flattens, reflecting slower, longer fermentation. If it's room temperature only, the curve is taller and narrower. The goal is always to have each curve near its peak at the moment it matters: the preferment at mix time, the dough at bake time.</P>
-            <P>Each preferment type has a different sweet spot:</P>
+            <P>When your recipe includes a poolish or biga, Baker Hub looks for a schedule where both the preferment and the final dough are in their optimal fermentation windows simultaneously. It's not enough for one to be ready — both need to align.</P>
+            <P>The fermentation chart shows two bell curves. The preferment curve peaks at mix time; the dough curve peaks at bake time. Green pills mean both are on target. Yellow means developing but usable. The graph disappears when no viable preferment window exists — the baker is told clearly to go direct.</P>
+            <P>Each preferment type has a different sweet spot, shaped by temperature and flour strength:</P>
             <BulletList items={[
-              'Fridge poolish: peaks around 18h in the cold, with about ±3h either side still producing excellent results.',
-              'Room-temperature poolish: peaks faster and has a narrower window — especially in warm kitchens where fermentation accelerates quickly.',
-              'Biga: the stiffest and most forgiving. Its cold, slow fermentation gives a wide plateau of 38–58h.',
+              <><strong style={{color:CHAR}}>Fridge poolish</strong> — optimal around 13h cold at 6°C (±5h plateau). Requires at least 16.5h total planning window. Longer cold retard = more complex flavour. Flour W scales this: W370 flour benefits from a longer poolish than W250.</>,
+              <><strong style={{color:CHAR}}>Room-temperature poolish</strong> — peaks in ~9h at 22°C, faster in hot kitchens, slower in cold ones. Narrower window (±1.5h). The engine tries RT poolish as a fallback when the fridge window is too short — if RT scores higher, RT wins.</>,
+              <><strong style={{color:CHAR}}>Biga</strong> — always cold. Stiff dough (50% hydration) ferments slowly over 38–58h. Wide plateau, most forgiving. Never RT — a room-temperature biga over-acidifies within hours.</>,
             ]} />
-            <P>If your schedule doesn't allow both to land in their sweet spots simultaneously, Baker Hub shows you the best available option honestly — and the status cards always reflect the actual fermentation quality, not just whether something is technically usable.</P>
+            <P>Scoring is transparent: score 4 = both green (optimal), score 3 = one green + one yellow (good), score 2 or below = direct dough recommended. The engine always picks the highest available score, then uses cold retard duration as the tiebreaker — more retard = better flavour when everything else is equal.</P>
             <p style={{ margin: '14px 0 0', ...bodyText }}>
-              <strong style={{ color: CHAR }}>Evening start.</strong> For fridge poolish, Baker Hub also tries to suggest a start time between 6pm and 9pm — practical for mixing before bed. If that timing conflicts with fermentation quality, quality always wins.
+              <strong style={{ color: CHAR }}>Blocker awareness.</strong> The engine respects your blocked hours when placing both poolish start and mix time. If your Nights blocker (10pm–7am) is active, mix is pushed to just after 7am. Bulk fermentation can start up to 30min before a blocker begins — the dough retards itself once you step away.
             </p>
           </>
         ),
@@ -480,10 +493,11 @@ const CONTENT: Record<string, LocaleContent> = {
         title: 'Le moteur de farine',
         body: (
           <>
-            <P>La base de données farines de Baker Hub contient 285+ entrées. Chaque farine porte trois propriétés qui affectent directement votre recette :</P>
-            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Valeur W</strong> — indice de force alvéographique (extensibilité et ténacité du gluten). Va de ~80 (farine faible pour gâteaux) à 400+ (Manitoba). Un W plus élevé signifie une structure de gluten plus forte et une meilleure tolérance de fermentation. Lorsque vous scannez un sac de farine avec le scanner IA, Baker Hub extrait la valeur W (ou l'estime à partir du % de protéines) et l'applique automatiquement. Vous pouvez aussi saisir W manuellement en mode Custom.</p>
-            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Delta d'hydratation</strong> — de combien décaler l'hydratation de base pour cette farine. Les farines fortes absorbent plus d'eau ; les farines faibles en nécessitent moins. Pour les mélanges, les deltas sont interpolés proportionnellement selon le ratio.</p>
-            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Tolérance de fermentation</strong> — combien de temps la pâte peut fermenter sans se dégrader. Une farine W300+ tolère une pousse froide de 48 h qui détruirait une farine W130. Le moteur de levure applique cela comme multiplicateur à l'IDY %.</p>
+            <P>La base de données farines de Baker Hub contient 285+ entrées. Chaque farine porte trois propriétés qui se cascadent à travers la recette et le planning :</P>
+            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Valeur W (Force W)</strong> — indice de force alvéographique mesurant l'extensibilité et la ténacité du gluten. Va de ~80 (farine faible pour gâteaux) à 400+ (Manitoba). Plus W est élevé = gluten plus fort = fermentation plus longue nécessaire pour le détendre et développer les saveurs. La farine W220 culmine en 4–6h TA. La farine W370 nécessite 48–96h au froid pour atteindre son meilleur. Scannez un sac de farine avec le scanner IA pour extraire W automatiquement, ou saisissez-le manuellement en mode Custom.</p>
+            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Delta d'hydratation</strong> — de combien décaler l'hydratation de base. Les farines fortes et riches en protéines absorbent plus d'eau ; les farines faibles en nécessitent moins. Pour les mélanges, les deltas sont pondérés par le ratio. Note : l'hydratation est définie après le planning — elle n'affecte pas la vitesse de fermentation dans les plages normales de boulangerie (55–80 %), uniquement la texture de la pâte, l'extensibilité et le caractère de la croûte.</p>
+            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Tolérance de fermentation (ftm)</strong> — un multiplicateur appliqué à la zone idéale du planificateur. ftm = 1,0 pour W250 (référence), 1,2 pour W300+, 0,85 pour W220. Cela scale la durée de pousse froide optimale, la zone idéale du poolish et la fenêtre de fermentation maximale utile. Deux boulangers utilisant le même style mais des farines différentes obtiennent des plannings recommandés différents — le boulanger W370 est orienté vers une pousse froide plus longue, le boulanger W220 vers une plus courte.</p>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>La levure est une sortie, pas une entrée.</strong> Baker Hub ne demande jamais de pourcentage de levure. Il le calcule à partir de vos heures de fermentation réelles et de la température avec la formule IDY% = 9,5 / (heures^1,65 × 2,5^((temp−25)/10)) en TA, et IDY% = 7,5 / heures^1,313 au froid. Modifiez votre planning et la levure se met à jour automatiquement. La tolérance de fermentation de la farine scale la zone idéale mais n'affecte pas directement la levure — la formule de levure s'ajuste déjà via le timing.</p>
           </>
         ),
       },
@@ -525,14 +539,26 @@ const CONTENT: Record<string, LocaleContent> = {
         title: 'Le moteur de planning',
         body: (
           <>
-            <P>Le planificateur remonte depuis votre heure de cuisson cible :</P>
+            <P>Le planificateur remonte depuis votre heure de cuisson cible. Pour chaque scénario, il évalue si un poolish, un biga ou une pâte directe produit le meilleur résultat compte tenu de votre fenêtre disponible.</P>
+            <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: TERRA, letterSpacing: '.04em' }}>FENÊTRES DE FERMENTATION À 22°C</p>
             <BulletList items={[
-              "Alloue la pousse froide à la fenêtre préférée du style (napolitaine 24 h, baguette 12 h, pizza pan zéro — TA pur)",
-              "Maximise la pousse froide dans vos disponibilités journalières, en respectant les fenêtres occupées",
-              "Dans les cuisines chaudes avec une longue fenêtre, applique une pousse froide en deux phases (bulk froid → diviser et bouler → boules froides) pour un contrôle maximum",
-              "Transmet les heures exactes de TA et de froid au moteur de levure — la quantité de levure correspond toujours à votre planning réel",
+              <><strong style={{color:CHAR}}>{'< 5,5h'}</strong> — fenêtre trop courte pour un préferment. Pâte directe uniquement, cuisson le jour même.</>,
+              <><strong style={{color:CHAR}}>5,5h – 9h</strong> — pâte directe. Pas de place pour une fermentation de poolish significative.</>,
+              <><strong style={{color:CHAR}}>9h – 15,5h</strong> — poolish à température ambiante (jaune). En développement, utilisable, saveurs qui se construisent.</>,
+              <><strong style={{color:CHAR}}>15,5h – 16,5h</strong> — poolish TA double vert. Zone de fermentation TA optimale.</>,
+              <><strong style={{color:CHAR}}>16,5h – 26,5h</strong> — poolish au frigo double vert. Pousse froide pour des saveurs complexes.</>,
+              <><strong style={{color:CHAR}}>{'> 26,5h'}</strong> — poolish au frigo + pousse froide complète 24h. Meilleure qualité possible.</>,
             ]} />
-            <p style={{ marginTop: '14px', margin: '14px 0 0', ...bodyText }}>Deux boulangers avec la même recette mais des plannings différents et des réfrigérateurs différents obtiennent des quantités de levure différentes. C'est tout l'intérêt.</p>
+            <p style={{ marginTop: '14px', ...bodyText }}>Ces limites évoluent avec la température de la cuisine (plus chaud = fermentation plus rapide, fenêtres plus courtes) et le type de four (un préchauffage plus long décale la fenêtre minimale). La force de votre farine scale également la zone idéale — une farine W370 bénéficie d'une pousse froide plus longue qu'une W250.</p>
+            <p style={{ margin: '14px 0 10px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: TERRA, letterSpacing: '.04em' }}>COMMENT L'HEURE DE PÉTRISSAGE EST CHOISIE</p>
+            <BulletList items={[
+              "Le moteur essaie poolish au frigo et poolish TA, choisit le mode avec le meilleur score. Le frigo gagne à égalité — la fermentation froide développe des saveurs plus complexes.",
+              "Dans chaque mode, il cherche l'heure de pétrissage qui maximise la durée de pousse froide (meilleure saveur) tout en respectant vos heures bloquées.",
+              "Si aucun créneau n'atteint le double vert, le meilleur jaune+vert disponible est retourné avec des cartes de statut honnêtes.",
+              "Si tous les créneaux tombent dans des blockers, une popup explique vos options — pétrir juste avant/après votre fenêtre occupée, ou dedans.",
+              "Tolérance blocker : la fermentation bulk peut commencer jusqu'à 30min avant un blocker — la pâte se retarde seule quand vous partez.",
+            ]} />
+            <p style={{ margin: '14px 0 0', ...bodyText }}>Deux boulangers avec la même recette mais des plannings, cuisines et farines différents obtiennent des quantités de levure différentes et des timings recommandés différents. C'est tout l'intérêt.</p>
           </>
         ),
       },
@@ -541,16 +567,16 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Quand votre recette inclut un poolish ou un biga, Baker Hub cherche un planning où le préferment et la pâte finale sont simultanément dans leurs fenêtres de fermentation optimales. Il ne suffit pas qu'un seul soit prêt — les deux doivent s'aligner.</P>
-            <P>Le graphique de fermentation affiche deux courbes : une pour le préferment (poolish ou biga) et une pour la pâte finale. Chaque courbe évolue en fonction de votre planning réel — si votre pâte passe par un repos au frigo, la courbe s'élargit et s'aplatit, reflétant une fermentation plus lente et longue. Si c'est uniquement à température ambiante, la courbe est plus haute et plus étroite. L'objectif est toujours que chaque courbe soit proche de son pic au bon moment : le préferment au moment du pétrissage, la pâte au moment de la cuisson.</P>
-            <P>Chaque type de préferment a sa propre fenêtre idéale :</P>
+            <P>Le graphique de fermentation affiche deux courbes en cloche. La courbe du préferment culmine au moment du pétrissage ; la courbe de la pâte culmine au moment de la cuisson. Les pastilles vertes signifient que les deux sont sur cible. Jaune signifie en développement mais utilisable. Le graphique disparaît quand aucune fenêtre de préferment viable n'existe — le boulanger est clairement invité à passer en pâte directe.</P>
+            <P>Chaque type de préferment a sa propre fenêtre idéale, façonnée par la température et la force de la farine :</P>
             <BulletList items={[
-              'Poolish au frigo : pic vers 18h au froid, avec environ ±3h de chaque côté qui donnent d\'excellents résultats.',
-              'Poolish à température ambiante : pic plus rapide et fenêtre plus étroite — surtout dans les cuisines chaudes où la fermentation s\'accélère vite.',
-              'Biga : le plus rigide et le plus indulgent. Sa fermentation lente au froid offre un plateau large de 38 à 58h.',
+              <><strong style={{color:CHAR}}>Poolish au frigo</strong> — optimal vers 13h au froid à 6°C (plateau ±5h). Nécessite au moins 16,5h de fenêtre de planification totale. Pousse froide plus longue = saveurs plus complexes. Le W de la farine scale cela : une farine W370 bénéficie d'un poolish plus long qu'une W250.</>,
+              <><strong style={{color:CHAR}}>Poolish à température ambiante</strong> — pic en ~9h à 22°C, plus rapide en cuisine chaude, plus lent en cuisine froide. Fenêtre plus étroite (±1,5h). Le moteur essaie le poolish TA en fallback quand la fenêtre frigo est trop courte — si le TA score plus haut, le TA gagne.</>,
+              <><strong style={{color:CHAR}}>Biga</strong> — toujours au froid. Pâte rigide (50% d'hydratation) qui fermente lentement sur 38–58h. Large plateau, le plus indulgent. Jamais en TA — un biga à température ambiante sur-acidifie en quelques heures.</>,
             ]} />
-            <P>Si votre planning ne permet pas aux deux d\'atterrir simultanément dans leur fenêtre idéale, Baker Hub vous montre honnêtement la meilleure option disponible — et les cartes reflètent toujours la qualité réelle de fermentation, pas seulement si quelque chose est techniquement utilisable.</P>
+            <P>Le scoring est transparent : score 4 = double vert (optimal), score 3 = un vert + un jaune (bien), score 2 ou moins = pâte directe recommandée. Le moteur choisit toujours le score le plus élevé disponible, puis utilise la durée de pousse froide comme critère de départage — plus de froid = meilleure saveur à égalité.</P>
             <p style={{ margin: '14px 0 0', ...bodyText }}>
-              <strong style={{ color: CHAR }}>Départ en soirée.</strong> Pour le poolish au frigo, Baker Hub essaie aussi de suggérer un démarrage entre 18h et 21h — pratique pour préparer avant de dormir. Si ce timing entre en conflit avec la qualité de fermentation, la qualité l'emporte toujours.
+              <strong style={{ color: CHAR }}>Conscience des blockers.</strong> Le moteur respecte vos heures bloquées pour placer le début du poolish et l'heure de pétrissage. Si votre blocker Nuits (22h–7h) est actif, le pétrissage est repoussé juste après 7h. La fermentation bulk peut commencer jusqu'à 30min avant un blocker — la pâte se retarde seule quand vous partez.
             </p>
           </>
         ),
