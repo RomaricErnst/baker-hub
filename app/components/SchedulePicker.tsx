@@ -594,8 +594,9 @@ function findOptimalPosition(
             Math.max(1, sweetFrom - minTotalRT) * 8
           ))
         : 0;
-      // Priority: score → cold retard → reasonable hour → poolish convenience
-      const combinedScore = score * 100 + retardBonus * 10 + doughReasonable * 5 + poolishComfort;
+      // Priority: score → fridge poolish → cold retard → reasonable hour → poolish convenience
+      const fridgeBonus = (prefGoesInFridge && hasPref) ? 8 : 0;
+      const combinedScore = score * 100 + fridgeBonus * 10 + retardBonus * 8 + doughReasonable * 5 + poolishComfort;
 
       if (combinedScore > bestCombinedScore) {
         bestScore = score;
@@ -1203,10 +1204,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const sweetCenterRaw = hasColdLocal
       ? scaledDefaults.coldH + defaults.rtH     // dough peaks at bake at this position
       : defaults.rtH;                            // RT only: peak at rtH before bake
-    const maxUsefulColdH = scaledDefaults.preferredColdH ?? scaledDefaults.coldH;
+    // sweetFrom = right edge of dough quality plateau (not preferredColdH which is the target).
+    // plateauHalfW is how far from sweetCenter bake can be while still at peak quality.
+    // Beyond this, dough is on the decline — mixInZone=false, score drops.
+    // Scaled by flourStrength: stronger flour has wider plateau tolerance.
+    const plateauHalfW = hasColdLocal
+      ? Math.round((defaults.coldH ?? 24) * 0.35 * (flourStrength ?? 1.0))  // ~8h for 24h cold, W250
+      : Math.round((defaults.rtH ?? 2) * 0.75);  // ~1.5h for 2h RT
     const sweetFromRaw = hasColdLocal
-      ? maxUsefulColdH + defaults.rtH           // max useful cold retard boundary
-      : defaults.rtH + 4;                       // RT only: allow some flexibility
+      ? Math.min(72, (defaults.coldH ?? 24) + (defaults.rtH ?? 2) + plateauHalfW)
+      : (defaults.rtH ?? 2) + plateauHalfW;
     // Use minTotalFermH as the right boundary — matches the card's green zone
     // and is the scientifically correct absolute minimum for acceptable results.
     // This is style-sensitive: each style defines its own minTotalFermH.
