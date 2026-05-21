@@ -1527,6 +1527,7 @@ export default function Home() {
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 sessionRestored={sessionRestored}
+                flourStrength={1.0}
               />
             </StepCard>
 
@@ -2260,6 +2261,7 @@ export default function Home() {
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onReady={() => {}}
                 sessionRestored={sessionRestored}
+                flourStrength={flourBlend ? (computeBlendProfile(flourBlend).fermToleranceMultiplier ?? 1.0) : 1.0}
               />
               {eatTime && !reviewMode && <ContinueBtn onClick={() => { setPrefermentFlourPct(undefined); advanceAdv(9); }} />}
             </StepCard>

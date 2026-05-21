@@ -23,6 +23,7 @@ interface SchedulePickerProps {
   onReady?: () => void;
   sessionRestored?: boolean;
   fridgeTemp?: number;
+  flourStrength?: number;
 }
 
 type PickerPhase = 'bake_time' | 'start_confirm';
@@ -1000,7 +1001,7 @@ function SimpleColourBar({
 
 // ── Component ─────────────────────────────────
 // v1779291581473456000
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0 }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1126,6 +1127,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Reset prefAlgoRed at start — prevents stale state from previous run
     setPrefAlgoRed(false);
     const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
+    // Scale fermentation windows by flour strength (W value / fermToleranceMultiplier).
+    // Stronger flour tolerates longer fermentation and benefits from more cold retard.
+    // rtH and minTotalFermH are NOT scaled — those are fixed by physiology and style.
+    const ftm = Math.max(0.5, Math.min(2.0, flourStrength));
+    const scaledDefaults = {
+      ...defaults,
+      coldH:          Math.round(defaults.coldH * ftm),
+      preferredColdH: Math.round((defaults.preferredColdH ?? defaults.coldH) * ftm),
+    };
     const isTrop = kitchenTemp >= 28;
     const minBulkRTLocal = isTrop ? 0.5 : 1.5;
     const minTotalRTLocal = minBulkRTLocal + 1.0 + (preheatMin / 60);
@@ -1146,14 +1156,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
 
     // CT maximization — exact same model as buildSchedule
-    const preferredColdH = defaults.preferredColdH ?? defaults.coldH;
+    const preferredColdH = scaledDefaults.preferredColdH ?? scaledDefaults.coldH;
     let expectedColdH: number;
-    if (defaults.coldH === 0) {
+    if (scaledDefaults.coldH === 0) {
       expectedColdH = 0;
     } else if (totalWindowH >= preferredColdH + minTotalRTLocal) {
       expectedColdH = preferredColdH;
-    } else if (totalWindowH >= defaults.coldH + minTotalRTLocal) {
-      expectedColdH = defaults.coldH;
+    } else if (totalWindowH >= scaledDefaults.coldH + minTotalRTLocal) {
+      expectedColdH = scaledDefaults.coldH;
     } else if (totalWindowH > minTotalRTLocal) {
       expectedColdH = totalWindowH - minTotalRTLocal;
     } else {
@@ -1174,8 +1184,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       prefermentType === 'biga'
       || (prefermentType === 'poolish' && (kitchenTemp >= 26 || localEnoughTimeForFridge))
     );
-    // fridge-aware poolish offset — pass directly, per-candidate clamp happens in findOptimalPosition
-    const rawPrefOffset = hasPrefActive ? getPrefOptH(prefermentType, kitchenTemp, localPrefGoesInFridge, styleKey ?? 'neapolitan', fridgeTemp) : prefOffsetH;
+    // Scale fridge poolish optimal time by flour strength — stronger flour benefits from longer poolish.
+    // RT poolish is temp-driven (not gluten-driven), so only fridge poolish gets scaled.
+    const basePrefOptH = hasPrefActive
+      ? getPrefOptH(prefermentType, kitchenTemp, localPrefGoesInFridge, styleKey ?? 'neapolitan', fridgeTemp)
+      : prefOffsetH;
+    const rawPrefOffset = localPrefGoesInFridge
+      ? Math.min(24, Math.round(basePrefOptH * ftm * 2) / 2)
+      : basePrefOptH;
     // fridge-aware minimum: 12h for fridge poolish/biga, 3h for RT poolish
     const poolishMinH = localPrefGoesInFridge ? 12 : 3;
 
@@ -1183,11 +1199,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // This is a style constant — NOT climate sensitive (climate adjusts yeast, not timing)
     // sweetFrom = leftmost boundary (preferredColdH + rtH) — widest useful cold
     // sweetTo = rightmost boundary (minimum viable total fermentation)
-    const optimalColdH = hasColdLocal ? (defaults.coldH + defaults.rtH) : 0;
+    const optimalColdH = hasColdLocal ? (scaledDefaults.coldH + defaults.rtH) : 0;
     const sweetCenterRaw = hasColdLocal
-      ? defaults.coldH + defaults.rtH           // dough peaks at bake at this position
+      ? scaledDefaults.coldH + defaults.rtH     // dough peaks at bake at this position
       : defaults.rtH;                            // RT only: peak at rtH before bake
-    const maxUsefulColdH = defaults.preferredColdH ?? defaults.coldH;
+    const maxUsefulColdH = scaledDefaults.preferredColdH ?? scaledDefaults.coldH;
     const sweetFromRaw = hasColdLocal
       ? maxUsefulColdH + defaults.rtH           // max useful cold retard boundary
       : defaults.rtH + 4;                       // RT only: allow some flexibility
