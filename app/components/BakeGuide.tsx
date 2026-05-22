@@ -6,6 +6,7 @@ import { MIXER_TYPES, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
 import { type UnitSystem, displayTemp, tempC, tempRange } from '../utils/units';
+import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
 
 interface BakeGuideProps {
   schedule: ScheduleResult;
@@ -19,6 +20,12 @@ interface BakeGuideProps {
   ovenType?: string;
   prefStartTime?: Date | null;
   feedTime?: Date | null;
+  feed2Time?: Date | null;
+  fridgeOutTime?: Date | null;
+  starterState?: 'rt_fed' | 'fridge_unfed' | 'fridge_fed';
+  starterMature?: boolean;
+  starterHasRye?: boolean;
+  usingPeak2?: boolean;
   units?: UnitSystem;
   locale?: string;
   onNavigateToPizzaParty?: () => void;
@@ -34,7 +41,7 @@ const D = {
 
 // ── Section sub-component ────────────────────────────
 function Section({ icon, title, children }: {
-  icon: string; title: string; children: React.ReactNode;
+  icon: string | null; title: string; children: React.ReactNode;
 }) {
   return (
     <div style={{ marginTop: '1rem' }}>
@@ -44,7 +51,7 @@ function Section({ icon, title, children }: {
         fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem',
         display: 'flex', alignItems: 'center', gap: '.35rem',
       }}>
-        <span>{icon}</span>{title}
+        {icon && <span>{icon}</span>}{title}
       </div>
       <div style={{ fontSize: '.82rem', color: D.ash, lineHeight: 1.65, fontFamily: 'var(--font-dm-sans)' }}>
         {children}
@@ -494,7 +501,11 @@ const TERM_TO_STEPID: Record<string, string> = {
 
 export default function BakeGuide({
   schedule, mixerType, styleKey, kitchenTemp, numItems,
-  prefermentType, oil, hydration, ovenType, prefStartTime, feedTime, units, locale,
+  prefermentType, oil, hydration, ovenType, prefStartTime, feedTime,
+  feed2Time = null, fridgeOutTime = null,
+  starterState = 'rt_fed', starterMature = true, starterHasRye = false,
+  usingPeak2 = false,
+  units, locale,
   onNavigateToPizzaParty, recipe,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
@@ -631,23 +642,127 @@ export default function BakeGuide({
 
       {/* ── STEP: Feed Starter (sourdough) ──────────── */}
       {isSourdough && feedTime && (
-        <StepCard number={n()} {...sc()} icon={<IconStarter />} title={t('stepTitles.feedStarter')} time={feedTime} accent="#6A7FA8">
-          <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
-            <Steps items={t.raw('starter.steps') as { bold: string; note: string }[]} />
-          </Section>
-          <Section icon="👁️" title={t('sectionTitles.readyWhen')}>
-            <Bullets items={[
-              `Doubled in size — at ${displayTemp(kitchenTemp, u)} expect ${kitchenTemp >= 28 ? '3-5h' : kitchenTemp >= 24 ? '4-7h' : '6-10h'}`,
-              ...(t.raw('starter.readyWhen') as string[]),
-            ]} />
-          </Section>
-          <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
-            <Bullets items={t.raw('starter.pitfalls') as string[]} />
-          </Section>
-          <div style={{ marginTop: '.5rem' }}>
-            <LearnLink term="preferment_ready" label={l === 'fr' ? 'Est-il prêt ?' : 'Is it ready?'} onOpen={setLearnTerm} showSparkle={true} />
-          </div>
-        </StepCard>
+        <>
+          {/* Feed 1 */}
+          <StepCard
+            number={n()} {...sc()} icon={<IconStarter />}
+            title={usingPeak2 ? 'Feed your starter — first feed' : 'Feed your starter'}
+            time={feedTime}
+            accent="#6A7FA8"
+          >
+            <Section icon={null} title={t('sectionTitles.whatToDo')}>
+              <Steps items={[
+                { bold: 'Equal parts starter, flour, water by weight',
+                  note: '1:1:1 ratio — e.g. 50g starter + 50g flour + 50g water' },
+                { bold: 'Mix until no dry flour remains',
+                  note: 'cover loosely — starter needs airflow' },
+                ...(starterState === 'fridge_fed'
+                  ? [{ bold: 'Return to fridge once mixed',
+                       note: 'slows the peak — gives you control over when it is ready' }]
+                  : []),
+              ]} />
+            </Section>
+            <Section icon={null} title={t('sectionTitles.readyWhen')}>
+              <Bullets items={[
+                `At ${displayTemp(kitchenTemp, u)}: peaks in ${(() => {
+                  const peakH = getPrefPeakH_RT('sourdough', kitchenTemp);
+                  const adj = peakH
+                    * (starterMature ? 1.0 : 1.2)
+                    * (starterHasRye ? 0.8 : 1.0);
+                  return `${Math.round(adj * 0.8)}–${Math.round(adj * 1.2)}h`;
+                })()}`,
+                'Doubled or more in volume',
+                'Dome-shaped surface, not yet collapsed',
+                'Bubbles visible through the sides of the jar',
+                'Smells pleasantly sour, not alcoholic',
+              ]} />
+            </Section>
+            <Section icon={null} title={t('sectionTitles.pitfalls')}>
+              <Bullets items={t.raw('starter.pitfalls') as string[]} />
+            </Section>
+            <div style={{ marginTop: '.5rem' }}>
+              <LearnLink
+                term="preferment_ready"
+                label={l === 'fr' ? 'Est-il prêt ?' : 'Is it ready?'}
+                onOpen={setLearnTerm}
+                showSparkle={true}
+              />
+            </div>
+          </StepCard>
+
+          {/* Put starter in fridge — fridge_fed state only */}
+          {starterState === 'fridge_fed' && (
+            <StepCard
+              number={n()} {...sc()} icon={<IconCold />}
+              title="Put starter in fridge"
+              time={feedTime}
+              accent="#6A7FA8"
+            >
+              <Section icon={null} title={t('sectionTitles.whatToDo')}>
+                <Steps items={[
+                  { bold: 'Place fed starter in fridge straight away',
+                    note: 'cold slows fermentation and holds the peak for longer' },
+                  { bold: fridgeOutTime
+                      ? `Take out at ${fridgeOutTime.toLocaleTimeString(
+                          l === 'fr' ? 'fr-FR' : 'en-US',
+                          { hour: 'numeric', minute: '2-digit', hour12: l !== 'fr' }
+                        )}`
+                      : 'Take out when ready to mix',
+                    note: 'allow time to come to room temperature before mixing' },
+                ]} />
+              </Section>
+            </StepCard>
+          )}
+
+          {/* Remove from fridge — fridge_fed state with fridgeOutTime */}
+          {starterState === 'fridge_fed' && fridgeOutTime && (
+            <StepCard
+              number={n()} {...sc()} icon={<IconStarter />}
+              title="Remove starter from fridge"
+              time={fridgeOutTime}
+              accent="#6A7FA8"
+            >
+              <Section icon={null} title={t('sectionTitles.whatToDo')}>
+                <Steps items={[
+                  { bold: 'Take out of fridge and leave at room temperature',
+                    note: `at ${displayTemp(kitchenTemp, u)} allow around ${
+                      Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60)
+                    } min to reach peak activity` },
+                  { bold: 'Look for dome and active bubbles at the sides',
+                    note: 'mix when the starter is at its highest point' },
+                ]} />
+              </Section>
+            </StepCard>
+          )}
+
+          {/* Feed 2 — Peak 2 scenario only */}
+          {usingPeak2 && feed2Time && (
+            <StepCard
+              number={n()} {...sc()} icon={<IconStarter />}
+              title="Feed your starter — second feed"
+              time={feed2Time}
+              accent="#6A7FA8"
+            >
+              <Section icon={null} title={t('sectionTitles.whatToDo')}>
+                <Steps items={[
+                  { bold: 'Starter will look deflated and smell quite sour',
+                    note: 'this is exactly right — it is depleted and ready for its second feed' },
+                  { bold: 'Equal parts starter, flour, water by weight',
+                    note: 'same 1:1:1 ratio as the first feed' },
+                  { bold: 'Mix thoroughly and cover loosely',
+                    note: 'the second peak builds more acidity — expect a stronger, more complex flavour' },
+                ]} />
+              </Section>
+              <Section icon={null} title={t('sectionTitles.readyWhen')}>
+                <Bullets items={[
+                  'Same signs as the first feed — dome, doubled, bubbles at the sides',
+                  'Flavour will be slightly more sour than the first peak',
+                  'Mix at the dome — do not wait for it to collapse',
+                ]} />
+              </Section>
+            </StepCard>
+          )}
+        </>
       )}
 
       {/* ── STEP: Mix Dough ─────────────────────────── */}
@@ -735,7 +850,10 @@ export default function BakeGuide({
           {isSourdough && (
             <Steps items={[
               { bold: bgFlour90Label, note: 'mix 2 min until no dry flour' },
-              { bold: 'Add your starter at peak', note: 'mix to combine' },
+              { bold: 'Add your starter at peak',
+                note: usingPeak2
+                  ? 'second peak — the dough will have a slightly more complex flavour'
+                  : 'use at the dome, do not wait for collapse' },
               { bold: bgSaltG && bgWater10 ? `Add salt (${bgSaltG}g) + remaining water (${bgWater10}g)` : 'Add salt + remaining 10% water', note: 'mix until fully absorbed' },
               ...(oil > 0 ? [{ bold: 'Add oil last', note: 'preserves gluten structure' }] : []),
             ]} />

@@ -319,8 +319,14 @@ export default function Home() {
   const [showResults, setShowResults]         = useState(false);
 
 
-  // Sourdough feed time
-  const [feedTime, setFeedTime] = useState<Date | null>(null);
+  // Sourdough feed time + constraint solver outputs
+  const [feedTime, setFeedTime]             = useState<Date | null>(null);
+  const [feed2Time, setFeed2Time]           = useState<Date | null>(null);
+  const [fridgeOutTime, setFridgeOutTime]   = useState<Date | null>(null);
+  const [starterState, setStarterState]     = useState<'rt_fed' | 'fridge_unfed' | 'fridge_fed'>('rt_fed');
+  const [starterMature, setStarterMature]   = useState(true);
+  const [starterHasRye, setStarterHasRye]   = useState(false);
+  const [usingPeak2, setUsingPeak2]         = useState(false);
 
   // Advanced mode manual overrides
   const [prefermentType, setPrefermentType] = useState<PrefermentType>('none');
@@ -515,6 +521,12 @@ export default function Home() {
 
     if (session.pizzaParty?.qtys) setPizzaPartyQtys(session.pizzaParty.qtys);
     if (session.bakedDone) setBakedDone(true);
+    if (session.starterState) setStarterState(session.starterState as 'rt_fed' | 'fridge_unfed' | 'fridge_fed');
+    if (session.starterMature !== undefined) setStarterMature(Boolean(session.starterMature));
+    if (session.starterHasRye !== undefined) setStarterHasRye(Boolean(session.starterHasRye));
+    if (session.fridgeOutTime) setFridgeOutTime(new Date(session.fridgeOutTime));
+    if (session.usingPeak2 !== undefined) setUsingPeak2(Boolean(session.usingPeak2));
+    if (session.feed2Time) setFeed2Time(new Date(session.feed2Time));
     setProtocolStale(false);
     setSessionRestored(true);
     setReviewMode(true);
@@ -713,6 +725,10 @@ export default function Home() {
       pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
       bakedDone,
       computedRecipe: buildComputedRecipe(),
+      starterState, starterMature, starterHasRye,
+      fridgeOutTime: fridgeOutTime?.getTime() ?? null,
+      usingPeak2,
+      feed2Time: feed2Time?.getTime() ?? null,
     },
     () => {},
   );
@@ -1499,6 +1515,8 @@ export default function Home() {
                 selected={yeastType}
                 onSelect={(yt) => { setYeastType(yt); advance(6); }}
                 onClose={() => {}}
+                disabledIds={['sourdough']}
+                disabledNote={locale === 'fr' ? 'Le levain nécessite le mode Avancé' : 'Sourdough requires Custom mode'}
               />
             </StepCard>
 
@@ -1523,6 +1541,10 @@ export default function Home() {
                 isSourdough={yeastType === 'sourdough'}
                 prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
+                onFeed2TimeChange={setFeed2Time}
+                onFridgeOutTimeChange={setFridgeOutTime}
+                onUsingPeak2Change={setUsingPeak2}
+                onStarterStateChange={setStarterState}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
@@ -1810,6 +1832,12 @@ export default function Home() {
                   ovenType={ovenType ?? undefined}
                   prefStartTime={prefStartTime}
                   feedTime={feedTime}
+                  feed2Time={feed2Time}
+                  fridgeOutTime={fridgeOutTime}
+                  starterState={starterState}
+                  starterMature={starterMature}
+                  starterHasRye={starterHasRye}
+                  usingPeak2={usingPeak2}
                   units={units}
                   locale={locale}
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
@@ -2256,6 +2284,10 @@ export default function Home() {
                 isSourdough={yeastType === 'sourdough'}
                 prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
+                onFeed2TimeChange={setFeed2Time}
+                onFridgeOutTimeChange={setFridgeOutTime}
+                onUsingPeak2Change={setUsingPeak2}
+                onStarterStateChange={setStarterState}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
@@ -2990,6 +3022,12 @@ export default function Home() {
                   ovenType={ovenType ?? undefined}
                   prefStartTime={prefStartTime}
                   feedTime={feedTime}
+                  feed2Time={feed2Time}
+                  fridgeOutTime={fridgeOutTime}
+                  starterState={starterState}
+                  starterMature={starterMature}
+                  starterHasRye={starterHasRye}
+                  usingPeak2={usingPeak2}
                   units={units}
                   locale={locale}
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}

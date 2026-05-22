@@ -13,27 +13,31 @@ interface DecisionListProps {
   options: Option[];
   selectedId: string;
   onSelect: (id: string) => void;
+  disabledIds?: string[];
 }
 
-export default function DecisionList({ options, selectedId, onSelect }: DecisionListProps) {
+export default function DecisionList({ options, selectedId, onSelect, disabledIds = [] }: DecisionListProps) {
   return (
     <div style={{ border: '1px solid var(--border)', borderRadius: '14px', overflow: 'hidden' }}>
       {options.map((option, idx) => {
         const isSelected = option.id === selectedId;
+        const isDisabled = disabledIds.includes(option.id);
         return (
           <div
             key={option.id}
-            onClick={() => onSelect(option.id)}
+            onClick={() => !isDisabled && onSelect(option.id)}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
               padding: isSelected ? '10px 14px 10px 11px' : '10px 14px',
               minHeight: '62px',
-              cursor: 'pointer',
+              cursor: isDisabled ? 'default' : 'pointer',
               borderBottom: idx < options.length - 1 ? '1px solid var(--border)' : 'none',
               borderLeft: isSelected ? '3px solid var(--gold)' : 'none',
               background: isSelected ? 'rgba(212,168,83,0.08)' : 'white',
+              opacity: isDisabled ? 0.5 : 1,
+              pointerEvents: isDisabled ? 'none' : undefined,
             }}
           >
             <div style={{

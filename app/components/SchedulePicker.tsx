@@ -19,6 +19,10 @@ interface SchedulePickerProps {
   prefermentType?: string;
   onPrefOffsetChange?: (h: number) => void;
   onPrefGoesInFridgeChange?: (inFridge: boolean) => void;
+  onFridgeOutTimeChange?: (t: Date | null) => void;
+  onUsingPeak2Change?: (v: boolean) => void;
+  onFeed2TimeChange?: (t: Date | null) => void;
+  onStarterStateChange?: (s: StarterState) => void;
   mode?: 'simple' | 'custom';   // default 'custom'
   onReady?: () => void;
   sessionRestored?: boolean;
@@ -1003,7 +1007,7 @@ function SimpleColourBar({
 
 // ── Component ─────────────────────────────────
 // v1779291581473456000
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0 }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterStateChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0 }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1597,15 +1601,24 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const peak1Tolerance = currentState === 'fridge_fed'
       ? FRIDGE_PEAK_TOLERANCE : RT_PEAK_TOLERANCE;
 
+    function commit(
+      p2: boolean, f2: Date | null, fo: Date | null, activeFeed: Date,
+    ) {
+      setUsingPeak2(p2);
+      setFeed2Time(f2);
+      setFridgeOutTime(fo);
+      onUsingPeak2Change?.(p2);
+      onFeed2TimeChange?.(f2);
+      onFridgeOutTimeChange?.(fo);
+      onFeedTimeChange?.(activeFeed);
+    }
+
     if (Math.abs(mixHBF - peak1HBF) <= peak1Tolerance) {
-      setUsingPeak2(false);
-      setFeed2Time(null);
-      setFridgeOutTime(currentFridgeOutTime);
+      commit(false, null, currentFridgeOutTime, currentFeedTime);
       const lateGap  = mixHBF - peak1HBF;
       const earlyGap = peak1HBF - mixHBF;
       setStarterPillState(lateGap > 0.5 || earlyGap > 0.5 ? 'yellow' : 'green');
       setRefeedSuggestion(null);
-      onFeedTimeChange?.(currentFeedTime);
       return;
     }
 
@@ -1614,12 +1627,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const neededFridgeOutTime = new Date(pendingStart.getTime() - warmupH * 3600000);
       const minRTAfterFeed = new Date(feedMs + 1 * 3600000);
       if (neededFridgeOutTime >= minRTAfterFeed) {
-        setUsingPeak2(false);
-        setFeed2Time(null);
-        setFridgeOutTime(neededFridgeOutTime);
+        commit(false, null, neededFridgeOutTime, currentFeedTime);
         setStarterPillState('yellow');
         setRefeedSuggestion(null);
-        onFeedTimeChange?.(currentFeedTime);
         return;
       }
     }
@@ -1630,12 +1640,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const peak2HBF   = (bakeMs - peak2Time.getTime()) / 3600000;
 
     if (Math.abs(mixHBF - peak2HBF) <= RT_PEAK_TOLERANCE) {
-      setUsingPeak2(true);
-      setFeed2Time(troughTime);
-      setFridgeOutTime(null);
+      commit(true, troughTime, null, troughTime);
       setStarterPillState('green');
       setRefeedSuggestion(null);
-      onFeedTimeChange?.(troughTime);
       return;
     }
 
@@ -1644,24 +1651,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const neededFridgeOutTime2 = new Date(pendingStart.getTime() - warmupH * 3600000);
       const minRTAfterFeed2 = new Date(troughTime.getTime() + 1 * 3600000);
       if (neededFridgeOutTime2 >= minRTAfterFeed2) {
-        setUsingPeak2(true);
-        setFeed2Time(troughTime);
-        setFridgeOutTime(neededFridgeOutTime2);
+        commit(true, troughTime, neededFridgeOutTime2, troughTime);
         setStarterPillState('yellow');
         setRefeedSuggestion(null);
-        onFeedTimeChange?.(troughTime);
         return;
       }
     }
 
     // Red pill: suggest new feed time aligned with Peak 1 at mix
     const suggestedFeedTime = new Date(pendingStart.getTime() - adjustedPeakH * 3600000);
-    setUsingPeak2(false);
-    setFeed2Time(null);
-    setFridgeOutTime(null);
+    commit(false, null, null, currentFeedTime);
     setStarterPillState('red');
     setRefeedSuggestion(suggestedFeedTime);
-    onFeedTimeChange?.(currentFeedTime);
   }
 
   // ── Handlers ─────────────────────────────────
@@ -1855,7 +1856,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ] as { value: StarterState; label: string }[]).map(opt => (
                 <button
                   key={opt.value}
-                  onClick={() => setStarterState(opt.value)}
+                  onClick={() => { setStarterState(opt.value); onStarterStateChange?.(opt.value); }}
                   style={{
                     textAlign: 'left',
                     padding: '.5rem .75rem',

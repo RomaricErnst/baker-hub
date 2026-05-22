@@ -19,9 +19,11 @@ interface YeastHelperProps {
   onClose: () => void;
   selected?: YeastType | null;
   calcData?: CalcData;
+  disabledIds?: string[];
+  disabledNote?: string;
 }
 
-export default function YeastHelper({ onSelect, onClose, selected, calcData }: YeastHelperProps) {
+export default function YeastHelper({ onSelect, onClose, selected, calcData, disabledIds, disabledNote }: YeastHelperProps) {
   const t = useTranslations('yeast');
   const [expanded, setExpanded] = useState(!selected);
   const [showCalc, setShowCalc] = useState(false);
@@ -59,7 +61,13 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData }: Y
             options={options}
             selectedId={selected ?? ''}
             onSelect={(id) => { onSelect(id as YeastType); setExpanded(false); }}
+            disabledIds={disabledIds}
           />
+          {disabledNote && disabledIds && disabledIds.length > 0 && (
+            <p style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', margin: '8px 0 0' }}>
+              {disabledNote}
+            </p>
+          )}
         </div>
       )}
 

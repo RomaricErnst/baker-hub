@@ -37,6 +37,12 @@ export interface SessionData {
   pizzaParty?: { qtys: Record<string, number>; bakedQtys?: Record<string, number> } | null;
   bakedDone?: boolean;
   prefGoesInFridge?: boolean;
+  starterState?: string;
+  starterMature?: boolean;
+  starterHasRye?: boolean;
+  fridgeOutTime?: number | null;
+  usingPeak2?: boolean;
+  feed2Time?: number | null;
   computedRecipe?: {
     flour: number;
     water: number;
