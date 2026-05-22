@@ -33,6 +33,7 @@ import {
   type AvailabilityBlock,
 } from '../utils';
 import { buildItems } from '@/app/components/Timeline';
+import { getPizzaById } from '../lib/toppingDatabase';
 
 // ── Constants ────────────────────────────────
 
@@ -520,7 +521,13 @@ export default function Home() {
       }
     }
 
-    if (session.pizzaParty?.qtys) setPizzaPartyQtys(session.pizzaParty.qtys);
+    if (session.pizzaParty?.qtys) {
+      const validQtys: Record<string, number> = {};
+      Object.entries(session.pizzaParty.qtys).forEach(([id, qty]) => {
+        if (getPizzaById(id)) validQtys[id] = qty as number;
+      });
+      setPizzaPartyQtys(validQtys);
+    }
     if (session.bakedDone) setBakedDone(true);
     if (session.starterState) setStarterState(session.starterState as 'rt_fed' | 'fridge_unfed' | 'fridge_fed');
     if (session.starterMature !== undefined) setStarterMature(Boolean(session.starterMature));

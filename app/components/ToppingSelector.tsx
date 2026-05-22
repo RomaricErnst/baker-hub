@@ -1260,6 +1260,13 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
     };
   }, [styleKey, filter]);
 
+  useEffect(() => {
+    setFilter(prev => ({
+      ...prev,
+      styleKey: styleKey as import('../lib/toppingTypes').StyleKey | undefined,
+    }));
+  }, [styleKey]);
+
   // ── Filter helpers ──────────────────────────────────────────
 
   const setBase = (v: BaseType | null) =>
@@ -1472,7 +1479,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               onRemove: () => toggleDietary(d),
             }));
             if (filter.complexity !== null) {
-              const cLabels: Record<number, string> = { 1: l === 'fr' ? 'Sans cuisson' : 'No cook', 2: l === 'fr' ? 'Léger' : 'Light prep', 3: l === 'fr' ? 'Cuisiné' : 'Cooked', 4: l === 'fr' ? 'Chef' : 'Chef level' };
+              const cLabels: Record<number, string> = { 1: l === 'fr' ? 'Sans cuisson' : 'No cook', 2: l === 'fr' ? 'Léger' : 'Light prep', 3: l === 'fr' ? 'Cuisiné' : 'Cooked' };
               activeChips.push({ label: cLabels[filter.complexity] ?? String(filter.complexity), onRemove: () => setComplexity(null) });
             }
             (filter.ingredientChips ?? []).forEach(ic => activeChips.push({
@@ -1596,7 +1603,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           [1,     l === 'fr' ? 'Sans cuisson' : 'No cook'],
                           [2,     l === 'fr' ? 'Léger' : 'Light prep'],
                           [3,     l === 'fr' ? 'Cuisiné' : 'Cooked'],
-                          [4,     l === 'fr' ? 'Chef' : 'Chef level'],
                         ] as [ComplexityTier | null, string][]).map(([v, label]) => {
                           const active = filter.complexity === v;
                           return (
