@@ -28,6 +28,7 @@ interface SchedulePickerProps {
   sessionRestored?: boolean;
   fridgeTemp?: number;
   flourStrength?: number;
+  startTimeInPast?: boolean;
 }
 
 type PickerPhase = 'bake_time' | 'start_confirm';
@@ -1007,7 +1008,7 @@ function SimpleColourBar({
 
 // ── Component ─────────────────────────────────
 // v1779291581473456000
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterStateChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0 }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterStateChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1031,6 +1032,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [isNarrow, setIsNarrow] = useState(false);
   const [blockerNote, setBlockerNote] = useState<string | null>(null);
   const [guardNote, setGuardNote] = useState<string | null>(null);
+  const [windowTooShort, setWindowTooShort] = useState(false);
+  const minTotalRTRef = useRef(2.5);
   const [recommendedColdH, setRecommendedColdH] = useState<number>(() => {
     const d = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
     return d.coldH ?? 0;
@@ -1139,6 +1142,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   ) {
     // Reset prefAlgoRed at start — prevents stale state from previous run
     setPrefAlgoRed(false);
+    setWindowTooShort(false);
     const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
     // Scale fermentation windows by flour strength (W value / fermToleranceMultiplier).
     // Stronger flour tolerates longer fermentation and benefits from more cold retard.
@@ -1152,6 +1156,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const isTrop = kitchenTemp >= 28;
     const minBulkRTLocal = isTrop ? 0.5 : 1.5;
     const minTotalRTLocal = minBulkRTLocal + 1.0 + (preheatMin / 60);
+    minTotalRTRef.current = minTotalRTLocal;
     const nowMs = Date.now();
     const totalWindowH = (et.getTime() - nowMs) / 3600000;
     const nowHBF = totalWindowH;
@@ -1164,7 +1169,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     // Guard: window too short for any fermentation
     if (totalWindowH < minTotalRTLocal) {
-      setGuardNote(`You'll need at least ${Math.ceil(minTotalRTLocal)}h for fermentation — try a later bake time.`);
+      setWindowTooShort(true);
+      setGuardNote(null);
+      setStartComputed(false);
       return;
     }
 
@@ -1237,7 +1244,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const sweetTo     = Math.min(sweetToRaw,     sweetFrom - 0.5);
 
     if (!hasColdLocal && totalWindowH < sweetToRaw) {
-      setGuardNote(tRoot('schedulePicker.guardShort'));
+      setGuardNote(isFr
+        ? 'Fenêtre courte — une pâte du jour peut quand même être excellente.'
+        : 'Working with a short window — same-day dough can still be wonderful.');
     } else {
       setGuardNote(null);
     }
@@ -1374,7 +1383,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       }
       // Score 0 with sweetCenter free: tight window note via existing guardShort path
       if (result.score === 0 && !result.mixInBlocker) {
-        setGuardNote(tRoot('schedulePicker.guardShort'));
+        setGuardNote(isFr
+        ? 'Fenêtre courte — une pâte du jour peut quand même être excellente.'
+        : 'Working with a short window — same-day dough can still be wonderful.');
       } else {
         setBlockerNote(null);
       }
@@ -1417,6 +1428,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setShowFallbackPopup(false);
     setDismissedConflict(false);
     setGuardNote(null);
+    setWindowTooShort(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
 
@@ -1814,14 +1826,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       {/* Phase 2 content — only once bake time is set */}
       {eatTimeSet && (<div>
-
-      {/* too_short compact note — only when bake is in future */}
-      {scenario === 'too_short' && !guardNote && (
-        <div style={{ fontSize: '.78rem', color: 'var(--terra)', marginBottom: '.9rem', lineHeight: 1.5 }}>
-          ⚡ {t('scenario.tooShort')}
-        </div>
-      )}
-
 
       {/* Sourdough starter section */}
       {isSourdough && (
@@ -2329,11 +2333,36 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       </div>
 
-      {guardNote && (
+      {windowTooShort && eatTimeSet && (
         <div style={{
-          background: 'var(--cream)', borderLeft: '4px solid var(--terra)',
-          borderRadius: 10, padding: '.75rem 1rem', marginBottom: '1rem',
-          fontSize: '.82rem', color: 'var(--char)', lineHeight: 1.5,
+          background: 'var(--cream)',
+          borderRadius: '12px',
+          border: '1.5px solid var(--border)',
+          padding: '1rem 1.25rem',
+          marginBottom: '1rem',
+          fontFamily: 'var(--font-dm-sans)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '.5rem',
+        }}>
+          <div style={{ fontSize: '.85rem', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+            {isFr ? 'Pas assez de temps pour ce créneau' : 'Not enough time for this bake'}
+          </div>
+          <div style={{ fontSize: '.82rem', color: 'var(--smoke)', lineHeight: 1.55 }}>
+            {isFr
+              ? `Il faut au moins ${Math.ceil(minTotalRTRef.current)}h entre maintenant et la cuisson. Essayez un créneau plus tardif — ou commandez une pizza ce soir.`
+              : `You need at least ${Math.ceil(minTotalRTRef.current)}h between now and your bake. Try a later time — or order in tonight.`}
+          </div>
+        </div>
+      )}
+
+      {guardNote && !windowTooShort && eatTimeSet && (
+        <div style={{
+          fontSize: '.82rem',
+          color: 'var(--smoke)',
+          lineHeight: 1.55,
+          padding: '.5rem 0',
+          fontFamily: 'var(--font-dm-sans)',
         }}>
           {guardNote}
         </div>
@@ -2417,6 +2446,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterFeed2Time={isSourdough && usingPeak2 ? feedTime : null}
               starterFridgeOutTime={isSourdough ? fridgeOutTime : null}
               starterMature={starterMature}
+              startTimeInPast={startTimeInPast}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
                 setHasDragged(true);
@@ -2479,7 +2509,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <div style={{ marginTop: '6px', marginBottom: '.75rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
           {/* Drag hint — always visible, disappears after first drag */}
-          {!hasDragged && mode !== 'simple' && (
+          {!hasDragged && mode !== 'simple' && !startTimeInPast && (
             <div style={{
               textAlign: 'center', fontSize: '11px',
               color: '#8A7F78', fontFamily: 'DM Sans, sans-serif',
@@ -2522,8 +2552,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </div>
           )}
 
-          {/* Reset link — always visible */}
-          {hasDragged && (
+          {/* Reset link — only when dragged and not a past session */}
+          {hasDragged && !startTimeInPast && (
             <button
               onClick={() => {
                 hasManuallyDragged.current = false;
@@ -2540,6 +2570,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             >
               {locale === 'fr' ? '↺ Revenir à la recommandation' : '↺ Reset to recommendation'}
             </button>
+          )}
+
+          {/* Read-only note — past sessions */}
+          {startTimeInPast && (
+            <div style={{
+              fontSize: '.75rem', color: 'var(--smoke)',
+              fontFamily: 'var(--font-dm-mono)',
+              textAlign: 'center', padding: '.4rem 0',
+            }}>
+              {locale === 'fr'
+                ? "Programme enregistré — modifiez l'heure de cuisson pour replanifier"
+                : 'Saved schedule — edit your bake time to replan'}
+            </div>
           )}
 
         </div>

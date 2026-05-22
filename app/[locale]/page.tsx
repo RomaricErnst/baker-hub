@@ -457,15 +457,16 @@ export default function Home() {
       return;
     }
 
-    // Discard expired sessions immediately — don't restore stale state
     const restoredEatTimeIsPast = session.eatTime
       ? new Date(session.eatTime) < new Date()
       : false;
-    if (restoredEatTimeIsPast) {
-      clearSession();
-      isRestoringRef.current = false;
-      return;
+    if (restoredEatTimeIsPast && !session.recipeGenerated) {
+      // Not a generated session — wipe schedule times, keep all other settings
+      session.eatTime = null;
+      session.startTime = null;
+      session.blocks = [];
     }
+    // Generated sessions with past bake times are kept as historical record
 
     setTab(session.tab as 'simple' | 'custom');
     setBakeType(session.bakeType as BakeType | null);
@@ -737,6 +738,13 @@ export default function Home() {
     if (!eatTime) return false;
     return new Date(eatTime) < new Date();
   }, [eatTime]);
+
+  const startTimeInPast = !!(
+    sessionRestored &&
+    recipeGenerated &&
+    startTime &&
+    startTime < new Date()
+  );
 
   // ── Handlers ──────────────────────────────
   function selectBakeType(bt: BakeType) {
@@ -1550,6 +1558,7 @@ export default function Home() {
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 sessionRestored={sessionRestored}
                 flourStrength={1.0}
+                startTimeInPast={startTimeInPast}
               />
             </StepCard>
 
@@ -2294,6 +2303,7 @@ export default function Home() {
                 onReady={() => {}}
                 sessionRestored={sessionRestored}
                 flourStrength={flourBlend ? (computeBlendProfile(flourBlend).fermToleranceMultiplier ?? 1.0) : 1.0}
+                startTimeInPast={startTimeInPast}
               />
               {eatTime && !reviewMode && <ContinueBtn onClick={() => { setPrefermentFlourPct(undefined); advanceAdv(9); }} />}
             </StepCard>

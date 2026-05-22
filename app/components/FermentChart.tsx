@@ -36,6 +36,7 @@ export interface FermentChartProps {
   starterFridgeOutTime?: Date | null;
   starterMature?: boolean;
   starterStoredInFridge?: boolean;
+  startTimeInPast?: boolean;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -224,6 +225,7 @@ export default function FermentChart({
   recommendedMixHBF, showZoneLabels, hasDragged,
   starterFeedTime, starterFeed2Time, starterFridgeOutTime,
   starterMature = true,
+  startTimeInPast = false,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -407,6 +409,7 @@ export default function FermentChart({
   }
 
   function onPointerDown(e: React.PointerEvent, which: 'mix' | 'pref') {
+    if (startTimeInPast) return;
     if (which === 'pref' && prefStartAbsHBF > nowHBF) return;
     e.preventDefault();
     e.stopPropagation();
@@ -546,7 +549,7 @@ export default function FermentChart({
     );
     return (
       <g
-        style={{ cursor: disabled ? 'not-allowed' : dragging === which ? 'grabbing' : 'grab' }}
+        style={{ cursor: startTimeInPast ? 'default' : (disabled ? 'not-allowed' : dragging === which ? 'grabbing' : 'grab'), opacity: startTimeInPast ? 0.6 : 1 }}
         onPointerDown={e => onPointerDown(e, which)}
       >
         <polygon

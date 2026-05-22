@@ -451,7 +451,6 @@
     "pickDate": "Pick a date",
     "selectDateFirst": "Select date first",
     "guardPast": "This bake time has passed — try picking a later date.",
-    "guardShort": "Working with a short window — same-day dough can still be wonderful.",
     "blockerNote": "Start Dough falls in one of your busy windows — that's fine if it works for you.",
     "bulkNote": "Your dough needs ~{dur} to rise — be free by {time} to put it in the fridge, or start a bit earlier.",
     "fallbackBtn1": "Start just before or after my busy time",

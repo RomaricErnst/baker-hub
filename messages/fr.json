@@ -451,7 +451,6 @@
     "pickDate": "Choisir une date",
     "selectDateFirst": "Sélectionnez d'abord une date",
     "guardPast": "Cette heure de cuisson est déjà passée — choisissez une date ultérieure.",
-    "guardShort": "Fenêtre courte — une pâte du jour peut quand même être excellente.",
     "blockerNote": "Le démarrage de la pâte tombe dans une de vos indisponibilités — c'est bien si ça vous convient.",
     "bulkNote": "Votre pâte a besoin d'environ {dur} pour lever — soyez libre avant {time} pour la mettre au frigo, ou démarrez un peu plus tôt.",
     "fallbackBtn1": "Démarrer juste avant ou après mon indisponibilité",
