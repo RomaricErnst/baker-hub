@@ -38,6 +38,10 @@ export interface SessionData {
   bakedDone?: boolean;
   prefGoesInFridge?: boolean;
   starterState?: string;
+  starterLocation?: string;
+  planningMode?: string;
+  lastFedTime?: number | null;
+  knownPeakTime?: number | null;
   starterMature?: boolean;
   starterHasRye?: boolean;
   fridgeOutTime?: number | null;

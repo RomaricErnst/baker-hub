@@ -325,6 +325,10 @@ export default function Home() {
   const [feed2Time, setFeed2Time]           = useState<Date | null>(null);
   const [fridgeOutTime, setFridgeOutTime]   = useState<Date | null>(null);
   const [starterState, setStarterState]     = useState<'rt_fed' | 'fridge_unfed' | 'fridge_fed'>('rt_fed');
+  const [starterLocation, setStarterLocation] = useState<'rt' | 'fridge'>('rt');
+  const [planningMode, setPlanningMode]     = useState<'last_fed' | 'know_peak'>('last_fed');
+  const [lastFedTime, setLastFedTime]       = useState<Date | null>(null);
+  const [knownPeakTime, setKnownPeakTime]   = useState<Date | null>(null);
   const [starterMature, setStarterMature]   = useState(true);
   const [starterHasRye, setStarterHasRye]   = useState(false);
   const [usingPeak2, setUsingPeak2]         = useState(false);
@@ -530,6 +534,10 @@ export default function Home() {
     }
     if (session.bakedDone) setBakedDone(true);
     if (session.starterState) setStarterState(session.starterState as 'rt_fed' | 'fridge_unfed' | 'fridge_fed');
+    if (session.starterLocation) setStarterLocation(session.starterLocation as 'rt' | 'fridge');
+    if (session.planningMode) setPlanningMode(session.planningMode as 'last_fed' | 'know_peak');
+    if (session.lastFedTime) setLastFedTime(new Date(session.lastFedTime));
+    if (session.knownPeakTime) setKnownPeakTime(new Date(session.knownPeakTime));
     if (session.starterMature !== undefined) setStarterMature(Boolean(session.starterMature));
     if (session.starterHasRye !== undefined) setStarterHasRye(Boolean(session.starterHasRye));
     if (session.fridgeOutTime) setFridgeOutTime(new Date(session.fridgeOutTime));
@@ -733,7 +741,10 @@ export default function Home() {
       pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
       bakedDone,
       computedRecipe: buildComputedRecipe(),
-      starterState, starterMature, starterHasRye,
+      starterState, starterLocation, planningMode,
+      lastFedTime: lastFedTime?.getTime() ?? null,
+      knownPeakTime: knownPeakTime?.getTime() ?? null,
+      starterMature, starterHasRye,
       fridgeOutTime: fridgeOutTime?.getTime() ?? null,
       usingPeak2,
       feed2Time: feed2Time?.getTime() ?? null,
@@ -1560,6 +1571,14 @@ export default function Home() {
                 onFridgeOutTimeChange={setFridgeOutTime}
                 onUsingPeak2Change={setUsingPeak2}
                 onStarterStateChange={setStarterState}
+                starterLocation={starterLocation}
+                planningMode={planningMode}
+                lastFedTime={lastFedTime}
+                knownPeakTime={knownPeakTime}
+                onStarterLocationChange={setStarterLocation}
+                onPlanningModeChange={setPlanningMode}
+                onLastFedTimeChange={setLastFedTime}
+                onKnownPeakTimeChange={setKnownPeakTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
@@ -2304,6 +2323,14 @@ export default function Home() {
                 onFridgeOutTimeChange={setFridgeOutTime}
                 onUsingPeak2Change={setUsingPeak2}
                 onStarterStateChange={setStarterState}
+                starterLocation={starterLocation}
+                planningMode={planningMode}
+                lastFedTime={lastFedTime}
+                knownPeakTime={knownPeakTime}
+                onStarterLocationChange={setStarterLocation}
+                onPlanningModeChange={setPlanningMode}
+                onLastFedTimeChange={setLastFedTime}
+                onKnownPeakTimeChange={setKnownPeakTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
