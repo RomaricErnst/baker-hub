@@ -34,6 +34,9 @@ export interface FermentChartProps {
   starterFeedTime?: Date | null;
   starterFeed2Time?: Date | null;
   starterFridgeOutTime?: Date | null;
+  starterKnownPeakTime?: Date | null;
+  starterIsDepletedAt?: Date | null;
+  starterRefeedTime?: Date | null;
   starterMature?: boolean;
   starterStoredInFridge?: boolean;
   startTimeInPast?: boolean;
@@ -224,6 +227,7 @@ export default function FermentChart({
   nowHBF = 999, phases, scheduleNote,
   recommendedMixHBF, showZoneLabels, hasDragged,
   starterFeedTime, starterFeed2Time, starterFridgeOutTime,
+  starterKnownPeakTime = null, starterIsDepletedAt = null, starterRefeedTime = null,
   starterMature = true,
   startTimeInPast = false,
 }: FermentChartProps) {
@@ -365,6 +369,24 @@ export default function FermentChart({
 
   const activePrefX = activeFeedHBF !== null ? hToX(activeFeedHBF, W, WH) : prefX;
   const histPrefX   = histFeedHBF  !== null ? hToX(histFeedHBF,  W, WH) : null;
+
+  // Mode B: known peak — bell centred on that time, no feed point
+  const knownPeakHBF: number | null = isLevain && starterKnownPeakTime
+    ? (bakeMs - starterKnownPeakTime.getTime()) / 3600000 : null;
+
+  // Depleted: trough time (starter flat from here)
+  const depletedAtHBF: number | null = isLevain && starterIsDepletedAt
+    ? (bakeMs - starterIsDepletedAt.getTime()) / 3600000 : null;
+
+  // Refeed time for depleted state — fresh bell origin
+  const refeedHBF: number | null = isLevain && starterRefeedTime
+    ? (bakeMs - starterRefeedTime.getTime()) / 3600000 : null;
+
+  // Effective peak for the active bell
+  const effectiveStarterPeakHBF: number | null =
+    knownPeakHBF !== null ? knownPeakHBF
+    : activePeakHBF !== null ? activePeakHBF
+    : null;
 
   // ── Label collision detection ────────────────────────────
   const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 80;
@@ -725,31 +747,91 @@ export default function FermentChart({
         {/* ── Pref bell (drawn first so dough overlaps) ── */}
         {hasPref && (
           <>
-            {/* Muted historical bell (Feed 1 when Peak 2 active) */}
+            {/* ── Muted historical bell (Feed 1 when Peak 2 active) ── */}
             {isLevain && histPeakHBF !== null && histFeedHBF !== null && (
               <path
                 d={makeBellPath(histPeakHBF, prefSig, W, WH, histFeedHBF)}
-                fill="rgba(107,122,90,0.12)" stroke="rgba(107,122,90,0.35)" strokeWidth={1}
+                fill="rgba(107,122,90,0.12)"
+                stroke="rgba(107,122,90,0.35)"
+                strokeWidth={1}
                 clipPath="url(#chart-area-clip)"
               />
             )}
-            {/* Active pref bell */}
-            <path
-              d={(() => {
-                const peakHBF  = isLevain && activePeakHBF !== null ? activePeakHBF  : prefPeakHBF;
-                const feedHBF  = isLevain && activeFeedHBF !== null ? activeFeedHBF  : prefStartAbsHBF;
-                const useRetard = isLevain && !!starterFridgeOutTime;
-                if (useRetard) {
-                  return makePlateauBellPath(peakHBF, prefSig, starterWarmupH / 2, W, WH, feedHBF);
-                }
-                if (prefNeedsFridge && !isLevain) {
-                  return makePlateauBellPath(peakHBF, prefSig, plateauHalfW, W, WH, feedHBF);
-                }
-                return makeBellPath(peakHBF, prefSig, W, WH, feedHBF);
-              })()}
-              fill={`${prefColor}2E`} stroke={`${prefColor}A5`} strokeWidth={1.5}
-              clipPath="url(#chart-area-clip)"
-            />
+
+            {/* ── Depleted: decay curve + flat line + fresh bell ── */}
+            {isLevain && depletedAtHBF !== null && activeFeedHBF !== null && (
+              <>
+                {/* Decay curve: full rise then decline showing spent cycle */}
+                {activePeakHBF !== null && (
+                  <path
+                    d={makeBellPath(activePeakHBF, prefSig, W, WH, activeFeedHBF)}
+                    fill="rgba(74,127,165,0.08)"
+                    stroke="rgba(74,127,165,0.25)"
+                    strokeWidth={1}
+                    strokeDasharray="4 3"
+                    clipPath="url(#chart-area-clip)"
+                  />
+                )}
+                {/* Flat baseline from trough onward — starter dormant */}
+                <line
+                  x1={hToX(depletedAtHBF, W, WH)}
+                  y1={BL}
+                  x2={Math.max(
+                    hToX(refeedHBF ?? depletedAtHBF, W, WH),
+                    hToX(depletedAtHBF, W, WH)
+                  )}
+                  y2={BL}
+                  stroke="rgba(74,127,165,0.3)"
+                  strokeWidth={1.5}
+                  strokeDasharray="3 3"
+                />
+                {/* Fresh bell starting at refeed time */}
+                {refeedHBF !== null && (
+                  <path
+                    d={makeBellPath(
+                      refeedHBF - starterPeakH,
+                      prefSig, W, WH, refeedHBF
+                    )}
+                    fill={`${prefColor}2E`}
+                    stroke={`${prefColor}A5`}
+                    strokeWidth={1.5}
+                    clipPath="url(#chart-area-clip)"
+                  />
+                )}
+              </>
+            )}
+
+            {/* ── Normal active bell (RT, fridge retard, or Mode B) ── */}
+            {(!isLevain || depletedAtHBF === null) && (
+              <path
+                d={(() => {
+                  // Mode B: known peak — bell centred on knownPeakHBF
+                  if (isLevain && knownPeakHBF !== null) {
+                    const syntheticFeedHBF = knownPeakHBF + starterPeakH;
+                    return makeBellPath(knownPeakHBF, prefSig, W, WH, syntheticFeedHBF);
+                  }
+                  // Mode A normal cases
+                  const peakHBF = isLevain && effectiveStarterPeakHBF !== null
+                    ? effectiveStarterPeakHBF : prefPeakHBF;
+                  const feedHBF = isLevain && activeFeedHBF !== null
+                    ? activeFeedHBF : prefStartAbsHBF;
+                  const useRetard = isLevain && !!starterFridgeOutTime;
+                  if (useRetard) {
+                    return makePlateauBellPath(peakHBF, prefSig, starterWarmupH / 2, W, WH, feedHBF);
+                  }
+                  if (prefNeedsFridge && !isLevain) {
+                    return makePlateauBellPath(peakHBF, prefSig, plateauHalfW, W, WH, feedHBF);
+                  }
+                  return makeBellPath(peakHBF, prefSig, W, WH, feedHBF);
+                })()}
+                fill={`${prefColor}2E`}
+                stroke={`${prefColor}A5`}
+                strokeWidth={1.5}
+                clipPath="url(#chart-area-clip)"
+              />
+            )}
+
+            {/* Vertical line at feed/origin point */}
             <line
               x1={activePrefX} y1={BL} x2={activePrefX} y2={BL}
               stroke={`${prefColor}A5`} strokeWidth={1.5}
@@ -838,8 +920,31 @@ export default function FermentChart({
           </g>
         )}
 
-        {/* ── Pref diamond ── */}
-        {hasPref && renderDiamond(
+        {/* ── Refeed diamond (depleted state) ── */}
+        {isLevain && refeedHBF !== null && depletedAtHBF !== null && (
+          <g>
+            <polygon
+              points={`${hToX(refeedHBF, W, WH)},${AXIS_Y - S} ${hToX(refeedHBF, W, WH) + S},${AXIS_Y} ${hToX(refeedHBF, W, WH)},${AXIS_Y + S} ${hToX(refeedHBF, W, WH) - S},${AXIS_Y}`}
+              fill={prefColor}
+              stroke="white"
+              strokeWidth={1.5}
+            />
+            <text
+              x={hToX(refeedHBF, W, WH)}
+              y={AXIS_Y + 36}
+              fontSize={11}
+              fill={prefColor}
+              fontFamily="DM Mono, monospace"
+              textAnchor="middle"
+              fontWeight="600"
+            >
+              Feed
+            </text>
+          </g>
+        )}
+
+        {/* ── Pref diamond (hidden in Mode B — no concrete feed time) ── */}
+        {hasPref && !knownPeakHBF && renderDiamond(
           activePrefX,
           (prefStartAbsHBF > nowHBF || inBlocker(prefStartAbsHBF)) ? '#BBBBBB' : prefColor,
           (prefStartAbsHBF > nowHBF || inBlocker(prefStartAbsHBF)) ? '#999999' : prefStroke,
@@ -847,7 +952,7 @@ export default function FermentChart({
           'pref',
           prefStartAbsHBF > nowHBF,
         )}
-        {hasPref && (
+        {hasPref && !knownPeakHBF && (
           <>
             <text
               x={activePrefX}

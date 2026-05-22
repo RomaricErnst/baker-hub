@@ -1134,6 +1134,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [mixOverride, setMixOverride]           = useState(false);
   const [hasNotFedYet, setHasNotFedYet]         = useState<boolean | null>(hasNotFedYetProp ?? null);
   const [starterStateNote, setStarterStateNote] = useState<string | null>(null);
+  const [starterIsDepletedAt, setStarterIsDepletedAt] = useState<Date | null>(null);
+  const [starterRefeedTime, setStarterRefeedTime]     = useState<Date | null>(null);
   // StarterState kept for BakeGuide compat — derived from new vars
   const starterState: StarterState = starterLocation === 'fridge'
     ? (fridgeOutTime ? 'fridge_fed' : 'fridge_unfed')
@@ -1665,19 +1667,28 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         return null;
       }
 
-      // RT starter
+      // RT starter — still rising
       if (hoursSinceFeed < adjPeakH) {
+        setStarterIsDepletedAt(null);
+        setStarterRefeedTime(null);
         return new Date(lastFedTime.getTime() + adjPeakH * 3600000);
       }
 
+      // RT starter — declining (past peak, before trough)
       if (hoursSinceFeed < troughH) {
         setStarterStateNote('Declining — still usable, but next peak will be stronger.');
+        setStarterIsDepletedAt(null);
+        setStarterRefeedTime(null);
         return new Date(new Date().getTime() + adjPeakH * 3600000);
       }
 
-      // Depleted
+      // RT starter — depleted (past trough)
+      const troughTime = new Date(lastFedTime.getTime() + troughH * 3600000);
+      setStarterIsDepletedAt(troughTime);
+      const refeedNow = new Date();
+      setStarterRefeedTime(refeedNow);
       setStarterStateNote('Depleted — needs feeding. Schedule below assumes you feed it now.');
-      return new Date(now.getTime() + adjPeakH * 3600000);
+      return new Date(refeedNow.getTime() + adjPeakH * 3600000);
     }
 
     return null;
@@ -2684,6 +2695,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 : null}
               starterFeed2Time={isSourdough && usingPeak2 ? feedTime : null}
               starterFridgeOutTime={isSourdough ? fridgeOutTime : null}
+              starterKnownPeakTime={
+                isSourdough && planningMode === 'know_peak' ? knownPeakTime : null
+              }
+              starterIsDepletedAt={isSourdough ? starterIsDepletedAt : null}
+              starterRefeedTime={isSourdough ? starterRefeedTime : null}
               starterMature={starterMature}
               startTimeInPast={startTimeInPast}
               onMixChange={(h) => {
