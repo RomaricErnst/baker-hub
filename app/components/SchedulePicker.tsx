@@ -1824,53 +1824,294 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       {/* Sourdough starter section */}
       {isSourdough && (
-        <div style={{ marginBottom: '1.25rem' }}>
-          <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--char)', marginBottom: '.4rem' }}>
-            🫙 When can you feed your starter?
-          </div>
-          <div style={{ fontSize: '.76rem', color: 'var(--smoke)', marginBottom: '.75rem', lineHeight: 1.5 }}>
-            Set your feed time on the chart — mix updates automatically.
+        <div style={{
+          background: 'var(--warm)',
+          border: '1.5px solid var(--border)',
+          borderRadius: '14px',
+          padding: '1.25rem',
+          marginTop: '1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+        }}>
+
+          {/* ── Starter state picker ── */}
+          <div>
+            <div style={{
+              fontSize: '.72rem',
+              fontFamily: 'var(--font-dm-mono)',
+              color: 'var(--smoke)',
+              letterSpacing: '.06em',
+              textTransform: 'uppercase',
+              marginBottom: '.6rem',
+            }}>
+              Where is your starter right now?
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+              {([
+                { value: 'rt_fed',       label: 'Room temp — fed recently' },
+                { value: 'fridge_unfed', label: 'Fridge — taking out to feed now' },
+                { value: 'fridge_fed',   label: 'Fridge — already fed (deliberate retard)' },
+              ] as { value: StarterState; label: string }[]).map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setStarterState(opt.value)}
+                  style={{
+                    textAlign: 'left',
+                    padding: '.5rem .75rem',
+                    borderRadius: '8px',
+                    border: `1.5px solid ${starterState === opt.value
+                      ? 'var(--terra)' : 'var(--border)'}`,
+                    background: starterState === opt.value ? '#FEF4EF' : 'transparent',
+                    color: starterState === opt.value ? 'var(--terra)' : 'var(--smoke)',
+                    fontFamily: 'var(--font-dm-sans)',
+                    fontSize: '.85rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Maturity toggle */}
-          <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.9rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '.72rem', color: 'var(--smoke)', alignSelf: 'center', fontFamily: 'var(--font-dm-mono)', marginRight: '.2rem' }}>
-              My starter is:
-            </span>
-            {([
-              { value: true,  label: '🔥 Active / mature' },
-              { value: false, label: '🌱 Young (< 6 months)' },
-            ] as { value: boolean; label: string }[]).map(opt => (
-              <button key={String(opt.value)}
-                onClick={() => {
-                  setStarterMature(opt.value);
-                  if (feedTime) {
-                    const peak = starterPeakHours(kitchenTemp, opt.value);
-                    const ft = pushToReasonableHour(new Date(pendingStart.getTime() - peak.mid * 3600000));
-                    setFeedTime(ft);
-                    onFeedTimeChange?.(ft);
-                  }
+          {/* ── Feed time input ── */}
+          <div>
+            <div style={{
+              fontSize: '.72rem',
+              fontFamily: 'var(--font-dm-mono)',
+              color: 'var(--smoke)',
+              letterSpacing: '.06em',
+              textTransform: 'uppercase',
+              marginBottom: '.5rem',
+            }}>
+              {starterState === 'fridge_unfed'
+                ? 'When will you feed it?'
+                : 'Fed at'}
+            </div>
+            <input
+              type="datetime-local"
+              defaultValue={feedTime
+                ? `${feedTime.getFullYear()}-${String(feedTime.getMonth()+1).padStart(2,'0')}-${String(feedTime.getDate()).padStart(2,'0')}T${String(feedTime.getHours()).padStart(2,'0')}:${String(feedTime.getMinutes()).padStart(2,'0')}`
+                : ''}
+              onChange={e => {
+                const [dp, tp] = e.target.value.split('T');
+                if (!dp || !tp) return;
+                const [y,mo,d] = dp.split('-').map(Number);
+                const [h,mi] = tp.split(':').map(Number);
+                const ft = new Date(y, mo-1, d, h, mi, 0, 0);
+                setFeedTime(ft);
+                onFeedTimeChange?.(ft);
+              }}
+              style={{
+                fontFamily: 'var(--font-dm-mono)',
+                fontSize: '.85rem',
+                padding: '.4rem .6rem',
+                borderRadius: '8px',
+                border: '1.5px solid var(--border)',
+                background: 'var(--cream)',
+                color: 'var(--char)',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          {/* ── Fridge-out time (fridge_fed state only) ── */}
+          {starterState === 'fridge_fed' && (
+            <div>
+              <div style={{
+                fontSize: '.72rem',
+                fontFamily: 'var(--font-dm-mono)',
+                color: 'var(--smoke)',
+                letterSpacing: '.06em',
+                textTransform: 'uppercase',
+                marginBottom: '.5rem',
+              }}>
+                Remove from fridge at
+              </div>
+              <input
+                type="datetime-local"
+                defaultValue={fridgeOutTime
+                  ? `${fridgeOutTime.getFullYear()}-${String(fridgeOutTime.getMonth()+1).padStart(2,'0')}-${String(fridgeOutTime.getDate()).padStart(2,'0')}T${String(fridgeOutTime.getHours()).padStart(2,'0')}:${String(fridgeOutTime.getMinutes()).padStart(2,'0')}`
+                  : ''}
+                onChange={e => {
+                  const [dp, tp] = e.target.value.split('T');
+                  if (!dp || !tp) return;
+                  const [y,mo,d] = dp.split('-').map(Number);
+                  const [h,mi] = tp.split(':').map(Number);
+                  setFridgeOutTime(new Date(y, mo-1, d, h, mi, 0, 0));
                 }}
                 style={{
-                  padding: '.3rem .75rem', borderRadius: '20px', cursor: 'pointer',
-                  fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
-                  border: `1.5px solid ${starterMature === opt.value ? 'var(--terra)' : 'var(--border)'}`,
+                  fontFamily: 'var(--font-dm-mono)',
+                  fontSize: '.85rem',
+                  padding: '.4rem .6rem',
+                  borderRadius: '8px',
+                  border: '1.5px solid var(--border)',
+                  background: 'var(--cream)',
+                  color: 'var(--char)',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                }}
+              />
+              <div style={{
+                fontSize: '.72rem',
+                color: 'var(--smoke)',
+                fontFamily: 'var(--font-dm-mono)',
+                marginTop: '.3rem',
+              }}>
+                {fridgeOutTime && feedTime && (() => {
+                  const warmupH = getStarterFridgeWarmupH(kitchenTemp);
+                  const peakTime = new Date(fridgeOutTime.getTime() + warmupH * 3600000);
+                  return `Expected peak: ~${peakTime.toLocaleTimeString(
+                    locale === 'fr' ? 'fr-FR' : 'en-US',
+                    { hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr' }
+                  )}`;
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* ── Starter maturity + rye ── */}
+          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+            {([
+              { value: true,  label: 'Active & healthy' },
+              { value: false, label: 'Young (<6 months)' },
+            ] as { value: boolean; label: string }[]).map(opt => (
+              <button
+                key={String(opt.value)}
+                onClick={() => setStarterMature(opt.value)}
+                style={{
+                  padding: '.35rem .7rem',
+                  borderRadius: '20px',
+                  border: `1.5px solid ${starterMature === opt.value
+                    ? 'var(--terra)' : 'var(--border)'}`,
                   background: starterMature === opt.value ? '#FEF4EF' : 'transparent',
                   color: starterMature === opt.value ? 'var(--terra)' : 'var(--smoke)',
+                  fontFamily: 'var(--font-dm-sans)',
+                  fontSize: '.8rem',
+                  cursor: 'pointer',
                 }}
-              >{opt.label}</button>
+              >
+                {opt.label}
+              </button>
             ))}
+            <button
+              onClick={() => setStarterHasRye(!starterHasRye)}
+              style={{
+                padding: '.35rem .7rem',
+                borderRadius: '20px',
+                border: `1.5px solid ${starterHasRye ? 'var(--sage)' : 'var(--border)'}`,
+                background: starterHasRye ? 'rgba(107,122,90,0.08)' : 'transparent',
+                color: starterHasRye ? 'var(--sage)' : 'var(--smoke)',
+                fontFamily: 'var(--font-dm-sans)',
+                fontSize: '.8rem',
+                cursor: 'pointer',
+              }}
+            >
+              Rye starter
+            </button>
           </div>
 
-          {/* Peak window note */}
-          {(() => {
-            const peak = starterPeakHours(kitchenTemp, starterMature);
+          {/* ── Pill output ── */}
+          {feedTime && eatTimeSet && (() => {
+            const peakH = getPrefPeakH_RT('sourdough', kitchenTemp);
+            const matFactor = starterMature ? 1.0 : 1.2;
+            const ryeFactor = starterHasRye ? 0.8 : 1.0;
+            const adjPeakH = peakH * matFactor * ryeFactor;
+            const warmupH = getStarterFridgeWarmupH(kitchenTemp);
+
+            const activeFeedTime = usingPeak2 && feed2Time ? feed2Time : feedTime;
+            const peakTime = starterState === 'fridge_fed' && fridgeOutTime
+              ? new Date(fridgeOutTime.getTime() + warmupH * 3600000)
+              : new Date(activeFeedTime.getTime() + adjPeakH * 3600000);
+
+            const fmt = (d: Date) => d.toLocaleTimeString(
+              locale === 'fr' ? 'fr-FR' : 'en-US',
+              { hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr' }
+            );
+            const fmtFull = (d: Date) => d.toLocaleDateString(
+              locale === 'fr' ? 'fr-FR' : 'en-US',
+              { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr' }
+            );
+
+            const pillColor = starterPillState === 'green'
+              ? { bg: '#E8F5E9', border: '#4CAF50', text: '#2E7D32' }
+              : starterPillState === 'yellow'
+              ? { bg: '#FFF8E1', border: '#FFC107', text: '#F57F17' }
+              : { bg: '#FFEBEE', border: '#EF5350', text: '#C62828' };
+
             return (
-              <div style={{ fontSize: '.74rem', color: 'var(--smoke)', fontStyle: 'italic', background: 'var(--cream)', borderRadius: '8px', padding: '.4rem .75rem', display: 'inline-block' }}>
-                At {kitchenTemp}°C your starter peaks in {peak.min}–{peak.max}h{!starterMature ? ' — young starters take longer' : ''}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+                <div style={{
+                  fontSize: '.8rem',
+                  fontFamily: 'var(--font-dm-mono)',
+                  color: 'var(--smoke)',
+                }}>
+                  {usingPeak2
+                    ? `Feed 1: ${fmt(feedTime)} · Feed 2: ${fmt(feed2Time!)} · Peak: ${fmt(peakTime)}`
+                    : `Expected peak: ${fmt(peakTime)}`}
+                </div>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '.4rem',
+                  padding: '.3rem .75rem',
+                  borderRadius: '20px',
+                  background: pillColor.bg,
+                  border: `1.5px solid ${pillColor.border}`,
+                  color: pillColor.text,
+                  fontSize: '.75rem',
+                  fontFamily: 'var(--font-dm-mono)',
+                  alignSelf: 'flex-start',
+                }}>
+                  {starterPillState === 'green' && (
+                    usingPeak2
+                      ? `Ready at mix — second peak (more complex flavour)`
+                      : `Ready at mix`
+                  )}
+                  {starterPillState === 'yellow' && (
+                    fridgeOutTime && !usingPeak2
+                      ? `Put in fridge now · Remove at ${fmt(fridgeOutTime)}`
+                      : `Still developing at mix — will work`
+                  )}
+                  {starterPillState === 'red' && refeedSuggestion && (
+                    `Feed at ${fmtFull(refeedSuggestion)} for this bake`
+                  )}
+                </div>
               </div>
             );
           })()}
+
+          {/* ── Snap mix to starter peak link ── */}
+          {feedTime && startComputed && starterPillState !== 'red' && (
+            <button
+              onClick={() => {
+                const peakH = getPrefPeakH_RT('sourdough', kitchenTemp);
+                const matFactor = starterMature ? 1.0 : 1.2;
+                const ryeFactor = starterHasRye ? 0.8 : 1.0;
+                const activeFeed = usingPeak2 && feed2Time ? feed2Time : feedTime;
+                const warmupH = getStarterFridgeWarmupH(kitchenTemp);
+                const peakTime = starterState === 'fridge_fed' && fridgeOutTime
+                  ? new Date(fridgeOutTime.getTime() + warmupH * 3600000)
+                  : new Date(activeFeed.getTime() + peakH * matFactor * ryeFactor * 3600000);
+                const newMix = pushToReasonableHour(peakTime);
+                setPendingStart(newMix);
+                onChange(newMix, pendingEatTime, blocks);
+              }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--smoke)', fontSize: '.72rem',
+                fontFamily: 'var(--font-dm-mono)',
+                textDecoration: 'underline',
+                textUnderlineOffset: '2px',
+                padding: 0, alignSelf: 'flex-start',
+              }}
+            >
+              Snap mix to starter peak →
+            </button>
+          )}
+
         </div>
       )}
 
@@ -2231,28 +2472,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           </div>
         )}
 
-        {/* Sourdough reset-mix link */}
-        {isSourdough && feedTime && startComputed && (
-          <div style={{ marginTop: '.4rem', textAlign: 'right' }}>
-            <button
-              onClick={() => {
-                setMixOverride(false);
-                const peak = starterPeakHours(kitchenTemp, starterMature);
-                const newMix = pushToReasonableHour(new Date(feedTime.getTime() + peak.mid * 3600000));
-                setPendingStart(newMix);
-                onChange(newMix, pendingEatTime, blocks);
-              }}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--smoke)', fontSize: '.72rem',
-                fontFamily: 'var(--font-dm-mono)',
-                textDecoration: 'underline', textUnderlineOffset: '2px', padding: 0,
-              }}
-            >
-              Reset mix to starter peak →
-            </button>
-          </div>
-        )}
       </div>
 
       {eatTimeSet && (
