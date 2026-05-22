@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
-import FermentChart, { getPrefOptH, getPrefPeakH_RT, getPrefRTWarmupH } from './FermentChart';
+import FermentChart, { getPrefOptH, getPrefPeakH_RT, getPrefRTWarmupH, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 
 interface SchedulePickerProps {
   startTime: Date;
@@ -28,6 +28,7 @@ interface SchedulePickerProps {
 
 type PickerPhase = 'bake_time' | 'start_confirm';
 type Scenario = 'plenty' | 'tight' | 'too_short';
+type StarterState = 'rt_fed' | 'fridge_unfed' | 'fridge_fed';
 
 // ── Card date+time formatter ─────────────────
 // "Fri 28 Mar · 9pm" / "ven. 28 mars · 21h"
@@ -1062,9 +1063,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [dismissedConflict, setDismissedConflict] = useState(false);
 
   // Sourdough state
-  const [feedTime, setFeedTime] = useState<Date | null>(null);
-  const [mixOverride, setMixOverride] = useState(false);
-  const [starterMature, setStarterMature] = useState(true);
+  const [starterState, setStarterState]         = useState<StarterState>('rt_fed');
+  const [starterMature, setStarterMature]       = useState(true);
+  const [starterHasRye, setStarterHasRye]       = useState(false);
+  const [feedTime, setFeedTime]                 = useState<Date | null>(null);
+  const [fridgeOutTime, setFridgeOutTime]       = useState<Date | null>(null);
+  const [usingPeak2, setUsingPeak2]             = useState(false);
+  const [feed2Time, setFeed2Time]               = useState<Date | null>(null);
+  const [starterPillState, setStarterPillState] = useState<'green' | 'yellow' | 'red'>('green');
+  const [refeedSuggestion, setRefeedSuggestion] = useState<Date | null>(null);
+  const [mixOverride, setMixOverride]           = useState(false);
 
   // Preferment offset state (non-sourdough)
   const [prefOffsetH, setPrefOffsetH] = useState<number>(() =>
@@ -1367,6 +1375,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         setBlockerNote(null);
       }
     }
+    if (isSourdough && feedTime) {
+      computeStarterSchedule(feedTime, fridgeOutTime, starterState, et);
+    }
   }
 
   useEffect(() => {
@@ -1427,6 +1438,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     applyAndUpdate(newBlocks);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
+
+  // Sourdough constraint re-evaluation when key inputs change
+  useEffect(() => {
+    if (!isSourdough || !feedTime || !eatTimeSet) return;
+    computeStarterSchedule(feedTime, fridgeOutTime, starterState, pendingEatTime);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feedTime, fridgeOutTime, starterState, starterMature, starterHasRye, pendingStart, pendingEatTime]);
 
   const suggestion = useMemo(
     () => computeSuggestion(pendingEatTime, preheatMin, styleKey, kitchenTemp),
@@ -1533,13 +1551,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setDismissedConflict(false);
     setShowFallbackPopup(false);
     setPhase('start_confirm');
-    if (isSourdough) {
-      const peak = starterPeakHours(kitchenTemp, starterMature);
-      const ft = pushToReasonableHour(
-        new Date(pendingStart.getTime() - peak.mid * 3600000)
-      );
-      setFeedTime(ft);
-      onFeedTimeChange?.(ft);
+    if (isSourdough && feedTime) {
+      computeStarterSchedule(feedTime, fridgeOutTime, starterState, et);
     }
     setTimeout(() => {
       computeAndApplyRecommendation(blocks, et);
@@ -1547,6 +1560,108 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       onReady?.();
       suppressStartReset.current = false;
     }, 0);
+  }
+
+  // ── Sourdough constraint solver ──────────────
+  function computeStarterSchedule(
+    currentFeedTime: Date,
+    currentFridgeOutTime: Date | null,
+    currentState: StarterState,
+    et: Date,
+  ) {
+    if (!isSourdough || !currentFeedTime) return;
+
+    const bakeMs = et.getTime();
+    const feedMs = currentFeedTime.getTime();
+    const peakH = getPrefPeakH_RT('sourdough', kitchenTemp);
+    const ryeBoost = starterHasRye ? 0.8 : 1.0;
+    const maturityFactor = starterMature ? 1.0 : 1.2;
+    const adjustedPeakH = peakH * ryeBoost * maturityFactor;
+    const troughH = getStarterTroughH(kitchenTemp, starterMature) * ryeBoost;
+    const warmupH = getStarterFridgeWarmupH(kitchenTemp);
+
+    const RT_PEAK_TOLERANCE  = 1.0;
+    const FRIDGE_PEAK_TOLERANCE = 2.0;
+
+    let peak1Time: Date;
+    if (currentState === 'fridge_fed' && currentFridgeOutTime) {
+      peak1Time = new Date(currentFridgeOutTime.getTime() + warmupH * 3600000);
+    } else if (currentState === 'fridge_unfed') {
+      peak1Time = new Date(feedMs + (adjustedPeakH + 0.5) * 3600000);
+    } else {
+      peak1Time = new Date(feedMs + adjustedPeakH * 3600000);
+    }
+
+    const peak1HBF = (bakeMs - peak1Time.getTime()) / 3600000;
+    const mixHBF   = (bakeMs - pendingStart.getTime()) / 3600000;
+    const peak1Tolerance = currentState === 'fridge_fed'
+      ? FRIDGE_PEAK_TOLERANCE : RT_PEAK_TOLERANCE;
+
+    if (Math.abs(mixHBF - peak1HBF) <= peak1Tolerance) {
+      setUsingPeak2(false);
+      setFeed2Time(null);
+      setFridgeOutTime(currentFridgeOutTime);
+      const lateGap  = mixHBF - peak1HBF;
+      const earlyGap = peak1HBF - mixHBF;
+      setStarterPillState(lateGap > 0.5 || earlyGap > 0.5 ? 'yellow' : 'green');
+      setRefeedSuggestion(null);
+      onFeedTimeChange?.(currentFeedTime);
+      return;
+    }
+
+    // Try Peak 1 + fridge retard (extend when mix is later than peak)
+    if (currentState === 'rt_fed' && mixHBF < peak1HBF) {
+      const neededFridgeOutTime = new Date(pendingStart.getTime() - warmupH * 3600000);
+      const minRTAfterFeed = new Date(feedMs + 1 * 3600000);
+      if (neededFridgeOutTime >= minRTAfterFeed) {
+        setUsingPeak2(false);
+        setFeed2Time(null);
+        setFridgeOutTime(neededFridgeOutTime);
+        setStarterPillState('yellow');
+        setRefeedSuggestion(null);
+        onFeedTimeChange?.(currentFeedTime);
+        return;
+      }
+    }
+
+    // Try Peak 2 (second feeding cycle at trough)
+    const troughTime = new Date(feedMs + troughH * 3600000);
+    const peak2Time  = new Date(troughTime.getTime() + adjustedPeakH * 3600000);
+    const peak2HBF   = (bakeMs - peak2Time.getTime()) / 3600000;
+
+    if (Math.abs(mixHBF - peak2HBF) <= RT_PEAK_TOLERANCE) {
+      setUsingPeak2(true);
+      setFeed2Time(troughTime);
+      setFridgeOutTime(null);
+      setStarterPillState('green');
+      setRefeedSuggestion(null);
+      onFeedTimeChange?.(troughTime);
+      return;
+    }
+
+    // Try Peak 2 + fridge retard
+    if (mixHBF < peak2HBF) {
+      const neededFridgeOutTime2 = new Date(pendingStart.getTime() - warmupH * 3600000);
+      const minRTAfterFeed2 = new Date(troughTime.getTime() + 1 * 3600000);
+      if (neededFridgeOutTime2 >= minRTAfterFeed2) {
+        setUsingPeak2(true);
+        setFeed2Time(troughTime);
+        setFridgeOutTime(neededFridgeOutTime2);
+        setStarterPillState('yellow');
+        setRefeedSuggestion(null);
+        onFeedTimeChange?.(troughTime);
+        return;
+      }
+    }
+
+    // Red pill: suggest new feed time aligned with Peak 1 at mix
+    const suggestedFeedTime = new Date(pendingStart.getTime() - adjustedPeakH * 3600000);
+    setUsingPeak2(false);
+    setFeed2Time(null);
+    setFridgeOutTime(null);
+    setStarterPillState('red');
+    setRefeedSuggestion(suggestedFeedTime);
+    onFeedTimeChange?.(currentFeedTime);
   }
 
   // ── Handlers ─────────────────────────────────
@@ -2056,6 +2171,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               sweetFromH={renderSweetFrom}
               sweetToH={renderSweetTo}
               nowHBF={(pendingEatTime.getTime() - Date.now()) / 3600000}
+              starterFeedTime={isSourdough ? (usingPeak2 ? feed2Time : feedTime) : null}
+              starterFeed2Time={isSourdough && usingPeak2 ? feedTime : null}
+              starterFridgeOutTime={isSourdough ? fridgeOutTime : null}
+              starterMature={starterMature}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
                 setHasDragged(true);

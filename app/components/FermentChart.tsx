@@ -31,6 +31,11 @@ export interface FermentChartProps {
   recommendedMixHBF?: number | null;
   showZoneLabels?: boolean;
   hasDragged?: boolean;
+  starterFeedTime?: Date | null;
+  starterFeed2Time?: Date | null;
+  starterFridgeOutTime?: Date | null;
+  starterMature?: boolean;
+  starterStoredInFridge?: boolean;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -83,6 +88,21 @@ export function getPrefRTWarmupH(temp: number): number {
   return 2.0;
 }
 
+// How long after Feed 1 until starter is depleted (trough = ready for Feed 2)
+export function getStarterTroughH(temp: number, mature: boolean): number {
+  const peakH = getPrefPeakH_RT('sourdough', temp);
+  const maturityFactor = mature ? 1.0 : 1.2;
+  return peakH * 1.8 * maturityFactor;
+}
+
+// How long starter needs at RT after coming out of fridge to reach peak
+export function getStarterFridgeWarmupH(temp: number): number {
+  if (temp >= 30) return 0.5;
+  if (temp >= 28) return 0.75;
+  if (temp >= 26) return 1.0;
+  return 1.5;
+}
+
 function getPrefSig(type: string, temp: number, inFridge = false, prefOffsetH = 10): number {
   if (type === 'biga') return Math.max(8, prefOffsetH * 0.4);
   if (type === 'poolish') {
@@ -101,10 +121,8 @@ export function getPrefOptH(type: string, temp: number, inFridge = false, styleK
     // RT poolish optimal = RT peak time for this style+temp
     return getPrefPeakH_RT(type, temp, styleKey);
   }
-  // levain / sourdough
-  if (temp >= 30) return 5;
-  if (temp >= 26) return 7;
-  return 9;
+  // levain / sourdough — align with getPrefPeakH_RT
+  return getPrefPeakH_RT(type, temp, styleKey);
 }
 
 // ── Math helpers ─────────────────────────────────────────────
@@ -204,6 +222,8 @@ export default function FermentChart({
   windowH, prefInFridge, hasColdRetard, sweetCenterH, sweetFromH, sweetToH,
   nowHBF = 999, phases, scheduleNote,
   recommendedMixHBF, showZoneLabels, hasDragged,
+  starterFeedTime, starterFeed2Time, starterFridgeOutTime,
+  starterMature = true,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -319,11 +339,33 @@ export default function FermentChart({
   const prefX = hasPref ? hToX(prefStartAbsHBF, W, WH) : 0;
   const bakeX = hToX(0, W, WH);
 
-  // ── Label collision detection ────────────────────────────
-  const labelsClose = hasPref && Math.abs(mixX - prefX) < 80;
-
   // ── Blocker helpers ──────────────────────────────────────
   const bakeMs = eatTime.getTime();
+
+  // ── Sourdough multi-cycle starter derived values ──────────
+  const starterPeakH   = isLevain ? getPrefPeakH_RT('sourdough', kitchenTemp) : 0;
+  const starterWarmupH = isLevain ? getStarterFridgeWarmupH(kitchenTemp) : 0;
+
+  const activeFeedHBF: number | null = isLevain && starterFeedTime
+    ? (bakeMs - starterFeedTime.getTime()) / 3600000 : null;
+
+  const activePeakHBF: number | null = activeFeedHBF !== null
+    ? (starterFridgeOutTime
+        ? (bakeMs - starterFridgeOutTime.getTime()) / 3600000 - starterWarmupH
+        : activeFeedHBF - starterPeakH)
+    : null;
+
+  const histFeedHBF: number | null = isLevain && starterFeed2Time
+    ? (bakeMs - starterFeed2Time.getTime()) / 3600000 : null;
+
+  const histPeakHBF: number | null = histFeedHBF !== null
+    ? histFeedHBF - starterPeakH : null;
+
+  const activePrefX = activeFeedHBF !== null ? hToX(activeFeedHBF, W, WH) : prefX;
+  const histPrefX   = histFeedHBF  !== null ? hToX(histFeedHBF,  W, WH) : null;
+
+  // ── Label collision detection ────────────────────────────
+  const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 80;
 
   function blockerHBF(b: AvailabilityBlock) {
     return {
@@ -638,8 +680,8 @@ export default function FermentChart({
         {showZoneLabels && (() => {
           const prefWindowLabel =
             prefermentType === 'biga'      ? t('zoneLabels.makeBigaWindow')    :
-            prefermentType === 'levain'    ? t('zoneLabels.feedStarterWindow') :
-            prefermentType === 'sourdough' ? t('zoneLabels.feedStarterWindow') :
+            prefermentType === 'levain'    ? (histFeedHBF !== null ? 'Starter peak 2' : 'Starter peak') :
+            prefermentType === 'sourdough' ? (histFeedHBF !== null ? 'Starter peak 2' : 'Starter peak') :
             t('zoneLabels.makePoolishWindow');
           return (
             <>
@@ -680,18 +722,33 @@ export default function FermentChart({
         {/* ── Pref bell (drawn first so dough overlaps) ── */}
         {hasPref && (
           <>
+            {/* Muted historical bell (Feed 1 when Peak 2 active) */}
+            {isLevain && histPeakHBF !== null && histFeedHBF !== null && (
+              <path
+                d={makeBellPath(histPeakHBF, prefSig, W, WH, histFeedHBF)}
+                fill="rgba(107,122,90,0.12)" stroke="rgba(107,122,90,0.35)" strokeWidth={1}
+                clipPath="url(#chart-area-clip)"
+              />
+            )}
+            {/* Active pref bell */}
             <path
-              d={prefNeedsFridge
-                ? makePlateauBellPath(prefPeakHBF, prefSig, plateauHalfW, W, WH, prefStartAbsHBF)
-                : makeBellPath(prefPeakHBF, prefSig, W, WH, prefStartAbsHBF)}
+              d={(() => {
+                const peakHBF  = isLevain && activePeakHBF !== null ? activePeakHBF  : prefPeakHBF;
+                const feedHBF  = isLevain && activeFeedHBF !== null ? activeFeedHBF  : prefStartAbsHBF;
+                const useRetard = isLevain && !!starterFridgeOutTime;
+                if (useRetard) {
+                  return makePlateauBellPath(peakHBF, prefSig, starterWarmupH / 2, W, WH, feedHBF);
+                }
+                if (prefNeedsFridge && !isLevain) {
+                  return makePlateauBellPath(peakHBF, prefSig, plateauHalfW, W, WH, feedHBF);
+                }
+                return makeBellPath(peakHBF, prefSig, W, WH, feedHBF);
+              })()}
               fill={`${prefColor}2E`} stroke={`${prefColor}A5`} strokeWidth={1.5}
               clipPath="url(#chart-area-clip)"
             />
             <line
-              x1={hToX(prefStartAbsHBF, W, WH)}
-              y1={BL}
-              x2={hToX(prefStartAbsHBF, W, WH)}
-              y2={BL}
+              x1={activePrefX} y1={BL} x2={activePrefX} y2={BL}
               stroke={`${prefColor}A5`} strokeWidth={1.5}
               clipPath="url(#pref-bell-clip)"
             />
@@ -764,9 +821,23 @@ export default function FermentChart({
         <text x={bakeX} y={AXIS_Y + 20} fontSize={14} fontWeight="600" fill={TERRA}
           fontFamily="DM Mono, monospace" textAnchor="middle">{t('bakeLabel')}</text>
 
+        {/* ── Historical feed diamond (muted, Feed 1 in Peak 2 scenario) ── */}
+        {hasPref && isLevain && histPrefX !== null && (
+          <g opacity={0.4} pointerEvents="none">
+            <polygon
+              points={`${histPrefX},${AXIS_Y - S} ${histPrefX + S},${AXIS_Y} ${histPrefX},${AXIS_Y + S} ${histPrefX - S},${AXIS_Y}`}
+              fill="#6B7A5A" stroke="white" strokeWidth={1.5}
+            />
+            <text x={histPrefX} y={AXIS_Y + 36} fontSize={11} fill="#6B7A5A"
+              fontFamily="DM Mono, monospace" textAnchor="middle" fontWeight="600">
+              Feed 1
+            </text>
+          </g>
+        )}
+
         {/* ── Pref diamond ── */}
         {hasPref && renderDiamond(
-          prefX,
+          activePrefX,
           (prefStartAbsHBF > nowHBF || inBlocker(prefStartAbsHBF)) ? '#BBBBBB' : prefColor,
           (prefStartAbsHBF > nowHBF || inBlocker(prefStartAbsHBF)) ? '#999999' : prefStroke,
           inBlocker(prefStartAbsHBF),
@@ -776,7 +847,7 @@ export default function FermentChart({
         {hasPref && (
           <>
             <text
-              x={prefX}
+              x={activePrefX}
               y={labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
               fontSize={12}
               fill={prefColor}
@@ -784,14 +855,14 @@ export default function FermentChart({
               textAnchor="middle"
               fontWeight="600"
             >
-              {prefermentType === 'biga'      ? t('cardLabels.makeBiga')    :
-               prefermentType === 'levain'    ? t('cardLabels.feedStarter') :
-               prefermentType === 'sourdough' ? t('cardLabels.feedStarter') :
-               t('cardLabels.makePoolish')}
+              {prefermentType === 'biga' ? t('cardLabels.makeBiga') :
+               (prefermentType === 'levain' || prefermentType === 'sourdough')
+                 ? (histFeedHBF !== null ? 'Feed 2' : 'Feed')
+                 : t('cardLabels.makePoolish')}
             </text>
             {/* Protocol indicator — ❄ Fridge or 🌡 RT */}
             <text
-              x={prefX}
+              x={activePrefX}
               y={labelsClose ? AXIS_Y + 64 : AXIS_Y + 50}
               fontSize={10}
               fill={prefNeedsFridge ? '#6A8FAF' : '#C4A030'}
