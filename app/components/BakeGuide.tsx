@@ -26,6 +26,7 @@ interface BakeGuideProps {
   starterMature?: boolean;
   starterHasRye?: boolean;
   usingPeak2?: boolean;
+  planningMode?: 'last_fed' | 'know_peak';
   units?: UnitSystem;
   locale?: string;
   onNavigateToPizzaParty?: () => void;
@@ -504,7 +505,7 @@ export default function BakeGuide({
   prefermentType, oil, hydration, ovenType, prefStartTime, feedTime,
   feed2Time = null, fridgeOutTime = null,
   starterState = 'rt_fed', starterMature = true, starterHasRye = false,
-  usingPeak2 = false,
+  usingPeak2 = false, planningMode = 'last_fed',
   units, locale,
   onNavigateToPizzaParty, recipe,
 }: BakeGuideProps) {
@@ -848,15 +849,22 @@ export default function BakeGuide({
             ]} />
           )}
           {isSourdough && (
-            <Steps items={[
-              { bold: bgFlour90Label, note: 'mix 2 min until no dry flour' },
-              { bold: 'Add your starter at peak',
-                note: usingPeak2
-                  ? 'second peak — the dough will have a slightly more complex flavour'
-                  : 'use at the dome, do not wait for collapse' },
-              { bold: bgSaltG && bgWater10 ? `Add salt (${bgSaltG}g) + remaining water (${bgWater10}g)` : 'Add salt + remaining 10% water', note: 'mix until fully absorbed' },
-              ...(oil > 0 ? [{ bold: 'Add oil last', note: 'preserves gluten structure' }] : []),
-            ]} />
+            <>
+              <Steps items={[
+                { bold: bgFlour90Label, note: 'mix 2 min until no dry flour' },
+                { bold: 'Add your starter at peak',
+                  note: usingPeak2
+                    ? 'second peak — the dough will have a slightly more complex flavour'
+                    : 'use at the dome, do not wait for collapse' },
+                { bold: bgSaltG && bgWater10 ? `Add salt (${bgSaltG}g) + remaining water (${bgWater10}g)` : 'Add salt + remaining 10% water', note: 'mix until fully absorbed' },
+                ...(oil > 0 ? [{ bold: 'Add oil last', note: 'preserves gluten structure' }] : []),
+              ]} />
+              {planningMode === 'know_peak' && (
+                <div style={{ marginTop: '.6rem', fontSize: '.75rem', color: D.smoke, fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+                  Mix time is set to your stated peak — adjust if your starter peaks earlier or later than expected.
+                </div>
+              )}
+            </>
           )}
         </Section>
 

@@ -42,6 +42,7 @@ export interface SessionData {
   planningMode?: string;
   lastFedTime?: number | null;
   knownPeakTime?: number | null;
+  hasNotFedYet?: boolean;
   starterMature?: boolean;
   starterHasRye?: boolean;
   fridgeOutTime?: number | null;

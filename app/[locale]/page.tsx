@@ -329,6 +329,7 @@ export default function Home() {
   const [planningMode, setPlanningMode]     = useState<'last_fed' | 'know_peak'>('last_fed');
   const [lastFedTime, setLastFedTime]       = useState<Date | null>(null);
   const [knownPeakTime, setKnownPeakTime]   = useState<Date | null>(null);
+  const [hasNotFedYet, setHasNotFedYet]     = useState<boolean | null>(null);
   const [starterMature, setStarterMature]   = useState(true);
   const [starterHasRye, setStarterHasRye]   = useState(false);
   const [usingPeak2, setUsingPeak2]         = useState(false);
@@ -538,6 +539,7 @@ export default function Home() {
     if (session.planningMode) setPlanningMode(session.planningMode as 'last_fed' | 'know_peak');
     if (session.lastFedTime) setLastFedTime(new Date(session.lastFedTime));
     if (session.knownPeakTime) setKnownPeakTime(new Date(session.knownPeakTime));
+    if (session.hasNotFedYet !== undefined) setHasNotFedYet(session.hasNotFedYet ?? null);
     if (session.starterMature !== undefined) setStarterMature(Boolean(session.starterMature));
     if (session.starterHasRye !== undefined) setStarterHasRye(Boolean(session.starterHasRye));
     if (session.fridgeOutTime) setFridgeOutTime(new Date(session.fridgeOutTime));
@@ -744,6 +746,7 @@ export default function Home() {
       starterState, starterLocation, planningMode,
       lastFedTime: lastFedTime?.getTime() ?? null,
       knownPeakTime: knownPeakTime?.getTime() ?? null,
+      hasNotFedYet: hasNotFedYet ?? undefined,
       starterMature, starterHasRye,
       fridgeOutTime: fridgeOutTime?.getTime() ?? null,
       usingPeak2,
@@ -1579,6 +1582,8 @@ export default function Home() {
                 onPlanningModeChange={setPlanningMode}
                 onLastFedTimeChange={setLastFedTime}
                 onKnownPeakTimeChange={setKnownPeakTime}
+                hasNotFedYet={hasNotFedYet}
+                onHasNotFedYetChange={setHasNotFedYet}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
@@ -1866,13 +1871,14 @@ export default function Home() {
                   hydration={recipe.hydration}
                   ovenType={ovenType ?? undefined}
                   prefStartTime={prefStartTime}
-                  feedTime={feedTime}
+                  feedTime={planningMode === 'last_fed' ? lastFedTime : null}
                   feed2Time={feed2Time}
                   fridgeOutTime={fridgeOutTime}
                   starterState={starterState}
                   starterMature={starterMature}
                   starterHasRye={starterHasRye}
                   usingPeak2={usingPeak2}
+                  planningMode={planningMode}
                   units={units}
                   locale={locale}
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
@@ -2331,6 +2337,8 @@ export default function Home() {
                 onPlanningModeChange={setPlanningMode}
                 onLastFedTimeChange={setLastFedTime}
                 onKnownPeakTimeChange={setKnownPeakTime}
+                hasNotFedYet={hasNotFedYet}
+                onHasNotFedYetChange={setHasNotFedYet}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
@@ -3065,13 +3073,14 @@ export default function Home() {
                   hydration={advancedRecipe.hydration}
                   ovenType={ovenType ?? undefined}
                   prefStartTime={prefStartTime}
-                  feedTime={feedTime}
+                  feedTime={planningMode === 'last_fed' ? lastFedTime : null}
                   feed2Time={feed2Time}
                   fridgeOutTime={fridgeOutTime}
                   starterState={starterState}
                   starterMature={starterMature}
                   starterHasRye={starterHasRye}
                   usingPeak2={usingPeak2}
+                  planningMode={planningMode}
                   units={units}
                   locale={locale}
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}

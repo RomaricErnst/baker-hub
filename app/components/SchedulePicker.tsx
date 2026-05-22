@@ -31,6 +31,8 @@ interface SchedulePickerProps {
   onPlanningModeChange?: (mode: 'last_fed' | 'know_peak') => void;
   onLastFedTimeChange?: (t: Date | null) => void;
   onKnownPeakTimeChange?: (t: Date | null) => void;
+  hasNotFedYet?: boolean | null;
+  onHasNotFedYetChange?: (v: boolean | null) => void;
   mode?: 'simple' | 'custom';   // default 'custom'
   onReady?: () => void;
   sessionRestored?: boolean;
@@ -1054,7 +1056,7 @@ function SimpleColourBar({
 
 // ── Component ─────────────────────────────────
 // v1779291581473456000
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1130,6 +1132,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [starterPillState, setStarterPillState] = useState<'green' | 'yellow' | 'red'>('green');
   const [refeedSuggestion, setRefeedSuggestion] = useState<Date | null>(null);
   const [mixOverride, setMixOverride]           = useState(false);
+  const [hasNotFedYet, setHasNotFedYet]         = useState<boolean | null>(hasNotFedYetProp ?? null);
+  const [starterStateNote, setStarterStateNote] = useState<string | null>(null);
   // StarterState kept for BakeGuide compat — derived from new vars
   const starterState: StarterState = starterLocation === 'fridge'
     ? (fridgeOutTime ? 'fridge_fed' : 'fridge_unfed')
@@ -1518,6 +1522,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastFedTime, knownPeakTime, fridgeOutTime, starterLocation, planningMode, starterMature, starterHasRye, pendingEatTime, styleKey]);
 
+  // Clear starter state note when inputs that drive it change
+  useEffect(() => {
+    setStarterStateNote(null);
+  }, [lastFedTime, knownPeakTime, starterLocation, planningMode, starterMature, starterHasRye]);
+
   const suggestion = useMemo(
     () => computeSuggestion(pendingEatTime, preheatMin, styleKey, kitchenTemp),
     [pendingEatTime, preheatMin, styleKey, kitchenTemp],
@@ -1662,11 +1671,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       }
 
       if (hoursSinceFeed < troughH) {
-        const refeedNow = new Date();
-        return new Date(refeedNow.getTime() + adjPeakH * 3600000);
+        setStarterStateNote('Declining — still usable, but next peak will be stronger.');
+        return new Date(new Date().getTime() + adjPeakH * 3600000);
       }
 
-      // Depleted — ready to feed now
+      // Depleted
+      setStarterStateNote('Depleted — needs feeding. Schedule below assumes you feed it now.');
       return new Date(now.getTime() + adjPeakH * 3600000);
     }
 
@@ -1978,101 +1988,133 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </div>
           </div>
 
-          {/* ── Mode A: last fed ── */}
+          {/* ── Mode A: last fed — three-state flow ── */}
           {planningMode === 'last_fed' && (
             <div>
-              <div style={STARTER_LABEL_STYLE}>
-                {starterLocation === 'rt' ? 'When was it last fed?' : 'When did you last feed it?'}
-              </div>
-              <div style={{ display: 'flex', gap: '.5rem', marginBottom: '.5rem' }}>
-                <select
-                  value={lastFedTime
-                    ? `${lastFedTime.getFullYear()}-${String(lastFedTime.getMonth()+1).padStart(2,'0')}-${String(lastFedTime.getDate()).padStart(2,'0')}`
-                    : ''}
-                  onChange={e => {
-                    const [y,mo,d] = e.target.value.split('-').map(Number);
-                    const base = lastFedTime ?? new Date();
-                    const next = new Date(y, mo-1, d, base.getHours(), base.getMinutes(), 0, 0);
-                    setLastFedTime(next);
-                    onLastFedTimeChange?.(next);
-                  }}
-                  style={STARTER_SELECT_STYLE}
-                >
-                  {[-1, 0].map(offset => {
-                    const dt = new Date();
-                    dt.setDate(dt.getDate() + offset);
-                    const val = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-                    const lbl = offset === 0
-                      ? (locale === 'fr' ? "Aujourd'hui" : 'Today')
-                      : (locale === 'fr' ? 'Hier' : 'Yesterday');
-                    return <option key={offset} value={val}>{lbl}</option>;
-                  })}
-                </select>
-                <select
-                  value={lastFedTime
-                    ? `${lastFedTime.getHours()}:${String(lastFedTime.getMinutes()).padStart(2,'0')}`
-                    : ''}
-                  onChange={e => {
-                    const [h, m] = e.target.value.split(':').map(Number);
-                    const base = lastFedTime ?? new Date();
-                    const next = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, 0, 0);
-                    setLastFedTime(next);
-                    onLastFedTimeChange?.(next);
-                  }}
-                  style={STARTER_SELECT_STYLE}
-                >
-                  {Array.from({ length: 96 }, (_, i) => {
-                    const h = Math.floor(i / 4);
-                    const m = (i % 4) * 15;
-                    const val = `${h}:${String(m).padStart(2,'0')}`;
-                    const lbl = locale === 'fr'
-                      ? `${h}h${String(m).padStart(2,'0')}`
-                      : `${h === 0 ? 12 : h > 12 ? h-12 : h}:${String(m).padStart(2,'0')} ${h < 12 ? 'am' : 'pm'}`;
-                    return <option key={i} value={val}>{lbl}</option>;
-                  })}
-                </select>
-              </div>
+              {/* State 1: no choice yet */}
+              {hasNotFedYet === null && (
+                <>
+                  <div style={STARTER_LABEL_STYLE}>Have you fed your starter recently?</div>
+                  <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => { setHasNotFedYet(false); onHasNotFedYetChange?.(false); }}
+                      style={starterPillButton(false)}
+                    >
+                      Yes — I fed it
+                    </button>
+                    <button
+                      onClick={() => { setHasNotFedYet(true); onHasNotFedYetChange?.(true); }}
+                      style={starterPillButton(false)}
+                    >
+                      Not yet
+                    </button>
+                  </div>
+                </>
+              )}
 
-              {/* Fridge-out time — only when location=fridge */}
-              {starterLocation === 'fridge' && (
-                <div style={{ marginTop: '.5rem' }}>
-                  <div style={STARTER_LABEL_STYLE}>Remove from fridge at</div>
-                  <div style={{ display: 'flex', gap: '.5rem' }}>
+              {/* State 2: recommendation card */}
+              {hasNotFedYet === true && (() => {
+                const peakH = getPrefPeakH_RT('sourdough', kitchenTemp);
+                const ryeF = starterHasRye ? 0.8 : 1.0;
+                const matF = starterMature ? 1.0 : 1.2;
+                const adjPeakH = peakH * ryeF * matF;
+                const idealMixHBF = (renderSweetFrom + renderSweetTo) / 2;
+                const idealMixTime = new Date(pendingEatTime.getTime() - idealMixHBF * 3600000);
+                const idealFeedTime = new Date(idealMixTime.getTime() - adjPeakH * 3600000);
+                const fmtFull = (dt: Date) => dt.toLocaleDateString(
+                  locale === 'fr' ? 'fr-FR' : 'en-US',
+                  { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr' }
+                );
+                return (
+                  <div>
+                    <div style={STARTER_LABEL_STYLE}>Recommended feed time</div>
+                    <div style={{
+                      background: '#EFF6FF', border: '1.5px solid #93C5FD',
+                      borderRadius: '10px', padding: '.75rem 1rem', marginBottom: '.6rem',
+                    }}>
+                      <div style={{
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
+                        fontWeight: 600, color: '#1E40AF', marginBottom: '.25rem',
+                      }}>
+                        Feed at {fmtFull(idealFeedTime)}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '.73rem', color: 'var(--smoke)' }}>
+                        At {kitchenTemp}°C your starter peaks in ~{(Math.round(adjPeakH * 10) / 10)}h — it will be ready right at mix time.
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { setHasNotFedYet(false); onHasNotFedYetChange?.(false); }}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        color: 'var(--terra)', fontFamily: 'var(--font-dm-sans)',
+                        fontSize: '.78rem', textDecoration: 'underline',
+                        textUnderlineOffset: '2px', padding: 0,
+                      }}
+                    >
+                      Enter actual feed time →
+                    </button>
+                  </div>
+                );
+              })()}
+
+              {/* State 3: picker with change link */}
+              {hasNotFedYet === false && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.25rem' }}>
+                    <div style={STARTER_LABEL_STYLE}>
+                      {starterLocation === 'rt' ? 'When was it last fed?' : 'When did you last feed it?'}
+                    </div>
+                    <button
+                      onClick={() => {
+                        setHasNotFedYet(null);
+                        setLastFedTime(null);
+                        onHasNotFedYetChange?.(null);
+                        onLastFedTimeChange?.(null);
+                      }}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                        fontSize: '.68rem', textDecoration: 'underline',
+                        textUnderlineOffset: '2px', padding: 0,
+                      }}
+                    >
+                      change
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: '.5rem', marginBottom: '.5rem' }}>
                     <select
-                      value={fridgeOutTime
-                        ? `${fridgeOutTime.getFullYear()}-${String(fridgeOutTime.getMonth()+1).padStart(2,'0')}-${String(fridgeOutTime.getDate()).padStart(2,'0')}`
+                      value={lastFedTime
+                        ? `${lastFedTime.getFullYear()}-${String(lastFedTime.getMonth()+1).padStart(2,'0')}-${String(lastFedTime.getDate()).padStart(2,'0')}`
                         : ''}
                       onChange={e => {
                         const [y,mo,d] = e.target.value.split('-').map(Number);
-                        const base = fridgeOutTime ?? new Date();
+                        const base = lastFedTime ?? new Date();
                         const next = new Date(y, mo-1, d, base.getHours(), base.getMinutes(), 0, 0);
-                        setFridgeOutTime(next);
-                        onFridgeOutTimeChange?.(next);
+                        setLastFedTime(next);
+                        onLastFedTimeChange?.(next);
                       }}
                       style={STARTER_SELECT_STYLE}
                     >
-                      {[0, 1, 2].map(offset => {
+                      {[-1, 0].map(offset => {
                         const dt = new Date();
                         dt.setDate(dt.getDate() + offset);
                         const val = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
                         const lbl = offset === 0
                           ? (locale === 'fr' ? "Aujourd'hui" : 'Today')
-                          : offset === 1
-                          ? (locale === 'fr' ? 'Demain' : 'Tomorrow')
-                          : dt.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                          : (locale === 'fr' ? 'Hier' : 'Yesterday');
                         return <option key={offset} value={val}>{lbl}</option>;
                       })}
                     </select>
                     <select
-                      value={fridgeOutTime
-                        ? `${fridgeOutTime.getHours()}:${String(fridgeOutTime.getMinutes()).padStart(2,'00')}`
+                      value={lastFedTime
+                        ? `${lastFedTime.getHours()}:${String(lastFedTime.getMinutes()).padStart(2,'0')}`
                         : ''}
                       onChange={e => {
                         const [h, m] = e.target.value.split(':').map(Number);
-                        const base = fridgeOutTime ?? new Date();
+                        const base = lastFedTime ?? new Date();
                         const next = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, 0, 0);
-                        setFridgeOutTime(next);
-                        onFridgeOutTimeChange?.(next);
+                        setLastFedTime(next);
+                        onLastFedTimeChange?.(next);
                       }}
                       style={STARTER_SELECT_STYLE}
                     >
@@ -2087,6 +2129,63 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       })}
                     </select>
                   </div>
+
+                  {/* Fridge-out time — only when location=fridge */}
+                  {starterLocation === 'fridge' && (
+                    <div style={{ marginTop: '.5rem' }}>
+                      <div style={STARTER_LABEL_STYLE}>Remove from fridge at</div>
+                      <div style={{ display: 'flex', gap: '.5rem' }}>
+                        <select
+                          value={fridgeOutTime
+                            ? `${fridgeOutTime.getFullYear()}-${String(fridgeOutTime.getMonth()+1).padStart(2,'0')}-${String(fridgeOutTime.getDate()).padStart(2,'0')}`
+                            : ''}
+                          onChange={e => {
+                            const [y,mo,d] = e.target.value.split('-').map(Number);
+                            const base = fridgeOutTime ?? new Date();
+                            const next = new Date(y, mo-1, d, base.getHours(), base.getMinutes(), 0, 0);
+                            setFridgeOutTime(next);
+                            onFridgeOutTimeChange?.(next);
+                          }}
+                          style={STARTER_SELECT_STYLE}
+                        >
+                          {[0, 1, 2].map(offset => {
+                            const dt = new Date();
+                            dt.setDate(dt.getDate() + offset);
+                            const val = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+                            const lbl = offset === 0
+                              ? (locale === 'fr' ? "Aujourd'hui" : 'Today')
+                              : offset === 1
+                              ? (locale === 'fr' ? 'Demain' : 'Tomorrow')
+                              : dt.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                            return <option key={offset} value={val}>{lbl}</option>;
+                          })}
+                        </select>
+                        <select
+                          value={fridgeOutTime
+                            ? `${fridgeOutTime.getHours()}:${String(fridgeOutTime.getMinutes()).padStart(2,'00')}`
+                            : ''}
+                          onChange={e => {
+                            const [h, m] = e.target.value.split(':').map(Number);
+                            const base = fridgeOutTime ?? new Date();
+                            const next = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, 0, 0);
+                            setFridgeOutTime(next);
+                            onFridgeOutTimeChange?.(next);
+                          }}
+                          style={STARTER_SELECT_STYLE}
+                        >
+                          {Array.from({ length: 96 }, (_, i) => {
+                            const h = Math.floor(i / 4);
+                            const m = (i % 4) * 15;
+                            const val = `${h}:${String(m).padStart(2,'0')}`;
+                            const lbl = locale === 'fr'
+                              ? `${h}h${String(m).padStart(2,'0')}`
+                              : `${h === 0 ? 12 : h > 12 ? h-12 : h}:${String(m).padStart(2,'0')} ${h < 12 ? 'am' : 'pm'}`;
+                            return <option key={i} value={val}>{lbl}</option>;
+                          })}
+                        </select>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2198,27 +2297,40 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr' }
             );
             return (
-              <div style={{
-                display: 'inline-flex', alignItems: 'center',
-                padding: '.3rem .75rem', borderRadius: '20px',
-                background: pillColor.bg,
-                border: `1.5px solid ${pillColor.border}`,
-                color: pillColor.text,
-                fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
-                alignSelf: 'flex-start',
-              }}>
-                {starterPillState === 'green' && (
-                  usingPeak2 ? 'Mix at second peak — stronger flavour' : 'Ready at mix'
+              <>
+                {starterStateNote && (
+                  <div style={{
+                    fontSize: '.72rem', color: 'var(--smoke)',
+                    fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic',
+                    marginBottom: '.35rem',
+                  }}>
+                    {starterStateNote}
+                  </div>
                 )}
-                {starterPillState === 'yellow' && (
-                  fridgeOutTime && !usingPeak2
-                    ? `Fridge retard — remove at ${fmt(fridgeOutTime)}`
-                    : 'Still developing at mix'
-                )}
-                {starterPillState === 'red' && refeedSuggestion && (
-                  `Feed at ${fmtFull(refeedSuggestion)} for this bake`
-                )}
-              </div>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center',
+                  padding: '.3rem .75rem', borderRadius: '20px',
+                  background: pillColor.bg,
+                  border: `1.5px solid ${pillColor.border}`,
+                  color: pillColor.text,
+                  fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
+                  alignSelf: 'flex-start',
+                }}>
+                  {starterPillState === 'green' && (
+                    usingPeak2 ? 'Mix at second peak — stronger flavour' : 'Ready at mix'
+                  )}
+                  {starterPillState === 'yellow' && (
+                    fridgeOutTime && !usingPeak2
+                      ? `Fridge retard — remove at ${fmt(fridgeOutTime)}`
+                      : 'Still developing at mix'
+                  )}
+                  {starterPillState === 'red' && refeedSuggestion && (
+                    starterStateNote?.startsWith('Depleted')
+                      ? `Depleted — feed at ${fmtFull(refeedSuggestion)}`
+                      : `Feed at ${fmtFull(refeedSuggestion)} for this bake`
+                  )}
+                </div>
+              </>
             );
           })()}
 
