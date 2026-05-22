@@ -43,6 +43,7 @@ export interface SessionData {
   lastFedTime?: number | null;
   knownPeakTime?: number | null;
   hasNotFedYet?: boolean;
+  feedRatio?: number;
   starterMature?: boolean;
   starterHasRye?: boolean;
   fridgeOutTime?: number | null;

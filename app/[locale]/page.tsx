@@ -330,6 +330,7 @@ export default function Home() {
   const [lastFedTime, setLastFedTime]       = useState<Date | null>(null);
   const [knownPeakTime, setKnownPeakTime]   = useState<Date | null>(null);
   const [hasNotFedYet, setHasNotFedYet]     = useState<boolean | null>(null);
+  const [feedRatio, setFeedRatio]           = useState<1 | 2 | 5 | 10>(1);
   const [starterMature, setStarterMature]   = useState(true);
   const [starterHasRye, setStarterHasRye]   = useState(false);
   const [usingPeak2, setUsingPeak2]         = useState(false);
@@ -540,6 +541,7 @@ export default function Home() {
     if (session.lastFedTime) setLastFedTime(new Date(session.lastFedTime));
     if (session.knownPeakTime) setKnownPeakTime(new Date(session.knownPeakTime));
     if (session.hasNotFedYet !== undefined) setHasNotFedYet(session.hasNotFedYet ?? null);
+    if (session.feedRatio) setFeedRatio((session.feedRatio as 1 | 2 | 5 | 10) ?? 1);
     if (session.starterMature !== undefined) setStarterMature(Boolean(session.starterMature));
     if (session.starterHasRye !== undefined) setStarterHasRye(Boolean(session.starterHasRye));
     if (session.fridgeOutTime) setFridgeOutTime(new Date(session.fridgeOutTime));
@@ -622,6 +624,12 @@ export default function Home() {
     return new Date(eatTime.getTime() - removeHBF * 3600000);
   }, [prefGoesInFridge, kitchenTemp, eatTime, schedule]);
 
+  const feedToMixH = useMemo(() => {
+    if (yeastType !== 'sourdough' || !feedTime || !startTime) return undefined;
+    const h = (startTime.getTime() - feedTime.getTime()) / 3600000;
+    return h > 0 ? h : undefined;
+  }, [yeastType, feedTime, startTime]);
+
   const recipe = useMemo(() => {
     if (!styleKey || !schedule || !ovenType || !yeastType) return null;
     try {
@@ -629,11 +637,14 @@ export default function Home() {
         styleKey, ovenType as OvenType, numItems, itemWeight,
         kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'simple',
         mixerType as MixerType,
+        undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+        undefined, undefined, undefined, undefined, undefined,
+        feedToMixH,
       );
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, feedToMixH]);
 
   // Recipe with yeast adjusted by appliedMultiplier (large-batch tuning)
   const displayRecipe = recipe;
@@ -657,11 +668,12 @@ export default function Home() {
         flourInFridge,
         wastePct,
         prefGoesInFridge,
+        feedToMixH,
       );
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, wastePct, prefGoesInFridge]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, wastePct, prefGoesInFridge, feedToMixH]);
 
   const advancedDisplayRecipe = advancedRecipe;
 
@@ -747,6 +759,7 @@ export default function Home() {
       lastFedTime: lastFedTime?.getTime() ?? null,
       knownPeakTime: knownPeakTime?.getTime() ?? null,
       hasNotFedYet: hasNotFedYet ?? undefined,
+      feedRatio,
       starterMature, starterHasRye,
       fridgeOutTime: fridgeOutTime?.getTime() ?? null,
       usingPeak2,
@@ -1584,6 +1597,8 @@ export default function Home() {
                 onKnownPeakTimeChange={setKnownPeakTime}
                 hasNotFedYet={hasNotFedYet}
                 onHasNotFedYetChange={setHasNotFedYet}
+                feedRatio={feedRatio}
+                onFeedRatioChange={setFeedRatio}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
@@ -2339,6 +2354,8 @@ export default function Home() {
                 onKnownPeakTimeChange={setKnownPeakTime}
                 hasNotFedYet={hasNotFedYet}
                 onHasNotFedYetChange={setHasNotFedYet}
+                feedRatio={feedRatio}
+                onFeedRatioChange={setFeedRatio}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}

@@ -250,7 +250,8 @@ export interface SourdoughResult {
 
 export function sourdoughGuidance(
   kitchenTemp: number,
-  flour: number
+  flour: number,
+  feedToMixH?: number,
 ): SourdoughResult {
   let min: number, max: number;
 
@@ -260,6 +261,14 @@ export function sourdoughGuidance(
     min = 15; max = 20;
   } else {
     min = 20; max = 25;
+  }
+
+  if (feedToMixH && feedToMixH > 0) {
+    const basePeakH = kitchenTemp >= 28 ? 5 : kitchenTemp >= 24 ? 7 : 9;
+    const mid = (min + max) / 2;
+    const adjMid = Math.max(5, Math.min(30, Math.round(mid * (basePeakH / feedToMixH))));
+    min = Math.max(5,  adjMid - 3);
+    max = Math.min(30, adjMid + 3);
   }
 
   const bulkCues = [
@@ -773,6 +782,7 @@ export function calculateRecipe(
   flourInFridge?: boolean,                 // custom mode only — flour temp = 4°C vs kitchenTemp
   wastePct?: number,                       // custom mode only — mixing loss buffer
   prefGoesInFridgeOverride?: boolean,      // custom mode only — from SchedulePicker
+  feedToMixH?: number,                     // sourdough only — hours from feed to mix
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = (ovenType in OVEN_TYPES)
@@ -877,7 +887,7 @@ export function calculateRecipe(
   const effectivePriority = manualPriorityOverride !== undefined ? manualPriorityOverride : autoPriority;
 
   if (yeastType === 'sourdough') {
-    sourdough = sourdoughGuidance(kitchenTemp, flour);
+    sourdough = sourdoughGuidance(kitchenTemp, flour, feedToMixH);
   } else {
     yeast = recommendYeast(
       schedule.totalRTHours,

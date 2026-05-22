@@ -33,6 +33,8 @@ interface SchedulePickerProps {
   onKnownPeakTimeChange?: (t: Date | null) => void;
   hasNotFedYet?: boolean | null;
   onHasNotFedYetChange?: (v: boolean | null) => void;
+  feedRatio?: 1 | 2 | 5 | 10;
+  onFeedRatioChange?: (r: 1 | 2 | 5 | 10) => void;
   mode?: 'simple' | 'custom';   // default 'custom'
   onReady?: () => void;
   sessionRestored?: boolean;
@@ -1056,7 +1058,7 @@ function SimpleColourBar({
 
 // ── Component ─────────────────────────────────
 // v1779291581473456000
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, feedRatio: feedRatioProp, onFeedRatioChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1136,6 +1138,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [starterStateNote, setStarterStateNote] = useState<string | null>(null);
   const [starterIsDepletedAt, setStarterIsDepletedAt] = useState<Date | null>(null);
   const [starterRefeedTime, setStarterRefeedTime]     = useState<Date | null>(null);
+  const [feedRatio, setFeedRatio]               = useState<1 | 2 | 5 | 10>(feedRatioProp ?? 1);
+  const [driftNote, setDriftNote]               = useState<string | null>(null);
   // StarterState kept for BakeGuide compat — derived from new vars
   const starterState: StarterState = starterLocation === 'fridge'
     ? (fridgeOutTime ? 'fridge_fed' : 'fridge_unfed')
@@ -1522,12 +1526,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (!peakTime) return;
     findOptimalPositionSourdough(pendingEatTime);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastFedTime, knownPeakTime, fridgeOutTime, starterLocation, planningMode, starterMature, starterHasRye, pendingEatTime, styleKey]);
+  }, [lastFedTime, knownPeakTime, fridgeOutTime, starterLocation, planningMode, starterMature, starterHasRye, pendingEatTime, styleKey, feedRatio]);
 
   // Clear starter state note when inputs that drive it change
   useEffect(() => {
     setStarterStateNote(null);
   }, [lastFedTime, knownPeakTime, starterLocation, planningMode, starterMature, starterHasRye]);
+
+  useEffect(() => {
+    setDriftNote(null);
+  }, [lastFedTime, knownPeakTime, pendingEatTime]);
 
   const suggestion = useMemo(
     () => computeSuggestion(pendingEatTime, preheatMin, styleKey, kitchenTemp),
@@ -1647,8 +1655,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const peakH = getPrefPeakH_RT('sourdough', kitchenTemp);
     const ryeF  = starterHasRye ? 0.8 : 1.0;
     const matF  = starterMature ? 1.0 : 1.2;
-    const adjPeakH = peakH * ryeF * matF;
-    const troughH  = getStarterTroughH(kitchenTemp, starterMature) * ryeF;
+    const ratioMultiplier = 1 + 0.35 * Math.log(feedRatio);
+    const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
+    const troughH  = getStarterTroughH(kitchenTemp, starterMature) * ryeF * ratioMultiplier;
     const warmupH  = getStarterFridgeWarmupH(kitchenTemp);
 
     if (planningMode === 'know_peak' && knownPeakTime) {
@@ -1704,8 +1713,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const peakH    = getPrefPeakH_RT('sourdough', kitchenTemp);
     const ryeF     = starterHasRye ? 0.8 : 1.0;
     const matF     = starterMature ? 1.0 : 1.2;
-    const adjPeakH = peakH * ryeF * matF;
-    const troughH  = getStarterTroughH(kitchenTemp, starterMature) * ryeF;
+    const ratioMultiplier = 1 + 0.35 * Math.log(feedRatio);
+    const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
+    const troughH  = getStarterTroughH(kitchenTemp, starterMature) * ryeF * ratioMultiplier;
 
     const TOL       = starterLocation === 'fridge' ? 2.0 : 1.0;
     const YELLOW_TOL = TOL + 1.5;
@@ -1724,6 +1734,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setUsingPeak2(false);
       setFeed2Time(null);
       setRefeedSuggestion(null);
+      setDriftNote(null);
       if (planningMode === 'last_fed' && lastFedTime) {
         onFeedTimeChange?.(lastFedTime);
         setFeedTime(lastFedTime);
@@ -1742,6 +1753,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setUsingPeak2(false);
       setFeed2Time(null);
       setRefeedSuggestion(null);
+      const mixInBlocker = blocks.some(b => newMix.getTime() > b.from.getTime() && newMix.getTime() < b.to.getTime());
+      setDriftNote(mixInBlocker
+        ? 'Mix time lands in a blocked window — adjust your bake time to realign.'
+        : 'Starter timing slightly off — mix was shifted to the nearest viable window.');
       if (planningMode === 'last_fed' && lastFedTime) {
         onFeedTimeChange?.(lastFedTime);
         setFeedTime(lastFedTime);
@@ -1765,6 +1780,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         setFeed2Time(new Date(troughMs));
         setStarterPillState('green');
         setRefeedSuggestion(null);
+        setDriftNote(null);
         onFeedTimeChange?.(new Date(troughMs));
         setFeedTime(new Date(troughMs));
         onFeed2TimeChange?.(new Date(troughMs));
@@ -1780,6 +1796,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         setFeed2Time(new Date(troughMs));
         setStarterPillState('yellow');
         setRefeedSuggestion(null);
+        const mixInBlocker2 = blocks.some(b => newMix.getTime() > b.from.getTime() && newMix.getTime() < b.to.getTime());
+        setDriftNote(mixInBlocker2
+          ? 'Second peak mix lands in a blocked window — adjust your bake time to realign.'
+          : 'Second peak used — starter timing shifted to nearest viable window.');
         onFeedTimeChange?.(new Date(troughMs));
         setFeedTime(new Date(troughMs));
         onFeed2TimeChange?.(new Date(troughMs));
@@ -1795,6 +1815,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setRefeedSuggestion(suggestedFeed);
     setUsingPeak2(false);
     setFeed2Time(null);
+    setDriftNote(null);
     if (planningMode === 'last_fed' && lastFedTime) {
       onFeedTimeChange?.(lastFedTime);
       setFeedTime(lastFedTime);
@@ -2028,7 +2049,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 const peakH = getPrefPeakH_RT('sourdough', kitchenTemp);
                 const ryeF = starterHasRye ? 0.8 : 1.0;
                 const matF = starterMature ? 1.0 : 1.2;
-                const adjPeakH = peakH * ryeF * matF;
+                const ratioMultiplier = 1 + 0.35 * Math.log(feedRatio);
+                const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
                 const idealMixHBF = (renderSweetFrom + renderSweetTo) / 2;
                 const idealMixTime = new Date(pendingEatTime.getTime() - idealMixHBF * 3600000);
                 const idealFeedTime = new Date(idealMixTime.getTime() - adjPeakH * 3600000);
@@ -2292,6 +2314,28 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </button>
           </div>
 
+          {/* ── Feed ratio selector ── */}
+          <div>
+            <div style={{ ...STARTER_LABEL_STYLE, marginBottom: '.35rem' }}>Feed ratio</div>
+            <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
+              {([1, 2, 5, 10] as const).map(r => (
+                <button
+                  key={r}
+                  onClick={() => { setFeedRatio(r); onFeedRatioChange?.(r); }}
+                  style={{
+                    padding: '.3rem .65rem', borderRadius: '20px',
+                    border: `1.5px solid ${feedRatio === r ? 'var(--bread)' : 'var(--border)'}`,
+                    background: feedRatio === r ? 'rgba(139,105,20,0.10)' : 'transparent',
+                    color: feedRatio === r ? 'var(--bread)' : 'var(--smoke)',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: '.78rem', cursor: 'pointer',
+                  }}
+                >
+                  1:{r}:{r}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* ── Pill output ── */}
           {eatTimeSet && (lastFedTime || knownPeakTime) && (() => {
             const pillColor = starterPillState === 'green'
@@ -2316,6 +2360,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     marginBottom: '.35rem',
                   }}>
                     {starterStateNote}
+                  </div>
+                )}
+                {driftNote && (
+                  <div style={{
+                    fontSize: '.72rem', color: '#92400E',
+                    fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic',
+                    marginBottom: '.35rem',
+                  }}>
+                    {driftNote}
                   </div>
                 )}
                 <div style={{
