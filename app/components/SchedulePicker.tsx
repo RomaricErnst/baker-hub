@@ -602,7 +602,13 @@ function findOptimalPosition(
         : 0;
       // Priority: score → fridge poolish → cold retard → reasonable hour → poolish convenience
       const fridgeBonus = (prefGoesInFridge && hasPref) ? 8 : 0;
-      const combinedScore = score * 100 + fridgeBonus * 10 + retardBonus * 8 + doughReasonable * 5 + poolishComfort;
+      // Reduce retard weight when preferment is still developing (not at peak).
+      // Scientifically: preferment at peak > marginal extra cold retard hours
+      // in the diminishing-returns zone (13h+). Applies to poolish RT, poolish
+      // fridge, and biga equally.
+      const prefScoreComponent = prefInZone ? 2 : prefYellow ? 1 : 0;
+      const retardWeight = prefScoreComponent >= 2 ? 8 : 3;
+      const combinedScore = score * 100 + fridgeBonus * 10 + retardBonus * retardWeight + doughReasonable * 5 + poolishComfort;
 
       if (combinedScore > bestCombinedScore) {
         bestScore = score;
