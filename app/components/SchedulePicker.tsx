@@ -2054,25 +2054,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </div>
           </div>
 
-          {/* ── Q2: Planning mode ── */}
-          <div>
-            <div style={STARTER_LABEL_STYLE}>How do you want to plan?</div>
-            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => { setPlanningMode('last_fed'); onPlanningModeChange?.('last_fed'); }}
-                style={starterPillButton(planningMode === 'last_fed')}
-              >
-                Tell me when to feed
-              </button>
-              <button
-                onClick={() => { setPlanningMode('know_peak'); onPlanningModeChange?.('know_peak'); }}
-                style={starterPillButton(planningMode === 'know_peak')}
-              >
-                I know my peak time
-              </button>
-            </div>
-          </div>
-
           {/* ── Mode A: last fed — three-state flow ── */}
           {planningMode === 'last_fed' && (
             <div>
@@ -2277,68 +2258,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </div>
           )}
 
-          {/* ── Mode B: known peak time ── */}
-          {planningMode === 'know_peak' && (
-            <div>
-              <div style={STARTER_LABEL_STYLE}>When does your starter peak?</div>
-              <div style={{ display: 'flex', gap: '.5rem' }}>
-                <select
-                  value={knownPeakTime
-                    ? `${knownPeakTime.getFullYear()}-${String(knownPeakTime.getMonth()+1).padStart(2,'0')}-${String(knownPeakTime.getDate()).padStart(2,'0')}`
-                    : ''}
-                  onChange={e => {
-                    const [y,mo,d] = e.target.value.split('-').map(Number);
-                    const base = knownPeakTime ?? new Date();
-                    const next = new Date(y, mo-1, d, base.getHours(), base.getMinutes(), 0, 0);
-                    setKnownPeakTime(next);
-                    onKnownPeakTimeChange?.(next);
-                  }}
-                  style={STARTER_SELECT_STYLE}
-                >
-                  {[0, 1, 2].map(offset => {
-                    const dt = new Date();
-                    dt.setDate(dt.getDate() + offset);
-                    const val = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-                    const lbl = offset === 0
-                      ? (locale === 'fr' ? "Aujourd'hui" : 'Today')
-                      : offset === 1
-                      ? (locale === 'fr' ? 'Demain' : 'Tomorrow')
-                      : dt.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                    return <option key={offset} value={val}>{lbl}</option>;
-                  })}
-                </select>
-                <select
-                  value={knownPeakTime
-                    ? `${knownPeakTime.getHours()}:${String(knownPeakTime.getMinutes()).padStart(2,'0')}`
-                    : ''}
-                  onChange={e => {
-                    const [h, m] = e.target.value.split(':').map(Number);
-                    const base = knownPeakTime ?? new Date();
-                    const next = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, 0, 0);
-                    setKnownPeakTime(next);
-                    onKnownPeakTimeChange?.(next);
-                  }}
-                  style={STARTER_SELECT_STYLE}
-                >
-                  {Array.from({ length: 96 }, (_, i) => {
-                    const h = Math.floor(i / 4);
-                    const m = (i % 4) * 15;
-                    const val = `${h}:${String(m).padStart(2,'0')}`;
-                    const lbl = locale === 'fr'
-                      ? `${h}h${String(m).padStart(2,'0')}`
-                      : `${h === 0 ? 12 : h > 12 ? h-12 : h}:${String(m).padStart(2,'0')} ${h < 12 ? 'am' : 'pm'}`;
-                    return <option key={i} value={val}>{lbl}</option>;
-                  })}
-                </select>
-              </div>
-              <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.3rem' }}>
-                {locale === 'fr'
-                  ? 'La fenêtre de mélange sera centrée sur ce moment'
-                  : 'Mix window will be centered on this time'}
-              </div>
-            </div>
-          )}
-
           {/* ── Maturity + rye (always shown) ── */}
           <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
             {([
@@ -2389,67 +2308,103 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </div>
           </div>
 
-          {/* ── Pill output ── */}
-          {eatTimeSet && (lastFedTime || knownPeakTime) && (() => {
-            const pillColor = starterPillState === 'green'
-              ? { bg: '#E8F5E9', border: '#4CAF50', text: '#2E7D32' }
-              : starterPillState === 'yellow'
-              ? { bg: '#FFF8E1', border: '#FFC107', text: '#F57F17' }
-              : { bg: '#FFEBEE', border: '#EF5350', text: '#C62828' };
-            const fmt = (dt: Date) => dt.toLocaleTimeString(
-              locale === 'fr' ? 'fr-FR' : 'en-US',
-              { hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr' }
-            );
-            const fmtFull = (dt: Date) => dt.toLocaleDateString(
-              locale === 'fr' ? 'fr-FR' : 'en-US',
-              { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr' }
-            );
-            return (
-              <>
-                {starterStateNote && (
-                  <div style={{
-                    fontSize: '.72rem', color: 'var(--smoke)',
-                    fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic',
-                    marginBottom: '.35rem',
-                  }}>
-                    {starterStateNote}
-                  </div>
-                )}
-                {driftNote && (
-                  <div style={{
-                    fontSize: '.72rem', color: '#92400E',
-                    fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic',
-                    marginBottom: '.35rem',
-                  }}>
-                    {driftNote}
-                  </div>
-                )}
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center',
-                  padding: '.3rem .75rem', borderRadius: '20px',
-                  background: pillColor.bg,
-                  border: `1.5px solid ${pillColor.border}`,
-                  color: pillColor.text,
-                  fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
-                  alignSelf: 'flex-start',
-                }}>
-                  {starterPillState === 'green' && (
-                    usingPeak2 ? 'Mix at second peak — stronger flavour' : 'Ready at mix'
-                  )}
-                  {starterPillState === 'yellow' && (
-                    fridgeOutTime && !usingPeak2
-                      ? `Fridge retard — remove at ${fmt(fridgeOutTime)}`
-                      : 'Still developing at mix'
-                  )}
-                  {starterPillState === 'red' && refeedSuggestion && (
-                    starterStateNote?.startsWith('Depleted')
-                      ? `Depleted — feed at ${fmtFull(refeedSuggestion)}`
-                      : `Feed at ${fmtFull(refeedSuggestion)} for this bake`
-                  )}
+          {/* ── Mode B toggle link / picker ── */}
+          {planningMode === 'last_fed' && (
+            <button
+              onClick={() => { setPlanningMode('know_peak'); onPlanningModeChange?.('know_peak'); }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--smoke)', fontSize: '.68rem',
+                fontFamily: 'var(--font-dm-mono)',
+                textDecoration: 'underline',
+                textUnderlineOffset: '2px',
+                padding: 0, alignSelf: 'flex-start',
+              }}
+            >
+              {isFr ? 'Je connais mon heure de pic →' : 'I know my peak time →'}
+            </button>
+          )}
+
+          {planningMode === 'know_peak' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+              <div>
+                <div style={STARTER_LABEL_STYLE}>
+                  {isFr ? 'À quelle heure votre levain est-il à son pic ?' : 'When does your starter peak?'}
                 </div>
-              </>
-            );
-          })()}
+                <div style={{ display: 'flex', gap: '.5rem' }}>
+                  <select
+                    value={knownPeakTime
+                      ? `${knownPeakTime.getFullYear()}-${String(knownPeakTime.getMonth()+1).padStart(2,'0')}-${String(knownPeakTime.getDate()).padStart(2,'0')}`
+                      : ''}
+                    onChange={e => {
+                      const [y,mo,d] = e.target.value.split('-').map(Number);
+                      const base = knownPeakTime ?? new Date();
+                      const next = new Date(y, mo-1, d, base.getHours(), base.getMinutes(), 0, 0);
+                      setKnownPeakTime(next);
+                      onKnownPeakTimeChange?.(next);
+                    }}
+                    style={STARTER_SELECT_STYLE}
+                  >
+                    {[0, 1, 2].map(offset => {
+                      const dt = new Date();
+                      dt.setDate(dt.getDate() + offset);
+                      const val = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+                      const lbl = offset === 0
+                        ? (isFr ? "Aujourd'hui" : 'Today')
+                        : offset === 1
+                        ? (isFr ? 'Demain' : 'Tomorrow')
+                        : dt.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                      return <option key={offset} value={val}>{lbl}</option>;
+                    })}
+                  </select>
+                  <select
+                    value={knownPeakTime
+                      ? `${knownPeakTime.getHours()}:${String(knownPeakTime.getMinutes()).padStart(2,'0')}`
+                      : ''}
+                    onChange={e => {
+                      const [h, m] = e.target.value.split(':').map(Number);
+                      const base = knownPeakTime ?? new Date();
+                      const next = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, 0, 0);
+                      setKnownPeakTime(next);
+                      onKnownPeakTimeChange?.(next);
+                    }}
+                    style={STARTER_SELECT_STYLE}
+                  >
+                    {Array.from({ length: 96 }, (_, i) => {
+                      const h = Math.floor(i / 4);
+                      const m = (i % 4) * 15;
+                      const val = `${h}:${String(m).padStart(2,'0')}`;
+                      const lbl = isFr
+                        ? `${h}h${String(m).padStart(2,'0')}`
+                        : `${h === 0 ? 12 : h > 12 ? h-12 : h}:${String(m).padStart(2,'0')} ${h < 12 ? 'am' : 'pm'}`;
+                      return <option key={i} value={val}>{lbl}</option>;
+                    })}
+                  </select>
+                </div>
+                <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.3rem' }}>
+                  {isFr ? 'La fenêtre de mélange sera centrée sur ce moment' : 'Mix window will be centered on this time'}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setPlanningMode('last_fed');
+                  onPlanningModeChange?.('last_fed');
+                  setKnownPeakTime(null);
+                  onKnownPeakTimeChange?.(null);
+                }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--smoke)', fontSize: '.68rem',
+                  fontFamily: 'var(--font-dm-mono)',
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '2px',
+                  padding: 0, alignSelf: 'flex-start',
+                }}
+              >
+                {isFr ? '← Retour' : '← Back'}
+              </button>
+            </div>
+          )}
 
         </div>
       )}
@@ -3149,21 +3104,21 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                                       : kitchenTemp >= 24 ? 1.5
                                       : 2.0;
         const cardPrefInZone = prefGoesInFridge
-          ? (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard - cardPrefPlateauH_LOW && prefOffsetH <= prefOptHCard + fridgePlateauH
-          : (hasPrefActive || isSourdough) && prefOffsetH >= prefOptHCard - RT_PEAK_TOLERANCE && prefOffsetH <= prefOptHCard + RT_PEAK_TOLERANCE_UPPER;
+          ? hasPrefActive && prefOffsetH >= prefOptHCard - cardPrefPlateauH_LOW && prefOffsetH <= prefOptHCard + fridgePlateauH
+          : hasPrefActive && prefOffsetH >= prefOptHCard - RT_PEAK_TOLERANCE && prefOffsetH <= prefOptHCard + RT_PEAK_TOLERANCE_UPPER;
         const cardPrefEarlyOk = prefGoesInFridge
-          ? (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + fridgePlateauH && prefOffsetH <= prefMaxHCard
-          : (hasPrefActive || isSourdough) && prefOffsetH > prefOptHCard + RT_PEAK_TOLERANCE_UPPER && prefOffsetH <= prefMaxHCard;
+          ? hasPrefActive && prefOffsetH > prefOptHCard + fridgePlateauH && prefOffsetH <= prefMaxHCard
+          : hasPrefActive && prefOffsetH > prefOptHCard + RT_PEAK_TOLERANCE_UPPER && prefOffsetH <= prefMaxHCard;
         // Developing = viable but not yet at peak (both fridge and RT)
-        const cardPrefDeveloping = (hasPrefActive || isSourdough)
+        const cardPrefDeveloping = hasPrefActive
           && prefOffsetH >= prefMinHCard
           && (prefGoesInFridge
             ? prefOffsetH < prefOptHCard - cardPrefPlateauH_LOW
             : prefOffsetH < prefOptHCard);
-        const cardPrefTooEarly  = (hasPrefActive || isSourdough) && prefOffsetH > prefMaxHCard;
-        const cardPrefLateOk    = (hasPrefActive || isSourdough) && prefOffsetH >= 0.25 && prefOffsetH < prefMinHCard;
+        const cardPrefTooEarly  = hasPrefActive && prefOffsetH > prefMaxHCard;
+        const cardPrefLateOk    = hasPrefActive && prefOffsetH >= 0.25 && prefOffsetH < prefMinHCard;
         // For RT: use cardPrefDeveloping instead of cardPrefLateOk for 3h→peak*0.8 range
-        const cardPrefTooShort  = (hasPrefActive || isSourdough) && prefOffsetH < 1;
+        const cardPrefTooShort  = hasPrefActive && prefOffsetH < 1;
         // Protocol already shown via ❄/🌡 indicator below diamond — not repeated in pill
         const cardPrefStatus = cardPrefInZone      ? tRoot('schedulePicker.prefReadyAtMix')
           : cardPrefEarlyOk                        ? tRoot('schedulePicker.prefEarlyOk')
@@ -3173,7 +3128,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           :                                          tRoot('schedulePicker.prefTooEarly');
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
-          : isSourdough && feedTime ? feedTime : null;
+          : null;
         const doughZoneFrom = renderSweetFrom;
         const doughZoneTo   = renderSweetTo;
         const mixInZone    = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
@@ -3198,9 +3153,184 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           return mixOffsetH >= Math.min(s2, e2) && mixOffsetH <= Math.max(s2, e2);
         });
         return (
-          <div style={{ display: 'flex', gap: '6px', marginTop: '1rem', flexWrap: 'wrap', justifyContent: cardPrefTime ? 'flex-start' : 'center' }}>
+          <div style={{ display: 'flex', gap: '6px', marginTop: '1rem', flexWrap: 'wrap', justifyContent: (cardPrefTime || isSourdough) ? 'flex-start' : 'center' }}>
+
+            {/* ── Sourdough Starter Plan card ── */}
+            {isSourdough && startComputed && (() => {
+              const peakH     = getPrefPeakH_RT('sourdough', kitchenTemp);
+              const ratioMult = 1 + 0.35 * Math.log(feedRatio);
+              const ryeF      = starterHasRye ? 0.8 : 1.0;
+              const matF      = starterMature ? 1.0 : 1.2;
+              const adjPeakH  = peakH * ryeF * matF * ratioMult;
+              const troughH   = getStarterTroughH(kitchenTemp, starterMature) * ryeF * ratioMult;
+              const warmupH   = getStarterFridgeWarmupH(kitchenTemp);
+              const mixTime   = pendingStart;
+
+              const activePeakTime: Date | null =
+                planningMode === 'know_peak' && knownPeakTime
+                  ? knownPeakTime
+                  : feedTime
+                    ? (starterLocation === 'fridge' && fridgeOutTime
+                        ? new Date(fridgeOutTime.getTime() + warmupH * 3600000)
+                        : new Date(feedTime.getTime() + adjPeakH * 3600000))
+                    : null;
+
+              const feedPlan: { ft: Date; label: string; note?: string }[] = [];
+
+              if (planningMode === 'last_fed' && lastFedTime && activePeakTime) {
+                const now = new Date();
+                if (!usingPeak2) {
+                  const isPast = lastFedTime < now;
+                  feedPlan.push({
+                    ft: lastFedTime,
+                    label: isPast
+                      ? (isFr ? 'Dernier repas' : 'Last fed')
+                      : (isFr ? 'Repas' : 'Feed'),
+                    note: starterLocation === 'fridge' && fridgeOutTime
+                      ? (isFr
+                          ? `Sortir du frigo à ${fmtCardHM(fridgeOutTime, isFr)}`
+                          : `Remove from fridge at ${fmtCardHM(fridgeOutTime, isFr)}`)
+                      : undefined,
+                  });
+                  const lastFeedNeeded = new Date(mixTime.getTime() - adjPeakH * 3600000);
+                  const gapH = (lastFeedNeeded.getTime() - now.getTime()) / 3600000;
+                  const numExtra = Math.floor(gapH / troughH);
+                  if (numExtra > 0) {
+                    feedPlan.length = 0;
+                    for (let i = 0; i <= numExtra; i++) {
+                      const ft = new Date(now.getTime() + i * troughH * 3600000);
+                      const h = ft.getHours();
+                      if (h < 7) { ft.setHours(7, 0, 0, 0); }
+                      else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
+                      const isLast = i === numExtra;
+                      const nextFt = new Date(ft.getTime() + troughH * 3600000);
+                      feedPlan.push({
+                        ft,
+                        label: isLast
+                          ? (isFr ? 'Dernier repas' : 'Last feed')
+                          : (isFr ? `Repas ${i + 1}` : `Feed ${i + 1}`),
+                        note: isLast
+                          ? (isFr
+                              ? `Pic vers ${fmtCardHM(new Date(ft.getTime() + adjPeakH * 3600000), isFr)}`
+                              : `Peak around ${fmtCardHM(new Date(ft.getTime() + adjPeakH * 3600000), isFr)}`)
+                          : (isFr
+                              ? `Prochain repas vers ${fmtCardHM(nextFt, isFr)}`
+                              : `Next feed around ${fmtCardHM(nextFt, isFr)}`),
+                      });
+                    }
+                  }
+                } else if (usingPeak2 && feed2Time) {
+                  feedPlan.push({
+                    ft: lastFedTime,
+                    label: isFr ? 'Repas 1' : 'Feed 1',
+                    note: isFr ? 'Laisser redescendre au creux' : 'Let decline to trough',
+                  });
+                  feedPlan.push({
+                    ft: feed2Time,
+                    label: isFr ? 'Repas 2' : 'Feed 2',
+                    note: isFr ? 'Repas actif pour cette cuisson' : 'Active feed for this bake',
+                  });
+                }
+              }
+
+              const pillColor = starterPillState === 'green'
+                ? { bg: '#E8F5E9', border: '#4CAF50', text: '#2E7D32' }
+                : starterPillState === 'yellow'
+                ? { bg: '#FFF8E1', border: '#FFC107', text: '#F57F17' }
+                : { bg: '#FFEBEE', border: '#EF5350', text: '#C62828' };
+
+              return (
+                <div style={{
+                  flex: 1, minWidth: '140px',
+                  background: 'var(--cream)',
+                  border: '1.5px solid var(--border)',
+                  borderRadius: '10px', padding: '14px 16px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.6rem' }}>
+                    <div style={{ width: 8, height: 8, background: '#4A7FA5', transform: 'rotate(45deg)', flexShrink: 0 }} />
+                    <div style={{
+                      fontSize: '13px', color: 'var(--smoke)',
+                      fontFamily: 'var(--font-dm-mono)',
+                      textTransform: 'uppercase', letterSpacing: '.04em',
+                    }}>
+                      {isFr ? 'LEVAIN' : 'STARTER'}
+                    </div>
+                  </div>
+
+                  {feedPlan.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '.45rem', marginBottom: '.6rem' }}>
+                      {feedPlan.map((fp, i) => (
+                        <div key={i}>
+                          <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                            {fp.label}
+                          </div>
+                          <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                            {fmtCardDT(fp.ft, isFr)}
+                          </div>
+                          {fp.note && (
+                            <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '1px' }}>
+                              {fp.note}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {activePeakTime && (
+                    <div style={{ marginBottom: '.6rem' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                        {isFr ? 'PIC' : 'PEAK'}
+                      </div>
+                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                        {fmtCardHM(activePeakTime, isFr)}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    padding: '.25rem .65rem', borderRadius: '20px',
+                    background: pillColor.bg,
+                    border: `1.5px solid ${pillColor.border}`,
+                    color: pillColor.text,
+                    fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
+                  }}>
+                    {starterPillState === 'green' && (
+                      usingPeak2
+                        ? (isFr ? 'Pic 2 — saveur plus complexe' : 'Second peak — stronger flavour')
+                        : (isFr ? 'Prêt au mélange' : 'Ready at mix')
+                    )}
+                    {starterPillState === 'yellow' && (
+                      fridgeOutTime && !usingPeak2
+                        ? (isFr
+                            ? `Sortir du frigo à ${fmtCardHM(fridgeOutTime, isFr)}`
+                            : `Remove from fridge at ${fmtCardHM(fridgeOutTime, isFr)}`)
+                        : (isFr ? 'En cours de montée' : 'Still developing')
+                    )}
+                    {starterPillState === 'red' && refeedSuggestion && (
+                      isFr
+                        ? `Nourrir à ${fmtCardDT(refeedSuggestion, true)}`
+                        : `Feed at ${fmtCardDT(refeedSuggestion, false)}`
+                    )}
+                  </div>
+
+                  {starterStateNote && (
+                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginTop: '.5rem' }}>
+                      {starterStateNote}
+                    </div>
+                  )}
+                  {driftNote && (
+                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginTop: '.4rem' }}>
+                      {driftNote}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Pref card */}
-            {(cardPrefTime || (hasPrefActive && (skipPoolishNote || prefAlgoRed))) && (
+            {!isSourdough && (cardPrefTime || (hasPrefActive && (skipPoolishNote || prefAlgoRed))) && (
               <div style={{
                 flex: 1, minWidth: '120px',
                 background: 'var(--cream)', border: '1.5px solid var(--border)',

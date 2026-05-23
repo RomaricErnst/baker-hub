@@ -2275,6 +2275,7 @@ export default function Home() {
                   if (yt === 'sourdough') {
                     setPrefermentType('levain');
                     setAdvancedStep(9);
+                    setAdvancedHighestStep(s => Math.max(s, 9));
                     setTimeout(() => {
                       const el = document.getElementById('adv-step-9');
                       if (el) {
