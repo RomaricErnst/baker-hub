@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { useLocale } from 'next-intl';
 import { type FlourKey, type FlourBlend } from '../data';
 import FlourScan from './FlourScan';
 import { FLOUR_DB, type FlourEntry } from '@/lib/flourDatabase';
@@ -9,6 +10,20 @@ const CROWD_FAV_IDS = [
   'caputo_pizzeria', 'caputo_cuoco', 'caputo_nuvola',
   'stagioni_napoletana', 'stagioni_superiore',
 ];
+
+// ── Bread recommendations by style ───────────────
+const BREAD_REC_BY_STYLE: Record<string, string[]> = {
+  sourdough:     ['T65', 'Bread flour', 'T80'],
+  pain_levain:   ['T65', 'T80'],
+  pain_campagne: ['T65', 'T80', 'Rye'],
+  baguette:      ['T65', 'T55'],
+  pain_complet:  ['T110 / T150', 'Wholemeal'],
+  pain_seigle:   ['Rye', 'T80'],
+  brioche:       ['T45 / Gruau', 'Manitoba'],
+  pain_mie:      ['T55', 'Bread flour'],
+  pain_viennois: ['T45 / Gruau', 'Bread flour'],
+  contemporary:  ['Bread flour', 'T80'],
+};
 
 // ── Blend presets ─────────────────────────────────
 const BLEND_PRESETS: Record<string, { label: string; type: FlourKey; ratio: number }[]> = {
@@ -176,6 +191,9 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   });
   const [blendRatio, setBlendRatio] = useState(() => blend.ratio1 < 100 ? blend.ratio1 : 85);
   const [blendShowFullSearch, setBlendShowFullSearch] = useState(false);
+
+  const locale = useLocale();
+  const isFr = locale === 'fr';
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const blendRef = useRef<HTMLDivElement>(null);
@@ -586,9 +604,54 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               </div>
             )}
 
-            {/* Results list — crowd favs when no filter, filtered otherwise */}
+            {/* Results list — style recs for bread, crowd favs for pizza, filtered results otherwise */}
             {(() => {
               const noFiltersActive = !searchQuery && !filterType && !filterOrigin && !filterManufacturer;
+
+              // Bread path: show quick-type recommendations for the style
+              if (bakeType === 'bread' && noFiltersActive) {
+                const recLabels = BREAD_REC_BY_STYLE[styleKey ?? ''] ?? ['Bread flour', 'T65', 'All-purpose'];
+                const breadRecs = recLabels.map(label => QUICK_TYPES.find(q => q.label === label)).filter(Boolean) as { label: string; w: number; protein: number }[];
+                const styleName = styleKey ? styleKey.replace(/_/g, ' ') : '';
+                const sectionLabel = !styleKey
+                  ? (isFr ? 'Pour le pain' : 'For bread')
+                  : (isFr ? `Pour le ${styleName}` : `For ${styleName}`);
+                return (
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                      {sectionLabel}
+                    </div>
+                    <div style={{ marginTop: '4px' }}>
+                      {breadRecs.map(t => {
+                        const isSelected = blend.brandProduct === t.label;
+                        return (
+                          <div
+                            key={t.label}
+                            onClick={() => applyQuickType(t.label, t.w)}
+                            style={{
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                              padding: '10px 0', borderBottom: '0.5px solid #E8E0D5',
+                              cursor: 'pointer',
+                              background: isSelected ? 'rgba(196,82,42,0.04)' : 'transparent',
+                            }}
+                            onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(196,82,42,0.04)' : 'transparent'; }}
+                          >
+                            <span style={{ fontSize: '13px', fontWeight: isSelected ? 600 : 500, color: isSelected ? '#C4522A' : '#1A1612', fontFamily: 'DM Sans, sans-serif' }}>
+                              {t.label}
+                            </span>
+                            <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>
+                              W~{t.w} · ~{t.protein}%
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Pizza / filtered path: crowd favs or search results
               const displayList: FlourEntry[] = noFiltersActive
                 ? CROWD_FAV_IDS.map(id => FLOUR_DB.find(f => f.id === id)).filter(Boolean) as FlourEntry[]
                 : results;
@@ -604,11 +667,13 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 <div>
                   {noFiltersActive ? (
                     <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-                      Crowd favourites
+                      {isFr ? 'Coups de cœur' : 'Crowd favourites'}
                     </div>
                   ) : (
                     <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'DM Sans, sans-serif' }}>
-                      {displayList.length} flour{displayList.length !== 1 ? 's' : ''} found
+                      {isFr
+                        ? `${displayList.length} farine${displayList.length !== 1 ? 's' : ''} trouvée${displayList.length !== 1 ? 's' : ''}`
+                        : `${displayList.length} flour${displayList.length !== 1 ? 's' : ''} found`}
                     </div>
                   )}
                   <div style={{ maxHeight: '320px', overflowY: 'auto', marginTop: '4px' }}>
