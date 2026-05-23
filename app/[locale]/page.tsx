@@ -1136,7 +1136,7 @@ export default function Home() {
         />
 
 
-        {bakeType && (
+        {bakeType && bakeType !== 'bread' && (
           <div style={{
             background: '#1A1612',
             borderBottom: '1px solid #2D2824',
