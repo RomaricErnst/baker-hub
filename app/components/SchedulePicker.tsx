@@ -1526,7 +1526,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (!peakTime) return;
     findOptimalPositionSourdough(pendingEatTime);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastFedTime, knownPeakTime, fridgeOutTime, starterLocation, planningMode, starterMature, starterHasRye, pendingEatTime, styleKey, feedRatio]);
+  }, [lastFedTime, knownPeakTime, fridgeOutTime, starterLocation, planningMode, starterMature, starterHasRye, feedRatio, eatTimeSet, pendingEatTime, styleKey]);
 
   // Clear starter state note when inputs that drive it change
   useEffect(() => {
@@ -1684,11 +1684,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       }
 
       // RT starter — declining (past peak, before trough)
+      // Return the ACTUAL current cycle peak (already passed) so the solver
+      // scores it as suboptimal. starterRefeedTime signals a refeed-now
+      // candidate which findOptimalPositionSourdough picks up as Peak 2B.
       if (hoursSinceFeed < troughH) {
-        setStarterStateNote('Declining — still usable, but next peak will be stronger.');
+        setStarterStateNote(
+          locale === 'fr'
+            ? 'En descente — encore utilisable. Nourrir maintenant donne un pic plus fort.'
+            : 'Declining — still usable. Feeding now gives a stronger result.'
+        );
         setStarterIsDepletedAt(null);
-        setStarterRefeedTime(null);
-        return new Date(new Date().getTime() + adjPeakH * 3600000);
+        setStarterRefeedTime(new Date());
+        return new Date(lastFedTime.getTime() + adjPeakH * 3600000);
       }
 
       // RT starter — depleted (past trough)
@@ -1814,18 +1821,36 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     // Peak 2 candidates (Mode A last_fed only)
     if (planningMode === 'last_fed' && lastFedTime) {
+      // Option A: natural trough cycle (Feed 2 at trough)
       const troughMs  = lastFedTime.getTime() + troughH * 3600000;
-      const peak2HBF  = (bakeMs - (troughMs + adjPeakH * 3600000)) / 3600000;
+      const peak2AHBF = (bakeMs - (troughMs + adjPeakH * 3600000)) / 3600000;
 
       for (let mixHBF = scanFrom; mixHBF >= scanTo; mixHBF -= STEP) {
         if (inBlocker(mixHBF)) continue;
-        const ss = starterScore(mixHBF, peak2HBF);
+        const ss = starterScore(mixHBF, peak2AHBF);
         if (ss === 0) continue;
         candidates.push({
-          mixHBF, peakHBF: peak2HBF, feedMs: troughMs,
+          mixHBF, peakHBF: peak2AHBF, feedMs: troughMs,
           usingPeak2: true, feed2Ms: troughMs,
-          score: combinedScore(mixHBF, peak2HBF, troughMs), sscore: ss,
+          score: combinedScore(mixHBF, peak2AHBF, troughMs), sscore: ss,
         });
+      }
+
+      // Option B: refeed now (declining state — starterRefeedTime set to now)
+      if (starterRefeedTime) {
+        const refeedMs  = starterRefeedTime.getTime();
+        const peak2BHBF = (bakeMs - (refeedMs + adjPeakH * 3600000)) / 3600000;
+
+        for (let mixHBF = scanFrom; mixHBF >= scanTo; mixHBF -= STEP) {
+          if (inBlocker(mixHBF)) continue;
+          const ss = starterScore(mixHBF, peak2BHBF);
+          if (ss === 0) continue;
+          candidates.push({
+            mixHBF, peakHBF: peak2BHBF, feedMs: refeedMs,
+            usingPeak2: true, feed2Ms: refeedMs,
+            score: combinedScore(mixHBF, peak2BHBF, refeedMs), sscore: ss,
+          });
+        }
       }
     }
 
@@ -3238,7 +3263,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   feedPlan.push({
                     ft: feed2Time,
                     label: isFr ? 'Repas 2' : 'Feed 2',
-                    note: isFr ? 'Repas actif pour cette cuisson' : 'Active feed for this bake',
+                    note: (() => {
+                      const isRefeedNow = Math.abs(feed2Time.getTime() - Date.now()) < 30 * 60 * 1000;
+                      if (isRefeedNow) {
+                        return isFr
+                          ? 'Nourrir maintenant pour un pic plus fort'
+                          : 'Feed now for a stronger peak';
+                      }
+                      return isFr ? 'Repas actif pour cette cuisson' : 'Active feed for this bake';
+                    })(),
                   });
                 }
               }
