@@ -582,12 +582,14 @@ export default function Home() {
     setScheduleReady(false);
   }, [bakeType, styleKey]);
 
-  // Auto-select sourdough for pain au levain when no yeast type is set yet
+  // Auto-select sourdough for pain au levain when no yeast type is set yet.
+  // Do NOT advance advancedHighestStep here — baker must still navigate
+  // through climate, oven, mixer, flour steps. The Max(s, 9) call fires
+  // correctly in the YeastHelper onSelect handler after all steps are done.
   useEffect(() => {
     if (tab === 'custom' && styleKey === 'pain_levain' && !yeastType) {
       setYeastType('sourdough');
       setPrefermentType('levain');
-      setAdvancedHighestStep(s => Math.max(s, 9));
     }
   }, [styleKey, tab]);
 
