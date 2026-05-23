@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { type YeastType } from '../data';
 import DecisionList from './DecisionList';
 import DecisionSummary from './DecisionSummary';
@@ -21,10 +21,12 @@ interface YeastHelperProps {
   calcData?: CalcData;
   disabledIds?: string[];
   disabledNote?: string;
+  styleKey?: string | null;
 }
 
-export default function YeastHelper({ onSelect, onClose, selected, calcData, disabledIds, disabledNote }: YeastHelperProps) {
+export default function YeastHelper({ onSelect, onClose, selected, calcData, disabledIds, disabledNote, styleKey }: YeastHelperProps) {
   const t = useTranslations('yeast');
+  const locale = useLocale();
   const [expanded, setExpanded] = useState(!selected);
   const [showCalc, setShowCalc] = useState(false);
 
@@ -35,6 +37,16 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
     { id: 'fresh',      image: '/yeast_fresh.webp',     title: t('fresh.title'),     tagline: t('fresh.tagline') },
     { id: 'sourdough',  image: '/yeast_sourdough.webp', title: t('sourdough.title'), tagline: t('sourdough.tagline') },
   ];
+
+  const sourdoughRecommended = ['pain_levain', 'pain_campagne', 'sourdough'].includes(styleKey ?? '');
+  const sourdoughTraditional = styleKey === 'pain_levain';
+
+  const orderedOptions = sourdoughRecommended
+    ? [
+        options.find(o => o.id === 'sourdough')!,
+        ...options.filter(o => o.id !== 'sourdough'),
+      ]
+    : options;
 
   const selectedOpt = options.find(o => o.id === selected);
 
@@ -58,7 +70,18 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
             </p>
           </div>
           <DecisionList
-            options={options}
+            options={orderedOptions.map(opt => ({
+              ...opt,
+              tagline: opt.id === 'sourdough' && sourdoughRecommended
+                ? (locale === 'fr'
+                    ? `${opt.tagline} · Recommandé pour ce pain`
+                    : `${opt.tagline} · Recommended for this style`)
+                : opt.id !== 'sourdough' && sourdoughTraditional
+                ? (locale === 'fr'
+                    ? `${opt.tagline} · Non traditionnel pour le pain au levain`
+                    : `${opt.tagline} · Non-traditional for pain au levain`)
+                : opt.tagline,
+            }))}
             selectedId={selected ?? ''}
             onSelect={(id) => { onSelect(id as YeastType); setExpanded(false); }}
             disabledIds={disabledIds}

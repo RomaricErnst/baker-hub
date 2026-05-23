@@ -582,6 +582,15 @@ export default function Home() {
     setScheduleReady(false);
   }, [bakeType, styleKey]);
 
+  // Auto-select sourdough for pain au levain when no yeast type is set yet
+  useEffect(() => {
+    if (tab === 'custom' && styleKey === 'pain_levain' && !yeastType) {
+      setYeastType('sourdough');
+      setPrefermentType('levain');
+      setAdvancedHighestStep(s => Math.max(s, 9));
+    }
+  }, [styleKey, tab]);
+
   // ── Computed ──────────────────────────────
   const ovenData = ovenType
     ? bakeType === 'bread'
@@ -1560,6 +1569,7 @@ export default function Home() {
                 onClose={() => {}}
                 disabledIds={['sourdough']}
                 disabledNote={locale === 'fr' ? 'Le levain nécessite le mode Avancé' : 'Sourdough requires Custom mode'}
+                styleKey={styleKey}
               />
             </StepCard>
 
@@ -2301,6 +2311,7 @@ export default function Home() {
                   }
                 }}
                 onClose={() => {}}
+                styleKey={styleKey}
               />
             </StepCard>
 
