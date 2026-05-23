@@ -1703,37 +1703,142 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     return null;
   }
 
-  // ── Sourdough: joint mix+starter solver ──────
+  // ── Sourdough: joint mix+starter solver (scoring loop) ──────
   function findOptimalPositionSourdough(et: Date) {
     const peakTime = deriveStarterPeakTime();
     if (!peakTime) return;
 
-    const bakeMs   = et.getTime();
-    const peakHBF  = (bakeMs - peakTime.getTime()) / 3600000;
-    const peakH    = getPrefPeakH_RT('sourdough', kitchenTemp);
-    const ryeF     = starterHasRye ? 0.8 : 1.0;
-    const matF     = starterMature ? 1.0 : 1.2;
+    const bakeMs  = et.getTime();
+    const peakH   = getPrefPeakH_RT('sourdough', kitchenTemp);
+    const ryeF    = starterHasRye ? 0.8 : 1.0;
+    const matF    = starterMature ? 1.0 : 1.2;
     const ratioMultiplier = 1 + 0.35 * Math.log(feedRatio);
     const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
     const troughH  = getStarterTroughH(kitchenTemp, starterMature) * ryeF * ratioMultiplier;
-
-    const TOL       = starterLocation === 'fridge' ? 2.0 : 1.0;
-    const YELLOW_TOL = TOL + 1.5;
+    const TOL      = starterLocation === 'fridge' ? 2.0 : 1.0;
 
     const sweetFromHBF = renderSweetFrom;
     const sweetToHBF   = renderSweetTo;
+    const minTotalRT   = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0 + (preheatMin / 60);
 
-    const peakMixHBF        = peakHBF;
-    const peakMixInDoughZone = peakMixHBF >= sweetToHBF && peakMixHBF <= sweetFromHBF;
+    // ── Scoring helpers ──────────────────────────────
 
-    if (peakMixInDoughZone) {
-      const newMix = new Date(bakeMs - peakMixHBF * 3600000);
-      setPendingStart(newMix);
-      onChange(newMix, et, blocks);
-      setStarterPillState('green');
+    function starterScore(mixHBF: number, peakHBF: number): 0 | 1 | 2 {
+      const gap = Math.abs(mixHBF - peakHBF);
+      if (gap <= TOL)       return 2;
+      if (gap <= TOL + 1.5) return 1;
+      return 0;
+    }
+
+    function doughScore(mixHBF: number): 0 | 1 | 2 {
+      if (mixHBF >= sweetToHBF && mixHBF <= sweetFromHBF) return 2;
+      if (mixHBF >= sweetToHBF - 2 && mixHBF <= sweetFromHBF + 2) return 1;
+      return 0;
+    }
+
+    function retardBonus(mixHBF: number): number {
+      const hasColdRetardLocal = (sweetFromHBF - sweetToHBF) / 2 > minTotalRT;
+      if (!hasColdRetardLocal) return 0;
+      return Math.min(8, Math.round(
+        Math.min(mixHBF - minTotalRT, sweetFromHBF - minTotalRT) /
+        Math.max(1, sweetFromHBF - minTotalRT) * 8
+      ));
+    }
+
+    function reasonableHour(mixHBF: number): number {
+      const h = new Date(bakeMs - mixHBF * 3600000).getHours();
+      return (h >= 7 && h <= 22) ? 1 : 0;
+    }
+
+    function feedComfort(feedMs: number): number {
+      const h = new Date(feedMs).getHours();
+      if (h >= 7  && h <= 9)  return 8;
+      if (h >= 19 && h <= 21) return 6;
+      if (h >= 6  && h <= 10) return 3;
+      if (h >= 18 && h <= 22) return 2;
+      return 0;
+    }
+
+    function inBlocker(mixHBF: number): boolean {
+      return blocks.some(b => {
+        const s = (bakeMs - b.from.getTime()) / 3600000;
+        const e = (bakeMs - b.to.getTime())   / 3600000;
+        return mixHBF > Math.min(s, e) && mixHBF < Math.max(s, e);
+      });
+    }
+
+    function combinedScore(mixHBF: number, peakHBF: number, feedMs: number): number {
+      const ss = starterScore(mixHBF, peakHBF);
+      const ds = doughScore(mixHBF);
+      const retardW = ss >= 2 ? 8 : 3;
+      return (ss + ds) * 100
+        + retardBonus(mixHBF) * retardW
+        + reasonableHour(mixHBF) * 5
+        + feedComfort(feedMs);
+    }
+
+    // ── Candidate generation ──────────────────────────
+
+    const STEP     = 0.25;
+    const scanFrom = sweetFromHBF + 2;
+    const scanTo   = Math.max(sweetToHBF - 2, minTotalRT + 0.5);
+
+    interface Candidate {
+      mixHBF:     number;
+      peakHBF:    number;
+      feedMs:     number;
+      usingPeak2: boolean;
+      feed2Ms:    number | null;
+      score:      number;
+      sscore:     0 | 1 | 2;
+    }
+
+    const candidates: Candidate[] = [];
+
+    // Peak 1 candidates
+    const peak1HBF = (bakeMs - peakTime.getTime()) / 3600000;
+    const feed1Ms  = lastFedTime
+      ? lastFedTime.getTime()
+      : peakTime.getTime() - adjPeakH * 3600000;
+
+    for (let mixHBF = scanFrom; mixHBF >= scanTo; mixHBF -= STEP) {
+      if (inBlocker(mixHBF)) continue;
+      const ss = starterScore(mixHBF, peak1HBF);
+      if (ss === 0) continue;
+      candidates.push({
+        mixHBF, peakHBF: peak1HBF, feedMs: feed1Ms,
+        usingPeak2: false, feed2Ms: null,
+        score: combinedScore(mixHBF, peak1HBF, feed1Ms), sscore: ss,
+      });
+    }
+
+    // Peak 2 candidates (Mode A last_fed only)
+    if (planningMode === 'last_fed' && lastFedTime) {
+      const troughMs  = lastFedTime.getTime() + troughH * 3600000;
+      const peak2HBF  = (bakeMs - (troughMs + adjPeakH * 3600000)) / 3600000;
+
+      for (let mixHBF = scanFrom; mixHBF >= scanTo; mixHBF -= STEP) {
+        if (inBlocker(mixHBF)) continue;
+        const ss = starterScore(mixHBF, peak2HBF);
+        if (ss === 0) continue;
+        candidates.push({
+          mixHBF, peakHBF: peak2HBF, feedMs: troughMs,
+          usingPeak2: true, feed2Ms: troughMs,
+          score: combinedScore(mixHBF, peak2HBF, troughMs), sscore: ss,
+        });
+      }
+    }
+
+    // ── Pick best candidate ──────────────────────────
+
+    if (candidates.length === 0) {
+      const idealMixHBF   = (sweetFromHBF + sweetToHBF) / 2;
+      const idealMixTime  = new Date(bakeMs - idealMixHBF * 3600000);
+      const suggestedFeed = new Date(idealMixTime.getTime() - adjPeakH * 3600000);
+      setStarterPillState('red');
+      setRefeedSuggestion(suggestedFeed);
       setUsingPeak2(false);
       setFeed2Time(null);
-      setRefeedSuggestion(null);
       setDriftNote(null);
       if (planningMode === 'last_fed' && lastFedTime) {
         onFeedTimeChange?.(lastFedTime);
@@ -1742,83 +1847,31 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       return;
     }
 
-    const clampedMixHBF = Math.max(sweetToHBF, Math.min(sweetFromHBF, peakHBF));
-    const gapH = Math.abs(clampedMixHBF - peakHBF);
+    candidates.sort((a, b) => b.score - a.score);
+    const best = candidates[0];
 
-    if (gapH <= YELLOW_TOL) {
-      const newMix = new Date(bakeMs - clampedMixHBF * 3600000);
-      setPendingStart(newMix);
-      onChange(newMix, et, blocks);
-      setStarterPillState('yellow');
-      setUsingPeak2(false);
-      setFeed2Time(null);
-      setRefeedSuggestion(null);
-      const mixInBlocker = blocks.some(b => newMix.getTime() > b.from.getTime() && newMix.getTime() < b.to.getTime());
-      setDriftNote(mixInBlocker
-        ? 'Mix time lands in a blocked window — adjust your bake time to realign.'
-        : 'Starter timing slightly off — mix was shifted to the nearest viable window.');
-      if (planningMode === 'last_fed' && lastFedTime) {
-        onFeedTimeChange?.(lastFedTime);
-        setFeedTime(lastFedTime);
-      }
-      return;
+    const newMix = new Date(bakeMs - best.mixHBF * 3600000);
+    setPendingStart(newMix);
+    onChange(newMix, et, blocks);
+    setUsingPeak2(best.usingPeak2);
+    setFeed2Time(best.feed2Ms ? new Date(best.feed2Ms) : null);
+    setStarterPillState(best.sscore === 2 ? 'green' : 'yellow');
+    setRefeedSuggestion(null);
+
+    // Drift note for yellow positions
+    if (best.sscore < 2 || doughScore(best.mixHBF) < 2) {
+      setDriftNote('Starter timing slightly off — mix shifted to best available window.');
+    } else {
+      setDriftNote(null);
     }
 
-    // Try Peak 2 (second feeding cycle)
-    if (planningMode === 'last_fed' && lastFedTime) {
-      const feed1Ms  = lastFedTime.getTime();
-      const troughMs = feed1Ms + troughH * 3600000;
-      const peak2Time = new Date(troughMs + adjPeakH * 3600000);
-      const peak2HBF  = (bakeMs - peak2Time.getTime()) / 3600000;
-      const peak2InDoughZone = peak2HBF >= sweetToHBF && peak2HBF <= sweetFromHBF;
-
-      if (peak2InDoughZone) {
-        const newMix = new Date(bakeMs - peak2HBF * 3600000);
-        setPendingStart(newMix);
-        onChange(newMix, et, blocks);
-        setUsingPeak2(true);
-        setFeed2Time(new Date(troughMs));
-        setStarterPillState('green');
-        setRefeedSuggestion(null);
-        setDriftNote(null);
-        onFeedTimeChange?.(new Date(troughMs));
-        setFeedTime(new Date(troughMs));
-        onFeed2TimeChange?.(new Date(troughMs));
-        return;
-      }
-
-      const clampedPeak2HBF = Math.max(sweetToHBF, Math.min(sweetFromHBF, peak2HBF));
-      if (Math.abs(clampedPeak2HBF - peak2HBF) <= YELLOW_TOL) {
-        const newMix = new Date(bakeMs - clampedPeak2HBF * 3600000);
-        setPendingStart(newMix);
-        onChange(newMix, et, blocks);
-        setUsingPeak2(true);
-        setFeed2Time(new Date(troughMs));
-        setStarterPillState('yellow');
-        setRefeedSuggestion(null);
-        const mixInBlocker2 = blocks.some(b => newMix.getTime() > b.from.getTime() && newMix.getTime() < b.to.getTime());
-        setDriftNote(mixInBlocker2
-          ? 'Second peak mix lands in a blocked window — adjust your bake time to realign.'
-          : 'Second peak used — starter timing shifted to nearest viable window.');
-        onFeedTimeChange?.(new Date(troughMs));
-        setFeedTime(new Date(troughMs));
-        onFeed2TimeChange?.(new Date(troughMs));
-        return;
-      }
-    }
-
-    // Red pill — suggest ideal feed time
-    const idealMixHBF  = (sweetFromHBF + sweetToHBF) / 2;
-    const idealMixTime = new Date(bakeMs - idealMixHBF * 3600000);
-    const suggestedFeed = new Date(idealMixTime.getTime() - adjPeakH * 3600000);
-    setStarterPillState('red');
-    setRefeedSuggestion(suggestedFeed);
-    setUsingPeak2(false);
-    setFeed2Time(null);
-    setDriftNote(null);
-    if (planningMode === 'last_fed' && lastFedTime) {
-      onFeedTimeChange?.(lastFedTime);
-      setFeedTime(lastFedTime);
+    const activeFeed = best.usingPeak2 && best.feed2Ms
+      ? new Date(best.feed2Ms)
+      : lastFedTime ?? new Date(best.feedMs);
+    onFeedTimeChange?.(activeFeed);
+    setFeedTime(activeFeed);
+    if (best.usingPeak2 && best.feed2Ms) {
+      onFeed2TimeChange?.(new Date(best.feed2Ms));
     }
   }
 
