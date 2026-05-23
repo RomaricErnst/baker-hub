@@ -8,6 +8,7 @@ export interface FermentChartProps {
   prefermentType: string;   // 'none' | 'biga' | 'poolish' | 'levain' | 'sourdough'
   kitchenTemp: number;
   fridgeTemp?: number;      // fridge storage temp — for starter curve shape
+  styleKey?: string;        // for style-sensitive starter peak timing
   mixOffsetH: number;       // hours before bake — controlled
   prefOffsetH: number;      // hours before mix — controlled (0 / ignored when no pref)
   blocks: AvailabilityBlock[];
@@ -41,6 +42,9 @@ export interface FermentChartProps {
   starterMature?: boolean;
   starterStoredInFridge?: boolean;
   startTimeInPast?: boolean;
+  comparisonFridgeOutTime?: Date | null;
+  comparisonFridgePeakTime?: Date | null;
+  showFridgeComparison?: boolean;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -94,8 +98,8 @@ export function getPrefRTWarmupH(temp: number): number {
 }
 
 // How long after Feed 1 until starter is depleted (trough = ready for Feed 2)
-export function getStarterTroughH(temp: number, mature: boolean): number {
-  const peakH = getPrefPeakH_RT('sourdough', temp);
+export function getStarterTroughH(temp: number, mature: boolean, styleKey = 'neapolitan'): number {
+  const peakH = getPrefPeakH_RT('sourdough', temp, styleKey);
   const maturityFactor = mature ? 1.0 : 1.2;
   return peakH * 1.8 * maturityFactor;
 }
@@ -221,7 +225,7 @@ function fmtDT(d: Date, isFr = false): string {
 
 // ── Component ─────────────────────────────────────────────────
 export default function FermentChart({
-  eatTime, prefermentType, kitchenTemp, fridgeTemp = 6,
+  eatTime, prefermentType, kitchenTemp, fridgeTemp = 6, styleKey = 'neapolitan',
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange, onDragStart, onDragEnd,
   windowH, prefInFridge, hasColdRetard, sweetCenterH, sweetFromH, sweetToH,
@@ -231,6 +235,8 @@ export default function FermentChart({
   starterKnownPeakTime = null, starterIsDepletedAt = null, starterRefeedTime = null,
   starterMature = true,
   startTimeInPast = false,
+  comparisonFridgeOutTime = null, comparisonFridgePeakTime = null,
+  showFridgeComparison = false,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -350,7 +356,7 @@ export default function FermentChart({
   const bakeMs = eatTime.getTime();
 
   // ── Sourdough multi-cycle starter derived values ──────────
-  const starterPeakH   = isLevain ? getPrefPeakH_RT('sourdough', kitchenTemp) : 0;
+  const starterPeakH   = isLevain ? getPrefPeakH_RT('sourdough', kitchenTemp, styleKey) : 0;
   const starterWarmupH = isLevain ? getStarterFridgeWarmupH(kitchenTemp) : 0;
 
   // Q10 cold activity model for fridge starter
@@ -413,6 +419,17 @@ export default function FermentChart({
     knownPeakHBF !== null ? knownPeakHBF
     : activePeakHBF !== null ? activePeakHBF
     : null;
+
+  // RT vs fridge comparison overlay values
+  const compFridgeOutHBF: number | null =
+    showFridgeComparison && comparisonFridgeOutTime
+      ? (bakeMs - comparisonFridgeOutTime.getTime()) / 3600000
+      : null;
+
+  const compFridgePeakHBF: number | null =
+    showFridgeComparison && comparisonFridgePeakTime
+      ? (bakeMs - comparisonFridgePeakTime.getTime()) / 3600000
+      : null;
 
   // ── Label collision detection ────────────────────────────
   const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 80;
@@ -911,6 +928,59 @@ export default function FermentChart({
               stroke={`${prefColor}A5`} strokeWidth={1.5}
               clipPath="url(#pref-bell-clip)"
             />
+          </>
+        )}
+
+        {/* ── RT vs Fridge comparison overlay ── */}
+        {isLevain && showFridgeComparison
+         && compFridgePeakHBF !== null
+         && compFridgeOutHBF !== null && (
+          <>
+            {/* Dashed RT bell — what happens without fridge */}
+            <path
+              d={makeBellPath(
+                activePeakHBF ?? compFridgePeakHBF + 2,
+                prefSig, W, WH,
+                activeFeedHBF ?? compFridgePeakHBF + starterPeakH
+              )}
+              fill="rgba(74,127,165,0.06)"
+              stroke="rgba(74,127,165,0.25)"
+              strokeWidth={1}
+              strokeDasharray="4 3"
+              clipPath="url(#chart-area-clip)"
+            />
+            {/* Solid fridge path — what happens if baker refrigerates */}
+            <path
+              d={makeBellPath(
+                compFridgePeakHBF,
+                Math.max(0.5, starterWarmupH * 0.4),
+                W, WH,
+                compFridgeOutHBF
+              )}
+              fill="rgba(74,127,165,0.15)"
+              stroke="rgba(74,127,165,0.6)"
+              strokeWidth={1.5}
+              clipPath="url(#chart-area-clip)"
+            />
+            {/* Fridge-out marker */}
+            <line
+              x1={hToX(compFridgeOutHBF, W, WH)}
+              y1={AXIS_Y - 8}
+              x2={hToX(compFridgeOutHBF, W, WH)}
+              y2={AXIS_Y + 8}
+              stroke="rgba(74,127,165,0.6)"
+              strokeWidth={1.5}
+            />
+            <text
+              x={hToX(compFridgeOutHBF, W, WH)}
+              y={AXIS_Y + 50}
+              fontSize={9}
+              fill="rgba(74,127,165,0.7)"
+              fontFamily="DM Mono, monospace"
+              textAnchor="middle"
+            >
+              {isFr ? 'Sortir' : 'Remove'}
+            </text>
           </>
         )}
 

@@ -1141,6 +1141,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [feedRatio, setFeedRatio]               = useState<1 | 2 | 5 | 10>(feedRatioProp ?? 1);
   const [driftNote, setDriftNote]               = useState<string | null>(null);
   const [showRatioInfo, setShowRatioInfo]       = useState(false);
+  const [fridgeSuggestion, setFridgeSuggestion] = useState<string | null>(null);
+  const [suggestedFridgeOutTime, setSuggestedFridgeOutTime] = useState<Date | null>(null);
+  const [suggestedFridgePeakTime, setSuggestedFridgePeakTime] = useState<Date | null>(null);
+  const [showFridgeComparison, setShowFridgeComparison] = useState(false);
   // StarterState kept for BakeGuide compat — derived from new vars
   const starterState: StarterState = starterLocation === 'fridge'
     ? (fridgeOutTime ? 'fridge_fed' : 'fridge_unfed')
@@ -1534,6 +1538,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setStarterStateNote(null);
   }, [lastFedTime, knownPeakTime, starterLocation, planningMode, starterMature, starterHasRye]);
 
+  // Clear fridge suggestion when key inputs change
+  useEffect(() => {
+    setFridgeSuggestion(null);
+    setSuggestedFridgeOutTime(null);
+    setSuggestedFridgePeakTime(null);
+    setShowFridgeComparison(false);
+  }, [starterLocation, lastFedTime, planningMode, pendingEatTime]);
+
   useEffect(() => {
     setDriftNote(null);
   }, [lastFedTime, knownPeakTime, pendingEatTime]);
@@ -1660,14 +1672,21 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }, 0);
   }
 
+  function clearFridgeSuggestion() {
+    setFridgeSuggestion(null);
+    setSuggestedFridgeOutTime(null);
+    setSuggestedFridgePeakTime(null);
+    setShowFridgeComparison(false);
+  }
+
   // ── Sourdough: derive peak time from inputs ──
   function deriveStarterPeakTime(): Date | null {
-    const peakH = getPrefPeakH_RT('sourdough', kitchenTemp);
+    const peakH = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
     const ryeF  = starterHasRye ? 0.8 : 1.0;
     const matF  = starterMature ? 1.0 : 1.2;
     const ratioMultiplier = 1 + 0.35 * Math.log(feedRatio);
     const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
-    const troughH  = getStarterTroughH(kitchenTemp, starterMature) * ryeF * ratioMultiplier;
+    const troughH  = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * ratioMultiplier;
     const warmupH  = getStarterFridgeWarmupH(kitchenTemp);
 
     if (planningMode === 'know_peak' && knownPeakTime) {
@@ -1691,7 +1710,47 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       if (hoursSinceFeed < adjPeakH) {
         setStarterIsDepletedAt(null);
         setStarterRefeedTime(null);
-        return new Date(lastFedTime.getTime() + adjPeakH * 3600000);
+
+        const rtPeakTime = new Date(lastFedTime.getTime() + adjPeakH * 3600000);
+        const hoursAfterPeak =
+          (pendingStart.getTime() - rtPeakTime.getTime()) / 3600000;
+
+        if (hoursAfterPeak > adjPeakH * 0.6 && starterLocation === 'rt') {
+          const warmupH2 = getStarterFridgeWarmupH(kitchenTemp);
+          if (hoursAfterPeak <= 18) {
+            const computedFridgeOut = new Date(
+              pendingStart.getTime() - warmupH2 * 3600000
+            );
+            const computedFridgePeak = new Date(
+              computedFridgeOut.getTime() + warmupH2 * 3600000
+            );
+            const minFridgeInTime = new Date(Date.now() + 15 * 60000);
+            if (computedFridgeOut > minFridgeInTime) {
+              setSuggestedFridgeOutTime(computedFridgeOut);
+              setSuggestedFridgePeakTime(computedFridgePeak);
+              setShowFridgeComparison(true);
+              setFridgeSuggestion(
+                locale === 'fr'
+                  ? `Mettez au frigo maintenant — sortez à ${
+                      computedFridgeOut.toLocaleTimeString('fr-FR',
+                        { hour: 'numeric', minute: '2-digit' })
+                    } pour mixer au pic`
+                  : `Refrigerate now — remove at ${
+                      computedFridgeOut.toLocaleTimeString('en-US',
+                        { hour: 'numeric', minute: '2-digit', hour12: true })
+                    } to mix at peak`
+              );
+            } else {
+              clearFridgeSuggestion();
+            }
+          } else {
+            clearFridgeSuggestion();
+          }
+        } else {
+          clearFridgeSuggestion();
+        }
+
+        return rtPeakTime;
       }
 
       // RT starter — declining (past peak, before trough)
@@ -1706,6 +1765,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         );
         setStarterIsDepletedAt(null);
         setStarterRefeedTime(new Date());
+        clearFridgeSuggestion();
         return new Date(lastFedTime.getTime() + adjPeakH * 3600000);
       }
 
@@ -1715,6 +1775,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const refeedNow = new Date();
       setStarterRefeedTime(refeedNow);
       setStarterStateNote('Depleted — needs feeding. Schedule below assumes you feed it now.');
+      clearFridgeSuggestion();
       return new Date(refeedNow.getTime() + adjPeakH * 3600000);
     }
 
@@ -1727,14 +1788,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (!peakTime) return;
 
     const bakeMs  = et.getTime();
-    const peakH   = getPrefPeakH_RT('sourdough', kitchenTemp);
+    const peakH   = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
     const ryeF    = starterHasRye ? 0.8 : 1.0;
     const matF    = starterMature ? 1.0 : 1.2;
     const ratioMultiplier = 1 + 0.35 * Math.log(feedRatio);
     const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
-    const troughH  = getStarterTroughH(kitchenTemp, starterMature) * ryeF * ratioMultiplier;
+    const troughH  = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * ratioMultiplier;
     const warmupH  = getStarterFridgeWarmupH(kitchenTemp);
-    const TOL      = starterLocation === 'fridge' ? 2.0 : 1.0;
+    const ftm      = Math.max(0.7, Math.min(1.5, flourStrength ?? 1.0));
+    const baseTOL  = starterLocation === 'fridge' ? 2.0 : 1.0;
+    const TOL      = baseTOL * ftm;
 
     const sweetFromHBF = renderSweetFrom;
     const sweetToHBF   = renderSweetTo;
@@ -1803,13 +1866,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const scanTo   = Math.max(sweetToHBF - 2, minTotalRT + 0.5);
 
     interface Candidate {
-      mixHBF:     number;
-      peakHBF:    number;
-      feedMs:     number;
-      usingPeak2: boolean;
-      feed2Ms:    number | null;
-      score:      number;
-      sscore:     0 | 1 | 2;
+      mixHBF:       number;
+      peakHBF:      number;
+      feedMs:       number;
+      usingPeak2:   boolean;
+      feed2Ms:      number | null;
+      score:        number;
+      sscore:       0 | 1 | 2;
+      isFridgePath?: boolean;
     }
 
     const candidates: Candidate[] = [];
@@ -1873,6 +1937,31 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       }
     }
 
+    // Peak 1 Fridge candidates (still-rising RT starter, fridge path computed)
+    if (starterLocation === 'rt' && suggestedFridgePeakTime) {
+      const fridgePeakHBF = (bakeMs - suggestedFridgePeakTime.getTime()) / 3600000;
+      const fridgeFeedMs  = lastFedTime?.getTime() ?? feed1Ms;
+      const fridgeTOL     = TOL * 1.5;
+
+      for (let mixHBF = scanFrom; mixHBF >= scanTo; mixHBF -= STEP) {
+        if (bakeMs - mixHBF * 3600000 <= nowMs) continue;
+        if (inBlocker(mixHBF)) continue;
+        const gap = Math.abs(mixHBF - fridgePeakHBF);
+        const ss: 0 | 1 | 2 = gap <= fridgeTOL ? 2 : gap <= fridgeTOL + 1.5 ? 1 : 0;
+        if (ss === 0) continue;
+        candidates.push({
+          mixHBF,
+          peakHBF: fridgePeakHBF,
+          feedMs: fridgeFeedMs,
+          usingPeak2: false,
+          feed2Ms: null,
+          score: combinedScore(mixHBF, fridgePeakHBF, fridgeFeedMs) + 5,
+          sscore: ss,
+          isFridgePath: true,
+        });
+      }
+    }
+
     // ── Pick best candidate ──────────────────────────
 
     if (candidates.length === 0) {
@@ -1903,6 +1992,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const computedFridgeOut = new Date(newMix.getTime() - warmupH * 3600000);
       setFridgeOutTime(computedFridgeOut);
       onFridgeOutTimeChange?.(computedFridgeOut);
+    }
+
+    // If fridge path candidate won, apply the suggested fridge-out time
+    if (best.isFridgePath && suggestedFridgeOutTime) {
+      setFridgeOutTime(suggestedFridgeOutTime);
+      onFridgeOutTimeChange?.(suggestedFridgeOutTime);
     }
 
     setUsingPeak2(best.usingPeak2);
@@ -2150,7 +2245,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
               {/* State 2: recommendation card */}
               {hasNotFedYet === true && (() => {
-                const peakH = getPrefPeakH_RT('sourdough', kitchenTemp);
+                const peakH = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
                 const ryeF = starterHasRye ? 0.8 : 1.0;
                 const matF = starterMature ? 1.0 : 1.2;
                 const ratioMultiplier = 1 + 0.35 * Math.log(feedRatio);
@@ -2343,6 +2438,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ))}
             </div>
           </div>
+
+          {/* ── Fridge suggestion (still-rising, mix too far from RT peak) ── */}
+          {isSourdough && fridgeSuggestion && starterLocation === 'rt' && (
+            <div style={{
+              fontSize: '.7rem',
+              color: 'var(--smoke)',
+              fontFamily: 'var(--font-dm-sans)',
+              lineHeight: 1.5,
+              fontStyle: 'italic',
+            }}>
+              {fridgeSuggestion}
+            </div>
+          )}
 
           {/* ── Mode B toggle link / picker ── */}
           {planningMode === 'last_fed' && (
@@ -2747,6 +2855,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               prefermentType={(skipPoolishNote || prefAlgoRed) ? 'none' : (isSourdough ? 'sourdough' : prefermentType)}
               kitchenTemp={kitchenTemp}
               fridgeTemp={fridgeTemp}
+              styleKey={styleKey ?? 'neapolitan'}
               mixOffsetH={Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)}
               prefOffsetH={(() => {
                 if (!isSourdough) return prefOffsetH;
@@ -2766,7 +2875,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 if (knownPeakTime) {
                   return Math.max(0.5,
                     (pendingStart.getTime() - knownPeakTime.getTime()) / 3600000
-                    + getPrefPeakH_RT('sourdough', kitchenTemp)
+                    + getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan')
                   );
                 }
                 return prefOffsetH;
@@ -2799,6 +2908,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterIsDepletedAt={isSourdough ? starterIsDepletedAt : null}
               starterRefeedTime={isSourdough ? starterRefeedTime : null}
               starterMature={starterMature}
+              comparisonFridgeOutTime={isSourdough && showFridgeComparison ? suggestedFridgeOutTime : null}
+              comparisonFridgePeakTime={isSourdough && showFridgeComparison ? suggestedFridgePeakTime : null}
+              showFridgeComparison={isSourdough && showFridgeComparison}
               startTimeInPast={startTimeInPast}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
@@ -3194,12 +3306,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
             {/* ── Sourdough Starter Plan card ── */}
             {isSourdough && startComputed && (() => {
-              const peakH     = getPrefPeakH_RT('sourdough', kitchenTemp);
+              const peakH     = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
               const ratioMult = 1 + 0.35 * Math.log(feedRatio);
               const ryeF      = starterHasRye ? 0.8 : 1.0;
               const matF      = starterMature ? 1.0 : 1.2;
               const adjPeakH  = peakH * ryeF * matF * ratioMult;
-              const troughH   = getStarterTroughH(kitchenTemp, starterMature) * ryeF * ratioMult;
+              const troughH   = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * ratioMult;
               const warmupH   = getStarterFridgeWarmupH(kitchenTemp);
               const mixTime   = pendingStart;
 
@@ -3342,6 +3454,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
                         {fmtCardHM(activePeakTime, isFr)}
                       </div>
+                    </div>
+                  )}
+
+                  {fridgeSuggestion && starterLocation === 'rt' && (
+                    <div style={{
+                      fontSize: '11px',
+                      color: '#78350F',
+                      fontFamily: 'var(--font-dm-sans)',
+                      lineHeight: 1.5,
+                      marginBottom: '.5rem',
+                      padding: '.4rem .6rem',
+                      background: '#FEF3C7',
+                      borderRadius: '6px',
+                      border: '1px solid #FDE68A',
+                    }}>
+                      {fridgeSuggestion}
                     </div>
                   )}
 
