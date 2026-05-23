@@ -45,6 +45,7 @@ export interface FermentChartProps {
   comparisonFridgeOutTime?: Date | null;
   comparisonFridgePeakTime?: Date | null;
   showFridgeComparison?: boolean;
+  starterAdjPeakH?: number | null;  // ratio+maturity+rye adjusted peak hours
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -237,6 +238,7 @@ export default function FermentChart({
   startTimeInPast = false,
   comparisonFridgeOutTime = null, comparisonFridgePeakTime = null,
   showFridgeComparison = false,
+  starterAdjPeakH = null,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -387,17 +389,26 @@ export default function FermentChart({
       ? Math.exp(-0.5 * ((feedToFridgeOutH - fridgePeakH) / fridgeSigma) ** 2)
       : 0;
 
+  // effectivePeakH: use starterAdjPeakH when provided (ratio/maturity/rye adjusted)
+  // Falls back to base starterPeakH when null (non-sourdough or engine not yet run)
+  const effectivePeakH = isLevain && starterAdjPeakH ? starterAdjPeakH : starterPeakH;
+
+  // starterSigmaH: bell width scales with actual peak time (wide bell for long cycles)
+  const starterSigmaH = isLevain && starterAdjPeakH
+    ? starterAdjPeakH * 0.35
+    : prefSig;
+
   const activePeakHBF: number | null = activeFeedHBF !== null
     ? (starterFridgeOutTime
         ? (bakeMs - starterFridgeOutTime.getTime()) / 3600000 - starterWarmupH
-        : activeFeedHBF - starterPeakH)
+        : activeFeedHBF - effectivePeakH)
     : null;
 
   const histFeedHBF: number | null = isLevain && starterFeed2Time
     ? (bakeMs - starterFeed2Time.getTime()) / 3600000 : null;
 
   const histPeakHBF: number | null = histFeedHBF !== null
-    ? histFeedHBF - starterPeakH : null;
+    ? histFeedHBF - effectivePeakH : null;
 
   const activePrefX = activeFeedHBF !== null ? hToX(activeFeedHBF, W, WH) : prefX;
   const histPrefX   = histFeedHBF  !== null ? hToX(histFeedHBF,  W, WH) : null;
@@ -794,7 +805,7 @@ export default function FermentChart({
             {isLevain && histPeakHBF !== null && histFeedHBF !== null && (
               <>
                 <path
-                  d={makeBellPath(histPeakHBF, prefSig, W, WH, histFeedHBF)}
+                  d={makeBellPath(histPeakHBF, starterSigmaH, W, WH, histFeedHBF)}
                   fill="rgba(74,127,165,0.07)"
                   stroke="rgba(74,127,165,0.22)"
                   strokeWidth={1}
@@ -821,7 +832,7 @@ export default function FermentChart({
                 {/* Decay curve: full rise then decline showing spent cycle */}
                 {activePeakHBF !== null && (
                   <path
-                    d={makeBellPath(activePeakHBF, prefSig, W, WH, activeFeedHBF)}
+                    d={makeBellPath(activePeakHBF, starterSigmaH, W, WH, activeFeedHBF)}
                     fill="rgba(74,127,165,0.08)"
                     stroke="rgba(74,127,165,0.25)"
                     strokeWidth={1}
@@ -846,8 +857,8 @@ export default function FermentChart({
                 {refeedHBF !== null && (
                   <path
                     d={makeBellPath(
-                      refeedHBF - starterPeakH,
-                      prefSig, W, WH, refeedHBF
+                      refeedHBF - effectivePeakH,
+                      starterSigmaH, W, WH, refeedHBF
                     )}
                     fill={`${prefColor}2E`}
                     stroke={`${prefColor}A5`}
@@ -895,8 +906,8 @@ export default function FermentChart({
                 <path
                   d={(() => {
                     if (isLevain && knownPeakHBF !== null) {
-                      const syntheticFeedHBF = knownPeakHBF + starterPeakH;
-                      return makeBellPath(knownPeakHBF, prefSig, W, WH, syntheticFeedHBF);
+                      const syntheticFeedHBF = knownPeakHBF + effectivePeakH;
+                      return makeBellPath(knownPeakHBF, starterSigmaH, W, WH, syntheticFeedHBF);
                     }
                     const peakHBF = isLevain && effectiveStarterPeakHBF !== null
                       ? effectiveStarterPeakHBF : prefPeakHBF;
@@ -912,7 +923,7 @@ export default function FermentChart({
                     if (prefNeedsFridge && !isLevain) {
                       return makePlateauBellPath(peakHBF, prefSig, plateauHalfW, W, WH, feedHBF);
                     }
-                    return makeBellPath(peakHBF, prefSig, W, WH, feedHBF);
+                    return makeBellPath(peakHBF, starterSigmaH, W, WH, feedHBF);
                   })()}
                   fill={`${prefColor}2E`}
                   stroke={`${prefColor}A5`}
@@ -940,8 +951,8 @@ export default function FermentChart({
             <path
               d={makeBellPath(
                 activePeakHBF ?? compFridgePeakHBF + 2,
-                prefSig, W, WH,
-                activeFeedHBF ?? compFridgePeakHBF + starterPeakH
+                starterSigmaH, W, WH,
+                activeFeedHBF ?? compFridgePeakHBF + effectivePeakH
               )}
               fill="rgba(74,127,165,0.06)"
               stroke="rgba(74,127,165,0.25)"
@@ -1065,7 +1076,8 @@ export default function FermentChart({
         )}
 
         {/* ── Refeed diamond (depleted state) ── */}
-        {isLevain && refeedHBF !== null && depletedAtHBF !== null && (
+        {isLevain && refeedHBF !== null && depletedAtHBF !== null
+         && refeedHBF > effectiveMixHBF && (
           <g>
             <polygon
               points={`${hToX(refeedHBF, W, WH)},${AXIS_Y - S} ${hToX(refeedHBF, W, WH) + S},${AXIS_Y} ${hToX(refeedHBF, W, WH)},${AXIS_Y + S} ${hToX(refeedHBF, W, WH) - S},${AXIS_Y}`}
@@ -1088,7 +1100,8 @@ export default function FermentChart({
         )}
 
         {/* ── Feed circle — single cycle, no Peak 2 ── */}
-        {isLevain && activeFeedHBF !== null && histFeedHBF === null && !knownPeakHBF && (
+        {isLevain && activeFeedHBF !== null && histFeedHBF === null && !knownPeakHBF
+         && activeFeedHBF > effectiveMixHBF && (
           <g>
             <circle
               cx={hToX(activeFeedHBF, W, WH)}

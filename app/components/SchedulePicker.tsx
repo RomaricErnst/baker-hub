@@ -1145,6 +1145,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [suggestedFridgeOutTime, setSuggestedFridgeOutTime] = useState<Date | null>(null);
   const [suggestedFridgePeakTime, setSuggestedFridgePeakTime] = useState<Date | null>(null);
   const [showFridgeComparison, setShowFridgeComparison] = useState(false);
+  const [adjPeakHState, setAdjPeakHState] = useState<number | null>(null);
   // StarterState kept for BakeGuide compat — derived from new vars
   const starterState: StarterState = starterLocation === 'fridge'
     ? (fridgeOutTime ? 'fridge_fed' : 'fridge_unfed')
@@ -1686,6 +1687,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const matF  = starterMature ? 1.0 : 1.2;
     const ratioMultiplier = 1 + 0.35 * Math.log(feedRatio);
     const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
+    setAdjPeakHState(adjPeakH);
     const troughH  = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * ratioMultiplier;
     const warmupH  = getStarterFridgeWarmupH(kitchenTemp);
 
@@ -1706,8 +1708,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         return new Date(pendingStart.getTime());
       }
 
-      // RT starter — still rising
-      if (hoursSinceFeed < adjPeakH) {
+      // RT starter — still rising (0.5h hysteresis prevents oscillation at boundary)
+      const PEAK_HYSTERESIS = 0.5;
+      if (hoursSinceFeed < adjPeakH + PEAK_HYSTERESIS) {
         setStarterIsDepletedAt(null);
         setStarterRefeedTime(null);
 
@@ -2911,6 +2914,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterIsDepletedAt={isSourdough ? starterIsDepletedAt : null}
               starterRefeedTime={isSourdough ? starterRefeedTime : null}
               starterMature={starterMature}
+              starterAdjPeakH={isSourdough ? adjPeakHState : null}
               comparisonFridgeOutTime={isSourdough && showFridgeComparison ? suggestedFridgeOutTime : null}
               comparisonFridgePeakTime={isSourdough && showFridgeComparison ? suggestedFridgePeakTime : null}
               showFridgeComparison={isSourdough && showFridgeComparison}
