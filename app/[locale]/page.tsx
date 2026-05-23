@@ -1486,10 +1486,10 @@ export default function Home() {
                         <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>⚖ {isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                           <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: '64px', justifyContent: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: itemWeight >= 1000 ? '80px' : '64px', justifyContent: 'center' }}>
                             <input type="number" min={weightBounds.min} max={weightBounds.max} step={weightBounds.step} value={itemWeight}
                               onChange={e => { const w = Math.max(weightBounds.min, Math.min(weightBounds.max, Math.round(+e.target.value / weightBounds.step) * weightBounds.step)); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }}
-                              style={{ width: '48px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '1.1rem', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
+                              style={{ width: itemWeight >= 1000 ? '62px' : '48px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '1.1rem', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
                             <span style={{ fontSize: '.8rem', fontWeight: 500, color: 'var(--smoke)' }}>g</span>
                           </div>
                           <button onClick={() => { const w = Math.min(weightBounds.max, itemWeight + weightBounds.step); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
@@ -2163,10 +2163,10 @@ export default function Home() {
                         <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>⚖ {isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
                           <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: '64px', justifyContent: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: itemWeight >= 1000 ? '80px' : '64px', justifyContent: 'center' }}>
                             <input type="number" min={weightBounds.min} max={weightBounds.max} step={weightBounds.step} value={itemWeight}
                               onChange={e => { const w = Math.max(weightBounds.min, Math.min(weightBounds.max, Math.round(+e.target.value / weightBounds.step) * weightBounds.step)); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }}
-                              style={{ width: '48px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '1.1rem', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
+                              style={{ width: itemWeight >= 1000 ? '62px' : '48px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '1.1rem', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
                             <span style={{ fontSize: '.8rem', fontWeight: 500, color: 'var(--smoke)' }}>g</span>
                           </div>
                           <button onClick={() => { const w = Math.min(weightBounds.max, itemWeight + weightBounds.step); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
@@ -2333,6 +2333,40 @@ export default function Home() {
                 onClose={() => {}}
                 styleKey={styleKey}
               />
+              {styleKey === 'pain_levain' && yeastType === 'sourdough' && advancedStep === 7 && (
+                <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.5rem', textAlign: 'center' }}>
+                  {locale === 'fr' ? 'Levain présélectionné — appuyez pour confirmer' : 'Sourdough pre-selected — tap to confirm'}
+                </div>
+              )}
+              {yeastType === 'sourdough' && advancedStep === 7 && styleKey === 'pain_levain' && !reviewMode && (
+                <div style={{ marginTop: '.75rem' }}>
+                  <button
+                    onClick={() => {
+                      setPrefermentType('levain');
+                      setAdvancedStep(9);
+                      setAdvancedHighestStep(s => Math.max(s, 9));
+                      setTimeout(() => {
+                        const el = document.getElementById('adv-step-9');
+                        if (el) {
+                          const top = el.getBoundingClientRect().top + window.scrollY - 70;
+                          window.scrollTo({ top, behavior: 'smooth' });
+                        }
+                      }, 150);
+                    }}
+                    style={{
+                      width: '100%', padding: '.9rem 1.25rem',
+                      border: 'none', borderRadius: '12px',
+                      background: 'var(--terra)', color: '#fff',
+                      fontFamily: 'var(--font-playfair)',
+                      fontSize: '1.05rem', fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
+                    }}
+                  >
+                    {locale === 'fr' ? 'Continuer →' : 'Continue →'}
+                  </button>
+                </div>
+              )}
             </StepCard>
 
             {/* ─── ADV STEP 9: Preferment (hidden for sourdough) ── */}
