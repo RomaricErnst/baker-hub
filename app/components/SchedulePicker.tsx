@@ -1546,7 +1546,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setSuggestedFridgeOutTime(null);
     setSuggestedFridgePeakTime(null);
     setShowFridgeComparison(false);
-  }, [starterLocation, lastFedTime, planningMode, pendingEatTime]);
+  }, [starterLocation, lastFedTime, planningMode,
+      pendingEatTime, feedRatio, starterMature,
+      starterHasRye, kitchenTemp]);
 
   useEffect(() => {
     setDriftNote(null);
@@ -1683,6 +1685,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Sourdough: derive peak time from inputs ──
   function deriveStarterPeakTime(): Date | null {
+    clearFridgeSuggestion();
     onStarterPeakTimeChange?.(null);
     const peakH = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
     const ryeF  = starterHasRye ? 0.8 : 1.0;
