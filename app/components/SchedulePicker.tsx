@@ -2063,7 +2063,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   <div style={STARTER_LABEL_STYLE}>Have you fed your starter recently?</div>
                   <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
                     <button
-                      onClick={() => { setHasNotFedYet(false); onHasNotFedYetChange?.(false); }}
+                      onClick={() => {
+                        const now = new Date();
+                        const m = Math.round(now.getMinutes() / 15) * 15;
+                        const rounded = new Date(now);
+                        rounded.setMinutes(m === 60 ? 0 : m, 0, 0);
+                        if (m === 60) rounded.setHours(rounded.getHours() + 1);
+                        setLastFedTime(rounded);
+                        onLastFedTimeChange?.(rounded);
+                        setHasNotFedYet(false);
+                        onHasNotFedYetChange?.(false);
+                      }}
                       style={starterPillButton(false)}
                     >
                       Yes — I fed it
