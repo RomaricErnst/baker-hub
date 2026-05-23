@@ -1717,7 +1717,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
         if (hoursAfterPeak > adjPeakH * 0.6 && starterLocation === 'rt') {
           const warmupH2 = getStarterFridgeWarmupH(kitchenTemp);
-          if (hoursAfterPeak <= 18) {
+          const coldFactor = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
+          const fridgePeakH = adjPeakH * coldFactor;
+          const maxFridgeGapH = fridgePeakH * 0.7;
+          if (hoursAfterPeak <= maxFridgeGapH) {
             const computedFridgeOut = new Date(
               pendingStart.getTime() - warmupH2 * 3600000
             );
