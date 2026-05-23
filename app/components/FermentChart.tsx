@@ -7,6 +7,7 @@ export interface FermentChartProps {
   eatTime: Date;
   prefermentType: string;   // 'none' | 'biga' | 'poolish' | 'levain' | 'sourdough'
   kitchenTemp: number;
+  fridgeTemp?: number;      // fridge storage temp — for starter curve shape
   mixOffsetH: number;       // hours before bake — controlled
   prefOffsetH: number;      // hours before mix — controlled (0 / ignored when no pref)
   blocks: AvailabilityBlock[];
@@ -220,7 +221,7 @@ function fmtDT(d: Date, isFr = false): string {
 
 // ── Component ─────────────────────────────────────────────────
 export default function FermentChart({
-  eatTime, prefermentType, kitchenTemp,
+  eatTime, prefermentType, kitchenTemp, fridgeTemp = 6,
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange, onDragStart, onDragEnd,
   windowH, prefInFridge, hasColdRetard, sweetCenterH, sweetFromH, sweetToH,
@@ -352,8 +353,33 @@ export default function FermentChart({
   const starterPeakH   = isLevain ? getPrefPeakH_RT('sourdough', kitchenTemp) : 0;
   const starterWarmupH = isLevain ? getStarterFridgeWarmupH(kitchenTemp) : 0;
 
+  // Q10 cold activity model for fridge starter
+  const starterColdFactor = isLevain && starterFridgeOutTime
+    ? Math.pow(2, (kitchenTemp - fridgeTemp) / 10)
+    : 1;
+
+  // fridgePeakH: how long starter takes to peak if left in fridge indefinitely
+  const fridgePeakH = starterPeakH * starterColdFactor;
+
+  // fridgeOutHBF: when starter is removed from fridge (hours before bake)
+  const fridgeOutHBF: number | null = isLevain && starterFridgeOutTime
+    ? (bakeMs - starterFridgeOutTime.getTime()) / 3600000
+    : null;
+
   const activeFeedHBF: number | null = isLevain && starterFeedTime
     ? (bakeMs - starterFeedTime.getTime()) / 3600000 : null;
+
+  // feedToFridgeOutH: hours starter spent in fridge after feeding (for fridge bell height)
+  const feedToFridgeOutH: number | null =
+    activeFeedHBF !== null && fridgeOutHBF !== null
+      ? activeFeedHBF - fridgeOutHBF
+      : null;
+
+  const fridgeSigma = fridgePeakH * 0.4;
+  const fridgeHeightAtRemoval: number =
+    feedToFridgeOutH !== null
+      ? Math.exp(-0.5 * ((feedToFridgeOutH - fridgePeakH) / fridgeSigma) ** 2)
+      : 0;
 
   const activePeakHBF: number | null = activeFeedHBF !== null
     ? (starterFridgeOutTime
@@ -749,13 +775,27 @@ export default function FermentChart({
           <>
             {/* ── Muted historical bell (Feed 1 when Peak 2 active) ── */}
             {isLevain && histPeakHBF !== null && histFeedHBF !== null && (
-              <path
-                d={makeBellPath(histPeakHBF, prefSig, W, WH, histFeedHBF)}
-                fill="rgba(107,122,90,0.12)"
-                stroke="rgba(107,122,90,0.35)"
-                strokeWidth={1}
-                clipPath="url(#chart-area-clip)"
-              />
+              <>
+                <path
+                  d={makeBellPath(histPeakHBF, prefSig, W, WH, histFeedHBF)}
+                  fill="rgba(74,127,165,0.07)"
+                  stroke="rgba(74,127,165,0.22)"
+                  strokeWidth={1}
+                  strokeDasharray="3 3"
+                  clipPath="url(#chart-area-clip)"
+                />
+                {activeFeedHBF !== null && histPeakHBF > activeFeedHBF && (
+                  <line
+                    x1={hToX(histPeakHBF, W, WH)}
+                    y1={BL - MAXH * 0.12}
+                    x2={hToX(activeFeedHBF, W, WH)}
+                    y2={BL}
+                    stroke="rgba(74,127,165,0.25)"
+                    strokeWidth={1}
+                    strokeDasharray="4 3"
+                  />
+                )}
+              </>
             )}
 
             {/* ── Depleted: decay curve + flat line + fresh bell ── */}
@@ -803,32 +843,66 @@ export default function FermentChart({
 
             {/* ── Normal active bell (RT, fridge retard, or Mode B) ── */}
             {(!isLevain || depletedAtHBF === null) && (
-              <path
-                d={(() => {
-                  // Mode B: known peak — bell centred on knownPeakHBF
-                  if (isLevain && knownPeakHBF !== null) {
-                    const syntheticFeedHBF = knownPeakHBF + starterPeakH;
-                    return makeBellPath(knownPeakHBF, prefSig, W, WH, syntheticFeedHBF);
-                  }
-                  // Mode A normal cases
-                  const peakHBF = isLevain && effectiveStarterPeakHBF !== null
-                    ? effectiveStarterPeakHBF : prefPeakHBF;
-                  const feedHBF = isLevain && activeFeedHBF !== null
-                    ? activeFeedHBF : prefStartAbsHBF;
-                  const useRetard = isLevain && !!starterFridgeOutTime;
-                  if (useRetard) {
-                    return makePlateauBellPath(peakHBF, prefSig, starterWarmupH / 2, W, WH, feedHBF);
-                  }
-                  if (prefNeedsFridge && !isLevain) {
-                    return makePlateauBellPath(peakHBF, prefSig, plateauHalfW, W, WH, feedHBF);
-                  }
-                  return makeBellPath(peakHBF, prefSig, W, WH, feedHBF);
-                })()}
-                fill={`${prefColor}2E`}
-                stroke={`${prefColor}A5`}
-                strokeWidth={1.5}
-                clipPath="url(#chart-area-clip)"
-              />
+              <>
+                {/* Fridge portion: slow rise while in cold storage */}
+                {isLevain && fridgeOutHBF !== null && activeFeedHBF !== null && (
+                  <path
+                    d={(() => {
+                      const N = 200;
+                      const pts: string[] = [];
+                      for (let i = 0; i <= N; i++) {
+                        const hbf = fridgeOutHBF + (i / N) * (activeFeedHBF - fridgeOutHBF);
+                        const rawH = Math.exp(
+                          -0.5 * ((hbf - (activeFeedHBF - fridgePeakH)) / fridgeSigma) ** 2
+                        );
+                        const normalised = rawH / Math.max(0.01, fridgeHeightAtRemoval);
+                        const y = BL - Math.min(1, normalised) * MAXH * 0.35;
+                        const x = hToX(hbf, W, WH);
+                        pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}`
+                                         : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
+                      }
+                      pts.push(`L ${hToX(activeFeedHBF, W, WH).toFixed(1)} ${BL}`);
+                      pts.push(`L ${hToX(fridgeOutHBF, W, WH).toFixed(1)} ${BL}`);
+                      pts.push('Z');
+                      return pts.join(' ');
+                    })()}
+                    fill="rgba(74,127,165,0.10)"
+                    stroke="rgba(74,127,165,0.30)"
+                    strokeWidth={1}
+                    strokeDasharray="3 2"
+                    clipPath="url(#chart-area-clip)"
+                  />
+                )}
+
+                {/* Warmup + active bell (RT or after fridge removal) */}
+                <path
+                  d={(() => {
+                    if (isLevain && knownPeakHBF !== null) {
+                      const syntheticFeedHBF = knownPeakHBF + starterPeakH;
+                      return makeBellPath(knownPeakHBF, prefSig, W, WH, syntheticFeedHBF);
+                    }
+                    const peakHBF = isLevain && effectiveStarterPeakHBF !== null
+                      ? effectiveStarterPeakHBF : prefPeakHBF;
+
+                    if (isLevain && fridgeOutHBF !== null) {
+                      const warmupSigma = Math.max(0.5, starterWarmupH * 0.4);
+                      return makeBellPath(peakHBF, warmupSigma, W, WH, fridgeOutHBF);
+                    }
+
+                    const feedHBF = isLevain && activeFeedHBF !== null
+                      ? activeFeedHBF : prefStartAbsHBF;
+
+                    if (prefNeedsFridge && !isLevain) {
+                      return makePlateauBellPath(peakHBF, prefSig, plateauHalfW, W, WH, feedHBF);
+                    }
+                    return makeBellPath(peakHBF, prefSig, W, WH, feedHBF);
+                  })()}
+                  fill={`${prefColor}2E`}
+                  stroke={`${prefColor}A5`}
+                  strokeWidth={1.5}
+                  clipPath="url(#chart-area-clip)"
+                />
+              </>
             )}
 
             {/* Vertical line at feed/origin point */}
@@ -943,6 +1017,54 @@ export default function FermentChart({
           </g>
         )}
 
+        {/* ── Feed circle — single cycle, no Peak 2 ── */}
+        {isLevain && activeFeedHBF !== null && histFeedHBF === null && !knownPeakHBF && (
+          <g>
+            <circle
+              cx={hToX(activeFeedHBF, W, WH)}
+              cy={AXIS_Y}
+              r={5}
+              fill="rgba(74,127,165,0.45)"
+              stroke="rgba(74,127,165,0.75)"
+              strokeWidth={1}
+            />
+            <text
+              x={hToX(activeFeedHBF, W, WH)}
+              y={AXIS_Y + 36}
+              fontSize={10}
+              fill="rgba(74,127,165,0.75)"
+              fontFamily="DM Mono, monospace"
+              textAnchor="middle"
+            >
+              {isFr ? 'Repas' : 'Feed'}
+            </text>
+          </g>
+        )}
+
+        {/* ── Feed 1 circle — historical, Peak 2 scenario ── */}
+        {isLevain && histFeedHBF !== null && (
+          <g>
+            <circle
+              cx={hToX(histFeedHBF, W, WH)}
+              cy={AXIS_Y}
+              r={4}
+              fill="rgba(74,127,165,0.20)"
+              stroke="rgba(74,127,165,0.40)"
+              strokeWidth={1}
+            />
+            <text
+              x={hToX(histFeedHBF, W, WH)}
+              y={AXIS_Y + 36}
+              fontSize={10}
+              fill="rgba(74,127,165,0.45)"
+              fontFamily="DM Mono, monospace"
+              textAnchor="middle"
+            >
+              {isFr ? 'Repas 1' : 'Feed 1'}
+            </text>
+          </g>
+        )}
+
         {/* ── Pref diamond (hidden in Mode B — no concrete feed time) ── */}
         {hasPref && !knownPeakHBF && renderDiamond(
           activePrefX,
@@ -963,10 +1085,13 @@ export default function FermentChart({
               textAnchor="middle"
               fontWeight="600"
             >
-              {prefermentType === 'biga' ? t('cardLabels.makeBiga') :
-               (prefermentType === 'levain' || prefermentType === 'sourdough')
-                 ? (histFeedHBF !== null ? 'Feed 2' : 'Feed')
-                 : t('cardLabels.makePoolish')}
+              {prefermentType === 'levain' || prefermentType === 'sourdough'
+                ? (histFeedHBF !== null
+                    ? (isFr ? 'Repas 2' : 'Feed 2')
+                    : (isFr ? 'Repas' : 'Feed'))
+                : prefermentType === 'biga'
+                  ? t('cardLabels.makeBiga')
+                  : t('cardLabels.makePoolish')}
             </text>
             {/* Protocol indicator — ❄ Fridge or 🌡 RT */}
             <text
@@ -978,9 +1103,13 @@ export default function FermentChart({
               textAnchor="middle"
               opacity={0.85}
             >
-              {prefNeedsFridge
-                ? (isFr ? '❄ Frigo' : '❄ Fridge')
-                : (isFr ? '🌡 Temp. ambiante' : '🌡 Room temp')}
+              {isLevain
+                ? (starterFridgeOutTime
+                    ? (isFr ? '❄ Frigo' : '❄ Fridge')
+                    : (isFr ? 'Temp. ambiante' : 'Room temp'))
+                : (prefNeedsFridge
+                    ? (isFr ? '❄ Frigo' : '❄ Fridge')
+                    : (isFr ? '🌡 Temp. ambiante' : '🌡 Room temp'))}
             </text>
           </>
         )}

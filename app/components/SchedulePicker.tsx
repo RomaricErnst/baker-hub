@@ -1606,15 +1606,24 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (isDragging) return windowHRef.current;
     const mixOffH = Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000);
     const diamondH = hasPrefActive ? mixOffH + prefOffsetH + 10 : mixOffH + 10;
-    // Also ensure zone arrows are visible — use whichever is larger
     const zoneH = renderSweetFrom + 8;
-    const computed = Math.min(144, Math.max(36, Math.ceil(Math.max(diamondH, zoneH) / 12) * 12));
-    // Clip left edge: never show more than 1h of past
+    let computed = Math.min(144, Math.max(36, Math.ceil(Math.max(diamondH, zoneH) / 12) * 12));
+
+    // Sourdough: expand window to always show Feed 1 (lastFedTime may be 40+ hours past)
+    if (isSourdough && lastFedTime) {
+      const feed1HBF = (pendingEatTime.getTime() - lastFedTime.getTime()) / 3600000;
+      computed = Math.min(120, Math.max(computed, Math.ceil((feed1HBF + 3) / 12) * 12));
+    }
+
     const nowHBF = (pendingEatTime.getTime() - Date.now()) / 3600000;
-    const clipped = Math.min(computed, Math.max(mixOffH + 4, nowHBF + 1));
+    const clipped = isSourdough
+      ? computed
+      : Math.min(computed, Math.max(mixOffH + 4, nowHBF + 1));
+
     windowHRef.current = clipped;
     return clipped;
-  }, [isDragging, pendingEatTime, pendingStart, prefOffsetH, hasPrefActive]);
+  }, [isDragging, pendingEatTime, pendingStart, prefOffsetH,
+      hasPrefActive, isSourdough, lastFedTime, renderSweetFrom]);
 
   // Fixed window start — always covers 5 days before bake regardless of diamond position
   const windowStart = useMemo(() => {
@@ -2737,6 +2746,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               eatTime={pendingEatTime}
               prefermentType={(skipPoolishNote || prefAlgoRed) ? 'none' : (isSourdough ? 'sourdough' : prefermentType)}
               kitchenTemp={kitchenTemp}
+              fridgeTemp={fridgeTemp}
               mixOffsetH={Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000)}
               prefOffsetH={(() => {
                 if (!isSourdough) return prefOffsetH;
