@@ -2225,13 +2225,49 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
                     <button
                       onClick={() => {
-                        const now = new Date();
-                        const m = Math.round(now.getMinutes() / 15) * 15;
-                        const rounded = new Date(now);
-                        rounded.setMinutes(m === 60 ? 0 : m, 0, 0);
-                        if (m === 60) rounded.setHours(rounded.getHours() + 1);
-                        setLastFedTime(rounded);
-                        onLastFedTimeChange?.(rounded);
+                        let prefill: Date;
+
+                        if (eatTimeSet && pendingEatTime) {
+                          const peakH = getPrefPeakH_RT(
+                            'sourdough', kitchenTemp, styleKey ?? 'neapolitan'
+                          );
+                          const ratioMult = 1 + 0.35 * Math.log(feedRatio);
+                          const matF = starterMature ? 1.0 : 1.2;
+                          const adjPeakH = peakH * matF * ratioMult;
+                          const troughH = adjPeakH * 1.8;
+                          const sweetCenterHBF = (renderSweetFrom + renderSweetTo) / 2;
+                          const idealMixTime = new Date(
+                            pendingEatTime.getTime() - sweetCenterHBF * 3600000
+                          );
+                          prefill = new Date(
+                            idealMixTime.getTime() - adjPeakH * 3600000
+                          );
+                          // Must always be in the past — shift back by full cycles until past
+                          while (prefill >= new Date()) {
+                            prefill = new Date(prefill.getTime() - troughH * 3600000);
+                          }
+                          // Clamp to reasonable hours (6am–11pm)
+                          const h = prefill.getHours();
+                          if (h < 6 || h > 23) {
+                            prefill.setHours(20, 0, 0, 0);
+                            if (prefill >= new Date()) {
+                              prefill.setDate(prefill.getDate() - 1);
+                            }
+                          }
+                        } else {
+                          // No bake time: default to 8pm yesterday
+                          prefill = new Date();
+                          prefill.setDate(prefill.getDate() - 1);
+                          prefill.setHours(20, 0, 0, 0);
+                        }
+
+                        // Round to nearest 15min
+                        const m = Math.round(prefill.getMinutes() / 15) * 15;
+                        prefill.setMinutes(m === 60 ? 0 : m, 0, 0);
+                        if (m === 60) prefill.setHours(prefill.getHours() + 1);
+
+                        setLastFedTime(prefill);
+                        onLastFedTimeChange?.(prefill);
                         setHasNotFedYet(false);
                         onHasNotFedYetChange?.(false);
                       }}
