@@ -25,6 +25,14 @@ interface RecipeOutputProps {
   wastePct?: number;
   flourBlend?: FlourBlend;
   units?: UnitSystem;
+  feedTime?: Date | null;
+  feed2Time?: Date | null;
+  fridgeOutTime?: Date | null;
+  starterPeakTime?: Date | null;
+  planningMode?: 'last_fed' | 'know_peak';
+  usingPeak2?: boolean;
+  feedRatio?: 1 | 2 | 4 | 5 | 10;
+  starterLocation?: 'rt' | 'fridge';
 }
 
 // ── Helpers ──────────────────────────────────
@@ -277,95 +285,171 @@ function computeWaterInfo(
 }
 
 // ── Starter prep card ─────────────────────────
-function StarterPrepCard({ sourdough }: { sourdough: { starterGramsMin: number; starterGramsMax: number } | null }) {
-  const [discardOpen, setDiscardOpen] = useState(false);
+function StarterPrepCard({
+  sourdough, feedTime, feed2Time, fridgeOutTime,
+  starterPeakTime, planningMode, usingPeak2,
+  feedRatio, starterLocation, locale,
+}: {
+  sourdough: { starterGramsMin: number; starterGramsMax: number } | null;
+  feedTime?: Date | null;
+  feed2Time?: Date | null;
+  fridgeOutTime?: Date | null;
+  starterPeakTime?: Date | null;
+  planningMode?: 'last_fed' | 'know_peak';
+  usingPeak2?: boolean;
+  feedRatio?: number;
+  starterLocation?: string;
+  locale: string;
+}) {
   if (!sourdough) return null;
+  const isFr = locale === 'fr';
+  const fmt = (d: Date) => d.toLocaleTimeString(
+    isFr ? 'fr-FR' : 'en-US',
+    { hour: 'numeric', minute: '2-digit', hour12: !isFr }
+  );
+  const fmtFull = (d: Date) => d.toLocaleDateString(
+    isFr ? 'fr-FR' : 'en-US',
+    { weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: !isFr }
+  );
+  const hasSchedule = !!(feedTime || starterPeakTime);
+  const discardKeep = Math.round(sourdough.starterGramsMax * 0.2);
+  const ratioLabel = feedRatio && feedRatio > 1
+    ? `1:${feedRatio}:${feedRatio}` : '1:1:1';
 
-  const targetGrams = sourdough.starterGramsMax;
-  const feedFlour   = Math.round(targetGrams / 2);
-  const feedWater   = Math.round(targetGrams / 2);
-  const discardKeep = Math.round(targetGrams / 2);
-
-  const M = { fontSize: '.82rem', fontFamily: 'var(--font-dm-mono)', color: 'var(--terra)', fontWeight: 600 };
-
-  const t = useTranslations();
-  const locale = useLocale();
-  const readyChecks = [
-    t('recipeOutput.starterReady.doubled'),
-    t('recipeOutput.starterReady.domed'),
-    t('recipeOutput.starterReady.floatTest'),
-    t('recipeOutput.starterReady.smell'),
-  ];
+  const rowStyle = {
+    display: 'flex' as const,
+    flexDirection: 'column' as const,
+    gap: '.15rem',
+  };
+  const labelStyle = {
+    fontSize: '.68rem',
+    fontFamily: 'var(--font-dm-mono)',
+    color: 'var(--smoke)',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '.04em',
+  };
+  const valueStyle = {
+    fontSize: '.9rem',
+    fontWeight: 500,
+    fontFamily: 'var(--font-dm-mono)',
+    color: 'var(--char)',
+  };
+  const noteStyle = {
+    fontSize: '.72rem',
+    color: 'var(--smoke)',
+    fontFamily: 'var(--font-dm-sans)',
+  };
 
   return (
     <div style={{
-      background: 'var(--warm)',
+      background: 'var(--cream)',
+      borderRadius: '12px',
       border: '1.5px solid var(--border)',
-      borderRadius: '13px',
-      padding: '1rem 1.2rem',
-      marginTop: '.75rem',
+      padding: '1rem 1.25rem',
+      marginTop: '1rem',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '.75rem',
     }}>
-      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '.82rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.75rem' }}>
-        🫙 {t('recipeOutput.preparingStarter')}
+      <div style={labelStyle}>
+        {isFr ? 'Préparer votre levain' : 'Preparing your starter'}
       </div>
 
-      {/* Section A — How much to prepare */}
-      <div style={{ marginBottom: '.75rem' }}>
+      {/* Scheduled timeline */}
+      {hasSchedule && (
+        <div style={{ display:'flex', flexDirection:'column', gap:'.5rem' }}>
+          {feedTime && planningMode !== 'know_peak' && (
+            <div style={rowStyle}>
+              <div style={labelStyle}>
+                {usingPeak2
+                  ? (isFr ? 'Repas 1' : 'Feed 1')
+                  : (isFr ? 'Nourrir' : 'Feed')}
+              </div>
+              <div style={valueStyle}>{fmtFull(feedTime)}</div>
+              <div style={noteStyle}>
+                {ratioLabel} — {isFr
+                  ? 'parts égales levain, farine, eau'
+                  : 'equal parts starter, flour, water'}
+              </div>
+            </div>
+          )}
+          {fridgeOutTime && starterLocation === 'fridge' && (
+            <div style={rowStyle}>
+              <div style={labelStyle}>
+                {isFr ? 'Sortir du frigo' : 'Remove from fridge'}
+              </div>
+              <div style={valueStyle}>{fmt(fridgeOutTime)}</div>
+            </div>
+          )}
+          {usingPeak2 && feed2Time && (
+            <div style={rowStyle}>
+              <div style={labelStyle}>
+                {isFr ? 'Repas 2' : 'Feed 2'}
+              </div>
+              <div style={valueStyle}>{fmtFull(feed2Time)}</div>
+              <div style={noteStyle}>
+                {isFr
+                  ? 'Repas actif pour cette cuisson'
+                  : 'Active feed for this bake'}
+              </div>
+            </div>
+          )}
+          {starterPeakTime && (
+            <div style={rowStyle}>
+              <div style={labelStyle}>
+                {isFr ? 'Pic' : 'Peak'}
+              </div>
+              <div style={valueStyle}>{fmt(starterPeakTime)}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Amount */}
+      <div style={rowStyle}>
+        <div style={labelStyle}>
+          {isFr ? 'Quantité' : 'Amount'}
+        </div>
+        <div style={valueStyle}>
+          {sourdough.starterGramsMin}–{sourdough.starterGramsMax} g
+        </div>
+        <div style={noteStyle}>
+          {isFr
+            ? `Gardez ${discardKeep}g pour votre prochaine fournée`
+            : `Keep ${discardKeep}g for your next bake`}
+        </div>
+      </div>
+
+      {/* Readiness cues */}
+      <div style={rowStyle}>
+        <div style={labelStyle}>
+          {isFr ? 'Prêt quand' : 'Ready when'}
+        </div>
         {[
-          <>{locale === 'fr' ? 'Gardez ' : 'Keep '}<span style={M}>{discardKeep}g</span>{locale === 'fr' ? ' de votre levain actuel' : ' of your current starter'}</>,
-          <>{locale === 'fr' ? 'Ajoutez ' : 'Add '}<span style={M}>{feedFlour}g</span>{' '}{locale === 'fr' ? 'farine + ' : 'flour + '}<span style={M}>{feedWater}g</span>{' '}{locale === 'fr' ? 'eau' : 'water'}</>,
-          <>{locale === 'fr' ? 'Vous aurez ~' : "You'll have ~"}<span style={M}>{targetGrams}g</span>{' '}{locale === 'fr' ? 'prêt à utiliser' : 'ready to use'}</>,
-        ].map((line, i) => (
-          <div key={i} style={{ fontSize: '.78rem', color: 'var(--ash)', lineHeight: 1.7 }}>{line}</div>
+          isFr ? 'Doublé ou plus en volume'
+               : 'Doubled or more in volume',
+          isFr ? 'Surface en dôme, pas encore effondrée'
+               : 'Dome-shaped, not yet collapsed',
+          isFr ? 'Bulles visibles sur les côtés du bocal'
+               : 'Bubbles visible through the sides of the jar',
+          isFr ? 'Odeur acidulée, pas alcoolisée'
+               : 'Smells pleasantly sour, not alcoholic',
+        ].map((cue, i) => (
+          <div key={i} style={noteStyle}>{cue}</div>
         ))}
       </div>
 
-      {/* Section B — Discard note (collapsible) */}
-      <div style={{ marginBottom: '.75rem' }}>
-        <button
-          onClick={() => setDiscardOpen(o => !o)}
-          style={{
-            background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-            fontSize: '.76rem', color: 'var(--smoke)', fontFamily: 'inherit',
-            display: 'flex', alignItems: 'center', gap: '.25rem',
-          }}
-        >
-          {t('recipeOutput.discardQuestion')} {discardOpen ? '▴' : '▾'}
-        </button>
-        {discardOpen && (
-          <div style={{ marginTop: '.45rem', display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
-            <div style={{ fontSize: '.76rem', color: 'var(--ash)', lineHeight: 1.55 }}>
-              {t('recipeOutput.discardNote1')}
-            </div>
-            <div style={{ fontSize: '.76rem', color: 'var(--ash)', lineHeight: 1.55 }}>
-              {t('recipeOutput.discardNote2')}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Section C — Ready check */}
+      {/* Post-mix maintenance */}
       <div style={{
+        ...noteStyle,
+        paddingTop: '.5rem',
         borderTop: '1px solid var(--border)',
-        paddingTop: '.6rem',
+        lineHeight: 1.5,
       }}>
-        <div style={{ fontSize: '.72rem', fontWeight: 600, color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.45rem' }}>
-          {t('recipeOutput.starterReadyWhen')}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
-          {readyChecks.map((cue, i) => (
-            <div key={i} style={{ display: 'flex', gap: '.55rem', alignItems: 'flex-start' }}>
-              <span style={{
-                width: '18px', height: '18px', borderRadius: '50%',
-                border: '1.5px solid var(--border)',
-                flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
-                marginTop: '.05rem',
-              }}>{i + 1}</span>
-              <span style={{ fontSize: '.78rem', color: 'var(--ash)', lineHeight: 1.55 }}>{cue}</span>
-            </div>
-          ))}
-        </div>
+        {isFr
+          ? 'Après avoir prélevé votre levain, nourrissez le reste et remettez-le au frigo.'
+          : 'After taking your starter, feed what remains and return it to the fridge.'}
       </div>
     </div>
   );
@@ -375,6 +459,7 @@ function StarterPrepCard({ sourdough }: { sourdough: { starterGramsMin: number; 
 export default function RecipeOutput({
   result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
+  feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
 }: RecipeOutputProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -1178,7 +1263,18 @@ export default function RecipeOutput({
           </div>
 
           {/* ── Starter preparation card ──────────── */}
-          <StarterPrepCard sourdough={sourdough} />
+          <StarterPrepCard
+            sourdough={sourdough}
+            feedTime={feedTime}
+            feed2Time={feed2Time}
+            fridgeOutTime={fridgeOutTime}
+            starterPeakTime={starterPeakTime}
+            planningMode={planningMode}
+            usingPeak2={usingPeak2}
+            feedRatio={feedRatio}
+            starterLocation={starterLocation}
+            locale={locale}
+          />
 
         </div>
       )}

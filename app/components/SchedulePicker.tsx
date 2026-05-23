@@ -33,8 +33,9 @@ interface SchedulePickerProps {
   onKnownPeakTimeChange?: (t: Date | null) => void;
   hasNotFedYet?: boolean | null;
   onHasNotFedYetChange?: (v: boolean | null) => void;
-  feedRatio?: 1 | 2 | 5 | 10;
-  onFeedRatioChange?: (r: 1 | 2 | 5 | 10) => void;
+  feedRatio?: 1 | 2 | 4 | 5 | 10;
+  onFeedRatioChange?: (r: 1 | 2 | 4 | 5 | 10) => void;
+  onStarterPeakTimeChange?: (t: Date | null) => void;
   mode?: 'simple' | 'custom';   // default 'custom'
   onReady?: () => void;
   sessionRestored?: boolean;
@@ -1058,7 +1059,7 @@ function SimpleColourBar({
 
 // ── Component ─────────────────────────────────
 // v1779291581473456000
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, feedRatio: feedRatioProp, onFeedRatioChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, feedRatio: feedRatioProp, onFeedRatioChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1138,7 +1139,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [starterStateNote, setStarterStateNote] = useState<string | null>(null);
   const [starterIsDepletedAt, setStarterIsDepletedAt] = useState<Date | null>(null);
   const [starterRefeedTime, setStarterRefeedTime]     = useState<Date | null>(null);
-  const [feedRatio, setFeedRatio]               = useState<1 | 2 | 5 | 10>(feedRatioProp ?? 1);
+  const [feedRatio, setFeedRatio]               = useState<1 | 2 | 4 | 5 | 10>(feedRatioProp ?? 1);
   const [driftNote, setDriftNote]               = useState<string | null>(null);
   const [showRatioInfo, setShowRatioInfo]       = useState(false);
   const [fridgeSuggestion, setFridgeSuggestion] = useState<string | null>(null);
@@ -1682,6 +1683,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Sourdough: derive peak time from inputs ──
   function deriveStarterPeakTime(): Date | null {
+    onStarterPeakTimeChange?.(null);
     const peakH = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
     const ryeF  = starterHasRye ? 0.8 : 1.0;
     const matF  = starterMature ? 1.0 : 1.2;
@@ -1692,6 +1694,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const warmupH  = getStarterFridgeWarmupH(kitchenTemp);
 
     if (planningMode === 'know_peak' && knownPeakTime) {
+      onStarterPeakTimeChange?.(knownPeakTime);
       return knownPeakTime;
     }
 
@@ -1700,11 +1703,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const hoursSinceFeed = (now.getTime() - lastFedTime.getTime()) / 3600000;
 
       if (starterLocation === 'fridge' && fridgeOutTime) {
-        return new Date(fridgeOutTime.getTime() + warmupH * 3600000);
+        const peakTime = new Date(fridgeOutTime.getTime() + warmupH * 3600000);
+        onStarterPeakTimeChange?.(peakTime);
+        return peakTime;
       }
 
       if (starterLocation === 'fridge' && !fridgeOutTime) {
         // No fridgeOutTime yet — estimate peak at mix time so solver can run
+        onStarterPeakTimeChange?.(new Date(pendingStart.getTime()));
         return new Date(pendingStart.getTime());
       }
 
@@ -1756,6 +1762,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           clearFridgeSuggestion();
         }
 
+        onStarterPeakTimeChange?.(rtPeakTime);
         return rtPeakTime;
       }
 
@@ -1772,7 +1779,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         setStarterIsDepletedAt(null);
         setStarterRefeedTime(new Date());
         clearFridgeSuggestion();
-        return new Date(lastFedTime.getTime() + adjPeakH * 3600000);
+        const decliningPeak = new Date(lastFedTime.getTime() + adjPeakH * 3600000);
+        onStarterPeakTimeChange?.(decliningPeak);
+        return decliningPeak;
       }
 
       // RT starter — depleted (past trough)
@@ -1782,7 +1791,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setStarterRefeedTime(refeedNow);
       setStarterStateNote('Depleted — needs feeding. Schedule below assumes you feed it now.');
       clearFridgeSuggestion();
-      return new Date(refeedNow.getTime() + adjPeakH * 3600000);
+      const depletedPeak = new Date(refeedNow.getTime() + adjPeakH * 3600000);
+      onStarterPeakTimeChange?.(depletedPeak);
+      return depletedPeak;
     }
 
     return null;
@@ -2463,7 +2474,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               </div>
             )}
             <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
-              {([1, 2, 5, 10] as const).map(r => (
+              {([1, 2, 4, 5, 10] as const).map(r => (
                 <button
                   key={r}
                   onClick={() => { setFeedRatio(r); onFeedRatioChange?.(r); }}
@@ -2479,6 +2490,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 </button>
               ))}
             </div>
+            {feedRatio === 4 && (
+              <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginTop: '.3rem' }}>
+                {isFr
+                  ? 'Équilibré · pic plus tardif, idéal pour la plupart'
+                  : 'Balanced · later peak, recommended for most bakers'}
+              </div>
+            )}
           </div>
 
           {/* ── Fridge suggestion (still-rising, mix too far from RT peak) ── */}

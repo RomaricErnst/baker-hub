@@ -27,6 +27,8 @@ interface BakeGuideProps {
   starterHasRye?: boolean;
   usingPeak2?: boolean;
   planningMode?: 'last_fed' | 'know_peak';
+  feedRatio?: 1 | 2 | 4 | 5 | 10;
+  starterLocation?: 'rt' | 'fridge';
   units?: UnitSystem;
   locale?: string;
   onNavigateToPizzaParty?: () => void;
@@ -506,6 +508,7 @@ export default function BakeGuide({
   feed2Time = null, fridgeOutTime = null,
   starterState = 'rt_fed', starterMature = true, starterHasRye = false,
   usingPeak2 = false, planningMode = 'last_fed',
+  feedRatio = 1, starterLocation = 'rt',
   units, locale,
   onNavigateToPizzaParty, recipe,
 }: BakeGuideProps) {
@@ -666,10 +669,14 @@ export default function BakeGuide({
             <Section icon={null} title={t('sectionTitles.readyWhen')}>
               <Bullets items={[
                 `At ${displayTemp(kitchenTemp, u)}: peaks in ${(() => {
-                  const peakH = getPrefPeakH_RT('sourdough', kitchenTemp);
+                  const peakH = getPrefPeakH_RT(
+                    'sourdough', kitchenTemp, styleKey ?? 'neapolitan'
+                  );
+                  const ratioMult = 1 + 0.35 * Math.log(feedRatio);
                   const adj = peakH
                     * (starterMature ? 1.0 : 1.2)
-                    * (starterHasRye ? 0.8 : 1.0);
+                    * (starterHasRye ? 0.8 : 1.0)
+                    * ratioMult;
                   return `${Math.round(adj * 0.8)}–${Math.round(adj * 1.2)}h`;
                 })()}`,
                 'Doubled or more in volume',
@@ -864,6 +871,19 @@ export default function BakeGuide({
                   Mix time is set to your stated peak — adjust if your starter peaks earlier or later than expected.
                 </div>
               )}
+              <div style={{
+                fontSize: '.78rem',
+                color: D.smoke,
+                fontFamily: 'var(--font-dm-sans)',
+                lineHeight: 1.55,
+                marginTop: '.5rem',
+                paddingTop: '.5rem',
+                borderTop: `1px solid ${D.border}`,
+              }}>
+                {l === 'fr'
+                  ? 'Après avoir prélevé votre levain, nourrissez le reste et remettez-le au frigo.'
+                  : 'After taking your starter for this bake, feed what remains and return it to the fridge.'}
+              </div>
             </>
           )}
         </Section>
