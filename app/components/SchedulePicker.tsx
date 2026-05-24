@@ -1529,6 +1529,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // Sourdough constraint re-evaluation when key inputs change
   useEffect(() => {
     if (!isSourdough || !eatTimeSet) return;
+    setWindowTooShort(false);
     const peakTime = deriveStarterPeakTime();
     if (!peakTime) return;
     findOptimalPositionSourdough(pendingEatTime);
@@ -1809,7 +1810,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const peakTime = deriveStarterPeakTime();
     if (!peakTime) return;
 
-    const bakeMs  = et.getTime();
+    // Window too short check — same concept as poolish windowTooShort
+    const bakeMs    = et.getTime();
+    const nowMs0    = Date.now();
+    const windowHBF = (bakeMs - nowMs0) / 3600000;
+    const minFermH  = (_sfDef.minTotalFermH ?? 4) + 1.0;
+    if (windowHBF < minFermH) {
+      setWindowTooShort(true);
+      setStarterPillState('green');
+      setRefeedSuggestion(null);
+      setFeed2Time(null);
+      return;
+    }
+    setWindowTooShort(false);
+
     const peakH   = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
     const ryeF    = starterHasRye ? 0.8 : 1.0;
     const matF    = starterMature ? 1.0 : 1.2;
