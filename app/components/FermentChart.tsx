@@ -448,6 +448,9 @@ export default function FermentChart({
 
   // ── Label collision detection ────────────────────────────
   const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 100;
+  const allClose = isLevain && histPrefX !== null
+    && Math.abs((histPrefX ?? 0) - activePrefX) < 80
+    && Math.abs(activePrefX - mixX) < 80;
 
   function blockerHBF(b: AvailabilityBlock) {
     return {
@@ -1074,10 +1077,10 @@ export default function FermentChart({
                 points={`${histPrefX},${AXIS_Y - S} ${histPrefX + S},${AXIS_Y} ${histPrefX},${AXIS_Y + S} ${histPrefX - S},${AXIS_Y}`}
                 fill="rgba(74,127,165,0.20)" stroke="rgba(74,127,165,0.45)" strokeWidth={1.5}
               />
-              <text x={histPrefX} y={histLabelsClose ? AXIS_Y + 52 : AXIS_Y + 36}
+              <text x={histPrefX} y={allClose ? AXIS_Y + 52 : histLabelsClose ? AXIS_Y + 52 : AXIS_Y + 36}
                 fontSize={11} fill="var(--smoke)"
                 fontFamily="DM Mono, monospace" textAnchor="middle" fontWeight="600">
-                {isFr ? 'Dernier repas' : 'Last Fed'}
+                {isFr ? 'Repas 1' : 'Feed 1'}
               </text>
             </g>
           );
@@ -1085,7 +1088,8 @@ export default function FermentChart({
 
         {/* ── Refeed diamond (depleted state) ── */}
         {isLevain && refeedHBF !== null && depletedAtHBF !== null
-         && refeedHBF > effectiveMixHBF && (
+         && refeedHBF > effectiveMixHBF
+         && Math.abs(hToX(refeedHBF, W, WH) - activePrefX) > 20 && (
           <g>
             <polygon
               points={`${hToX(refeedHBF, W, WH)},${AXIS_Y - S} ${hToX(refeedHBF, W, WH) + S},${AXIS_Y} ${hToX(refeedHBF, W, WH)},${AXIS_Y + S} ${hToX(refeedHBF, W, WH) - S},${AXIS_Y}`}
@@ -1132,29 +1136,7 @@ export default function FermentChart({
           </g>
         )}
 
-        {/* ── Feed 1 circle — historical, Peak 2 scenario ── */}
-        {isLevain && histFeedHBF !== null && (
-          <g>
-            <circle
-              cx={hToX(histFeedHBF, W, WH)}
-              cy={AXIS_Y}
-              r={4}
-              fill="rgba(74,127,165,0.20)"
-              stroke="rgba(74,127,165,0.40)"
-              strokeWidth={1}
-            />
-            <text
-              x={hToX(histFeedHBF, W, WH)}
-              y={AXIS_Y + 36}
-              fontSize={10}
-              fill="rgba(74,127,165,0.45)"
-              fontFamily="DM Mono, monospace"
-              textAnchor="middle"
-            >
-              {isFr ? 'Repas 1' : 'Feed 1'}
-            </text>
-          </g>
-        )}
+        {/* Feed 1 circle removed — hist diamond handles this marker */}
 
         {/* ── Pref diamond (hidden in Mode B — no concrete feed time) ── */}
         {hasPref && !knownPeakHBF && renderDiamond(
@@ -1217,7 +1199,7 @@ export default function FermentChart({
         )}
         {/* ── Mix label ── */}
         <text
-          x={mixX} y={labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
+          x={mixX} y={allClose ? AXIS_Y + 52 : labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
           fontSize={12} fill="#3D5A30"
           fontFamily="DM Mono, monospace"
           textAnchor="middle" fontWeight="600"

@@ -1550,7 +1550,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setSuggestedFridgeOutTime(null);
     setSuggestedFridgePeakTime(null);
     setShowFridgeComparison(false);
-  }, [starterLocation, lastFedTime, planningMode,
+  }, [starterLocation, lastFedTime, lastFedAge, planningMode,
       pendingEatTime, feedRatio, starterMature,
       starterHasRye, kitchenTemp]);
 
@@ -2006,6 +2006,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // ── Pick best candidate ──────────────────────────
 
     if (candidates.length === 0) {
+      // Is the bake too soon for ANY starter cycle, or is this a genuine timing mismatch?
+      const windowH    = (bakeMs - Date.now()) / 3600000;
+      const minViableH = sweetToHBF + adjPeakH + 1;
+      if (windowH > 0 && windowH < minViableH) {
+        setWindowTooShort(true);
+        setFeed2Time(null);
+        setRefeedSuggestion(null);
+        setDriftNote(null);
+        return;
+      }
+
       const idealMixHBF  = (sweetFromHBF + sweetToHBF) / 2;
       const idealMixTime = new Date(bakeMs - idealMixHBF * 3600000);
       const baseFeed     = new Date(idealMixTime.getTime() - adjPeakH * 3600000);
@@ -3423,14 +3434,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               if (planningMode === 'last_fed' && lastFedTime && activePeakTime) {
                 const now = new Date();
                 if (!usingPeak2) {
-                  const isPast = lastFedTime < now;
-                  feedPlan.push({
-                    ft: lastFedTime,
-                    label: isPast
-                      ? (isFr ? 'Dernier repas' : 'Last fed')
-                      : (isFr ? 'Repas' : 'Feed'),
-                    note: undefined,
-                  });
+                  if (lastFedTime > now) {
+                    feedPlan.push({
+                      ft: lastFedTime,
+                      label: isFr ? 'Nourrir' : 'Feed',
+                      note: undefined,
+                    });
+                  }
                   const lastFeedNeeded = new Date(mixTime.getTime() - adjPeakH * 3600000);
                   const gapH = (lastFeedNeeded.getTime() - now.getTime()) / 3600000;
                   const numExtra = Math.floor(gapH / troughH);
@@ -3460,21 +3470,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   }
                 } else if (usingPeak2 && feed2Time) {
                   feedPlan.push({
-                    ft: lastFedTime,
-                    label: isFr ? 'Repas 1' : 'Feed 1',
-                    note: isFr ? 'Laisser redescendre au creux' : 'Let decline to trough',
-                  });
-                  feedPlan.push({
                     ft: feed2Time,
-                    label: isFr ? 'Repas 2' : 'Feed 2',
+                    label: isFr ? 'Prochain repas' : 'Next Feed',
                     note: (() => {
                       const isRefeedNow = Math.abs(feed2Time.getTime() - Date.now()) < 30 * 60 * 1000;
-                      if (isRefeedNow) {
-                        return isFr
-                          ? 'Nourrir maintenant pour un pic plus fort'
-                          : 'Feed now for a stronger peak';
-                      }
-                      return isFr ? 'Repas actif pour cette cuisson' : 'Active feed for this bake';
+                      return isRefeedNow
+                        ? (isFr ? 'Nourrir maintenant pour un pic plus fort' : 'Feed now for a stronger peak')
+                        : (isFr ? 'Repas actif pour cette cuisson' : 'Active feed for this bake');
                     })(),
                   });
                 }
@@ -3499,6 +3501,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   </div>
 
+                  {feedPlan.length === 0 && lastFedTime && (
+                    <div style={{ marginBottom: '.6rem' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em', opacity: 0.7 }}>
+                        {isFr ? 'DERNIER REPAS' : 'LAST FED'}
+                      </div>
+                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', opacity: 0.7 }}>
+                        {fmtCardDT(lastFedTime, isFr)}
+                      </div>
+                    </div>
+                  )}
                   {feedPlan.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '.45rem', marginBottom: '.6rem' }}>
                       {feedPlan.map((fp, i) => (
@@ -3601,6 +3613,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         color: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#C4522A',
                         fontFamily: 'var(--font-dm-mono)',
                       }}>
+                        <div style={{
+                          width: 6, height: 6, borderRadius: '50%',
+                          background: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#C4522A',
+                          flexShrink: 0,
+                        }} />
                         {pillText}
                       </div>
                     );
@@ -3774,6 +3791,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     color: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#C4522A',
                     fontFamily: 'var(--font-dm-mono)',
                   }}>
+                    <div style={{
+                      width: 6, height: 6, borderRadius: '50%',
+                      background: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#C4522A',
+                      flexShrink: 0,
+                    }} />
                     {pillText}
                   </div>
                 );
