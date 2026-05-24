@@ -350,8 +350,24 @@ export default function FermentChart({
     : prefNeedsFridge           ? 24
     : rtPeakH * 1.5
     : 0;
-  const prefZoneFrom  = hasPref ? effectiveMixHBF + prefZoneMax : 0;
-  const prefZoneTo    = hasPref ? effectiveMixHBF + 3 : 0;
+
+  // Poolish/Biga: zone is anchored to mix (time available for preferment before mix)
+  // Sourdough/Levain: zone is anchored to the actual starter peak time (±TOL band)
+  // The two concepts are completely different — mixing them was wrong for sourdough.
+  let prefZoneFrom: number;
+  let prefZoneTo: number;
+  if (isLevain && starterFeedTime) {
+    const activePeakH = starterAdjPeakH ?? getPrefPeakH_RT('sourdough', kitchenTemp, styleKey);
+    const activeFeedHBF2 = (eatTime.getTime() - starterFeedTime.getTime()) / 3600000;
+    const peakHBF2 = activeFeedHBF2 - activePeakH;
+    // TOL mirrors the solver's tolerance: ±2h for fridge, ±1h for RT, widened by 0.5h for display
+    const displayTOL = activeFeedHBF2 > 30 ? 2.5 : 1.5;
+    prefZoneFrom = peakHBF2 + displayTOL;
+    prefZoneTo   = Math.max(0, peakHBF2 - displayTOL);
+  } else {
+    prefZoneFrom = hasPref ? effectiveMixHBF + prefZoneMax : 0;
+    prefZoneTo   = hasPref ? effectiveMixHBF + 3 : 0;
+  }
 
   // ── Pixel positions ──────────────────────────────────────
   const mixX  = hToX(effectiveMixHBF, W, WH);
