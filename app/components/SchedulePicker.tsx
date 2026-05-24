@@ -2284,69 +2284,97 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             <div>
               {/* State 1: no choice yet */}
               {hasNotFedYet === null && (
-                <>
-                  <div style={STARTER_LABEL_STYLE}>Have you fed your starter recently?</div>
-                  <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-                    <button
-                      onClick={() => {
-                        let prefill: Date;
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+                  {/* Primary CTA: not fed yet */}
+                  <button
+                    onClick={() => { setHasNotFedYet(true); onHasNotFedYetChange?.(true); }}
+                    style={{
+                      textAlign: 'left',
+                      padding: '.6rem .85rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid var(--terra)',
+                      background: '#FEF4EF',
+                      color: 'var(--terra)',
+                      fontFamily: 'var(--font-dm-sans)',
+                      fontSize: '.85rem',
+                      cursor: 'pointer',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {eatTimeSet
+                      ? (locale === 'fr'
+                          ? 'Pas encore nourri — dites-moi quand le faire'
+                          : 'Not fed yet — tell me when to feed')
+                      : (locale === 'fr'
+                          ? 'Pas encore nourri'
+                          : 'Not fed yet')}
+                  </button>
+                  {/* Secondary: already fed */}
+                  <button
+                    onClick={() => {
+                      let prefill: Date;
 
-                        if (eatTimeSet && pendingEatTime) {
-                          const peakH = getPrefPeakH_RT(
-                            'sourdough', kitchenTemp, styleKey ?? 'neapolitan'
-                          );
-                          const ratioMult = 1 + 0.35 * Math.log(feedRatio);
-                          const matF = starterMature ? 1.0 : 1.2;
-                          const adjPeakH = peakH * matF * ratioMult;
-                          const troughH = adjPeakH * 1.8;
-                          const sweetCenterHBF = (renderSweetFrom + renderSweetTo) / 2;
-                          const idealMixTime = new Date(
-                            pendingEatTime.getTime() - sweetCenterHBF * 3600000
-                          );
-                          prefill = new Date(
-                            idealMixTime.getTime() - adjPeakH * 3600000
-                          );
-                          // Must always be in the past — shift back by full cycles until past
-                          while (prefill >= new Date()) {
-                            prefill = new Date(prefill.getTime() - troughH * 3600000);
-                          }
-                          // Clamp to reasonable hours (6am–11pm)
-                          const h = prefill.getHours();
-                          if (h < 6 || h > 23) {
-                            prefill.setHours(20, 0, 0, 0);
-                            if (prefill >= new Date()) {
-                              prefill.setDate(prefill.getDate() - 1);
-                            }
-                          }
-                        } else {
-                          // No bake time: default to 8pm yesterday
-                          prefill = new Date();
-                          prefill.setDate(prefill.getDate() - 1);
-                          prefill.setHours(20, 0, 0, 0);
+                      if (eatTimeSet && pendingEatTime) {
+                        const peakH = getPrefPeakH_RT(
+                          'sourdough', kitchenTemp, styleKey ?? 'neapolitan'
+                        );
+                        const ratioMult = 1 + 0.35 * Math.log(feedRatio);
+                        const matF = starterMature ? 1.0 : 1.2;
+                        const adjPeakH = peakH * matF * ratioMult;
+                        const troughH = adjPeakH * 1.8;
+                        const sweetCenterHBF = (renderSweetFrom + renderSweetTo) / 2;
+                        const idealMixTime = new Date(
+                          pendingEatTime.getTime() - sweetCenterHBF * 3600000
+                        );
+                        prefill = new Date(
+                          idealMixTime.getTime() - adjPeakH * 3600000
+                        );
+                        // Must always be in the past — shift back by full cycles until past
+                        while (prefill >= new Date()) {
+                          prefill = new Date(prefill.getTime() - troughH * 3600000);
                         }
+                        // Clamp to reasonable hours (6am–11pm)
+                        const h = prefill.getHours();
+                        if (h < 6 || h > 23) {
+                          prefill.setHours(20, 0, 0, 0);
+                          if (prefill >= new Date()) {
+                            prefill.setDate(prefill.getDate() - 1);
+                          }
+                        }
+                      } else {
+                        // No bake time: default to 8pm yesterday
+                        prefill = new Date();
+                        prefill.setDate(prefill.getDate() - 1);
+                        prefill.setHours(20, 0, 0, 0);
+                      }
 
-                        // Round to nearest 15min
-                        const m = Math.round(prefill.getMinutes() / 15) * 15;
-                        prefill.setMinutes(m === 60 ? 0 : m, 0, 0);
-                        if (m === 60) prefill.setHours(prefill.getHours() + 1);
+                      // Round to nearest 15min
+                      const m = Math.round(prefill.getMinutes() / 15) * 15;
+                      prefill.setMinutes(m === 60 ? 0 : m, 0, 0);
+                      if (m === 60) prefill.setHours(prefill.getHours() + 1);
 
-                        setLastFedTime(prefill);
-                        onLastFedTimeChange?.(prefill);
-                        setHasNotFedYet(false);
-                        onHasNotFedYetChange?.(false);
-                      }}
-                      style={starterPillButton(false)}
-                    >
-                      Yes — I fed it
-                    </button>
-                    <button
-                      onClick={() => { setHasNotFedYet(true); onHasNotFedYetChange?.(true); }}
-                      style={starterPillButton(false)}
-                    >
-                      Not yet
-                    </button>
-                  </div>
-                </>
+                      setLastFedTime(prefill);
+                      onLastFedTimeChange?.(prefill);
+                      setHasNotFedYet(false);
+                      onHasNotFedYetChange?.(false);
+                    }}
+                    style={{
+                      textAlign: 'left',
+                      padding: '.6rem .85rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid var(--border)',
+                      background: 'transparent',
+                      color: 'var(--smoke)',
+                      fontFamily: 'var(--font-dm-sans)',
+                      fontSize: '.85rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {locale === 'fr'
+                      ? "Je l'ai nourri à une heure précise"
+                      : 'I fed it at a specific time'}
+                  </button>
+                </div>
               )}
 
               {/* State 2: recommendation card */}
