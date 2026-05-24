@@ -3033,6 +3033,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterMature={starterMature}
               starterAdjPeakH={isSourdough ? adjPeakHState : null}
               starterRedPill={isSourdough && starterPillState === 'red'}
+              starterFeed2OutOfZone={isSourdough && usingPeak2 && starterPillState === 'red'}
               comparisonFridgeOutTime={isSourdough && showFridgeComparison ? suggestedFridgeOutTime : null}
               comparisonFridgePeakTime={isSourdough && showFridgeComparison ? suggestedFridgePeakTime : null}
               showFridgeComparison={isSourdough && showFridgeComparison}
@@ -3071,11 +3072,25 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 setHasDragged(true);
                 setPrefAlgoRed(false);
                 if (isSourdough) {
-                  const newFeed = new Date(pendingStart.getTime() - offsetH * 3600000);
-                  setFeedTime(newFeed);
-                  onFeedTimeChange?.(newFeed);
-                  // Starter diamond moves independently — Start Dough stays.
-                  // Baker uses "Reset mix to starter peak" to relink.
+                  const bakeMs = pendingEatTime.getTime();
+                  const feedAbsHBF = mixOffsetH + offsetH;
+                  const newFeedTime = new Date(bakeMs - feedAbsHBF * 3600000);
+                  if (usingPeak2 && adjPeakHState) {
+                    // Feed 2 drag cascades: peak is adjPeakH after feed → mix aligns with peak
+                    const newMixHBF = Math.max(_minTotalRT, feedAbsHBF - adjPeakHState);
+                    const newMixTime = new Date(bakeMs - newMixHBF * 3600000);
+                    setFeed2Time(newFeedTime);
+                    onFeed2TimeChange?.(newFeedTime);
+                    const inZone = newMixHBF >= renderSweetTo && newMixHBF <= renderSweetFrom;
+                    setStarterPillState(inZone ? 'green' : 'yellow');
+                    setPendingStart(newMixTime);
+                    onChange(newMixTime, pendingEatTime, blocks);
+                  } else {
+                    // Single cycle: update feed, trigger solver re-run via lastFedTime
+                    setFeedTime(newFeedTime);
+                    onFeedTimeChange?.(newFeedTime);
+                    onLastFedTimeChange?.(newFeedTime);
+                  }
                 } else {
                   setPrefOffsetH(offsetH);
                   onPrefOffsetChange?.(offsetH);
@@ -3406,6 +3421,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const doughZoneFrom = renderSweetFrom;
         const doughZoneTo   = renderSweetTo;
         const mixInZone    = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
+        const sourdoughDoughGreen  = isSourdough && mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
+        const sourdoughDoughYellow = isSourdough && !sourdoughDoughGreen
+          && mixOffsetH >= doughZoneTo - 2 && mixOffsetH <= doughZoneFrom + 2;
         // Gold zones: use yellowTo (already computed) for right edge,
         // mirror symmetrically for left gold
         const doughGoldRightTo  = renderYellowTo;
@@ -3765,19 +3783,32 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   {fmtCardDT(pendingStart, isFr)}
                 </div>
               )}
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '.3rem',
-                marginTop: '.3rem',
-                background: mixInZone ? 'rgba(74,122,58,0.1)' : (mixEarlyOk || mixLateOk) ? 'rgba(212,168,83,0.15)' : 'rgba(196,82,42,0.1)',
-                border: `1px solid ${mixInZone ? 'rgba(74,122,58,0.3)' : (mixEarlyOk || mixLateOk) ? 'rgba(212,168,83,0.4)' : 'rgba(196,82,42,0.3)'}`,
-                borderRadius: '20px',
-                padding: '.15rem .55rem',
-                fontSize: '11px',
-                color: mixInZone ? '#4A7A3A' : (mixEarlyOk || mixLateOk) ? '#9A7010' : '#C4522A',
-                fontFamily: 'var(--font-dm-mono)',
-              }}>
-                {mixStatus}
-              </div>
+              {(() => {
+                const pillGreen  = isSourdough ? sourdoughDoughGreen  : mixInZone;
+                const pillYellow = isSourdough ? sourdoughDoughYellow : (mixEarlyOk || mixLateOk);
+                const pillText   = isSourdough
+                  ? (sourdoughDoughGreen
+                      ? (isFr ? 'Levain à son pic' : 'Starter peaks at mix')
+                      : sourdoughDoughYellow
+                        ? (isFr ? 'Levain en montée' : 'Starter still rising')
+                        : (isFr ? 'Levain pas encore prêt' : 'Starter not yet ready'))
+                  : mixStatus;
+                return (
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+                    marginTop: '.3rem',
+                    background: pillGreen ? 'rgba(74,122,58,0.1)' : pillYellow ? 'rgba(212,168,83,0.15)' : 'rgba(196,82,42,0.1)',
+                    border: `1px solid ${pillGreen ? 'rgba(74,122,58,0.3)' : pillYellow ? 'rgba(212,168,83,0.4)' : 'rgba(196,82,42,0.3)'}`,
+                    borderRadius: '20px',
+                    padding: '.15rem .55rem',
+                    fontSize: '11px',
+                    color: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#C4522A',
+                    fontFamily: 'var(--font-dm-mono)',
+                  }}>
+                    {pillText}
+                  </div>
+                );
+              })()}
               {mixInBlocker && (
                 <div style={{ fontSize: '11px', color: '#7A5A10', marginTop: '4px', lineHeight: 1.4 }}>
                   Within a blocked window — intentional?

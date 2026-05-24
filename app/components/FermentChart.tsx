@@ -47,6 +47,7 @@ export interface FermentChartProps {
   showFridgeComparison?: boolean;
   starterAdjPeakH?: number | null;  // ratio+maturity+rye adjusted peak hours
   starterRedPill?: boolean;
+  starterFeed2OutOfZone?: boolean;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -241,6 +242,7 @@ export default function FermentChart({
   showFridgeComparison = false,
   starterAdjPeakH = null,
   starterRedPill = false,
+  starterFeed2OutOfZone = false,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -445,7 +447,7 @@ export default function FermentChart({
       : null;
 
   // ── Label collision detection ────────────────────────────
-  const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 80;
+  const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 100;
 
   function blockerHBF(b: AvailabilityBlock) {
     return {
@@ -808,8 +810,8 @@ export default function FermentChart({
               <>
                 <path
                   d={makeBellPath(histPeakHBF, starterSigmaH, W, WH, histFeedHBF)}
-                  fill="rgba(74,127,165,0.07)"
-                  stroke="rgba(74,127,165,0.22)"
+                  fill="rgba(74,127,165,0.08)"
+                  stroke="rgba(74,127,165,0.30)"
                   strokeWidth={1}
                   strokeDasharray="3 3"
                   clipPath="url(#chart-area-clip)"
@@ -820,8 +822,8 @@ export default function FermentChart({
                     y1={BL - MAXH * 0.12}
                     x2={hToX(activeFeedHBF, W, WH)}
                     y2={BL}
-                    stroke="rgba(74,127,165,0.25)"
-                    strokeWidth={1}
+                    stroke="rgba(74,127,165,0.35)"
+                    strokeWidth={1.5}
                     strokeDasharray="4 3"
                   />
                 )}
@@ -1064,18 +1066,22 @@ export default function FermentChart({
           fontFamily="DM Mono, monospace" textAnchor="middle">{t('bakeLabel')}</text>
 
         {/* ── Historical feed diamond (muted, Feed 1 in Peak 2 scenario) ── */}
-        {hasPref && isLevain && histPrefX !== null && (
-          <g opacity={0.4} pointerEvents="none">
-            <polygon
-              points={`${histPrefX},${AXIS_Y - S} ${histPrefX + S},${AXIS_Y} ${histPrefX},${AXIS_Y + S} ${histPrefX - S},${AXIS_Y}`}
-              fill="#6B7A5A" stroke="white" strokeWidth={1.5}
-            />
-            <text x={histPrefX} y={AXIS_Y + 36} fontSize={11} fill="#6B7A5A"
-              fontFamily="DM Mono, monospace" textAnchor="middle" fontWeight="600">
-              Feed 1
-            </text>
-          </g>
-        )}
+        {hasPref && isLevain && histPrefX !== null && (() => {
+          const histLabelsClose = histPrefX !== null && Math.abs(activePrefX - (histPrefX ?? 0)) < 90;
+          return (
+            <g pointerEvents="none">
+              <polygon
+                points={`${histPrefX},${AXIS_Y - S} ${histPrefX + S},${AXIS_Y} ${histPrefX},${AXIS_Y + S} ${histPrefX - S},${AXIS_Y}`}
+                fill="rgba(74,127,165,0.20)" stroke="rgba(74,127,165,0.45)" strokeWidth={1.5}
+              />
+              <text x={histPrefX} y={histLabelsClose ? AXIS_Y + 52 : AXIS_Y + 36}
+                fontSize={11} fill="var(--smoke)"
+                fontFamily="DM Mono, monospace" textAnchor="middle" fontWeight="600">
+                {isFr ? 'Dernier repas' : 'Last Fed'}
+              </text>
+            </g>
+          );
+        })()}
 
         {/* ── Refeed diamond (depleted state) ── */}
         {isLevain && refeedHBF !== null && depletedAtHBF !== null
@@ -1155,7 +1161,7 @@ export default function FermentChart({
           activePrefX,
           (prefStartAbsHBF > nowHBF || inBlocker(prefStartAbsHBF)) ? '#BBBBBB' : prefColor,
           (prefStartAbsHBF > nowHBF || inBlocker(prefStartAbsHBF)) ? '#999999' : prefStroke,
-          inBlocker(prefStartAbsHBF),
+          inBlocker(prefStartAbsHBF) || (isLevain && starterFeed2OutOfZone),
           'pref',
           prefStartAbsHBF > nowHBF,
         )}
@@ -1174,7 +1180,7 @@ export default function FermentChart({
                 ? (starterRedPill && histFeedHBF !== null
                     ? (isFr ? 'Nourrir' : 'Feed')
                     : histFeedHBF !== null
-                      ? (isFr ? 'Repas 2' : 'Feed 2')
+                      ? (isFr ? 'Prochain repas' : 'Next Feed')
                       : (isFr ? 'Repas' : 'Feed'))
                 : prefermentType === 'biga'
                   ? t('cardLabels.makeBiga')
@@ -1211,7 +1217,7 @@ export default function FermentChart({
         )}
         {/* ── Mix label ── */}
         <text
-          x={mixX} y={AXIS_Y + 36}
+          x={mixX} y={labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
           fontSize={12} fill="#3D5A30"
           fontFamily="DM Mono, monospace"
           textAnchor="middle" fontWeight="600"
