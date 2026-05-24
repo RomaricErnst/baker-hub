@@ -1086,6 +1086,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [blockerNote, setBlockerNote] = useState<string | null>(null);
   const [guardNote, setGuardNote] = useState<string | null>(null);
   const [windowTooShort, setWindowTooShort] = useState(false);
+  const [suggestedBakeTime, setSuggestedBakeTime] = useState<Date | null>(null);
   const minTotalRTRef = useRef(2.5);
   const [recommendedColdH, setRecommendedColdH] = useState<number>(() => {
     const d = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
@@ -1555,6 +1556,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       starterHasRye, kitchenTemp]);
 
   useEffect(() => {
+    if (!isSourdough) return;
+    setSuggestedBakeTime(null);
+  }, [lastFedTime, lastFedAge, starterLocation, planningMode,
+      starterMature, starterHasRye, feedRatio, kitchenTemp, isSourdough]);
+
+  useEffect(() => {
     setDriftNote(null);
   }, [lastFedTime, knownPeakTime, pendingEatTime]);
 
@@ -1818,20 +1825,40 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const nowMs0    = Date.now();
     const windowHBF = (bakeMs - nowMs0) / 3600000;
     const minFermH  = (_sfDef.minTotalFermH ?? 4) + 1.0;
-    if (windowHBF < minFermH) {
-      setWindowTooShort(true);
-      setStarterPillState('green');
-      setRefeedSuggestion(null);
-      setFeed2Time(null);
-      return;
-    }
-    setWindowTooShort(false);
 
+    // Compute starter peak params early — needed for suggestion if window too short
     const peakH   = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
     const ryeF    = starterHasRye ? 0.8 : 1.0;
     const matF    = starterMature ? 1.0 : 1.2;
     const ratioMultiplier = 1 + 0.35 * Math.log(feedRatio);
     const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
+
+    if (windowHBF < minFermH) {
+      setWindowTooShort(true);
+      setStarterPillState('green');
+      setRefeedSuggestion(null);
+      setFeed2Time(null);
+
+      // Earliest viable bake = now + adjPeakH + sweetCenter + 1h buffer
+      const sweetCenterH = (renderSweetFrom + renderSweetTo) / 2;
+      const minNeededH   = adjPeakH + sweetCenterH + 1;
+      const suggested    = new Date(Date.now() + minNeededH * 3600000);
+      suggested.setMinutes(0, 0, 0);
+      suggested.setHours(suggested.getHours() + 1);
+      const sh = suggested.getHours();
+      if (sh < 7) {
+        suggested.setHours(7, 0, 0, 0);
+        if (suggested <= new Date()) suggested.setDate(suggested.getDate() + 1);
+      } else if (sh > 22) {
+        suggested.setDate(suggested.getDate() + 1);
+        suggested.setHours(7, 0, 0, 0);
+      }
+      setSuggestedBakeTime(suggested);
+      return;
+    }
+    setWindowTooShort(false);
+    setSuggestedBakeTime(null);
+
     const troughH  = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * ratioMultiplier;
     const warmupH  = getStarterFridgeWarmupH(kitchenTemp);
     const ftm      = Math.max(0.7, Math.min(1.5, flourStrength ?? 1.0));
@@ -2858,9 +2885,44 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           </div>
           <div style={{ fontSize: '.82rem', color: 'var(--smoke)', lineHeight: 1.55 }}>
             {isFr
-              ? `Il faut au moins ${Math.ceil(minTotalRTRef.current)}h entre maintenant et la cuisson. Essayez un créneau plus tardif — ou commandez une pizza ce soir.`
-              : `You need at least ${Math.ceil(minTotalRTRef.current)}h between now and your bake. Try a later time — or order in tonight.`}
+              ? `Il faut au moins ${Math.ceil(minTotalRTRef.current)}h entre maintenant et la cuisson.`
+              : `You need at least ${Math.ceil(minTotalRTRef.current)}h between now and your bake.`}
           </div>
+          {isSourdough && suggestedBakeTime && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', flexWrap: 'wrap' }}>
+              <div style={{ fontSize: '.8rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+                {isFr ? 'Essayez plutôt :' : 'Try instead:'}
+              </div>
+              <button
+                onClick={() => {
+                  setPendingEatTime(suggestedBakeTime);
+                  setEatTimeSet(true);
+                  onChange(pendingStart, suggestedBakeTime, blocks);
+                  setSuggestedBakeTime(null);
+                  setWindowTooShort(false);
+                }}
+                style={{
+                  padding: '.35rem .85rem',
+                  borderRadius: '20px',
+                  border: '1.5px solid var(--terra)',
+                  background: '#FEF4EF',
+                  color: 'var(--terra)',
+                  fontFamily: 'var(--font-dm-mono)',
+                  fontSize: '.82rem',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                {fmtCardDT(suggestedBakeTime, isFr)} →
+              </button>
+            </div>
+          )}
+          {!isSourdough && (
+            <div style={{ fontSize: '.82rem', color: 'var(--smoke)' }}>
+              {isFr ? 'Essayez un créneau plus tardif — ou commandez une pizza ce soir.'
+                     : 'Try a later time — or order in tonight.'}
+            </div>
+          )}
         </div>
       )}
 
