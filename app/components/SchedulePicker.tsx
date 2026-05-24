@@ -3532,11 +3532,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 }
               }
 
-              const pillColor = starterPillState === 'green'
-                ? { bg: '#E8F5E9', border: '#4CAF50', text: '#2E7D32' }
-                : starterPillState === 'yellow'
-                ? { bg: '#FFF8E1', border: '#FFC107', text: '#F57F17' }
-                : { bg: '#FFEBEE', border: '#EF5350', text: '#C62828' };
 
               return (
                 <div style={{
@@ -3619,26 +3614,49 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center',
-                    padding: '.25rem .65rem', borderRadius: '20px',
-                    background: pillColor.bg,
-                    border: `1.5px solid ${pillColor.border}`,
-                    color: pillColor.text,
-                    fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
-                  }}>
-                    {starterPillState === 'green' && (
-                      usingPeak2
-                        ? (isFr ? 'Pic 2 — saveur plus complexe' : 'Second peak — stronger flavour')
-                        : (isFr ? 'Prêt au mélange' : 'Ready at mix')
-                    )}
-                    {starterPillState === 'yellow' && (isFr ? 'En cours de montée' : 'Still developing')}
-                    {starterPillState === 'red' && refeedSuggestion && (
-                      isFr
-                        ? `Nourrir à ${fmtCardDT(refeedSuggestion, true)}`
-                        : `Feed at ${fmtCardDT(refeedSuggestion, false)}`
-                    )}
-                  </div>
+                  {(() => {
+                    const pillGreen  = starterPillState === 'green';
+                    const pillYellow = starterPillState === 'yellow';
+                    const pillText =
+                      starterPillState === 'green'
+                        ? (usingPeak2
+                            ? (isFr ? 'Pic 2 — saveur plus complexe' : 'Second peak — stronger flavour')
+                            : (isFr ? 'Prêt au mélange' : 'Ready at mix'))
+                        : starterPillState === 'yellow'
+                        ? (fridgeOutTime && !usingPeak2
+                            ? (isFr
+                                ? `Sortir du frigo à ${fmtCardHM(fridgeOutTime, isFr)}`
+                                : `Remove from fridge at ${fmtCardHM(fridgeOutTime, isFr)}`)
+                            : (isFr ? 'En cours de montée' : 'Still developing'))
+                        : (refeedSuggestion
+                            ? (isFr
+                                ? `Nourrir à ${fmtCardDT(refeedSuggestion, true)}`
+                                : `Feed at ${fmtCardDT(refeedSuggestion, false)}`)
+                            : '');
+                    return (
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center',
+                        gap: '.3rem', marginTop: '.3rem',
+                        background: pillGreen
+                          ? 'rgba(74,122,58,0.1)'
+                          : pillYellow
+                            ? 'rgba(212,168,83,0.15)'
+                            : 'rgba(196,82,42,0.1)',
+                        border: `1px solid ${pillGreen
+                          ? 'rgba(74,122,58,0.3)'
+                          : pillYellow
+                            ? 'rgba(212,168,83,0.4)'
+                            : 'rgba(196,82,42,0.3)'}`,
+                        borderRadius: '20px',
+                        padding: '.15rem .55rem',
+                        fontSize: '11px',
+                        color: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#C4522A',
+                        fontFamily: 'var(--font-dm-mono)',
+                      }}>
+                        {pillText}
+                      </div>
+                    );
+                  })()}
 
                   {starterStateNote && starterPillState !== 'red' && (
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginTop: '.5rem' }}>
