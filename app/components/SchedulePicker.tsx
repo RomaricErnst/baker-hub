@@ -2037,12 +2037,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       }
 
       setStarterPillState('red');
-      setRefeedSuggestion(bestFeed);
+      const now = new Date();
+      const displayFeed = bestFeed < now ? now : bestFeed;
+      setRefeedSuggestion(displayFeed);
       setUsingPeak2(false);
-      setFeed2Time(bestFeed);
+      setFeed2Time(displayFeed);
       setDriftNote(null);
-      setPendingStart(bestMix);
-      onChange(bestMix, et, blocks);
+      const newPeak = new Date(displayFeed.getTime() + adjPeakH * 3600000);
+      const newMixHBF = (bakeMs - newPeak.getTime()) / 3600000;
+      const clampedMixHBF = Math.max(sweetToHBF, Math.min(sweetFromHBF, newMixHBF));
+      const newMix = new Date(bakeMs - clampedMixHBF * 3600000);
+      setPendingStart(newMix);
+      onChange(newMix, et, blocks);
       if (planningMode === 'last_fed' && lastFedTime) {
         onFeedTimeChange?.(lastFedTime);
         setFeedTime(lastFedTime);
@@ -2377,51 +2383,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 </div>
               )}
 
-              {/* State 2: recommendation card */}
-              {hasNotFedYet === true && (() => {
-                const peakH = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
-                const ryeF = starterHasRye ? 0.8 : 1.0;
-                const matF = starterMature ? 1.0 : 1.2;
-                const ratioMultiplier = 1 + 0.35 * Math.log(feedRatio);
-                const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
-                const idealMixHBF = (renderSweetFrom + renderSweetTo) / 2;
-                const idealMixTime = new Date(pendingEatTime.getTime() - idealMixHBF * 3600000);
-                const idealFeedTime = new Date(idealMixTime.getTime() - adjPeakH * 3600000);
-                const fmtFull = (dt: Date) => dt.toLocaleDateString(
-                  locale === 'fr' ? 'fr-FR' : 'en-US',
-                  { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr' }
-                );
-                return (
-                  <div>
-                    <div style={STARTER_LABEL_STYLE}>Recommended feed time</div>
-                    <div style={{
-                      background: '#EFF6FF', border: '1.5px solid #93C5FD',
-                      borderRadius: '10px', padding: '.75rem 1rem', marginBottom: '.6rem',
-                    }}>
-                      <div style={{
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '.88rem',
-                        fontWeight: 600, color: '#1E40AF', marginBottom: '.25rem',
-                      }}>
-                        Feed at {fmtFull(idealFeedTime)}
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '.73rem', color: 'var(--smoke)' }}>
-                        At {kitchenTemp}°C your starter peaks in ~{(Math.round(adjPeakH * 10) / 10)}h — it will be ready right at mix time.
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => { setHasNotFedYet(false); onHasNotFedYetChange?.(false); }}
-                      style={{
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        color: 'var(--terra)', fontFamily: 'var(--font-dm-sans)',
-                        fontSize: '.78rem', textDecoration: 'underline',
-                        textUnderlineOffset: '2px', padding: 0,
-                      }}
-                    >
-                      Enter actual feed time →
-                    </button>
-                  </div>
-                );
-              })()}
+              {/* State 2: neutral note — recommendation appears in plan below */}
+              {hasNotFedYet === true && (
+                <div style={{
+                  fontSize: '.78rem',
+                  color: 'var(--smoke)',
+                  fontFamily: 'var(--font-dm-sans)',
+                  lineHeight: 1.5,
+                  padding: '.3rem 0',
+                }}>
+                  {locale === 'fr'
+                    ? 'Le meilleur moment pour nourrir apparaîtra dans le plan ci-dessous.'
+                    : 'The best time to feed will appear in the plan below.'}
+                </div>
+              )}
 
               {/* State 3: picker with change link */}
               {hasNotFedYet === false && (

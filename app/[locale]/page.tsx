@@ -907,6 +907,19 @@ export default function Home() {
     setPizzaPartyQtys({});
     setBakePhotoUrl(null);
     setBakedDone(false);
+    // Sourdough starter state — full reset
+    setLastFedTime(null);
+    setKnownPeakTime(null);
+    setHasNotFedYet(null);
+    setFeed2Time(null);
+    setFridgeOutTime(null);
+    setUsingPeak2(false);
+    setStarterLocation('rt');
+    setPlanningMode('last_fed');
+    setStarterMature(true);
+    setStarterHasRye(false);
+    setFeedRatio(1);
+    setStarterPeakTime(null);
   }
 
   function handleGenerate() {
