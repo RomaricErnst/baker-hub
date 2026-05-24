@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { type AnyOvenType } from '../data';
 import DecisionList from './DecisionList';
 import DecisionSummary from './DecisionSummary';
@@ -23,7 +23,25 @@ interface OvenPickerProps {
 
 export default function OvenPicker({ bakeType, styleKey, selected, onSelect }: OvenPickerProps) {
   const t = useTranslations('oven');
+  const locale = useLocale();
   const [expanded, setExpanded] = useState(true);
+
+  useEffect(() => {
+    if (selected === null && bakeType === 'pizza') {
+      onSelect('home_oven_steel' as AnyOvenType);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const recommendedOven = bakeType === 'bread'
+    ? (['brioche', 'pain_mie', 'pain_viennois', 'pain_seigle'].includes(styleKey ?? '')
+        ? 'standard_bread'
+        : ['baguette', 'fougasse'].includes(styleKey ?? '')
+          ? 'home_oven_stone_bread'
+          : 'dutch_oven')
+    : null;
+
+  const badge = locale === 'fr' ? 'Recommandé' : 'Recommended';
 
   const pizzaOptions = [
     { id: 'pizza_oven',         image: '/oven_fire.webp',           title: t('pizzaOven.title'),     tagline: t('pizzaOven.tagline') },
@@ -33,21 +51,12 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect }: O
   ];
 
   const allBreadOptions = [
-    { id: 'dutch_oven',            image: '/oven_dutch.webp',          title: t('dutchOven.title'),  tagline: t('dutchOven.tagline') },
-    { id: 'home_oven_stone_bread', image: '/oven_stone_bread.webp',    title: t('homeStoneB.title'), tagline: t('homeStoneB.tagline') },
-    { id: 'standard_bread',        image: '/oven_standard_bread.webp', title: t('standardB.title'),  tagline: t('standardB.tagline') },
+    { id: 'dutch_oven',            image: '/oven_dutch.webp',          title: t('dutchOven.title'),  tagline: t('dutchOven.tagline'),  badge: recommendedOven === 'dutch_oven'            ? badge : undefined },
+    { id: 'home_oven_stone_bread', image: '/oven_stone_bread.webp',    title: t('homeStoneB.title'), tagline: t('homeStoneB.tagline'), badge: recommendedOven === 'home_oven_stone_bread' ? badge : undefined },
+    { id: 'standard_bread',        image: '/oven_standard_bread.webp', title: t('standardB.title'),  tagline: t('standardB.tagline'),  badge: recommendedOven === 'standard_bread'        ? badge : undefined },
     { id: 'wood_fired',            image: '/oven_wood_bread.webp',     title: t('woodFired.title'),  tagline: t('woodFired.tagline') },
     { id: 'steam_oven',            image: '/oven_steam.webp',          title: t('steamOven.title'),  tagline: t('steamOven.tagline') },
   ];
-
-  const defaultId = bakeType === 'pizza' ? 'home_oven_steel' : 'dutch_oven';
-
-  useEffect(() => {
-    if (selected === null) {
-      onSelect(defaultId as AnyOvenType);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const options = bakeType === 'pizza'
     ? pizzaOptions
@@ -71,23 +80,13 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect }: O
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <h2 style={{ fontFamily: 'Playfair Display', fontSize: 22, fontWeight: 700, color: 'var(--char)', margin: 0 }}>
-          {t('heading')}
-        </h2>
-        <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '4px 0 0', fontFamily: 'DM Sans' }}>
-          {t('subtitle')}
-        </p>
-      </div>
-      <DecisionList
-        options={options}
-        selectedId={selectedId}
-        onSelect={(id) => {
-          onSelect(id as AnyOvenType);
-          setExpanded(false);
-        }}
-      />
-    </div>
+    <DecisionList
+      options={options}
+      selectedId={selectedId}
+      onSelect={(id) => {
+        onSelect(id as AnyOvenType);
+        setExpanded(false);
+      }}
+    />
   );
 }
