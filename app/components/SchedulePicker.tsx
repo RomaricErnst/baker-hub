@@ -2919,7 +2919,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               </button>
             </div>
           )}
-          {!isSourdough && (
+          {bakeType === 'pizza' && (
             <div style={{ fontSize: '.82rem', color: 'var(--smoke)' }}>
               {isFr ? 'Essayez un créneau plus tardif — ou commandez une pizza ce soir.'
                      : 'Try a later time — or order in tonight.'}
