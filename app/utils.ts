@@ -252,6 +252,7 @@ export function sourdoughGuidance(
   kitchenTemp: number,
   flour: number,
   feedToMixH?: number,
+  flourStrength?: number,
 ): SourdoughResult {
   let min: number, max: number;
 
@@ -271,13 +272,40 @@ export function sourdoughGuidance(
     max = Math.min(30, adjMid + 3);
   }
 
-  const bulkCues = [
-    'Dough has grown 75–100% in volume',
-    'Surface looks domed and slightly bubbly',
-    'Dough jiggles when you shake the container',
-    'Sides of container look slightly pulled away',
-    'Smells pleasantly tangy, not alcoholic',
-  ];
+  // Apply flour strength to starter % — weaker flour needs less starter to
+  // avoid over-acidification; stronger flour tolerates more.
+  if (flourStrength && flourStrength !== 1.0) {
+    const ftm = Math.max(0.6, Math.min(1.5, flourStrength));
+    min = Math.max(5,  Math.round(min * ftm));
+    max = Math.min(30, Math.round(max * ftm));
+  }
+
+  const isWeakFlour   = flourStrength !== undefined && flourStrength < 0.85;
+  const isStrongFlour = flourStrength !== undefined && flourStrength > 1.15;
+
+  const bulkCues = isWeakFlour
+    ? [
+        'Dough has grown 50–75% in volume',
+        'Surface looks domed — stop before it jiggles freely',
+        'Sides of container look slightly pulled away',
+        'Smells pleasantly tangy, not strongly sour',
+        'Weaker flour ferments faster — watch closely',
+      ]
+    : isStrongFlour
+    ? [
+        'Dough has grown 75–100% in volume',
+        'Surface is domed and slightly bubbly',
+        'Dough jiggles when you gently shake the container',
+        'Sides of container look slightly pulled away',
+        'Smells pleasantly tangy — strong flour can go longer',
+      ]
+    : [
+        'Dough has grown 75–100% in volume',
+        'Surface looks domed and slightly bubbly',
+        'Dough jiggles when you shake the container',
+        'Sides of container look slightly pulled away',
+        'Smells pleasantly tangy, not alcoholic',
+      ];
 
   const warning = kitchenTemp >= 28
     ? `At ${kitchenTemp}°C your starter is very active. ` +
@@ -887,7 +915,7 @@ export function calculateRecipe(
   const effectivePriority = manualPriorityOverride !== undefined ? manualPriorityOverride : autoPriority;
 
   if (yeastType === 'sourdough') {
-    sourdough = sourdoughGuidance(kitchenTemp, flour, feedToMixH);
+    sourdough = sourdoughGuidance(kitchenTemp, flour, feedToMixH, blendProfile?.fermToleranceMultiplier);
   } else {
     yeast = recommendYeast(
       schedule.totalRTHours,
