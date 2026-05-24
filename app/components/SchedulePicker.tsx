@@ -2292,98 +2292,67 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           {planningMode === 'last_fed' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
               <div style={STARTER_LABEL_STYLE}>
-                {isFr ? 'Quand avez-vous nourri votre levain ?' : 'When did you last feed your starter?'}
+                {isFr ? 'QUAND A-T-IL ÉTÉ NOURRI ?' : 'WHEN WAS IT LAST FED?'}
               </div>
 
-              {/* Chips — shown when no age selected yet */}
-              {lastFedAge === null && (
-                <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
-                  {([
-                    { id: 'today',     en: 'Today',     fr: "Aujourd'hui" },
-                    { id: 'yesterday', en: 'Yesterday', fr: 'Hier' },
-                    { id: 'days23',    en: '2–3 days',  fr: '2–3 jours' },
-                    { id: 'days45',    en: '4–5 days',  fr: '4–5 jours' },
-                    { id: 'week',      en: 'A week+',   fr: 'Une semaine+' },
-                  ] as { id: 'today'|'yesterday'|'days23'|'days45'|'week'; en: string; fr: string }[]).map(chip => (
-                    <button
-                      key={chip.id}
-                      onClick={() => {
-                        const now = new Date();
-                        let prefill: Date;
-                        if (chip.id === 'today') {
-                          prefill = new Date(now.getTime() - 2 * 3600000);
-                          const m = Math.round(prefill.getMinutes() / 15) * 15;
-                          prefill.setMinutes(m === 60 ? 0 : m, 0, 0);
-                          if (m === 60) prefill.setHours(prefill.getHours() + 1);
-                        } else if (chip.id === 'yesterday') {
-                          prefill = new Date(now);
-                          prefill.setDate(prefill.getDate() - 1);
-                          prefill.setHours(20, 0, 0, 0);
-                        } else if (chip.id === 'days23') {
-                          prefill = new Date(now.getTime() - 60 * 3600000);
-                        } else if (chip.id === 'days45') {
-                          prefill = new Date(now.getTime() - 108 * 3600000);
-                        } else {
-                          prefill = new Date(now.getTime() - 196 * 3600000);
-                        }
-                        setLastFedAge(chip.id);
-                        onLastFedAgeChange?.(chip.id);
-                        setLastFedTime(prefill);
-                        onLastFedTimeChange?.(prefill);
-                      }}
-                      style={{
-                        padding: '.35rem .7rem', borderRadius: '20px',
-                        border: '1.5px solid var(--border)',
-                        background: 'transparent',
-                        color: 'var(--smoke)',
-                        fontFamily: 'var(--font-dm-sans)', fontSize: '.8rem', cursor: 'pointer',
-                      }}
-                    >
-                      {isFr ? chip.fr : chip.en}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Selected chip + change link */}
-              {lastFedAge !== null && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center',
-                    padding: '.3rem .65rem', borderRadius: '20px',
-                    border: '1.5px solid var(--bread)',
-                    background: 'rgba(139,105,20,0.08)',
-                    color: 'var(--bread)',
-                    fontFamily: 'var(--font-dm-sans)', fontSize: '.8rem',
-                  }}>
-                    {lastFedAge === 'today'     ? (isFr ? "Aujourd'hui" : 'Today')
-                     : lastFedAge === 'yesterday' ? (isFr ? 'Hier' : 'Yesterday')
-                     : lastFedAge === 'days23'    ? (isFr ? '2–3 jours' : '2–3 days')
-                     : lastFedAge === 'days45'    ? (isFr ? '4–5 jours' : '4–5 days')
-                     :                             (isFr ? 'Une semaine+' : 'A week+')}
-                  </div>
+              {/* Age chips — always visible */}
+              <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
+                {([
+                  { id: 'today',     en: 'Today',       fr: "Aujourd'hui" },
+                  { id: 'yesterday', en: 'Yesterday',    fr: 'Hier' },
+                  { id: 'days23',    en: '2–3 days ago', fr: 'Il y a 2–3 jours' },
+                  { id: 'days45',    en: '4–5 days ago', fr: 'Il y a 4–5 jours' },
+                  { id: 'week',      en: 'A week+',      fr: 'Une semaine+' },
+                ] as { id: 'today'|'yesterday'|'days23'|'days45'|'week'; en: string; fr: string }[]).map(chip => (
                   <button
+                    key={chip.id}
                     onClick={() => {
-                      setLastFedAge(null); onLastFedAgeChange?.(null);
-                      setLastFedTime(null); onLastFedTimeChange?.(null);
+                      const now = new Date();
+                      let prefill: Date;
+                      if (chip.id === 'today') {
+                        prefill = new Date(now.getTime() - 2 * 3600000);
+                        const m = Math.round(prefill.getMinutes() / 15) * 15;
+                        prefill.setMinutes(m === 60 ? 0 : m, 0, 0);
+                        if (m === 60) prefill.setHours(prefill.getHours() + 1);
+                      } else if (chip.id === 'yesterday') {
+                        prefill = new Date(now);
+                        prefill.setDate(prefill.getDate() - 1);
+                        prefill.setHours(20, 0, 0, 0);
+                      } else if (chip.id === 'days23') {
+                        prefill = new Date(now.getTime() - 60 * 3600000);
+                      } else if (chip.id === 'days45') {
+                        prefill = new Date(now.getTime() - 108 * 3600000);
+                      } else {
+                        prefill = new Date(now.getTime() - 196 * 3600000);
+                      }
+                      setLastFedAge(chip.id);
+                      onLastFedAgeChange?.(chip.id);
+                      setLastFedTime(prefill);
+                      onLastFedTimeChange?.(prefill);
                     }}
                     style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
-                      fontSize: '.68rem', textDecoration: 'underline',
-                      textUnderlineOffset: '2px', padding: 0,
+                      padding: '.3rem .65rem',
+                      borderRadius: '20px',
+                      border: `1.5px solid ${lastFedAge === chip.id ? 'var(--terra)' : 'var(--border)'}`,
+                      background: lastFedAge === chip.id ? '#FEF4EF' : 'transparent',
+                      color: lastFedAge === chip.id ? 'var(--terra)' : 'var(--smoke)',
+                      fontFamily: 'var(--font-dm-sans)',
+                      fontSize: '.8rem',
+                      cursor: 'pointer',
+                      fontWeight: lastFedAge === chip.id ? 600 : 400,
+                      transition: 'all 0.15s ease',
                     }}
                   >
-                    {isFr ? 'changer' : 'change'}
+                    {isFr ? chip.fr : chip.en}
                   </button>
-                </div>
-              )}
+                ))}
+              </div>
 
-              {/* Time picker — Today / Yesterday only */}
+              {/* Time select — inline, Today / Yesterday only */}
               {(lastFedAge === 'today' || lastFedAge === 'yesterday') && (
-                <div>
-                  <div style={{ ...STARTER_LABEL_STYLE, marginBottom: '.25rem' }}>
-                    {isFr ? 'À quelle heure ?' : 'At what time?'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginTop: '.1rem' }}>
+                  <div style={{ fontSize: '.78rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+                    {isFr ? 'à' : 'at'}
                   </div>
                   <select
                     value={lastFedTime
@@ -2391,36 +2360,52 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       : ''}
                     onChange={e => {
                       const [h, m] = e.target.value.split(':').map(Number);
-                      const base = lastFedTime ?? new Date();
-                      const next = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, 0, 0);
-                      setLastFedTime(next); onLastFedTimeChange?.(next);
+                      const base = lastFedAge === 'today'
+                        ? new Date()
+                        : (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d; })();
+                      base.setHours(h, m, 0, 0);
+                      if (base > new Date()) return;
+                      setLastFedTime(base);
+                      onLastFedTimeChange?.(base);
                     }}
-                    style={STARTER_SELECT_STYLE}
+                    style={{
+                      fontFamily: 'var(--font-dm-mono)',
+                      fontSize: '.82rem',
+                      padding: '.28rem .5rem',
+                      borderRadius: '8px',
+                      border: '1.5px solid var(--border)',
+                      background: 'var(--warm)',
+                      color: 'var(--char)',
+                      minWidth: '100px',
+                    }}
                   >
                     {Array.from({ length: 96 }, (_, i) => {
                       const h = Math.floor(i / 4);
                       const m = (i % 4) * 15;
-                      const val = `${h}:${String(m).padStart(2,'0')}`;
-                      const lbl = isFr
-                        ? `${h}h${String(m).padStart(2,'0')}`
-                        : `${h === 0 ? 12 : h > 12 ? h-12 : h}:${String(m).padStart(2,'0')} ${h < 12 ? 'am' : 'pm'}`;
-                      return <option key={i} value={val}>{lbl}</option>;
-                    })}
+                      if (lastFedAge === 'today') {
+                        const now = new Date();
+                        if (h > now.getHours() || (h === now.getHours() && m > now.getMinutes())) return null;
+                      }
+                      const mm = String(m).padStart(2, '0');
+                      const label = isFr
+                        ? `${h}h${m === 0 ? '' : mm}`
+                        : `${h === 0 ? 12 : h > 12 ? h - 12 : h}:${mm} ${h < 12 ? 'am' : 'pm'}`;
+                      return <option key={i} value={`${h}:${mm}`}>{label}</option>;
+                    }).filter(Boolean)}
                   </select>
                 </div>
               )}
 
-              {/* Info note — multi-day chips */}
+              {/* Approximate age note — 2+ days */}
               {(lastFedAge === 'days23' || lastFedAge === 'days45' || lastFedAge === 'week') && (
-                <div style={{
-                  fontSize: '.78rem', color: 'var(--smoke)',
-                  fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,
-                }}>
-                  {lastFedAge === 'days23'
-                    ? (isFr ? 'Levain actif — le plan inclura un rafraîchi.' : 'Active starter — the plan will include a refresh feed.')
-                    : lastFedAge === 'days45'
-                    ? (isFr ? 'Levain dormant — un rafraîchi est nécessaire avant de mélanger.' : 'Dormant starter — a refresh feed is needed before mixing.')
-                    : (isFr ? 'Levain très dormant — plusieurs rafraîchis peuvent être nécessaires.' : 'Very dormant starter — multiple refreshes may be needed.')}
+                <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>
+                  {starterLocation === 'fridge'
+                    ? (isFr
+                        ? 'Le plan ci-dessous indiquera quand sortir votre levain.'
+                        : 'The plan below will tell you when to take it out.')
+                    : (isFr
+                        ? "Votre levain a besoin d'être nourri — le plan vous guidera."
+                        : 'Your starter needs feeding — the plan will guide you.')}
                 </div>
               )}
             </div>
