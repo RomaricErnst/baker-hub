@@ -1087,6 +1087,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [guardNote, setGuardNote] = useState<string | null>(null);
   const [windowTooShort, setWindowTooShort] = useState(false);
   const [suggestedBakeTime, setSuggestedBakeTime] = useState<Date | null>(null);
+  const [suggestedBakeTimeBread, setSuggestedBakeTimeBread] = useState<Date | null>(null);
   const minTotalRTRef = useRef(2.5);
   const [recommendedColdH, setRecommendedColdH] = useState<number>(() => {
     const d = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
@@ -1218,6 +1219,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Reset prefAlgoRed at start — prevents stale state from previous run
     setPrefAlgoRed(false);
     setWindowTooShort(false);
+    setSuggestedBakeTimeBread(null);
     const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
     // Scale fermentation windows by flour strength (W value / fermToleranceMultiplier).
     // Stronger flour tolerates longer fermentation and benefits from more cold retard.
@@ -1247,6 +1249,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setWindowTooShort(true);
       setGuardNote(null);
       setStartComputed(false);
+      if (bakeType === 'bread') {
+        const prefColdH  = scaledDefaults.preferredColdH ?? scaledDefaults.coldH ?? 0;
+        const minNeededH = prefColdH + minTotalRTLocal + 1;
+        const suggested  = new Date(Date.now() + minNeededH * 3600000);
+        suggested.setMinutes(0, 0, 0);
+        suggested.setHours(suggested.getHours() + 1);
+        const sh = suggested.getHours();
+        if (sh < 7) {
+          suggested.setHours(7, 0, 0, 0);
+          if (suggested <= new Date()) suggested.setDate(suggested.getDate() + 1);
+        } else if (sh > 22) {
+          suggested.setDate(suggested.getDate() + 1);
+          suggested.setHours(7, 0, 0, 0);
+        }
+        setSuggestedBakeTimeBread(suggested);
+      }
       return;
     }
 
@@ -2916,6 +2934,35 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 }}
               >
                 {fmtCardDT(suggestedBakeTime, isFr)} →
+              </button>
+            </div>
+          )}
+          {!isSourdough && bakeType === 'bread' && suggestedBakeTimeBread && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', flexWrap: 'wrap' }}>
+              <div style={{ fontSize: '.8rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+                {isFr ? 'Essayez plutôt :' : 'Try instead:'}
+              </div>
+              <button
+                onClick={() => {
+                  setPendingEatTime(suggestedBakeTimeBread);
+                  setEatTimeSet(true);
+                  onChange(pendingStart, suggestedBakeTimeBread, blocks);
+                  setSuggestedBakeTimeBread(null);
+                  setWindowTooShort(false);
+                }}
+                style={{
+                  padding: '.35rem .85rem',
+                  borderRadius: '20px',
+                  border: '1.5px solid var(--terra)',
+                  background: '#FEF4EF',
+                  color: 'var(--terra)',
+                  fontFamily: 'var(--font-dm-mono)',
+                  fontSize: '.82rem',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                {fmtCardDT(suggestedBakeTimeBread, isFr)} →
               </button>
             </div>
           )}
