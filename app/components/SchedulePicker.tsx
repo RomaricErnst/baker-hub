@@ -3068,6 +3068,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   : null
                 );
                 onChange(newStart, pendingEatTime, blocks);
+                if (isSourdough) {
+                  setTimeout(() => findOptimalPositionSourdough(pendingEatTime), 0);
+                }
               }}
             />
           ) : (
@@ -3126,10 +3129,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         : (lastFedTime ?? feedTime))
                 : null}
               starterFeed2Time={
-                isSourdough
-                  ? (hasFutureFeedPath && feed2Time
-                      ? (lastFedTime ?? feedTime)
-                      : usingPeak2 ? feedTime : null)
+                isSourdough && (hasFutureFeedPath || usingPeak2)
+                  ? (lastFedTime ?? null)
                   : null
               }
               starterFridgeOutTime={isSourdough ? fridgeOutTime : null}
@@ -3771,7 +3772,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                             ? (isFr
                                 ? `Sortir du frigo à ${fmtCardHM(fridgeOutTime, isFr)}`
                                 : `Remove fridge at ${fmtCardHM(fridgeOutTime, isFr)}`)
-                            : (isFr ? 'En cours de montée' : 'Still developing');
+                            : (() => {
+                                const adjPeakH2 = adjPeakHState ?? 8;
+                                const baseFeedMs = (() => {
+                                  if (planningMode === 'know_peak' && knownPeakTime) return knownPeakTime.getTime() - adjPeakH2 * 3600000;
+                                  if (usingPeak2 && feed2Time) return feed2Time.getTime();
+                                  return lastFedTime?.getTime() ?? feedTime?.getTime() ?? null;
+                                })();
+                                if (!baseFeedMs) return isFr ? 'En cours de montée' : 'Still rising';
+                                const peakMs = planningMode === 'know_peak' && knownPeakTime
+                                  ? knownPeakTime.getTime()
+                                  : baseFeedMs + adjPeakH2 * 3600000;
+                                const gapH = (pendingStart.getTime() - peakMs) / 3600000;
+                                if (gapH < -0.5)  return isFr ? 'En cours de montée' : 'Still rising';
+                                if (gapH <= 1.5)  return isFr ? 'Au pic au mélange' : 'At peak at mix';
+                                if (gapH <= 3.5)  return isFr ? 'Légèrement après le pic' : 'Just past peak';
+                                return isFr ? 'Passé le pic — surveiller' : 'Past peak — watch closely';
+                              })();
                     return (
                       <div style={{
                         display: 'inline-flex', alignItems: 'center',
