@@ -1388,7 +1388,15 @@ export default function Home() {
               onEdit={() => setActiveStep(1)}
             >
               {bakeType && (
-                <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
+                <StylePicker
+                  bakeType={bakeType}
+                  selected={styleKey}
+                  onSelect={selectStyle}
+                  disabledIds={bakeType === 'bread' ? ['pain_levain'] : []}
+                  disabledNote={locale === 'fr'
+                    ? 'Le Pain au Levain nécessite le mode Avancé — essayez le Pain de Campagne pour un style similaire'
+                    : 'Pain au Levain requires Custom mode — try Pain de Campagne for a similar style'}
+                />
               )}
             </StepCard>
 

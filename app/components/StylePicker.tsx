@@ -10,6 +10,8 @@ interface StylePickerProps {
   bakeType: BakeType;
   selected: StyleKey | null;
   onSelect: (key: StyleKey) => void;
+  disabledIds?: string[];
+  disabledNote?: string;
 }
 
 // SVG illustrations — no external dependencies
@@ -114,7 +116,7 @@ const STYLE_ART: Record<string, { bg: string; svg: string }> = {
   },
 };
 
-export default function StylePicker({ bakeType, selected, onSelect }: StylePickerProps) {
+export default function StylePicker({ bakeType, selected, onSelect, disabledIds = [], disabledNote }: StylePickerProps) {
   const t = useTranslations('style');
   const locale = useLocale();
   const styleKey = selected;
@@ -182,28 +184,31 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
     }}>
       {(Object.entries(styles) as [string, { name: string; nameFr?: string; emoji: string; image?: string; desc: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
         const isSelected = selected === key;
+        const isDisabled = disabledIds.includes(key);
         const art = STYLE_ART[key];
 
         return (
+          <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <div
-            key={key}
-            onClick={() => onSelect(key as StyleKey)}
-            onMouseEnter={() => setHoveredKey(key)}
-            onMouseLeave={() => setHoveredKey(null)}
+            onClick={isDisabled ? undefined : () => onSelect(key as StyleKey)}
+            onMouseEnter={isDisabled ? undefined : () => setHoveredKey(key)}
+            onMouseLeave={isDisabled ? undefined : () => setHoveredKey(null)}
             style={{
               border: `2px solid ${isSelected ? 'var(--bread)' : 'var(--border)'}`,
               borderRadius: '16px',
-              cursor: 'pointer',
+              cursor: isDisabled ? 'not-allowed' : 'pointer',
               overflow: 'hidden',
               background: isSelected ? '#FFF8F3' : 'var(--warm)',
               transition: 'all .25s',
-              boxShadow: hoveredKey === key ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
-              transform: hoveredKey === key ? 'translateY(-3px)' : 'none',
+              boxShadow: (!isDisabled && hoveredKey === key) ? 'var(--card-shadow-hover)' : 'var(--card-shadow)',
+              transform: (!isDisabled && hoveredKey === key) ? 'translateY(-3px)' : 'none',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               textAlign: 'center',
               padding: '1rem .75rem .85rem',
+              opacity: isDisabled ? 0.45 : 1,
+              pointerEvents: isDisabled ? 'none' : 'auto',
             }}
           >
             {style.image ? (
@@ -261,6 +266,15 @@ export default function StylePicker({ bakeType, selected, onSelect }: StylePicke
                 {style.desc}
               </div>
             </div>
+          </div>
+          {isDisabled && disabledNote && (
+            <div style={{
+              fontSize: '10px', color: 'var(--smoke)', textAlign: 'center',
+              lineHeight: 1.4, padding: '0 4px',
+            }}>
+              {disabledNote}
+            </div>
+          )}
           </div>
         );
       })}
