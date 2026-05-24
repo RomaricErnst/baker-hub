@@ -1906,8 +1906,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const troughH  = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * ratioMultiplier;
     const warmupH  = getStarterFridgeWarmupH(kitchenTemp);
     const ftm      = Math.max(0.7, Math.min(1.5, flourStrength ?? 1.0));
-    const baseTOL  = starterLocation === 'fridge' ? 2.0 : 1.0;
-    const TOL      = baseTOL * ftm;
+    // Peak hold window scales with peak time — faster biology = narrower window.
+    // RT: adjPeakH × 0.15, clamped 1.0–3.0h. Fridge: always 2.0h (cold = stable).
+    const rtTOL   = Math.max(1.0, Math.min(3.0, adjPeakH * 0.15));
+    const baseTOL = starterLocation === 'fridge' ? 2.0 : rtTOL;
+    const TOL     = baseTOL * ftm;
 
     const sweetFromHBF = localSweetFrom;
     const sweetToHBF   = localSweetTo;
@@ -3758,8 +3761,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   {(() => {
                     const pillGreen =
                       !windowTooShort
-                      && starterPillState === 'green'
-                      && (sourdoughDoughGreen || hasFutureFeedPath);
+                      && starterPillState === 'green';
                     const pillText = pillGreen
                       ? (isFr ? 'Prêt au mélange' : 'Ready at mix')
                       : windowTooShort

@@ -361,7 +361,9 @@ export default function FermentChart({
     const activeFeedHBF2 = (eatTime.getTime() - starterFeedTime.getTime()) / 3600000;
     const peakHBF2 = activeFeedHBF2 - activePeakH;
     // TOL mirrors the solver's tolerance: ±2h for fridge, ±1h for RT, widened by 0.5h for display
-    const displayTOL = activeFeedHBF2 > 30 ? 2.5 : 1.5;
+    // Match solver: adjPeakH × 0.15 clamped 1.0–3.0h, then +0.5h visual breathing room.
+    // starterAdjPeakH is the ratio+maturity+rye adjusted peak — same value solver uses.
+    const displayTOL = Math.max(1.5, Math.min(3.5, activePeakH * 0.15 + 0.5));
     prefZoneFrom = peakHBF2 + displayTOL;
     prefZoneTo   = Math.max(0, peakHBF2 - displayTOL);
   } else {
