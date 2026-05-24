@@ -1838,11 +1838,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const peakTime = deriveStarterPeakTime();
     if (!peakTime) return;
 
+    // Local sfDef — avoids stale render-time closure
+    const localSfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
+    const _localPrefColdH = localSfDef.preferredColdH ?? localSfDef.coldH;
+    const localSweetFrom  = _localPrefColdH + localSfDef.rtH;
+    const localSweetTo    = localSfDef.minTotalFermH ?? 4;
+
     // Window too short check — same concept as poolish windowTooShort
     const bakeMs    = et.getTime();
     const nowMs0    = Date.now();
     const windowHBF = (bakeMs - nowMs0) / 3600000;
-    const minFermH  = (_sfDef.minTotalFermH ?? 4) + 1.0;
+    const minFermH  = (localSfDef.minTotalFermH ?? 4) + 1.0;
 
     // Compute starter peak params early — needed for suggestion if window too short
     const peakH   = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
@@ -1859,7 +1865,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       // Earliest viable bake suggestion — bread only (not pizza)
       if (bakeType === 'bread') {
-        const sweetCenterH = (renderSweetFrom + renderSweetTo) / 2;
+        const sweetCenterH = (localSweetFrom + localSweetTo) / 2;
         const minNeededH   = adjPeakH + sweetCenterH + 1;
         const suggested    = new Date(Date.now() + minNeededH * 3600000);
         suggested.setMinutes(0, 0, 0);
@@ -1885,8 +1891,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const baseTOL  = starterLocation === 'fridge' ? 2.0 : 1.0;
     const TOL      = baseTOL * ftm;
 
-    const sweetFromHBF = renderSweetFrom;
-    const sweetToHBF   = renderSweetTo;
+    const sweetFromHBF = localSweetFrom;
+    const sweetToHBF   = localSweetTo;
     const minTotalRT   = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0 + (preheatMin / 60);
 
     // ── Scoring helpers ──────────────────────────────
@@ -2888,7 +2894,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       </div>
 
-      {windowTooShort && eatTimeSet && (
+      {windowTooShort && eatTimeSet && !isSourdough && (
         <div style={{
           background: 'var(--cream)',
           borderRadius: '12px',
@@ -3612,16 +3618,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   </div>
 
-                  {feedPlan.length === 0 && lastFedTime && (
-                    <div style={{ marginBottom: '.6rem' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em', opacity: 0.7 }}>
-                        {isFr ? 'DERNIER REPAS' : 'LAST FED'}
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', opacity: 0.7 }}>
-                        {fmtCardDT(lastFedTime, isFr)}
-                      </div>
-                    </div>
-                  )}
                   {feedPlan.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '.45rem', marginBottom: '.6rem' }}>
                       {feedPlan.map((fp, i) => (
@@ -3919,6 +3915,42 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               {blockerNote && !mixInBlocker && (
                 <div style={{ fontSize: '11px', color: '#7A5A10', marginTop: '5px', lineHeight: 1.5 }}>
                   {blockerNote}
+                </div>
+              )}
+              {isSourdough && windowTooShort && (
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)' }}>
+                    {isFr ? 'Pas assez de temps pour ce créneau' : 'Not enough time for this bake'}
+                  </div>
+                  {bakeType === 'bread' && suggestedBakeTime && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+                        {isFr ? 'Essayez plutôt :' : 'Try instead:'}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setPendingEatTime(suggestedBakeTime);
+                          setEatTimeSet(true);
+                          onChange(pendingStart, suggestedBakeTime, blocks);
+                          setSuggestedBakeTime(null);
+                          setWindowTooShort(false);
+                        }}
+                        style={{
+                          padding: '.2rem .65rem',
+                          borderRadius: '20px',
+                          border: '1.5px solid var(--terra)',
+                          background: '#FEF4EF',
+                          color: 'var(--terra)',
+                          fontFamily: 'var(--font-dm-mono)',
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {fmtCardDT(suggestedBakeTime, isFr)} →
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
               {/* scheduleNote removed — info available in timeline */}
