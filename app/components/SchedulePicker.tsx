@@ -1220,6 +1220,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setPrefAlgoRed(false);
     setWindowTooShort(false);
     setSuggestedBakeTimeBread(null);
+
+    // Sourdough uses its own engine — non-sourdough schedule computation must not run
+    if (isSourdough) {
+      findOptimalPositionSourdough(et);
+      return;
+    }
+
     const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
     // Scale fermentation windows by flour strength (W value / fermToleranceMultiplier).
     // Stronger flour tolerates longer fermentation and benefits from more cold retard.
@@ -1482,9 +1489,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       } else {
         setBlockerNote(null);
       }
-    }
-    if (isSourdough) {
-      findOptimalPositionSourdough(et);
     }
   }
 
@@ -3618,6 +3622,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   </div>
 
+                  {usingPeak2 && feed2Time && feedPlan.length === 0 && (
+                    <div style={{ marginBottom: '.6rem' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                        {isFr ? 'PROCHAIN REPAS' : 'NEXT FEED'}
+                      </div>
+                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                        {(() => {
+                          const isNow = Math.abs(feed2Time.getTime() - Date.now()) < 30 * 60 * 1000;
+                          return isNow ? (isFr ? 'Maintenant' : 'Now') : fmtCardDT(feed2Time, isFr);
+                        })()}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '1px' }}>
+                        {isFr ? 'Nourrir pour un pic plus fort' : 'Feed for a stronger peak'}
+                      </div>
+                    </div>
+                  )}
+
                   {feedPlan.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '.45rem', marginBottom: '.6rem' }}>
                       {feedPlan.map((fp, i) => (
@@ -3881,10 +3902,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 const pillYellow = isSourdough ? sourdoughDoughYellow : (mixEarlyOk || mixLateOk);
                 const pillText   = isSourdough
                   ? (sourdoughDoughGreen
-                      ? (isFr ? 'Levain à son pic' : 'Starter peaks at mix')
-                      : sourdoughDoughYellow
-                        ? (isFr ? 'Levain en montée' : 'Starter still rising')
-                        : (isFr ? 'Levain pas encore prêt' : 'Starter not yet ready'))
+                      ? (isFr ? 'Pâte prête à la cuisson' : 'Dough ready at bake')
+                      : sourdoughDoughYellow && mixOffsetH < renderSweetTo
+                        ? (isFr ? 'Encore en fermentation — devrait être bien'
+                                : 'Still rising at bake — should be fine')
+                        : sourdoughDoughYellow
+                        ? (isFr ? 'Pic avant la cuisson — surveiller'
+                                : 'Dough peaks before bake — watch closely')
+                        : (isFr ? 'Fenêtre de fermentation courte'
+                                : 'Short fermentation window'))
                   : mixStatus;
                 return (
                   <div style={{
