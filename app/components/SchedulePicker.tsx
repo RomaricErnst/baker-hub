@@ -33,6 +33,8 @@ interface SchedulePickerProps {
   onKnownPeakTimeChange?: (t: Date | null) => void;
   hasNotFedYet?: boolean | null;
   onHasNotFedYetChange?: (v: boolean | null) => void;
+  lastFedAge?: 'today' | 'yesterday' | 'days23' | 'days45' | 'week' | null;
+  onLastFedAgeChange?: (age: 'today' | 'yesterday' | 'days23' | 'days45' | 'week' | null) => void;
   feedRatio?: 1 | 2 | 4 | 5 | 10;
   onFeedRatioChange?: (r: 1 | 2 | 4 | 5 | 10) => void;
   onStarterPeakTimeChange?: (t: Date | null) => void;
@@ -1059,7 +1061,7 @@ function SimpleColourBar({
 
 // ── Component ─────────────────────────────────
 // v1779291581473456000
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, feedRatio: feedRatioProp, onFeedRatioChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, feedRatio: feedRatioProp, onFeedRatioChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1136,6 +1138,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [refeedSuggestion, setRefeedSuggestion] = useState<Date | null>(null);
   const [mixOverride, setMixOverride]           = useState(false);
   const [hasNotFedYet, setHasNotFedYet]         = useState<boolean | null>(hasNotFedYetProp ?? null);
+  const [lastFedAge, setLastFedAge]             = useState<'today'|'yesterday'|'days23'|'days45'|'week'|null>(lastFedAgeProp ?? null);
   const [starterStateNote, setStarterStateNote] = useState<string | null>(null);
   const [starterIsDepletedAt, setStarterIsDepletedAt] = useState<Date | null>(null);
   const [starterRefeedTime, setStarterRefeedTime]     = useState<Date | null>(null);
@@ -2285,192 +2288,139 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </div>
           </div>
 
-          {/* ── Mode A: last fed — three-state flow ── */}
+          {/* ── Mode A: last fed — age chip flow ── */}
           {planningMode === 'last_fed' && (
-            <div>
-              {/* State 1: no choice yet */}
-              {hasNotFedYet === null && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
-                  {/* Primary CTA: not fed yet */}
-                  <button
-                    onClick={() => { setHasNotFedYet(true); onHasNotFedYetChange?.(true); }}
-                    style={{
-                      textAlign: 'left',
-                      padding: '.6rem .85rem',
-                      borderRadius: '10px',
-                      border: '1.5px solid var(--terra)',
-                      background: '#FEF4EF',
-                      color: 'var(--terra)',
-                      fontFamily: 'var(--font-dm-sans)',
-                      fontSize: '.85rem',
-                      cursor: 'pointer',
-                      fontWeight: 500,
-                    }}
-                  >
-                    {eatTimeSet
-                      ? (locale === 'fr'
-                          ? 'Pas encore nourri — dites-moi quand le faire'
-                          : 'Not fed yet — tell me when to feed')
-                      : (locale === 'fr'
-                          ? 'Pas encore nourri'
-                          : 'Not fed yet')}
-                  </button>
-                  {/* Secondary: already fed */}
-                  <button
-                    onClick={() => {
-                      let prefill: Date;
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+              <div style={STARTER_LABEL_STYLE}>
+                {isFr ? 'Quand avez-vous nourri votre levain ?' : 'When did you last feed your starter?'}
+              </div>
 
-                      if (eatTimeSet && pendingEatTime) {
-                        const peakH = getPrefPeakH_RT(
-                          'sourdough', kitchenTemp, styleKey ?? 'neapolitan'
-                        );
-                        const ratioMult = 1 + 0.35 * Math.log(feedRatio);
-                        const matF = starterMature ? 1.0 : 1.2;
-                        const adjPeakH = peakH * matF * ratioMult;
-                        const troughH = adjPeakH * 1.8;
-                        const sweetCenterHBF = (renderSweetFrom + renderSweetTo) / 2;
-                        const idealMixTime = new Date(
-                          pendingEatTime.getTime() - sweetCenterHBF * 3600000
-                        );
-                        prefill = new Date(
-                          idealMixTime.getTime() - adjPeakH * 3600000
-                        );
-                        // Must always be in the past — shift back by full cycles until past
-                        while (prefill >= new Date()) {
-                          prefill = new Date(prefill.getTime() - troughH * 3600000);
-                        }
-                        // Clamp to reasonable hours (6am–11pm)
-                        const h = prefill.getHours();
-                        if (h < 6 || h > 23) {
-                          prefill.setHours(20, 0, 0, 0);
-                          if (prefill >= new Date()) {
-                            prefill.setDate(prefill.getDate() - 1);
-                          }
-                        }
-                      } else {
-                        // No bake time: default to 8pm yesterday
-                        prefill = new Date();
-                        prefill.setDate(prefill.getDate() - 1);
-                        prefill.setHours(20, 0, 0, 0);
-                      }
-
-                      // Round to nearest 15min
-                      const m = Math.round(prefill.getMinutes() / 15) * 15;
-                      prefill.setMinutes(m === 60 ? 0 : m, 0, 0);
-                      if (m === 60) prefill.setHours(prefill.getHours() + 1);
-
-                      setLastFedTime(prefill);
-                      onLastFedTimeChange?.(prefill);
-                      setHasNotFedYet(false);
-                      onHasNotFedYetChange?.(false);
-                    }}
-                    style={{
-                      textAlign: 'left',
-                      padding: '.6rem .85rem',
-                      borderRadius: '10px',
-                      border: '1.5px solid var(--border)',
-                      background: 'transparent',
-                      color: 'var(--smoke)',
-                      fontFamily: 'var(--font-dm-sans)',
-                      fontSize: '.85rem',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {locale === 'fr'
-                      ? "Je l'ai nourri à une heure précise"
-                      : 'I fed it at a specific time'}
-                  </button>
-                </div>
-              )}
-
-              {/* State 2: neutral note — recommendation appears in plan below */}
-              {hasNotFedYet === true && (
-                <div style={{
-                  fontSize: '.78rem',
-                  color: 'var(--smoke)',
-                  fontFamily: 'var(--font-dm-sans)',
-                  lineHeight: 1.5,
-                  padding: '.3rem 0',
-                }}>
-                  {locale === 'fr'
-                    ? 'Le meilleur moment pour nourrir apparaîtra dans le plan ci-dessous.'
-                    : 'The best time to feed will appear in the plan below.'}
-                </div>
-              )}
-
-              {/* State 3: picker with change link */}
-              {hasNotFedYet === false && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.25rem' }}>
-                    <div style={STARTER_LABEL_STYLE}>
-                      {starterLocation === 'rt' ? 'When was it last fed?' : 'When did you last feed it?'}
-                    </div>
+              {/* Chips — shown when no age selected yet */}
+              {lastFedAge === null && (
+                <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
+                  {([
+                    { id: 'today',     en: 'Today',     fr: "Aujourd'hui" },
+                    { id: 'yesterday', en: 'Yesterday', fr: 'Hier' },
+                    { id: 'days23',    en: '2–3 days',  fr: '2–3 jours' },
+                    { id: 'days45',    en: '4–5 days',  fr: '4–5 jours' },
+                    { id: 'week',      en: 'A week+',   fr: 'Une semaine+' },
+                  ] as { id: 'today'|'yesterday'|'days23'|'days45'|'week'; en: string; fr: string }[]).map(chip => (
                     <button
+                      key={chip.id}
                       onClick={() => {
-                        setHasNotFedYet(null);
-                        setLastFedTime(null);
-                        onHasNotFedYetChange?.(null);
-                        onLastFedTimeChange?.(null);
+                        const now = new Date();
+                        let prefill: Date;
+                        if (chip.id === 'today') {
+                          prefill = new Date(now.getTime() - 2 * 3600000);
+                          const m = Math.round(prefill.getMinutes() / 15) * 15;
+                          prefill.setMinutes(m === 60 ? 0 : m, 0, 0);
+                          if (m === 60) prefill.setHours(prefill.getHours() + 1);
+                        } else if (chip.id === 'yesterday') {
+                          prefill = new Date(now);
+                          prefill.setDate(prefill.getDate() - 1);
+                          prefill.setHours(20, 0, 0, 0);
+                        } else if (chip.id === 'days23') {
+                          prefill = new Date(now.getTime() - 60 * 3600000);
+                        } else if (chip.id === 'days45') {
+                          prefill = new Date(now.getTime() - 108 * 3600000);
+                        } else {
+                          prefill = new Date(now.getTime() - 196 * 3600000);
+                        }
+                        setLastFedAge(chip.id);
+                        onLastFedAgeChange?.(chip.id);
+                        setLastFedTime(prefill);
+                        onLastFedTimeChange?.(prefill);
                       }}
                       style={{
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
-                        fontSize: '.68rem', textDecoration: 'underline',
-                        textUnderlineOffset: '2px', padding: 0,
+                        padding: '.35rem .7rem', borderRadius: '20px',
+                        border: '1.5px solid var(--border)',
+                        background: 'transparent',
+                        color: 'var(--smoke)',
+                        fontFamily: 'var(--font-dm-sans)', fontSize: '.8rem', cursor: 'pointer',
                       }}
                     >
-                      change
+                      {isFr ? chip.fr : chip.en}
                     </button>
-                  </div>
-                  <div style={{ display: 'flex', gap: '.5rem', marginBottom: '.5rem' }}>
-                    <select
-                      value={lastFedTime
-                        ? `${lastFedTime.getFullYear()}-${String(lastFedTime.getMonth()+1).padStart(2,'0')}-${String(lastFedTime.getDate()).padStart(2,'0')}`
-                        : ''}
-                      onChange={e => {
-                        const [y,mo,d] = e.target.value.split('-').map(Number);
-                        const base = lastFedTime ?? new Date();
-                        const next = new Date(y, mo-1, d, base.getHours(), base.getMinutes(), 0, 0);
-                        setLastFedTime(next);
-                        onLastFedTimeChange?.(next);
-                      }}
-                      style={STARTER_SELECT_STYLE}
-                    >
-                      {[-1, 0].map(offset => {
-                        const dt = new Date();
-                        dt.setDate(dt.getDate() + offset);
-                        const val = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-                        const lbl = offset === 0
-                          ? (locale === 'fr' ? "Aujourd'hui" : 'Today')
-                          : (locale === 'fr' ? 'Hier' : 'Yesterday');
-                        return <option key={offset} value={val}>{lbl}</option>;
-                      })}
-                    </select>
-                    <select
-                      value={lastFedTime
-                        ? `${lastFedTime.getHours()}:${String(lastFedTime.getMinutes()).padStart(2,'0')}`
-                        : ''}
-                      onChange={e => {
-                        const [h, m] = e.target.value.split(':').map(Number);
-                        const base = lastFedTime ?? new Date();
-                        const next = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, 0, 0);
-                        setLastFedTime(next);
-                        onLastFedTimeChange?.(next);
-                      }}
-                      style={STARTER_SELECT_STYLE}
-                    >
-                      {Array.from({ length: 96 }, (_, i) => {
-                        const h = Math.floor(i / 4);
-                        const m = (i % 4) * 15;
-                        const val = `${h}:${String(m).padStart(2,'0')}`;
-                        const lbl = locale === 'fr'
-                          ? `${h}h${String(m).padStart(2,'0')}`
-                          : `${h === 0 ? 12 : h > 12 ? h-12 : h}:${String(m).padStart(2,'0')} ${h < 12 ? 'am' : 'pm'}`;
-                        return <option key={i} value={val}>{lbl}</option>;
-                      })}
-                    </select>
-                  </div>
+                  ))}
+                </div>
+              )}
 
+              {/* Selected chip + change link */}
+              {lastFedAge !== null && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    padding: '.3rem .65rem', borderRadius: '20px',
+                    border: '1.5px solid var(--bread)',
+                    background: 'rgba(139,105,20,0.08)',
+                    color: 'var(--bread)',
+                    fontFamily: 'var(--font-dm-sans)', fontSize: '.8rem',
+                  }}>
+                    {lastFedAge === 'today'     ? (isFr ? "Aujourd'hui" : 'Today')
+                     : lastFedAge === 'yesterday' ? (isFr ? 'Hier' : 'Yesterday')
+                     : lastFedAge === 'days23'    ? (isFr ? '2–3 jours' : '2–3 days')
+                     : lastFedAge === 'days45'    ? (isFr ? '4–5 jours' : '4–5 days')
+                     :                             (isFr ? 'Une semaine+' : 'A week+')}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setLastFedAge(null); onLastFedAgeChange?.(null);
+                      setLastFedTime(null); onLastFedTimeChange?.(null);
+                    }}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                      fontSize: '.68rem', textDecoration: 'underline',
+                      textUnderlineOffset: '2px', padding: 0,
+                    }}
+                  >
+                    {isFr ? 'changer' : 'change'}
+                  </button>
+                </div>
+              )}
+
+              {/* Time picker — Today / Yesterday only */}
+              {(lastFedAge === 'today' || lastFedAge === 'yesterday') && (
+                <div>
+                  <div style={{ ...STARTER_LABEL_STYLE, marginBottom: '.25rem' }}>
+                    {isFr ? 'À quelle heure ?' : 'At what time?'}
+                  </div>
+                  <select
+                    value={lastFedTime
+                      ? `${lastFedTime.getHours()}:${String(lastFedTime.getMinutes()).padStart(2,'0')}`
+                      : ''}
+                    onChange={e => {
+                      const [h, m] = e.target.value.split(':').map(Number);
+                      const base = lastFedTime ?? new Date();
+                      const next = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, 0, 0);
+                      setLastFedTime(next); onLastFedTimeChange?.(next);
+                    }}
+                    style={STARTER_SELECT_STYLE}
+                  >
+                    {Array.from({ length: 96 }, (_, i) => {
+                      const h = Math.floor(i / 4);
+                      const m = (i % 4) * 15;
+                      const val = `${h}:${String(m).padStart(2,'0')}`;
+                      const lbl = isFr
+                        ? `${h}h${String(m).padStart(2,'0')}`
+                        : `${h === 0 ? 12 : h > 12 ? h-12 : h}:${String(m).padStart(2,'0')} ${h < 12 ? 'am' : 'pm'}`;
+                      return <option key={i} value={val}>{lbl}</option>;
+                    })}
+                  </select>
+                </div>
+              )}
+
+              {/* Info note — multi-day chips */}
+              {(lastFedAge === 'days23' || lastFedAge === 'days45' || lastFedAge === 'week') && (
+                <div style={{
+                  fontSize: '.78rem', color: 'var(--smoke)',
+                  fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,
+                }}>
+                  {lastFedAge === 'days23'
+                    ? (isFr ? 'Levain actif — le plan inclura un rafraîchi.' : 'Active starter — the plan will include a refresh feed.')
+                    : lastFedAge === 'days45'
+                    ? (isFr ? 'Levain dormant — un rafraîchi est nécessaire avant de mélanger.' : 'Dormant starter — a refresh feed is needed before mixing.')
+                    : (isFr ? 'Levain très dormant — plusieurs rafraîchis peuvent être nécessaires.' : 'Very dormant starter — multiple refreshes may be needed.')}
                 </div>
               )}
             </div>
@@ -2581,7 +2531,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 padding: 0, alignSelf: 'flex-start',
               }}
             >
-              {isFr ? 'Je connais mon heure de pic →' : 'I know my peak time →'}
+              {isFr ? 'Je sais quand mon levain sera à son pic →' : 'I know when my starter will peak →'}
             </button>
           )}
 

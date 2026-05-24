@@ -345,6 +345,7 @@ export default function Home() {
   const [lastFedTime, setLastFedTime]       = useState<Date | null>(null);
   const [knownPeakTime, setKnownPeakTime]   = useState<Date | null>(null);
   const [hasNotFedYet, setHasNotFedYet]     = useState<boolean | null>(null);
+  const [lastFedAge, setLastFedAge]         = useState<'today'|'yesterday'|'days23'|'days45'|'week'|null>(null);
   const [feedRatio, setFeedRatio]           = useState<1 | 2 | 4 | 5 | 10>(1);
   const [starterPeakTime, setStarterPeakTime] = useState<Date | null>(null);
   const [starterMature, setStarterMature]   = useState(true);
@@ -558,6 +559,7 @@ export default function Home() {
     if (session.lastFedTime) setLastFedTime(new Date(session.lastFedTime));
     if (session.knownPeakTime) setKnownPeakTime(new Date(session.knownPeakTime));
     if (session.hasNotFedYet !== undefined) setHasNotFedYet(session.hasNotFedYet ?? null);
+    if (session.lastFedAge !== undefined) setLastFedAge((session.lastFedAge as 'today'|'yesterday'|'days23'|'days45'|'week'|null) ?? null);
     if (session.feedRatio) setFeedRatio((session.feedRatio as 1 | 2 | 4 | 5 | 10) ?? 1);
     if (session.starterMature !== undefined) setStarterMature(Boolean(session.starterMature));
     if (session.starterHasRye !== undefined) setStarterHasRye(Boolean(session.starterHasRye));
@@ -789,6 +791,7 @@ export default function Home() {
       lastFedTime: lastFedTime?.getTime() ?? null,
       knownPeakTime: knownPeakTime?.getTime() ?? null,
       hasNotFedYet: hasNotFedYet ?? undefined,
+      lastFedAge: lastFedAge ?? null,
       feedRatio,
       starterMature, starterHasRye,
       fridgeOutTime: fridgeOutTime?.getTime() ?? null,
@@ -911,6 +914,7 @@ export default function Home() {
     setLastFedTime(null);
     setKnownPeakTime(null);
     setHasNotFedYet(null);
+    setLastFedAge(null);
     setFeed2Time(null);
     setFridgeOutTime(null);
     setUsingPeak2(false);
@@ -1649,6 +1653,8 @@ export default function Home() {
                 onKnownPeakTimeChange={setKnownPeakTime}
                 hasNotFedYet={hasNotFedYet}
                 onHasNotFedYetChange={setHasNotFedYet}
+                lastFedAge={lastFedAge}
+                onLastFedAgeChange={setLastFedAge}
                 feedRatio={feedRatio}
                 onFeedRatioChange={setFeedRatio}
                 onStarterPeakTimeChange={setStarterPeakTime}
@@ -2453,6 +2459,8 @@ export default function Home() {
                 onKnownPeakTimeChange={setKnownPeakTime}
                 hasNotFedYet={hasNotFedYet}
                 onHasNotFedYetChange={setHasNotFedYet}
+                lastFedAge={lastFedAge}
+                onLastFedAgeChange={setLastFedAge}
                 feedRatio={feedRatio}
                 onFeedRatioChange={setFeedRatio}
                 onStarterPeakTimeChange={setStarterPeakTime}
