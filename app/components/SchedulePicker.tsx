@@ -1839,21 +1839,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setRefeedSuggestion(null);
       setFeed2Time(null);
 
-      // Earliest viable bake = now + adjPeakH + sweetCenter + 1h buffer
-      const sweetCenterH = (renderSweetFrom + renderSweetTo) / 2;
-      const minNeededH   = adjPeakH + sweetCenterH + 1;
-      const suggested    = new Date(Date.now() + minNeededH * 3600000);
-      suggested.setMinutes(0, 0, 0);
-      suggested.setHours(suggested.getHours() + 1);
-      const sh = suggested.getHours();
-      if (sh < 7) {
-        suggested.setHours(7, 0, 0, 0);
-        if (suggested <= new Date()) suggested.setDate(suggested.getDate() + 1);
-      } else if (sh > 22) {
-        suggested.setDate(suggested.getDate() + 1);
-        suggested.setHours(7, 0, 0, 0);
+      // Earliest viable bake suggestion — bread only (not pizza)
+      if (bakeType === 'bread') {
+        const sweetCenterH = (renderSweetFrom + renderSweetTo) / 2;
+        const minNeededH   = adjPeakH + sweetCenterH + 1;
+        const suggested    = new Date(Date.now() + minNeededH * 3600000);
+        suggested.setMinutes(0, 0, 0);
+        suggested.setHours(suggested.getHours() + 1);
+        const sh = suggested.getHours();
+        if (sh < 7) {
+          suggested.setHours(7, 0, 0, 0);
+          if (suggested <= new Date()) suggested.setDate(suggested.getDate() + 1);
+        } else if (sh > 22) {
+          suggested.setDate(suggested.getDate() + 1);
+          suggested.setHours(7, 0, 0, 0);
+        }
+        setSuggestedBakeTime(suggested);
       }
-      setSuggestedBakeTime(suggested);
       return;
     }
     setWindowTooShort(false);
@@ -2888,7 +2890,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ? `Il faut au moins ${Math.ceil(minTotalRTRef.current)}h entre maintenant et la cuisson.`
               : `You need at least ${Math.ceil(minTotalRTRef.current)}h between now and your bake.`}
           </div>
-          {isSourdough && suggestedBakeTime && (
+          {isSourdough && bakeType === 'bread' && suggestedBakeTime && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', flexWrap: 'wrap' }}>
               <div style={{ fontSize: '.8rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
                 {isFr ? 'Essayez plutôt :' : 'Try instead:'}
