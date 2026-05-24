@@ -1154,6 +1154,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [adjPeakHState, setAdjPeakHState] = useState<number | null>(null);
   const [sourdoughSweetFrom, setSourdoughSweetFrom] = useState<number | null>(null);
   const [sourdoughSweetTo,   setSourdoughSweetTo]   = useState<number | null>(null);
+  const [hasFutureFeedPath,  setHasFutureFeedPath]  = useState(false);
   // StarterState kept for BakeGuide compat — derived from new vars
   const starterState: StarterState = starterLocation === 'fridge'
     ? (fridgeOutTime ? 'fridge_fed' : 'fridge_unfed')
@@ -1578,6 +1579,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setSuggestedFridgeOutTime(null);
     setSuggestedFridgePeakTime(null);
     setShowFridgeComparison(false);
+    setSourdoughSweetFrom(null);
+    setSourdoughSweetTo(null);
+    setHasFutureFeedPath(false);
   }, [starterLocation, lastFedTime, lastFedAge, planningMode,
       pendingEatTime, feedRatio, starterMature,
       starterHasRye, kitchenTemp]);
@@ -1847,6 +1851,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const peakTime = deriveStarterPeakTime();
     if (!peakTime) return;
 
+    // Reset path flags at the start of every solver run
+    setHasFutureFeedPath(false);
+
     // Local sfDef — avoids stale render-time closure
     const localSfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
     const _localPrefColdH = localSfDef.preferredColdH ?? localSfDef.coldH;
@@ -2114,7 +2121,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         bestMix  = feedCandidates[0].mixTime;
       }
 
-      setStarterPillState('red');
+      setHasFutureFeedPath(feedCandidates.length > 0);
+      setStarterPillState(feedCandidates.length > 0 ? 'green' : 'yellow');
       const now = new Date();
       const displayFeed = bestFeed < now ? now : bestFeed;
       setRefeedSuggestion(displayFeed);
@@ -3111,7 +3119,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterFeedTime={isSourdough
                 ? (planningMode === 'know_peak'
                     ? null
-                    : starterPillState === 'red' && feed2Time
+                    : hasFutureFeedPath && feed2Time
                       ? feed2Time
                       : usingPeak2
                         ? feed2Time
@@ -3119,7 +3127,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 : null}
               starterFeed2Time={
                 isSourdough
-                  ? (starterPillState === 'red' && feed2Time
+                  ? (hasFutureFeedPath && feed2Time
                       ? (lastFedTime ?? feedTime)
                       : usingPeak2 ? feedTime : null)
                   : null
@@ -3132,8 +3140,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterRefeedTime={isSourdough ? starterRefeedTime : null}
               starterMature={starterMature}
               starterAdjPeakH={isSourdough ? adjPeakHState : null}
-              starterRedPill={isSourdough && starterPillState === 'red'}
-              starterFeed2OutOfZone={isSourdough && usingPeak2 && starterPillState === 'red'}
+              starterRedPill={isSourdough && hasFutureFeedPath}
+              starterFeed2OutOfZone={isSourdough && usingPeak2 && hasFutureFeedPath}
               comparisonFridgeOutTime={isSourdough && showFridgeComparison ? suggestedFridgeOutTime : null}
               comparisonFridgePeakTime={isSourdough && showFridgeComparison ? suggestedFridgePeakTime : null}
               showFridgeComparison={isSourdough && showFridgeComparison}
@@ -3564,8 +3572,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               const activePeakTime: Date | null =
                 planningMode === 'know_peak' && knownPeakTime
                   ? knownPeakTime
-                  // Red pill: use feed2Time (planned future feed) for correct peak
-                  : starterPillState === 'red' && feed2Time
+                  // Future feed path: use feed2Time (planned future feed) for correct peak
+                  : hasFutureFeedPath && feed2Time
                     ? new Date(feed2Time.getTime() + adjPeakH * 3600000)
                   // Normal: derive from feedTime
                   : feedTime
@@ -3646,8 +3654,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   </div>
 
-                  {/* Red pill: planned Next Feed */}
-                  {isSourdough && starterPillState === 'red' && feed2Time && (
+                  {/* Future feed path: planned Next Feed */}
+                  {isSourdough && hasFutureFeedPath && feed2Time && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'PROCHAIN REPAS' : 'NEXT FEED'}
@@ -3747,47 +3755,38 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   )}
 
                   {(() => {
-                    const pillGreen  = starterPillState === 'green';
-                    const pillYellow = starterPillState === 'yellow';
-                    const pillText =
-                      starterPillState === 'green'
-                        ? (usingPeak2
-                            ? (isFr ? 'Pic 2 — saveur plus complexe' : 'Second peak — stronger flavour')
-                            : (isFr ? 'Prêt au mélange' : 'Ready at mix'))
-                        : starterPillState === 'yellow'
-                        ? (fridgeOutTime && !usingPeak2
+                    const pillGreen =
+                      !windowTooShort
+                      && starterPillState === 'green'
+                      && (sourdoughDoughGreen || hasFutureFeedPath);
+                    const pillText = pillGreen
+                      ? (isFr ? 'Prêt au mélange' : 'Ready at mix')
+                      : windowTooShort
+                        ? (isFr ? 'Fenêtre courte — voir le plan' : 'Window tight — see plan')
+                        : hasFutureFeedPath && feed2Time
+                          ? (isFr
+                              ? `Nourrir le ${fmtCardDT(feed2Time, true)}`
+                              : `Feed ${fmtCardDT(feed2Time, false)}`)
+                          : starterPillState === 'yellow' && fridgeOutTime
                             ? (isFr
                                 ? `Sortir du frigo à ${fmtCardHM(fridgeOutTime, isFr)}`
-                                : `Remove from fridge at ${fmtCardHM(fridgeOutTime, isFr)}`)
-                            : (isFr ? 'En cours de montée' : 'Still developing'))
-                        : (refeedSuggestion
-                            ? (isFr
-                                ? `Nourrir à ${fmtCardDT(refeedSuggestion, true)}`
-                                : `Feed at ${fmtCardDT(refeedSuggestion, false)}`)
-                            : '');
+                                : `Remove fridge at ${fmtCardHM(fridgeOutTime, isFr)}`)
+                            : (isFr ? 'En cours de montée' : 'Still developing');
                     return (
                       <div style={{
                         display: 'inline-flex', alignItems: 'center',
                         gap: '.3rem', marginTop: '.3rem',
-                        background: pillGreen
-                          ? 'rgba(74,122,58,0.1)'
-                          : pillYellow
-                            ? 'rgba(212,168,83,0.15)'
-                            : 'rgba(196,82,42,0.1)',
-                        border: `1px solid ${pillGreen
-                          ? 'rgba(74,122,58,0.3)'
-                          : pillYellow
-                            ? 'rgba(212,168,83,0.4)'
-                            : 'rgba(196,82,42,0.3)'}`,
+                        background: pillGreen ? 'rgba(74,122,58,0.1)' : 'rgba(212,168,83,0.15)',
+                        border: `1px solid ${pillGreen ? 'rgba(74,122,58,0.3)' : 'rgba(212,168,83,0.4)'}`,
                         borderRadius: '20px',
                         padding: '.15rem .55rem',
                         fontSize: '11px',
-                        color: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#C4522A',
+                        color: pillGreen ? '#4A7A3A' : '#9A7010',
                         fontFamily: 'var(--font-dm-mono)',
                       }}>
                         <div style={{
                           width: 6, height: 6, borderRadius: '50%',
-                          background: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#C4522A',
+                          background: pillGreen ? '#4A7A3A' : '#9A7010',
                           flexShrink: 0,
                         }} />
                         {pillText}
@@ -3796,7 +3795,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   })()}
 
                   {starterStateNote
-                    && !(starterPillState === 'red' && feed2Time && feed2Time.getTime() - Date.now() > 30 * 60 * 1000)
+                    && !(hasFutureFeedPath && feed2Time && feed2Time.getTime() - Date.now() > 30 * 60 * 1000)
                     && (
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginTop: '.5rem' }}>
                       {starterStateNote}
