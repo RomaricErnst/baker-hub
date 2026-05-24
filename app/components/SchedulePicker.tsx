@@ -1152,6 +1152,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [suggestedFridgePeakTime, setSuggestedFridgePeakTime] = useState<Date | null>(null);
   const [showFridgeComparison, setShowFridgeComparison] = useState(false);
   const [adjPeakHState, setAdjPeakHState] = useState<number | null>(null);
+  const [sourdoughSweetFrom, setSourdoughSweetFrom] = useState<number | null>(null);
+  const [sourdoughSweetTo,   setSourdoughSweetTo]   = useState<number | null>(null);
   // StarterState kept for BakeGuide compat — derived from new vars
   const starterState: StarterState = starterLocation === 'fridge'
     ? (fridgeOutTime ? 'fridge_fed' : 'fridge_unfed')
@@ -1526,6 +1528,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setDismissedConflict(false);
     setGuardNote(null);
     setWindowTooShort(false);
+    setSourdoughSweetFrom(null);
+    setSourdoughSweetTo(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
 
@@ -1556,6 +1560,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   useEffect(() => {
     if (!isSourdough || !eatTimeSet) return;
     setWindowTooShort(false);
+    setDriftNote(null);
     const peakTime = deriveStarterPeakTime();
     if (!peakTime) return;
     findOptimalPositionSourdough(pendingEatTime);
@@ -1847,6 +1852,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const _localPrefColdH = localSfDef.preferredColdH ?? localSfDef.coldH;
     const localSweetFrom  = _localPrefColdH + localSfDef.rtH;
     const localSweetTo    = localSfDef.minTotalFermH ?? 4;
+    setSourdoughSweetFrom(localSweetFrom);
+    setSourdoughSweetTo(localSweetTo);
 
     // Window too short check — same concept as poolish windowTooShort
     const bakeMs    = et.getTime();
@@ -2153,8 +2160,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setRefeedSuggestion(null);
 
     // Drift note for yellow positions
-    if (best.sscore < 2 || doughScore(best.mixHBF) < 2) {
-      setDriftNote('Starter timing slightly off — mix shifted to best available window.');
+    if (best.sscore < 2 && doughScore(best.mixHBF) < 2) {
+      setDriftNote(isFr
+        ? 'Timing légèrement décalé — la pâte sera quand même bonne.'
+        : 'Timing slightly off — your dough will still be great.');
+    } else if (best.sscore < 2) {
+      setDriftNote(isFr
+        ? 'Le levain sera légèrement passé son pic — toujours bon.'
+        : 'Starter slightly past peak at mix — still good.');
+    } else if (doughScore(best.mixHBF) < 2) {
+      setDriftNote(isFr
+        ? 'Fenêtre un peu courte — la pâte sera bonne quand même.'
+        : 'Window a little tight — dough will still be good.');
     } else {
       setDriftNote(null);
     }
@@ -3501,11 +3518,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
           : null;
-        const doughZoneFrom = renderSweetFrom;
-        const doughZoneTo   = renderSweetTo;
+        const doughZoneFrom = isSourdough && sourdoughSweetFrom !== null
+          ? sourdoughSweetFrom : renderSweetFrom;
+        const doughZoneTo   = isSourdough && sourdoughSweetTo !== null
+          ? sourdoughSweetTo : renderSweetTo;
         const mixInZone    = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
-        const sourdoughDoughGreen  = isSourdough && mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
-        const sourdoughDoughYellow = isSourdough && !sourdoughDoughGreen
+        const sourdoughDoughGreen  = isSourdough && !windowTooShort
+          && mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
+        const sourdoughDoughYellow = isSourdough && !windowTooShort && !sourdoughDoughGreen
           && mixOffsetH >= doughZoneTo - 2 && mixOffsetH <= doughZoneFrom + 2;
         // Gold zones: use yellowTo (already computed) for right edge,
         // mirror symmetrically for left gold
@@ -3544,6 +3564,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               const activePeakTime: Date | null =
                 planningMode === 'know_peak' && knownPeakTime
                   ? knownPeakTime
+                  // Red pill: use feed2Time (planned future feed) for correct peak
+                  : starterPillState === 'red' && feed2Time
+                    ? new Date(feed2Time.getTime() + adjPeakH * 3600000)
+                  // Normal: derive from feedTime
                   : feedTime
                     ? (starterLocation === 'fridge' && fridgeOutTime
                         ? new Date(fridgeOutTime.getTime() + warmupH * 3600000)
@@ -3622,6 +3646,26 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   </div>
 
+                  {/* Red pill: planned Next Feed */}
+                  {isSourdough && starterPillState === 'red' && feed2Time && (
+                    <div style={{ marginBottom: '.6rem' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                        {isFr ? 'PROCHAIN REPAS' : 'NEXT FEED'}
+                      </div>
+                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                        {(() => {
+                          const isNow = Math.abs(feed2Time.getTime() - Date.now()) < 30 * 60 * 1000;
+                          return isNow ? (isFr ? 'Maintenant' : 'Now') : fmtCardDT(feed2Time, isFr);
+                        })()}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
+                        {isFr
+                          ? 'Nourrir pour que le levain soit prêt au bon moment'
+                          : 'Feed so your starter peaks at mix time'}
+                      </div>
+                    </div>
+                  )}
+
                   {usingPeak2 && feed2Time && feedPlan.length === 0 && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
@@ -3681,7 +3725,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         {isFr ? 'PIC' : 'PEAK'}
                       </div>
                       <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-                        {fmtCardHM(activePeakTime, isFr)}
+                        {fmtCardDT(activePeakTime, isFr)}
                       </div>
                     </div>
                   )}
@@ -3751,7 +3795,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     );
                   })()}
 
-                  {starterStateNote && starterPillState !== 'red' && (
+                  {starterStateNote
+                    && !(starterPillState === 'red' && feed2Time && feed2Time.getTime() - Date.now() > 30 * 60 * 1000)
+                    && (
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginTop: '.5rem' }}>
                       {starterStateNote}
                     </div>
