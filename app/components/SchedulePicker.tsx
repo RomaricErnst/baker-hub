@@ -1717,8 +1717,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         return new Date(pendingStart.getTime());
       }
 
-      // RT starter — still rising (0.5h hysteresis prevents oscillation at boundary)
-      const PEAK_HYSTERESIS = 0.5;
+      // RT starter — still rising or just past peak (1h tolerance for fridge suggestion)
+      // 0.5h hysteresis prevents oscillation; extended to 1h so a starter up to 1h
+      // past peak still gets evaluated for fridge hold suggestion.
+      const PEAK_HYSTERESIS = 1.0;
       if (hoursSinceFeed < adjPeakH + PEAK_HYSTERESIS) {
         setStarterIsDepletedAt(null);
         setStarterRefeedTime(null);
@@ -1869,14 +1871,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       });
     }
 
-    function combinedScore(mixHBF: number, peakHBF: number, feedMs: number): number {
+    function combinedScore(mixHBF: number, peakHBF: number, feedMs: number, usesMixForComfort = false): number {
       const ss = starterScore(mixHBF, peakHBF);
       const ds = doughScore(mixHBF);
       const retardW = ss >= 2 ? 8 : 3;
+      // For Peak 2: score the mix hour (controllable) not the trough/refeed time (fixed biology)
+      const comfortMs = usesMixForComfort ? (bakeMs - mixHBF * 3600000) : feedMs;
       return (ss + ds) * 100
         + retardBonus(mixHBF) * retardW
         + reasonableHour(mixHBF) * 5
-        + feedComfort(feedMs);
+        + feedComfort(comfortMs);
     }
 
     // ── Candidate generation ──────────────────────────
@@ -1933,7 +1937,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           candidates.push({
             mixHBF, peakHBF: peak2AHBF, feedMs: troughMs,
             usingPeak2: true, feed2Ms: troughMs,
-            score: combinedScore(mixHBF, peak2AHBF, troughMs), sscore: ss,
+            score: combinedScore(mixHBF, peak2AHBF, troughMs, true), sscore: ss,
           });
         }
       }
@@ -1951,7 +1955,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           candidates.push({
             mixHBF, peakHBF: peak2BHBF, feedMs: refeedMs,
             usingPeak2: true, feed2Ms: refeedMs,
-            score: combinedScore(mixHBF, peak2BHBF, refeedMs), sscore: ss,
+            score: combinedScore(mixHBF, peak2BHBF, refeedMs, true), sscore: ss,
           });
         }
       }
@@ -1985,18 +1989,46 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // ── Pick best candidate ──────────────────────────
 
     if (candidates.length === 0) {
-      const idealMixHBF   = (sweetFromHBF + sweetToHBF) / 2;
-      const idealMixTime  = new Date(bakeMs - idealMixHBF * 3600000);
-      const suggestedFeed = new Date(idealMixTime.getTime() - adjPeakH * 3600000);
+      const idealMixHBF  = (sweetFromHBF + sweetToHBF) / 2;
+      const idealMixTime = new Date(bakeMs - idealMixHBF * 3600000);
+      const baseFeed     = new Date(idealMixTime.getTime() - adjPeakH * 3600000);
+
+      // Search for the best future feed time in a ±36h window around the ideal,
+      // scoring by feedComfort so a 4am ideal gets promoted to a nearby morning.
+      const feedCandidates: { feedTime: Date; mixTime: Date; comfort: number }[] = [];
+      const nowMs2        = Date.now();
+      const searchStart   = new Date(baseFeed.getTime() - 36 * 3600000);
+      const searchEnd     = new Date(baseFeed.getTime() + 2  * 3600000);
+
+      for (let t = searchStart.getTime(); t <= searchEnd.getTime(); t += 15 * 60000) {
+        if (t <= nowMs2) continue;
+        const peakT  = new Date(t + adjPeakH * 3600000);
+        const mixHBF = (bakeMs - peakT.getTime()) / 3600000;
+        if (mixHBF < sweetToHBF - 4) continue;
+        if (mixHBF > sweetFromHBF + 4) continue;
+        if (bakeMs - mixHBF * 3600000 <= nowMs2) continue;
+        feedCandidates.push({ feedTime: new Date(t), mixTime: peakT, comfort: feedComfort(t) });
+      }
+
+      let bestFeed = baseFeed;
+      let bestMix  = idealMixTime;
+      if (feedCandidates.length > 0) {
+        feedCandidates.sort((a, b) => {
+          if (b.comfort !== a.comfort) return b.comfort - a.comfort;
+          return Math.abs(a.mixTime.getTime() - idealMixTime.getTime())
+               - Math.abs(b.mixTime.getTime() - idealMixTime.getTime());
+        });
+        bestFeed = feedCandidates[0].feedTime;
+        bestMix  = feedCandidates[0].mixTime;
+      }
+
       setStarterPillState('red');
-      setRefeedSuggestion(suggestedFeed);
+      setRefeedSuggestion(bestFeed);
       setUsingPeak2(false);
-      // Pass suggested feed to chart so it renders the prospective new cycle bell
-      setFeed2Time(suggestedFeed);
+      setFeed2Time(bestFeed);
       setDriftNote(null);
-      // Move mix diamond to show where baker should mix after recommended refeed
-      setPendingStart(idealMixTime);
-      onChange(idealMixTime, et, blocks);
+      setPendingStart(bestMix);
+      onChange(bestMix, et, blocks);
       if (planningMode === 'last_fed' && lastFedTime) {
         onFeedTimeChange?.(lastFedTime);
         setFeedTime(lastFedTime);
