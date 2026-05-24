@@ -1991,8 +1991,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setStarterPillState('red');
       setRefeedSuggestion(suggestedFeed);
       setUsingPeak2(false);
-      setFeed2Time(null);
+      // Pass suggested feed to chart so it renders the prospective new cycle bell
+      setFeed2Time(suggestedFeed);
       setDriftNote(null);
+      // Move mix diamond to show where baker should mix after recommended refeed
+      setPendingStart(idealMixTime);
+      onChange(idealMixTime, et, blocks);
       if (planningMode === 'last_fed' && lastFedTime) {
         onFeedTimeChange?.(lastFedTime);
         setFeedTime(lastFedTime);
@@ -2961,9 +2965,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterFeedTime={isSourdough
                 ? (planningMode === 'know_peak'
                     ? null
-                    : (usingPeak2 ? feed2Time : (lastFedTime ?? feedTime)))
+                    : starterPillState === 'red' && feed2Time
+                      ? feed2Time
+                      : usingPeak2
+                        ? feed2Time
+                        : (lastFedTime ?? feedTime))
                 : null}
-              starterFeed2Time={isSourdough && usingPeak2 ? feedTime : null}
+              starterFeed2Time={
+                isSourdough
+                  ? (starterPillState === 'red' && feed2Time
+                      ? (lastFedTime ?? feedTime)
+                      : usingPeak2 ? feedTime : null)
+                  : null
+              }
               starterFridgeOutTime={isSourdough ? fridgeOutTime : null}
               starterKnownPeakTime={
                 isSourdough && planningMode === 'know_peak' ? knownPeakTime : null
@@ -2972,6 +2986,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterRefeedTime={isSourdough ? starterRefeedTime : null}
               starterMature={starterMature}
               starterAdjPeakH={isSourdough ? adjPeakHState : null}
+              starterRedPill={isSourdough && starterPillState === 'red'}
               comparisonFridgeOutTime={isSourdough && showFridgeComparison ? suggestedFridgeOutTime : null}
               comparisonFridgePeakTime={isSourdough && showFridgeComparison ? suggestedFridgePeakTime : null}
               showFridgeComparison={isSourdough && showFridgeComparison}
@@ -3558,7 +3573,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     )}
                   </div>
 
-                  {starterStateNote && (
+                  {starterStateNote && starterPillState !== 'red' && (
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginTop: '.5rem' }}>
                       {starterStateNote}
                     </div>

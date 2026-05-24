@@ -46,6 +46,7 @@ export interface FermentChartProps {
   comparisonFridgePeakTime?: Date | null;
   showFridgeComparison?: boolean;
   starterAdjPeakH?: number | null;  // ratio+maturity+rye adjusted peak hours
+  starterRedPill?: boolean;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -239,6 +240,7 @@ export default function FermentChart({
   comparisonFridgeOutTime = null, comparisonFridgePeakTime = null,
   showFridgeComparison = false,
   starterAdjPeakH = null,
+  starterRedPill = false,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -1168,10 +1170,12 @@ export default function FermentChart({
               textAnchor="middle"
               fontWeight="600"
             >
-              {prefermentType === 'levain' || prefermentType === 'sourdough'
-                ? (histFeedHBF !== null
-                    ? (isFr ? 'Repas 2' : 'Feed 2')
-                    : (isFr ? 'Repas' : 'Feed'))
+              {isLevain
+                ? (starterRedPill && histFeedHBF !== null
+                    ? (isFr ? 'Nourrir' : 'Feed')
+                    : histFeedHBF !== null
+                      ? (isFr ? 'Repas 2' : 'Feed 2')
+                      : (isFr ? 'Repas' : 'Feed'))
                 : prefermentType === 'biga'
                   ? t('cardLabels.makeBiga')
                   : t('cardLabels.makePoolish')}
