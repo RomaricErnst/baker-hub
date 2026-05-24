@@ -2264,6 +2264,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           gap: '1rem',
         }}>
 
+          {/* ── Card header ── */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '-.25rem' }}>
+            <div style={{ width: 8, height: 8, background: '#4A7FA5', transform: 'rotate(45deg)', flexShrink: 0 }} />
+            <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+              {isFr ? 'Votre levain' : 'Your starter'}
+            </div>
+          </div>
+
           {/* ── Q1: Where has it been since last fed? ── */}
           <div>
             <div style={STARTER_LABEL_STYLE}>
@@ -2411,32 +2419,37 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </div>
           )}
 
-          {/* ── Maturity + rye (always shown) ── */}
-          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-            {([
-              { value: true,  label: 'Active & healthy' },
-              { value: false, label: 'Young (<6 months)' },
-            ] as { value: boolean; label: string }[]).map(opt => (
+          {/* ── Maturity + rye ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
+            <div style={STARTER_LABEL_STYLE}>
+              {isFr ? 'Comment est-il en forme ?' : 'How active is it?'}
+            </div>
+            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+              {([
+                { value: true,  label: 'Active & healthy' },
+                { value: false, label: 'Young (<6 months)' },
+              ] as { value: boolean; label: string }[]).map(opt => (
+                <button
+                  key={String(opt.value)}
+                  onClick={() => setStarterMature(opt.value)}
+                  style={starterPillButton(starterMature === opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
               <button
-                key={String(opt.value)}
-                onClick={() => setStarterMature(opt.value)}
-                style={starterPillButton(starterMature === opt.value)}
+                onClick={() => setStarterHasRye(!starterHasRye)}
+                style={{
+                  padding: '.35rem .7rem', borderRadius: '20px',
+                  border: `1.5px solid ${starterHasRye ? 'var(--sage)' : 'var(--border)'}`,
+                  background: starterHasRye ? 'rgba(107,122,90,0.08)' : 'transparent',
+                  color: starterHasRye ? 'var(--sage)' : 'var(--smoke)',
+                  fontFamily: 'var(--font-dm-sans)', fontSize: '.8rem', cursor: 'pointer',
+                }}
               >
-                {opt.label}
+                Rye starter
               </button>
-            ))}
-            <button
-              onClick={() => setStarterHasRye(!starterHasRye)}
-              style={{
-                padding: '.35rem .7rem', borderRadius: '20px',
-                border: `1.5px solid ${starterHasRye ? 'var(--sage)' : 'var(--border)'}`,
-                background: starterHasRye ? 'rgba(107,122,90,0.08)' : 'transparent',
-                color: starterHasRye ? 'var(--sage)' : 'var(--smoke)',
-                fontFamily: 'var(--font-dm-sans)', fontSize: '.8rem', cursor: 'pointer',
-              }}
-            >
-              Rye starter
-            </button>
+            </div>
           </div>
 
           {/* ── Feed ratio selector ── */}
