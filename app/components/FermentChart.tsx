@@ -1205,11 +1205,9 @@ export default function FermentChart({
               fontWeight="600"
             >
               {isLevain
-                ? (starterRedPill && histFeedHBF !== null
-                    ? (isFr ? 'Nourrir' : 'Feed')
-                    : histFeedHBF !== null
-                      ? (isFr ? 'Prochain repas' : 'Next Feed')
-                      : (isFr ? 'Repas' : 'Feed'))
+                ? (histFeedHBF !== null
+                    ? (isFr ? 'Prochain repas' : 'Next Feed')
+                    : (isFr ? 'Repas' : 'Feed'))
                 : prefermentType === 'biga'
                   ? t('cardLabels.makeBiga')
                   : t('cardLabels.makePoolish')}

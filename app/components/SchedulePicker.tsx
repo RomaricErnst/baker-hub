@@ -3807,9 +3807,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   )}
 
                   {(() => {
-                    const pillGreen =
-                      !windowTooShort
-                      && starterPillState === 'green';
+                    // During active drag, compute pill directly from mix position vs peak
+                    // so baker gets immediate feedback without waiting for async solver rerun.
+                    const dragGapH = isSourdough && hasDragged && adjPeakHState
+                      ? (() => {
+                          const peakMs = (() => {
+                            if (planningMode === 'know_peak' && knownPeakTime) return knownPeakTime.getTime();
+                            const base = usingPeak2 && feed2Time ? feed2Time
+                              : lastFedTime ?? feedTime;
+                            return base ? base.getTime() + (adjPeakHState) * 3600000 : null;
+                          })();
+                          return peakMs ? Math.abs((pendingStart.getTime() - peakMs) / 3600000) : null;
+                        })()
+                      : null;
+                    const rtTOLDrag = adjPeakHState ? Math.max(1.0, Math.min(3.0, adjPeakHState * 0.15)) : 2.0;
+                    const pillGreen = !windowTooShort
+                      && (dragGapH !== null ? dragGapH <= rtTOLDrag : starterPillState === 'green');
                     const pillText = pillGreen
                       ? (isFr ? 'Prêt au mélange' : 'Ready at mix')
                       : windowTooShort
