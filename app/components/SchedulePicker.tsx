@@ -3040,7 +3040,21 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       <div style={{ borderTop: '1px solid var(--border)', margin: '1.1rem 0 1rem' }} />
 
       {/* Fermentation chart */}
-      <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
+      {isSourdough && lastFedAge === null && (
+        <div style={{
+          padding: '24px 20px',
+          textAlign: 'center',
+          color: 'var(--smoke)',
+          fontFamily: 'var(--font-dm-sans)',
+          fontSize: '13px',
+          lineHeight: 1.6,
+        }}>
+          {isFr
+            ? 'Indiquez quand votre levain a été nourri pour voir votre plan.'
+            : 'Tell us when your starter was last fed to see your plan.'}
+        </div>
+      )}
+      <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem', display: isSourdough && lastFedAge === null ? 'none' : undefined }}>
         <div style={{ fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.4rem' }}>
           {hasDragged ? t('schedulerTitle.yours') : t('schedulerTitle.recommended')}
         </div>
@@ -3578,7 +3592,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           <div style={{ display: 'flex', gap: '6px', marginTop: '1rem', flexWrap: 'wrap', justifyContent: (cardPrefTime || isSourdough) ? 'flex-start' : 'center' }}>
 
             {/* ── Sourdough Starter Plan card ── */}
-            {isSourdough && startComputed && (() => {
+            {isSourdough && startComputed && lastFedAge !== null && (() => {
               const peakH     = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
               const ratioMult = 1 + 0.35 * Math.log(feedRatio);
               const ryeF      = starterHasRye ? 0.8 : 1.0;
