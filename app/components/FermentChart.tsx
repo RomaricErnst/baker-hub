@@ -1123,11 +1123,13 @@ export default function FermentChart({
                 points={`${histPrefX},${AXIS_Y - S} ${histPrefX + S},${AXIS_Y} ${histPrefX},${AXIS_Y + S} ${histPrefX - S},${AXIS_Y}`}
                 fill="rgba(74,127,165,0.20)" stroke="rgba(74,127,165,0.45)" strokeWidth={1.5}
               />
-              <text x={histPrefX} y={allClose ? AXIS_Y + 52 : histLabelsClose ? AXIS_Y + 52 : AXIS_Y + 36}
-                fontSize={11} fill="var(--smoke)"
-                fontFamily="DM Mono, monospace" textAnchor="middle" fontWeight="600">
-                {isFr ? 'Repas 1' : 'Feed 1'}
-              </text>
+              {!allClose && (
+                <text x={histPrefX} y={histLabelsClose ? AXIS_Y + 52 : AXIS_Y + 36}
+                  fontSize={11} fill="var(--smoke)"
+                  fontFamily="DM Mono, monospace" textAnchor="middle" fontWeight="600">
+                  {isFr ? 'Repas 1' : 'Feed 1'}
+                </text>
+              )}
             </g>
           );
         })()}

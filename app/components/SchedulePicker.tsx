@@ -2392,6 +2392,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     setFridgeOutTime(null);
                     onFridgeOutTimeChange?.(null);
                     onStarterStateChange?.(loc === 'fridge' ? 'fridge_unfed' : 'rt_fed');
+                    setUsingPeak2(false);
+                    setFeed2Time(null);
+                    setHasFutureFeedPath(false);
                   }}
                   style={starterPillButton(starterLocation === loc)}
                 >
@@ -3642,15 +3645,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       feedPlan.push({
                         ft,
                         label: isLast
-                          ? (isFr ? 'Dernier repas' : 'Last feed')
+                          ? (isFr ? 'Repas avant mélange' : 'Pre-mix feed')
                           : (isFr ? `Repas ${i + 1}` : `Feed ${i + 1}`),
                         note: isLast
                           ? (isFr
                               ? `Pic vers ${fmtCardHM(new Date(ft.getTime() + adjPeakH * 3600000), isFr)}`
                               : `Peak around ${fmtCardHM(new Date(ft.getTime() + adjPeakH * 3600000), isFr)}`)
-                          : (isFr
-                              ? `Prochain repas vers ${fmtCardHM(nextFt, isFr)}`
-                              : `Next feed around ${fmtCardHM(nextFt, isFr)}`),
+                          : undefined,
                       });
                     }
                   }
