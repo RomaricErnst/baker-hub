@@ -40,6 +40,7 @@ export interface FermentChartProps {
   starterIsDepletedAt?: Date | null;
   starterRefeedTime?: Date | null;
   starterMature?: boolean;
+  starterHasRye?: boolean;
   starterStoredInFridge?: boolean;
   startTimeInPast?: boolean;
   comparisonFridgeOutTime?: Date | null;
@@ -389,7 +390,10 @@ export default function FermentChart({
     : 1;
 
   // fridgePeakH: how long starter takes to peak if left in fridge indefinitely
-  const fridgePeakH = starterPeakH * starterColdFactor;
+  // Use effectivePeakH (adjPeakH adjusted for maturity/rye/ratio) if available.
+  // effectivePeakH is computed below but we need it here — compute it early.
+  const basePeakForFridge = (isLevain && starterAdjPeakH) ? starterAdjPeakH : starterPeakH;
+  const fridgePeakH = basePeakForFridge * starterColdFactor;
 
   // fridgeOutHBF: when starter is removed from fridge (hours before bake)
   const fridgeOutHBF: number | null = isLevain && starterFridgeOutTime
@@ -939,7 +943,31 @@ export default function FermentChart({
 
                     if (isLevain && fridgeOutHBF !== null) {
                       const warmupSigma = Math.max(0.5, starterWarmupH * 0.4);
-                      return makeBellPath(peakHBF, warmupSigma, W, WH, fridgeOutHBF);
+                      const feedHBF2 = activeFeedHBF ?? fridgeOutHBF + 24;
+                      const N = 300;
+                      const pts: string[] = [];
+                      for (let i = 0; i <= N; i++) {
+                        const hbf = (i / N) * feedHBF2;
+                        let normH: number;
+                        if (hbf >= fridgeOutHBF) {
+                          normH = Math.exp(-0.5 * ((hbf - fridgePeakH) / fridgeSigma) ** 2);
+                        } else {
+                          const rtH = Math.exp(-0.5 * ((hbf - peakHBF) / warmupSigma) ** 2);
+                          const rtAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - peakHBF) / warmupSigma) ** 2);
+                          const scale = rtAtRemoval < 1
+                            ? (1 - fridgeHeightAtRemoval) / (1 - rtAtRemoval)
+                            : 1;
+                          normH = fridgeHeightAtRemoval + (rtH - rtAtRemoval) * scale;
+                        }
+                        normH = Math.max(0, Math.min(1, normH));
+                        const x = hToX(hbf, W, WH);
+                        const y = BL - normH * MAXH;
+                        pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
+                      }
+                      pts.push(`L ${hToX(0, W, WH).toFixed(1)} ${BL}`);
+                      pts.push(`L ${hToX(feedHBF2, W, WH).toFixed(1)} ${BL}`);
+                      pts.push('Z');
+                      return pts.join(' ');
                     }
 
                     const feedHBF = isLevain && activeFeedHBF !== null

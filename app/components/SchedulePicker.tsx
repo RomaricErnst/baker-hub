@@ -3153,6 +3153,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterRefeedTime={isSourdough ? starterRefeedTime : null}
               starterMature={starterMature}
               starterAdjPeakH={isSourdough ? adjPeakHState : null}
+              starterHasRye={isSourdough ? starterHasRye : false}
               starterRedPill={isSourdough && hasFutureFeedPath}
               starterFeed2OutOfZone={isSourdough && usingPeak2 && hasFutureFeedPath}
               comparisonFridgeOutTime={isSourdough && showFridgeComparison ? suggestedFridgeOutTime : null}
