@@ -788,8 +788,8 @@ export default function FermentChart({
         {showZoneLabels && (() => {
           const prefWindowLabel =
             prefermentType === 'biga'      ? t('zoneLabels.makeBigaWindow')    :
-            prefermentType === 'levain'    ? (histFeedHBF !== null ? 'Starter peak 2' : 'Starter peak') :
-            prefermentType === 'sourdough' ? (histFeedHBF !== null ? 'Starter peak 2' : 'Starter peak') :
+            prefermentType === 'levain'    ? 'Starter peak' :
+            prefermentType === 'sourdough' ? 'Starter peak' :
             t('zoneLabels.makePoolishWindow');
           return (
             <>
