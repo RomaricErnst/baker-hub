@@ -1585,11 +1585,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setSourdoughSweetFrom(null);
     setSourdoughSweetTo(null);
     setHasFutureFeedPath(false);
-    setUsingPeak2(false);
-    setFeed2Time(null);
-    setStarterPillState('green');
-    setDriftNote(null);
-    setStarterRefeedTime(null);
     setStarterStateNote(null);
   }, [starterLocation, lastFedTime, lastFedAge, planningMode,
       pendingEatTime, feedRatio, starterMature,
@@ -1857,11 +1852,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Sourdough: joint mix+starter solver (scoring loop) ──────
   function findOptimalPositionSourdough(et: Date) {
+    // Reset all solver outputs before recomputing — batched with new values
+    // into a single React render. No intermediate stale state visible.
+    setUsingPeak2(false);
+    setFeed2Time(null);
+    setStarterPillState('yellow');
+    setDriftNote(null);
+    setStarterRefeedTime(null);
+    setHasFutureFeedPath(false);
     const peakTime = deriveStarterPeakTime();
     if (!peakTime) return;
-
-    // Reset path flags at the start of every solver run
-    setHasFutureFeedPath(false);
 
     // Local sfDef — avoids stale render-time closure
     const localSfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
