@@ -1567,7 +1567,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (!peakTime) return;
     findOptimalPositionSourdough(pendingEatTime);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastFedTime, knownPeakTime, fridgeOutTime, starterLocation, planningMode, starterMature, starterHasRye, feedRatio, eatTimeSet, pendingEatTime, styleKey]);
+  }, [lastFedTime, knownPeakTime, fridgeOutTime, starterLocation, planningMode,
+      starterMature, starterHasRye, feedRatio, eatTimeSet, pendingEatTime,
+      styleKey, kitchenTemp]);
 
   // Clear starter state note when inputs that drive it change
   useEffect(() => {
@@ -3286,6 +3288,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 hasManuallyDragged.current = false;
                 setHasDragged(false);
                 computeAndApplyRecommendation(blocks, pendingEatTime);
+                if (isSourdough) {
+                  setTimeout(() => findOptimalPositionSourdough(pendingEatTime), 0);
+                }
               }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
