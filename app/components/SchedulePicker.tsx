@@ -1701,8 +1701,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const windowStart = useMemo(() => {
     const fiveDaysBefore = new Date(pendingEatTime.getTime() - 5 * 24 * 3600000);
     const now = new Date();
-    return fiveDaysBefore > now ? fiveDaysBefore : now;
-  }, [pendingEatTime]);
+    const base = fiveDaysBefore > now ? fiveDaysBefore : now;
+    if (!isSourdough) return base;
+    // Sourdough: extend back to show hist feed bell (lastFedTime may be in the past)
+    // and active feed bell (feed2Time may be further back than now)
+    const histFeed = solverResult?.starterFeed2Time ?? lastFedTime;
+    const activeFeed = solverResult?.starterFeedTime;
+    let earliest = base;
+    if (histFeed && histFeed < earliest) {
+      earliest = new Date(histFeed.getTime() - 2 * 3600000);
+    }
+    if (activeFeed && activeFeed < earliest) {
+      earliest = new Date(activeFeed.getTime() - 2 * 3600000);
+    }
+    // Never go back more than 6 days
+    const sixDaysBefore = new Date(pendingEatTime.getTime() - 6 * 24 * 3600000);
+    return earliest < sixDaysBefore ? sixDaysBefore : earliest;
+  }, [pendingEatTime, isSourdough, solverResult, lastFedTime]);
 
   const nights   = useMemo(() => getNightsInWindow(windowStart, pendingEatTime), [windowStart, pendingEatTime]);
   const workdays = useMemo(() => getWorkdaysInWindow(windowStart, pendingEatTime), [windowStart, pendingEatTime]);
@@ -2543,6 +2558,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       } else {
                         prefill = new Date(now.getTime() - 196 * 3600000);
                       }
+                      setSolverResult(null);
                       setLastFedAge(chip.id);
                       onLastFedAgeChange?.(chip.id);
                       setLastFedTime(prefill);
