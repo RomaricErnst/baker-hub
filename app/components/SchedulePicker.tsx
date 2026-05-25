@@ -1155,6 +1155,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [sourdoughSweetFrom, setSourdoughSweetFrom] = useState<number | null>(null);
   const [sourdoughSweetTo,   setSourdoughSweetTo]   = useState<number | null>(null);
   const [hasFutureFeedPath,  setHasFutureFeedPath]  = useState(false);
+  const [showStarterTips, setShowStarterTips] = useState(false);
   // StarterState kept for BakeGuide compat — derived from new vars
   const starterState: StarterState = starterLocation === 'fridge'
     ? (fridgeOutTime ? 'fridge_fed' : 'fridge_unfed')
@@ -1582,6 +1583,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setSourdoughSweetFrom(null);
     setSourdoughSweetTo(null);
     setHasFutureFeedPath(false);
+    setUsingPeak2(false);
+    setFeed2Time(null);
+    setStarterPillState('green');
+    setDriftNote(null);
+    setStarterRefeedTime(null);
+    setStarterStateNote(null);
   }, [starterLocation, lastFedTime, lastFedAge, planningMode,
       pendingEatTime, feedRatio, starterMature,
       starterHasRye, kitchenTemp]);
@@ -2726,7 +2733,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       {/* Quick presets — all toggles on one row */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.45rem', marginBottom: '.8rem', width: '100%', overflow: 'visible', paddingLeft: 0 }}>
-        {workdays.length > 0 && (
+        {(
           <button
             onClick={toggleWork}
             style={{
@@ -3132,7 +3139,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         : (lastFedTime ?? feedTime))
                 : null}
               starterFeed2Time={
-                isSourdough && (hasFutureFeedPath || usingPeak2)
+                isSourdough
+                && (hasFutureFeedPath || usingPeak2)
+                && !(['days23','days45','week'] as const).includes(lastFedAge as 'days23'|'days45'|'week')
                   ? (lastFedTime ?? null)
                   : null
               }
@@ -3678,6 +3687,25 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
+                  {isSourdough && starterRefeedTime && !hasFutureFeedPath && !usingPeak2 && (
+                    <div style={{ marginBottom: '.6rem' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                        textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                        {isFr ? 'PROCHAIN REPAS' : 'NEXT FEED'}
+                      </div>
+                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)',
+                        fontFamily: 'var(--font-dm-mono)' }}>
+                        {isFr ? 'Maintenant' : 'Now'}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)',
+                        lineHeight: 1.4, marginTop: '2px' }}>
+                        {isFr
+                          ? 'Nourrir maintenant pour un pic plus fort'
+                          : 'Feed now for a stronger peak'}
+                      </div>
+                    </div>
+                  )}
+
                   {usingPeak2 && feed2Time && feedPlan.length === 0 && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
@@ -3823,6 +3851,45 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   {driftNote && (
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginTop: '.4rem' }}>
                       {driftNote}
+                    </div>
+                  )}
+
+                  {isSourdough && (starterRefeedTime && !hasFutureFeedPath || usingPeak2 && feed2Time || hasFutureFeedPath && feed2Time) && (
+                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)',
+                      lineHeight: 1.5, marginTop: '6px' }}>
+                      {starterRefeedTime && !hasFutureFeedPath
+                        ? (isFr ? 'Nourrir maintenant — votre levain atteindra son pic au moment du mélange.'
+                                : 'Feed now — your starter will peak around mix time.')
+                        : usingPeak2 && feed2Time
+                          ? (isFr ? `Nourrir le ${fmtCardDT(feed2Time, true)} pour un pic au moment du mélange.`
+                                  : `Feed ${fmtCardDT(feed2Time, false)} — timed to peak at mix.`)
+                          : hasFutureFeedPath && feed2Time
+                            ? (isFr ? 'Votre levain actuel ne peut pas atteindre le moment du mélange — un nouveau repas le synchronise.'
+                                    : "Current cycle can't reach mix time — a fresh feed gets it in sync.")
+                            : null}
+                    </div>
+                  )}
+
+                  {isSourdough && (
+                    <div style={{ marginTop: '8px' }}>
+                      <button onClick={() => setShowStarterTips(v => !v)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+                        <span style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid var(--smoke)',
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '9px', flexShrink: 0 }}>i</span>
+                        {isFr ? 'Signes que votre levain est prêt' : 'Signs your starter is ready'}
+                      </button>
+                      {showStarterTips && (
+                        <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--smoke)',
+                          fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
+                          borderLeft: '2px solid var(--border)', paddingLeft: '8px' }}>
+                          {isFr
+                            ? "Dôme bombé · Odeur alcoolisée et légèrement acide · Texture bulleuse · Flotte dans l'eau"
+                            : 'Domed top · Alcoholic, slightly sour smell · Bubbly texture · Floats in water'}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
