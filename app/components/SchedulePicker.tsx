@@ -1674,10 +1674,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const zoneH = renderSweetFrom + 8;
     let computed = Math.min(144, Math.max(36, Math.ceil(Math.max(diamondH, zoneH) / 12) * 12));
 
-    // Sourdough: expand window to always show Feed 1 (lastFedTime may be 40+ hours past)
-    if (isSourdough && lastFedTime) {
-      const feed1HBF = (pendingEatTime.getTime() - lastFedTime.getTime()) / 3600000;
-      computed = Math.min(120, Math.max(computed, Math.ceil((feed1HBF + 3) / 12) * 12));
+    // Sourdough: expand window to always show Feed 1 and active feed diamond
+    if (isSourdough) {
+      if (lastFedTime) {
+        const feed1HBF = (pendingEatTime.getTime() - lastFedTime.getTime()) / 3600000;
+        computed = Math.min(120, Math.max(computed, Math.ceil((feed1HBF + 3) / 12) * 12));
+      }
+      const activeFeedTime = solverResult?.starterFeedTime;
+      if (activeFeedTime) {
+        const activeFeedHBF = (pendingEatTime.getTime() - activeFeedTime.getTime()) / 3600000;
+        computed = Math.min(120, Math.max(computed, Math.ceil((activeFeedHBF + 3) / 12) * 12));
+      }
     }
 
     const nowHBF = (pendingEatTime.getTime() - Date.now()) / 3600000;
@@ -1688,7 +1695,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     windowHRef.current = clipped;
     return clipped;
   }, [isDragging, pendingEatTime, pendingStart, prefOffsetH,
-      hasPrefActive, isSourdough, lastFedTime, renderSweetFrom]);
+      hasPrefActive, isSourdough, lastFedTime, renderSweetFrom, solverResult]);
 
   // Fixed window start — always covers 5 days before bake regardless of diamond position
   const windowStart = useMemo(() => {
@@ -2483,12 +2490,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 <button
                   key={loc}
                   onClick={() => {
+                    setSolverResult(null);
                     setStarterLocation(loc);
                     onStarterLocationChange?.(loc);
                     setFridgeOutTime(null);
                     onFridgeOutTimeChange?.(null);
                     onStarterStateChange?.(loc === 'fridge' ? 'fridge_unfed' : 'rt_fed');
-                    setSolverResult(null);
                   }}
                   style={starterPillButton(starterLocation === loc)}
                 >
@@ -2517,6 +2524,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   <button
                     key={chip.id}
                     onClick={() => {
+                      setSolverResult(null);
                       const now = new Date();
                       let prefill: Date;
                       if (chip.id === 'today') {
@@ -2569,6 +2577,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       ? `${lastFedTime.getHours()}:${String(lastFedTime.getMinutes()).padStart(2,'0')}`
                       : ''}
                     onChange={e => {
+                      setSolverResult(null);
                       const [h, m] = e.target.value.split(':').map(Number);
                       const base = lastFedAge === 'today'
                         ? new Date()
@@ -2633,14 +2642,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ] as { value: boolean; label: string }[]).map(opt => (
                 <button
                   key={String(opt.value)}
-                  onClick={() => setStarterMature(opt.value)}
+                  onClick={() => { setSolverResult(null); setStarterMature(opt.value); }}
                   style={starterPillButton(starterMature === opt.value)}
                 >
                   {opt.label}
                 </button>
               ))}
               <button
-                onClick={() => setStarterHasRye(!starterHasRye)}
+                onClick={() => { setSolverResult(null); setStarterHasRye(!starterHasRye); }}
                 style={{
                   padding: '.35rem .7rem', borderRadius: '20px',
                   border: `1.5px solid ${starterHasRye ? 'var(--sage)' : 'var(--border)'}`,
@@ -2683,7 +2692,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               {([1, 2, 4, 5, 10] as const).map(r => (
                 <button
                   key={r}
-                  onClick={() => { setFeedRatio(r); onFeedRatioChange?.(r); }}
+                  onClick={() => { setSolverResult(null); setFeedRatio(r); onFeedRatioChange?.(r); }}
                   style={{
                     padding: '.3rem .65rem', borderRadius: '20px',
                     border: `1.5px solid ${feedRatio === r ? 'var(--bread)' : 'var(--border)'}`,
@@ -3935,6 +3944,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                                 const adjPeakH2 = _adjPeakHState ?? 8;
                                 const baseFeedMs = (() => {
                                   if (planningMode === 'know_peak' && knownPeakTime) return knownPeakTime.getTime() - adjPeakH2 * 3600000;
+                                  if (_hasFutureFeedPath && _feed2Time) return _feed2Time.getTime();
                                   if (_usingPeak2 && _feed2Time) return _feed2Time.getTime();
                                   return lastFedTime?.getTime() ?? _feedTime?.getTime() ?? null;
                                 })();
