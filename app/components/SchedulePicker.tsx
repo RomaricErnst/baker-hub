@@ -3288,9 +3288,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 hasManuallyDragged.current = false;
                 setHasDragged(false);
                 computeAndApplyRecommendation(blocks, pendingEatTime);
-                if (isSourdough) {
-                  setTimeout(() => findOptimalPositionSourdough(pendingEatTime), 0);
-                }
+                // No setTimeout needed: computeAndApplyRecommendation calls
+                // findOptimalPositionSourdough synchronously for sourdough via early return.
+                // Adding a second async call causes double-run with ghost bells.
               }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
