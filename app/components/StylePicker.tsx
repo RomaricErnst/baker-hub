@@ -179,7 +179,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
       gap: '.75rem',
     }}>
       {(Object.entries(styles) as [string, { name: string; nameFr?: string; emoji: string; image?: string; desc: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
