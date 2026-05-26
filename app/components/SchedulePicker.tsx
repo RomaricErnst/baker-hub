@@ -2109,14 +2109,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const scanTo   = Math.max(sweetToHBF - 2, minTotalRT + 0.5);
 
     interface Candidate {
-      mixHBF:       number;
-      peakHBF:      number;
-      feedMs:       number;
-      usingPeak2:   boolean;
-      feed2Ms:      number | null;
-      score:        number;
-      sscore:       0 | 1 | 2;
-      isFridgePath?: boolean;
+      mixHBF:          number;
+      peakHBF:         number;
+      feedMs:          number;
+      usingPeak2:      boolean;
+      feed2Ms:         number | null;
+      score:           number;
+      sscore:          0 | 1 | 2;
+      isFridgePath?:   boolean;
+      isFutureFeedPath?: boolean;
     }
 
     const candidates: Candidate[] = [];
@@ -2205,10 +2206,37 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       }
     }
 
+    // ── Future-feed candidates (always generated, compete in main pool) ──────
+    // A future feed with ss=2,ds=2 (score≈400) beats Peak1 with ss=2,ds=0 (score≈200).
+    {
+      const nowMs2       = Date.now();
+      const idealMixHBF2 = (sweetFromHBF + sweetToHBF) / 2;
+      const baseFeed2    = new Date(bakeMs - (idealMixHBF2 + adjPeakH) * 3600000);
+      const searchStart2 = new Date(baseFeed2.getTime() - 36 * 3600000);
+      const searchEnd2   = new Date(baseFeed2.getTime() + 2 * 3600000);
+
+      for (let t2 = searchStart2.getTime(); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
+        if (t2 <= nowMs2) continue;
+        const peakT2 = new Date(t2 + adjPeakH * 3600000);
+        const mHBF2  = (bakeMs - peakT2.getTime()) / 3600000;
+        if (mHBF2 < sweetToHBF - 4 || mHBF2 > sweetFromHBF + 4) continue;
+        if (bakeMs - mHBF2 * 3600000 <= nowMs2) continue;
+        const sc2 = combinedScore(mHBF2, mHBF2, t2, true);
+        const ss2 = starterScore(mHBF2, mHBF2);
+        if (ss2 === 0) continue;
+        candidates.push({
+          mixHBF: mHBF2, peakHBF: mHBF2, feedMs: t2,
+          usingPeak2: false, feed2Ms: t2,
+          score: sc2, sscore: ss2,
+          isFutureFeedPath: true,
+        });
+      }
+    }
+
     // ── Pick best candidate ──────────────────────────
 
     if (candidates.length === 0) {
-      // Is the bake too soon for ANY starter cycle, or is this a genuine timing mismatch?
+      // True dead-end: window too short for even a future-feed path.
       const windowH    = (bakeMs - Date.now()) / 3600000;
       const minViableH = sweetToHBF + adjPeakH + 1;
       if (windowH > 0 && windowH < minViableH) {
@@ -2219,57 +2247,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         buildAndSetResult();
         return;
       }
-
-      const idealMixHBF  = (sweetFromHBF + sweetToHBF) / 2;
-      const idealMixTime = new Date(bakeMs - idealMixHBF * 3600000);
-      const baseFeed     = new Date(idealMixTime.getTime() - adjPeakH * 3600000);
-
-      // Search for the best future feed time in a ±36h window around the ideal,
-      // scoring by feedComfort so a 4am ideal gets promoted to a nearby morning.
-      const feedCandidates: { feedTime: Date; mixTime: Date; comfort: number }[] = [];
-      const nowMs2        = Date.now();
-      const searchStart   = new Date(baseFeed.getTime() - 36 * 3600000);
-      const searchEnd     = new Date(baseFeed.getTime() + 2  * 3600000);
-
-      for (let t = searchStart.getTime(); t <= searchEnd.getTime(); t += 15 * 60000) {
-        if (t <= nowMs2) continue;
-        const peakT  = new Date(t + adjPeakH * 3600000);
-        const mixHBF = (bakeMs - peakT.getTime()) / 3600000;
-        if (mixHBF < sweetToHBF - 4) continue;
-        if (mixHBF > sweetFromHBF + 4) continue;
-        if (bakeMs - mixHBF * 3600000 <= nowMs2) continue;
-        feedCandidates.push({ feedTime: new Date(t), mixTime: peakT, comfort: feedComfort(t) });
-      }
-
-      let bestFeed = baseFeed;
-      let bestMix  = idealMixTime;
-      if (feedCandidates.length > 0) {
-        feedCandidates.sort((a, b) => {
-          if (b.comfort !== a.comfort) return b.comfort - a.comfort;
-          return Math.abs(a.mixTime.getTime() - idealMixTime.getTime())
-               - Math.abs(b.mixTime.getTime() - idealMixTime.getTime());
-        });
-        bestFeed = feedCandidates[0].feedTime;
-        bestMix  = feedCandidates[0].mixTime;
-      }
-
-      _hasFutureFeedPath = feedCandidates.length > 0;
-      _starterPillState  = feedCandidates.length > 0 ? 'green' : 'yellow';
-      const now = new Date();
-      const displayFeed = bestFeed < now ? now : bestFeed;
-      setRefeedSuggestion(displayFeed);
-      _usingPeak2 = false;
-      _feed2Time  = displayFeed;
-      _driftNote  = null;
-      const newPeak = new Date(displayFeed.getTime() + adjPeakH * 3600000);
-      const newMixHBF = (bakeMs - newPeak.getTime()) / 3600000;
-      const clampedMixHBF = Math.max(sweetToHBF, Math.min(sweetFromHBF, newMixHBF));
-      const newMix = new Date(bakeMs - clampedMixHBF * 3600000);
-      _newPendingStart = newMix;
-      onChange(newMix, et, blocks);
-      if (planningMode === 'last_fed' && lastFedTime) {
-        onFeedTimeChange?.(lastFedTime);
-      }
+      _hasFutureFeedPath = false;
+      _starterPillState  = 'yellow';
       buildAndSetResult();
       return;
     }
@@ -2296,6 +2275,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     _starterPillState = best.sscore === 2 ? 'green' : 'yellow';
     setRefeedSuggestion(null);
 
+    // If a future-feed candidate won, override flags accordingly.
+    if (best.isFutureFeedPath) {
+      _hasFutureFeedPath = true;
+      _usingPeak2 = false;
+      if (_feed2Time) setRefeedSuggestion(_feed2Time);
+    }
+
     // Drift note for yellow positions
     if (best.sscore < 2 && doughScore(best.mixHBF) < 2) {
       _driftNote = isFr
@@ -2313,11 +2299,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       _driftNote = null;
     }
 
-    const activeFeed = best.usingPeak2 && best.feed2Ms
+    const activeFeed = (best.isFutureFeedPath || best.usingPeak2) && best.feed2Ms
       ? new Date(best.feed2Ms)
       : lastFedTime ?? new Date(best.feedMs);
     onFeedTimeChange?.(activeFeed);
-    if (best.usingPeak2 && best.feed2Ms) {
+    if ((best.isFutureFeedPath || best.usingPeak2) && best.feed2Ms) {
       onFeed2TimeChange?.(new Date(best.feed2Ms));
     }
 
