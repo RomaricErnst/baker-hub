@@ -2506,6 +2506,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   key={loc}
                   onClick={() => {
                     setSolverResult(null);
+                    setHasDragged(false);
                     setStarterLocation(loc);
                     onStarterLocationChange?.(loc);
                     setFridgeOutTime(null);
@@ -2540,6 +2541,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     key={chip.id}
                     onClick={() => {
                       setSolverResult(null);
+                      setHasDragged(false);
                       const now = new Date();
                       let prefill: Date;
                       if (chip.id === 'today') {
@@ -2559,6 +2561,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         prefill = new Date(now.getTime() - 196 * 3600000);
                       }
                       setSolverResult(null);
+                      setHasDragged(false);
                       setLastFedAge(chip.id);
                       onLastFedAgeChange?.(chip.id);
                       setLastFedTime(prefill);
@@ -2594,6 +2597,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       : ''}
                     onChange={e => {
                       setSolverResult(null);
+                      setHasDragged(false);
                       const [h, m] = e.target.value.split(':').map(Number);
                       const base = lastFedAge === 'today'
                         ? new Date()
@@ -2658,14 +2662,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ] as { value: boolean; label: string }[]).map(opt => (
                 <button
                   key={String(opt.value)}
-                  onClick={() => { setSolverResult(null); setStarterMature(opt.value); }}
+                  onClick={() => { setSolverResult(null); setHasDragged(false); setStarterMature(opt.value); }}
                   style={starterPillButton(starterMature === opt.value)}
                 >
                   {opt.label}
                 </button>
               ))}
               <button
-                onClick={() => { setSolverResult(null); setStarterHasRye(!starterHasRye); }}
+                onClick={() => { setSolverResult(null); setHasDragged(false); setStarterHasRye(!starterHasRye); }}
                 style={{
                   padding: '.35rem .7rem', borderRadius: '20px',
                   border: `1.5px solid ${starterHasRye ? 'var(--sage)' : 'var(--border)'}`,
@@ -2708,7 +2712,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               {([1, 2, 4, 5, 10] as const).map(r => (
                 <button
                   key={r}
-                  onClick={() => { setSolverResult(null); setFeedRatio(r); onFeedRatioChange?.(r); }}
+                  onClick={() => { setSolverResult(null); setHasDragged(false); setFeedRatio(r); onFeedRatioChange?.(r); }}
                   style={{
                     padding: '.3rem .65rem', borderRadius: '20px',
                     border: `1.5px solid ${feedRatio === r ? 'var(--bread)' : 'var(--border)'}`,
@@ -3934,7 +3938,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       ? (() => {
                           const peakMs = (() => {
                             if (planningMode === 'know_peak' && knownPeakTime) return knownPeakTime.getTime();
-                            const base = _usingPeak2 && _feed2Time ? _feed2Time
+                            const base = (_usingPeak2 || _hasFutureFeedPath) && _feed2Time
+                              ? _feed2Time
                               : lastFedTime ?? _feedTime;
                             return base ? base.getTime() + (_adjPeakHState) * 3600000 : null;
                           })();
@@ -4247,6 +4252,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                           setEatTimeSet(true);
                           onChange(pendingStart, sugBakeTime, blocks);
                           setSolverResult(null);
+                          setHasDragged(false);
                         }}
                         style={{
                           padding: '.2rem .65rem',
