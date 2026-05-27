@@ -1558,7 +1558,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setShowFallbackPopup(false);
     setDismissedConflict(false);
     setGuardNote(null);
-    setSolverResult(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
 
@@ -1890,6 +1889,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Sourdough: joint mix+starter solver (scoring loop) ──────
   function findOptimalPositionSourdough(et: Date) {
+    // Reset drag state — any solver run means inputs changed, drag position is stale.
+    hasManuallyDragged.current = false;
+    setHasDragged(false);
+
     // Local vars for atomic solver output — all written here, committed in one setSolverResult call
     let _usingPeak2 = false;
     let _feed2Time: Date | null = null;
@@ -2487,8 +2490,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 <button
                   key={loc}
                   onClick={() => {
-                    setSolverResult(null);
-                    setHasDragged(false);
                     setStarterLocation(loc);
                     onStarterLocationChange?.(loc);
                     setFridgeOutTime(null);
@@ -2522,8 +2523,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   <button
                     key={chip.id}
                     onClick={() => {
-                      setSolverResult(null);
-                      setHasDragged(false);
                       const now = new Date();
                       let prefill: Date;
                       if (chip.id === 'today') {
@@ -2542,8 +2541,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       } else {
                         prefill = new Date(now.getTime() - 196 * 3600000);
                       }
-                      setSolverResult(null);
-                      setHasDragged(false);
                       setLastFedAge(chip.id);
                       onLastFedAgeChange?.(chip.id);
                       setLastFedTime(prefill);
@@ -2578,8 +2575,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       ? `${lastFedTime.getHours()}:${String(lastFedTime.getMinutes()).padStart(2,'0')}`
                       : ''}
                     onChange={e => {
-                      setSolverResult(null);
-                      setHasDragged(false);
                       const [h, m] = e.target.value.split(':').map(Number);
                       const base = lastFedAge === 'today'
                         ? new Date()
@@ -2644,14 +2639,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ] as { value: boolean; label: string }[]).map(opt => (
                 <button
                   key={String(opt.value)}
-                  onClick={() => { setSolverResult(null); setHasDragged(false); setStarterMature(opt.value); }}
+                  onClick={() => { setStarterMature(opt.value); }}
                   style={starterPillButton(starterMature === opt.value)}
                 >
                   {opt.label}
                 </button>
               ))}
               <button
-                onClick={() => { setSolverResult(null); setHasDragged(false); setStarterHasRye(!starterHasRye); }}
+                onClick={() => { setStarterHasRye(!starterHasRye); }}
                 style={{
                   padding: '.35rem .7rem', borderRadius: '20px',
                   border: `1.5px solid ${starterHasRye ? 'var(--sage)' : 'var(--border)'}`,
@@ -2694,7 +2689,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               {([1, 2, 4, 5, 10] as const).map(r => (
                 <button
                   key={r}
-                  onClick={() => { setSolverResult(null); setHasDragged(false); setFeedRatio(r); onFeedRatioChange?.(r); }}
+                  onClick={() => { setFeedRatio(r); onFeedRatioChange?.(r); }}
                   style={{
                     padding: '.3rem .65rem', borderRadius: '20px',
                     border: `1.5px solid ${feedRatio === r ? 'var(--bread)' : 'var(--border)'}`,
