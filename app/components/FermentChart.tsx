@@ -915,17 +915,16 @@ export default function FermentChart({
                           const fridgeAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - fridgePeakH) / fridgeSigma) ** 2);
                           normH = fridgeAtRemoval > 0 ? rawFridgeH / fridgeAtRemoval * fridgeHeightAtRemoval : rawFridgeH;
                         } else {
-                          const rtH = Math.exp(-0.5 * ((hbf - peakHBF) / warmupSigma) ** 2);
-                          if (fridgeHeightAtRemoval > 0.9) {
-                            // Starter removed near fridge peak — draw RT bell directly
-                            normH = rtH;
-                          } else {
-                            const rtAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - peakHBF) / warmupSigma) ** 2);
-                            const scale = rtAtRemoval < 1
-                              ? (1 - fridgeHeightAtRemoval) / (1 - rtAtRemoval)
-                              : 1;
-                            normH = fridgeHeightAtRemoval + (rtH - rtAtRemoval) * scale;
-                          }
+                          // Correct model: one continuous fermentation cycle.
+                          // In fridge: progresses at 1/coldFactor speed.
+                          // After removal: progresses at full RT speed.
+                          // Accumulated fridge time at removal = feedToFridgeOutH.
+                          // After removal, each real hour = 1 RT hour.
+                          // Total equivalent time from feed = fridge hours + RT hours since removal.
+                          const fridgeHoursAccumulated = feedToFridgeOutH ?? 0;
+                          const rtHoursAfterRemoval = fridgeOutHBF - hbf;
+                          const totalEquivH = fridgeHoursAccumulated + rtHoursAfterRemoval;
+                          normH = Math.exp(-0.5 * ((totalEquivH - fridgePeakH) / fridgeSigma) ** 2);
                         }
                         normH = Math.max(0, Math.min(1, normH));
                         const x = hToX(hbf, W, WH);
