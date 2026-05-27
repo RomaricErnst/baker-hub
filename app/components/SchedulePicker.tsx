@@ -3203,7 +3203,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 );
                 onChange(newStart, pendingEatTime, blocks);
                 if (isSourdough) {
-                  setTimeout(() => findOptimalPositionSourdough(pendingEatTime, newStart), 0);
+                  findOptimalPositionSourdough(pendingEatTime, newStart);
                 }
               }}
             />
