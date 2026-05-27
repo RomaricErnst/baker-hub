@@ -1798,8 +1798,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const warmupH2 = getStarterFridgeWarmupH(kitchenTemp);
           const coldFactor = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
           const fridgePeakH = adjPeakH * coldFactor;
-          const maxFridgeGapH = fridgePeakH * 0.7;
-          if (hoursAfterPeak <= maxFridgeGapH) {
+          // Forward-looking check: if we feed NOW, will it peak near mix time via fridge?
+          // fridgeOut = mix - warmupH, timeInFridge = fridgeOut - now
+          // Valid if 0 < timeInFridge < fridgePeakH (still rising at removal)
+          const nowMs2 = Date.now();
+          const fridgeOutTime2 = new Date(pendingStart.getTime() - warmupH2 * 3600000);
+          const timeInFridgeH = (fridgeOutTime2.getTime() - nowMs2) / 3600000;
+          const fridgeViable = timeInFridgeH > 0 && timeInFridgeH < fridgePeakH * 0.95;
+          if (fridgeViable) {
             const computedFridgeOut = new Date(
               pendingStart.getTime() - warmupH2 * 3600000
             );
