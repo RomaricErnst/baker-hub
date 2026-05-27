@@ -841,17 +841,6 @@ export default function FermentChart({
                   strokeDasharray="3 3"
                   clipPath="url(#chart-area-clip)"
                 />
-                {activeFeedHBF !== null && histPeakHBF > activeFeedHBF && (
-                  <line
-                    x1={hToX(histPeakHBF, W, WH)}
-                    y1={BL - MAXH * 0.12}
-                    x2={hToX(activeFeedHBF, W, WH)}
-                    y2={BL}
-                    stroke="rgba(74,127,165,0.35)"
-                    strokeWidth={1.5}
-                    strokeDasharray="4 3"
-                  />
-                )}
               </>
             )}
 

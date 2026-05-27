@@ -2219,8 +2219,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const idealMixTime2 = targetMixTime ?? new Date(bakeMs - ((sweetFromHBF + sweetToHBF) / 2) * 3600000);
       const idealMixHBF2  = (bakeMs - idealMixTime2.getTime()) / 3600000;
       const baseFeed2    = new Date(idealMixTime2.getTime() - adjPeakH * 3600000);
-      const searchStart2 = new Date(baseFeed2.getTime() - 36 * 3600000);
-      const searchEnd2   = new Date(baseFeed2.getTime() + 2 * 3600000);
+      const searchStart2 = targetMixTime
+        ? new Date(baseFeed2.getTime() - 15 * 60000)
+        : new Date(baseFeed2.getTime() - 36 * 3600000);
+      const searchEnd2 = targetMixTime
+        ? new Date(baseFeed2.getTime() + 15 * 60000)
+        : new Date(baseFeed2.getTime() + 2 * 3600000);
 
       for (let t2 = searchStart2.getTime(); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
         if (t2 <= nowMs2) continue;
@@ -2350,7 +2354,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
     setBlockerNote(null);
     onChange(resolvedStart, pendingEatTime, newBlocks);
-    if (!hasManuallyDragged.current && phase === 'start_confirm') {
+    if (isSourdough && eatTimeSet) {
+      findOptimalPositionSourdough(pendingEatTime,
+        hasManuallyDragged.current ? resolvedStart : undefined);
+    } else if (!hasManuallyDragged.current && phase === 'start_confirm') {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
   }
