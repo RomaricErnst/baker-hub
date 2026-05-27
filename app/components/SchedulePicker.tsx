@@ -3805,7 +3805,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       });
                       numExtra = 0;
                     } else {
-                      numExtra = Math.floor(gapH / troughH);
+                      // Optimal fridge feed time passed. Check if feeding now + RT peaks near mix.
+                      const rtPeakIfFeedNow = new Date(Date.now() + adjPeakH * 3600000);
+                      const rtGapH = (mixTime.getTime() - rtPeakIfFeedNow.getTime()) / 3600000;
+                      if (Math.abs(rtGapH) <= adjPeakH * 0.15 + 0.5) {
+                        feedPlan.length = 0;
+                        feedPlan.push({
+                          ft: new Date(),
+                          label: isFr ? 'Nourrir maintenant' : 'Feed now',
+                          note: isFr
+                            ? 'Votre levain atteindra son pic au moment du mélange'
+                            : 'Your starter will peak around mix time',
+                        });
+                        numExtra = 0;
+                      } else {
+                        numExtra = Math.floor(gapH / troughH);
+                      }
                     }
                   } else {
                     numExtra = Math.floor(gapH / troughH);

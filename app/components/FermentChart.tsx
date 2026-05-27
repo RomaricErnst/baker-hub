@@ -916,11 +916,16 @@ export default function FermentChart({
                           normH = fridgeAtRemoval > 0 ? rawFridgeH / fridgeAtRemoval * fridgeHeightAtRemoval : rawFridgeH;
                         } else {
                           const rtH = Math.exp(-0.5 * ((hbf - peakHBF) / warmupSigma) ** 2);
-                          const rtAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - peakHBF) / warmupSigma) ** 2);
-                          const scale = rtAtRemoval < 1
-                            ? (1 - fridgeHeightAtRemoval) / (1 - rtAtRemoval)
-                            : 1;
-                          normH = fridgeHeightAtRemoval + (rtH - rtAtRemoval) * scale;
+                          if (fridgeHeightAtRemoval > 0.9) {
+                            // Starter removed near fridge peak — draw RT bell directly
+                            normH = rtH;
+                          } else {
+                            const rtAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - peakHBF) / warmupSigma) ** 2);
+                            const scale = rtAtRemoval < 1
+                              ? (1 - fridgeHeightAtRemoval) / (1 - rtAtRemoval)
+                              : 1;
+                            normH = fridgeHeightAtRemoval + (rtH - rtAtRemoval) * scale;
+                          }
                         }
                         normH = Math.max(0, Math.min(1, normH));
                         const x = hToX(hbf, W, WH);
