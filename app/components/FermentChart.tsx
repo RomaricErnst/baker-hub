@@ -1199,7 +1199,7 @@ export default function FermentChart({
           <>
             <text
               x={activePrefX}
-              y={labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
+              y={allClose ? AXIS_Y + 20 : labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
               fontSize={12}
               fill={prefColor}
               fontFamily="DM Mono, monospace"
@@ -1217,7 +1217,7 @@ export default function FermentChart({
             {/* Protocol indicator — ❄ Fridge or 🌡 RT */}
             <text
               x={activePrefX}
-              y={labelsClose ? AXIS_Y + 64 : AXIS_Y + 50}
+              y={allClose ? AXIS_Y + 34 : labelsClose ? AXIS_Y + 64 : AXIS_Y + 50}
               fontSize={10}
               fill={prefNeedsFridge ? '#6A8FAF' : '#C4A030'}
               fontFamily="DM Mono, monospace"

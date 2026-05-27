@@ -3313,6 +3313,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   : null
                 );
                 onChange(newStart, pendingEatTime, blocks);
+                if (isSourdough) {
+                  findOptimalPositionSourdough(pendingEatTime, newStart);
+                }
               }}
               onPrefChange={(offsetH) => {
                 hasManuallyDragged.current = true;
