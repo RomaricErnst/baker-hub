@@ -2303,6 +2303,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       _driftNote = null;
     }
 
+    // If baker manually dragged, compute advisory next-feed time so starter
+    // peaks at their chosen mix time. This updates the feed diamond
+    // independently of which candidate won the scoring.
+    if (targetMixTime && !best.isFutureFeedPath && !best.usingPeak2) {
+      const advisoryFeed = new Date(targetMixTime.getTime() - adjPeakH * 3600000);
+      if (advisoryFeed.getTime() > Date.now()) {
+        // Feed is in the future — show it as the recommended next feed
+        _hasFutureFeedPath = true;
+        _feed2Time = advisoryFeed;
+      }
+      // If feed is in the past, starter already peaked — keep current state,
+      // pill correctly shows "Just past peak" or "Still rising"
+    }
+
     const activeFeed = (best.isFutureFeedPath || best.usingPeak2) && best.feed2Ms
       ? new Date(best.feed2Ms)
       : lastFedTime ?? new Date(best.feedMs);
