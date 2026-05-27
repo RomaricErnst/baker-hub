@@ -878,9 +878,9 @@ export default function FermentChart({
                     hToX(depletedAtHBF, W, WH)
                   )}
                   y2={BL}
-                  stroke="rgba(74,127,165,0.3)"
-                  strokeWidth={1.5}
-                  strokeDasharray="3 3"
+                  stroke="rgba(74,127,165,0.12)"
+                  strokeWidth={1}
+                  strokeDasharray="2 5"
                 />
                 {/* Fresh bell starting at refeed time */}
                 {refeedHBF !== null && (

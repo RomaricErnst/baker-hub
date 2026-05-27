@@ -1890,8 +1890,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // ── Sourdough: joint mix+starter solver (scoring loop) ──────
   function findOptimalPositionSourdough(et: Date, manualMixOverride?: Date) {
     // Reset drag state — any solver run means inputs changed, drag position is stale.
+    // When triggered by a drag, preserve hasDragged so the label stays "Your plan".
     hasManuallyDragged.current = false;
-    setHasDragged(false);
+    if (!manualMixOverride) {
+      setHasDragged(false);
+    }
 
     // If baker manually dragged, use their chosen mix time for feed timing
     const targetMixTime: Date | null = manualMixOverride ?? null;
@@ -2260,7 +2263,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     candidates.sort((a, b) => b.score - a.score);
     const best = candidates[0];
 
-    const newMix = new Date(bakeMs - best.mixHBF * 3600000);
+    // If baker manually dragged, always use their chosen mix time.
+    // Never snap back — it is the baker's decision.
+    // Solver still found best starter protocol for this position.
+    const newMix = manualMixOverride ?? new Date(bakeMs - best.mixHBF * 3600000);
     _newPendingStart = newMix;
     onChange(newMix, et, blocks);
 
@@ -2309,12 +2315,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (targetMixTime && !best.isFutureFeedPath && !best.usingPeak2) {
       const advisoryFeed = new Date(targetMixTime.getTime() - adjPeakH * 3600000);
       if (advisoryFeed.getTime() > Date.now()) {
-        // Feed is in the future — show it as the recommended next feed
+        // Feed is in the future — show as recommended next feed
         _hasFutureFeedPath = true;
         _feed2Time = advisoryFeed;
+      } else {
+        // Feed is in the past — starter already peaked or declining at mix time.
+        // Show feed1 as the relevant feed, pill reflects honest state.
+        // _feed2Time stays null, _starterFeedTime will use lastFedTime.
+        // _starterPillState already set by scoring — may be yellow/green.
       }
-      // If feed is in the past, starter already peaked — keep current state,
-      // pill correctly shows "Just past peak" or "Still rising"
     }
 
     const activeFeed = (best.isFutureFeedPath || best.usingPeak2) && best.feed2Ms
