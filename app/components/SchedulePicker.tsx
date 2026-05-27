@@ -1888,10 +1888,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   // ── Sourdough: joint mix+starter solver (scoring loop) ──────
-  function findOptimalPositionSourdough(et: Date) {
+  function findOptimalPositionSourdough(et: Date, manualMixOverride?: Date) {
     // Reset drag state — any solver run means inputs changed, drag position is stale.
     hasManuallyDragged.current = false;
     setHasDragged(false);
+
+    // If baker manually dragged, use their chosen mix time for feed timing
+    const targetMixTime: Date | null = manualMixOverride ?? null;
 
     // Local vars for atomic solver output — all written here, committed in one setSolverResult call
     let _usingPeak2 = false;
@@ -2209,8 +2212,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // A future feed with ss=2,ds=2 (score≈400) beats Peak1 with ss=2,ds=0 (score≈200).
     {
       const nowMs2       = Date.now();
-      const idealMixHBF2 = (sweetFromHBF + sweetToHBF) / 2;
-      const baseFeed2    = new Date(bakeMs - (idealMixHBF2 + adjPeakH) * 3600000);
+      // Use baker's dragged mix time if available, otherwise use sweet center
+      const idealMixTime2 = targetMixTime ?? new Date(bakeMs - ((sweetFromHBF + sweetToHBF) / 2) * 3600000);
+      const idealMixHBF2  = (bakeMs - idealMixTime2.getTime()) / 3600000;
+      const baseFeed2    = new Date(idealMixTime2.getTime() - adjPeakH * 3600000);
       const searchStart2 = new Date(baseFeed2.getTime() - 36 * 3600000);
       const searchEnd2   = new Date(baseFeed2.getTime() + 2 * 3600000);
 
@@ -3198,7 +3203,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 );
                 onChange(newStart, pendingEatTime, blocks);
                 if (isSourdough) {
-                  setTimeout(() => findOptimalPositionSourdough(pendingEatTime), 0);
+                  setTimeout(() => findOptimalPositionSourdough(pendingEatTime, newStart), 0);
                 }
               }}
             />
