@@ -4228,7 +4228,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                           setPendingEatTime(sugBakeTime);
                           setEatTimeSet(true);
                           onChange(pendingStart, sugBakeTime, blocks);
-                          setSolverResult(null);
                           setHasDragged(false);
                         }}
                         style={{
