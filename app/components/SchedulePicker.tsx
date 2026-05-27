@@ -1596,12 +1596,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       starterMature, starterHasRye, feedRatio, eatTimeSet, pendingEatTime,
       styleKey, kitchenTemp]);
 
-  // Clear solver result when key inputs change (will be recomputed by above effect)
-  useEffect(() => {
-    setSolverResult(null);
-  }, [starterLocation, lastFedTime, lastFedAge, planningMode,
-      pendingEatTime, feedRatio, starterMature,
-      starterHasRye, kitchenTemp]);
 
   const suggestion = useMemo(
     () => computeSuggestion(pendingEatTime, preheatMin, styleKey, kitchenTemp),
@@ -1908,6 +1902,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _suggestedBakeTime: Date | null = null;
     let _newPendingStart: Date = pendingStart;
     let _newFridgeOut: Date | null = fridgeOutTime;
+    let _adjPeakH: number | null = null;
 
     // Get derived starter state (no setState calls inside)
     const derived = deriveStarterPeakTime();
@@ -1948,7 +1943,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         suggestedFridgeOutTime: _suggestedFridgeOut,
         suggestedFridgePeakTime: _suggestedFridgePeak,
         showFridgeComparison:   _showFridgeComparison,
-        adjPeakHValue:          adjPeakH_derived,
+        adjPeakHValue:          _adjPeakH ?? (adjPeakH_derived || null),
         sourdoughSweetFrom:     _sourdoughSweetFrom,
         sourdoughSweetTo:       _sourdoughSweetTo,
         starterIsDepletedAt:    _starterIsDepletedAt,
@@ -2001,6 +1996,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const matF    = starterMature ? 1.0 : 1.2;
     const ratioMultiplier = 1 + 0.35 * Math.log(feedRatio);
     const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
+    _adjPeakH = adjPeakH;
 
     if (windowHBF < minFermH) {
       _windowTooShort = true;
