@@ -890,37 +890,7 @@ export default function FermentChart({
             {/* ── Normal active bell (RT, fridge retard, or Mode B) ── */}
             {(!isLevain || depletedAtHBF === null) && (
               <>
-                {/* Fridge portion: slow rise while in cold storage */}
-                {isLevain && fridgeOutHBF !== null && activeFeedHBF !== null && (
-                  <path
-                    d={(() => {
-                      const N = 200;
-                      const pts: string[] = [];
-                      for (let i = 0; i <= N; i++) {
-                        const hbf = fridgeOutHBF + (i / N) * (activeFeedHBF - fridgeOutHBF);
-                        const rawH = Math.exp(
-                          -0.5 * ((hbf - (activeFeedHBF - fridgePeakH)) / fridgeSigma) ** 2
-                        );
-                        const normalised = rawH / Math.max(0.01, fridgeHeightAtRemoval);
-                        const y = BL - Math.min(1, normalised) * MAXH * 0.35;
-                        const x = hToX(hbf, W, WH);
-                        pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}`
-                                         : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
-                      }
-                      pts.push(`L ${hToX(activeFeedHBF, W, WH).toFixed(1)} ${BL}`);
-                      pts.push(`L ${hToX(fridgeOutHBF, W, WH).toFixed(1)} ${BL}`);
-                      pts.push('Z');
-                      return pts.join(' ');
-                    })()}
-                    fill="rgba(74,127,165,0.10)"
-                    stroke="rgba(74,127,165,0.30)"
-                    strokeWidth={1}
-                    strokeDasharray="3 2"
-                    clipPath="url(#chart-area-clip)"
-                  />
-                )}
-
-                {/* Warmup + active bell (RT or after fridge removal) */}
+                {/* Warmup + active bell (RT or after fridge removal, including fridge portion) */}
                 <path
                   d={(() => {
                     if (isLevain && knownPeakHBF !== null) {
@@ -939,7 +909,11 @@ export default function FermentChart({
                         const hbf = (i / N) * feedHBF2;
                         let normH: number;
                         if (hbf >= fridgeOutHBF) {
-                          normH = Math.exp(-0.5 * ((hbf - fridgePeakH) / fridgeSigma) ** 2);
+                          // Fridge gaussian normalised so height at fridgeOutHBF = fridgeHeightAtRemoval,
+                          // ensuring continuity with the RT warmup segment.
+                          const rawFridgeH = Math.exp(-0.5 * ((hbf - fridgePeakH) / fridgeSigma) ** 2);
+                          const fridgeAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - fridgePeakH) / fridgeSigma) ** 2);
+                          normH = fridgeAtRemoval > 0 ? rawFridgeH / fridgeAtRemoval * fridgeHeightAtRemoval : rawFridgeH;
                         } else {
                           const rtH = Math.exp(-0.5 * ((hbf - peakHBF) / warmupSigma) ** 2);
                           const rtAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - peakHBF) / warmupSigma) ** 2);

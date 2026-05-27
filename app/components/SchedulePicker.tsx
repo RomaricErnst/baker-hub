@@ -3784,7 +3784,32 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   }
                   const lastFeedNeeded = new Date(mixTime.getTime() - adjPeakH * 3600000);
                   const gapH = (lastFeedNeeded.getTime() - now.getTime()) / 3600000;
-                  const numExtra = Math.floor(gapH / troughH);
+                  let numExtra: number;
+                  if (starterLocation === 'fridge') {
+                    // Optimal single feed: latest time to feed so starter peaks at mix via fridge
+                    const warmupH2 = 1.5;
+                    const fridgePeakH2 = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10) * adjPeakH;
+                    const optimalFeedTime = new Date(mixTime.getTime() - (warmupH2 + fridgePeakH2) * 3600000);
+                    if (optimalFeedTime.getTime() > now.getTime()) {
+                      feedPlan.length = 0;
+                      const hf = optimalFeedTime.getHours();
+                      const adjustedFeed = new Date(optimalFeedTime);
+                      if (hf < 7) { adjustedFeed.setHours(7, 0, 0, 0); }
+                      else if (hf > 22) { adjustedFeed.setHours(7, 0, 0, 0); adjustedFeed.setDate(adjustedFeed.getDate() + 1); }
+                      feedPlan.push({
+                        ft: adjustedFeed,
+                        label: isFr ? 'Nourrir' : 'Feed',
+                        note: isFr
+                          ? 'Nourrir puis mettre au frigo — pic au moment du mélange'
+                          : 'Feed then refrigerate — timed to peak at mix',
+                      });
+                      numExtra = 0;
+                    } else {
+                      numExtra = Math.floor(gapH / troughH);
+                    }
+                  } else {
+                    numExtra = Math.floor(gapH / troughH);
+                  }
                   if (numExtra > 0) {
                     feedPlan.length = 0;
                     for (let i = 0; i <= numExtra; i++) {
