@@ -3714,15 +3714,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               const activePeakTime: Date | null =
                 planningMode === 'know_peak' && knownPeakTime
                   ? knownPeakTime
-                  // Future feed path: use feed2Time (planned future feed) for correct peak
+                  // Future feed path: peak = feed2Time + adjPeakH
                   : _hasFutureFeedPath && _feed2Time
                     ? new Date(_feed2Time.getTime() + adjPeakH * 3600000)
-                  // Normal: derive from feedTime
+                  // Peak2 (usingPeak2): peak = feed2Time + adjPeakH (trough feed peak)
+                  : _usingPeak2 && _feed2Time
+                    ? new Date(_feed2Time.getTime() + adjPeakH * 3600000)
+                  // Refeed now (declining/depleted): peak = starterRefeedTime + adjPeakH
+                  : _starterRefeedTime && !_usingPeak2 && !_hasFutureFeedPath
+                    ? new Date(_starterRefeedTime.getTime() + adjPeakH * 3600000)
+                  // Fridge path
+                  : _feedTime && starterLocation === 'fridge' && _activeFridgeOutTime
+                    ? new Date(_activeFridgeOutTime.getTime() + warmupH * 3600000)
+                  // Normal: peak1 = feedTime + adjPeakH
                   : _feedTime
-                    ? (starterLocation === 'fridge' && _activeFridgeOutTime
-                        ? new Date(_activeFridgeOutTime.getTime() + warmupH * 3600000)
-                        : new Date(_feedTime.getTime() + adjPeakH * 3600000))
-                    : null;
+                    ? new Date(_feedTime.getTime() + adjPeakH * 3600000)
+                  : null;
 
               const feedPlan: { ft: Date; label: string; note?: string }[] = [];
 
