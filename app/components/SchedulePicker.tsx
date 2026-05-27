@@ -3825,7 +3825,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   } else {
                     numExtra = Math.floor(gapH / troughH);
                   }
-                  if (numExtra > 0) {
+                  if (numExtra > 0 && !_hasFutureFeedPath) {
                     feedPlan.length = 0;
                     for (let i = 0; i <= numExtra; i++) {
                       const ft = new Date(now.getTime() + i * troughH * 3600000);
@@ -3846,6 +3846,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                           : undefined,
                       });
                     }
+                  }
+                  // When solver computed exact feed2Time via future-feed path,
+                  // use it as the pre-mix feed — more accurate than RT numExtra calculation.
+                  if (_hasFutureFeedPath && _feed2Time && feedPlan.length === 0) {
+                    feedPlan.push({
+                      ft: _feed2Time,
+                      label: isFr ? 'Repas avant mélange' : 'Pre-mix feed',
+                      note: isFr
+                        ? `Pic vers ${fmtCardHM(new Date(_feed2Time.getTime() + adjPeakH * 3600000), isFr)}`
+                        : `Peak around ${fmtCardHM(new Date(_feed2Time.getTime() + adjPeakH * 3600000), isFr)}`,
+                    });
                   }
                 } else if (_usingPeak2 && _feed2Time) {
                   feedPlan.push({
@@ -3881,7 +3892,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   </div>
 
                   {/* Future feed path: planned Next Feed */}
-                  {isSourdough && _hasFutureFeedPath && _feed2Time && (
+                  {isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'PROCHAIN REPAS' : 'NEXT FEED'}
@@ -4070,7 +4081,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   })()}
 
                   {_starterStateNote
-                    && !(_hasFutureFeedPath && _feed2Time && _feed2Time.getTime() - Date.now() > 30 * 60 * 1000)
+                    && !(_hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && _feed2Time.getTime() - Date.now() > 30 * 60 * 1000)
                     && (
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginTop: '.5rem' }}>
                       {_starterStateNote}
@@ -4082,7 +4093,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
-                  {isSourdough && (_starterRefeedTime && !_hasFutureFeedPath || _usingPeak2 && _feed2Time || _hasFutureFeedPath && _feed2Time) && (
+                  {isSourdough && feedPlan.length === 0 && (_starterRefeedTime && !_hasFutureFeedPath || _usingPeak2 && _feed2Time || _hasFutureFeedPath && _feed2Time) && (
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)',
                       lineHeight: 1.5, marginTop: '6px' }}>
                       {_starterRefeedTime && !_hasFutureFeedPath

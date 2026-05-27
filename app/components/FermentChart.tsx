@@ -1108,15 +1108,13 @@ export default function FermentChart({
           <g>
             <polygon
               points={`${hToX(refeedHBF, W, WH)},${AXIS_Y - S} ${hToX(refeedHBF, W, WH) + S},${AXIS_Y} ${hToX(refeedHBF, W, WH)},${AXIS_Y + S} ${hToX(refeedHBF, W, WH) - S},${AXIS_Y}`}
-              fill={prefColor}
-              stroke="white"
-              strokeWidth={1.5}
+              fill="rgba(74,127,165,0.20)" stroke="rgba(74,127,165,0.45)" strokeWidth={1.5}
             />
             <text
               x={hToX(refeedHBF, W, WH)}
               y={AXIS_Y + 36}
               fontSize={11}
-              fill={prefColor}
+              fill="var(--smoke)"
               fontFamily="DM Mono, monospace"
               textAnchor="middle"
               fontWeight="600"
@@ -1154,7 +1152,7 @@ export default function FermentChart({
         {/* Feed 1 circle removed — hist diamond handles this marker */}
 
         {/* ── Pref diamond (hidden in Mode B — no concrete feed time) ── */}
-        {hasPref && !knownPeakHBF && renderDiamond(
+        {hasPref && !knownPeakHBF && !isLevain && renderDiamond(
           activePrefX,
           (prefStartAbsHBF > nowHBF || inBlocker(prefStartAbsHBF)) ? '#BBBBBB' : prefColor,
           (prefStartAbsHBF > nowHBF || inBlocker(prefStartAbsHBF)) ? '#999999' : prefStroke,
@@ -1162,7 +1160,7 @@ export default function FermentChart({
           'pref',
           prefStartAbsHBF > nowHBF,
         )}
-        {hasPref && !knownPeakHBF && (
+        {hasPref && !knownPeakHBF && !isLevain && (
           <>
             <text
               x={activePrefX}
