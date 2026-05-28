@@ -985,30 +985,30 @@ export default function FermentChart({
                     activeFeedHBF ?? compFridgePeakHBF + effectivePeakH
                   );
                 }
-                const peakHBF3 = activePeakHBF ?? compFridgePeakHBF;
-                const N = 300;
-                const pts: string[] = [];
                 const _coldFactor = starterColdFactor > 0 ? starterColdFactor : 3;
                 const _sigma = starterSigmaH;
-                const rtAtFridgeIn = activeFeedHBF - fridgeInHBF;
+                // RT hours accumulated at fridgeIn (phase 1 duration)
+                const rtBeforeFridge = activeFeedHBF - fridgeInHBF;
+                // RT hours accumulated at fridgeOut (phase 1 + phase 2 in RT-equiv)
+                const rtAtFridgeOut = rtBeforeFridge + (fridgeInHBF - compFridgeOutHBF) / _coldFactor;
+                const N = 300;
+                const pts: string[] = [];
                 for (let i = 0; i <= N; i++) {
                   const hbf = (i / N) * activeFeedHBF;
-                  let normH: number;
+                  let equivRT: number;
                   if (hbf >= fridgeInHBF) {
-                    // Phase 1: RT segment (feed → fridgeIn)
-                    const rtElapsed = activeFeedHBF - hbf;
-                    normH = Math.exp(-0.5 * ((rtElapsed - effectivePeakH) / _sigma) ** 2);
+                    // Phase 1: RT before fridge
+                    equivRT = activeFeedHBF - hbf;
                   } else if (hbf >= compFridgeOutHBF) {
-                    // Phase 2: fridge segment (fridgeIn → fridgeOut)
-                    const fridgeRealH = fridgeInHBF - hbf;
-                    const equivRT = rtAtFridgeIn + fridgeRealH / _coldFactor;
-                    normH = Math.exp(-0.5 * ((equivRT - effectivePeakH) / _sigma) ** 2);
+                    // Phase 2: in fridge, time passes coldFactor slower
+                    equivRT = rtBeforeFridge + (fridgeInHBF - hbf) / _coldFactor;
                   } else {
-                    // Phase 3: warmup (fridgeOut → peak)
-                    const warmupSigma3 = Math.max(0.5, (starterWarmupH ?? 1.5) * 0.4);
-                    normH = Math.exp(-0.5 * ((hbf - peakHBF3) / warmupSigma3) ** 2);
+                    // Phase 3: RT after fridge removal
+                    equivRT = rtAtFridgeOut + (compFridgeOutHBF - hbf);
                   }
-                  normH = Math.max(0, Math.min(1, normH));
+                  const normH = Math.max(0, Math.min(1,
+                    Math.exp(-0.5 * ((equivRT - effectivePeakH) / _sigma) ** 2)
+                  ));
                   const x = hToX(hbf, W, WH);
                   const y = BL - normH * MAXH;
                   pts.push(i === 0 ? `M${x},${y}` : `L${x},${y}`);
