@@ -1618,6 +1618,7 @@ export default function Home() {
               onEdit={() => setActiveStep(7)}
             >
               <SchedulePicker
+                key={eatTime ? eatTime.toISOString() : 'no-bake'}
                 mode="simple"
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
                 preheatMin={preheatMin}
@@ -2424,6 +2425,7 @@ export default function Home() {
               onEdit={() => setAdvancedStep(9)}
             >
               <SchedulePicker
+                key={eatTime ? eatTime.toISOString() : 'no-bake'}
                 mode="custom"
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
                 preheatMin={preheatMin}

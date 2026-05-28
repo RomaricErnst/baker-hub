@@ -1558,6 +1558,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setShowFallbackPopup(false);
     setDismissedConflict(false);
     setGuardNote(null);
+    setHasDragged(false);
+    hasManuallyDragged.current = false;
+    if (isSourdough) {
+      const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
+      const sweetCenter = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0)
+        + sfDef.rtH + (sfDef.minTotalFermH ?? 12)) / 2;
+      setPendingStart(new Date(pendingEatTime.getTime() - sweetCenter * 3600000));
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
 
@@ -1904,7 +1912,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   // ── Sourdough: joint mix+starter solver (scoring loop) ──────
-  function findOptimalPositionSourdough(et: Date, manualMixOverride?: Date) {
+  function findOptimalPositionSourdough(et: Date, manualMixOverride?: Date, blocksOverride?: AvailabilityBlock[]) {
     // Reset drag state — any solver run means inputs changed, drag position is stale.
     // When triggered by a drag, preserve hasDragged so the label stays "Your plan".
     hasManuallyDragged.current = false;
@@ -2103,8 +2111,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       return 0;
     }
 
+    const effectiveBlocks = blocksOverride ?? blocks;
     function inBlocker(mixHBF: number): boolean {
-      return blocks.some(b => {
+      return effectiveBlocks.some(b => {
         const s = (bakeMs - b.from.getTime()) / 3600000;
         const e = (bakeMs - b.to.getTime())   / 3600000;
         return mixHBF > Math.min(s, e) && mixHBF < Math.max(s, e);
@@ -2296,7 +2305,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
 
     // If fridge path candidate won, apply the suggested fridge-out time
-    if (best.isFridgePath && _suggestedFridgeOut) {
+    if (best.isFridgePath && _suggestedFridgeOut && starterLocation === 'fridge') {
       _newFridgeOut = _suggestedFridgeOut;
     }
 
@@ -2371,11 +2380,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setBlockerNote(null);
     onChange(resolvedStart, pendingEatTime, newBlocks);
     if (isSourdough && eatTimeSet) {
-      if (!hasManuallyDragged.current) {
-        setHasDragged(false);
-      }
-      // Always pass resolvedStart so solver uses the correct post-blocker position
-      findOptimalPositionSourdough(pendingEatTime, resolvedStart);
+      setHasDragged(false);
+      hasManuallyDragged.current = false;
+      // Pass newBlocks directly — blocks prop hasn't updated yet (parent re-renders async).
+      // No manualMixOverride — let solver freely find best position avoiding blockers.
+      findOptimalPositionSourdough(pendingEatTime, undefined, newBlocks);
     } else if (!hasManuallyDragged.current && phase === 'start_confirm') {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
