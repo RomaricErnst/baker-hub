@@ -49,6 +49,7 @@ export interface FermentChartProps {
   starterAdjPeakH?: number | null;  // ratio+maturity+rye adjusted peak hours
   starterRedPill?: boolean;
   starterFeed2OutOfZone?: boolean;
+  starterFridgeInTime?: Date | null;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -244,6 +245,7 @@ export default function FermentChart({
   starterAdjPeakH = null,
   starterRedPill = false,
   starterFeed2OutOfZone = false,
+  starterFridgeInTime = null,
 }: FermentChartProps) {
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -467,6 +469,10 @@ export default function FermentChart({
     showFridgeComparison && comparisonFridgePeakTime
       ? (bakeMs - comparisonFridgePeakTime.getTime()) / 3600000
       : null;
+
+  const fridgeInHBF: number | null = isLevain && starterFridgeInTime
+    ? (bakeMs - starterFridgeInTime.getTime()) / 3600000
+    : null;
 
   // ── Label collision detection ────────────────────────────
   const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 100;
@@ -923,7 +929,9 @@ export default function FermentChart({
                           // Total equivalent time from feed = fridge hours + RT hours since removal.
                           const fridgeHoursAccumulated = feedToFridgeOutH ?? 0;
                           const rtHoursAfterRemoval = fridgeOutHBF - hbf;
-                          const totalEquivH = fridgeHoursAccumulated + rtHoursAfterRemoval;
+                          // RT is coldFactor faster than fridge — scale to equivalent fridge hours
+                          const fridgeEquivAfterRemoval = rtHoursAfterRemoval * starterColdFactor;
+                          const totalEquivH = fridgeHoursAccumulated + fridgeEquivAfterRemoval;
                           normH = Math.exp(-0.5 * ((totalEquivH - fridgePeakH) / fridgeSigma) ** 2);
                         }
                         normH = Math.max(0, Math.min(1, normH));
@@ -967,17 +975,50 @@ export default function FermentChart({
          && compFridgePeakHBF !== null
          && compFridgeOutHBF !== null && (
           <>
-            {/* Dashed RT bell — what happens without fridge */}
+            {/* 3-phase curve: RT → fridge → warmup (or fallback RT bell) */}
             <path
-              d={makeBellPath(
-                activePeakHBF ?? compFridgePeakHBF + 2,
-                starterSigmaH, W, WH,
-                activeFeedHBF ?? compFridgePeakHBF + effectivePeakH
-              )}
+              d={(() => {
+                if (fridgeInHBF === null || activeFeedHBF === null || compFridgeOutHBF === null) {
+                  return makeBellPath(
+                    activePeakHBF ?? compFridgePeakHBF + 2,
+                    starterSigmaH, W, WH,
+                    activeFeedHBF ?? compFridgePeakHBF + effectivePeakH
+                  );
+                }
+                const peakHBF3 = activePeakHBF ?? compFridgePeakHBF;
+                const N = 300;
+                const pts: string[] = [];
+                const _coldFactor = starterColdFactor > 0 ? starterColdFactor : 3;
+                const _sigma = starterSigmaH;
+                const rtAtFridgeIn = activeFeedHBF - fridgeInHBF;
+                for (let i = 0; i <= N; i++) {
+                  const hbf = (i / N) * activeFeedHBF;
+                  let normH: number;
+                  if (hbf >= fridgeInHBF) {
+                    // Phase 1: RT segment (feed → fridgeIn)
+                    const rtElapsed = activeFeedHBF - hbf;
+                    normH = Math.exp(-0.5 * ((rtElapsed - effectivePeakH) / _sigma) ** 2);
+                  } else if (hbf >= compFridgeOutHBF) {
+                    // Phase 2: fridge segment (fridgeIn → fridgeOut)
+                    const fridgeRealH = fridgeInHBF - hbf;
+                    const equivRT = rtAtFridgeIn + fridgeRealH / _coldFactor;
+                    normH = Math.exp(-0.5 * ((equivRT - effectivePeakH) / _sigma) ** 2);
+                  } else {
+                    // Phase 3: warmup (fridgeOut → peak)
+                    const warmupSigma3 = Math.max(0.5, (starterWarmupH ?? 1.5) * 0.4);
+                    normH = Math.exp(-0.5 * ((hbf - peakHBF3) / warmupSigma3) ** 2);
+                  }
+                  normH = Math.max(0, Math.min(1, normH));
+                  const x = hToX(hbf, W, WH);
+                  const y = BL - normH * MAXH;
+                  pts.push(i === 0 ? `M${x},${y}` : `L${x},${y}`);
+                }
+                return pts.join(' ');
+              })()}
               fill="rgba(74,127,165,0.06)"
               stroke="rgba(74,127,165,0.25)"
               strokeWidth={1}
-              strokeDasharray="4 3"
+              strokeDasharray="3 2"
               clipPath="url(#chart-area-clip)"
             />
             {/* Solid fridge path — what happens if baker refrigerates */}

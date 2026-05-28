@@ -32,6 +32,7 @@ interface SourdoughSolverResult {
   starterFeed2OutOfZone: boolean;
   comparisonFridgeOutTime: Date | null;
   comparisonFridgePeakTime: Date | null;
+  starterFridgeInTime:  Date | null;
 }
 
 interface DerivedStarterState {
@@ -66,6 +67,7 @@ interface SchedulePickerProps {
   onFridgeOutTimeChange?: (t: Date | null) => void;
   onUsingPeak2Change?: (v: boolean) => void;
   onFeed2TimeChange?: (t: Date | null) => void;
+  onStarterFridgeInTimeChange?: (t: Date | null) => void;
   onStarterStateChange?: (s: StarterState) => void;
   starterLocation?: 'rt' | 'fridge';
   planningMode?: 'last_fed' | 'know_peak';
@@ -1105,7 +1107,7 @@ function SimpleColourBar({
 
 // ── Component ─────────────────────────────────
 // v1779291581473456000
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, feedRatio: feedRatioProp, onFeedRatioChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, feedRatio: feedRatioProp, onFeedRatioChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1992,7 +1994,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         starterFeed2OutOfZone:  _usingPeak2 && _hasFutureFeedPath,
         comparisonFridgeOutTime:  _showFridgeComparison ? _suggestedFridgeOut : null,
         comparisonFridgePeakTime: _showFridgeComparison ? _suggestedFridgePeak : null,
+        starterFridgeInTime:      _showFridgeComparison ? new Date() : null,
       });
+      onStarterFridgeInTimeChange?.(_showFridgeComparison ? new Date() : null);
 
       // Also sync pendingStart and fridgeOutTime (individual states) if changed
       if (_newPendingStart.getTime() !== pendingStart.getTime()) {
@@ -2558,6 +2562,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     setFridgeOutTime(null);
                     onFridgeOutTimeChange?.(null);
                     onStarterStateChange?.(loc === 'fridge' ? 'fridge_unfed' : 'rt_fed');
+                    setHasDragged(false);
+                    hasManuallyDragged.current = false;
+                    if (isSourdough) {
+                      const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
+                      const sweetCenter = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0)
+                        + sfDef.rtH + (sfDef.minTotalFermH ?? 12)) / 2;
+                      setPendingStart(new Date(pendingEatTime.getTime() - sweetCenter * 3600000));
+                    }
                   }}
                   style={starterPillButton(starterLocation === loc)}
                 >
@@ -3328,6 +3340,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               comparisonFridgeOutTime={solverResult?.comparisonFridgeOutTime ?? null}
               comparisonFridgePeakTime={solverResult?.comparisonFridgePeakTime ?? null}
               showFridgeComparison={solverResult?.showFridgeComparison ?? false}
+              starterFridgeInTime={isSourdough ? (solverResult?.starterFridgeInTime ?? null) : null}
               startTimeInPast={startTimeInPast}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;

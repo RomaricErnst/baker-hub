@@ -339,6 +339,7 @@ export default function Home() {
   const [feedTime, setFeedTime]             = useState<Date | null>(null);
   const [feed2Time, setFeed2Time]           = useState<Date | null>(null);
   const [fridgeOutTime, setFridgeOutTime]   = useState<Date | null>(null);
+  const [starterFridgeInTime, setStarterFridgeInTime] = useState<Date | null>(null);
   const [starterState, setStarterState]     = useState<'rt_fed' | 'fridge_unfed' | 'fridge_fed'>('rt_fed');
   const [starterLocation, setStarterLocation] = useState<'rt' | 'fridge'>('rt');
   const [planningMode, setPlanningMode]     = useState<'last_fed' | 'know_peak'>('last_fed');
@@ -566,6 +567,7 @@ export default function Home() {
     if (session.fridgeOutTime) setFridgeOutTime(new Date(session.fridgeOutTime));
     if (session.usingPeak2 !== undefined) setUsingPeak2(Boolean(session.usingPeak2));
     if (session.feed2Time) setFeed2Time(new Date(session.feed2Time));
+    if (session.starterFridgeInTime) setStarterFridgeInTime(new Date(session.starterFridgeInTime));
     setProtocolStale(false);
     setSessionRestored(true);
     setReviewMode(true);
@@ -797,6 +799,7 @@ export default function Home() {
       fridgeOutTime: fridgeOutTime?.getTime() ?? null,
       usingPeak2,
       feed2Time: feed2Time?.getTime() ?? null,
+      starterFridgeInTime: starterFridgeInTime?.getTime() ?? null,
     },
     () => {},
   );
@@ -907,6 +910,7 @@ export default function Home() {
     setLastFedAge(null);
     setFeed2Time(null);
     setFridgeOutTime(null);
+    setStarterFridgeInTime(null);
     setUsingPeak2(false);
     setStarterLocation('rt');
     setPlanningMode('last_fed');
@@ -1633,6 +1637,7 @@ export default function Home() {
                 onFeed2TimeChange={setFeed2Time}
                 onFridgeOutTimeChange={setFridgeOutTime}
                 onUsingPeak2Change={setUsingPeak2}
+                onStarterFridgeInTimeChange={setStarterFridgeInTime}
                 onStarterStateChange={setStarterState}
                 starterLocation={starterLocation}
                 planningMode={planningMode}
@@ -2440,6 +2445,7 @@ export default function Home() {
                 onFeed2TimeChange={setFeed2Time}
                 onFridgeOutTimeChange={setFridgeOutTime}
                 onUsingPeak2Change={setUsingPeak2}
+                onStarterFridgeInTimeChange={setStarterFridgeInTime}
                 onStarterStateChange={setStarterState}
                 starterLocation={starterLocation}
                 planningMode={planningMode}

@@ -50,6 +50,7 @@ export interface SessionData {
   fridgeOutTime?: number | null;
   usingPeak2?: boolean;
   feed2Time?: number | null;
+  starterFridgeInTime?: number | null;
   computedRecipe?: {
     flour: number;
     water: number;
