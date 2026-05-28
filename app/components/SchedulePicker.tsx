@@ -1744,7 +1744,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   // ── Sourdough: derive peak time from inputs (returns values, no setState) ──
-  function deriveStarterPeakTime(bakeTime: Date): DerivedStarterState {
+  function deriveStarterPeakTime(bakeTime: Date, targetMixTime?: Date | null): DerivedStarterState {
     const NULL_RESULT: DerivedStarterState = {
       peakTime: null, feedTime: null, fridgeOut: null,
       suggestedFridgeOut: null, suggestedFridgePeak: null,
@@ -1789,15 +1789,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const PEAK_HYSTERESIS = 1.0;
       if (hoursSinceFeed < adjPeakH + PEAK_HYSTERESIS) {
         const rtPeakTime = new Date(lastFedTime.getTime() + adjPeakH * 3600000);
-        // Use ideal mix time (sweet center from bakeTime) unless baker manually dragged
+        // Use targetMixTime if available (passed from solver with post-blocker position),
+        // otherwise fall back to ideal mix from sweet center. Never use raw pendingStart (may be stale).
         const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
         const sweetCenterH = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0) + sfDef.rtH
           + (sfDef.minTotalFermH ?? 12)) / 2;
-        const idealMixMs = bakeTime.getTime() - sweetCenterH * 3600000;
-        const referenceMixMs = hasManuallyDragged.current
-          ? pendingStart.getTime() : idealMixMs;
+        const referenceMixTime = targetMixTime
+          ?? new Date(bakeTime.getTime() - sweetCenterH * 3600000);
         const hoursAfterPeak =
-          (referenceMixMs - rtPeakTime.getTime()) / 3600000;
+          (referenceMixTime.getTime() - rtPeakTime.getTime()) / 3600000;
 
         let _suggestedFridgeOut: Date | null = null;
         let _suggestedFridgePeak: Date | null = null;
@@ -1930,7 +1930,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _adjPeakH: number | null = null;
 
     // Get derived starter state (no setState calls inside)
-    const derived = deriveStarterPeakTime(et);
+    const derived = deriveStarterPeakTime(et, targetMixTime);
     const _feedTime = derived.feedTime;
     const _starterRefeedTime = derived.starterRefeedTime;
     const _starterIsDepletedAt = derived.starterIsDepletedAt;
@@ -2371,8 +2371,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setBlockerNote(null);
     onChange(resolvedStart, pendingEatTime, newBlocks);
     if (isSourdough && eatTimeSet) {
-      findOptimalPositionSourdough(pendingEatTime,
-        hasManuallyDragged.current ? resolvedStart : undefined);
+      if (!hasManuallyDragged.current) {
+        setHasDragged(false);
+      }
+      // Always pass resolvedStart so solver uses the correct post-blocker position
+      findOptimalPositionSourdough(pendingEatTime, resolvedStart);
     } else if (!hasManuallyDragged.current && phase === 'start_confirm') {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
