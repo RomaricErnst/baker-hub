@@ -985,12 +985,14 @@ export default function FermentChart({
                     activeFeedHBF ?? compFridgePeakHBF + effectivePeakH
                   );
                 }
-                const _coldFactor = starterColdFactor > 0 ? starterColdFactor : 3;
+                // Compute coldFactor directly from temps — starterColdFactor is 1
+                // for RT starters since starterFridgeOutTime is null.
+                const _coldFactor = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
                 const _sigma = starterSigmaH;
-                // RT hours accumulated at fridgeIn (phase 1 duration)
                 const rtBeforeFridge = activeFeedHBF - fridgeInHBF;
-                // RT hours accumulated at fridgeOut (phase 1 + phase 2 in RT-equiv)
                 const rtAtFridgeOut = rtBeforeFridge + (fridgeInHBF - compFridgeOutHBF) / _coldFactor;
+                // Peak position: where equivRT = effectivePeakH in phase 3
+                const peakEquivRT = effectivePeakH;
                 const N = 300;
                 const pts: string[] = [];
                 for (let i = 0; i <= N; i++) {
