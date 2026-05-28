@@ -1996,12 +1996,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         comparisonFridgePeakTime: _showFridgeComparison ? _suggestedFridgePeak : null,
         // Capture fridge-in time once — don't overwrite on repeated solver runs
         // to prevent the curve from drifting when baker toggles settings.
+        // fridgeInTime = when starter goes into fridge = the feed time itself
+        // (baker feeds then immediately refrigerates)
+        // When hasFutureFeedPath: use feed2Time (the future recommended feed)
+        // When currently declining: use now (refrigerate immediately)
         starterFridgeInTime: _showFridgeComparison
-          ? (solverResult?.starterFridgeInTime ?? new Date())
+          ? (_hasFutureFeedPath && _feed2Time
+              ? _feed2Time
+              : (solverResult?.starterFridgeInTime ?? new Date()))
           : null,
       });
       onStarterFridgeInTimeChange?.(_showFridgeComparison
-        ? (solverResult?.starterFridgeInTime ?? new Date())
+        ? (_hasFutureFeedPath && _feed2Time
+            ? _feed2Time
+            : (solverResult?.starterFridgeInTime ?? new Date()))
         : null);
 
       // Also sync pendingStart and fridgeOutTime (individual states) if changed

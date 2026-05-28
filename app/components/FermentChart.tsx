@@ -975,41 +975,36 @@ export default function FermentChart({
          && compFridgePeakHBF !== null
          && compFridgeOutHBF !== null && (
           <>
-            {/* 3-phase curve: RT → fridge → warmup (or fallback RT bell) */}
+            {/* Single continuous curve: feed → fridge → RT warmup
+                Uses equiv-RT gaussian: 1 real hour in fridge = 1/coldFactor equiv hours
+                Gives flat slope in fridge, steep slope at RT — one smooth curve */}
             <path
               d={(() => {
-                if (fridgeInHBF === null || activeFeedHBF === null || compFridgeOutHBF === null) {
-                  return makeBellPath(
-                    activePeakHBF ?? compFridgePeakHBF + 2,
-                    starterSigmaH, W, WH,
-                    activeFeedHBF ?? compFridgePeakHBF + effectivePeakH
-                  );
-                }
-                // Compute coldFactor directly from temps — starterColdFactor is 1
-                // for RT starters since starterFridgeOutTime is null.
-                const _coldFactor = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
+                const _cf = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
                 const _sigma = starterSigmaH;
-                const rtBeforeFridge = activeFeedHBF - fridgeInHBF;
-                const rtAtFridgeOut = rtBeforeFridge + (fridgeInHBF - compFridgeOutHBF) / _coldFactor;
-                // Peak position: where equivRT = effectivePeakH in phase 3
-                const peakEquivRT = effectivePeakH;
+                const _peakH = effectivePeakH;
+                const feedH  = activeFeedHBF ?? compFridgeOutHBF + _peakH;
+                // fridgeInHBF: when starter goes INTO fridge (same as feedH when feed→fridge)
+                const inH = (fridgeInHBF !== null && fridgeInHBF <= feedH)
+                  ? fridgeInHBF : feedH;
+                const outH = compFridgeOutHBF;
+                // equiv RT accumulated through each phase:
+                const phase1EquivRT = feedH - inH;           // RT before fridge
+                const phase2EquivRT = (inH - outH) / _cf;   // fridge time scaled down
                 const N = 300;
                 const pts: string[] = [];
                 for (let i = 0; i <= N; i++) {
-                  const hbf = (i / N) * activeFeedHBF;
+                  const hbf = (i / N) * feedH;
                   let equivRT: number;
-                  if (hbf >= fridgeInHBF) {
-                    // Phase 1: RT before fridge
-                    equivRT = activeFeedHBF - hbf;
-                  } else if (hbf >= compFridgeOutHBF) {
-                    // Phase 2: in fridge, time passes coldFactor slower
-                    equivRT = rtBeforeFridge + (fridgeInHBF - hbf) / _coldFactor;
+                  if (hbf >= inH) {
+                    equivRT = feedH - hbf;                          // phase 1: RT
+                  } else if (hbf >= outH) {
+                    equivRT = phase1EquivRT + (inH - hbf) / _cf;   // phase 2: fridge
                   } else {
-                    // Phase 3: RT after fridge removal
-                    equivRT = rtAtFridgeOut + (compFridgeOutHBF - hbf);
+                    equivRT = phase1EquivRT + phase2EquivRT + (outH - hbf); // phase 3: RT
                   }
                   const normH = Math.max(0, Math.min(1,
-                    Math.exp(-0.5 * ((equivRT - effectivePeakH) / _sigma) ** 2)
+                    Math.exp(-0.5 * ((equivRT - _peakH) / _sigma) ** 2)
                   ));
                   const x = hToX(hbf, W, WH);
                   const y = BL - normH * MAXH;
@@ -1017,20 +1012,6 @@ export default function FermentChart({
                 }
                 return pts.join(' ');
               })()}
-              fill="rgba(74,127,165,0.06)"
-              stroke="rgba(74,127,165,0.25)"
-              strokeWidth={1}
-              strokeDasharray="3 2"
-              clipPath="url(#chart-area-clip)"
-            />
-            {/* Solid fridge path — what happens if baker refrigerates */}
-            <path
-              d={makeBellPath(
-                compFridgePeakHBF,
-                Math.max(0.5, starterWarmupH * 0.4),
-                W, WH,
-                compFridgeOutHBF
-              )}
               fill="rgba(74,127,165,0.15)"
               stroke="rgba(74,127,165,0.6)"
               strokeWidth={1.5}
