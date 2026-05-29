@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock } from '../utils';
 
@@ -247,6 +247,7 @@ export default function FermentChart({
   starterFeed2OutOfZone = false,
   starterFridgeInTime = null,
 }: FermentChartProps) {
+  const chartId = useId().replace(/:/g, '');
   const WH = windowH ?? WINDOW_H_DEFAULT;
   const containerRef  = useRef<HTMLDivElement>(null);
   const svgRef        = useRef<SVGSVGElement>(null);
@@ -642,8 +643,8 @@ export default function FermentChart({
           x1={arrowX1} x2={arrowX2}
           y1={labelY + 9} y2={labelY + 9}
           stroke={color} strokeWidth={1.2} strokeOpacity={0.7}
-          markerStart={x1 >= 0 ? `url(#arrow-${markerId}-start)` : undefined}
-          markerEnd={`url(#arrow-${markerId}-end)`}
+          markerStart={x1 >= 0 ? `url(#arrow-${markerId}-start-${chartId})` : undefined}
+          markerEnd={`url(#arrow-${markerId}-end-${chartId})`}
         />}
       </g>
     );
@@ -747,34 +748,34 @@ export default function FermentChart({
             const x1 = hToX(hbfStart, W, WH);
             const x2 = hToX(hbfEnd,   W, WH);
             return (
-              <clipPath key={i} id={`bc-${i}`}>
+              <clipPath key={i} id={`bc-${chartId}-${i}`}>
                 <rect x={x1} y={TOP_PAD} width={Math.max(0, x2 - x1)} height={AXIS_Y - TOP_PAD} />
               </clipPath>
             );
           })}
           {/* Bidirectional arrow markers for zone width indicators */}
-          <marker id="arrow-sage-start" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+          <marker id={`arrow-sage-start-${chartId}`} markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
             <path d="M6,0 L0,3 L6,6" fill="none" stroke="#6B7A5A" strokeWidth="1.2"/>
           </marker>
-          <marker id="arrow-sage-end" markerWidth="6" markerHeight="6" refX="0" refY="3" orient="auto">
+          <marker id={`arrow-sage-end-${chartId}`} markerWidth="6" markerHeight="6" refX="0" refY="3" orient="auto">
             <path d="M0,0 L6,3 L0,6" fill="none" stroke="#6B7A5A" strokeWidth="1.2"/>
           </marker>
-          <marker id="arrow-pref-start" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+          <marker id={`arrow-pref-start-${chartId}`} markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
             <path d="M6,0 L0,3 L6,6" fill="none" stroke={prefColor} strokeWidth="1.2"/>
           </marker>
-          <marker id="arrow-pref-end" markerWidth="6" markerHeight="6" refX="0" refY="3" orient="auto">
+          <marker id={`arrow-pref-end-${chartId}`} markerWidth="6" markerHeight="6" refX="0" refY="3" orient="auto">
             <path d="M0,0 L6,3 L0,6" fill="none" stroke={prefColor} strokeWidth="1.2"/>
           </marker>
           {/* Chart area clip — hide anything below axis */}
-          <clipPath id="chart-area-clip">
+          <clipPath id={`chart-area-clip-${chartId}`}>
             <rect x={0} y={0} width={W} height={AXIS_Y} />
           </clipPath>
           {/* Bell clip paths — hide left tail before each diamond */}
-          <clipPath id="dough-bell-clip">
+          <clipPath id={`dough-bell-clip-${chartId}`}>
             <rect x={hToX(effectiveMixHBF, W, WH)} y={0} width={W} height={CHART_H} />
           </clipPath>
           {hasPref && (
-            <clipPath id="pref-bell-clip">
+            <clipPath id={`pref-bell-clip-${chartId}`}>
               <rect x={hToX(prefStartAbsHBF, W, WH)} y={0} width={W} height={CHART_H} />
             </clipPath>
           )}
@@ -816,7 +817,7 @@ export default function FermentChart({
           return (
             <g key={i}>
               <rect x={x1} y={TOP_PAD} width={x2 - x1} height={AXIS_Y - TOP_PAD} fill="rgba(196,82,42,0.09)" />
-              <g clipPath={`url(#bc-${i})`}>
+              <g clipPath={`url(#bc-${chartId}-${i})`}>
                 {Array.from({ length: n }, (_, j) => {
                   const ox = x1 + j * 7 - AXIS_Y;
                   return (
@@ -845,7 +846,7 @@ export default function FermentChart({
                   stroke="rgba(74,127,165,0.30)"
                   strokeWidth={1}
                   strokeDasharray="3 3"
-                  clipPath="url(#chart-area-clip)"
+                  clipPath={`url(#chart-area-clip-${chartId})`}
                 />
               </>
             )}
@@ -861,7 +862,7 @@ export default function FermentChart({
                     stroke="rgba(74,127,165,0.25)"
                     strokeWidth={1}
                     strokeDasharray="4 3"
-                    clipPath="url(#chart-area-clip)"
+                    clipPath={`url(#chart-area-clip-${chartId})`}
                   />
                 )}
                 {/* Flat baseline from trough onward — starter dormant */}
@@ -887,7 +888,7 @@ export default function FermentChart({
                     fill={`${prefColor}2E`}
                     stroke={`${prefColor}A5`}
                     strokeWidth={1.5}
-                    clipPath="url(#chart-area-clip)"
+                    clipPath={`url(#chart-area-clip-${chartId})`}
                   />
                 )}
               </>
@@ -964,7 +965,7 @@ export default function FermentChart({
                   fill={`${prefColor}2E`}
                   stroke={`${prefColor}A5`}
                   strokeWidth={1.5}
-                  clipPath="url(#chart-area-clip)"
+                  clipPath={`url(#chart-area-clip-${chartId})`}
                 />
               </>
             )}
@@ -973,7 +974,7 @@ export default function FermentChart({
             <line
               x1={activePrefX} y1={BL} x2={activePrefX} y2={BL}
               stroke={`${prefColor}A5`} strokeWidth={1.5}
-              clipPath="url(#pref-bell-clip)"
+              clipPath={`url(#pref-bell-clip-${chartId})`}
             />
           </>
         )}
@@ -1023,7 +1024,7 @@ export default function FermentChart({
               fill="rgba(74,127,165,0.15)"
               stroke="rgba(74,127,165,0.6)"
               strokeWidth={1.5}
-              clipPath="url(#chart-area-clip)"
+              clipPath={`url(#chart-area-clip-${chartId})`}
             />
             {/* Fridge-out marker */}
             <line
@@ -1085,7 +1086,7 @@ export default function FermentChart({
               : makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF);
           })()}
           fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
-          clipPath="url(#chart-area-clip)"
+          clipPath={`url(#chart-area-clip-${chartId})`}
         />
         <line
           x1={hToX(effectiveMixHBF, W, WH)}
@@ -1101,7 +1102,7 @@ export default function FermentChart({
           x2={hToX(effectiveMixHBF, W, WH)}
           y2={BL}
           stroke={`${SAGE}A5`} strokeWidth={1.5}
-          clipPath="url(#dough-bell-clip)"
+          clipPath={`url(#dough-bell-clip-${chartId})`}
         />
 
         {/* ── Baseline ── */}
