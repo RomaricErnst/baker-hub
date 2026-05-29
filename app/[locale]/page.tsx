@@ -1656,7 +1656,7 @@ export default function Home() {
                 onStarterPeakTimeChange={setStarterPeakTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
-                onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                onChange={(st, _et, bl) => { setStartTime(st); setBlocks(bl); }}
                 sessionRestored={sessionRestored}
                 flourStrength={1.0}
                 startTimeInPast={startTimeInPast}
@@ -2464,7 +2464,7 @@ export default function Home() {
                 onStarterPeakTimeChange={setStarterPeakTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
-                onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                onChange={(st, _et, bl) => { setStartTime(st); setBlocks(bl); }}
                 onReady={() => {}}
                 sessionRestored={sessionRestored}
                 flourStrength={flourBlend ? (computeBlendProfile(flourBlend).fermToleranceMultiplier ?? 1.0) : 1.0}
