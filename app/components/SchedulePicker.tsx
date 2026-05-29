@@ -24,6 +24,7 @@ interface SourdoughSolverResult {
   feed2Time:            Date | null;
   feedTime:             Date | null;
   fridgeOutTime:        Date | null;
+  fridgeFeedTime:       Date | null;
   // Computed FermentChart props
   starterFeedTime:      Date | null;
   starterFeed2Time:     Date | null;
@@ -1964,6 +1965,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _newPendingStart: Date = pendingStart;
     let _newFridgeOut: Date | null = fridgeOutTime;
     let _adjPeakH: number | null = null;
+    let _fridgeFeedTime: Date | null = null;
 
     // Get derived starter state (no setState calls inside)
     const derived = deriveStarterPeakTime(et, targetMixTime);
@@ -1982,6 +1984,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     function buildAndSetResult() {
       const _starterFeedTime = (() => {
         if (planningMode === 'know_peak') return null;
+        if (starterLocation === 'fridge' && _fridgeFeedTime) return _fridgeFeedTime;
         if (_hasFutureFeedPath && _feed2Time) return _feed2Time;
         if (_usingPeak2 && _feed2Time) return _feed2Time;
         return lastFedTime ?? _feedTime;
@@ -2013,6 +2016,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         feed2Time:              _feed2Time,
         feedTime:               _feedTime,
         fridgeOutTime:          _newFridgeOut,
+        fridgeFeedTime:         _fridgeFeedTime,
         starterFeedTime:        _starterFeedTime,
         starterFeed2Time:       _starterFeed2Time,
         starterKnownPeakTime:   planningMode === 'know_peak' ? knownPeakTime : null,
@@ -2410,6 +2414,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     onFeedTimeChange?.(activeFeed);
     if ((best.isFutureFeedPath || best.usingPeak2) && best.feed2Ms) {
       onFeed2TimeChange?.(new Date(best.feed2Ms));
+    }
+
+    // For fridge starters, compute optimal feed time so the graph bell is anchored correctly.
+    if (starterLocation === 'fridge' && adjPeakH) {
+      const _wh2 = 1.5;
+      const _fph2 = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10) * adjPeakH;
+      const _optFeed = new Date(_newPendingStart.getTime() - (_wh2 + _fph2) * 3600000);
+      if (_optFeed.getTime() > Date.now()) {
+        const _hf = _optFeed.getHours();
+        const _adj = new Date(_optFeed);
+        if (_hf < 7) { _adj.setHours(7, 0, 0, 0); }
+        else if (_hf > 22) { _adj.setHours(7, 0, 0, 0); _adj.setDate(_adj.getDate() + 1); }
+        _fridgeFeedTime = _adj;
+      }
     }
 
     buildAndSetResult();
@@ -3915,7 +3933,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   }
                   // When solver computed exact feed2Time via future-feed path,
                   // use it as the pre-mix feed — more accurate than RT numExtra calculation.
-                  if (_hasFutureFeedPath && _feed2Time && feedPlan.length === 0) {
+                  if (_hasFutureFeedPath && _feed2Time) {
                     feedPlan.push({
                       ft: _feed2Time,
                       label: isFr ? 'Repas avant mélange' : 'Pre-mix feed',
