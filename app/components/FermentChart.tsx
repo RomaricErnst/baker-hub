@@ -917,8 +917,11 @@ export default function FermentChart({
                         if (hbf >= fridgeOutHBF) {
                           // Fridge gaussian normalised so height at fridgeOutHBF = fridgeHeightAtRemoval,
                           // ensuring continuity with the RT warmup segment.
-                          const rawFridgeH = Math.exp(-0.5 * ((hbf - fridgePeakH) / fridgeSigma) ** 2);
-                          const fridgeAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - fridgePeakH) / fridgeSigma) ** 2);
+                          // Correct: bell center in HBF space = feedHBF2 - fridgePeakH
+                          // (fridgePeakH hours before feed = where starter peaks if left in fridge forever)
+                          const fridgeBellCenter = feedHBF2 - fridgePeakH;
+                          const rawFridgeH = Math.exp(-0.5 * ((hbf - fridgeBellCenter) / fridgeSigma) ** 2);
+                          const fridgeAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - fridgeBellCenter) / fridgeSigma) ** 2);
                           normH = fridgeAtRemoval > 0 ? rawFridgeH / fridgeAtRemoval * fridgeHeightAtRemoval : rawFridgeH;
                         } else {
                           // Correct model: one continuous fermentation cycle.
@@ -1025,13 +1028,15 @@ export default function FermentChart({
               y2={AXIS_Y + 8}
               stroke="rgba(74,127,165,0.6)"
               strokeWidth={1.5}
+              strokeDasharray="4 3"
             />
             <text
               x={hToX(compFridgeOutHBF, W, WH)}
               y={AXIS_Y + 50}
               fontSize={9}
-              fill="rgba(74,127,165,0.7)"
+              fill="rgba(74,127,165,0.9)"
               fontFamily="DM Mono, monospace"
+              fontWeight="600"
               textAnchor="middle"
             >
               {isFr ? 'Sortir' : 'Remove'}
