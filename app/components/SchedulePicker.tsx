@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
 import FermentChart, { getPrefOptH, getPrefPeakH_RT, getPrefRTWarmupH, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
@@ -766,6 +766,7 @@ function SimpleColourBar({
   const tRoot = useTranslations();
   const locale = useLocale();
   const isFr = locale === 'fr';
+  const barId = useId().replace(/:/g, '');
   const _barWindowH = nowHBF ?? 0;
   // Scale window to the sweet zone: show ~2× sweetFrom so baker sees
   // equal context either side of the green zone.
@@ -949,7 +950,7 @@ function SimpleColourBar({
             const bx1 = barHToX(hbfFrom, W, barWin);
             const bx2 = barHToX(hbfTo, W, barWin);
             return (
-              <clipPath key={i} id={`sbc-${i}`}>
+              <clipPath key={i} id={`sbc-${barId}-${i}`}>
                 <rect x={bx1} y={0} width={Math.max(0, bx2 - bx1)} height={BAR_SVG_H} />
               </clipPath>
             );
@@ -1005,7 +1006,7 @@ function SimpleColourBar({
           return (
             <g key={i}>
               <rect x={bx1} y={0} width={bx2 - bx1} height={BAR_AXIS_Y} fill="rgba(196,82,42,0.09)" />
-              <g clipPath={`url(#sbc-${i})`}>
+              <g clipPath={`url(#sbc-${barId}-${i})`}>
                 {Array.from({ length: n }, (_, j) => {
                   const ox = bx1 + j * 7 - BAR_AXIS_Y;
                   return (
@@ -1964,6 +1965,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _suggestedBakeTime: Date | null = null;
     let _newPendingStart: Date = pendingStart;
     let _newFridgeOut: Date | null = fridgeOutTime;
+    if (starterLocation === 'fridge' && !_newFridgeOut) {
+      const warmupH2 = getStarterFridgeWarmupH(kitchenTemp);
+      _newFridgeOut = new Date(pendingStart.getTime() - warmupH2 * 3600000);
+    }
     let _adjPeakH: number | null = null;
     let _fridgeFeedTime: Date | null = null;
 
@@ -3977,7 +3982,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   </div>
 
                   {/* Future feed path: planned Next Feed */}
-                  {isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && (
+                  {isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && planningMode !== 'last_fed' && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'PROCHAIN REPAS' : 'NEXT FEED'}
