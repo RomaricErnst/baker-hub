@@ -3888,9 +3888,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   } else {
                     numExtra = Math.floor(gapH / troughH);
                   }
-                  if (numExtra > 0 && !_hasFutureFeedPath) {
+                  if (numExtra > 0) {
                     feedPlan.length = 0;
-                    for (let i = 0; i <= numExtra; i++) {
+                    // When hasFutureFeedPath, only generate intermediate feeds (i < numExtra),
+                    // not the final entry — that comes from feed2Time below.
+                    const loopMax = _hasFutureFeedPath ? numExtra - 1 : numExtra;
+                    for (let i = 0; i <= loopMax; i++) {
                       const ft = new Date(now.getTime() + i * troughH * 3600000);
                       const h = ft.getHours();
                       if (h < 7) { ft.setHours(7, 0, 0, 0); }
