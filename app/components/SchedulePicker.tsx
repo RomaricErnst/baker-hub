@@ -1224,6 +1224,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [editingMix, setEditingMix]   = useState(false);
   const [editingPref, setEditingPref] = useState(false);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
+  const [localBlocks, setLocalBlocks] = useState<AvailabilityBlock[]>(blocks);
 
   const prefLabel = prefermentType === 'poolish' ? tRoot('preferment.makePoolish')
     : prefermentType === 'biga' ? tRoot('preferment.makeBiga')
@@ -1659,6 +1660,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   useEffect(() => {
     onPrefGoesInFridgeChange?.(prefGoesInFridge);
   }, [prefGoesInFridge, onPrefGoesInFridgeChange]);
+  useEffect(() => { setLocalBlocks(blocks); }, [blocks]);
   // "Remove poolish from fridge" time: rtWarmupH before mix, pushed out of blockers
   const prefRTWarmupH = prefGoesInFridge ? getPrefRTWarmupH(kitchenTemp) : 0;
   const prefRemoveFromFridgeHBF = prefGoesInFridge ? mixOffsetH + prefRTWarmupH : null;
@@ -2457,7 +2459,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // Pass newBlocks directly — blocks prop hasn't updated yet (parent re-renders async).
       // No manualMixOverride — let solver freely find best position avoiding blockers.
       findOptimalPositionSourdough(pendingEatTime, undefined, newBlocks);
-      setStartComputed(true); // ensure FermentChart renders with new blocks
+      setLocalBlocks(newBlocks);
     } else if (!hasManuallyDragged.current && phase === 'start_confirm') {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
@@ -3385,7 +3387,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               hasColdRetard={hasColdRetard}
               phases={phases}
               scheduleNote={schedule?.scheduleNote ?? null}
-              blocks={blocks}
+              blocks={isSourdough ? localBlocks : blocks}
               recommendedMixHBF={recommendedHBF}
               showZoneLabels={zonesOpen}
               hasDragged={hasDragged}
