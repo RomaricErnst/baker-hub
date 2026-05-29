@@ -899,6 +899,11 @@ export default function FermentChart({
                 {/* Warmup + active bell (RT or after fridge removal, including fridge portion) */}
                 <path
                   d={(() => {
+                    // When fridge comparison is showing, suppress this bell entirely —
+                    // the comparison overlay is the single authoritative curve.
+                    if (isLevain && showFridgeComparison) {
+                      return `M0,${BL} L0,${BL}`; // empty path
+                    }
                     if (isLevain && knownPeakHBF !== null) {
                       const syntheticFeedHBF = knownPeakHBF + effectivePeakH;
                       return makeBellPath(knownPeakHBF, starterSigmaH, W, WH, syntheticFeedHBF);

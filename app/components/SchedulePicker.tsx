@@ -1837,15 +1837,28 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               _suggestedFridgeOut = computedFridgeOut;
               _suggestedFridgePeak = computedFridgePeak;
               _showFridgeComparison = true;
+              const feedNowFridgeH = (fridgeOutTime2.getTime() - Date.now()) / 3600000;
+              const feedNowBetter = hoursAfterPeak >= adjPeakH && feedNowFridgeH > 0
+                && feedNowFridgeH < fridgePeakH * 0.8;
               _fridgeSuggestion = locale === 'fr'
-                ? `Mettez au frigo maintenant — sortez à ${
-                    computedFridgeOut.toLocaleTimeString('fr-FR',
-                      { hour: 'numeric', minute: '2-digit' })
-                  } pour mixer au pic`
-                : `Refrigerate now — remove at ${
-                    computedFridgeOut.toLocaleTimeString('en-US',
-                      { hour: 'numeric', minute: '2-digit', hour12: true })
-                  } to mix at peak`;
+                ? (feedNowBetter
+                    ? `Nourrissez maintenant, réfrigérez — sortir à ${
+                        computedFridgeOut.toLocaleTimeString('fr-FR',
+                          { hour: 'numeric', minute: '2-digit' })
+                      } pour pic au mélange`
+                    : `Mettez au frigo maintenant — sortez à ${
+                        computedFridgeOut.toLocaleTimeString('fr-FR',
+                          { hour: 'numeric', minute: '2-digit' })
+                      } pour mixer au pic`)
+                : (feedNowBetter
+                    ? `Feed now, refrigerate — remove at ${
+                        computedFridgeOut.toLocaleTimeString('en-US',
+                          { hour: 'numeric', minute: '2-digit', hour12: true })
+                      } to mix at peak`
+                    : `Refrigerate now — remove at ${
+                        computedFridgeOut.toLocaleTimeString('en-US',
+                          { hour: 'numeric', minute: '2-digit', hour12: true })
+                      } to mix at peak`);
             }
           }
         }
