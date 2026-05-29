@@ -33,6 +33,7 @@ interface SourdoughSolverResult {
   comparisonFridgeOutTime: Date | null;
   comparisonFridgePeakTime: Date | null;
   starterFridgeInTime:  Date | null;
+  peakTime:             Date | null;
 }
 
 interface DerivedStarterState {
@@ -1814,17 +1815,29 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         let _showFridgeComparison = false;
         let _fridgeSuggestion: string | null = null;
 
-        if (hoursAfterPeak > adjPeakH * 0.6 && starterLocation === 'rt') {
+        if (starterLocation === 'rt') {
           const warmupH2 = getStarterFridgeWarmupH(kitchenTemp);
           const coldFactor = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
           const fridgePeakH = adjPeakH * coldFactor;
-          // Forward-looking check: if we feed NOW, will it peak near mix time via fridge?
-          // fridgeOut = mix - warmupH, timeInFridge = fridgeOut - now
-          // Valid if 0 < timeInFridge < fridgePeakH (still rising at removal)
           const nowMs2 = Date.now();
           const fridgeOutTime2 = new Date(pendingStart.getTime() - warmupH2 * 3600000);
           const timeInFridgeH = (fridgeOutTime2.getTime() - nowMs2) / 3600000;
-          const fridgeViable = timeInFridgeH > 0 && timeInFridgeH < fridgePeakH * 0.95;
+          // fridgeViable: there is enough window to feed now, put in fridge,
+          // and have it still rising (or near peak) at removal.
+          // 0 < timeInFridge < fridgePeakH means: removal is before fridge peak
+          // (starter still rising at removal — best case)
+          // Also check: RT path doesn't already give green-green at a reasonable hour
+          // If rtPeakTime is already in the sweet zone, no need for fridge.
+          const localSweetFrom = (sfDef.preferredColdH ?? sfDef.coldH ?? 0) + (sfDef.rtH ?? 2)
+            + Math.round(((sfDef.coldH ?? 0) + (sfDef.rtH ?? 2)) * 0.35);
+          const localSweetTo = sfDef.minTotalFermH ?? (sfDef.rtH ?? 2);
+          const rtPeakInZone = rtPeakTime !== null && (() => {
+            const rtPeakHBF = (bakeTime.getTime() - rtPeakTime.getTime()) / 3600000;
+            return rtPeakHBF >= localSweetTo && rtPeakHBF <= localSweetFrom;
+          })();
+          const fridgeViable = !rtPeakInZone
+            && timeInFridgeH > 0
+            && timeInFridgeH < fridgePeakH * 0.95;
           if (fridgeViable) {
             const computedFridgeOut = new Date(
               pendingStart.getTime() - warmupH2 * 3600000
@@ -2018,6 +2031,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ? _feed2Time
               : (solverResult?.starterFridgeInTime ?? new Date()))
           : null,
+        peakTime: _starterFeedTime && _adjPeakH
+          ? new Date(_starterFeedTime.getTime() + _adjPeakH * 3600000)
+          : (starterLocation === 'fridge' && _newFridgeOut
+              ? new Date(_newFridgeOut.getTime() + getStarterFridgeWarmupH(kitchenTemp) * 3600000)
+              : null),
       });
       onStarterFridgeInTimeChange?.(_showFridgeComparison
         ? (_hasFutureFeedPath && _feed2Time
@@ -3356,7 +3374,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterFeedTime={solverResult?.starterFeedTime ?? null}
               starterFeed2Time={solverResult?.starterFeed2Time ?? null}
               starterFridgeOutTime={isSourdough ? (solverResult?.fridgeOutTime ?? fridgeOutTime) : null}
-              starterKnownPeakTime={solverResult?.starterKnownPeakTime ?? null}
+              starterKnownPeakTime={solverResult?.peakTime ?? solverResult?.starterKnownPeakTime ?? null}
               starterIsDepletedAt={solverResult?.starterIsDepletedAt ?? null}
               starterRefeedTime={solverResult?.starterRefeedTime ?? null}
               starterMature={starterMature}
@@ -3812,25 +3830,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               const _suggestedBakeTimeCard = solverResult?.suggestedBakeTime ?? null;
               const _activeFridgeOutTime = solverResult?.fridgeOutTime ?? fridgeOutTime;
 
-              const activePeakTime: Date | null =
-                planningMode === 'know_peak' && knownPeakTime
-                  ? knownPeakTime
-                  // Future feed path: peak = feed2Time + adjPeakH
-                  : _hasFutureFeedPath && _feed2Time
-                    ? new Date(_feed2Time.getTime() + adjPeakH * 3600000)
-                  // Peak2 (usingPeak2): peak = feed2Time + adjPeakH (trough feed peak)
-                  : _usingPeak2 && _feed2Time
-                    ? new Date(_feed2Time.getTime() + adjPeakH * 3600000)
-                  // Refeed now (declining/depleted): peak = starterRefeedTime + adjPeakH
-                  : _starterRefeedTime && !_usingPeak2 && !_hasFutureFeedPath
-                    ? new Date(_starterRefeedTime.getTime() + adjPeakH * 3600000)
-                  // Fridge path
-                  : _feedTime && starterLocation === 'fridge' && _activeFridgeOutTime
-                    ? new Date(_activeFridgeOutTime.getTime() + warmupH * 3600000)
-                  // Normal: peak1 = feedTime + adjPeakH
-                  : _feedTime
-                    ? new Date(_feedTime.getTime() + adjPeakH * 3600000)
-                  : null;
+              // Use pre-computed peakTime from solverResult — same value the chart uses
+              const activePeakTime: Date | null = solverResult?.peakTime ?? null;
 
               const feedPlan: { ft: Date; label: string; note?: string }[] = [];
 
