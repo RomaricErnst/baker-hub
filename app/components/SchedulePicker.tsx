@@ -3400,7 +3400,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterFeedTime={solverResult?.starterFeedTime ?? null}
               starterFeed2Time={solverResult?.starterFeed2Time ?? null}
               starterFridgeOutTime={isSourdough ? (solverResult?.fridgeOutTime ?? fridgeOutTime) : null}
-              starterKnownPeakTime={solverResult?.peakTime ?? solverResult?.starterKnownPeakTime ?? null}
+              starterKnownPeakTime={
+                (isSourdough && starterLocation === 'fridge')
+                  ? (solverResult?.starterKnownPeakTime ?? null)
+                  : (solverResult?.peakTime ?? solverResult?.starterKnownPeakTime ?? null)
+              }
               starterIsDepletedAt={solverResult?.starterIsDepletedAt ?? null}
               starterRefeedTime={solverResult?.starterRefeedTime ?? null}
               starterMature={starterMature}
@@ -4065,7 +4069,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         {isFr ? 'SORTIR DU FRIGO' : 'REMOVE FROM FRIDGE'}
                       </div>
                       <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
-                        {fmtCardHM(_activeFridgeOutTime, isFr)}
+                        {fmtCardDT(_activeFridgeOutTime, isFr)}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '1px' }}>
                         {isFr
