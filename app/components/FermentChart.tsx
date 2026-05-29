@@ -1209,7 +1209,36 @@ export default function FermentChart({
           </g>
         )}
 
-        {/* Feed 1 circle removed — hist diamond handles this marker */}
+        {/* Active feed diamond — hasFutureFeedPath or Peak2 scenario */}
+        {isLevain && activeFeedHBF !== null && histFeedHBF !== null && !knownPeakHBF
+         && activeFeedHBF > effectiveMixHBF && (() => {
+          const labelsClose = Math.abs(activePrefX - (histPrefX ?? 0)) < 70;
+          return (
+            <g>
+              <polygon
+                points={`${activePrefX},${AXIS_Y - S} ${activePrefX + S},${AXIS_Y} ${activePrefX},${AXIS_Y + S} ${activePrefX - S},${AXIS_Y}`}
+                fill={prefColor}
+                stroke="white"
+                strokeWidth={1.5}
+                style={{ cursor: 'pointer' }}
+                onPointerDown={e => onPointerDown(e, 'pref')}
+              />
+              {!allClose && (
+                <text
+                  x={activePrefX}
+                  y={labelsClose ? AXIS_Y + 52 : AXIS_Y + 36}
+                  fontSize={10}
+                  fill={prefColor}
+                  fontFamily="DM Mono, monospace"
+                  textAnchor="middle"
+                  fontWeight="600"
+                >
+                  {starterRedPill ? (isFr ? 'Nourrir' : 'Feed') : (isFr ? 'Prochain repas' : 'Next Feed')}
+                </text>
+              )}
+            </g>
+          );
+        })()}
 
         {/* ── Pref diamond (hidden in Mode B — no concrete feed time) ── */}
         {hasPref && !knownPeakHBF && !isLevain && renderDiamond(
