@@ -2452,6 +2452,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // Pass newBlocks directly — blocks prop hasn't updated yet (parent re-renders async).
       // No manualMixOverride — let solver freely find best position avoiding blockers.
       findOptimalPositionSourdough(pendingEatTime, undefined, newBlocks);
+      setStartComputed(true); // ensure FermentChart renders with new blocks
     } else if (!hasManuallyDragged.current && phase === 'start_confirm') {
       computeAndApplyRecommendation(newBlocks, pendingEatTime);
     }
