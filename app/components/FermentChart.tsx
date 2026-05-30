@@ -39,6 +39,7 @@ export interface FermentChartProps {
   starterKnownPeakTime?: Date | null;
   starterIsDepletedAt?: Date | null;
   starterRefeedTime?: Date | null;
+  starterIntermediateFeeds?: Date[];
   starterMature?: boolean;
   starterHasRye?: boolean;
   starterStoredInFridge?: boolean;
@@ -238,6 +239,7 @@ export default function FermentChart({
   recommendedMixHBF, showZoneLabels, hasDragged,
   starterFeedTime, starterFeed2Time, starterFridgeOutTime,
   starterKnownPeakTime = null, starterIsDepletedAt = null, starterRefeedTime = null,
+  starterIntermediateFeeds = [],
   starterMature = true,
   startTimeInPast = false,
   comparisonFridgeOutTime = null, comparisonFridgePeakTime = null,
@@ -779,6 +781,14 @@ export default function FermentChart({
               <rect x={hToX(prefStartAbsHBF, W, WH)} y={0} width={W} height={CHART_H} />
             </clipPath>
           )}
+          {isLevain && starterIntermediateFeeds.map((ft, idx) => {
+            const leftX = hToX((bakeMs - ft.getTime()) / 3600000, W, WH);
+            return (
+              <clipPath key={`rbc-${idx}`} id={`refresh-bell-clip-${chartId}-${idx}`}>
+                <rect x={leftX} y={0} width={Math.max(0, W - leftX)} height={CHART_H} />
+              </clipPath>
+            );
+          })}
         </defs>
 
         {/* ── Bake reference line ── */}
@@ -837,6 +847,23 @@ export default function FermentChart({
         {/* ── Pref bell (drawn first so dough overlaps) ── */}
         {hasPref && (
           <>
+            {/* ── Intermediate refresh cycle bells (drawn below hist + active) ── */}
+            {isLevain && starterIntermediateFeeds.length > 0 && starterIntermediateFeeds.map((ft, idx) => {
+              const hbf = (bakeMs - ft.getTime()) / 3600000;
+              if (hbf <= 0 || hbf > WH) return null;
+              return (
+                <path
+                  key={`rb-${idx}`}
+                  d={makeBellPath(hbf - effectivePeakH, starterSigmaH, W, WH, hbf)}
+                  fill="rgba(74,127,165,0.06)"
+                  stroke="rgba(74,127,165,0.25)"
+                  strokeWidth={1}
+                  strokeDasharray="2 3"
+                  clipPath={`url(#refresh-bell-clip-${chartId}-${idx})`}
+                />
+              );
+            })}
+
             {/* ── Muted historical bell (Feed 1 when Peak 2 active) ── */}
             {isLevain && histPeakHBF !== null && histFeedHBF !== null && (
               <>
@@ -1244,37 +1271,52 @@ export default function FermentChart({
           );
         })()}
 
-        {/* Refeed-now action marker — shown when solver suggests waking declining starter */}
-        {isLevain && starterRefeedTime && (() => {
-          const refeedHBF = (eatTime.getTime() - starterRefeedTime.getTime()) / 3600000;
-          if (refeedHBF < 0 || refeedHBF > WH) return null;
-          const refeedX = hToX(refeedHBF, W, WH);
-          if (activeFeedHBF !== null && Math.abs(refeedX - hToX(activeFeedHBF, W, WH)) < 35) return null;
-          if (histFeedHBF !== null && Math.abs(refeedX - hToX(histFeedHBF, W, WH)) < 35) return null;
+        {/* Refresh Feed markers — one diamond per intermediate feed cycle */}
+        {isLevain && starterIntermediateFeeds.length > 0 && (() => {
+          const refreshes = starterIntermediateFeeds.map((ft, idx) => {
+            const hbf = (eatTime.getTime() - ft.getTime()) / 3600000;
+            const x = hToX(hbf, W, WH);
+            return { ft, hbf, x, idx };
+          });
+          const visible = refreshes.filter(r => r.hbf >= 0 && r.hbf <= WH);
+          visible.sort((a, b) => b.hbf - a.hbf);
+          const kept: typeof visible = [];
+          const activeX = activeFeedHBF !== null ? hToX(activeFeedHBF, W, WH) : null;
+          const histX = histFeedHBF !== null ? hToX(histFeedHBF, W, WH) : null;
+          for (const r of visible) {
+            if (activeX !== null && Math.abs(r.x - activeX) < 35) continue;
+            if (histX !== null && Math.abs(r.x - histX) < 35) continue;
+            if (kept.some(k => Math.abs(r.x - k.x) < 35)) continue;
+            kept.push(r);
+          }
+          const showNumbers = kept.length > 1;
           return (
             <g>
-              <polygon
-                points={`${refeedX},${AXIS_Y - S * 0.7} ${refeedX + S * 0.7},${AXIS_Y} ${refeedX},${AXIS_Y + S * 0.7} ${refeedX - S * 0.7},${AXIS_Y}`}
-                fill="rgba(74,127,165,0.5)"
-                stroke="#4A7FA5"
-                strokeWidth={1}
-              />
-              {(() => {
-                const tickDistH = Math.min(refeedHBF % 12, 12 - (refeedHBF % 12));
+              {kept.map((r, displayIdx) => {
+                const tickDistH = Math.min(r.hbf % 12, 12 - (r.hbf % 12));
                 const nearTick = tickDistH < 2;
                 const timeY = nearTick ? AXIS_Y + S + 26 : AXIS_Y + S + 14;
                 const labelY = nearTick ? AXIS_Y + S + 38 : AXIS_Y + S + 26;
+                const labelText = showNumbers
+                  ? (isFr ? `Rafraîchi ${displayIdx + 1}` : `Refresh Feed ${displayIdx + 1}`)
+                  : (isFr ? 'Rafraîchi' : 'Refresh Feed');
                 return (
-                  <>
-                    <text x={refeedX} y={timeY} textAnchor="middle" fontSize="10" fill="var(--smoke)" fontFamily="var(--font-dm-mono)">
-                      {fmtHM(starterRefeedTime, isFr)}
+                  <g key={`refresh-${r.idx}`}>
+                    <polygon
+                      points={`${r.x},${AXIS_Y - S * 0.7} ${r.x + S * 0.7},${AXIS_Y} ${r.x},${AXIS_Y + S * 0.7} ${r.x - S * 0.7},${AXIS_Y}`}
+                      fill="rgba(74,127,165,0.5)"
+                      stroke="#4A7FA5"
+                      strokeWidth={1}
+                    />
+                    <text x={r.x} y={timeY} textAnchor="middle" fontSize="10" fill="var(--smoke)" fontFamily="var(--font-dm-mono)">
+                      {fmtHM(r.ft, isFr)}
                     </text>
-                    <text x={refeedX} y={labelY} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
-                      {isFr ? 'Rafraîchi' : 'Refresh Feed'}
+                    <text x={r.x} y={labelY} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
+                      {labelText}
                     </text>
-                  </>
+                  </g>
                 );
-              })()}
+              })}
             </g>
           );
         })()}

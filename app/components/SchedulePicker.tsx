@@ -35,6 +35,7 @@ interface SourdoughSolverResult {
   comparisonFridgePeakTime: Date | null;
   starterFridgeInTime:  Date | null;
   peakTime:             Date | null;
+  starterIntermediateFeeds: Date[];
 }
 
 interface DerivedStarterState {
@@ -2005,6 +2006,31 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         return lastFedTime ?? null;
       })();
 
+      const _intermediateRefreshFeeds: Date[] = [];
+      if (!_usingPeak2 && planningMode === 'last_fed' && lastFedTime) {
+        const adjPeakH_eff = _adjPeakH ?? adjPeakH_derived;
+        if (adjPeakH_eff) {
+          const ryeF = starterHasRye ? 0.8 : 1.0;
+          const matF = starterMature ? 1.0 : 1.2;
+          const ratioMult = 1 + 0.35 * Math.log(feedRatio);
+          const troughH_int = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * matF * ratioMult;
+          const lastFeedNeededMs = _newPendingStart.getTime() - adjPeakH_eff * 3600000;
+          const gapH_int = (lastFeedNeededMs - Date.now()) / 3600000;
+          const numExtra_int = Math.floor(gapH_int / troughH_int);
+          if (numExtra_int > 0) {
+            const now_int = Date.now();
+            const loopStart_int = _starterRefeedTime ? 1 : 0;
+            for (let i = loopStart_int; i < numExtra_int; i++) {
+              const ft = new Date(now_int + i * troughH_int * 3600000);
+              const h = ft.getHours();
+              if (h < 7) { ft.setHours(7, 0, 0, 0); }
+              else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
+              _intermediateRefreshFeeds.push(ft);
+            }
+          }
+        }
+      }
+
       setSolverResult({
         usingPeak2:             _usingPeak2,
         hasFutureFeedPath:      _hasFutureFeedPath,
@@ -2049,6 +2075,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           : (_starterFeedTime && _adjPeakH
               ? new Date(_starterFeedTime.getTime() + _adjPeakH * 3600000)
               : null),
+        starterIntermediateFeeds: _intermediateRefreshFeeds,
       });
       onStarterFridgeInTimeChange?.(_showFridgeComparison
         ? (_hasFutureFeedPath && _feed2Time
@@ -3477,6 +3504,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               }
               starterIsDepletedAt={solverResult?.starterIsDepletedAt ?? null}
               starterRefeedTime={solverResult?.starterRefeedTime ?? null}
+              starterIntermediateFeeds={solverResult?.starterIntermediateFeeds ?? []}
               starterMature={starterMature}
               starterAdjPeakH={solverResult?.adjPeakHValue ?? null}
               starterHasRye={isSourdough ? starterHasRye : false}
