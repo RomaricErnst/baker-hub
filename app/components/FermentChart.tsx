@@ -1185,7 +1185,8 @@ export default function FermentChart({
         )}
 
         {/* ── Feed circle — single cycle, no Peak 2 ── */}
-        {isLevain && activeFeedHBF !== null && histFeedHBF === null && !knownPeakHBF
+        {isLevain && activeFeedHBF !== null && histFeedHBF === null
+         && (!knownPeakHBF || starterRedPill)
          && activeFeedHBF > 0 && (
           <g>
             <circle
@@ -1210,7 +1211,8 @@ export default function FermentChart({
         )}
 
         {/* Active feed diamond — hasFutureFeedPath or Peak2 scenario */}
-        {isLevain && activeFeedHBF !== null && histFeedHBF !== null && !knownPeakHBF
+        {isLevain && activeFeedHBF !== null && histFeedHBF !== null
+         && (!knownPeakHBF || starterRedPill || starterFeed2Time)
          && activeFeedHBF > 0 && (() => {
           const labelsClose = Math.abs(activePrefX - (histPrefX ?? 0)) < 70;
           return (
@@ -1236,6 +1238,31 @@ export default function FermentChart({
                   {starterRedPill ? (isFr ? 'Nourrir' : 'Feed') : (isFr ? 'Prochain repas' : 'Next Feed')}
                 </text>
               )}
+            </g>
+          );
+        })()}
+
+        {/* Refeed-now action marker — shown when solver suggests waking declining starter */}
+        {isLevain && starterRefeedTime && (() => {
+          const refeedHBF = (eatTime.getTime() - starterRefeedTime.getTime()) / 3600000;
+          if (refeedHBF < 0 || refeedHBF > WH) return null;
+          const refeedX = hToX(refeedHBF, W, WH);
+          if (activeFeedHBF !== null && Math.abs(refeedX - hToX(activeFeedHBF, W, WH)) < 20) return null;
+          if (histFeedHBF !== null && Math.abs(refeedX - hToX(histFeedHBF, W, WH)) < 20) return null;
+          return (
+            <g>
+              <polygon
+                points={`${refeedX},${AXIS_Y - S * 0.7} ${refeedX + S * 0.7},${AXIS_Y} ${refeedX},${AXIS_Y + S * 0.7} ${refeedX - S * 0.7},${AXIS_Y}`}
+                fill="rgba(74,127,165,0.5)"
+                stroke="#4A7FA5"
+                strokeWidth={1}
+              />
+              <text x={refeedX} y={AXIS_Y + S + 14} textAnchor="middle" fontSize="10" fill="var(--smoke)" fontFamily="var(--font-dm-mono)">
+                {fmtHM(starterRefeedTime, isFr)}
+              </text>
+              <text x={refeedX} y={AXIS_Y + S + 26} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
+                {isFr ? 'Réveil' : 'Wake-up'}
+              </text>
             </g>
           );
         })()}

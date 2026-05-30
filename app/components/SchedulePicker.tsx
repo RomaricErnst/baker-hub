@@ -4056,7 +4056,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
-                  {isSourdough && _starterRefeedTime && !_hasFutureFeedPath && !_usingPeak2 && (
+                  {isSourdough && _starterRefeedTime && !_usingPeak2 && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
                         textTransform: 'uppercase', letterSpacing: '.04em' }}>
