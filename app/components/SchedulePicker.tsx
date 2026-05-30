@@ -1967,10 +1967,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _suggestedBakeTime: Date | null = null;
     let _newPendingStart: Date = pendingStart;
     let _newFridgeOut: Date | null = fridgeOutTime;
-    if (starterLocation === 'fridge' && !_newFridgeOut) {
-      const warmupH2 = getStarterFridgeWarmupH(kitchenTemp);
-      _newFridgeOut = new Date(pendingStart.getTime() - warmupH2 * 3600000);
-    }
     let _adjPeakH: number | null = null;
     let _fridgeFeedTime: Date | null = null;
 
@@ -4043,6 +4039,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
+                  {_fridgeSuggestion && starterLocation === 'rt' && (
+                    <div style={{
+                      fontSize: '11px',
+                      color: '#78350F',
+                      fontFamily: 'var(--font-dm-sans)',
+                      lineHeight: 1.5,
+                      marginBottom: '.5rem',
+                      padding: '.4rem .6rem',
+                      background: '#FEF3C7',
+                      borderRadius: '6px',
+                      border: '1px solid #FDE68A',
+                    }}>
+                      {_fridgeSuggestion}
+                    </div>
+                  )}
+
                   {feedPlan.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '.45rem', marginBottom: '.6rem' }}>
                       {feedPlan.map((fp, i) => (
@@ -4090,22 +4102,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
-                  {_fridgeSuggestion && starterLocation === 'rt' && (
-                    <div style={{
-                      fontSize: '11px',
-                      color: '#78350F',
-                      fontFamily: 'var(--font-dm-sans)',
-                      lineHeight: 1.5,
-                      marginBottom: '.5rem',
-                      padding: '.4rem .6rem',
-                      background: '#FEF3C7',
-                      borderRadius: '6px',
-                      border: '1px solid #FDE68A',
-                    }}>
-                      {_fridgeSuggestion}
-                    </div>
-                  )}
-
                   {(() => {
                     // During active drag, compute pill directly from mix position vs peak
                     // so baker gets immediate feedback without waiting for async solver rerun.
@@ -4134,8 +4130,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                               : `Feed ${fmtCardDT(_feed2Time, false)}`)
                           : _starterPillState === 'yellow' && _activeFridgeOutTime
                             ? (isFr
-                                ? `Sortir du frigo à ${fmtCardHM(_activeFridgeOutTime, isFr)}`
-                                : `Remove fridge at ${fmtCardHM(_activeFridgeOutTime, isFr)}`)
+                                ? `Sortir du frigo — ${fmtCardDT(_activeFridgeOutTime, isFr)}`
+                                : `Remove from fridge — ${fmtCardDT(_activeFridgeOutTime, isFr)}`)
                             : (() => {
                                 const adjPeakH2 = _adjPeakHState ?? 8;
                                 const baseFeedMs = (() => {

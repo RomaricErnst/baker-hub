@@ -1186,7 +1186,7 @@ export default function FermentChart({
 
         {/* ── Feed circle — single cycle, no Peak 2 ── */}
         {isLevain && activeFeedHBF !== null && histFeedHBF === null && !knownPeakHBF
-         && activeFeedHBF > effectiveMixHBF && (
+         && activeFeedHBF > 0 && (
           <g>
             <circle
               cx={hToX(activeFeedHBF, W, WH)}
@@ -1211,7 +1211,7 @@ export default function FermentChart({
 
         {/* Active feed diamond — hasFutureFeedPath or Peak2 scenario */}
         {isLevain && activeFeedHBF !== null && histFeedHBF !== null && !knownPeakHBF
-         && activeFeedHBF > effectiveMixHBF && (() => {
+         && activeFeedHBF > 0 && (() => {
           const labelsClose = Math.abs(activePrefX - (histPrefX ?? 0)) < 70;
           return (
             <g>
