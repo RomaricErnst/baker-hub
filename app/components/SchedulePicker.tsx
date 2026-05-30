@@ -1920,7 +1920,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           starterIsDepletedAt: null,
           starterRefeedTime: new Date(),
           starterStateNote: locale === 'fr'
-            ? 'En descente — encore utilisable. Nourrir maintenant donne un pic plus fort.'
+            ? 'En descente — encore utilisable. Rafraîchir maintenant donne un pic plus fort.'
             : 'Declining — still usable. Feeding now gives a stronger result.',
           adjPeakH,
         };
@@ -3941,7 +3941,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   if (lastFedTime > now) {
                     feedPlan.push({
                       ft: lastFedTime,
-                      label: isFr ? 'Nourrir' : 'Feed',
+                      label: isFr ? 'Rafraîchi' : 'Feed',
                       note: undefined,
                     });
                   }
@@ -3961,9 +3961,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       else if (hf > 22) { adjustedFeed.setHours(7, 0, 0, 0); adjustedFeed.setDate(adjustedFeed.getDate() + 1); }
                       feedPlan.push({
                         ft: adjustedFeed,
-                        label: isFr ? 'Nourrir' : 'Feed',
+                        label: isFr ? 'Rafraîchir' : 'Feed',
                         note: isFr
-                          ? 'Nourrir puis mettre au frigo — pic au moment du mélange'
+                          ? 'Rafraîchir puis mettre au frais — pic au moment du pétrissage'
                           : 'Feed then refrigerate — timed to peak at mix',
                       });
                       numExtra = 0;
@@ -3975,9 +3975,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         feedPlan.length = 0;
                         feedPlan.push({
                           ft: new Date(),
-                          label: isFr ? 'Nourrir maintenant' : 'Feed now',
+                          label: isFr ? 'Rafraîchir maintenant' : 'Feed now',
                           note: isFr
-                            ? 'Votre levain atteindra son pic au moment du mélange'
+                            ? 'Votre levain atteindra son pic au moment du pétrissage'
                             : 'Your starter will peak around mix time',
                         });
                         numExtra = 0;
@@ -3993,7 +3993,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     // When hasFutureFeedPath, only generate intermediate feeds (i < numExtra),
                     // not the final entry — that comes from feed2Time below.
                     const loopMax = _hasFutureFeedPath ? numExtra - 1 : numExtra;
-                    for (let i = 0; i <= loopMax; i++) {
+                    // Skip i=0 when standalone REFRESH FEED block is shown (avoids duplicate)
+                    const loopStart = (_starterRefeedTime && !_usingPeak2) ? 1 : 0;
+                    for (let i = loopStart; i <= loopMax; i++) {
                       const ft = new Date(now.getTime() + i * troughH * 3600000);
                       const h = ft.getHours();
                       if (h < 7) { ft.setHours(7, 0, 0, 0); }
@@ -4003,8 +4005,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       feedPlan.push({
                         ft,
                         label: isLast
-                          ? (isFr ? 'Repas avant mélange' : 'Pre-mix feed')
-                          : (isFr ? `Repas ${i + 1}` : `Feed ${i + 1}`),
+                          ? (isFr ? 'Rafraîchi final' : 'Pre-mix Feed')
+                          : (isFr ? `Rafraîchi ${i + 1}` : `Refresh Feed ${i + 1}`),
                         note: isLast
                           ? (isFr
                               ? `Pic vers ${fmtCardHM(new Date(ft.getTime() + adjPeakH * 3600000), isFr)}`
@@ -4018,7 +4020,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   if (_hasFutureFeedPath && _feed2Time) {
                     feedPlan.push({
                       ft: _feed2Time,
-                      label: isFr ? 'Repas avant mélange' : 'Pre-mix feed',
+                      label: isFr ? 'Rafraîchi final' : 'Pre-mix Feed',
                       note: isFr
                         ? `Pic vers ${fmtCardHM(new Date(_feed2Time.getTime() + adjPeakH * 3600000), isFr)}`
                         : `Peak around ${fmtCardHM(new Date(_feed2Time.getTime() + adjPeakH * 3600000), isFr)}`,
@@ -4027,12 +4029,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 } else if (_usingPeak2 && _feed2Time) {
                   feedPlan.push({
                     ft: _feed2Time,
-                    label: isFr ? 'Prochain repas' : 'Next Feed',
+                    label: isFr ? 'Prochain rafraîchi' : 'Next Feed',
                     note: (() => {
                       const isRefeedNow = Math.abs(_feed2Time.getTime() - Date.now()) < 30 * 60 * 1000;
                       return isRefeedNow
-                        ? (isFr ? 'Nourrir maintenant pour un pic plus fort' : 'Feed now for a stronger peak')
-                        : (isFr ? 'Repas actif pour cette cuisson' : 'Active feed for this bake');
+                        ? (isFr ? 'Rafraîchir maintenant pour un pic plus fort' : 'Feed now for a stronger peak')
+                        : (isFr ? 'Rafraîchi actif pour cette cuisson' : 'Active feed for this bake');
                     })(),
                   });
                 }
@@ -4061,7 +4063,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   {isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && planningMode !== 'last_fed' && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                        {isFr ? 'PROCHAIN REPAS' : 'NEXT FEED'}
+                        {isFr ? 'RAFRAÎCHI FINAL' : 'PRE-MIX FEED'}
                       </div>
                       <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
                         {(() => {
@@ -4071,7 +4073,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
                         {isFr
-                          ? 'Nourrir pour que le levain soit prêt au bon moment'
+                          ? 'Rafraîchi pour que le levain soit prêt au pétrissage'
                           : 'Feed so your starter peaks at mix time'}
                       </div>
                     </div>
@@ -4081,7 +4083,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
                         textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                        {isFr ? 'PROCHAIN REPAS' : 'NEXT FEED'}
+                        {isFr ? 'RAFRAÎCHI' : 'REFRESH FEED'}
                       </div>
                       <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)',
                         fontFamily: 'var(--font-dm-mono)' }}>
@@ -4090,7 +4092,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)',
                         lineHeight: 1.4, marginTop: '2px' }}>
                         {isFr
-                          ? 'Nourrir maintenant pour un pic plus fort'
+                          ? 'Rafraîchir maintenant pour un pic plus fort'
                           : 'Feed now for a stronger peak'}
                       </div>
                     </div>
@@ -4099,7 +4101,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   {_usingPeak2 && _feed2Time && feedPlan.length === 0 && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                        {isFr ? 'PROCHAIN REPAS' : 'NEXT FEED'}
+                        {isFr ? 'PROCHAIN RAFRAÎCHI' : 'NEXT FEED'}
                       </div>
                       <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
                         {(() => {
@@ -4108,7 +4110,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         })()}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '1px' }}>
-                        {isFr ? 'Nourrir pour un pic plus fort' : 'Feed for a stronger peak'}
+                        {isFr ? 'Rafraîchir pour un pic plus fort' : 'Feed for a stronger peak'}
                       </div>
                     </div>
                   )}
@@ -4200,7 +4202,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         ? (isFr ? 'Fenêtre courte — voir le plan' : 'Window tight — see plan')
                         : _hasFutureFeedPath && _feed2Time
                           ? (isFr
-                              ? `Nourrir le ${fmtCardDT(_feed2Time, true)}`
+                              ? `Rafraîchir le ${fmtCardDT(_feed2Time, true)}`
                               : `Feed ${fmtCardDT(_feed2Time, false)}`)
                           : _starterPillState === 'yellow' && _activeFridgeOutTime
                             ? (isFr
@@ -4263,10 +4265,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)',
                       lineHeight: 1.5, marginTop: '6px' }}>
                       {_starterRefeedTime && !_hasFutureFeedPath
-                        ? (isFr ? 'Nourrir maintenant — votre levain atteindra son pic au moment du mélange.'
+                        ? (isFr ? 'Rafraîchir maintenant — votre levain atteindra son pic au moment du pétrissage.'
                                 : 'Feed now — your starter will peak around mix time.')
                         : _usingPeak2 && _feed2Time
-                          ? (isFr ? `Nourrir le ${fmtCardDT(_feed2Time, true)} pour un pic au moment du mélange.`
+                          ? (isFr ? `Rafraîchir le ${fmtCardDT(_feed2Time, true)} pour un pic au moment du pétrissage.`
                                   : `Feed ${fmtCardDT(_feed2Time, false)} — timed to peak at mix.`)
                           : _hasFutureFeedPath && _feed2Time
                             ? (isFr ? 'Votre levain actuel ne peut pas atteindre le moment du mélange — un nouveau repas le synchronise.'

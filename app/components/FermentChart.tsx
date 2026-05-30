@@ -1154,7 +1154,7 @@ export default function FermentChart({
                 <text x={histPrefX} y={histLabelsClose ? AXIS_Y + 52 : AXIS_Y + 36}
                   fontSize={11} fill="var(--smoke)"
                   fontFamily="DM Mono, monospace" textAnchor="middle" fontWeight="600">
-                  {isFr ? 'Repas 1' : 'Feed 1'}
+                  {isFr ? 'Dernier rafraîchi' : 'Last fed'}
                 </text>
               )}
             </g>
@@ -1205,7 +1205,7 @@ export default function FermentChart({
               fontFamily="DM Mono, monospace"
               textAnchor="middle"
             >
-              {isFr ? 'Repas' : 'Feed'}
+              {isFr ? 'Rafraîchi' : 'Feed'}
             </text>
           </g>
         )}
@@ -1235,7 +1235,9 @@ export default function FermentChart({
                   textAnchor="middle"
                   fontWeight="600"
                 >
-                  {starterRedPill ? (isFr ? 'Nourrir' : 'Feed') : (isFr ? 'Prochain repas' : 'Next Feed')}
+                  {starterRedPill
+                    ? (isFr ? 'Rafraîchi final' : 'Pre-mix Feed')
+                    : (isFr ? 'Prochain rafraîchi' : 'Next Feed')}
                 </text>
               )}
             </g>
@@ -1247,8 +1249,8 @@ export default function FermentChart({
           const refeedHBF = (eatTime.getTime() - starterRefeedTime.getTime()) / 3600000;
           if (refeedHBF < 0 || refeedHBF > WH) return null;
           const refeedX = hToX(refeedHBF, W, WH);
-          if (activeFeedHBF !== null && Math.abs(refeedX - hToX(activeFeedHBF, W, WH)) < 20) return null;
-          if (histFeedHBF !== null && Math.abs(refeedX - hToX(histFeedHBF, W, WH)) < 20) return null;
+          if (activeFeedHBF !== null && Math.abs(refeedX - hToX(activeFeedHBF, W, WH)) < 35) return null;
+          if (histFeedHBF !== null && Math.abs(refeedX - hToX(histFeedHBF, W, WH)) < 35) return null;
           return (
             <g>
               <polygon
@@ -1257,12 +1259,22 @@ export default function FermentChart({
                 stroke="#4A7FA5"
                 strokeWidth={1}
               />
-              <text x={refeedX} y={AXIS_Y + S + 14} textAnchor="middle" fontSize="10" fill="var(--smoke)" fontFamily="var(--font-dm-mono)">
-                {fmtHM(starterRefeedTime, isFr)}
-              </text>
-              <text x={refeedX} y={AXIS_Y + S + 26} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
-                {isFr ? 'Réveil' : 'Wake-up'}
-              </text>
+              {(() => {
+                const tickDistH = Math.min(refeedHBF % 12, 12 - (refeedHBF % 12));
+                const nearTick = tickDistH < 2;
+                const timeY = nearTick ? AXIS_Y + S + 26 : AXIS_Y + S + 14;
+                const labelY = nearTick ? AXIS_Y + S + 38 : AXIS_Y + S + 26;
+                return (
+                  <>
+                    <text x={refeedX} y={timeY} textAnchor="middle" fontSize="10" fill="var(--smoke)" fontFamily="var(--font-dm-mono)">
+                      {fmtHM(starterRefeedTime, isFr)}
+                    </text>
+                    <text x={refeedX} y={labelY} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
+                      {isFr ? 'Rafraîchi' : 'Refresh Feed'}
+                    </text>
+                  </>
+                );
+              })()}
             </g>
           );
         })()}
