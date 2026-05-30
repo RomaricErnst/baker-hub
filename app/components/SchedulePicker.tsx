@@ -2269,7 +2269,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           candidates.push({
             mixHBF, peakHBF: peak2BHBF, feedMs: refeedMs,
             usingPeak2: true, feed2Ms: refeedMs,
-            score: combinedScore(mixHBF, peak2BHBF, refeedMs, true), sscore: ss,
+            score: combinedScore(mixHBF, peak2BHBF, refeedMs, true) + 6, sscore: ss,
           });
         }
       }
@@ -2293,7 +2293,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           feedMs: fridgeFeedMs,
           usingPeak2: false,
           feed2Ms: null,
-          score: combinedScore(mixHBF, fridgePeakHBF, fridgeFeedMs) + 5,
+          score: combinedScore(mixHBF, fridgePeakHBF, fridgeFeedMs)
+                 + (lastFedTime && (Date.now() - lastFedTime.getTime()) / 3600000 > adjPeakH ? 10 : 5),
           sscore: ss,
           isFridgePath: true,
         });
@@ -2357,10 +2358,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const sc2 = combinedScore(mHBF2, mHBF2, t2, true);
         const ss2 = starterScore(mHBF2, mHBF2);
         if (ss2 === 0) continue;
+        const _depletionPenalty = (() => {
+          if (!lastFedTime) return 0;
+          const gapH = (t2 - lastFedTime.getTime()) / 3600000;
+          if (gapH <= adjPeakH) return 0;
+          if (gapH <= troughH) return -3;
+          if (gapH <= troughH * 1.5) return -8;
+          return -15;
+        })();
         candidates.push({
           mixHBF: mHBF2, peakHBF: mHBF2, feedMs: t2,
           usingPeak2: false, feed2Ms: t2,
-          score: sc2, sscore: ss2,
+          score: sc2 + _depletionPenalty, sscore: ss2,
           isFutureFeedPath: true,
         });
       }
