@@ -2044,10 +2044,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ? _feed2Time
               : (solverResult?.starterFridgeInTime ?? new Date()))
           : null,
-        peakTime: _starterFeedTime && _adjPeakH
-          ? new Date(_starterFeedTime.getTime() + _adjPeakH * 3600000)
-          : (starterLocation === 'fridge' && _newFridgeOut
-              ? new Date(_newFridgeOut.getTime() + getStarterFridgeWarmupH(kitchenTemp) * 3600000)
+        peakTime: (starterLocation === 'fridge' && _newFridgeOut)
+          ? new Date(_newFridgeOut.getTime() + getStarterFridgeWarmupH(kitchenTemp) * 3600000)
+          : (_starterFeedTime && _adjPeakH
+              ? new Date(_starterFeedTime.getTime() + _adjPeakH * 3600000)
               : null),
       });
       onStarterFridgeInTimeChange?.(_showFridgeComparison
