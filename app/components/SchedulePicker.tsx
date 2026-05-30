@@ -2181,6 +2181,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         return mixHBF > Math.min(s, e) && mixHBF < Math.max(s, e);
       });
     }
+    function inBlockerMs(timeMs: number): boolean {
+      return effectiveBlocks.some(b =>
+        timeMs > b.from.getTime() && timeMs < b.to.getTime()
+      );
+    }
+    function candidateValid(actionsMs: (number | null | undefined)[]): boolean {
+      return actionsMs.every(t => t == null || !inBlockerMs(t));
+    }
 
     function combinedScore(mixHBF: number, peakHBF: number, feedMs: number, usesMixForComfort = false): number {
       const ss = starterScore(mixHBF, peakHBF);
@@ -2246,6 +2254,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         for (let mixHBF = scanFrom; mixHBF >= scanTo; mixHBF -= STEP) {
           if (bakeMs - mixHBF * 3600000 <= nowMs) continue;
           if (inBlocker(mixHBF)) continue;
+          if (inBlockerMs(troughMs)) continue;
           const ss = starterScore(mixHBF, peak2AHBF);
           if (ss === 0) continue;
           candidates.push({
@@ -2257,7 +2266,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       }
 
       // Option B: refeed now (declining state — _starterRefeedTime set from derived)
-      if (_starterRefeedTime) {
+      if (_starterRefeedTime && !inBlockerMs(_starterRefeedTime.getTime())) {
         const refeedMs  = _starterRefeedTime.getTime();
         const peak2BHBF = (bakeMs - (refeedMs + adjPeakH * 3600000)) / 3600000;
 
@@ -2276,7 +2285,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
 
     // Peak 1 Fridge candidates (still-rising RT starter, fridge path computed)
-    if (starterLocation === 'rt' && _suggestedFridgePeak) {
+    if (starterLocation === 'rt' && _suggestedFridgePeak && _suggestedFridgeOut
+        && !inBlockerMs(_suggestedFridgeOut.getTime())) {
       const fridgePeakHBF = (bakeMs - _suggestedFridgePeak.getTime()) / 3600000;
       const fridgeFeedMs  = lastFedTime?.getTime() ?? feed1Ms;
       const fridgeTOL     = TOL * 1.5;
@@ -2320,6 +2330,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const mixMs = foMs + _warmupH * 3600000;
         const mixHBF = (bakeMs - mixMs) / 3600000;
         if (inBlocker(mixHBF)) continue;
+        if (inBlockerMs(foMs)) continue;
         const ds = doughScore(mixHBF);
         if (ds === 0) continue;
         const feedMs = lastFedTime?.getTime() ?? foMs;
@@ -2355,6 +2366,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const mHBF2  = (bakeMs - peakT2.getTime()) / 3600000;
         if (mHBF2 < sweetToHBF - 4 || mHBF2 > sweetFromHBF + 4) continue;
         if (bakeMs - mHBF2 * 3600000 <= nowMs2) continue;
+        if (inBlocker(mHBF2)) continue;
+        if (inBlockerMs(t2)) continue;
         const sc2 = combinedScore(mHBF2, mHBF2, t2, true);
         const ss2 = starterScore(mHBF2, mHBF2);
         if (ss2 === 0) continue;
@@ -2396,7 +2409,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
 
     candidates.sort((a, b) => b.score - a.score);
-    const best = candidates[0];
+    let best = candidates[0];
+    for (const cand of candidates) {
+      const candMixMs = bakeMs - cand.mixHBF * 3600000;
+      const actions: (number | null | undefined)[] = [candMixMs, cand.feedMs, cand.feed2Ms];
+      if (cand.isFridgePath) {
+        actions.push(candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000);
+      }
+      if (candidateValid(actions)) { best = cand; break; }
+    }
 
     // If baker manually dragged, always use their chosen mix time.
     // Never snap back — it is the baker's decision.
