@@ -948,8 +948,8 @@ export default function FermentChart({
                         const y = BL - normH * MAXH;
                         pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
                       }
-                      pts.push(`L ${hToX(0, W, WH).toFixed(1)} ${BL}`);
                       pts.push(`L ${hToX(feedHBF2, W, WH).toFixed(1)} ${BL}`);
+                      pts.push(`L ${hToX(0, W, WH).toFixed(1)} ${BL}`);
                       pts.push('Z');
                       return pts.join(' ');
                     }
