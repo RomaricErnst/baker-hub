@@ -319,7 +319,12 @@ export default function FermentChart({
   // Passed as sweetCenterH from SchedulePicker. Fallback: 26h cold, 6h RT.
   // When mixHBF = DOUGH_SWEET_CENTER → doughPeakHBF = 0 = bake (correct).
   const DOUGH_SIG          = hasColdRetard ? 18 : Math.max(3, WH * 0.35);
-  const DOUGH_SWEET_CENTER = sweetCenterH ?? (hasColdRetard ? 26 : 6);
+  // For sourdough RT-only (no cold retard), dough needs ~adjPeakH for the
+  // levain to peak inside it. Non-sourdough RT-only uses 6h default.
+  const DOUGH_SWEET_CENTER_NO_RETARD = isLevain && starterAdjPeakH
+    ? Math.max(6, starterAdjPeakH * 0.85)
+    : 6;
+  const DOUGH_SWEET_CENTER = sweetCenterH ?? (hasColdRetard ? 26 : DOUGH_SWEET_CENTER_NO_RETARD);
 
   // Two-temperature poolish protocol:
   // needsFridge = offset > RT peak time for this style+temp

@@ -42,6 +42,7 @@ interface SourdoughSolverResult {
   fridgeHoldOutTime:       Date | null;
   preMixStretchFactor:     number;
   refreshStretchFactor:    number;
+  planExplanation:         string | null;
 }
 
 interface DerivedStarterState {
@@ -2108,6 +2109,53 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         return computePreMixStretchFactor(_feed2Time.getTime(), refreshPeakMs);
       })();
 
+      const _planExplanation = (() => {
+        if (_windowTooShort) {
+          return isFr
+            ? 'Pas assez de temps avant la cuisson. Essayez une cuisson plus tardive.'
+            : 'Not enough time before bake. Try a later bake time.';
+        }
+        if (_isFridgeHoldPath) {
+          return isFr
+            ? "Rafraîchi, pic, puis frigo jusqu'au rafraîchi final — idéal pour les cuissons à 2+ jours."
+            : 'Refresh, peak, then fridge holds your starter until pre-mix — best for 2+ day plans.';
+        }
+        if (_usingPeak2 && !_hasFutureFeedPath) {
+          return isFr
+            ? 'Un seul rafraîchi suffit — votre levain pique pile au pétrissage.'
+            : "One refresh is enough — your starter peaks right when you'll mix.";
+        }
+        if (_hasFutureFeedPath && _feed2Time && _starterRefeedTime) {
+          const adjPeakH_eff = _adjPeakH ?? adjPeakH_derived;
+          if (!adjPeakH_eff) {
+            return isFr
+              ? 'Rafraîchi pour réveiller votre levain, puis rafraîchi final synchronisé au pétrissage.'
+              : 'Refresh wakes your starter; pre-mix is timed so it peaks at mix.';
+          }
+          const refreshPeakMsLocal = _starterRefeedTime.getTime() + adjPeakH_eff * _refreshStretchFactor * 3600000;
+          const gapH = (_feed2Time.getTime() - refreshPeakMsLocal) / 3600000;
+          if (gapH >= -1 && gapH <= 3) {
+            return isFr
+              ? 'Rafraîchi pour réveiller votre levain, puis rafraîchi final au pic — levain optimal.'
+              : 'Refresh wakes your starter; pre-mix at peak gives the strongest leaven.';
+          }
+          if (gapH < -1) {
+            return isFr
+              ? "Rafraîchi final un peu avant le pic pour s'adapter à votre planning — résultat solide."
+              : 'Pre-mix lands a bit before peak to fit your schedule — still gives a solid result.';
+          }
+          return isFr
+            ? "Rafraîchi final plus tard qu'idéal à cause de votre planning — ça reste bon."
+            : 'Pre-mix is later than ideal because of your schedule — still works.';
+        }
+        if (planningMode === 'know_peak') {
+          return isFr
+            ? 'Votre levain pique naturellement vers le pétrissage — aucune action nécessaire.'
+            : 'Your starter peaks naturally around mix time — no action needed.';
+        }
+        return null;
+      })();
+
       setSolverResult({
         usingPeak2:             _usingPeak2,
         hasFutureFeedPath:      _hasFutureFeedPath,
@@ -2159,6 +2207,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         fridgeHoldOutTime:     _fridgeHoldOutTime,
         preMixStretchFactor:   _preMixStretchFactor,
         refreshStretchFactor:  _refreshStretchFactor,
+        planExplanation:       _planExplanation,
       });
       onStarterFridgeInTimeChange?.(_showFridgeComparison
         ? (_hasFutureFeedPath && _feed2Time
@@ -4698,14 +4747,25 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     );
                   })()}
 
-                  {_starterStateNote
+                  {solverResult?.planExplanation && (
+                    <div style={{
+                      fontSize: '12px',
+                      color: 'var(--char)',
+                      fontFamily: 'var(--font-dm-sans)',
+                      lineHeight: 1.5,
+                      marginTop: '.5rem',
+                    }}>
+                      {solverResult.planExplanation}
+                    </div>
+                  )}
+                  {!solverResult?.planExplanation && _starterStateNote
                     && !(_hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && _feed2Time.getTime() - Date.now() > 30 * 60 * 1000)
                     && (
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginTop: '.5rem' }}>
                       {_starterStateNote}
                     </div>
                   )}
-                  {_driftNote && (
+                  {!solverResult?.planExplanation && _driftNote && (
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginTop: '.4rem' }}>
                       {_driftNote}
                     </div>
@@ -4889,15 +4949,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               {(() => {
                 const pillGreen  = isSourdough ? sourdoughDoughGreen  : mixInZone;
                 const pillYellow = isSourdough ? sourdoughDoughYellow : (mixEarlyOk || mixLateOk);
+                // Dough peak position relative to bake. Matches bell physics:
+                //   _doughPeakHBF > 0 → peak BEFORE bake → still rising at bake
+                //   _doughPeakHBF < 0 → peak AFTER bake → over-fermenting past bake
+                //   _doughPeakHBF ≈ 0 → peak AT bake (sweet spot)
+                const _doughPeakHBF = mixOffsetH - renderSweetCenter;
                 const pillText   = isSourdough
                   ? (sourdoughDoughGreen
                       ? (isFr ? 'Pâte prête à la cuisson' : 'Dough ready at bake')
-                      : sourdoughDoughYellow && mixOffsetH < renderSweetTo
+                      : sourdoughDoughYellow && _doughPeakHBF > 0.5
                         ? (isFr ? 'Encore en fermentation — devrait être bien'
                                 : 'Still rising at bake — should be fine')
+                        : sourdoughDoughYellow && _doughPeakHBF < -0.5
+                        ? (isFr ? 'Pic après la cuisson — surveiller la surfermentation'
+                                : 'Dough peaks after bake — watch for over-fermentation')
                         : sourdoughDoughYellow
-                        ? (isFr ? 'Pic avant la cuisson — surveiller'
-                                : 'Dough peaks before bake — watch closely')
+                        ? (isFr ? 'Proche du pic — devrait être bien'
+                                : 'Near peak — should be fine')
                         : (isFr ? 'Fenêtre de fermentation courte'
                                 : 'Short fermentation window'))
                   : mixStatus;
