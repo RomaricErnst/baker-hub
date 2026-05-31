@@ -36,6 +36,10 @@ interface SourdoughSolverResult {
   starterFridgeInTime:  Date | null;
   peakTime:             Date | null;
   starterIntermediateFeeds: Date[];
+  isFridgeHoldPath:        boolean;
+  fridgeHoldRefreshTime:   Date | null;
+  fridgeHoldInTime:        Date | null;
+  fridgeHoldOutTime:       Date | null;
 }
 
 interface DerivedStarterState {
@@ -1969,6 +1973,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _starterPillState: 'green' | 'yellow' | 'red' = 'yellow';
     let _driftNote: string | null = null;
     let _hasFutureFeedPath = false;
+    let _isFridgeHoldPath = false;
+    let _fridgeHoldRefreshTime: Date | null = null;
+    let _fridgeHoldInTime: Date | null = null;
+    let _fridgeHoldOutTime: Date | null = null;
     let _sourdoughSweetFrom: number | null = null;
     let _sourdoughSweetTo: number | null = null;
     let _windowTooShort = false;
@@ -2113,6 +2121,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ? new Date(_starterFeedTime.getTime() + _adjPeakH * 3600000)
               : null),
         starterIntermediateFeeds: _intermediateRefreshFeeds,
+        isFridgeHoldPath:      _isFridgeHoldPath,
+        fridgeHoldRefreshTime: _fridgeHoldRefreshTime,
+        fridgeHoldInTime:      _fridgeHoldInTime,
+        fridgeHoldOutTime:     _fridgeHoldOutTime,
       });
       onStarterFridgeInTimeChange?.(_showFridgeComparison
         ? (_hasFutureFeedPath && _feed2Time
@@ -2282,6 +2294,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       sscore:          0 | 1 | 2;
       isFridgePath?:   boolean;
       isFutureFeedPath?: boolean;
+      isFridgeHoldPath?: boolean;
+      // Path B specific fields
+      fridgeHoldRefreshMs?: number;
+      fridgeHoldInMs?:      number;
+      fridgeHoldOutMs?:     number;
     }
 
     const candidates: Candidate[] = [];
@@ -2506,6 +2523,83 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       }
     }
 
+    // ── Path B: Refresh → Fridge Hold → Pre-mix Feed (far-future bakes) ─────
+    // For declining/depleted starters with bake 2+ days away, the optimal
+    // baker practice is: refresh now → let peak → fridge → take out → pre-mix
+    // → mix. Two feeds total, fridge handles the long gap.
+    // Generated when:
+    //   - starter is declining/depleted (past peak, set via _starterRefeedTime)
+    //   - planningMode === 'last_fed' && lastFedTime exists
+    //   - starterLocation === 'rt'
+    //   - Pre-mix feed is far enough out that fridge hold makes sense (>= 24h
+    //     from refresh peak to pre-mix feed)
+    //   - Fridge hold duration is reasonable (6h <= hold <= 120h / 5 days)
+    if (
+      _starterRefeedTime &&
+      planningMode === 'last_fed' && lastFedTime &&
+      starterLocation === 'rt'
+    ) {
+      const warmupH_pathB = getStarterFridgeWarmupH(kitchenTemp);
+      const nowMs_pathB = Date.now();
+      const refreshMs_pathB = _starterRefeedTime.getTime();
+      const refreshPeakMs = refreshMs_pathB + adjPeakH * 3600000;
+      const idealMixTime_pathB = targetMixTime ?? new Date(bakeMs - ((sweetFromHBF + sweetToHBF) / 2) * 3600000);
+      const baseFeed_pathB = new Date(idealMixTime_pathB.getTime() - adjPeakH * 3600000);
+      const searchStart_pathB = targetMixTime
+        ? new Date(baseFeed_pathB.getTime() - 15 * 60000)
+        : new Date(baseFeed_pathB.getTime() - 24 * 3600000);
+      const searchEnd_pathB = targetMixTime
+        ? new Date(baseFeed_pathB.getTime() + 15 * 60000)
+        : new Date(baseFeed_pathB.getTime() + 2 * 3600000);
+      const minHoldH = 6;
+      const maxHoldH = 120; // 5 days
+      const minGapFromRefreshPeakH = 24; // require at least 24h between refresh peak and pre-mix
+
+      if (!inBlockerMs(refreshMs_pathB)) {
+        for (let t = searchStart_pathB.getTime(); t <= searchEnd_pathB.getTime(); t += 15 * 60000) {
+          if (t <= nowMs_pathB) continue;
+          // Pre-mix peak = mix
+          const peakT = new Date(t + adjPeakH * 3600000);
+          const mHBF  = (bakeMs - peakT.getTime()) / 3600000;
+          if (mHBF < sweetToHBF - 4 || mHBF > sweetFromHBF + 4) continue;
+          if (bakeMs - mHBF * 3600000 <= nowMs_pathB) continue;
+          if (inBlocker(mHBF)) continue;
+          if (inBlockerMs(t)) continue;
+
+          // Fridge timing: in at refresh peak, out at pre-mix - warmupH
+          const fridgeInMs  = refreshPeakMs;
+          const fridgeOutMs = t - warmupH_pathB * 3600000;
+          if (fridgeOutMs <= fridgeInMs) continue; // negative hold
+          const holdH = (fridgeOutMs - fridgeInMs) / 3600000;
+          if (holdH < minHoldH || holdH > maxHoldH) continue;
+          if ((fridgeOutMs - refreshPeakMs) / 3600000 < minGapFromRefreshPeakH - 1) continue;
+          if (inBlockerMs(fridgeInMs)) continue;
+          if (inBlockerMs(fridgeOutMs)) continue;
+
+          const sc = combinedScore(mHBF, mHBF, t, true);
+          const ss = starterScore(mHBF, mHBF);
+          if (ss === 0) continue;
+
+          // Bonus: cleaner than multi-refresh-at-RT for far bakes.
+          // Scales with RT refreshes avoided.
+          const gapFromNowToPreMixH = (t - nowMs_pathB) / 3600000;
+          const rtRefreshesAvoided = Math.max(0, Math.floor(gapFromNowToPreMixH / troughH) - 1);
+          const pathBBonus = 8 + rtRefreshesAvoided * 3;
+
+          candidates.push({
+            mixHBF: mHBF, peakHBF: mHBF, feedMs: t,
+            usingPeak2: false, feed2Ms: t,
+            score: sc + pathBBonus, sscore: ss,
+            isFridgeHoldPath: true,
+            isFutureFeedPath: true, // keeps existing winner logic working
+            fridgeHoldRefreshMs: refreshMs_pathB,
+            fridgeHoldInMs: fridgeInMs,
+            fridgeHoldOutMs: fridgeOutMs,
+          });
+        }
+      }
+    }
+
     // ── Pick best candidate ──────────────────────────
 
     if (candidates.length === 0) {
@@ -2533,6 +2627,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const actions: (number | null | undefined)[] = [candMixMs, cand.feedMs, cand.feed2Ms];
       if (cand.isFridgePath) {
         actions.push(candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000);
+      }
+      if (cand.isFridgeHoldPath) {
+        actions.push(cand.fridgeHoldRefreshMs, cand.fridgeHoldInMs, cand.fridgeHoldOutMs);
       }
       if (candidateValid(actions)) { best = cand; break; }
     }
@@ -2567,6 +2664,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       _hasFutureFeedPath = true;
       _usingPeak2 = false;
       if (_feed2Time) setRefeedSuggestion(_feed2Time);
+    }
+
+    if (best.isFridgeHoldPath) {
+      _isFridgeHoldPath = true;
+      _fridgeHoldRefreshTime = best.fridgeHoldRefreshMs ? new Date(best.fridgeHoldRefreshMs) : null;
+      _fridgeHoldInTime = best.fridgeHoldInMs ? new Date(best.fridgeHoldInMs) : null;
+      _fridgeHoldOutTime = best.fridgeHoldOutMs ? new Date(best.fridgeHoldOutMs) : null;
     }
 
     // Drift note for yellow positions
