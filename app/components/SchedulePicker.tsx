@@ -41,6 +41,7 @@ interface SourdoughSolverResult {
   fridgeHoldInTime:        Date | null;
   fridgeHoldOutTime:       Date | null;
   preMixStretchFactor:     number;
+  refreshStretchFactor:    number;
 }
 
 interface DerivedStarterState {
@@ -1987,6 +1988,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _starterPillState: 'green' | 'yellow' | 'red' = 'yellow';
     let _driftNote: string | null = null;
     let _hasFutureFeedPath = false;
+    let _refreshStretchFactor = 1.0;
     let _isFridgeHoldPath = false;
     let _fridgeHoldRefreshTime: Date | null = null;
     let _fridgeHoldInTime: Date | null = null;
@@ -2156,6 +2158,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         fridgeHoldInTime:      _fridgeHoldInTime,
         fridgeHoldOutTime:     _fridgeHoldOutTime,
         preMixStretchFactor:   _preMixStretchFactor,
+        refreshStretchFactor:  _refreshStretchFactor,
       });
       onStarterFridgeInTimeChange?.(_showFridgeComparison
         ? (_hasFutureFeedPath && _feed2Time
@@ -2230,6 +2233,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     _suggestedBakeTime = null;
 
     const troughH  = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * ratioMultiplier;
+    // Refresh stretch factor: a refresh feed from a past-peak starter takes
+    // longer to peak because yeast population starts lower. More depletion =
+    // longer stretch. Multiplier on adjPeakH (already temperature-sensitive).
+    _refreshStretchFactor = (() => {
+      if (planningMode !== 'last_fed' || !lastFedTime) return 1.0;
+      const hSinceFeed = (Date.now() - lastFedTime.getTime()) / 3600000;
+      if (hSinceFeed <= adjPeakH) return 1.0;
+      if (hSinceFeed <= adjPeakH * 1.5) return 1.05;
+      if (hSinceFeed <= troughH) return 1.15;
+      if (hSinceFeed <= troughH * 1.5) return 1.25;
+      if (hSinceFeed <= troughH * 2.5) return 1.35;
+      return 1.5;
+    })();
+    const _adjPeakH_refresh = adjPeakH * _refreshStretchFactor;
     const warmupH  = getStarterFridgeWarmupH(kitchenTemp);
     const ftm      = Math.max(0.7, Math.min(1.5, flourStrength ?? 1.0));
     // Peak hold window scales with peak time — faster biology = narrower window.
@@ -2519,7 +2536,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     ) {
       const nowMs3 = Date.now();
       const refreshMs = nowMs3;
-      const refreshPeakMs = refreshMs + adjPeakH * 3600000;
+      const refreshPeakMs = refreshMs + _adjPeakH_refresh * 3600000;
       // Pre-mix feed must come AFTER refresh has had time to peak (or close to it)
       // Allow pre-mix feed to start as early as refreshPeakMs - 1h (some overlap ok)
       const earliestPreMixMs = refreshPeakMs - 2 * 3600000;  // allow up to 2h before refresh peak; scoring penalty applies
@@ -2585,7 +2602,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const warmupH_pathB = getStarterFridgeWarmupH(kitchenTemp);
       const nowMs_pathB = Date.now();
       const refreshMs_pathB = _starterRefeedTime.getTime();
-      const refreshPeakMs = refreshMs_pathB + adjPeakH * 3600000;
+      const refreshPeakMs = refreshMs_pathB + _adjPeakH_refresh * 3600000;
       const idealMixTime_pathB = targetMixTime ?? new Date(bakeMs - ((sweetFromHBF + sweetToHBF) / 2) * 3600000);
       const baseFeed_pathB = new Date(idealMixTime_pathB.getTime() - adjPeakH * 3600000);
       const searchStart_pathB = targetMixTime
@@ -3757,6 +3774,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterFridgeHoldInTime={isSourdough ? (solverResult?.fridgeHoldInTime ?? null) : null}
               starterFridgeHoldOutTime={isSourdough ? (solverResult?.fridgeHoldOutTime ?? null) : null}
               starterPreMixStretchFactor={solverResult?.preMixStretchFactor ?? 1.0}
+              starterRefreshStretchFactor={solverResult?.refreshStretchFactor ?? 1.0}
               startTimeInPast={startTimeInPast}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
@@ -4371,9 +4389,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)',
                         lineHeight: 1.4, marginTop: '2px' }}>
-                        {isFr
-                          ? 'Rafraîchir maintenant pour un pic plus fort'
-                          : 'Feed now for a stronger peak'}
+                        {(() => {
+                          const stretchFactor = solverResult?.refreshStretchFactor ?? 1.0;
+                          const adjPeakH_eff = solverResult?.adjPeakHValue ?? null;
+                          if (!adjPeakH_eff || !_starterRefeedTime) {
+                            return isFr ? 'Rafraîchir maintenant pour un pic plus fort' : 'Feed now for a stronger peak';
+                          }
+                          const peakTime = new Date(_starterRefeedTime.getTime() + adjPeakH_eff * stretchFactor * 3600000);
+                          return isFr
+                            ? `Pic vers ${fmtCardHM(peakTime, isFr)}`
+                            : `Peak around ${fmtCardHM(peakTime, isFr)}`;
+                        })()}
                       </div>
                     </div>
                   )}
@@ -4427,9 +4453,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                           })()}
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
-                          {isFr
-                            ? 'Rafraîchir, laisser pousser, puis réfrigérer'
-                            : 'Feed, let peak, then refrigerate'}
+                          {(() => {
+                            const stretchFactor = solverResult?.refreshStretchFactor ?? 1.0;
+                            const adjPeakH_eff = solverResult?.adjPeakHValue ?? null;
+                            if (!adjPeakH_eff) {
+                              return isFr ? 'Rafraîchir, laisser pousser, puis réfrigérer' : 'Feed, let peak, then refrigerate';
+                            }
+                            const peakTime = new Date(_fridgeHoldRefreshTime.getTime() + adjPeakH_eff * stretchFactor * 3600000);
+                            return isFr
+                              ? `Pic vers ${fmtCardHM(peakTime, isFr)} — puis au frigo`
+                              : `Peak around ${fmtCardHM(peakTime, isFr)} — then refrigerate`;
+                          })()}
                         </div>
                       </div>
 

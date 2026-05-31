@@ -55,6 +55,7 @@ export interface FermentChartProps {
   starterFridgeHoldInTime?:      Date | null;
   starterFridgeHoldOutTime?:     Date | null;
   starterPreMixStretchFactor?:   number;
+  starterRefreshStretchFactor?:  number;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -256,6 +257,7 @@ export default function FermentChart({
   starterFridgeHoldInTime      = null,
   starterFridgeHoldOutTime     = null,
   starterPreMixStretchFactor   = 1.0,
+  starterRefreshStretchFactor  = 1.0,
 }: FermentChartProps) {
   const chartId = useId().replace(/:/g, '');
   const WH = windowH ?? WINDOW_H_DEFAULT;
@@ -433,11 +435,15 @@ export default function FermentChart({
   const effectivePeakH = isLevain && starterAdjPeakH ? starterAdjPeakH : starterPeakH;
   // Stretched effective peak (used only for the ACTIVE pre-mix bell)
   const effectivePeakHStretched = effectivePeakH * starterPreMixStretchFactor;
+  // Refresh bell peak (position only — sigma computed after starterSigmaH)
+  const effectivePeakH_refresh = effectivePeakH * starterRefreshStretchFactor;
 
   // starterSigmaH: bell width scales with actual peak time (wide bell for long cycles)
   const starterSigmaH = isLevain && starterAdjPeakH
     ? starterAdjPeakH * 0.35
     : prefSig;
+  // Refresh bell: sigma stretched proportionally — depleted starter = wider/flatter peak
+  const starterSigmaH_refresh = starterSigmaH * starterRefreshStretchFactor;
 
   const activePeakHBF: number | null = activeFeedHBF !== null
     ? (starterFridgeOutTime
@@ -870,7 +876,7 @@ export default function FermentChart({
               const refreshX = hToX(fridgeHoldRefreshHBF, W, WH);
               const fridgeInX = hToX(fridgeHoldInHBF, W, WH);
               const fridgeOutX = hToX(fridgeHoldOutHBF, W, WH);
-              const refreshPeakHBF = fridgeHoldRefreshHBF - effectivePeakH;
+              const refreshPeakHBF = fridgeHoldRefreshHBF - effectivePeakH_refresh;
               return (
                 <g>
                   {/* Refresh bell clipped to refresh → fridge-in window */}
@@ -880,7 +886,7 @@ export default function FermentChart({
                     </clipPath>
                   </defs>
                   <path
-                    d={makeBellPath(refreshPeakHBF, starterSigmaH, W, WH, fridgeHoldRefreshHBF)}
+                    d={makeBellPath(refreshPeakHBF, starterSigmaH_refresh, W, WH, fridgeHoldRefreshHBF)}
                     fill="rgba(74,127,165,0.08)"
                     stroke="rgba(74,127,165,0.35)"
                     strokeWidth={1}
@@ -923,7 +929,7 @@ export default function FermentChart({
               return (
                 <path
                   key={`rb-${idx}`}
-                  d={makeBellPath(hbf - effectivePeakH, starterSigmaH, W, WH, hbf)}
+                  d={makeBellPath(hbf - effectivePeakH_refresh, starterSigmaH_refresh, W, WH, hbf)}
                   fill="rgba(74,127,165,0.06)"
                   stroke="rgba(74,127,165,0.25)"
                   strokeWidth={1}
