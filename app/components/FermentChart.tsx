@@ -54,6 +54,7 @@ export interface FermentChartProps {
   starterFridgeHoldRefreshTime?: Date | null;
   starterFridgeHoldInTime?:      Date | null;
   starterFridgeHoldOutTime?:     Date | null;
+  starterPreMixStretchFactor?:   number;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -254,6 +255,7 @@ export default function FermentChart({
   starterFridgeHoldRefreshTime = null,
   starterFridgeHoldInTime      = null,
   starterFridgeHoldOutTime     = null,
+  starterPreMixStretchFactor   = 1.0,
 }: FermentChartProps) {
   const chartId = useId().replace(/:/g, '');
   const WH = windowH ?? WINDOW_H_DEFAULT;
@@ -429,6 +431,8 @@ export default function FermentChart({
   // effectivePeakH: use starterAdjPeakH when provided (ratio/maturity/rye adjusted)
   // Falls back to base starterPeakH when null (non-sourdough or engine not yet run)
   const effectivePeakH = isLevain && starterAdjPeakH ? starterAdjPeakH : starterPeakH;
+  // Stretched effective peak (used only for the ACTIVE pre-mix bell)
+  const effectivePeakHStretched = effectivePeakH * starterPreMixStretchFactor;
 
   // starterSigmaH: bell width scales with actual peak time (wide bell for long cycles)
   const starterSigmaH = isLevain && starterAdjPeakH
@@ -438,7 +442,7 @@ export default function FermentChart({
   const activePeakHBF: number | null = activeFeedHBF !== null
     ? (starterFridgeOutTime
         ? (bakeMs - starterFridgeOutTime.getTime()) / 3600000 - starterWarmupH
-        : activeFeedHBF - effectivePeakH)
+        : activeFeedHBF - effectivePeakHStretched)
     : null;
 
   const histFeedHBF: number | null = isLevain && starterFeed2Time
@@ -1052,7 +1056,7 @@ export default function FermentChart({
                     if (prefNeedsFridge && !isLevain) {
                       return makePlateauBellPath(peakHBF, prefSig, plateauHalfW, W, WH, feedHBF);
                     }
-                    return makeBellPath(peakHBF, starterSigmaH, W, WH, feedHBF);
+                    return makeBellPath(peakHBF, starterSigmaH * starterPreMixStretchFactor, W, WH, feedHBF);
                   })()}
                   fill={`${prefColor}2E`}
                   stroke={`${prefColor}A5`}

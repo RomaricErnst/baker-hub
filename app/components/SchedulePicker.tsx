@@ -40,6 +40,7 @@ interface SourdoughSolverResult {
   fridgeHoldRefreshTime:   Date | null;
   fridgeHoldInTime:        Date | null;
   fridgeHoldOutTime:       Date | null;
+  preMixStretchFactor:     number;
 }
 
 interface DerivedStarterState {
@@ -123,6 +124,18 @@ function fmtCardDT(d: Date, isFr = false): string {
   const wd = d.toLocaleDateString(loc, { weekday: 'short' });
   const mo = d.toLocaleDateString(loc, { month: 'short' });
   return `${wd} ${d.getDate()} ${mo} · ${fmtCardHM(d, isFr)}`;
+}
+
+// Pre-mix stretch factor: when pre-mix feed happens BEFORE refresh peak,
+// starter yeast population isn't fully matured → pre-mix peak takes longer.
+// 0h early = 1.0 (sweet spot), 1h early = 1.1, 2h early = 1.2 (max).
+// At-or-after refresh peak = 1.0 (no stretch).
+function computePreMixStretchFactor(preMixMs: number, refreshPeakMs: number | null): number {
+  if (refreshPeakMs == null) return 1.0;
+  const gapH = (preMixMs - refreshPeakMs) / 3600000;
+  if (gapH >= 0) return 1.0;
+  const hoursEarly = Math.min(2, Math.abs(gapH));
+  return 1.0 + 0.1 * hoursEarly;
 }
 
 // ── Time formatter ────────────────────────────
@@ -2080,6 +2093,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         }
       }
 
+      // Compute pre-mix stretch factor for the winning path.
+      // Only relevant when refresh peak exists AND pre-mix feed exists.
+      // Path B handles its own timing — gets 1.0 by construction.
+      const _preMixStretchFactor = (() => {
+        if (_isFridgeHoldPath) return 1.0;
+        if (!_starterRefeedTime || !_feed2Time) return 1.0;
+        const adjPeakH_eff = _adjPeakH ?? adjPeakH_derived;
+        if (!adjPeakH_eff) return 1.0;
+        const refreshPeakMs = _starterRefeedTime.getTime() + adjPeakH_eff * 3600000;
+        return computePreMixStretchFactor(_feed2Time.getTime(), refreshPeakMs);
+      })();
+
       setSolverResult({
         usingPeak2:             _usingPeak2,
         hasFutureFeedPath:      _hasFutureFeedPath,
@@ -2122,13 +2147,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         peakTime: (starterLocation === 'fridge' && _newFridgeOut)
           ? new Date(_newFridgeOut.getTime() + getStarterFridgeWarmupH(kitchenTemp) * 3600000)
           : (_starterFeedTime && _adjPeakH
-              ? new Date(_starterFeedTime.getTime() + _adjPeakH * 3600000)
+              ? new Date(_starterFeedTime.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
               : null),
         starterIntermediateFeeds: _intermediateRefreshFeeds,
         isFridgeHoldPath:      _isFridgeHoldPath,
         fridgeHoldRefreshTime: _fridgeHoldRefreshTime,
         fridgeHoldInTime:      _fridgeHoldInTime,
         fridgeHoldOutTime:     _fridgeHoldOutTime,
+        preMixStretchFactor:   _preMixStretchFactor,
       });
       onStarterFridgeInTimeChange?.(_showFridgeComparison
         ? (_hasFutureFeedPath && _feed2Time
@@ -2506,7 +2532,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       if (!inBlockerMs(refreshMs)) {
         for (let t3 = Math.max(searchStart3.getTime(), earliestPreMixMs); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
           if (t3 <= nowMs3) continue;
-          const peakT3 = new Date(t3 + adjPeakH * 3600000);
+          const stretchFactor3 = computePreMixStretchFactor(t3, refreshPeakMs);
+          const peakT3 = new Date(t3 + adjPeakH * stretchFactor3 * 3600000);
           const mHBF3  = (bakeMs - peakT3.getTime()) / 3600000;
           if (mHBF3 < sweetToHBF - 4 || mHBF3 > sweetFromHBF + 4) continue;
           if (bakeMs - mHBF3 * 3600000 <= nowMs3) continue;
@@ -3726,6 +3753,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterFridgeHoldRefreshTime={isSourdough ? (solverResult?.fridgeHoldRefreshTime ?? null) : null}
               starterFridgeHoldInTime={isSourdough ? (solverResult?.fridgeHoldInTime ?? null) : null}
               starterFridgeHoldOutTime={isSourdough ? (solverResult?.fridgeHoldOutTime ?? null) : null}
+              starterPreMixStretchFactor={solverResult?.preMixStretchFactor ?? 1.0}
               startTimeInPast={startTimeInPast}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
