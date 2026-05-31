@@ -1382,7 +1382,9 @@ export default function FermentChart({
                     {(() => {
                       const tickPositions = ticks.map(tk => tk.x);
                       const collidesWithTick = tickPositions.some(tx => Math.abs(r.x - tx) < 40);
-                      const labelY = collidesWithTick ? AXIS_Y + S + 30 : AXIS_Y + S + 14;
+                      const activeX = activeFeedHBF !== null ? hToX(activeFeedHBF, W, WH) : null;
+                      const collidesWithActive = activeX !== null && Math.abs(r.x - activeX) < 50;
+                      const labelY = (collidesWithTick || collidesWithActive) ? AXIS_Y + S + 30 : AXIS_Y + S + 14;
                       return (
                         <text x={r.x} y={labelY} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
                           {labelText}

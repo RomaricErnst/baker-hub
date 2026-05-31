@@ -2284,6 +2284,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
 
     function reasonableHour(mixHBF: number): number {
+      // Sourdough styles use cold retard — mix at any hour is fine (just go to fridge).
+      // Suppress hour-of-day penalty for sourdough to avoid biasing against
+      // biologically-optimal but late/early mix times.
+      if (isSourdough) return 1;
       const h = new Date(bakeMs - mixHBF * 3600000).getHours();
       return (h >= 7 && h <= 22) ? 1 : 0;
     }
@@ -2515,10 +2519,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           if (gapH <= troughH * 1.5) return -8;
           return -15;
         })();
+        // Sub-peak pre-mix penalty (when refresh peak exists)
+        const _subPeakPenalty = (() => {
+          if (refreshPeakMsForStretch == null) return 0;
+          const gapFromRefreshPeakH = (t2 - refreshPeakMsForStretch) / 3600000;
+          if (gapFromRefreshPeakH >= 0) return 0;
+          if (gapFromRefreshPeakH >= -2) return -5;
+          return -10 - Math.min(20, (Math.abs(gapFromRefreshPeakH) - 2) * 3);
+        })();
         candidates.push({
           mixHBF: mHBF2, peakHBF: mHBF2, feedMs: t2,
           usingPeak2: false, feed2Ms: t2,
-          score: sc2 + _depletionPenalty, sscore: ss2,
+          score: sc2 + _depletionPenalty + _subPeakPenalty, sscore: ss2,
           isFutureFeedPath: true,
         });
       }
@@ -2578,7 +2590,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             if (gapFromRefreshPeakH > 3 && gapFromRefreshPeakH <= 6) return -(gapFromRefreshPeakH - 3) * 2;
             if (gapFromRefreshPeakH < 0 && gapFromRefreshPeakH >= -1) return -2;
             if (gapFromRefreshPeakH < -1 && gapFromRefreshPeakH >= -2) return -5;
-            return -10;
+            // Heavily sub-peak: scale penalty with how far before refresh peak
+            return -10 - Math.min(20, (Math.abs(gapFromRefreshPeakH) - 2) * 3);
           })();
           candidates.push({
             mixHBF: mHBF3, peakHBF: mHBF3, feedMs: t3,
@@ -3921,10 +3934,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               onClick={() => {
                 hasManuallyDragged.current = false;
                 setHasDragged(false);
-                computeAndApplyRecommendation(blocks, pendingEatTime);
-                // No setTimeout needed: computeAndApplyRecommendation calls
-                // findOptimalPositionSourdough synchronously for sourdough via early return.
-                // Adding a second async call causes double-run with ghost bells.
+                const blocksToUse = isSourdough ? localBlocks : blocks;
+                computeAndApplyRecommendation(blocksToUse, pendingEatTime);
+                if (isSourdough) {
+                  findOptimalPositionSourdough(pendingEatTime, undefined, blocksToUse);
+                }
               }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
@@ -4320,9 +4334,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                           ? (isFr ? 'Rafraîchi final' : 'Pre-mix Feed')
                           : (isFr ? `Rafraîchi ${i + 1}` : `Refresh Feed ${i + 1}`),
                         note: isLast
-                          ? (isFr
-                              ? `Pic vers ${fmtCardHM(new Date(ft.getTime() + adjPeakH * 3600000), isFr)}`
-                              : `Peak around ${fmtCardHM(new Date(ft.getTime() + adjPeakH * 3600000), isFr)}`)
+                          ? (() => {
+                              const stretchFactor = solverResult?.preMixStretchFactor ?? 1.0;
+                              const peakAt = new Date(ft.getTime() + adjPeakH * stretchFactor * 3600000);
+                              return isFr
+                                ? `Pic vers ${fmtCardHM(peakAt, isFr)}`
+                                : `Peak around ${fmtCardHM(peakAt, isFr)}`;
+                            })()
                           : undefined,
                       });
                     }
@@ -4333,9 +4351,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     feedPlan.push({
                       ft: _feed2Time,
                       label: isFr ? 'Rafraîchi final' : 'Pre-mix Feed',
-                      note: isFr
-                        ? `Pic vers ${fmtCardHM(new Date(_feed2Time.getTime() + adjPeakH * 3600000), isFr)}`
-                        : `Peak around ${fmtCardHM(new Date(_feed2Time.getTime() + adjPeakH * 3600000), isFr)}`,
+                      note: (() => {
+                        const stretchFactor = solverResult?.preMixStretchFactor ?? 1.0;
+                        const peakAt = new Date(_feed2Time.getTime() + adjPeakH * stretchFactor * 3600000);
+                        return isFr
+                          ? `Pic vers ${fmtCardHM(peakAt, isFr)}`
+                          : `Peak around ${fmtCardHM(peakAt, isFr)}`;
+                      })(),
                     });
                   }
                 } else if (_usingPeak2 && _feed2Time) {
@@ -4529,7 +4551,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
                           {(() => {
-                            const peakAt = new Date(_feed2Time.getTime() + adjPeakH * 3600000);
+                            const stretchFactor = solverResult?.preMixStretchFactor ?? 1.0;
+                            const peakAt = new Date(_feed2Time.getTime() + adjPeakH * stretchFactor * 3600000);
                             return isFr
                               ? `Pic vers ${fmtCardHM(peakAt, isFr)}`
                               : `Peak around ${fmtCardHM(peakAt, isFr)}`;
