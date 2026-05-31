@@ -939,7 +939,7 @@ export default function FermentChart({
               );
             })}
 
-            {/* ── Muted historical bell (Feed 1 when Peak 2 active) ── */}
+            {/* ── Muted historical bell — shows the spent cycle from Last Fed ── */}
             {isLevain && histPeakHBF !== null && histFeedHBF !== null && (
               <>
                 <path
@@ -953,20 +953,9 @@ export default function FermentChart({
               </>
             )}
 
-            {/* ── Depleted: decay curve + flat line + fresh bell ── */}
+            {/* ── Depleted: flat dormant baseline + fresh bell ── */}
             {isLevain && depletedAtHBF !== null && activeFeedHBF !== null && (
               <>
-                {/* Decay curve: full rise then decline showing spent cycle */}
-                {activePeakHBF !== null && (
-                  <path
-                    d={makeBellPath(activePeakHBF, starterSigmaH, W, WH, activeFeedHBF)}
-                    fill="rgba(74,127,165,0.08)"
-                    stroke="rgba(74,127,165,0.25)"
-                    strokeWidth={1}
-                    strokeDasharray="4 3"
-                    clipPath={`url(#chart-area-clip-${chartId})`}
-                  />
-                )}
                 {/* Flat baseline from trough onward — starter dormant */}
                 <line
                   x1={hToX(depletedAtHBF, W, WH)}
