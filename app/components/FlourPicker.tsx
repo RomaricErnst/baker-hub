@@ -14,7 +14,7 @@ const CROWD_FAV_IDS = [
 // ── Bread recommendations by style ───────────────
 const BREAD_REC_BY_STYLE: Record<string, string[]> = {
   sourdough:     ['T65', 'Bread flour', 'T80'],
-  pain_levain:   ['T65', 'T80'],
+  pain_levain:   ['T65', 'Bread flour', 'T80'],
   pain_campagne: ['T65', 'T80', 'Rye'],
   baguette:      ['T65', 'T55'],
   pain_complet:  ['T110 / T150', 'Wholemeal'],

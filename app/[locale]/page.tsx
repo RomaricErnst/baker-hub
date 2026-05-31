@@ -613,6 +613,15 @@ export default function Home() {
     }
   }, [styleKey, tab]);
 
+  useEffect(() => {
+    if (bakeType === 'bread' && flourBlend.flour1 === 'pizza00') {
+      setFlourBlend({ flour1: 'bread', flour2: null, ratio1: 100 });
+    }
+    if (bakeType === 'pizza' && flourBlend.flour1 === 'bread') {
+      setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 });
+    }
+  }, [bakeType]);
+
   const weightBounds = getWeightBounds(styleKey, bakeType);
 
   // ── Computed ──────────────────────────────
@@ -887,7 +896,7 @@ export default function Home() {
     setBlocks([]); setYeastType(null);
     setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(6);
     setShowResults(false); setActiveStep(1); setHighestStep(1);
-    setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
+    setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: bakeType === 'bread' ? 'bread' : 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
     setModeChosen(false);
