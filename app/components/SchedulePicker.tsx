@@ -4261,13 +4261,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         background: pillGreen ? 'rgba(74,122,58,0.1)' : 'rgba(212,168,83,0.15)',
                         border: `1px solid ${pillGreen ? 'rgba(74,122,58,0.3)' : 'rgba(212,168,83,0.4)'}`,
                         borderRadius: '20px',
-                        padding: '.15rem .55rem',
-                        fontSize: '11px',
+                        padding: '.2rem .65rem',
+                        fontSize: '12px',
                         color: pillGreen ? '#4A7A3A' : '#9A7010',
                         fontFamily: 'var(--font-dm-mono)',
                       }}>
                         <div style={{
-                          width: 6, height: 6, borderRadius: '50%',
+                          width: 8, height: 8, borderRadius: '50%',
                           background: pillGreen ? '#4A7A3A' : '#9A7010',
                           flexShrink: 0,
                         }} />
@@ -4393,9 +4393,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       display: 'inline-flex', alignItems: 'center', gap: '.3rem',
                       marginTop: '.3rem',
                       background: bg, border: `1px solid ${border}`,
-                      borderRadius: '20px', padding: '.15rem .55rem',
-                      fontSize: '11px', color, fontFamily: 'var(--font-dm-mono)',
+                      borderRadius: '20px', padding: '.2rem .65rem',
+                      fontSize: '12px', color, fontFamily: 'var(--font-dm-mono)',
                     }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
                       {cardPrefStatus}
                     </div>
                   );
@@ -4485,13 +4486,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     background: pillGreen ? 'rgba(74,122,58,0.1)' : pillYellow ? 'rgba(212,168,83,0.15)' : 'rgba(196,82,42,0.1)',
                     border: `1px solid ${pillGreen ? 'rgba(74,122,58,0.3)' : pillYellow ? 'rgba(212,168,83,0.4)' : 'rgba(196,82,42,0.3)'}`,
                     borderRadius: '20px',
-                    padding: '.15rem .55rem',
-                    fontSize: '11px',
+                    padding: '.2rem .65rem',
+                    fontSize: '12px',
                     color: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#C4522A',
                     fontFamily: 'var(--font-dm-mono)',
                   }}>
                     <div style={{
-                      width: 6, height: 6, borderRadius: '50%',
+                      width: 8, height: 8, borderRadius: '50%',
                       background: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#C4522A',
                       flexShrink: 0,
                     }} />
