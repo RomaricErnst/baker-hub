@@ -2489,9 +2489,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         ? new Date(baseFeed2.getTime() + 15 * 60000)
         : new Date(baseFeed2.getTime() + 2 * 3600000);
 
+      // refreshPeakMsForStretch: if starter is declining/depleted, refresh
+      // peak exists and stretch applies. Otherwise null (no stretch).
+      const refreshPeakMsForStretch = _starterRefeedTime
+        ? _starterRefeedTime.getTime() + _adjPeakH_refresh * 3600000
+        : null;
+
       for (let t2 = searchStart2.getTime(); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
         if (t2 <= nowMs2) continue;
-        const peakT2 = new Date(t2 + adjPeakH * 3600000);
+        const stretchFactor2 = computePreMixStretchFactor(t2, refreshPeakMsForStretch);
+        const peakT2 = new Date(t2 + adjPeakH * stretchFactor2 * 3600000);
         const mHBF2  = (bakeMs - peakT2.getTime()) / 3600000;
         if (mHBF2 < sweetToHBF - 4 || mHBF2 > sweetFromHBF + 4) continue;
         if (bakeMs - mHBF2 * 3600000 <= nowMs2) continue;
@@ -2683,6 +2690,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     candidates.sort((a, b) => b.score - a.score);
     let best = candidates[0];
+    let foundValid = false;
     for (const cand of candidates) {
       const candMixMs = bakeMs - cand.mixHBF * 3600000;
       const actions: (number | null | undefined)[] = [candMixMs, cand.feedMs, cand.feed2Ms];
@@ -2692,7 +2700,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       if (cand.isFridgeHoldPath) {
         actions.push(cand.fridgeHoldRefreshMs, cand.fridgeHoldInMs, cand.fridgeHoldOutMs);
       }
-      if (candidateValid(actions)) { best = cand; break; }
+      if (candidateValid(actions)) {
+        best = cand;
+        foundValid = true;
+        break;
+      }
+    }
+    // If no candidate cleared all blockers, the highest-scoring fallback still
+    // violates blocker rules. Surface this honestly via windowTooShort so the
+    // baker can adjust bake time or blockers instead of seeing a misleading
+    // green-pill plan with diamonds in red zones.
+    if (!foundValid) {
+      _windowTooShort = true;
     }
 
     // If baker manually dragged, always use their chosen mix time.
