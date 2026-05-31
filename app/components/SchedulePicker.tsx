@@ -1757,7 +1757,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   const nights   = useMemo(() => getNightsInWindow(windowStart, pendingEatTime), [windowStart, pendingEatTime]);
   const workdays = useMemo(() => getWorkdaysInWindow(windowStart, pendingEatTime), [windowStart, pendingEatTime]);
-  const isWorkActive = blocks.some(b => b.label.startsWith('Work · '));
+  const _effectiveBlocks = isSourdough ? localBlocks : blocks;
+  const isWorkActive = _effectiveBlocks.some(b => b.label.startsWith('Work · '));
 
   // ── Phase transitions ────────────────────────
   function confirmBakeTime() {
@@ -2499,20 +2500,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       }
     }
 
-    // ── Refresh + Future Feed candidates (depleted starter, two-feed path) ─
-    // When starter is past trough (depleted), a single future feed produces
+    // ── Refresh + Future Feed candidates (declining/depleted starter, two-feed path) ─
+    // When starter is past peak (declining or depleted), a single future feed produces
     // a weak levain. The correct biology is: refresh now to rebuild yeast
     // population, then a second (pre-mix) feed timed so peak = mix. This
     // candidate models that two-feed path. Only generated when:
-    //   - starter is currently past trough (depleted)
+    //   - starter is currently past peak (declining or depleted)
     //   - planningMode === 'last_fed' and lastFedTime exists
     //   - starterLocation === 'rt' (fridge has its own paths)
     //   - there is enough time between now+adjPeakH (refresh peak) and the
     //     pre-mix feed to allow the refresh cycle to complete
+    // Include declining starters (past peak, before trough), not just depleted.
+    // Biology: any past-peak starter benefits from a refresh before pre-mix.
     if (
       planningMode === 'last_fed' && lastFedTime &&
       starterLocation === 'rt' &&
-      (Date.now() - lastFedTime.getTime()) / 3600000 > troughH
+      (Date.now() - lastFedTime.getTime()) / 3600000 > adjPeakH
     ) {
       const nowMs3 = Date.now();
       const refreshMs = nowMs3;
@@ -2800,19 +2803,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   function toggleWork() {
     const newBlocks = isWorkActive
-      ? blocks.filter(b => !b.label.startsWith('Work · '))
-      : [...blocks, ...workdays.map(d => ({ from: d.blockStart, to: d.blockEnd, label: d.label }))];
+      ? _effectiveBlocks.filter(b => !b.label.startsWith('Work · '))
+      : [..._effectiveBlocks, ...workdays.map(d => ({ from: d.blockStart, to: d.blockEnd, label: d.label }))];
     applyAndUpdate(newBlocks);
   }
 
   function isAnyNightActive(): boolean {
-    return nights.some(n => blocks.some(b => b.label === n.label));
+    return nights.some(n => _effectiveBlocks.some(b => b.label === n.label));
   }
 
   function toggleAllNights() {
     const anyActive = isAnyNightActive();
     const nightLabels = new Set(nights.map(n => n.label));
-    const withoutNights = blocks.filter(b => !nightLabels.has(b.label));
+    const withoutNights = _effectiveBlocks.filter(b => !nightLabels.has(b.label));
     const newBlocks = anyActive
       ? withoutNights
       : [...withoutNights, ...nights.map(n => ({ from: n.blockStart, to: n.blockEnd, label: n.label }))];
@@ -2820,14 +2823,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   function removeBlock(index: number) {
-    applyAndUpdate(blocks.filter((_, i) => i !== index));
+    applyAndUpdate(_effectiveBlocks.filter((_, i) => i !== index));
   }
 
   function addCustomBlock() {
     const from = new Date(customFrom);
     const to   = new Date(customTo);
     if (!customLabel.trim() || isNaN(from.getTime()) || isNaN(to.getTime()) || to <= from) return;
-    applyAndUpdate([...blocks, { from, to, label: customLabel.trim() }]);
+    applyAndUpdate([..._effectiveBlocks, { from, to, label: customLabel.trim() }]);
     setCustomLabel(''); setCustomFrom(''); setCustomTo('');
     setShowCustom(false);
   }

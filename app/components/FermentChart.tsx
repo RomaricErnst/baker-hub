@@ -1373,9 +1373,16 @@ export default function FermentChart({
                       stroke="#4A7FA5"
                       strokeWidth={1}
                     />
-                    <text x={r.x} y={AXIS_Y + S + 14} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
-                      {labelText}
-                    </text>
+                    {(() => {
+                      const tickPositions = ticks.map(tk => tk.x);
+                      const collidesWithTick = tickPositions.some(tx => Math.abs(r.x - tx) < 40);
+                      const labelY = collidesWithTick ? AXIS_Y + S + 30 : AXIS_Y + S + 14;
+                      return (
+                        <text x={r.x} y={labelY} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
+                          {labelText}
+                        </text>
+                      );
+                    })()}
                   </g>
                 );
               })}
