@@ -51,6 +51,9 @@ export interface FermentChartProps {
   starterRedPill?: boolean;
   starterFeed2OutOfZone?: boolean;
   starterFridgeInTime?: Date | null;
+  starterFridgeHoldRefreshTime?: Date | null;
+  starterFridgeHoldInTime?:      Date | null;
+  starterFridgeHoldOutTime?:     Date | null;
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -248,6 +251,9 @@ export default function FermentChart({
   starterRedPill = false,
   starterFeed2OutOfZone = false,
   starterFridgeInTime = null,
+  starterFridgeHoldRefreshTime = null,
+  starterFridgeHoldInTime      = null,
+  starterFridgeHoldOutTime     = null,
 }: FermentChartProps) {
   const chartId = useId().replace(/:/g, '');
   const WH = windowH ?? WINDOW_H_DEFAULT;
@@ -476,6 +482,14 @@ export default function FermentChart({
   const fridgeInHBF: number | null = isLevain && starterFridgeInTime
     ? (bakeMs - starterFridgeInTime.getTime()) / 3600000
     : null;
+
+  const fridgeHoldRefreshHBF: number | null = isLevain && starterFridgeHoldRefreshTime
+    ? (bakeMs - starterFridgeHoldRefreshTime.getTime()) / 3600000 : null;
+  const fridgeHoldInHBF: number | null = isLevain && starterFridgeHoldInTime
+    ? (bakeMs - starterFridgeHoldInTime.getTime()) / 3600000 : null;
+  const fridgeHoldOutHBF: number | null = isLevain && starterFridgeHoldOutTime
+    ? (bakeMs - starterFridgeHoldOutTime.getTime()) / 3600000 : null;
+  const isFridgeHoldPath = fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null;
 
   // ── Label collision detection ────────────────────────────
   const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 100;
@@ -847,6 +861,57 @@ export default function FermentChart({
         {/* ── Pref bell (drawn first so dough overlaps) ── */}
         {hasPref && (
           <>
+            {/* Path B: Refresh → Fridge Hold → Pre-mix Feed visualization */}
+            {isFridgeHoldPath && fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null && (() => {
+              const refreshX = hToX(fridgeHoldRefreshHBF, W, WH);
+              const fridgeInX = hToX(fridgeHoldInHBF, W, WH);
+              const fridgeOutX = hToX(fridgeHoldOutHBF, W, WH);
+              const refreshPeakHBF = fridgeHoldRefreshHBF - effectivePeakH;
+              return (
+                <g>
+                  {/* Refresh bell clipped to refresh → fridge-in window */}
+                  <defs>
+                    <clipPath id={`pathb-refresh-clip-${chartId}`}>
+                      <rect x={refreshX} y={0} width={Math.max(0, fridgeInX - refreshX)} height={CHART_H} />
+                    </clipPath>
+                  </defs>
+                  <path
+                    d={makeBellPath(refreshPeakHBF, starterSigmaH, W, WH, fridgeHoldRefreshHBF)}
+                    fill="rgba(74,127,165,0.08)"
+                    stroke="rgba(74,127,165,0.35)"
+                    strokeWidth={1}
+                    strokeDasharray="2 3"
+                    clipPath={`url(#pathb-refresh-clip-${chartId})`}
+                  />
+                  {/* Cold storage flat region from fridge-in to fridge-out */}
+                  <rect
+                    x={fridgeInX}
+                    y={AXIS_Y - 12}
+                    width={Math.max(0, fridgeOutX - fridgeInX)}
+                    height={12}
+                    fill="rgba(150,180,210,0.20)"
+                    stroke="rgba(150,180,210,0.5)"
+                    strokeWidth={0.5}
+                    strokeDasharray="4 2"
+                  />
+                  {/* Fridge-in marker */}
+                  <line
+                    x1={fridgeInX} y1={AXIS_Y - 12}
+                    x2={fridgeInX} y2={AXIS_Y}
+                    stroke="rgba(74,127,165,0.6)"
+                    strokeWidth={1.5}
+                  />
+                  {/* Fridge-out marker */}
+                  <line
+                    x1={fridgeOutX} y1={AXIS_Y - 12}
+                    x2={fridgeOutX} y2={AXIS_Y}
+                    stroke="rgba(74,127,165,0.6)"
+                    strokeWidth={1.5}
+                  />
+                </g>
+              );
+            })()}
+
             {/* ── Intermediate refresh cycle bells (drawn below hist + active) ── */}
             {isLevain && starterIntermediateFeeds.length > 0 && starterIntermediateFeeds.map((ft, idx) => {
               const hbf = (bakeMs - ft.getTime()) / 3600000;
@@ -1313,6 +1378,43 @@ export default function FermentChart({
                     </text>
                     <text x={r.x} y={labelY} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
                       {labelText}
+                    </text>
+                  </g>
+                );
+              })}
+            </g>
+          );
+        })()}
+
+        {/* Path B diamonds: Refresh, Into Fridge, Out of Fridge */}
+        {isFridgeHoldPath && fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null && (() => {
+          const items = [
+            { hbf: fridgeHoldRefreshHBF, label: isFr ? 'Rafraîchi' : 'Refresh',       fillColor: '#4A7FA5' },
+            { hbf: fridgeHoldInHBF,      label: isFr ? 'Au frigo' : 'Into fridge',    fillColor: '#96B4D2' },
+            { hbf: fridgeHoldOutHBF,     label: isFr ? 'Sortie' : 'Out of fridge',    fillColor: '#96B4D2' },
+          ];
+          return (
+            <g>
+              {items.map((item, idx) => {
+                const x = hToX(item.hbf, W, WH);
+                if (x < 0 || x > W) return null;
+                return (
+                  <g key={`pathb-diamond-${idx}`}>
+                    <polygon
+                      points={`${x},${AXIS_Y - 6} ${x + 5},${AXIS_Y} ${x},${AXIS_Y + 6} ${x - 5},${AXIS_Y}`}
+                      fill={item.fillColor}
+                      stroke="#FFF"
+                      strokeWidth={1}
+                    />
+                    <text
+                      x={x}
+                      y={AXIS_Y + 22}
+                      fill="var(--smoke)"
+                      fontSize="9"
+                      fontFamily="var(--font-dm-mono)"
+                      textAnchor="middle"
+                    >
+                      {item.label}
                     </text>
                   </g>
                 );

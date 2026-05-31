@@ -2023,54 +2023,58 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // use fridgeOutTime which has its own diamond rendering path).
       const _intermediateRefreshFeeds: Date[] = [];
 
-      // (a) Primary refresh: card shows REFRESH FEED when _starterRefeedTime
-      // is set and not in usingPeak2 mode. Chart must show the same diamond
-      // + bell. _starterRefeedTime is currently always "now" by engine
-      // convention (refeedNow = new Date()) — if that changes later, this
-      // still renders correctly.
-      if (_starterRefeedTime && !_usingPeak2) {
-        _intermediateRefreshFeeds.push(_starterRefeedTime);
-      }
+      if (_isFridgeHoldPath) {
+        // Path B owns its own refresh visualisation — skip the multi-refresh array
+      } else {
+        // (a) Primary refresh: card shows REFRESH FEED when _starterRefeedTime
+        // is set and not in usingPeak2 mode. Chart must show the same diamond
+        // + bell. _starterRefeedTime is currently always "now" by engine
+        // convention (refeedNow = new Date()) — if that changes later, this
+        // still renders correctly.
+        if (_starterRefeedTime && !_usingPeak2) {
+          _intermediateRefreshFeeds.push(_starterRefeedTime);
+        }
 
-      // (b) Long-horizon intermediates: if the gap from refresh (or last feed)
-      // to the next major feed exceeds one full trough cycle, add additional
-      // refresh feeds to keep starter alive. Temperature/style/maturity/rye/
-      // ratio sensitive via getStarterTroughH + ryeF/matF/ratioMult.
-      if (planningMode === 'last_fed' && lastFedTime) {
-        const adjPeakH_eff = _adjPeakH ?? adjPeakH_derived;
-        if (adjPeakH_eff) {
-          const ryeF = starterHasRye ? 0.8 : 1.0;
-          const matF = starterMature ? 1.0 : 1.2;
-          const ratioMult = 1 + 0.35 * Math.log(feedRatio);
-          const troughH_int = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * matF * ratioMult;
+        // (b) Long-horizon intermediates: if the gap from refresh (or last feed)
+        // to the next major feed exceeds one full trough cycle, add additional
+        // refresh feeds to keep starter alive. Temperature/style/maturity/rye/
+        // ratio sensitive via getStarterTroughH + ryeF/matF/ratioMult.
+        if (planningMode === 'last_fed' && lastFedTime) {
+          const adjPeakH_eff = _adjPeakH ?? adjPeakH_derived;
+          if (adjPeakH_eff) {
+            const ryeF = starterHasRye ? 0.8 : 1.0;
+            const matF = starterMature ? 1.0 : 1.2;
+            const ratioMult = 1 + 0.35 * Math.log(feedRatio);
+            const troughH_int = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * matF * ratioMult;
 
-          // Determine the "next major feed" the chart walks toward.
-          // Priority: future pre-mix feed (_feed2Time) > start dough time.
-          const nextMajorFeedMs = (_hasFutureFeedPath || _usingPeak2) && _feed2Time
-            ? _feed2Time.getTime()
-            : _newPendingStart.getTime() - adjPeakH_eff * 3600000;
+            // Determine the "next major feed" the chart walks toward.
+            // Priority: future pre-mix feed (_feed2Time) > start dough time.
+            const nextMajorFeedMs = (_hasFutureFeedPath || _usingPeak2) && _feed2Time
+              ? _feed2Time.getTime()
+              : _newPendingStart.getTime() - adjPeakH_eff * 3600000;
 
-          // Starting point: most recent refresh (if any) else lastFedTime
-          const startMs = _intermediateRefreshFeeds.length > 0
-            ? _intermediateRefreshFeeds[_intermediateRefreshFeeds.length - 1].getTime()
-            : lastFedTime.getTime();
+            // Starting point: most recent refresh (if any) else lastFedTime
+            const startMs = _intermediateRefreshFeeds.length > 0
+              ? _intermediateRefreshFeeds[_intermediateRefreshFeeds.length - 1].getTime()
+              : lastFedTime.getTime();
 
-          const gapH = (nextMajorFeedMs - startMs) / 3600000;
-          const numIntermediate = Math.floor(gapH / troughH_int);
+            const gapH = (nextMajorFeedMs - startMs) / 3600000;
+            const numIntermediate = Math.floor(gapH / troughH_int);
 
-          for (let i = 1; i < numIntermediate; i++) {
-            const ft = new Date(startMs + i * troughH_int * 3600000);
-            // Snap to 7am-10pm sleeping hours
-            const h = ft.getHours();
-            if (h < 7) { ft.setHours(7, 0, 0, 0); }
-            else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
-            // Guards: must be future, must clear blockers, must precede next major feed
-            if (
-              ft.getTime() > Date.now() &&
-              ft.getTime() < nextMajorFeedMs - 30 * 60000 &&
-              !inBlockerMs(ft.getTime())
-            ) {
-              _intermediateRefreshFeeds.push(ft);
+            for (let i = 1; i < numIntermediate; i++) {
+              const ft = new Date(startMs + i * troughH_int * 3600000);
+              // Snap to 7am-10pm sleeping hours
+              const h = ft.getHours();
+              if (h < 7) { ft.setHours(7, 0, 0, 0); }
+              else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
+              // Guards: must be future, must clear blockers, must precede next major feed
+              if (
+                ft.getTime() > Date.now() &&
+                ft.getTime() < nextMajorFeedMs - 30 * 60000 &&
+                !inBlockerMs(ft.getTime())
+              ) {
+                _intermediateRefreshFeeds.push(ft);
+              }
             }
           }
         }
@@ -3709,6 +3713,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               comparisonFridgePeakTime={solverResult?.comparisonFridgePeakTime ?? null}
               showFridgeComparison={solverResult?.showFridgeComparison ?? false}
               starterFridgeInTime={isSourdough ? (solverResult?.starterFridgeInTime ?? null) : null}
+              starterFridgeHoldRefreshTime={isSourdough ? (solverResult?.fridgeHoldRefreshTime ?? null) : null}
+              starterFridgeHoldInTime={isSourdough ? (solverResult?.fridgeHoldInTime ?? null) : null}
+              starterFridgeHoldOutTime={isSourdough ? (solverResult?.fridgeHoldOutTime ?? null) : null}
               startTimeInPast={startTimeInPast}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
@@ -4152,6 +4159,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               const _windowTooShortCard = solverResult?.windowTooShort ?? false;
               const _suggestedBakeTimeCard = solverResult?.suggestedBakeTime ?? null;
               const _activeFridgeOutTime = solverResult?.fridgeOutTime ?? fridgeOutTime;
+              const _isFridgeHoldPath        = solverResult?.isFridgeHoldPath ?? false;
+              const _fridgeHoldRefreshTime   = solverResult?.fridgeHoldRefreshTime ?? null;
+              const _fridgeHoldInTime        = solverResult?.fridgeHoldInTime ?? null;
+              const _fridgeHoldOutTime       = solverResult?.fridgeHoldOutTime ?? null;
 
               // Use pre-computed peakTime from solverResult — same value the chart uses
               const activePeakTime: Date | null = solverResult?.peakTime ?? null;
@@ -4283,7 +4294,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   </div>
 
                   {/* Future feed path: planned Next Feed */}
-                  {isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && planningMode !== 'last_fed' && (
+                  {isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && planningMode !== 'last_fed' && !_isFridgeHoldPath && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'RAFRAÎCHI FINAL' : 'PRE-MIX FEED'}
@@ -4302,7 +4313,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
-                  {isSourdough && _starterRefeedTime && !_usingPeak2 && (
+                  {isSourdough && _starterRefeedTime && !_usingPeak2 && !_isFridgeHoldPath && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
                         textTransform: 'uppercase', letterSpacing: '.04em' }}>
@@ -4321,7 +4332,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
-                  {_usingPeak2 && _feed2Time && feedPlan.length === 0 && (
+                  {_usingPeak2 && _feed2Time && feedPlan.length === 0 && !_isFridgeHoldPath && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'PROCHAIN RAFRAÎCHI' : 'NEXT FEED'}
@@ -4354,7 +4365,80 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
-                  {feedPlan.length > 0 && (
+                  {_isFridgeHoldPath && _fridgeHoldRefreshTime && _fridgeHoldInTime && _fridgeHoldOutTime && _feed2Time && (
+                    <>
+                      {/* REFRESH FEED */}
+                      <div style={{ marginBottom: '.6rem' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                          {isFr ? 'RAFRAÎCHI' : 'REFRESH FEED'}
+                        </div>
+                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                          {(() => {
+                            const isNow = Math.abs(_fridgeHoldRefreshTime.getTime() - Date.now()) < 30 * 60 * 1000;
+                            return isNow ? (isFr ? 'Maintenant' : 'Now') : fmtCardDT(_fridgeHoldRefreshTime, isFr);
+                          })()}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
+                          {isFr
+                            ? 'Rafraîchir, laisser pousser, puis réfrigérer'
+                            : 'Feed, let peak, then refrigerate'}
+                        </div>
+                      </div>
+
+                      {/* INTO FRIDGE */}
+                      <div style={{ marginBottom: '.6rem' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                          {isFr ? 'AU FRIGO' : 'INTO FRIDGE'}
+                        </div>
+                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                          {fmtCardDT(_fridgeHoldInTime, isFr)}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
+                          {isFr
+                            ? 'Au pic — ralentit la fermentation'
+                            : 'At peak — slows fermentation'}
+                        </div>
+                      </div>
+
+                      {/* OUT OF FRIDGE */}
+                      <div style={{ marginBottom: '.6rem' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                          {isFr ? 'SORTIE DU FRIGO' : 'OUT OF FRIDGE'}
+                        </div>
+                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                          {fmtCardDT(_fridgeHoldOutTime, isFr)}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
+                          {(() => {
+                            const warmupMin = Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60);
+                            return isFr
+                              ? `Tempérer ~${warmupMin} min avant le rafraîchi final`
+                              : `Warm up ~${warmupMin} min before pre-mix feed`;
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* PRE-MIX FEED */}
+                      <div style={{ marginBottom: '.6rem' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                          {isFr ? 'RAFRAÎCHI FINAL' : 'PRE-MIX FEED'}
+                        </div>
+                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                          {fmtCardDT(_feed2Time, isFr)}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
+                          {(() => {
+                            const peakAt = new Date(_feed2Time.getTime() + adjPeakH * 3600000);
+                            return isFr
+                              ? `Pic vers ${fmtCardHM(peakAt, isFr)}`
+                              : `Peak around ${fmtCardHM(peakAt, isFr)}`;
+                          })()}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {feedPlan.length > 0 && !_isFridgeHoldPath && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '.45rem', marginBottom: '.6rem' }}>
                       {feedPlan.map((fp, i) => (
                         <div key={i}>
