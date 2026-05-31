@@ -2007,7 +2007,27 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         return lastFedTime ?? null;
       })();
 
+      // Refresh Feeds for chart: stay in sync with the card text.
+      // Source of truth = _starterRefeedTime (set in deriveStarterPeakTime
+      // when RT starter is declining/depleted) + long-horizon intermediates.
+      // Style/temperature/fridge sensitivity inherited from getStarterTroughH
+      // and from the fact that _starterRefeedTime is RT-only (fridge starters
+      // use fridgeOutTime which has its own diamond rendering path).
       const _intermediateRefreshFeeds: Date[] = [];
+
+      // (a) Primary refresh: card shows REFRESH FEED when _starterRefeedTime
+      // is set and not in usingPeak2 mode. Chart must show the same diamond
+      // + bell. _starterRefeedTime is currently always "now" by engine
+      // convention (refeedNow = new Date()) — if that changes later, this
+      // still renders correctly.
+      if (_starterRefeedTime && !_usingPeak2) {
+        _intermediateRefreshFeeds.push(_starterRefeedTime);
+      }
+
+      // (b) Long-horizon intermediates: if the gap from refresh (or last feed)
+      // to the next major feed exceeds one full trough cycle, add additional
+      // refresh feeds to keep starter alive. Temperature/style/maturity/rye/
+      // ratio sensitive via getStarterTroughH + ryeF/matF/ratioMult.
       if (planningMode === 'last_fed' && lastFedTime) {
         const adjPeakH_eff = _adjPeakH ?? adjPeakH_derived;
         if (adjPeakH_eff) {
@@ -2015,56 +2035,34 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const matF = starterMature ? 1.0 : 1.2;
           const ratioMult = 1 + 0.35 * Math.log(feedRatio);
           const troughH_int = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * matF * ratioMult;
-          const hoursSinceLastFeed = (Date.now() - lastFedTime.getTime()) / 3600000;
-          const isDepleted = hoursSinceLastFeed > troughH_int;
 
-          // Refresh Feed needed when:
-          // (a) starter is currently depleted AND winning path is single future-feed
-          //     (i.e. _starterFeed2Time is set to a future time, meaning a pre-mix
-          //      feed is planned). Refresh wakes it up before pre-mix.
-          // (b) Long-horizon case: gap from last feed to pre-mix exceeds one
-          //     full trough cycle — need intermediate refresh feeds to keep
-          //     starter alive between feeds.
-          const preMixFeedMs = (_hasFutureFeedPath || _usingPeak2) && _feed2Time
+          // Determine the "next major feed" the chart walks toward.
+          // Priority: future pre-mix feed (_feed2Time) > start dough time.
+          const nextMajorFeedMs = (_hasFutureFeedPath || _usingPeak2) && _feed2Time
             ? _feed2Time.getTime()
-            : null;
+            : _newPendingStart.getTime() - adjPeakH_eff * 3600000;
 
-          if (isDepleted && preMixFeedMs && preMixFeedMs > Date.now() + 30 * 60000) {
-            // Case (a): depleted starter + future pre-mix feed → refresh now
-            // Only push if there's at least 30min between refresh and pre-mix feed
-            const refreshTime = new Date();
-            _intermediateRefreshFeeds.push(refreshTime);
+          // Starting point: most recent refresh (if any) else lastFedTime
+          const startMs = _intermediateRefreshFeeds.length > 0
+            ? _intermediateRefreshFeeds[_intermediateRefreshFeeds.length - 1].getTime()
+            : lastFedTime.getTime();
 
-            // Case (b) extension: if gap from refresh to pre-mix exceeds troughH,
-            // add additional intermediate refreshes spaced at troughH intervals
-            const gapToPreMixH = (preMixFeedMs - refreshTime.getTime()) / 3600000;
-            const numAdditional = Math.floor(gapToPreMixH / troughH_int);
-            for (let i = 1; i < numAdditional; i++) {
-              const ft = new Date(refreshTime.getTime() + i * troughH_int * 3600000);
-              const h = ft.getHours();
-              if (h < 7) { ft.setHours(7, 0, 0, 0); }
-              else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
-              if (ft.getTime() < preMixFeedMs - 30 * 60000) {
-                _intermediateRefreshFeeds.push(ft);
-              }
-            }
-          } else if (!_usingPeak2 && !preMixFeedMs) {
-            // Case (b) original: no pre-mix feed planned (Peak 1 path), but
-            // bake is far enough out that we need intermediate refreshes to
-            // keep starter alive until mix time.
-            const lastFeedNeededMs = _newPendingStart.getTime() - adjPeakH_eff * 3600000;
-            const gapH_int = (lastFeedNeededMs - Date.now()) / 3600000;
-            const numExtra_int = Math.floor(gapH_int / troughH_int);
-            if (numExtra_int > 0) {
-              const now_int = Date.now();
-              const loopStart_int = _starterRefeedTime ? 1 : 0;
-              for (let i = loopStart_int; i < numExtra_int; i++) {
-                const ft = new Date(now_int + i * troughH_int * 3600000);
-                const h = ft.getHours();
-                if (h < 7) { ft.setHours(7, 0, 0, 0); }
-                else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
-                _intermediateRefreshFeeds.push(ft);
-              }
+          const gapH = (nextMajorFeedMs - startMs) / 3600000;
+          const numIntermediate = Math.floor(gapH / troughH_int);
+
+          for (let i = 1; i < numIntermediate; i++) {
+            const ft = new Date(startMs + i * troughH_int * 3600000);
+            // Snap to 7am-10pm sleeping hours
+            const h = ft.getHours();
+            if (h < 7) { ft.setHours(7, 0, 0, 0); }
+            else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
+            // Guards: must be future, must clear blockers, must precede next major feed
+            if (
+              ft.getTime() > Date.now() &&
+              ft.getTime() < nextMajorFeedMs - 30 * 60000 &&
+              !inBlockerMs(ft.getTime())
+            ) {
+              _intermediateRefreshFeeds.push(ft);
             }
           }
         }
