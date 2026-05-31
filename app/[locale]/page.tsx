@@ -1041,10 +1041,9 @@ export default function Home() {
       {/* ── Sticky header + journey bar (autohide on scroll down) ── */}
       <div style={{
         position: 'sticky',
-        top: 0,
+        top: navHidden ? '-100px' : '0',
         zIndex: 100,
-        transform: navHidden ? 'translateY(-100%)' : 'translateY(0)',
-        transition: 'transform 0.25s ease',
+        transition: 'top 0.25s ease',
       }}>
         <Header
           units={units}

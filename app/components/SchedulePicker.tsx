@@ -2508,6 +2508,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         if (bakeMs - mHBF2 * 3600000 <= nowMs2) continue;
         if (inBlocker(mHBF2)) continue;
         if (inBlockerMs(t2)) continue;
+        // Same biological gap rule for plain future-feed (when refresh exists)
+        if (refreshPeakMsForStretch != null) {
+          const _gapPreCheck2 = (t2 - refreshPeakMsForStretch) / 3600000;
+          const _maxEarly2 = adjPeakH * 0.5;
+          if (_gapPreCheck2 < -_maxEarly2 || _gapPreCheck2 > 6) continue;
+        }
         const sc2 = combinedScore(mHBF2, mHBF2, t2, true);
         const ss2 = starterScore(mHBF2, mHBF2);
         if (ss2 === 0) continue;
@@ -2583,6 +2589,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           if (bakeMs - mHBF3 * 3600000 <= nowMs3) continue;
           if (inBlocker(mHBF3)) continue;
           if (inBlockerMs(t3)) continue;
+          // Biological minimum gap: pre-mix must be no earlier than
+          // adjPeakH × 0.5 before refresh peak (= half refresh cycle has
+          // elapsed since refresh feed), and no later than 6h after refresh
+          // peak (starter declining beyond that point).
+          const _gapPreCheck3 = (t3 - refreshPeakMs) / 3600000;
+          const _maxEarly = adjPeakH * 0.5;
+          if (_gapPreCheck3 < -_maxEarly || _gapPreCheck3 > 6) continue;
           const sc3 = combinedScore(mHBF3, mHBF3, t3, true);
           const ss3 = starterScore(mHBF3, mHBF3);
           if (ss3 === 0) continue;
