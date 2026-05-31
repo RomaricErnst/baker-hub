@@ -2007,25 +2007,63 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       })();
 
       const _intermediateRefreshFeeds: Date[] = [];
-      if (!_usingPeak2 && planningMode === 'last_fed' && lastFedTime) {
+      if (planningMode === 'last_fed' && lastFedTime) {
         const adjPeakH_eff = _adjPeakH ?? adjPeakH_derived;
         if (adjPeakH_eff) {
           const ryeF = starterHasRye ? 0.8 : 1.0;
           const matF = starterMature ? 1.0 : 1.2;
           const ratioMult = 1 + 0.35 * Math.log(feedRatio);
           const troughH_int = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * matF * ratioMult;
-          const lastFeedNeededMs = _newPendingStart.getTime() - adjPeakH_eff * 3600000;
-          const gapH_int = (lastFeedNeededMs - Date.now()) / 3600000;
-          const numExtra_int = Math.floor(gapH_int / troughH_int);
-          if (numExtra_int > 0) {
-            const now_int = Date.now();
-            const loopStart_int = _starterRefeedTime ? 1 : 0;
-            for (let i = loopStart_int; i < numExtra_int; i++) {
-              const ft = new Date(now_int + i * troughH_int * 3600000);
+          const hoursSinceLastFeed = (Date.now() - lastFedTime.getTime()) / 3600000;
+          const isDepleted = hoursSinceLastFeed > troughH_int;
+
+          // Refresh Feed needed when:
+          // (a) starter is currently depleted AND winning path is single future-feed
+          //     (i.e. _starterFeed2Time is set to a future time, meaning a pre-mix
+          //      feed is planned). Refresh wakes it up before pre-mix.
+          // (b) Long-horizon case: gap from last feed to pre-mix exceeds one
+          //     full trough cycle — need intermediate refresh feeds to keep
+          //     starter alive between feeds.
+          const preMixFeedMs = (_hasFutureFeedPath || _usingPeak2) && _feed2Time
+            ? _feed2Time.getTime()
+            : null;
+
+          if (isDepleted && preMixFeedMs && preMixFeedMs > Date.now() + 30 * 60000) {
+            // Case (a): depleted starter + future pre-mix feed → refresh now
+            // Only push if there's at least 30min between refresh and pre-mix feed
+            const refreshTime = new Date();
+            _intermediateRefreshFeeds.push(refreshTime);
+
+            // Case (b) extension: if gap from refresh to pre-mix exceeds troughH,
+            // add additional intermediate refreshes spaced at troughH intervals
+            const gapToPreMixH = (preMixFeedMs - refreshTime.getTime()) / 3600000;
+            const numAdditional = Math.floor(gapToPreMixH / troughH_int);
+            for (let i = 1; i < numAdditional; i++) {
+              const ft = new Date(refreshTime.getTime() + i * troughH_int * 3600000);
               const h = ft.getHours();
               if (h < 7) { ft.setHours(7, 0, 0, 0); }
               else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
-              _intermediateRefreshFeeds.push(ft);
+              if (ft.getTime() < preMixFeedMs - 30 * 60000) {
+                _intermediateRefreshFeeds.push(ft);
+              }
+            }
+          } else if (!_usingPeak2 && !preMixFeedMs) {
+            // Case (b) original: no pre-mix feed planned (Peak 1 path), but
+            // bake is far enough out that we need intermediate refreshes to
+            // keep starter alive until mix time.
+            const lastFeedNeededMs = _newPendingStart.getTime() - adjPeakH_eff * 3600000;
+            const gapH_int = (lastFeedNeededMs - Date.now()) / 3600000;
+            const numExtra_int = Math.floor(gapH_int / troughH_int);
+            if (numExtra_int > 0) {
+              const now_int = Date.now();
+              const loopStart_int = _starterRefeedTime ? 1 : 0;
+              for (let i = loopStart_int; i < numExtra_int; i++) {
+                const ft = new Date(now_int + i * troughH_int * 3600000);
+                const h = ft.getHours();
+                if (h < 7) { ft.setHours(7, 0, 0, 0); }
+                else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
+                _intermediateRefreshFeeds.push(ft);
+              }
             }
           }
         }
@@ -2412,6 +2450,60 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           score: sc2 + _depletionPenalty, sscore: ss2,
           isFutureFeedPath: true,
         });
+      }
+    }
+
+    // ── Refresh + Future Feed candidates (depleted starter, two-feed path) ─
+    // When starter is past trough (depleted), a single future feed produces
+    // a weak levain. The correct biology is: refresh now to rebuild yeast
+    // population, then a second (pre-mix) feed timed so peak = mix. This
+    // candidate models that two-feed path. Only generated when:
+    //   - starter is currently past trough (depleted)
+    //   - planningMode === 'last_fed' and lastFedTime exists
+    //   - starterLocation === 'rt' (fridge has its own paths)
+    //   - there is enough time between now+adjPeakH (refresh peak) and the
+    //     pre-mix feed to allow the refresh cycle to complete
+    if (
+      planningMode === 'last_fed' && lastFedTime &&
+      starterLocation === 'rt' &&
+      (Date.now() - lastFedTime.getTime()) / 3600000 > troughH
+    ) {
+      const nowMs3 = Date.now();
+      const refreshMs = nowMs3;
+      const refreshPeakMs = refreshMs + adjPeakH * 3600000;
+      // Pre-mix feed must come AFTER refresh has had time to peak (or close to it)
+      // Allow pre-mix feed to start as early as refreshPeakMs - 1h (some overlap ok)
+      const earliestPreMixMs = refreshPeakMs - 1 * 3600000;
+      const idealMixTime3 = targetMixTime ?? new Date(bakeMs - ((sweetFromHBF + sweetToHBF) / 2) * 3600000);
+      const baseFeed3 = new Date(idealMixTime3.getTime() - adjPeakH * 3600000);
+      const searchStart3 = targetMixTime
+        ? new Date(baseFeed3.getTime() - 15 * 60000)
+        : new Date(baseFeed3.getTime() - 24 * 3600000);
+      const searchEnd3 = targetMixTime
+        ? new Date(baseFeed3.getTime() + 15 * 60000)
+        : new Date(baseFeed3.getTime() + 2 * 3600000);
+
+      if (!inBlockerMs(refreshMs)) {
+        for (let t3 = Math.max(searchStart3.getTime(), earliestPreMixMs); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
+          if (t3 <= nowMs3) continue;
+          const peakT3 = new Date(t3 + adjPeakH * 3600000);
+          const mHBF3  = (bakeMs - peakT3.getTime()) / 3600000;
+          if (mHBF3 < sweetToHBF - 4 || mHBF3 > sweetFromHBF + 4) continue;
+          if (bakeMs - mHBF3 * 3600000 <= nowMs3) continue;
+          if (inBlocker(mHBF3)) continue;
+          if (inBlockerMs(t3)) continue;
+          const sc3 = combinedScore(mHBF3, mHBF3, t3, true);
+          const ss3 = starterScore(mHBF3, mHBF3);
+          if (ss3 === 0) continue;
+          // Bonus: this is a healthy two-feed path on a depleted starter — biology favours it
+          // Score it +12 relative to single future-feed (which gets _depletionPenalty -8 to -15)
+          candidates.push({
+            mixHBF: mHBF3, peakHBF: mHBF3, feedMs: t3,
+            usingPeak2: false, feed2Ms: t3,
+            score: sc3 + 12, sscore: ss3,
+            isFutureFeedPath: true,
+          });
+        }
       }
     }
 
