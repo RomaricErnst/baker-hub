@@ -1250,6 +1250,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const d = new Date(yyyy, mm - 1, dd, hh, mi, 0, 0);
     setPendingEatTime(d);
     setEatTimeSet(true);
+    onChange(pendingStart, d, blocks);
   }
 
   function computeAndApplyRecommendation(
