@@ -1358,10 +1358,6 @@ export default function FermentChart({
           return (
             <g>
               {kept.map((r, displayIdx) => {
-                const tickDistH = Math.min(r.hbf % 12, 12 - (r.hbf % 12));
-                const nearTick = tickDistH < 2;
-                const timeY = nearTick ? AXIS_Y + S + 26 : AXIS_Y + S + 14;
-                const labelY = nearTick ? AXIS_Y + S + 38 : AXIS_Y + S + 26;
                 const labelText = showNumbers
                   ? (isFr ? `Rafraîchi ${displayIdx + 1}` : `Refresh Feed ${displayIdx + 1}`)
                   : (isFr ? 'Rafraîchi' : 'Refresh Feed');
@@ -1373,10 +1369,7 @@ export default function FermentChart({
                       stroke="#4A7FA5"
                       strokeWidth={1}
                     />
-                    <text x={r.x} y={timeY} textAnchor="middle" fontSize="10" fill="var(--smoke)" fontFamily="var(--font-dm-mono)">
-                      {fmtHM(r.ft, isFr)}
-                    </text>
-                    <text x={r.x} y={labelY} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
+                    <text x={r.x} y={AXIS_Y + S + 14} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
                       {labelText}
                     </text>
                   </g>

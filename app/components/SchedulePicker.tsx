@@ -2493,7 +2493,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const refreshPeakMs = refreshMs + adjPeakH * 3600000;
       // Pre-mix feed must come AFTER refresh has had time to peak (or close to it)
       // Allow pre-mix feed to start as early as refreshPeakMs - 1h (some overlap ok)
-      const earliestPreMixMs = refreshPeakMs - 1 * 3600000;
+      const earliestPreMixMs = refreshPeakMs - 2 * 3600000;  // allow up to 2h before refresh peak; scoring penalty applies
       const idealMixTime3 = targetMixTime ?? new Date(bakeMs - ((sweetFromHBF + sweetToHBF) / 2) * 3600000);
       const baseFeed3 = new Date(idealMixTime3.getTime() - adjPeakH * 3600000);
       const searchStart3 = targetMixTime
@@ -2515,12 +2515,21 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const sc3 = combinedScore(mHBF3, mHBF3, t3, true);
           const ss3 = starterScore(mHBF3, mHBF3);
           if (ss3 === 0) continue;
-          // Bonus: this is a healthy two-feed path on a depleted starter — biology favours it
-          // Score it +12 relative to single future-feed (which gets _depletionPenalty -8 to -15)
+          // Biology penalty: pre-mix sweet spot is AT refresh peak (0h gap).
+          // Earlier than peak → starter not yet matured, pre-mix peak stretches.
+          // Later than peak → starter declining, pre-mix peaks weaker.
+          const gapFromRefreshPeakH = (t3 - refreshPeakMs) / 3600000;
+          const biologyPenalty = (() => {
+            if (gapFromRefreshPeakH >= 0 && gapFromRefreshPeakH <= 3) return 0;
+            if (gapFromRefreshPeakH > 3 && gapFromRefreshPeakH <= 6) return -(gapFromRefreshPeakH - 3) * 2;
+            if (gapFromRefreshPeakH < 0 && gapFromRefreshPeakH >= -1) return -2;
+            if (gapFromRefreshPeakH < -1 && gapFromRefreshPeakH >= -2) return -5;
+            return -10;
+          })();
           candidates.push({
             mixHBF: mHBF3, peakHBF: mHBF3, feedMs: t3,
             usingPeak2: false, feed2Ms: t3,
-            score: sc3 + 12, sscore: ss3,
+            score: sc3 + 12 + biologyPenalty, sscore: ss3,
             isFutureFeedPath: true,
           });
         }
@@ -2576,6 +2585,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           if (fridgeOutMs <= fridgeInMs) continue; // negative hold
           const holdH = (fridgeOutMs - fridgeInMs) / 3600000;
           if (holdH < minHoldH || holdH > maxHoldH) continue;
+          if (fridgeOutMs <= refreshPeakMs) continue;  // pre-mix must come at or after refresh peak
           if ((fridgeOutMs - refreshPeakMs) / 3600000 < minGapFromRefreshPeakH - 1) continue;
           if (inBlockerMs(fridgeInMs)) continue;
           if (inBlockerMs(fridgeOutMs)) continue;
@@ -4321,7 +4331,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       </div>
                       <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)',
                         fontFamily: 'var(--font-dm-mono)' }}>
-                        {isFr ? 'Maintenant' : 'Now'}
+                        {(() => {
+                          const fifteen = 15 * 60 * 1000;
+                          const rounded = new Date(Math.ceil(_starterRefeedTime.getTime() / fifteen) * fifteen);
+                          const timeStr = fmtCardHM(rounded, isFr);
+                          return isFr ? `Maintenant · ${timeStr}` : `Now · ${timeStr}`;
+                        })()}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)',
                         lineHeight: 1.4, marginTop: '2px' }}>
@@ -4374,8 +4389,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         </div>
                         <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
                           {(() => {
-                            const isNow = Math.abs(_fridgeHoldRefreshTime.getTime() - Date.now()) < 30 * 60 * 1000;
-                            return isNow ? (isFr ? 'Maintenant' : 'Now') : fmtCardDT(_fridgeHoldRefreshTime, isFr);
+                            const fifteen = 15 * 60 * 1000;
+                            const rounded = new Date(Math.ceil(_fridgeHoldRefreshTime.getTime() / fifteen) * fifteen);
+                            const timeStr = fmtCardHM(rounded, isFr);
+                            return isFr ? `Maintenant · ${timeStr}` : `Now · ${timeStr}`;
                           })()}
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
