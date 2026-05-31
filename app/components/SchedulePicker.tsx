@@ -2519,11 +2519,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           if (gapH <= troughH * 1.5) return -8;
           return -15;
         })();
-        // Sub-peak pre-mix penalty (when refresh peak exists)
+        // Biology penalty: pre-mix sweet spot is at refresh peak (0–3h post-peak window).
+        // Both sub-peak and far-post-peak candidates are penalised symmetrically.
         const _subPeakPenalty = (() => {
           if (refreshPeakMsForStretch == null) return 0;
           const gapFromRefreshPeakH = (t2 - refreshPeakMsForStretch) / 3600000;
-          if (gapFromRefreshPeakH >= 0) return 0;
+          if (gapFromRefreshPeakH >= 0 && gapFromRefreshPeakH <= 3) return 0;
+          if (gapFromRefreshPeakH > 3 && gapFromRefreshPeakH <= 6) return -(gapFromRefreshPeakH - 3) * 2;
+          if (gapFromRefreshPeakH > 6 && gapFromRefreshPeakH <= 9) return -10 - (gapFromRefreshPeakH - 6) * 2;
+          if (gapFromRefreshPeakH > 9) return -16 - Math.min(14, (gapFromRefreshPeakH - 9) * 3);
           if (gapFromRefreshPeakH >= -2) return -5;
           return -10 - Math.min(20, (Math.abs(gapFromRefreshPeakH) - 2) * 3);
         })();
@@ -2558,15 +2562,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const refreshPeakMs = refreshMs + _adjPeakH_refresh * 3600000;
       // Pre-mix feed must come AFTER refresh has had time to peak (or close to it)
       // Allow pre-mix feed to start as early as refreshPeakMs - 1h (some overlap ok)
-      const earliestPreMixMs = refreshPeakMs - 2 * 3600000;  // allow up to 2h before refresh peak; scoring penalty applies
-      const idealMixTime3 = targetMixTime ?? new Date(bakeMs - ((sweetFromHBF + sweetToHBF) / 2) * 3600000);
-      const baseFeed3 = new Date(idealMixTime3.getTime() - adjPeakH * 3600000);
-      const searchStart3 = targetMixTime
+      const earliestPreMixMs = refreshPeakMs - 12 * 3600000;  // allow up to 12h before refresh peak; scoring penalty applies
+      const baseFeed3 = targetMixTime
+        ? new Date(targetMixTime.getTime() - adjPeakH * 3600000)
+        : null;
+      const searchStart3 = baseFeed3
         ? new Date(baseFeed3.getTime() - 15 * 60000)
-        : new Date(baseFeed3.getTime() - 24 * 3600000);
-      const searchEnd3 = targetMixTime
+        : new Date(refreshPeakMs - 12 * 3600000);
+      const searchEnd3 = baseFeed3
         ? new Date(baseFeed3.getTime() + 15 * 60000)
-        : new Date(baseFeed3.getTime() + 2 * 3600000);
+        : new Date(refreshPeakMs + 12 * 3600000);
 
       if (!inBlockerMs(refreshMs)) {
         for (let t3 = Math.max(searchStart3.getTime(), earliestPreMixMs); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
@@ -2588,9 +2593,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const biologyPenalty = (() => {
             if (gapFromRefreshPeakH >= 0 && gapFromRefreshPeakH <= 3) return 0;
             if (gapFromRefreshPeakH > 3 && gapFromRefreshPeakH <= 6) return -(gapFromRefreshPeakH - 3) * 2;
+            if (gapFromRefreshPeakH > 6 && gapFromRefreshPeakH <= 9) return -10 - (gapFromRefreshPeakH - 6) * 2;
+            if (gapFromRefreshPeakH > 9) return -16 - Math.min(14, (gapFromRefreshPeakH - 9) * 3);
             if (gapFromRefreshPeakH < 0 && gapFromRefreshPeakH >= -1) return -2;
             if (gapFromRefreshPeakH < -1 && gapFromRefreshPeakH >= -2) return -5;
-            // Heavily sub-peak: scale penalty with how far before refresh peak
             return -10 - Math.min(20, (Math.abs(gapFromRefreshPeakH) - 2) * 3);
           })();
           candidates.push({
@@ -2723,7 +2729,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // violates blocker rules. Surface this honestly via windowTooShort so the
     // baker can adjust bake time or blockers instead of seeing a misleading
     // green-pill plan with diamonds in red zones.
-    if (!foundValid) {
+    if (!foundValid || best.score < 250) {
       _windowTooShort = true;
     }
 
