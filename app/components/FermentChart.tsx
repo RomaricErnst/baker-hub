@@ -958,7 +958,7 @@ export default function FermentChart({
               </>
             )}
 
-            {/* ── Depleted: flat dormant baseline + fresh bell ── */}
+            {/* ── Depleted: flat dormant baseline + refresh bell + pre-mix bell ── */}
             {isLevain && depletedAtHBF !== null && activeFeedHBF !== null && (
               <>
                 {/* Flat baseline from trough onward — starter dormant */}
@@ -974,19 +974,34 @@ export default function FermentChart({
                   strokeWidth={1}
                   strokeDasharray="2 5"
                 />
-                {/* Fresh bell starting at refeed time */}
-                {refeedHBF !== null && (
+                {/* Refresh bell — dotted, only when refresh is a distinct earlier
+                    feed from the active (pre-mix) feed. Uses refresh stretch
+                    (wider sigma, slightly later peak) per depleted-starter biology. */}
+                {refeedHBF !== null && Math.abs(refeedHBF - activeFeedHBF) > 0.5 && (
                   <path
                     d={makeBellPath(
-                      refeedHBF - effectivePeakH,
-                      starterSigmaH, W, WH, refeedHBF
+                      refeedHBF - effectivePeakH_refresh,
+                      starterSigmaH_refresh, W, WH, refeedHBF
                     )}
-                    fill={`${prefColor}2E`}
-                    stroke={`${prefColor}A5`}
-                    strokeWidth={1.5}
+                    fill={`${prefColor}1A`}
+                    stroke={`${prefColor}80`}
+                    strokeWidth={1}
+                    strokeDasharray="3 3"
                     clipPath={`url(#chart-area-clip-${chartId})`}
                   />
                 )}
+                {/* Active pre-mix bell — solid, always rendered at active feed
+                    position. This is the cycle that feeds the dough. */}
+                <path
+                  d={makeBellPath(
+                    activeFeedHBF - effectivePeakHStretched,
+                    starterSigmaH * starterPreMixStretchFactor, W, WH, activeFeedHBF
+                  )}
+                  fill={`${prefColor}2E`}
+                  stroke={`${prefColor}A5`}
+                  strokeWidth={1.5}
+                  clipPath={`url(#chart-area-clip-${chartId})`}
+                />
               </>
             )}
 

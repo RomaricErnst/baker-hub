@@ -2032,27 +2032,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         return lastFedTime ?? null;
       })();
 
-      // Refresh Feeds for chart: stay in sync with the card text.
-      // Source of truth = _starterRefeedTime (set in deriveStarterPeakTime
-      // when RT starter is declining/depleted) + long-horizon intermediates.
-      // Style/temperature/fridge sensitivity inherited from getStarterTroughH
-      // and from the fact that _starterRefeedTime is RT-only (fridge starters
-      // use fridgeOutTime which has its own diamond rendering path).
+      // Refresh Feeds for chart: long-horizon intermediates ONLY.
+      // The PRIMARY refresh (_starterRefeedTime) is rendered separately via
+      // the starterRefeedTime prop — it gets the refeed diamond (line ~1261
+      // in FermentChart) and the refresh bell in the depleted block. Pushing
+      // it here too would duplicate both. Block (b) below handles long-horizon
+      // intermediates (3+ day plans where starter needs feeding between major
+      // events).
       const _intermediateRefreshFeeds: Date[] = [];
 
       if (_isFridgeHoldPath) {
         // Path B owns its own refresh visualisation — skip the multi-refresh array
       } else {
-        // (a) Primary refresh: card shows REFRESH FEED when _starterRefeedTime
-        // is set and not in usingPeak2 mode. Chart must show the same diamond
-        // + bell. _starterRefeedTime is currently always "now" by engine
-        // convention (refeedNow = new Date()) — if that changes later, this
-        // still renders correctly.
-        if (_starterRefeedTime && !_usingPeak2) {
-          _intermediateRefreshFeeds.push(_starterRefeedTime);
-        }
-
-        // (b) Long-horizon intermediates: if the gap from refresh (or last feed)
+        // Long-horizon intermediates: if the gap from refresh (or last feed)
         // to the next major feed exceeds one full trough cycle, add additional
         // refresh feeds to keep starter alive. Temperature/style/maturity/rye/
         // ratio sensitive via getStarterTroughH + ryeF/matF/ratioMult.
@@ -2070,10 +2062,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ? _feed2Time.getTime()
               : _newPendingStart.getTime() - adjPeakH_eff * 3600000;
 
-            // Starting point: most recent refresh (if any) else lastFedTime
+            // Starting point: primary refresh if exists, then intermediate
+            // refreshes (if any), else lastFedTime.
             const startMs = _intermediateRefreshFeeds.length > 0
               ? _intermediateRefreshFeeds[_intermediateRefreshFeeds.length - 1].getTime()
-              : lastFedTime.getTime();
+              : (_starterRefeedTime ? _starterRefeedTime.getTime() : lastFedTime.getTime());
 
             const gapH = (nextMajorFeedMs - startMs) / 3600000;
             const numIntermediate = Math.floor(gapH / troughH_int);
