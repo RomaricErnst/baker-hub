@@ -2380,7 +2380,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       if (h >= 19 && h <= 21) return 6;
       if (h >= 6  && h <= 10) return 3;
       if (h >= 18 && h <= 22) return 2;
-      return 0;
+      if (h >= 11 && h <= 17) return 1;
+      if (h >= 23 || h <= 1)  return -4;
+      return -8;  // 2am-5am
     }
 
     const effectiveBlocks = blocksOverride ?? blocks;
@@ -2406,10 +2408,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const retardW = ss >= 2 ? 8 : 3;
       // For Peak 2: score the mix hour (controllable) not the trough/refeed time (fixed biology)
       const comfortMs = usesMixForComfort ? (bakeMs - mixHBF * 3600000) : feedMs;
+      // feedComfort x3: feed hour matters when biology is otherwise equal.
+      // Without weighting, retardBonus (up to 64 points) buries feedComfort
+      // (up to 8 points), forcing midnight feeds when humane alternatives exist.
       return (ss + ds) * 100
         + retardBonus(mixHBF) * retardW
         + reasonableHour(mixHBF) * 5
-        + feedComfort(comfortMs);
+        + feedComfort(comfortMs) * 3;
     }
 
     // ── Candidate generation ──────────────────────────
@@ -2610,14 +2615,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // Biology penalty: pre-mix sweet spot is at refresh peak (0–3h post-peak window).
         // Both sub-peak and far-post-peak candidates are penalised symmetrically.
         const _subPeakPenalty = (() => {
-          if (refreshPeakMsForStretch == null) return 0;
-          const gapFromRefreshPeakH = (t2 - refreshPeakMsForStretch) / 3600000;
-          if (gapFromRefreshPeakH >= 0 && gapFromRefreshPeakH <= 3) return 0;
-          if (gapFromRefreshPeakH > 3 && gapFromRefreshPeakH <= 6) return -(gapFromRefreshPeakH - 3) * 2;
-          if (gapFromRefreshPeakH > 6 && gapFromRefreshPeakH <= 9) return -10 - (gapFromRefreshPeakH - 6) * 2;
-          if (gapFromRefreshPeakH > 9) return -16 - Math.min(14, (gapFromRefreshPeakH - 9) * 3);
-          if (gapFromRefreshPeakH >= -2) return -5;
-          return -10 - Math.min(20, (Math.abs(gapFromRefreshPeakH) - 2) * 3);
+          // Reference peak: explicit refresh peak if any, else implicit last-fed peak.
+          // Same biology either way — pre-mix from a near-peak starter is strongest.
+          const referencePeakMs = refreshPeakMsForStretch ?? (
+            lastFedTime ? lastFedTime.getTime() + adjPeakH * 3600000 : null
+          );
+          if (referencePeakMs == null) return 0;
+          const gapFromPeakH = (t2 - referencePeakMs) / 3600000;
+          if (gapFromPeakH >= 0 && gapFromPeakH <= 3) return 0;
+          if (gapFromPeakH > 3 && gapFromPeakH <= 6) return -(gapFromPeakH - 3) * 2;
+          if (gapFromPeakH > 6 && gapFromPeakH <= 9) return -10 - (gapFromPeakH - 6) * 2;
+          if (gapFromPeakH > 9) return -16 - Math.min(14, (gapFromPeakH - 9) * 3);
+          if (gapFromPeakH >= -2) return -5;
+          return -10 - Math.min(20, (Math.abs(gapFromPeakH) - 2) * 3);
         })();
         candidates.push({
           mixHBF: mHBF2, peakHBF: mHBF2, feedMs: t2,
