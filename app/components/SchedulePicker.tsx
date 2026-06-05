@@ -2189,6 +2189,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         return null;
       })();
 
+      // Suppress fridge suggestion banner when the winning candidate doesn't
+      // use the fridge path. deriveStarterPeakTime may suggest fridge based on
+      // standalone state but if the solver chose a refresh+future-feed or
+      // single future feed path, the suggestion is stale and misleading.
+      const _winnerUsesFridge = _isFridgeHoldPath
+        || starterLocation === 'fridge'
+        || (_suggestedFridgeOut !== null && _suggestedFridgeOut !== undefined);
+      const _fridgeSuggestionFinal = _winnerUsesFridge ? _fridgeSuggestion : null;
+
       setSolverResult({
         usingPeak2:             _usingPeak2,
         hasFutureFeedPath:      _hasFutureFeedPath,
@@ -2196,7 +2205,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         driftNote:              _driftNote,
         starterRefeedTime:      _starterRefeedTime,
         starterStateNote:       _starterStateNote,
-        fridgeSuggestion:       _fridgeSuggestion,
+        fridgeSuggestion:       _fridgeSuggestionFinal,
         suggestedFridgeOutTime: _suggestedFridgeOut,
         suggestedFridgePeakTime: _suggestedFridgePeak,
         showFridgeComparison:   _showFridgeComparison,
@@ -5018,8 +5027,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         : sourdoughDoughYellow
                         ? (isFr ? 'Proche du pic — devrait être bien'
                                 : 'Near peak — should be fine')
-                        : (isFr ? 'Fenêtre de fermentation courte'
-                                : 'Short fermentation window'))
+                        : mixOffsetH > doughZoneFrom + 2
+                        ? (isFr ? 'Pétrissage trop tôt — risque de surfermentation'
+                                : 'Mix too early — over-fermentation risk')
+                        : (isFr ? 'Fenêtre de fermentation courte — risque de sous-fermentation'
+                                : 'Short fermentation window — under-fermentation risk'))
                   : mixStatus;
                 return (
                   <div style={{
