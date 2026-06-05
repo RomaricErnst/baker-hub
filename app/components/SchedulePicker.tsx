@@ -1210,6 +1210,46 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [feedRatio, setFeedRatio]               = useState<1 | 2 | 4 | 5 | 10>(feedRatioProp ?? 1);
   const [showRatioInfo, setShowRatioInfo]       = useState(false);
   const [showStarterTips, setShowStarterTips] = useState(false);
+
+  // Sync sourdough state from props when they change (session restore case).
+  // Without this, props restored asynchronously after mount don't reach the
+  // solver because state is stuck at initial null/default values.
+  useEffect(() => {
+    if (lastFedTimeProp !== undefined && lastFedTimeProp !== lastFedTime) {
+      setLastFedTime(lastFedTimeProp ?? null);
+    }
+  }, [lastFedTimeProp]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (knownPeakTimeProp !== undefined && knownPeakTimeProp !== knownPeakTime) {
+      setKnownPeakTime(knownPeakTimeProp ?? null);
+    }
+  }, [knownPeakTimeProp]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (starterLocationProp !== undefined && starterLocationProp !== starterLocation) {
+      setStarterLocation(starterLocationProp);
+    }
+  }, [starterLocationProp]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (planningModeProp !== undefined && planningModeProp !== planningMode) {
+      setPlanningMode(planningModeProp);
+    }
+  }, [planningModeProp]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (lastFedAgeProp !== undefined && lastFedAgeProp !== lastFedAge) {
+      setLastFedAge(lastFedAgeProp ?? null);
+    }
+  }, [lastFedAgeProp]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (feedRatioProp !== undefined && feedRatioProp !== feedRatio) {
+      setFeedRatio(feedRatioProp);
+    }
+  }, [feedRatioProp]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // StarterState kept for BakeGuide compat — derived from new vars
   const starterState: StarterState = starterLocation === 'fridge'
     ? (fridgeOutTime ? 'fridge_fed' : 'fridge_unfed')
