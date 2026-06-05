@@ -2984,14 +2984,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
         <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center', position: 'relative' }}>
           {/* Date — native picker styled as "Sat 4 Apr" */}
-          <div style={{ flex: 2, position: 'relative' }}
-            onClick={() => { try { dateInputRef.current?.showPicker(); } catch { dateInputRef.current?.click(); } }}
-          >
+          <div style={{ flex: 2, position: 'relative' }}>
             <div style={{
               ...INPUT_STYLE, width: '100%',
               display: 'flex', alignItems: 'center',
               color: pickerDate ? 'var(--char)' : 'var(--smoke)',
               position: 'relative', zIndex: 1, cursor: 'pointer',
+              pointerEvents: 'none',
             }}>
               {pickerDate ? (() => {
                 const [y, m, d] = pickerDate.split('-').map(Number);

@@ -1010,13 +1010,18 @@ export default function Home() {
     setProtocolStale(false);
     setActiveTab('setup');
 
-    // Advance to scheduler step (step 8 simple, step 10 custom)
-    // All prior steps are marked completed
+    // Advance to scheduler step and mark all prior steps as completed.
+    // Without highestStep updates, the scheduler StepCard renders as locked
+    // → graph doesn't show → user stuck.
     if (isCustom) {
       setAdvancedStep(9);
+      setAdvancedHighestStep(prev => Math.max(prev, 9));
     } else {
       setActiveStep(7);
+      setHighestStep(prev => Math.max(prev, 7));
     }
+    // Enable reviewMode so the baker can freely edit any prior step
+    setReviewMode(true);
 
     // Scroll to scheduler step after state settles
     setTimeout(() => {
