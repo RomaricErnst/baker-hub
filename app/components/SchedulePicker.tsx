@@ -3043,6 +3043,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 setPickerDate(d);
                 if (d && pickerHour !== null) applyTimePick(d, pickerHour, pickerMinute);
               }}
+              onClick={e => {
+                // Desktop browsers need showPicker() to open the calendar.
+                // iOS opens natively on tap — showPicker() throws or no-ops there.
+                // Single handler on the input itself — no double-trigger.
+                try {
+                  (e.currentTarget as HTMLInputElement).showPicker?.();
+                } catch {
+                  // iOS or older browsers — native behavior already opens picker
+                }
+              }}
               style={{
                 position: 'absolute', inset: 0, opacity: 0,
                 cursor: 'pointer', width: '100%', height: '100%',
