@@ -1322,7 +1322,7 @@ export default function FermentChart({
           fontFamily="DM Mono, monospace" textAnchor="middle">{t('bakeLabel')}</text>
 
         {/* ── Event-driven diamonds + labels (sourdough) ── */}
-        {useEventDrivenStarter && starterEvents.map((ev, idx) => {
+        {useEventDrivenStarter && starterEvents.filter(ev => ev.kind !== 'fridge_out').map((ev, idx) => {
           if (ev.kind === 'fridge_in') return null;
           const hbf = (bakeMs - ev.time.getTime()) / 3600000;
           if (hbf < 0 || hbf > WH) return null;
