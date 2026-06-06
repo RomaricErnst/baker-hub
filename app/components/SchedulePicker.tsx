@@ -2346,6 +2346,27 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           });
         }
 
+        if (!_isFridgeHoldPath
+            && !_starterRefeedTime
+            && starterLocation === 'fridge'
+            && _starterFeedTime
+            && !_usingPeak2) {
+          const activePeakAt = new Date(_starterFeedTime.getTime() + adjPeakH_eff * 3600000);
+          events.push({
+            kind: 'refresh',
+            time: _starterFeedTime,
+            isPast: _starterFeedTime.getTime() < nowMs,
+            isActive: true,
+            isDraggable: false,
+            label: isFr ? 'Rafraîchi' : 'Refresh Feed',
+            cardTimeFormat: 'absolute',
+            cardNote: isFr ? `Pic vers ${fmtCardHM(activePeakAt, isFr)}` : `Peak around ${fmtCardHM(activePeakAt, isFr)}`,
+            bellStyle: 'solid',
+            bellPeakTime: activePeakAt,
+            bellSigmaScale: 1.0,
+          });
+        }
+
         for (let i = 0; i < _intermediateRefreshFeeds.length; i++) {
           const ft = _intermediateRefreshFeeds[i];
           if (_starterRefeedTime && Math.abs(ft.getTime() - _starterRefeedTime.getTime()) < 30 * 60 * 1000) continue;
@@ -5093,7 +5114,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
-                  {isSourdough && feedPlan.length === 0 && (_starterRefeedTime && !_hasFutureFeedPath || _usingPeak2 && _feed2Time || _hasFutureFeedPath && _feed2Time) && (
+                  {isSourdough && !solverResult?.planExplanation && feedPlan.length === 0 && (_starterRefeedTime && !_hasFutureFeedPath || _usingPeak2 && _feed2Time || _hasFutureFeedPath && _feed2Time) && (
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)',
                       lineHeight: 1.5, marginTop: '6px' }}>
                       {_starterRefeedTime && !_hasFutureFeedPath
