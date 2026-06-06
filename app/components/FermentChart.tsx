@@ -2,6 +2,7 @@
 import { useRef, useEffect, useState, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock } from '../utils';
+import type { StarterEvent } from './SchedulePicker';
 
 export interface FermentChartProps {
   eatTime: Date;
@@ -56,6 +57,7 @@ export interface FermentChartProps {
   starterFridgeHoldOutTime?:     Date | null;
   starterPreMixStretchFactor?:   number;
   starterRefreshStretchFactor?:  number;
+  starterEvents?: StarterEvent[];
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -258,6 +260,7 @@ export default function FermentChart({
   starterFridgeHoldOutTime     = null,
   starterPreMixStretchFactor   = 1.0,
   starterRefreshStretchFactor  = 1.0,
+  starterEvents = [] as StarterEvent[],
 }: FermentChartProps) {
   const chartId = useId().replace(/:/g, '');
   const WH = windowH ?? WINDOW_H_DEFAULT;
@@ -306,6 +309,11 @@ export default function FermentChart({
 
   // ── Colors ───────────────────────────────────────────────
   const isLevain   = prefermentType === 'levain' || prefermentType === 'sourdough';
+  // When isLevain AND starterEvents is non-empty, use new event-driven render
+  // path. When isLevain but starterEvents is empty (shouldn't happen post Phase 1
+  // but defensive), fall back to legacy paths.
+  // For non-sourdough (!isLevain), legacy paths always used.
+  const useEventDrivenStarter = isLevain && starterEvents.length > 0;
   const prefColor  = isLevain ? '#4A7FA5' : '#C4A030';
   const prefStroke = isLevain ? '#2A5F85' : '#7A6010';
   const SAGE            = '#6B7A5A';
@@ -810,7 +818,7 @@ export default function FermentChart({
               <rect x={hToX(prefStartAbsHBF, W, WH)} y={0} width={W} height={CHART_H} />
             </clipPath>
           )}
-          {isLevain && starterIntermediateFeeds.map((ft, idx) => {
+          {!useEventDrivenStarter && isLevain && starterIntermediateFeeds.map((ft, idx) => {
             const leftX = hToX((bakeMs - ft.getTime()) / 3600000, W, WH);
             return (
               <clipPath key={`rbc-${idx}`} id={`refresh-bell-clip-${chartId}-${idx}`}>
@@ -877,7 +885,7 @@ export default function FermentChart({
         {hasPref && (
           <>
             {/* Path B: Refresh → Fridge Hold → Pre-mix Feed visualization */}
-            {isFridgeHoldPath && fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null && (() => {
+            {!useEventDrivenStarter && isFridgeHoldPath && fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null && (() => {
               const refreshX = hToX(fridgeHoldRefreshHBF, W, WH);
               const fridgeInX = hToX(fridgeHoldInHBF, W, WH);
               const fridgeOutX = hToX(fridgeHoldOutHBF, W, WH);
@@ -928,7 +936,7 @@ export default function FermentChart({
             })()}
 
             {/* ── Intermediate refresh cycle bells (drawn below hist + active) ── */}
-            {isLevain && starterIntermediateFeeds.length > 0 && starterIntermediateFeeds.map((ft, idx) => {
+            {!useEventDrivenStarter && isLevain && starterIntermediateFeeds.length > 0 && starterIntermediateFeeds.map((ft, idx) => {
               const hbf = (bakeMs - ft.getTime()) / 3600000;
               if (hbf <= 0 || hbf > WH) return null;
               return (
@@ -944,8 +952,68 @@ export default function FermentChart({
               );
             })}
 
+            {/* ── Event-driven bells (sourdough, one per starterEvent) ── */}
+            {useEventDrivenStarter && (() => {
+              const fridgeIn = starterEvents.find(e => e.kind === 'fridge_in');
+              const fridgeOut = starterEvents.find(e => e.kind === 'fridge_out');
+              const fridgeHasIn = !!fridgeIn;
+              return (
+                <>
+                  {/* Cold-storage flat region (Path B): low baseline between fridge_in and fridge_out */}
+                  {fridgeHasIn && fridgeOut && (() => {
+                    const inHBF = (bakeMs - fridgeIn.time.getTime()) / 3600000;
+                    const outHBF = (bakeMs - fridgeOut.time.getTime()) / 3600000;
+                    if (inHBF <= 0 || outHBF <= 0) return null;
+                    const xIn = hToX(inHBF, W, WH);
+                    const xOut = hToX(outHBF, W, WH);
+                    return (
+                      <rect
+                        x={Math.min(xIn, xOut)}
+                        y={BL - 4}
+                        width={Math.abs(xOut - xIn)}
+                        height={4}
+                        fill="rgba(74,127,165,0.10)"
+                        stroke="rgba(74,127,165,0.25)"
+                        strokeWidth={0.5}
+                        strokeDasharray="2 3"
+                      />
+                    );
+                  })()}
+                  {/* Bells — one per event with bellStyle !== 'none' */}
+                  {starterEvents.map((ev, idx) => {
+                    if (ev.bellStyle === 'none' || !ev.bellPeakTime) return null;
+                    const feedHBF = (bakeMs - ev.time.getTime()) / 3600000;
+                    const peakHBF = (bakeMs - ev.bellPeakTime.getTime()) / 3600000;
+                    if (feedHBF <= 0 || feedHBF > WH) return null;
+                    const sigma = starterSigmaH * ev.bellSigmaScale;
+                    const fillStyle = ev.bellStyle === 'solid' ? `${prefColor}2E` :
+                                       ev.bellStyle === 'dotted' ? `${prefColor}14` :
+                                       'rgba(74,127,165,0.08)';
+                    const strokeStyle = ev.bellStyle === 'solid' ? `${prefColor}A5` :
+                                         ev.bellStyle === 'dotted' ? `${prefColor}80` :
+                                         'rgba(74,127,165,0.30)';
+                    const strokeWidth = ev.bellStyle === 'solid' ? 1.5 : 1;
+                    const dashArray = ev.bellStyle === 'solid' ? undefined :
+                                       ev.bellStyle === 'dotted' ? '3 3' :
+                                       '3 3';
+                    return (
+                      <path
+                        key={`ev-bell-${idx}`}
+                        d={makeBellPath(peakHBF, sigma, W, WH, feedHBF)}
+                        fill={fillStyle}
+                        stroke={strokeStyle}
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={dashArray}
+                        clipPath={`url(#chart-area-clip-${chartId})`}
+                      />
+                    );
+                  })}
+                </>
+              );
+            })()}
+
             {/* ── Muted historical bell — shows the spent cycle from Last Fed ── */}
-            {isLevain && histPeakHBF !== null && histFeedHBF !== null && (
+            {!useEventDrivenStarter && isLevain && histPeakHBF !== null && histFeedHBF !== null && (
               <>
                 <path
                   d={makeBellPath(histPeakHBF, starterSigmaH, W, WH, histFeedHBF)}
@@ -959,7 +1027,7 @@ export default function FermentChart({
             )}
 
             {/* ── Depleted: flat dormant baseline + refresh bell + pre-mix bell ── */}
-            {isLevain && depletedAtHBF !== null && activeFeedHBF !== null && (
+            {!useEventDrivenStarter && isLevain && depletedAtHBF !== null && activeFeedHBF !== null && (
               <>
                 {/* Flat baseline from trough onward — starter dormant */}
                 <line
@@ -1006,7 +1074,7 @@ export default function FermentChart({
             )}
 
             {/* ── Normal active bell (RT, fridge retard, or Mode B) ── */}
-            {(!isLevain || depletedAtHBF === null) && (
+            {(!isLevain || (depletedAtHBF === null && !useEventDrivenStarter)) && (
               <>
                 {/* Warmup + active bell (RT or after fridge removal, including fridge portion) */}
                 <path
@@ -1252,8 +1320,59 @@ export default function FermentChart({
         <text x={bakeX} y={AXIS_Y + 20} fontSize={14} fontWeight="600" fill={TERRA}
           fontFamily="DM Mono, monospace" textAnchor="middle">{t('bakeLabel')}</text>
 
+        {/* ── Event-driven diamonds + labels (sourdough) ── */}
+        {useEventDrivenStarter && starterEvents.map((ev, idx) => {
+          if (ev.kind === 'fridge_in') return null;
+          const hbf = (bakeMs - ev.time.getTime()) / 3600000;
+          if (hbf < 0 || hbf > WH) return null;
+          const x = hToX(hbf, W, WH);
+          const isFridgeOut = ev.kind === 'fridge_out';
+          const isHistorical = ev.kind === 'last_fed' && ev.isPast;
+          const isIntermediate = ev.kind === 'intermediate_refresh';
+          const diamondFill = isHistorical ? 'rgba(74,127,165,0.20)' :
+                              isIntermediate ? 'rgba(74,127,165,0.5)' :
+                              isFridgeOut ? 'rgba(140,200,230,0.5)' :
+                              ev.isActive ? prefColor : 'rgba(74,127,165,0.45)';
+          const diamondStroke = isHistorical ? 'rgba(74,127,165,0.45)' :
+                                isIntermediate ? '#4A7FA5' :
+                                isFridgeOut ? '#5A9DC9' :
+                                ev.isActive ? 'white' : 'rgba(74,127,165,0.75)';
+          const diamondSize = isIntermediate ? S * 0.7 : S;
+          const points = `${x},${AXIS_Y - diamondSize} ${x + diamondSize},${AXIS_Y} ${x},${AXIS_Y + diamondSize} ${x - diamondSize},${AXIS_Y}`;
+          const tickPositions = ticks.map(tk => tk.x);
+          const collidesWithTick = tickPositions.some(tx => Math.abs(x - tx) < 40);
+          const labelY = collidesWithTick ? AXIS_Y + S + 30 : AXIS_Y + S + 14;
+          const labelFill = isHistorical ? 'var(--smoke)' :
+                            isIntermediate ? '#4A7FA5' :
+                            isFridgeOut ? '#5A9DC9' :
+                            ev.isActive ? prefColor : 'rgba(74,127,165,0.75)';
+          return (
+            <g key={`ev-diamond-${idx}`} pointerEvents={ev.isDraggable ? 'auto' : 'none'}>
+              <polygon
+                points={points}
+                fill={diamondFill}
+                stroke={diamondStroke}
+                strokeWidth={1.5}
+                style={{ cursor: ev.isDraggable ? 'pointer' : 'default' }}
+                onPointerDown={ev.isDraggable ? (e) => onPointerDown(e, 'pref') : undefined}
+              />
+              <text
+                x={x}
+                y={labelY}
+                fontSize={10}
+                fill={labelFill}
+                fontFamily="DM Mono, monospace"
+                textAnchor="middle"
+                fontWeight={ev.isActive ? '600' : '500'}
+              >
+                {ev.label}
+              </text>
+            </g>
+          );
+        })}
+
         {/* ── Historical feed diamond (muted, Feed 1 in Peak 2 scenario) ── */}
-        {hasPref && isLevain && histPrefX !== null && (() => {
+        {!useEventDrivenStarter && hasPref && isLevain && histPrefX !== null && (() => {
           const histLabelsClose = histPrefX !== null && Math.abs(activePrefX - (histPrefX ?? 0)) < 90;
           return (
             <g pointerEvents="none">
@@ -1273,7 +1392,7 @@ export default function FermentChart({
         })()}
 
         {/* ── Refeed diamond (depleted state) ── */}
-        {isLevain && refeedHBF !== null && depletedAtHBF !== null
+        {!useEventDrivenStarter && isLevain && refeedHBF !== null && depletedAtHBF !== null
          && refeedHBF > effectiveMixHBF
          && Math.abs(hToX(refeedHBF, W, WH) - activePrefX) > 20 && (
           <g>
@@ -1296,7 +1415,7 @@ export default function FermentChart({
         )}
 
         {/* ── Feed circle — single cycle, no Peak 2 ── */}
-        {isLevain && activeFeedHBF !== null && histFeedHBF === null
+        {!useEventDrivenStarter && isLevain && activeFeedHBF !== null && histFeedHBF === null
          && (!knownPeakHBF || starterRedPill)
          && activeFeedHBF > 0 && (
           <g>
@@ -1322,7 +1441,7 @@ export default function FermentChart({
         )}
 
         {/* Active feed diamond — hasFutureFeedPath or Peak2 scenario */}
-        {isLevain && activeFeedHBF !== null && histFeedHBF !== null
+        {!useEventDrivenStarter && isLevain && activeFeedHBF !== null && histFeedHBF !== null
          && (!knownPeakHBF || starterRedPill || starterFeed2Time)
          && activeFeedHBF > 0 && (() => {
           const labelsClose = Math.abs(activePrefX - (histPrefX ?? 0)) < 70;
@@ -1356,7 +1475,7 @@ export default function FermentChart({
         })()}
 
         {/* Refresh Feed markers — one diamond per intermediate feed cycle */}
-        {isLevain && starterIntermediateFeeds.length > 0 && (() => {
+        {!useEventDrivenStarter && isLevain && starterIntermediateFeeds.length > 0 && (() => {
           const refreshes = starterIntermediateFeeds.map((ft, idx) => {
             const hbf = (eatTime.getTime() - ft.getTime()) / 3600000;
             const x = hToX(hbf, W, WH);

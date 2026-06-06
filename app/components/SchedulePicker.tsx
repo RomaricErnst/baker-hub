@@ -4,6 +4,30 @@ import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
 import FermentChart, { getPrefOptH, getPrefPeakH_RT, getPrefRTWarmupH, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 
+export type StarterEventKind =
+  | 'last_fed'
+  | 'refresh'
+  | 'intermediate_refresh'
+  | 'pre_mix'
+  | 'fridge_in'
+  | 'fridge_out'
+  | 'known_peak'
+  ;
+
+export interface StarterEvent {
+  kind: StarterEventKind;
+  time: Date;
+  isPast: boolean;
+  isActive: boolean;
+  isDraggable: boolean;
+  label: string;
+  cardTimeFormat: 'relative' | 'absolute';
+  cardNote?: string;
+  bellStyle: 'none' | 'solid' | 'dotted' | 'historical_dotted';
+  bellPeakTime?: Date;
+  bellSigmaScale: number;
+}
+
 interface SourdoughSolverResult {
   usingPeak2:           boolean;
   hasFutureFeedPath:    boolean;
@@ -43,6 +67,7 @@ interface SourdoughSolverResult {
   preMixStretchFactor:     number;
   refreshStretchFactor:    number;
   planExplanation:         string | null;
+  starterEvents:           StarterEvent[];
 }
 
 interface DerivedStarterState {
@@ -2135,11 +2160,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // Path B handles its own timing — gets 1.0 by construction.
       const _preMixStretchFactor = (() => {
         if (_isFridgeHoldPath) return 1.0;
-        if (!_starterRefeedTime || !_feed2Time) return 1.0;
+        if (!_feed2Time) return 1.0;
         const adjPeakH_eff = _adjPeakH ?? adjPeakH_derived;
         if (!adjPeakH_eff) return 1.0;
-        const refreshPeakMs = _starterRefeedTime.getTime() + adjPeakH_eff * 3600000;
-        return computePreMixStretchFactor(_feed2Time.getTime(), refreshPeakMs);
+        // Reference peak: explicit refresh peak if any, else implicit last-fed peak.
+        // Same biology either way — pre-mix fed before its reference peak has
+        // stretched timing because yeast hasn't fully matured.
+        const referencePeakMs = _starterRefeedTime
+          ? _starterRefeedTime.getTime() + adjPeakH_eff * 3600000
+          : (lastFedTime ? lastFedTime.getTime() + adjPeakH_eff * 3600000 : null);
+        return computePreMixStretchFactor(_feed2Time.getTime(), referencePeakMs);
       })();
 
       const _planExplanation = (() => {
@@ -2187,6 +2217,195 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             : 'Your starter peaks naturally around mix time — no action needed.';
         }
         return null;
+      })();
+
+      // ── Canonical starter event list (sourdough only) ──
+      const _starterEvents: StarterEvent[] = (() => {
+        const events: StarterEvent[] = [];
+        const nowMs = Date.now();
+        const adjPeakH_eff = _adjPeakH ?? adjPeakH_derived ?? 0;
+        const refreshStretch = _refreshStretchFactor;
+        const preMixStretch  = _preMixStretchFactor;
+
+        if (planningMode === 'know_peak' && knownPeakTime) {
+          events.push({
+            kind: 'known_peak',
+            time: knownPeakTime,
+            isPast: knownPeakTime.getTime() < nowMs,
+            isActive: true,
+            isDraggable: false,
+            label: isFr ? 'Pic du levain' : 'Starter Peak',
+            cardTimeFormat: 'absolute',
+            bellStyle: 'solid',
+            bellPeakTime: knownPeakTime,
+            bellSigmaScale: 1.0,
+          });
+          return events;
+        }
+
+        if (lastFedTime) {
+          events.push({
+            kind: 'last_fed',
+            time: lastFedTime,
+            isPast: lastFedTime.getTime() < nowMs,
+            isActive: false,
+            isDraggable: false,
+            label: isFr ? 'Dernier rafraîchi' : 'Last fed',
+            cardTimeFormat: 'absolute',
+            bellStyle: 'historical_dotted',
+            bellPeakTime: new Date(lastFedTime.getTime() + adjPeakH_eff * 3600000),
+            bellSigmaScale: 1.0,
+          });
+        }
+
+        if (_isFridgeHoldPath
+            && _fridgeHoldRefreshTime
+            && _fridgeHoldInTime
+            && _fridgeHoldOutTime
+            && _feed2Time) {
+          const refreshPeakAt = new Date(_fridgeHoldRefreshTime.getTime() + adjPeakH_eff * refreshStretch * 3600000);
+          events.push({
+            kind: 'refresh',
+            time: _fridgeHoldRefreshTime,
+            isPast: _fridgeHoldRefreshTime.getTime() < nowMs - 60 * 60 * 1000,
+            isActive: false,
+            isDraggable: false,
+            label: isFr ? 'Rafraîchi' : 'Refresh Feed',
+            cardTimeFormat: 'relative',
+            cardNote: isFr
+              ? `Pic vers ${fmtCardHM(refreshPeakAt, isFr)} — puis au frigo`
+              : `Peak around ${fmtCardHM(refreshPeakAt, isFr)} — then refrigerate`,
+            bellStyle: 'dotted',
+            bellPeakTime: refreshPeakAt,
+            bellSigmaScale: refreshStretch,
+          });
+          events.push({
+            kind: 'fridge_in',
+            time: _fridgeHoldInTime,
+            isPast: _fridgeHoldInTime.getTime() < nowMs,
+            isActive: false,
+            isDraggable: false,
+            label: isFr ? 'Au frigo' : 'Into Fridge',
+            cardTimeFormat: 'absolute',
+            cardNote: isFr ? 'Au pic — ralentit la fermentation' : 'At peak — slows fermentation',
+            bellStyle: 'none',
+            bellSigmaScale: 1.0,
+          });
+          const warmupMin = Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60);
+          events.push({
+            kind: 'fridge_out',
+            time: _fridgeHoldOutTime,
+            isPast: _fridgeHoldOutTime.getTime() < nowMs,
+            isActive: false,
+            isDraggable: false,
+            label: isFr ? 'Sortie du frigo' : 'Out of Fridge',
+            cardTimeFormat: 'absolute',
+            cardNote: isFr
+              ? `Tempérer ~${warmupMin} min avant le rafraîchi final`
+              : `Warm up ~${warmupMin} min before pre-mix feed`,
+            bellStyle: 'none',
+            bellSigmaScale: 1.0,
+          });
+          const preMixPeakAt = new Date(_feed2Time.getTime() + adjPeakH_eff * preMixStretch * 3600000);
+          events.push({
+            kind: 'pre_mix',
+            time: _feed2Time,
+            isPast: _feed2Time.getTime() < nowMs,
+            isActive: true,
+            isDraggable: true,
+            label: isFr ? 'Rafraîchi final' : 'Pre-mix Feed',
+            cardTimeFormat: 'absolute',
+            cardNote: isFr ? `Pic vers ${fmtCardHM(preMixPeakAt, isFr)}` : `Peak around ${fmtCardHM(preMixPeakAt, isFr)}`,
+            bellStyle: 'solid',
+            bellPeakTime: preMixPeakAt,
+            bellSigmaScale: preMixStretch,
+          });
+          events.sort((a, b) => a.time.getTime() - b.time.getTime());
+          return events;
+        }
+
+        if (_starterRefeedTime && !_usingPeak2) {
+          const isPrimary = !_hasFutureFeedPath;
+          const refreshPeakAt = new Date(_starterRefeedTime.getTime() + adjPeakH_eff * refreshStretch * 3600000);
+          events.push({
+            kind: 'refresh',
+            time: _starterRefeedTime,
+            isPast: _starterRefeedTime.getTime() < nowMs - 60 * 60 * 1000,
+            isActive: isPrimary,
+            isDraggable: false,
+            label: isFr ? 'Rafraîchi' : 'Refresh Feed',
+            cardTimeFormat: 'relative',
+            cardNote: isFr ? `Pic vers ${fmtCardHM(refreshPeakAt, isFr)}` : `Peak around ${fmtCardHM(refreshPeakAt, isFr)}`,
+            bellStyle: isPrimary ? 'solid' : 'dotted',
+            bellPeakTime: refreshPeakAt,
+            bellSigmaScale: refreshStretch,
+          });
+        }
+
+        for (let i = 0; i < _intermediateRefreshFeeds.length; i++) {
+          const ft = _intermediateRefreshFeeds[i];
+          if (_starterRefeedTime && Math.abs(ft.getTime() - _starterRefeedTime.getTime()) < 30 * 60 * 1000) continue;
+          const intPeakAt = new Date(ft.getTime() + adjPeakH_eff * 3600000);
+          const refreshCount = events.filter(e => e.kind === 'refresh' || e.kind === 'intermediate_refresh').length + 1;
+          events.push({
+            kind: 'intermediate_refresh',
+            time: ft,
+            isPast: ft.getTime() < nowMs,
+            isActive: false,
+            isDraggable: false,
+            label: isFr ? `Rafraîchi ${refreshCount}` : `Refresh Feed ${refreshCount}`,
+            cardTimeFormat: 'absolute',
+            bellStyle: 'dotted',
+            bellPeakTime: intPeakAt,
+            bellSigmaScale: 1.0,
+          });
+        }
+
+        if ((_hasFutureFeedPath || _usingPeak2) && _feed2Time) {
+          const preMixPeakAt = new Date(_feed2Time.getTime() + adjPeakH_eff * preMixStretch * 3600000);
+          const isNow = Math.abs(_feed2Time.getTime() - nowMs) < 30 * 60 * 1000;
+          events.push({
+            kind: 'pre_mix',
+            time: _feed2Time,
+            isPast: _feed2Time.getTime() < nowMs,
+            isActive: true,
+            isDraggable: true,
+            label: _usingPeak2
+              ? (isFr ? 'Prochain rafraîchi' : 'Next Feed')
+              : (isFr ? 'Rafraîchi final' : 'Pre-mix Feed'),
+            cardTimeFormat: isNow ? 'relative' : 'absolute',
+            cardNote: isFr ? `Pic vers ${fmtCardHM(preMixPeakAt, isFr)}` : `Peak around ${fmtCardHM(preMixPeakAt, isFr)}`,
+            bellStyle: 'solid',
+            bellPeakTime: preMixPeakAt,
+            bellSigmaScale: preMixStretch,
+          });
+        }
+
+        if (!_isFridgeHoldPath && starterLocation === 'fridge' && _newFridgeOut) {
+          const warmupMin = Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60);
+          events.push({
+            kind: 'fridge_out',
+            time: _newFridgeOut,
+            isPast: _newFridgeOut.getTime() < nowMs,
+            isActive: false,
+            isDraggable: false,
+            label: isFr ? 'Sortie du frigo' : 'Remove from Fridge',
+            cardTimeFormat: 'absolute',
+            cardNote: isFr
+              ? `~${warmupMin} min pour atteindre la temp. ambiante`
+              : `~${warmupMin} min to reach room temp`,
+            bellStyle: 'none',
+            bellSigmaScale: 1.0,
+          });
+        }
+
+        if (events.length === 1 && events[0].kind === 'last_fed' && !_starterRefeedTime) {
+          events[0].isActive = true;
+          events[0].bellStyle = 'solid';
+        }
+
+        events.sort((a, b) => a.time.getTime() - b.time.getTime());
+        return events;
       })();
 
       // Suppress fridge suggestion banner when the winning candidate doesn't
@@ -2250,6 +2469,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         preMixStretchFactor:   _preMixStretchFactor,
         refreshStretchFactor:  _refreshStretchFactor,
         planExplanation:       _planExplanation,
+        starterEvents:         _starterEvents,
       });
       onStarterFridgeInTimeChange?.(_showFridgeComparison
         ? (_hasFutureFeedPath && _feed2Time
@@ -3936,6 +4156,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterFridgeHoldOutTime={isSourdough ? (solverResult?.fridgeHoldOutTime ?? null) : null}
               starterPreMixStretchFactor={solverResult?.preMixStretchFactor ?? 1.0}
               starterRefreshStretchFactor={solverResult?.refreshStretchFactor ?? 1.0}
+              starterEvents={isSourdough ? (solverResult?.starterEvents ?? []) : []}
               startTimeInPast={startTimeInPast}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
@@ -4522,8 +4743,44 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   </div>
 
+                  {/* Event-driven render (sourdough only) — replaces feedPlan + standalone blocks */}
+                  {isSourdough && solverResult?.starterEvents && solverResult.starterEvents.length > 0 && (() => {
+                    const events = solverResult.starterEvents;
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginBottom: '.6rem' }}>
+                        {events.map((ev, i) => {
+                          if (ev.kind === 'last_fed' && ev.isPast) return null;
+                          const timeStr = ev.cardTimeFormat === 'relative'
+                            ? (() => {
+                                const fifteen = 15 * 60 * 1000;
+                                const rounded = new Date(Math.ceil(ev.time.getTime() / fifteen) * fifteen);
+                                const hm = fmtCardHM(rounded, isFr);
+                                return isFr ? `Maintenant · ${hm}` : `Now · ${hm}`;
+                              })()
+                            : fmtCardDT(ev.time, isFr);
+                          const labelUpper = ev.label.toUpperCase();
+                          return (
+                            <div key={`ev-card-${i}`}>
+                              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                                {labelUpper}
+                              </div>
+                              <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                                {timeStr}
+                              </div>
+                              {ev.cardNote && (
+                                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
+                                  {ev.cardNote}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
                   {/* Future feed path: planned Next Feed */}
-                  {isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && planningMode !== 'last_fed' && !_isFridgeHoldPath && (
+                  {!solverResult?.starterEvents?.length && isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && planningMode !== 'last_fed' && !_isFridgeHoldPath && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'RAFRAÎCHI FINAL' : 'PRE-MIX FEED'}
@@ -4542,7 +4799,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
-                  {isSourdough && _starterRefeedTime && !_usingPeak2 && !_isFridgeHoldPath && (
+                  {!solverResult?.starterEvents?.length && isSourdough && _starterRefeedTime && !_usingPeak2 && !_isFridgeHoldPath && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
                         textTransform: 'uppercase', letterSpacing: '.04em' }}>
@@ -4574,7 +4831,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
-                  {_usingPeak2 && _feed2Time && feedPlan.length === 0 && !_isFridgeHoldPath && (
+                  {!solverResult?.starterEvents?.length && _usingPeak2 && _feed2Time && feedPlan.length === 0 && !_isFridgeHoldPath && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'PROCHAIN RAFRAÎCHI' : 'NEXT FEED'}
@@ -4607,7 +4864,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
-                  {_isFridgeHoldPath && _fridgeHoldRefreshTime && _fridgeHoldInTime && _fridgeHoldOutTime && _feed2Time && (
+                  {!solverResult?.starterEvents?.length && _isFridgeHoldPath && _fridgeHoldRefreshTime && _fridgeHoldInTime && _fridgeHoldOutTime && _feed2Time && (
                     <>
                       {/* REFRESH FEED */}
                       <div style={{ marginBottom: '.6rem' }}>
@@ -4691,7 +4948,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </>
                   )}
 
-                  {feedPlan.length > 0 && !_isFridgeHoldPath && (
+                  {(!isSourdough || !solverResult?.starterEvents?.length) && feedPlan.length > 0 && !_isFridgeHoldPath && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '.45rem', marginBottom: '.6rem' }}>
                       {feedPlan.map((fp, i) => (
                         <div key={i}>
@@ -4711,7 +4968,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   )}
 
-                  {starterLocation === 'fridge' && _activeFridgeOutTime && (
+                  {(!isSourdough || !solverResult?.starterEvents?.length) && starterLocation === 'fridge' && _activeFridgeOutTime && (
                     <div style={{ marginBottom: '.6rem' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'SORTIR DU FRIGO' : 'REMOVE FROM FRIDGE'}
