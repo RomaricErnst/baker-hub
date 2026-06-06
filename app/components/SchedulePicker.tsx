@@ -2120,13 +2120,25 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             const ryeF = starterHasRye ? 0.8 : 1.0;
             const matF = starterMature ? 1.0 : 1.2;
             const ratioMult = 1 + 0.35 * Math.log(feedRatio);
-            const troughH_int = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * matF * ratioMult;
+            // Refresh spacing: use peak-shoulder timing (~peakH × 1.25) instead of trough.
+            // Baker best practice — refresh at/just past peak when starter is still strong,
+            // not at trough (fully depleted). Peak-shoulder = peakH × 1.25 ≈ 17h at 22°C
+            // for bread (peakH=14h). Biologically much better than waiting until trough (~25h),
+            // because each refresh is from a stronger base.
+            const peakH_int = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan') * ryeF * matF * ratioMult;
+            const refreshSpacingH = peakH_int * 1.25;
 
             // Determine the "next major feed" the chart walks toward.
-            // Priority: future pre-mix feed (_feed2Time) > start dough time.
-            const nextMajorFeedMs = (_hasFutureFeedPath || _usingPeak2) && _feed2Time
-              ? _feed2Time.getTime()
-              : _newPendingStart.getTime() - adjPeakH_eff * 3600000;
+            // For fridge starter non-Path-B: respect _fridgeFeedTime as the boundary
+            // (intermediates must precede the active fridge feed, not run past it).
+            // For RT with future pre-mix: use _feed2Time.
+            // For RT no future feed: use _newPendingStart - adjPeakH (implicit feed).
+            const nextMajorFeedMs =
+              starterLocation === 'fridge' && _fridgeFeedTime
+                ? _fridgeFeedTime.getTime()
+                : (_hasFutureFeedPath || _usingPeak2) && _feed2Time
+                  ? _feed2Time.getTime()
+                  : _newPendingStart.getTime() - adjPeakH_eff * 3600000;
 
             // Starting point: primary refresh if exists, then intermediate
             // refreshes (if any), else lastFedTime.
@@ -2135,10 +2147,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               : (_starterRefeedTime ? _starterRefeedTime.getTime() : lastFedTime.getTime());
 
             const gapH = (nextMajorFeedMs - startMs) / 3600000;
-            const numIntermediate = Math.floor(gapH / troughH_int);
+            // Cap intermediate refreshes at 2 (so total feeds including active ≤ 3).
+            // This matches baker best practice — severely depleted starter recovers
+            // with 2-3 feeds; more than that is wasted effort and not how bakers work.
+            const MAX_INTERMEDIATES = 2;
+            const numIntermediate = Math.min(MAX_INTERMEDIATES + 1, Math.floor(gapH / refreshSpacingH));
 
             for (let i = 1; i < numIntermediate; i++) {
-              const ft = new Date(startMs + i * troughH_int * 3600000);
+              const ft = new Date(startMs + i * refreshSpacingH * 3600000);
               // Snap to 7am-10pm sleeping hours
               const h = ft.getHours();
               if (h < 7) { ft.setHours(7, 0, 0, 0); }
@@ -5292,20 +5308,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               {(() => {
                 const pillGreen  = isSourdough ? sourdoughDoughGreen  : mixInZone;
                 const pillYellow = isSourdough ? sourdoughDoughYellow : (mixEarlyOk || mixLateOk);
-                // Dough peak position relative to bake. Matches bell physics:
-                //   _doughPeakHBF > 0 → peak BEFORE bake → still rising at bake
-                //   _doughPeakHBF < 0 → peak AFTER bake → over-fermenting past bake
-                //   _doughPeakHBF ≈ 0 → peak AT bake (sweet spot)
+                // Dough peak position relative to bake. HBF = hours before bake:
+                //   _doughPeakHBF > 0 → mix earlier than optimal → dough peaks BEFORE bake → slightly over-fermented at bake
+                //   _doughPeakHBF < 0 → mix later than optimal → dough peaks AFTER bake → still rising at bake
+                //   _doughPeakHBF ≈ 0 → mix at sweetCenter → peak AT bake (sweet spot)
+                // Both yellow-zone messages end "should be fine" because yellow IS the acceptable tier.
+                // The "mix too early — over-fermentation risk" branch below catches the gold/red case.
                 const _doughPeakHBF = mixOffsetH - renderSweetCenter;
                 const pillText   = isSourdough
                   ? (sourdoughDoughGreen
                       ? (isFr ? 'Pâte prête à la cuisson' : 'Dough ready at bake')
                       : sourdoughDoughYellow && _doughPeakHBF > 0.5
+                        ? (isFr ? 'Pic avant la cuisson — devrait être bien'
+                                : 'Dough peaks before bake — should be fine')
+                        : sourdoughDoughYellow && _doughPeakHBF < -0.5
                         ? (isFr ? 'Encore en fermentation — devrait être bien'
                                 : 'Still rising at bake — should be fine')
-                        : sourdoughDoughYellow && _doughPeakHBF < -0.5
-                        ? (isFr ? 'Pic après la cuisson — surveiller la surfermentation'
-                                : 'Dough peaks after bake — watch for over-fermentation')
                         : sourdoughDoughYellow
                         ? (isFr ? 'Proche du pic — devrait être bien'
                                 : 'Near peak — should be fine')
