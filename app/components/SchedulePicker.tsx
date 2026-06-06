@@ -25,6 +25,7 @@ export interface StarterEvent {
   cardNote?: string;
   bellStyle: 'none' | 'solid' | 'dotted' | 'historical_dotted';
   bellPeakTime?: Date;
+  bellStartTime?: Date;
   bellSigmaScale: number;
 }
 
@@ -2228,6 +2229,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const preMixStretch  = _preMixStretchFactor;
 
         if (planningMode === 'know_peak' && knownPeakTime) {
+          const knownPeakBellH = adjPeakH_eff > 0 ? adjPeakH_eff : 14;
+          const bellStartTime = new Date(knownPeakTime.getTime() - knownPeakBellH * 3600000);
           events.push({
             kind: 'known_peak',
             time: knownPeakTime,
@@ -2238,6 +2241,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             cardTimeFormat: 'absolute',
             bellStyle: 'solid',
             bellPeakTime: knownPeakTime,
+            bellStartTime: bellStartTime,
             bellSigmaScale: 1.0,
           });
           return events;

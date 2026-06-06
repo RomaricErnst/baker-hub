@@ -170,7 +170,7 @@ function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_D
   const pts: string[] = [];
   const left = startHBF ?? wh;
   const floor = startHBF !== undefined ? bell(startHBF, peakHBF, sigma) : 0;
-  const range = 1 - floor;
+  const range = Math.max(0.01, 1 - floor);
   for (let i = 0; i <= N; i++) {
     const hbf = (i / N) * left;
     const x = hToX(hbf, W, wh);
@@ -982,7 +982,8 @@ export default function FermentChart({
                   {/* Bells — one per event with bellStyle !== 'none' */}
                   {starterEvents.map((ev, idx) => {
                     if (ev.bellStyle === 'none' || !ev.bellPeakTime) return null;
-                    const feedHBF = (bakeMs - ev.time.getTime()) / 3600000;
+                    const bellStartMs = (ev.bellStartTime ?? ev.time).getTime();
+                    const feedHBF = (bakeMs - bellStartMs) / 3600000;
                     const peakHBF = (bakeMs - ev.bellPeakTime.getTime()) / 3600000;
                     if (feedHBF <= 0 || feedHBF > WH) return null;
                     const sigma = starterSigmaH * ev.bellSigmaScale;
