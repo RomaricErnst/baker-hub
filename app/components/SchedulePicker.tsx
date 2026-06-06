@@ -1879,15 +1879,42 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const now = new Date();
       const hoursSinceFeed = (now.getTime() - lastFedTime.getTime()) / 3600000;
 
-      if (starterLocation === 'fridge' && fridgeOutTime) {
-        const peakTime = new Date(fridgeOutTime.getTime() + warmupH * 3600000);
-        onStarterPeakTimeChange?.(peakTime);
-        return { ...NULL_RESULT, peakTime, feedTime: lastFedTime, fridgeOut: fridgeOutTime, adjPeakH };
-      }
+      if (starterLocation === 'fridge') {
+        // Detect fridge starter revival need based on dwell time + lastFedAge.
+        // Cold storage extends starter viability ~3-4× vs RT, but after ~5-7 days
+        // in fridge, starter activity drops significantly and needs revival cycles.
+        // Revival threshold: lastFedAge in {'days45', 'week'} OR fridge dwell > 5 days.
+        const needsRevival = lastFedAge === 'days45' || lastFedAge === 'week';
 
-      if (starterLocation === 'fridge' && !fridgeOutTime) {
-        // No fridgeOutTime set yet — solver's fridge candidate scan will find one.
-        // peakTime stays null; solver picks the winning fridgeOut and computes peak.
+        if (needsRevival) {
+          // Signal solver: this starter needs revival cycles. starterRefeedTime=now
+          // makes Path B candidate (and intermediate refresh loop) eligible.
+          const refeedNow = new Date();
+          const decliningPeak = new Date(refeedNow.getTime() + adjPeakH * 3600000);
+          onStarterPeakTimeChange?.(decliningPeak);
+          return {
+            peakTime: decliningPeak,
+            feedTime: lastFedTime,
+            fridgeOut: fridgeOutTime,
+            suggestedFridgeOut: null,
+            suggestedFridgePeak: null,
+            showFridgeComparison: false,
+            fridgeSuggestion: null,
+            starterIsDepletedAt: null,
+            starterRefeedTime: refeedNow,
+            starterStateNote: locale === 'fr'
+              ? 'Levain au frigo depuis longtemps — rafraîchissements multiples recommandés avant le pétrissage.'
+              : 'Starter in fridge for a while — multiple refresh cycles recommended before mixing.',
+            adjPeakH,
+          };
+        }
+
+        // Not in revival territory — original behavior
+        if (fridgeOutTime) {
+          const peakTime = new Date(fridgeOutTime.getTime() + warmupH * 3600000);
+          onStarterPeakTimeChange?.(peakTime);
+          return { ...NULL_RESULT, peakTime, feedTime: lastFedTime, fridgeOut: fridgeOutTime, adjPeakH };
+        }
         onStarterPeakTimeChange?.(null);
         return { ...NULL_RESULT, peakTime: null, feedTime: lastFedTime, adjPeakH };
       }
@@ -2151,7 +2178,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             // This matches baker best practice — severely depleted starter recovers
             // with 2-3 feeds; more than that is wasted effort and not how bakers work.
             const MAX_INTERMEDIATES = 2;
-            const numIntermediate = Math.min(MAX_INTERMEDIATES + 1, Math.floor(gapH / refreshSpacingH));
+            // Minimum revival refreshes by depletion level:
+            //   - week+: at least 2 revival refreshes before active feed (deep revival)
+            //   - days45: at least 1 revival refresh
+            //   - else: no minimum (gap drives count)
+            const MIN_INTERMEDIATES =
+              lastFedAge === 'week'   ? 2 :
+              lastFedAge === 'days45' ? 1 : 0;
+            const gapBasedCount = Math.floor(gapH / refreshSpacingH);
+            const numIntermediate = Math.min(MAX_INTERMEDIATES + 1,
+              Math.max(MIN_INTERMEDIATES + 1, gapBasedCount));
 
             for (let i = 1; i < numIntermediate; i++) {
               const ft = new Date(startMs + i * refreshSpacingH * 3600000);
@@ -2555,7 +2591,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
     _adjPeakH = adjPeakH;
 
-    if (windowHBF < minFermH) {
+    // For severely depleted starters (week+ or fridge revival territory),
+    // baker needs 1-2 full peak cycles to revive before normal dough cycle.
+    // Minimum revival overhead: 1 cycle ~ adjPeakH; deep revival ~ 2 cycles.
+    const _revivalOverheadH = (() => {
+      if (lastFedAge === 'week') return adjPeakH * 2.25;   // 2 revival cycles
+      if (lastFedAge === 'days45') return adjPeakH * 1.25; // 1 revival cycle
+      return 0;
+    })();
+    const effectiveMinFermH = minFermH + _revivalOverheadH;
+
+    if (windowHBF < effectiveMinFermH) {
       _windowTooShort = true;
       _starterPillState = 'green';
       setRefeedSuggestion(null);
@@ -2564,7 +2610,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // Earliest viable bake suggestion — bread only (not pizza)
       if (bakeType === 'bread') {
         const sweetCenterH = (localSweetFrom + localSweetTo) / 2;
-        const minNeededH   = adjPeakH + sweetCenterH + 1;
+        const minNeededH   = adjPeakH + sweetCenterH + 1 + _revivalOverheadH;
         const suggested    = new Date(Date.now() + minNeededH * 3600000);
         suggested.setMinutes(0, 0, 0);
         suggested.setHours(suggested.getHours() + 1);
@@ -2998,7 +3044,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (
       _starterRefeedTime &&
       planningMode === 'last_fed' && lastFedTime &&
-      starterLocation === 'rt'
+      (starterLocation === 'rt' || starterLocation === 'fridge')
     ) {
       const warmupH_pathB = getStarterFridgeWarmupH(kitchenTemp);
       const nowMs_pathB = Date.now();
