@@ -1230,30 +1230,6 @@ export default function FermentChart({
           </>
         )}
 
-        {/* Fridge removal marker — actual fridge starter */}
-        {isLevain && fridgeOutHBF !== null && (
-          <>
-            <line
-              x1={hToX(fridgeOutHBF, W, WH)}
-              y1={BL - MAXH}
-              x2={hToX(fridgeOutHBF, W, WH)}
-              y2={AXIS_Y}
-              stroke="rgba(74,127,165,0.45)"
-              strokeWidth={1}
-              strokeDasharray="3 3"
-            />
-            <text
-              x={hToX(fridgeOutHBF, W, WH)}
-              y={AXIS_Y + 14}
-              fontSize={9}
-              fill="rgba(74,127,165,0.7)"
-              fontFamily="DM Mono, monospace"
-              textAnchor="middle"
-            >
-              {isFr ? 'Sortir' : 'Remove'}
-            </text>
-          </>
-        )}
 
         {/* ── Dough bell (drawn on top) ── */}
         <path
@@ -1342,7 +1318,7 @@ export default function FermentChart({
           const points = `${x},${AXIS_Y - diamondSize} ${x + diamondSize},${AXIS_Y} ${x},${AXIS_Y + diamondSize} ${x - diamondSize},${AXIS_Y}`;
           const tickPositions = ticks.map(tk => tk.x);
           const collidesWithTick = tickPositions.some(tx => Math.abs(x - tx) < 40);
-          const labelY = collidesWithTick ? AXIS_Y + S + 30 : AXIS_Y + S + 14;
+          const labelY = collidesWithTick ? AXIS_Y + S + 38 : AXIS_Y + S + 20;
           const labelFill = isHistorical ? 'var(--smoke)' :
                             isIntermediate ? '#4A7FA5' :
                             isFridgeOut ? '#5A9DC9' :
@@ -1513,7 +1489,7 @@ export default function FermentChart({
                       const collidesWithTick = tickPositions.some(tx => Math.abs(r.x - tx) < 40);
                       const activeX = activeFeedHBF !== null ? hToX(activeFeedHBF, W, WH) : null;
                       const collidesWithActive = activeX !== null && Math.abs(r.x - activeX) < 50;
-                      const labelY = (collidesWithTick || collidesWithActive) ? AXIS_Y + S + 30 : AXIS_Y + S + 14;
+                      const labelY = (collidesWithTick || collidesWithActive) ? AXIS_Y + S + 38 : AXIS_Y + S + 20;
                       return (
                         <text x={r.x} y={labelY} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
                           {labelText}
