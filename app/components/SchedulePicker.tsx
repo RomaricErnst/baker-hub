@@ -2350,17 +2350,48 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         }
 
         if (lastFedTime) {
+          // Detect: fridge is holding the last feed as the active cycle.
+          // (No refresh planned, no path B, no future feed — engine is using
+          // the existing feed and removing from fridge at the right time.)
+          const isLastFedActiveInFridge =
+            starterLocation === 'fridge'
+            && !_isFridgeHoldPath
+            && !_starterRefeedTime
+            && !_usingPeak2
+            && !_hasFutureFeedPath;
+
+          // Bell peak time:
+          //  - When active in fridge AND engine has set _newFridgeOut:
+          //      peak = fridgeOut + warmupH (engine's actual plan)
+          //  - When active in fridge but no fridgeOut yet (early state):
+          //      peak = lastFed + adjPeakH × coldFactor (theoretical fridge peak)
+          //  - Otherwise (historical, RT cycle):
+          //      peak = lastFed + adjPeakH (RT cycle)
+          const _coldFactor_evt = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
+          const _warmupH_evt = getStarterFridgeWarmupH(kitchenTemp);
+          const lastFedBellPeakTime = isLastFedActiveInFridge
+            ? (_newFridgeOut
+                ? new Date(_newFridgeOut.getTime() + _warmupH_evt * 3600000)
+                : new Date(lastFedTime.getTime() + adjPeakH_last_eff * _coldFactor_evt * 3600000))
+            : new Date(lastFedTime.getTime() + adjPeakH_last_eff * 3600000);
+
           events.push({
             kind: 'last_fed',
             time: lastFedTime,
             isPast: lastFedTime.getTime() < nowMs,
-            isActive: false,
+            isActive: isLastFedActiveInFridge,
             isDraggable: false,
             label: isFr ? 'Dernier rafraîchi' : 'Last fed',
             cardTimeFormat: 'absolute',
-            bellStyle: 'historical_dotted',
-            bellPeakTime: new Date(lastFedTime.getTime() + adjPeakH_last_eff * 3600000),
+            cardNote: isLastFedActiveInFridge
+              ? (isFr
+                  ? `Au frigo — pic vers ${fmtCardHM(lastFedBellPeakTime, isFr)}`
+                  : `Held in fridge — peak around ${fmtCardHM(lastFedBellPeakTime, isFr)}`)
+              : undefined,
+            bellStyle: isLastFedActiveInFridge ? 'solid' : 'historical_dotted',
+            bellPeakTime: lastFedBellPeakTime,
             bellSigmaScale: 1.0,
+            hasFridgePhase: isLastFedActiveInFridge,
           });
         }
 
@@ -2445,28 +2476,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             bellStyle: isPrimary ? 'solid' : 'dotted',
             bellPeakTime: refreshPeakAt,
             bellSigmaScale: refreshStretch,
-          });
-        }
-
-        if (!_isFridgeHoldPath
-            && !_starterRefeedTime
-            && starterLocation === 'fridge'
-            && _starterFeedTime
-            && !_usingPeak2) {
-          const activePeakAt = new Date(_starterFeedTime.getTime() + adjPeakH_next_eff * 3600000);
-          events.push({
-            kind: 'refresh',
-            time: _starterFeedTime,
-            isPast: _starterFeedTime.getTime() < nowMs,
-            isActive: true,
-            isDraggable: false,
-            label: isFr ? 'Rafraîchi' : 'Refresh Feed',
-            cardTimeFormat: 'absolute',
-            cardNote: isFr ? `Pic vers ${fmtCardHM(activePeakAt, isFr)}` : `Peak around ${fmtCardHM(activePeakAt, isFr)}`,
-            bellStyle: 'solid',
-            bellPeakTime: activePeakAt,
-            bellSigmaScale: 1.0,
-            hasFridgePhase: true,
           });
         }
 
@@ -4983,7 +4992,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginBottom: '.6rem' }}>
                         {events.map((ev, i) => {
-                          if (ev.kind === 'last_fed' && ev.isPast) return null;
+                          if (ev.kind === 'last_fed' && ev.isPast && !ev.isActive) return null;
                           const timeStr = ev.cardTimeFormat === 'relative'
                             ? (() => {
                                 const fifteen = 15 * 60 * 1000;
