@@ -45,6 +45,9 @@ export interface SessionData {
   hasNotFedYet?: boolean;
   lastFedAge?: string | null;
   feedRatio?: number;
+  lastFeedRatio?: number;
+  nextFeedRatio?: number;
+  nextFeedRatioOverride?: number | null;
   starterMature?: boolean;
   starterHasRye?: boolean;
   fridgeOutTime?: number | null;

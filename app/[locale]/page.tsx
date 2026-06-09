@@ -347,7 +347,9 @@ export default function Home() {
   const [knownPeakTime, setKnownPeakTime]   = useState<Date | null>(null);
   const [hasNotFedYet, setHasNotFedYet]     = useState<boolean | null>(null);
   const [lastFedAge, setLastFedAge]         = useState<'today'|'yesterday'|'days23'|'days45'|'week'|null>(null);
-  const [feedRatio, setFeedRatio]           = useState<1 | 2 | 4 | 5 | 10>(1);
+  const [lastFeedRatio, setLastFeedRatio]   = useState<1 | 2 | 4 | 5 | 10>(1);
+  const [nextFeedRatio, setNextFeedRatio]   = useState<1 | 2 | 4 | 5 | 10>(1);
+  const [nextFeedRatioOverride, setNextFeedRatioOverride] = useState<1 | 2 | 4 | 5 | 10 | null>(null);
   const [starterPeakTime, setStarterPeakTime] = useState<Date | null>(null);
   const [starterMature, setStarterMature]   = useState(true);
   const [starterHasRye, setStarterHasRye]   = useState(false);
@@ -561,7 +563,14 @@ export default function Home() {
     if (session.knownPeakTime) setKnownPeakTime(new Date(session.knownPeakTime));
     if (session.hasNotFedYet !== undefined) setHasNotFedYet(session.hasNotFedYet ?? null);
     if (session.lastFedAge !== undefined) setLastFedAge((session.lastFedAge as 'today'|'yesterday'|'days23'|'days45'|'week'|null) ?? null);
-    if (session.feedRatio) setFeedRatio((session.feedRatio as 1 | 2 | 4 | 5 | 10) ?? 1);
+    // Stage 1: support both new and legacy key names
+    const _lfr = session.lastFeedRatio ?? session.feedRatio;
+    if (_lfr) setLastFeedRatio(_lfr as 1 | 2 | 4 | 5 | 10);
+    const _nfr = session.nextFeedRatio ?? session.lastFeedRatio ?? session.feedRatio;
+    if (_nfr) setNextFeedRatio(_nfr as 1 | 2 | 4 | 5 | 10);
+    if (session.nextFeedRatioOverride !== undefined) {
+      setNextFeedRatioOverride(session.nextFeedRatioOverride as 1 | 2 | 4 | 5 | 10 | null);
+    }
     if (session.starterMature !== undefined) setStarterMature(Boolean(session.starterMature));
     if (session.starterHasRye !== undefined) setStarterHasRye(Boolean(session.starterHasRye));
     if (session.fridgeOutTime) setFridgeOutTime(new Date(session.fridgeOutTime));
@@ -803,7 +812,9 @@ export default function Home() {
       knownPeakTime: knownPeakTime?.getTime() ?? null,
       hasNotFedYet: hasNotFedYet ?? undefined,
       lastFedAge: lastFedAge ?? null,
-      feedRatio,
+      lastFeedRatio,
+      nextFeedRatio,
+      nextFeedRatioOverride,
       starterMature, starterHasRye,
       fridgeOutTime: fridgeOutTime?.getTime() ?? null,
       usingPeak2,
@@ -925,7 +936,9 @@ export default function Home() {
     setPlanningMode('last_fed');
     setStarterMature(true);
     setStarterHasRye(false);
-    setFeedRatio(1);
+    setLastFeedRatio(1);
+    setNextFeedRatio(1);
+    setNextFeedRatioOverride(null);
     setStarterPeakTime(null);
   }
 
@@ -1664,8 +1677,12 @@ export default function Home() {
                 onHasNotFedYetChange={setHasNotFedYet}
                 lastFedAge={lastFedAge}
                 onLastFedAgeChange={setLastFedAge}
-                feedRatio={feedRatio}
-                onFeedRatioChange={setFeedRatio}
+                lastFeedRatio={lastFeedRatio}
+                onLastFeedRatioChange={setLastFeedRatio}
+                nextFeedRatio={nextFeedRatio}
+                onNextFeedRatioChange={setNextFeedRatio}
+                nextFeedRatioOverride={nextFeedRatioOverride}
+                onNextFeedRatioOverrideChange={setNextFeedRatioOverride}
                 onStarterPeakTimeChange={setStarterPeakTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
@@ -1802,7 +1819,7 @@ export default function Home() {
                             starterPeakTime={starterPeakTime}
                             planningMode={planningMode}
                             usingPeak2={usingPeak2}
-                            feedRatio={feedRatio}
+                            feedRatio={lastFeedRatio}
                             starterLocation={starterLocation}
                           />
 
@@ -1970,7 +1987,7 @@ export default function Home() {
                   starterHasRye={starterHasRye}
                   usingPeak2={usingPeak2}
                   planningMode={planningMode}
-                  feedRatio={feedRatio}
+                  feedRatio={lastFeedRatio}
                   starterLocation={starterLocation}
                   units={units}
                   locale={locale}
@@ -2472,8 +2489,12 @@ export default function Home() {
                 onHasNotFedYetChange={setHasNotFedYet}
                 lastFedAge={lastFedAge}
                 onLastFedAgeChange={setLastFedAge}
-                feedRatio={feedRatio}
-                onFeedRatioChange={setFeedRatio}
+                lastFeedRatio={lastFeedRatio}
+                onLastFeedRatioChange={setLastFeedRatio}
+                nextFeedRatio={nextFeedRatio}
+                onNextFeedRatioChange={setNextFeedRatio}
+                nextFeedRatioOverride={nextFeedRatioOverride}
+                onNextFeedRatioOverrideChange={setNextFeedRatioOverride}
                 onStarterPeakTimeChange={setStarterPeakTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
@@ -3058,7 +3079,7 @@ export default function Home() {
                             starterPeakTime={starterPeakTime}
                             planningMode={planningMode}
                             usingPeak2={usingPeak2}
-                            feedRatio={feedRatio}
+                            feedRatio={lastFeedRatio}
                             starterLocation={starterLocation}
                           />
                           {schedule && (
@@ -3225,7 +3246,7 @@ export default function Home() {
                   starterHasRye={starterHasRye}
                   usingPeak2={usingPeak2}
                   planningMode={planningMode}
-                  feedRatio={feedRatio}
+                  feedRatio={lastFeedRatio}
                   starterLocation={starterLocation}
                   units={units}
                   locale={locale}
