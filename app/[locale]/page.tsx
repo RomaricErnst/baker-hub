@@ -1819,7 +1819,7 @@ export default function Home() {
                             starterPeakTime={starterPeakTime}
                             planningMode={planningMode}
                             usingPeak2={usingPeak2}
-                            feedRatio={lastFeedRatio}
+                            feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
 
@@ -1987,7 +1987,7 @@ export default function Home() {
                   starterHasRye={starterHasRye}
                   usingPeak2={usingPeak2}
                   planningMode={planningMode}
-                  feedRatio={lastFeedRatio}
+                  feedRatio={nextFeedRatio}
                   starterLocation={starterLocation}
                   units={units}
                   locale={locale}
@@ -3079,7 +3079,7 @@ export default function Home() {
                             starterPeakTime={starterPeakTime}
                             planningMode={planningMode}
                             usingPeak2={usingPeak2}
-                            feedRatio={lastFeedRatio}
+                            feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
                           {schedule && (
@@ -3246,7 +3246,7 @@ export default function Home() {
                   starterHasRye={starterHasRye}
                   usingPeak2={usingPeak2}
                   planningMode={planningMode}
-                  feedRatio={lastFeedRatio}
+                  feedRatio={nextFeedRatio}
                   starterLocation={starterLocation}
                   units={units}
                   locale={locale}

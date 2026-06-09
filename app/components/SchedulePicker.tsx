@@ -70,6 +70,7 @@ interface SourdoughSolverResult {
   refreshStretchFactor:    number;
   planExplanation:         string | null;
   starterEvents:           StarterEvent[];
+  recommendedNextFeedRatio: 1 | 2 | 4 | 5 | 10 | null;
 }
 
 interface DerivedStarterState {
@@ -1299,6 +1300,21 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
   }, [lastFeedRatio, nextFeedRatioOverride]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Stage 2: auto-apply engine's ratio recommendation.
+  // Triggers only when:
+  //   - Baker hasn't overridden (override is null)
+  //   - Solver found a recommendation different from current nextFeedRatio
+  // Convergence: once applied, solver re-runs and finds same recommendation
+  // (stable plan). No further changes.
+  useEffect(() => {
+    if (nextFeedRatioOverride !== null) return;
+    const rec = solverResult?.recommendedNextFeedRatio;
+    if (rec == null) return;
+    if (rec === nextFeedRatio) return;
+    setNextFeedRatio(rec);
+    onNextFeedRatioChange?.(rec);
+  }, [solverResult?.recommendedNextFeedRatio, nextFeedRatioOverride]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // StarterState kept for BakeGuide compat — derived from new vars
   const starterState: StarterState = starterLocation === 'fridge'
     ? (fridgeOutTime ? 'fridge_fed' : 'fridge_unfed')
@@ -2118,6 +2134,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _newFridgeOut: Date | null = fridgeOutTime;
     let _adjPeakH: number | null = null;
     let _fridgeFeedTime: Date | null = null;
+    let _recommendedNextFeedRatio: 1 | 2 | 4 | 5 | 10 | null = null;
 
     // Get derived starter state (no setState calls inside)
     const derived = deriveStarterPeakTime(et, targetMixTime);
@@ -2582,6 +2599,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         refreshStretchFactor:  _refreshStretchFactor,
         planExplanation:       _planExplanation,
         starterEvents:         _starterEvents,
+        recommendedNextFeedRatio: _recommendedNextFeedRatio,
       });
       onStarterFridgeInTimeChange?.(_showFridgeComparison
         ? (_hasFutureFeedPath && _feed2Time
@@ -3281,6 +3299,62 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         if (_hf < 7) { _adj.setHours(7, 0, 0, 0); }
         else if (_hf > 22) { _adj.setHours(7, 0, 0, 0); _adj.setDate(_adj.getDate() + 1); }
         _fridgeFeedTime = _adj;
+      }
+    }
+
+    // ── Stage 2: evaluate ratio alternatives for next feed ──
+    // Scores each ratio for humane feed time + blocker avoidance.
+    // Returns null if no ratio meaningfully beats lastFeedRatio.
+    if (
+      planningMode !== 'know_peak'
+      && lastFedAge !== 'week'
+      && !_windowTooShort
+    ) {
+      const activeFeedMs = best.feed2Ms ?? best.feedMs;
+      const minutesFromNow = activeFeedMs
+        ? (activeFeedMs - Date.now()) / 60000
+        : -1;
+
+      if (activeFeedMs && minutesFromNow >= 60) {
+        const mixMs = bakeMs - best.mixHBF * 3600000;
+        const peakH_base = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
+        const ryeF = starterHasRye ? 0.8 : 1.0;
+        const matF = starterMature ? 1.0 : 1.2;
+        const preMixStr = 1.0; // scoring is comparative; exact stretch doesn't change winner
+
+        const scoreFeedAtRatio = (r: 1 | 2 | 4 | 5 | 10): number => {
+          const ratioMult = 1 + 0.35 * Math.log(r);
+          const adjPeakH_r = peakH_base * ryeF * matF * ratioMult;
+          const feedMs_r = mixMs - adjPeakH_r * preMixStr * 3600000;
+          if (feedMs_r < Date.now() + 30 * 60 * 1000) return -1000;
+          const d = new Date(feedMs_r);
+          const hour = d.getHours() + d.getMinutes() / 60;
+          let s = 0;
+          if (hour >= 7 && hour < 22) s += 50;
+          else if (hour >= 6 && hour < 23) s += 20;
+          const inBlocker = (blocksOverride ?? blocks).some(b =>
+            feedMs_r > b.from.getTime() && feedMs_r < b.to.getTime()
+          );
+          if (!inBlocker) s += 100;
+          return s;
+        };
+
+        const baseScore = scoreFeedAtRatio(lastFeedRatio);
+        const RATIOS: (1 | 2 | 4 | 5 | 10)[] = [1, 2, 4, 5, 10];
+        const RECOMMEND_THRESHOLD = 30;
+        let bestR: 1 | 2 | 4 | 5 | 10 = lastFeedRatio;
+        let bestS = baseScore;
+        for (const r of RATIOS) {
+          if (r === lastFeedRatio) continue;
+          const s = scoreFeedAtRatio(r);
+          if (s > bestS + RECOMMEND_THRESHOLD) {
+            bestS = s;
+            bestR = r;
+          }
+        }
+        if (bestR !== lastFeedRatio) {
+          _recommendedNextFeedRatio = bestR;
+        }
       }
     }
 
@@ -4938,6 +5012,92 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       </div>
                     );
                   })()}
+
+                  {/* ── Stage 2: NEXT FEED RATIO chip row ── */}
+                  {isSourdough
+                    && planningMode !== 'know_peak'
+                    && (solverResult?.starterEvents ?? []).some(e =>
+                         !e.isPast && (
+                           e.kind === 'refresh'
+                           || e.kind === 'pre_mix'
+                           || e.kind === 'intermediate_refresh'
+                         )
+                       )
+                    && !solverResult?.windowTooShort
+                    && (() => {
+                      const rec = solverResult?.recommendedNextFeedRatio ?? null;
+                      const showEnginePick =
+                        nextFeedRatioOverride === null
+                        && nextFeedRatio !== lastFeedRatio;
+                      const showEngineSuggests =
+                        nextFeedRatioOverride !== null
+                        && rec !== null
+                        && rec !== nextFeedRatio;
+
+                      const buildConsequence = (oldR: 1|2|4|5|10, newR: 1|2|4|5|10): string | null => {
+                        const mixMs = pendingStart.getTime();
+                        const peakH_base = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
+                        const ryeF = starterHasRye ? 0.8 : 1.0;
+                        const matF = starterMature ? 1.0 : 1.2;
+                        const preMixStr = solverResult?.preMixStretchFactor ?? 1.0;
+                        const adjOld = peakH_base * ryeF * matF * (1 + 0.35 * Math.log(oldR));
+                        const adjNew = peakH_base * ryeF * matF * (1 + 0.35 * Math.log(newR));
+                        const oldFeed = new Date(mixMs - adjOld * preMixStr * 3600000);
+                        const newFeed = new Date(mixMs - adjNew * preMixStr * 3600000);
+                        return isFr
+                          ? `À 1:${newR}:${newR}, le rafraîchi passe de ${fmtCardHM(oldFeed, isFr)} à ${fmtCardHM(newFeed, isFr)}.`
+                          : `At 1:${newR}:${newR} your feed shifts from ${fmtCardHM(oldFeed, isFr)} to ${fmtCardHM(newFeed, isFr)}.`;
+                      };
+
+                      const consequenceText = showEnginePick
+                        ? buildConsequence(lastFeedRatio, nextFeedRatio)
+                        : (showEngineSuggests && rec !== null
+                            ? (isFr
+                                ? `Suggestion : 1:${rec}:${rec} (toucher pour utiliser)`
+                                : `Engine suggests 1:${rec}:${rec} — tap to use`)
+                            : null);
+
+                      return (
+                        <div style={{ marginTop: '.4rem', marginBottom: '.6rem' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                            {isFr ? 'PROCHAIN RAFRAÎCHI' : 'NEXT FEED RATIO'}
+                          </div>
+                          <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginTop: '.3rem' }}>
+                            {([1, 2, 4, 5, 10] as const).map(r => (
+                              <button
+                                key={r}
+                                onClick={() => {
+                                  if (r === nextFeedRatio && nextFeedRatioOverride !== null) return;
+                                  if (r === rec && nextFeedRatioOverride !== null) {
+                                    setNextFeedRatioOverride(null);
+                                    onNextFeedRatioOverrideChange?.(null);
+                                    return;
+                                  }
+                                  setNextFeedRatioOverride(r);
+                                  onNextFeedRatioOverrideChange?.(r);
+                                  setNextFeedRatio(r);
+                                  onNextFeedRatioChange?.(r);
+                                }}
+                                style={{
+                                  padding: '.3rem .65rem', borderRadius: '20px',
+                                  border: `1.5px solid ${nextFeedRatio === r ? 'var(--bread)' : 'var(--border)'}`,
+                                  background: nextFeedRatio === r ? 'rgba(139,105,20,0.10)' : 'transparent',
+                                  color: nextFeedRatio === r ? 'var(--bread)' : 'var(--smoke)',
+                                  fontFamily: 'var(--font-dm-mono)', fontSize: '.78rem', cursor: 'pointer',
+                                }}
+                              >
+                                1:{r}:{r}
+                              </button>
+                            ))}
+                          </div>
+                          {consequenceText && (
+                            <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginTop: '.3rem', lineHeight: 1.4 }}>
+                              {consequenceText}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                   {/* Future feed path: planned Next Feed */}
                   {!solverResult?.starterEvents?.length && isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && planningMode !== 'last_fed' && !_isFridgeHoldPath && (
