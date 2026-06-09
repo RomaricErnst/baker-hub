@@ -214,6 +214,46 @@ function makePlateauBellPath(
   return pts.join(' ');
 }
 
+function makeFridgePhaseBellPath(
+  feedHBF: number,
+  fridgeOutHBF: number,
+  fridgePeakH: number,
+  fridgeSigma: number,
+  feedToFridgeOutH: number,
+  starterColdFactor: number,
+  fridgeHeightAtRemoval: number,
+  W: number,
+  WH: number,
+): string {
+  const N = 300;
+  const pts: string[] = [];
+  for (let i = 0; i <= N; i++) {
+    const hbf = (i / N) * feedHBF;
+    let normH: number;
+    if (hbf >= fridgeOutHBF) {
+      const fridgeBellCenter = feedHBF - fridgePeakH;
+      const rawFridgeH = Math.exp(-0.5 * ((hbf - fridgeBellCenter) / fridgeSigma) ** 2);
+      const fridgeAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - fridgeBellCenter) / fridgeSigma) ** 2);
+      normH = fridgeAtRemoval > 0
+        ? rawFridgeH / fridgeAtRemoval * fridgeHeightAtRemoval
+        : rawFridgeH;
+    } else {
+      const rtHoursAfterRemoval = fridgeOutHBF - hbf;
+      const fridgeEquivAfterRemoval = rtHoursAfterRemoval * starterColdFactor;
+      const totalEquivH = feedToFridgeOutH + fridgeEquivAfterRemoval;
+      normH = Math.exp(-0.5 * ((totalEquivH - fridgePeakH) / fridgeSigma) ** 2);
+    }
+    normH = Math.max(0, Math.min(1, normH));
+    const x = hToX(hbf, W, WH);
+    const y = BL - normH * MAXH;
+    pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
+  }
+  pts.push(`L ${hToX(feedHBF, W, WH).toFixed(1)} ${BL}`);
+  pts.push(`L ${hToX(0, W, WH).toFixed(1)} ${BL}`);
+  pts.push('Z');
+  return pts.join(' ');
+}
+
 // ── Formatting ───────────────────────────────────────────────
 function formatHours(h: number): string {
   if (h < 1) return `${Math.round(h * 60)}m`;
@@ -1000,7 +1040,20 @@ export default function FermentChart({
                     return (
                       <path
                         key={`ev-bell-${idx}`}
-                        d={makeBellPath(peakHBF, sigma, W, WH, feedHBF)}
+                        d={
+                          ev.hasFridgePhase && fridgeOutHBF !== null && feedToFridgeOutH !== null
+                            ? makeFridgePhaseBellPath(
+                                feedHBF,
+                                fridgeOutHBF,
+                                fridgePeakH,
+                                fridgeSigma,
+                                feedToFridgeOutH,
+                                starterColdFactor,
+                                fridgeHeightAtRemoval,
+                                W, WH
+                              )
+                            : makeBellPath(peakHBF, sigma, W, WH, feedHBF)
+                        }
                         fill={fillStyle}
                         stroke={strokeStyle}
                         strokeWidth={strokeWidth}

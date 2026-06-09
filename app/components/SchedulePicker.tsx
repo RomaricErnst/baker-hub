@@ -27,6 +27,7 @@ export interface StarterEvent {
   bellPeakTime?: Date;
   bellStartTime?: Date;
   bellSigmaScale: number;
+  hasFridgePhase?: boolean;
 }
 
 interface SourdoughSolverResult {
@@ -2416,6 +2417,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             bellStyle: 'solid',
             bellPeakTime: activePeakAt,
             bellSigmaScale: 1.0,
+            hasFridgePhase: true,
           });
         }
 
@@ -2455,6 +2457,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             bellStyle: 'solid',
             bellPeakTime: preMixPeakAt,
             bellSigmaScale: preMixStretch,
+            hasFridgePhase: starterLocation === 'fridge',
           });
         }
 
