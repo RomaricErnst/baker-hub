@@ -2852,6 +2852,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       fridgeHoldRefreshMs?: number;
       fridgeHoldInMs?:      number;
       fridgeHoldOutMs?:     number;
+      // Fridge scan: honest removal time (mix = fridgeOut + rtToPeakH, not mix − warmupH)
+      fridgeOutMs?:         number;
     }
 
     const candidates: Candidate[] = [];
@@ -2965,7 +2967,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const fridgeOutMaxMs = bakeMs - (mixHBFMin + _warmupH) * 3600000;
       for (let foMs = fridgeOutMinMs; foMs <= fridgeOutMaxMs; foMs += 15 * 60000) {
         const dwellH = (foMs - lastFedMs) / 3600000;
-        const rtToPeakH = Math.max(_warmupH, (_fpH - dwellH) / _cf);
+        // peakUnflooredH: when biology truly peaks after removal (can be < warmupH
+        // when starter already accumulated most of its rise while in fridge).
+        // rtToPeakH: earliest safe mix (physically floored by warmup time).
+        // When floor binds: mix is PAST peak by (warmupH − peakUnflooredH).
+        const peakUnflooredH = (_fpH - dwellH) / _cf;
+        const rtToPeakH = Math.max(_warmupH, peakUnflooredH);
         const mixMs = foMs + rtToPeakH * 3600000;
         const mixHBF = (bakeMs - mixMs) / 3600000;
         if (mixHBF < mixHBFMin - 0.5 || mixHBF > mixHBFMax + 0.5) continue;
@@ -2973,15 +2980,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         if (inBlockerMs(foMs)) continue;
         const ds = doughScore(mixHBF);
         if (ds === 0) continue;
-        const gapRT_h = rtToPeakH - _warmupH;
-        const ss: 0 | 1 | 2 = gapRT_h < 0.5 ? 2 : gapRT_h < 2 ? 1 : 0;
+        // Honest peak HBF: clamp unfloored to at least 0.25h (can't peak before warmup starts)
+        const peakMs = foMs + Math.max(0.25, peakUnflooredH) * 3600000;
+        const peakHBF_honest = (bakeMs - peakMs) / 3600000;
+        const ss = starterScore(mixHBF, peakHBF_honest);
         if (ss === 0 && ds < 2) continue;
         candidates.push({
-          mixHBF, peakHBF: mixHBF, feedMs: lastFedMs,
+          mixHBF, peakHBF: peakHBF_honest, feedMs: lastFedMs,
           usingPeak2: false, feed2Ms: null,
-          score: combinedScore(mixHBF, mixHBF, lastFedMs) + (ss === 2 ? 10 : ss === 1 ? 5 : 0),
+          score: combinedScore(mixHBF, peakHBF_honest, lastFedMs) + (ss === 2 ? 10 : ss === 1 ? 5 : 0),
           sscore: ss,
           isFridgePath: true,
+          fridgeOutMs: foMs,
         });
       }
     }
@@ -3266,12 +3276,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     _newPendingStart = newMix;
     onChange(newMix, et, blocks);
 
-    // Compute fridgeOutTime from mix position when fridge starter
+    // Use the candidate's HONEST fridge-out time (mix = fridgeOut + rtToPeakH),
+    // not mix − warmupH. The old recompute moved fridgeOut later than the
+    // candidate's actual removal time, pushing the committed peak past mix.
+    // When the baker dragged (manualMixOverride), best.fridgeOutMs doesn't
+    // correspond to the dragged position — fall back to mix − warmupH in that case.
     if (starterLocation === 'fridge') {
-      const candidateFridgeOut = new Date(newMix.getTime() - warmupH * 3600000);
-      _newFridgeOut = candidateFridgeOut.getTime() < Date.now()
+      const honestFridgeOut = (best.fridgeOutMs && !manualMixOverride)
+        ? new Date(best.fridgeOutMs)
+        : new Date(newMix.getTime() - warmupH * 3600000);
+      _newFridgeOut = honestFridgeOut.getTime() < Date.now()
         ? new Date()
-        : candidateFridgeOut;
+        : honestFridgeOut;
     }
 
     // If fridge path candidate won, apply the suggested fridge-out time
@@ -3304,9 +3320,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         ? 'Timing légèrement décalé — la pâte sera quand même bonne.'
         : 'Timing slightly off — your dough will still be great.';
     } else if (best.sscore < 2) {
-      _driftNote = isFr
-        ? 'Le levain sera légèrement passé son pic — toujours bon.'
-        : 'Starter slightly past peak at mix — still good.';
+      // HBF: larger = earlier. mixHBF > peakHBF means mix BEFORE peak (still rising).
+      const mixBeforePeak = best.mixHBF > best.peakHBF;
+      _driftNote = mixBeforePeak
+        ? (isFr
+            ? 'Le levain sera encore en montée au pétrissage — presque au pic.'
+            : 'Starter still rising at mix — nearly at peak.')
+        : (isFr
+            ? 'Le levain sera légèrement passé son pic — toujours bon.'
+            : 'Starter slightly past peak at mix — still good.');
     } else if (doughScore(best.mixHBF) < 2) {
       _driftNote = isFr
         ? 'Fenêtre un peu courte — la pâte sera bonne quand même.'
@@ -5393,10 +5415,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                           ? (isFr
                               ? `Rafraîchir le ${fmtCardDT(_feed2Time, true)}`
                               : `Feed ${fmtCardDT(_feed2Time, false)}`)
-                          : _starterPillState === 'yellow' && _activeFridgeOutTime
-                            ? (isFr
-                                ? `Sortir du frigo — ${fmtCardDT(_activeFridgeOutTime, isFr)}`
-                                : `Remove from fridge — ${fmtCardDT(_activeFridgeOutTime, isFr)}`)
+                          : _starterPillState === 'yellow' && _activeFridgeOutTime && solverResult?.peakTime
+                            ? (() => {
+                                const gapH = (pendingStart.getTime() - solverResult.peakTime.getTime()) / 3600000;
+                                if (gapH < -0.5) return isFr ? 'En montée au pétrissage — presque au pic' : 'Still rising at mix — nearly at peak';
+                                if (gapH <= 1.5) return isFr ? 'Au pic au mélange' : 'At peak at mix';
+                                if (gapH <= 3.5) return isFr ? 'Légèrement après le pic' : 'Just past peak';
+                                return isFr ? 'Passé le pic — surveiller' : 'Past peak — watch closely';
+                              })()
                             : (() => {
                                 const adjPeakH2 = _adjPeakHState ?? 8;
                                 const baseFeedMs = (() => {

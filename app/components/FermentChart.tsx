@@ -427,8 +427,21 @@ export default function FermentChart({
   let prefZoneTo: number;
   if (isLevain && starterFeedTime) {
     const activePeakH = starterAdjPeakH ?? getPrefPeakH_RT('sourdough', kitchenTemp, styleKey);
-    const activeFeedHBF2 = (eatTime.getTime() - starterFeedTime.getTime()) / 3600000;
-    const peakHBF2 = activeFeedHBF2 - activePeakH;
+    // Fridge-aware: a fridge starter's true peak is fridgeOut + rtToPeakH
+    // (generalized two-phase), not feed + RT-peakH. Mirror the engine.
+    let peakHBF2: number;
+    if (starterFridgeOutTime) {
+      const cf = Math.pow(2, (kitchenTemp - fridgeTemp) / 10);
+      const wu = getStarterFridgeWarmupH(kitchenTemp);
+      const fpH = activePeakH * cf;
+      const dwellH = (starterFridgeOutTime.getTime() - starterFeedTime.getTime()) / 3600000;
+      const rtToPeakH = Math.max(wu, (fpH - dwellH) / cf);
+      const peakMs = starterFridgeOutTime.getTime() + rtToPeakH * 3600000;
+      peakHBF2 = (eatTime.getTime() - peakMs) / 3600000;
+    } else {
+      const activeFeedHBF2 = (eatTime.getTime() - starterFeedTime.getTime()) / 3600000;
+      peakHBF2 = activeFeedHBF2 - activePeakH;
+    }
     // TOL mirrors the solver's tolerance: ±2h for fridge, ±1h for RT, widened by 0.5h for display
     // Match solver: adjPeakH × 0.15 clamped 1.0–3.0h, then +0.5h visual breathing room.
     // starterAdjPeakH is the ratio+maturity+rye adjusted peak — same value solver uses.
