@@ -2799,7 +2799,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       return -8;  // 2am-5am
     }
 
-    const effectiveBlocks = blocksOverride ?? blocks;
+    // Sourdough's live blocker source is localBlocks (the blocks prop lags by
+    // a render because the parent updates async). Non-sourdough uses blocks.
+    // blocksOverride (passed by applyAndUpdate) always wins when present.
+    const effectiveBlocks = blocksOverride ?? (isSourdough ? localBlocks : blocks);
     function inBlocker(mixHBF: number): boolean {
       return effectiveBlocks.some(b => {
         const s = (bakeMs - b.from.getTime()) / 3600000;
@@ -3406,7 +3409,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           let s = 0;
           if (hour >= 7 && hour < 22) s += 50;
           else if (hour >= 6 && hour < 23) s += 20;
-          const inBlocker = (blocksOverride ?? blocks).some(b =>
+          const inBlocker = effectiveBlocks.some(b =>
             feedMs_r > b.from.getTime() && feedMs_r < b.to.getTime()
           );
           if (!inBlocker) s += 100;
