@@ -132,6 +132,8 @@ interface SchedulePickerProps {
   fridgeTemp?: number;
   flourStrength?: number;
   startTimeInPast?: boolean;
+  tang?: 'mild' | 'balanced' | 'tangy';
+  onTangChange?: (t: 'mild' | 'balanced' | 'tangy') => void;
 }
 
 type PickerPhase = 'bake_time' | 'start_confirm';
@@ -1162,7 +1164,7 @@ function SimpleColourBar({
 
 // ── Component ─────────────────────────────────
 // v1779291581473456000
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1484,10 +1486,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // This is a style constant — NOT climate sensitive (climate adjusts yeast, not timing)
     // sweetFrom = leftmost boundary (preferredColdH + rtH) — widest useful cold
     // sweetTo = rightmost boundary (minimum viable total fermentation)
-    const optimalColdH = hasColdLocal ? (scaledDefaults.coldH + defaults.rtH) : 0;
+    const _biasedColdSolver = biasCold(
+      scaledDefaults.coldH,
+      scaledDefaults.minColdH ?? 0,
+      scaledDefaults.preferredColdH ?? scaledDefaults.coldH
+    );
+    const optimalColdH = hasColdLocal ? (_biasedColdSolver + defaults.rtH) : 0;
     const sweetCenterRaw = hasColdLocal
-      ? scaledDefaults.coldH + defaults.rtH     // dough peaks at bake at this position
-      : defaults.rtH;                            // RT only: peak at rtH before bake
+      ? _biasedColdSolver + defaults.rtH         // dough peaks at bake at this position
+      : defaults.rtH;                             // RT only: peak at rtH before bake
     // sweetFrom = right edge of dough quality plateau (not preferredColdH which is the target).
     // plateauHalfW is how far from sweetCenter bake can be while still at peak quality.
     // Beyond this, dough is on the decline — mixInZone=false, score drops.
@@ -1740,7 +1747,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastFedTime, knownPeakTime, starterLocation, planningMode,
-      starterMature, starterHasRye, lastFeedRatio, nextFeedRatio, eatTimeSet, pendingEatTime,
+      starterMature, starterHasRye, lastFeedRatio, nextFeedRatio, tang, eatTimeSet, pendingEatTime,
       styleKey, kitchenTemp]);
 
 
@@ -1756,6 +1763,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const mixOffsetH = Math.max(1, (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000);
   const hasColdRetard = (schedule?.coldRetardHours ?? 0) > 0;
   const _sfDef = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
+  // Tang → cold-retard bias. Longer cold = more acetic = tangier.
+  // ±15% on the COLD portion only, clamped to the style's [minColdH, preferredColdH].
+  // Balanced = 1.0 = byte-identical to pre-feature output.
+  const _tangMult = tang === 'tangy' ? 1.15 : tang === 'mild' ? 0.85 : 1.0;
+  function biasCold(coldH: number, minColdH: number, prefColdH: number): number {
+    if (coldH <= 0) return 0;
+    if (_tangMult === 1.0) return coldH;
+    const biased = coldH * _tangMult;
+    return Math.max(minColdH, Math.min(prefColdH, biased));
+  }
   const _minTotalRT = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0 + (preheatMin / 60);
   const _nowHBF = (pendingEatTime.getTime() - Date.now()) / 3600000;
   // Bake time in blocker detection
@@ -1773,13 +1790,24 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const renderYellowTo  = Math.max(0.5, renderSweetTo - 2);
   // _optimalMix = style sweet spot where dough peaks at bake = coldH + rtH
   // For RT-only styles, use rtH. Climate adjusts yeast not timing so no tropFactor here.
+  const _biasedColdRender = biasCold(
+    _sfDef.coldH,
+    _sfDef.minColdH ?? 0,
+    _sfDef.preferredColdH ?? _sfDef.coldH
+  );
   const _optimalMix = _sfDef.coldH > 0
-    ? _sfDef.coldH + _sfDef.rtH
+    ? _biasedColdRender + _sfDef.rtH
     : _sfDef.rtH;
   // Dough peaks at bake when mix is in sweet zone — cold retard duration
   // flexes to match mix position. Outside sweet zone, bell shifts to show
   // under/over fermentation honestly. RT-only styles use fixed _optimalMix.
   const _hasColdRetardStyle = (_sfDef.coldH ?? 0) > 0;
+  // Tang control is relevant when there's meaningful cold fermentation to bias,
+  // or when the starter needs revival (extra refresh alters lactic/acetic balance).
+  const _tangRelevant = isSourdough && (
+    _hasColdRetardStyle ||
+    lastFedAge === 'days45' || lastFedAge === 'week'
+  );
   const renderSweetCenter = _hasColdRetardStyle
     ? Math.max(renderSweetTo, Math.min(mixOffsetH, renderSweetFrom))
     : _optimalMix;
@@ -1947,7 +1975,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         //              in a single refresh.
         const needsRevival =
           lastFedAge === 'week' ||
-          (lastFedAge === 'days45' && !starterMature);
+          (lastFedAge === 'days45' && !starterMature) ||
+          (lastFedAge === 'days45' && starterMature && tang === 'mild');
 
         if (needsRevival) {
           // Signal solver: this starter needs revival cycles. starterRefeedTime=now
@@ -2250,10 +2279,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             //   - week+: at least 2 revival refreshes before active feed (deep revival)
             //   - days45: at least 1 revival refresh
             //   - else: no minimum (gap drives count)
-            // Mature cultures need fewer forced revival feeds.
+            // Mature cultures need fewer forced revival feeds; mild tang adds a 2nd refresh.
             const MIN_INTERMEDIATES =
               lastFedAge === 'week'   ? (starterMature ? 1 : 2) :
-              lastFedAge === 'days45' ? (starterMature ? 0 : 1) : 0;
+              lastFedAge === 'days45' ? ((!starterMature || tang === 'mild') ? 1 : 0) : 0;
             const gapBasedCount = Math.floor(gapH / refreshSpacingH);
             const numIntermediate = Math.min(MAX_INTERMEDIATES + 1,
               Math.max(MIN_INTERMEDIATES + 1, gapBasedCount));
@@ -2677,7 +2706,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Local sfDef — avoids stale render-time closure
     const localSfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
     const _localPrefColdH = localSfDef.preferredColdH ?? localSfDef.coldH;
-    const localSweetFrom  = _localPrefColdH + localSfDef.rtH;
+    const _biasedColdSourdough = biasCold(
+      _localPrefColdH,
+      localSfDef.minColdH ?? 0,
+      _localPrefColdH
+    );
+    const localSweetFrom  = _biasedColdSourdough + localSfDef.rtH;
     const localSweetTo    = localSfDef.minTotalFermH ?? 4;
     _sourdoughSweetFrom = localSweetFrom;
     _sourdoughSweetTo   = localSweetTo;
@@ -2701,7 +2735,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Minimum revival overhead: 1 cycle ~ adjPeakH; deep revival ~ 2 cycles.
     const _revivalOverheadH = (() => {
       if (lastFedAge === 'week')   return adjPeakH * (starterMature ? 1.25 : 2.25);
-      if (lastFedAge === 'days45') return adjPeakH * (starterMature ? 0    : 1.25);
+      if (lastFedAge === 'days45') return adjPeakH * ((!starterMature || tang === 'mild') ? 1.25 : 0);
       return 0;
     })();
     const effectiveMinFermH = minFermH + _revivalOverheadH;
@@ -5193,6 +5227,41 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         </div>
                       );
                     })()}
+
+                  {/* Tang taste control */}
+                  {_tangRelevant && (
+                    <div style={{ marginTop: '.4rem', marginBottom: '.6rem' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                        {isFr ? 'GOÛT' : 'TASTE'}
+                      </div>
+                      <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginTop: '.3rem' }}>
+                        {(['mild', 'balanced', 'tangy'] as const).map(t => (
+                          <button
+                            key={t}
+                            onClick={() => { onTangChange?.(t); }}
+                            style={{
+                              padding: '.3rem .65rem', borderRadius: '20px',
+                              border: `1.5px solid ${tang === t ? 'var(--bread)' : 'var(--border)'}`,
+                              background: tang === t ? 'rgba(139,105,20,0.10)' : 'transparent',
+                              color: tang === t ? 'var(--bread)' : 'var(--smoke)',
+                              fontFamily: 'var(--font-dm-mono)', fontSize: '.78rem', cursor: 'pointer',
+                            }}
+                          >
+                            {t === 'mild'
+                              ? (isFr ? 'Plus doux' : 'Milder')
+                              : t === 'balanced'
+                              ? (isFr ? 'Équilibré' : 'Balanced')
+                              : (isFr ? 'Plus acidulé' : 'Tangier')}
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginTop: '.3rem', lineHeight: 1.4 }}>
+                        {isFr
+                          ? 'Ajuste le rafraîchi et la pousse au froid pour un pain plus doux ou plus acidulé.'
+                          : 'Shifts starter refresh and cold proof for a milder or tangier loaf.'}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Future feed path: planned Next Feed */}
                   {!solverResult?.starterEvents?.length && isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && planningMode !== 'last_fed' && !_isFridgeHoldPath && (

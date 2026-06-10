@@ -50,6 +50,7 @@ export interface SessionData {
   nextFeedRatioOverride?: number | null;
   starterMature?: boolean;
   starterHasRye?: boolean;
+  tang?: string;
   fridgeOutTime?: number | null;
   usingPeak2?: boolean;
   feed2Time?: number | null;

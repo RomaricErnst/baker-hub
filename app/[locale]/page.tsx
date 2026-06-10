@@ -353,6 +353,7 @@ export default function Home() {
   const [starterPeakTime, setStarterPeakTime] = useState<Date | null>(null);
   const [starterMature, setStarterMature]   = useState(true);
   const [starterHasRye, setStarterHasRye]   = useState(false);
+  const [tang, setTang] = useState<'mild' | 'balanced' | 'tangy'>('balanced');
   const [usingPeak2, setUsingPeak2]         = useState(false);
 
   // Advanced mode manual overrides
@@ -573,6 +574,7 @@ export default function Home() {
     }
     if (session.starterMature !== undefined) setStarterMature(Boolean(session.starterMature));
     if (session.starterHasRye !== undefined) setStarterHasRye(Boolean(session.starterHasRye));
+    if (session.tang) setTang(session.tang as 'mild' | 'balanced' | 'tangy');
     if (session.fridgeOutTime) setFridgeOutTime(new Date(session.fridgeOutTime));
     if (session.usingPeak2 !== undefined) setUsingPeak2(Boolean(session.usingPeak2));
     if (session.feed2Time) setFeed2Time(new Date(session.feed2Time));
@@ -815,7 +817,7 @@ export default function Home() {
       lastFeedRatio,
       nextFeedRatio,
       nextFeedRatioOverride,
-      starterMature, starterHasRye,
+      starterMature, starterHasRye, tang,
       fridgeOutTime: fridgeOutTime?.getTime() ?? null,
       usingPeak2,
       feed2Time: feed2Time?.getTime() ?? null,
@@ -936,6 +938,7 @@ export default function Home() {
     setPlanningMode('last_fed');
     setStarterMature(true);
     setStarterHasRye(false);
+    setTang('balanced');
     setLastFeedRatio(1);
     setNextFeedRatio(1);
     setNextFeedRatioOverride(null);
@@ -1690,6 +1693,8 @@ export default function Home() {
                 sessionRestored={sessionRestored}
                 flourStrength={1.0}
                 startTimeInPast={startTimeInPast}
+                tang={tang}
+                onTangChange={setTang}
               />
             </StepCard>
 
@@ -2503,6 +2508,8 @@ export default function Home() {
                 sessionRestored={sessionRestored}
                 flourStrength={flourBlend ? (computeBlendProfile(flourBlend).fermToleranceMultiplier ?? 1.0) : 1.0}
                 startTimeInPast={startTimeInPast}
+                tang={tang}
+                onTangChange={setTang}
               />
               {eatTime && !reviewMode && <ContinueBtn onClick={() => { setPrefermentFlourPct(undefined); advanceAdv(9); }} />}
             </StepCard>
