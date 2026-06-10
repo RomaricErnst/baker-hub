@@ -1733,6 +1733,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // findOptimalPositionSourdough now calls deriveStarterPeakTime internally
     // and commits a single atomic setSolverResult at every exit point.
     findOptimalPositionSourdough(pendingEatTime);
+    // Restore startComputed so the plan panel is visible after session restore
+    // or bake-time change — the solver ran, so we have a result to show.
+    if (lastFedAge !== null || (planningMode === 'know_peak' && knownPeakTime)) {
+      setStartComputed(true);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastFedTime, knownPeakTime, starterLocation, planningMode,
       starterMature, starterHasRye, lastFeedRatio, nextFeedRatio, eatTimeSet, pendingEatTime,
@@ -1891,6 +1896,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }, 0);
   }
 
+  // Compute RT hours after fridge removal until starter peak, accounting for cold dwell.
+  // rtToPeakH = max(warmupH, (fpH − dwellH) / coldFactor)
+  // When dwell is long enough, the starter is nearly at peak on removal → bounded by warmupH.
+  // When dwell is short, starter needs more RT time to finish rising.
+  function fridgePeakAfterRemoval(fridgeOut: Date, lastFed: Date, adjPeakH_in: number): Date {
+    const cf = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
+    const wu = getStarterFridgeWarmupH(kitchenTemp);
+    const fpH = adjPeakH_in * cf;
+    const dwellH = (fridgeOut.getTime() - lastFed.getTime()) / 3600000;
+    const rtToPeakH = Math.max(wu, (fpH - dwellH) / cf);
+    return new Date(fridgeOut.getTime() + rtToPeakH * 3600000);
+  }
+
   // ── Sourdough: derive peak time from inputs (returns values, no setState) ──
   function deriveStarterPeakTime(bakeTime: Date, targetMixTime?: Date | null): DerivedStarterState {
     const NULL_RESULT: DerivedStarterState = {
@@ -1950,7 +1968,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
         // Not in revival territory — original behavior
         if (fridgeOutTime) {
-          const peakTime = new Date(fridgeOutTime.getTime() + warmupH * 3600000);
+          const peakTime = fridgePeakAfterRemoval(fridgeOutTime, lastFedTime, adjPeakH);
           onStarterPeakTimeChange?.(peakTime);
           return { ...NULL_RESULT, peakTime, feedTime: lastFedTime, fridgeOut: fridgeOutTime, adjPeakH };
         }
@@ -2105,6 +2123,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Sourdough: joint mix+starter solver (scoring loop) ──────
   function findOptimalPositionSourdough(et: Date, manualMixOverride?: Date, blocksOverride?: AvailabilityBlock[]) {
+    // Guard: bail early if required inputs aren't ready yet
+    if (planningMode === 'last_fed' && (!lastFedTime || lastFedAge === null)) return;
+    if (planningMode === 'know_peak' && !knownPeakTime) return;
+
     // Reset drag state — any solver run means inputs changed, drag position is stale.
     // When triggered by a drag, preserve hasDragged so the label stays "Your plan".
     hasManuallyDragged.current = false;
@@ -2371,7 +2393,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const _warmupH_evt = getStarterFridgeWarmupH(kitchenTemp);
           const lastFedBellPeakTime = isLastFedActiveInFridge
             ? (_newFridgeOut
-                ? new Date(_newFridgeOut.getTime() + _warmupH_evt * 3600000)
+                ? fridgePeakAfterRemoval(_newFridgeOut, lastFedTime, adjPeakH_last_eff)
                 : new Date(lastFedTime.getTime() + adjPeakH_last_eff * _coldFactor_evt * 3600000))
             : new Date(lastFedTime.getTime() + adjPeakH_last_eff * 3600000);
 
@@ -2520,7 +2542,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         }
 
         if (!_isFridgeHoldPath && starterLocation === 'fridge' && _newFridgeOut) {
-          const warmupMin = Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60);
+          const _warmupH_fo = getStarterFridgeWarmupH(kitchenTemp);
+          const _cf_fo = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
+          const _fpH_fo = adjPeakH_last_eff * _cf_fo;
+          const _dwellH_fo = lastFedTime
+            ? (_newFridgeOut.getTime() - lastFedTime.getTime()) / 3600000
+            : _fpH_fo;
+          const _rtToPeak_fo = Math.max(_warmupH_fo, (_fpH_fo - _dwellH_fo) / _cf_fo);
+          const _foNoteMin = Math.round(_rtToPeak_fo * 60);
+          const _showExtendedNote = _rtToPeak_fo > _warmupH_fo + 0.25;
           events.push({
             kind: 'fridge_out',
             time: _newFridgeOut,
@@ -2529,9 +2559,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             isDraggable: false,
             label: isFr ? 'Sortie du frigo' : 'Remove from Fridge',
             cardTimeFormat: 'absolute',
-            cardNote: isFr
-              ? `~${warmupMin} min pour atteindre la temp. ambiante`
-              : `~${warmupMin} min to reach room temp`,
+            cardNote: _showExtendedNote
+              ? (isFr
+                  ? `~${_foNoteMin} min à temp. ambiante jusqu'au pic`
+                  : `~${_foNoteMin} min at room temp to reach peak`)
+              : (isFr
+                  ? `~${_foNoteMin} min pour atteindre la temp. ambiante`
+                  : `~${_foNoteMin} min to reach room temp`),
             bellStyle: 'none',
             bellSigmaScale: 1.0,
           });
@@ -2594,7 +2628,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ? _feed2Time
               : (solverResult?.starterFridgeInTime ?? new Date()))
           : null,
-        peakTime: (starterLocation === 'fridge' && _newFridgeOut)
+        peakTime: (starterLocation === 'fridge' && _newFridgeOut && lastFedTime)
+          ? fridgePeakAfterRemoval(_newFridgeOut, lastFedTime, _adjPeakH ?? adjPeakH_derived ?? 14)
+          : (starterLocation === 'fridge' && _newFridgeOut)
           ? new Date(_newFridgeOut.getTime() + getStarterFridgeWarmupH(kitchenTemp) * 3600000)
           : (_starterFeedTime && _adjPeakH
               ? new Date(_starterFeedTime.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
@@ -2910,33 +2946,40 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
 
     // ── Fridge candidate scan (fridge starter, no fridgeOutTime yet) ──────────
-    // Iterate candidate fridge-removal times in 15min steps. Each gives
-    // mix = fridgeOut + warmupH. Starter peak = mix by construction (true ss=2).
-    // Scan window respects sweet zone bounds + yellow margin.
-    // Temperature/style sensitive via warmupH, sweetFromHBF, sweetToHBF, adjPeakH.
+    // Iterate candidate fridge-removal times in 15min steps.
+    // Uses honest rtToPeakH = max(warmupH, (fpH − dwellH) / coldFactor) so the
+    // scan accounts for short-dwell starters that need extra RT time after removal.
     if (starterLocation === 'fridge' && !fridgeOutTime) {
       const _warmupH = getStarterFridgeWarmupH(kitchenTemp);
+      const _cf = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
+      const _fpH = adjPeakH * _cf;
+      const lastFedMs = lastFedTime?.getTime() ?? Date.now() - 24 * 3600000;
       const nowMsLocal = Date.now();
       const mixHBFMin = Math.max(minTotalRT + 0.5, sweetToHBF - 2);
       const mixHBFMax = sweetFromHBF + 2;
+      // Widen lower bound to handle short-dwell cases where rtToPeakH > warmupH
       const fridgeOutMinMs = Math.max(
         nowMsLocal + 15 * 60000,
-        bakeMs - (mixHBFMax + _warmupH) * 3600000
+        bakeMs - (mixHBFMax + adjPeakH) * 3600000
       );
       const fridgeOutMaxMs = bakeMs - (mixHBFMin + _warmupH) * 3600000;
       for (let foMs = fridgeOutMinMs; foMs <= fridgeOutMaxMs; foMs += 15 * 60000) {
-        const mixMs = foMs + _warmupH * 3600000;
+        const dwellH = (foMs - lastFedMs) / 3600000;
+        const rtToPeakH = Math.max(_warmupH, (_fpH - dwellH) / _cf);
+        const mixMs = foMs + rtToPeakH * 3600000;
         const mixHBF = (bakeMs - mixMs) / 3600000;
+        if (mixHBF < mixHBFMin - 0.5 || mixHBF > mixHBFMax + 0.5) continue;
         if (inBlocker(mixHBF)) continue;
         if (inBlockerMs(foMs)) continue;
         const ds = doughScore(mixHBF);
         if (ds === 0) continue;
-        const feedMs = lastFedTime?.getTime() ?? foMs;
-        const ss: 2 = 2;
+        const gapRT_h = rtToPeakH - _warmupH;
+        const ss: 0 | 1 | 2 = gapRT_h < 0.5 ? 2 : gapRT_h < 2 ? 1 : 0;
+        if (ss === 0 && ds < 2) continue;
         candidates.push({
-          mixHBF, peakHBF: mixHBF, feedMs,
+          mixHBF, peakHBF: mixHBF, feedMs: lastFedMs,
           usingPeak2: false, feed2Ms: null,
-          score: combinedScore(mixHBF, mixHBF, feedMs) + 10,
+          score: combinedScore(mixHBF, mixHBF, lastFedMs) + (ss === 2 ? 10 : ss === 1 ? 5 : 0),
           sscore: ss,
           isFridgePath: true,
         });

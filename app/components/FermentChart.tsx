@@ -574,22 +574,28 @@ export default function FermentChart({
     });
   }
 
-  // Adaptive ticks: 3h short / 12h medium / 24h long — same as SimpleColourBar
-  const tickIntervalH = WH <= 18 ? 3 : WH <= 72 ? 12 : 24;
+  // Adaptive ticks: clock-aligned, stepping backward from bake time
+  const tickIntervalH = WH <= 18 ? 3 : WH <= 48 ? 6 : WH <= 96 ? 12 : 24;
   const ticks: { x: number; label: string }[] = [];
-  for (let h = tickIntervalH; h < WH; h += tickIntervalH) {
-    const tick = new Date(bakeMs - h * 3600000);
-    if (tick.getMinutes() !== 0) continue;
-    const wd = tick.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' });
-    const hr = tick.getHours();
-    const timeLabel = hr === 0  ? t('tickLabels.midnight')
-      : hr === 6  ? t('tickLabels.6am')
-      : hr === 12 ? t('tickLabels.noon')
-      : hr === 18 ? t('tickLabels.6pm')
-      : isFr
-      ? `${hr}h`
-      : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
-    ticks.push({ x: hToX(h, W, WH), label: `${wd} ${timeLabel}` });
+  {
+    const firstTick = new Date(bakeMs);
+    firstTick.setMinutes(0, 0, 0);
+    firstTick.setHours(Math.floor(firstTick.getHours() / tickIntervalH) * tickIntervalH);
+    for (let tMs = firstTick.getTime(); tMs > bakeMs - WH * 3600000; tMs -= tickIntervalH * 3600000) {
+      const h = (bakeMs - tMs) / 3600000;
+      if (h < 1.5) continue;
+      if (h > WH - 0.5) continue;
+      const tick = new Date(tMs);
+      const wd = tick.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' });
+      const hr = tick.getHours();
+      const timeLabel = hr === 0 ? t('tickLabels.midnight')
+        : hr === 6 ? t('tickLabels.6am')
+        : hr === 12 ? t('tickLabels.noon')
+        : hr === 18 ? t('tickLabels.6pm')
+        : isFr ? `${hr}h`
+        : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
+      ticks.push({ x: hToX(h, W, WH), label: `${wd} ${timeLabel}` });
+    }
   }
 
   // ── Pointer events ───────────────────────────────────────
