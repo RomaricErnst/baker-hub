@@ -85,11 +85,12 @@ export function getPrefPeakH_RT(type: string, temp: number, styleKey = 'neapolit
                    'pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   // Bread styles: slightly slower RT peak (lower yeast, more enzymatic)
   if (isBread) {
-    if (temp >= 30) return 5;
-    if (temp >= 28) return 7;
-    if (temp >= 26) return 9;
-    if (temp >= 24) return 11;
-    return 14;
+    if (temp >= 32) return 3;
+    if (temp >= 30) return 4;
+    if (temp >= 28) return 5;
+    if (temp >= 26) return 7;
+    if (temp >= 24) return 9;
+    return 12;
   }
   // Pizza / sourdough styles
   if (temp >= 32) return 3;

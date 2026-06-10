@@ -1941,7 +1941,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // Cold storage extends starter viability ~3-4× vs RT, but after ~5-7 days
         // in fridge, starter activity drops significantly and needs revival cycles.
         // Revival threshold: lastFedAge in {'days45', 'week'} OR fridge dwell > 5 days.
-        const needsRevival = lastFedAge === 'days45' || lastFedAge === 'week';
+        // Maturity-aware revival (science-backed):
+        //   week+    → always revive (yeast + LAB both need rebuilding)
+        //   4-5 days → revive ONLY if young/weak; a mature starter recovers
+        //              in a single refresh.
+        const needsRevival =
+          lastFedAge === 'week' ||
+          (lastFedAge === 'days45' && !starterMature);
 
         if (needsRevival) {
           // Signal solver: this starter needs revival cycles. starterRefeedTime=now
@@ -2244,9 +2250,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             //   - week+: at least 2 revival refreshes before active feed (deep revival)
             //   - days45: at least 1 revival refresh
             //   - else: no minimum (gap drives count)
+            // Mature cultures need fewer forced revival feeds.
             const MIN_INTERMEDIATES =
-              lastFedAge === 'week'   ? 2 :
-              lastFedAge === 'days45' ? 1 : 0;
+              lastFedAge === 'week'   ? (starterMature ? 1 : 2) :
+              lastFedAge === 'days45' ? (starterMature ? 0 : 1) : 0;
             const gapBasedCount = Math.floor(gapH / refreshSpacingH);
             const numIntermediate = Math.min(MAX_INTERMEDIATES + 1,
               Math.max(MIN_INTERMEDIATES + 1, gapBasedCount));
@@ -2693,8 +2700,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // baker needs 1-2 full peak cycles to revive before normal dough cycle.
     // Minimum revival overhead: 1 cycle ~ adjPeakH; deep revival ~ 2 cycles.
     const _revivalOverheadH = (() => {
-      if (lastFedAge === 'week') return adjPeakH * 2.25;   // 2 revival cycles
-      if (lastFedAge === 'days45') return adjPeakH * 1.25; // 1 revival cycle
+      if (lastFedAge === 'week')   return adjPeakH * (starterMature ? 1.25 : 2.25);
+      if (lastFedAge === 'days45') return adjPeakH * (starterMature ? 0    : 1.25);
       return 0;
     })();
     const effectiveMinFermH = minFermH + _revivalOverheadH;
