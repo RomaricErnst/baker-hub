@@ -3247,6 +3247,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
 
     candidates.sort((a, b) => b.score - a.score);
+    // No feasible candidate (e.g. blockers eliminate every viable feed/mix
+    // time for a tight window). Surface as windowTooShort instead of crashing
+    // on an undefined best / Invalid Date downstream.
+    if (candidates.length === 0) {
+      _windowTooShort = true;
+      _starterPillState = 'green';
+      setRefeedSuggestion(null);
+      _feed2Time = null;
+      buildAndSetResult();
+      return;
+    }
     let best = candidates[0];
     let foundValid = false;
     for (const cand of candidates) {
@@ -5556,7 +5567,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 ) : editingPref ? (
                   <input
                     type="datetime-local"
-                    defaultValue={cardPrefTime!.toISOString().slice(0,16)}
+                    defaultValue={cardPrefTime && !isNaN(cardPrefTime.getTime()) ? cardPrefTime.toISOString().slice(0,16) : ''}
                     autoFocus
                     onBlur={e => {
                       const t = new Date(e.target.value);
@@ -5635,7 +5646,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               {editingMix ? (
                 <input
                   type="datetime-local"
-                  defaultValue={pendingStart.toISOString().slice(0,16)}
+                  defaultValue={!isNaN(pendingStart.getTime()) ? pendingStart.toISOString().slice(0,16) : ''}
                   autoFocus
                   onBlur={e => {
                     const t = new Date(e.target.value);
