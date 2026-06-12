@@ -2706,12 +2706,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Local sfDef — avoids stale render-time closure
     const localSfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
     const _localPrefColdH = localSfDef.preferredColdH ?? localSfDef.coldH;
-    const _biasedColdSourdough = biasCold(
-      _localPrefColdH,
-      localSfDef.minColdH ?? 0,
-      _localPrefColdH
-    );
-    const localSweetFrom  = _biasedColdSourdough + localSfDef.rtH;
+    // localSweetFrom = full quality plateau edge (preferredCold + rtH) — unbiased.
+    // Tang effect comes from directional retardBonus (not band edge shift).
+    const localSweetFrom  = _localPrefColdH + localSfDef.rtH;
     const localSweetTo    = localSfDef.minTotalFermH ?? 4;
     _sourdoughSweetFrom = localSweetFrom;
     _sourdoughSweetTo   = localSweetTo;
@@ -2814,10 +2811,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     function retardBonus(mixHBF: number): number {
       const hasColdRetardLocal = (sweetFromHBF - sweetToHBF) / 2 > minTotalRT;
       if (!hasColdRetardLocal) return 0;
-      return Math.min(8, Math.round(
+      // Base reward: longer cold retard (mix further from bake) = more flavour.
+      const longCold = Math.min(8, Math.round(
         Math.min(mixHBF - minTotalRT, sweetFromHBF - minTotalRT) /
         Math.max(1, sweetFromHBF - minTotalRT) * 8
       ));
+      // Tang direction: tangy favours longer cold (toward sweetFrom),
+      // mild favours shorter cold (toward sweetTo). Balanced = neutral (unchanged).
+      if (tang === 'tangy') return longCold;      // reward long cold
+      if (tang === 'mild')  return 8 - longCold;  // reward short cold
+      return longCold;                             // balanced: byte-identical to pre-2b
     }
 
     function reasonableHour(mixHBF: number): number {
@@ -2869,8 +2872,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // feedComfort x3: feed hour matters when biology is otherwise equal.
       // Without weighting, retardBonus (up to 64 points) buries feedComfort
       // (up to 8 points), forcing midnight feeds when humane alternatives exist.
+      // Tang nudge: extra retardBonus weight when baker picked mild/tangy.
+      // Capped so a full starter-score tier (100 pts) always dominates —
+      // tang only breaks ties between candidates the starter is equally happy with.
+      const tangW = tang === 'balanced' ? 0 : 12;
       return (ss + ds) * 100
-        + retardBonus(mixHBF) * retardW
+        + retardBonus(mixHBF) * (retardW + tangW)
         + reasonableHour(mixHBF) * 5
         + feedComfort(comfortMs) * 3;
     }
@@ -4065,6 +4072,41 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </div>
           )}
 
+          {/* ── Tang taste control (setup input, not card output) ── */}
+          {_tangRelevant && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
+              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                {isFr ? 'GOÛT' : 'TASTE'}
+              </div>
+              <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
+                {(['mild', 'balanced', 'tangy'] as const).map(t => (
+                  <button
+                    key={t}
+                    onClick={() => { onTangChange?.(t); }}
+                    style={{
+                      padding: '.3rem .65rem', borderRadius: '20px',
+                      border: `1.5px solid ${tang === t ? 'var(--bread)' : 'var(--border)'}`,
+                      background: tang === t ? 'rgba(139,105,20,0.10)' : 'transparent',
+                      color: tang === t ? 'var(--bread)' : 'var(--smoke)',
+                      fontFamily: 'var(--font-dm-mono)', fontSize: '.78rem', cursor: 'pointer',
+                    }}
+                  >
+                    {t === 'mild'
+                      ? (isFr ? 'Plus doux' : 'Milder')
+                      : t === 'balanced'
+                      ? (isFr ? 'Équilibré' : 'Balanced')
+                      : (isFr ? 'Plus acidulé' : 'Tangier')}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4 }}>
+                {isFr
+                  ? 'Ajuste le rafraîchi et la pousse au froid pour un pain plus doux ou plus acidulé.'
+                  : 'Shifts starter refresh and cold proof for a milder or tangier loaf.'}
+              </div>
+            </div>
+          )}
+
         </div>
       )}
 
@@ -5227,41 +5269,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         </div>
                       );
                     })()}
-
-                  {/* Tang taste control */}
-                  {_tangRelevant && (
-                    <div style={{ marginTop: '.4rem', marginBottom: '.6rem' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                        {isFr ? 'GOÛT' : 'TASTE'}
-                      </div>
-                      <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginTop: '.3rem' }}>
-                        {(['mild', 'balanced', 'tangy'] as const).map(t => (
-                          <button
-                            key={t}
-                            onClick={() => { onTangChange?.(t); }}
-                            style={{
-                              padding: '.3rem .65rem', borderRadius: '20px',
-                              border: `1.5px solid ${tang === t ? 'var(--bread)' : 'var(--border)'}`,
-                              background: tang === t ? 'rgba(139,105,20,0.10)' : 'transparent',
-                              color: tang === t ? 'var(--bread)' : 'var(--smoke)',
-                              fontFamily: 'var(--font-dm-mono)', fontSize: '.78rem', cursor: 'pointer',
-                            }}
-                          >
-                            {t === 'mild'
-                              ? (isFr ? 'Plus doux' : 'Milder')
-                              : t === 'balanced'
-                              ? (isFr ? 'Équilibré' : 'Balanced')
-                              : (isFr ? 'Plus acidulé' : 'Tangier')}
-                          </button>
-                        ))}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginTop: '.3rem', lineHeight: 1.4 }}>
-                        {isFr
-                          ? 'Ajuste le rafraîchi et la pousse au froid pour un pain plus doux ou plus acidulé.'
-                          : 'Shifts starter refresh and cold proof for a milder or tangier loaf.'}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Future feed path: planned Next Feed */}
                   {!solverResult?.starterEvents?.length && isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && planningMode !== 'last_fed' && !_isFridgeHoldPath && (
