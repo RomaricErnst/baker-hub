@@ -467,8 +467,8 @@
       "tooLate": "Too late"
     },
     "tickLabels": {
-      "midnight": "midnight",
-      "noon": "noon",
+      "midnight": "12am",
+      "noon": "12pm",
       "6am": "6am",
       "6pm": "6pm"
     },
@@ -1070,8 +1070,8 @@
   },
   "fermentChart": {
     "tickLabels": {
-      "midnight": "midnight",
-      "noon": "noon",
+      "midnight": "12am",
+      "noon": "12pm",
       "6am": "6am",
       "6pm": "6pm"
     },
