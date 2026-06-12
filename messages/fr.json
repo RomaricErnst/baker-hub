@@ -1098,7 +1098,10 @@
       "makeBiga": "Préparer la Biga",
       "feedStarter": "Nourrir le levain"
     },
-    "bakeLabel": "Cuisson"
+    "bakeLabel": "Cuisson",
+    "chart": {
+      "starterInFridge": "Levain au frigo"
+    }
   },
   "prefermentSlider": {
     "longAhead": "16h+ à l'avance",

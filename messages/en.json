@@ -1098,7 +1098,10 @@
       "makeBiga": "Make Biga",
       "feedStarter": "Feed Starter"
     },
-    "bakeLabel": "Bake"
+    "bakeLabel": "Bake",
+    "chart": {
+      "starterInFridge": "Starter in fridge"
+    }
   },
   "prefermentSlider": {
     "longAhead": "16h+ ahead",

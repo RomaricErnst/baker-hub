@@ -362,6 +362,7 @@ export default function FermentChart({
   const CHAR            = '#1A1612';
   const DARK_SAGE       = '#3D5A30';
   const DARK_SAGE_STR   = '#4A6B3A';
+  const COLD_TINT_FILL  = 'rgba(120,160,200,0.22)';
 
   // ── Physics ──────────────────────────────────────────────
   // DOUGH_SWEET_CENTER = offset from mix to dough peak = coldH + rtH per style
@@ -597,7 +598,7 @@ export default function FermentChart({
     firstTick.setHours(Math.floor(firstTick.getHours() / tickIntervalH) * tickIntervalH);
     for (let tMs = firstTick.getTime(); tMs > bakeMs - WH * 3600000; tMs -= tickIntervalH * 3600000) {
       const h = (bakeMs - tMs) / 3600000;
-      if (h < 1.5) continue;
+      if (h < 1.0) continue;
       if (h > WH - 0.5) continue;
       const tick = new Date(tMs);
       const wd = tick.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' });
@@ -609,6 +610,23 @@ export default function FermentChart({
         : isFr ? `${hr}h`
         : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
       ticks.push({ x: hToX(h, W, WH), label: `${wd} ${timeLabel}` });
+    }
+    // If the leftmost tick is more than 25% of W from the left edge, add one more interval
+    if (ticks.length > 0 && ticks[ticks.length - 1].x > PAD + W * 0.25) {
+      const extraMs = firstTick.getTime() - ticks.length * tickIntervalH * 3600000;
+      const extraH = (bakeMs - extraMs) / 3600000;
+      if (extraH > 1.0 && extraH < WH) {
+        const extraTick = new Date(extraMs);
+        const wd = extraTick.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' });
+        const hr = extraTick.getHours();
+        const timeLabel = hr === 0 ? t('tickLabels.midnight')
+          : hr === 6 ? t('tickLabels.6am')
+          : hr === 12 ? t('tickLabels.noon')
+          : hr === 18 ? t('tickLabels.6pm')
+          : isFr ? `${hr}h`
+          : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
+        ticks.push({ x: hToX(extraH, W, WH), label: `${wd} ${timeLabel}` });
+      }
     }
   }
 
@@ -823,6 +841,17 @@ export default function FermentChart({
             Dough
           </span>
         </div>
+        {fridgeOutHBF !== null && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <svg width="24" height="10" viewBox="0 0 24 10">
+              <path d="M0,8 Q6,0 12,5 Q18,10 24,2"
+                stroke="rgba(120,160,200,0.75)" strokeWidth="2" fill="none" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+              {t('chart.starterInFridge')}
+            </span>
+          </div>
+        )}
       </div>
       <svg
         ref={svgRef}
@@ -886,6 +915,17 @@ export default function FermentChart({
               </clipPath>
             );
           })}
+          {/* Fridge-phase tint clip: spans from feed (left) to fridgeOut (right) */}
+          {useEventDrivenStarter && activeFeedHBF !== null && fridgeOutHBF !== null && (
+            <clipPath id={`fridge-phase-tint-clip-${chartId}`}>
+              <rect
+                x={hToX(activeFeedHBF, W, WH)}
+                y={0}
+                width={Math.max(0, hToX(fridgeOutHBF, W, WH) - hToX(activeFeedHBF, W, WH))}
+                height={CHART_H}
+              />
+            </clipPath>
+          )}
         </defs>
 
         {/* ── Bake reference line ── */}
@@ -1019,26 +1059,6 @@ export default function FermentChart({
               const fridgeHasIn = !!fridgeIn;
               return (
                 <>
-                  {/* Cold-storage flat region (Path B): low baseline between fridge_in and fridge_out */}
-                  {fridgeHasIn && fridgeOut && (() => {
-                    const inHBF = (bakeMs - fridgeIn.time.getTime()) / 3600000;
-                    const outHBF = (bakeMs - fridgeOut.time.getTime()) / 3600000;
-                    if (inHBF <= 0 || outHBF <= 0) return null;
-                    const xIn = hToX(inHBF, W, WH);
-                    const xOut = hToX(outHBF, W, WH);
-                    return (
-                      <rect
-                        x={Math.min(xIn, xOut)}
-                        y={BL - 4}
-                        width={Math.abs(xOut - xIn)}
-                        height={4}
-                        fill="rgba(74,127,165,0.10)"
-                        stroke="rgba(74,127,165,0.25)"
-                        strokeWidth={0.5}
-                        strokeDasharray="2 3"
-                      />
-                    );
-                  })()}
                   {/* Bells — one per event with bellStyle !== 'none' */}
                   {starterEvents.map((ev, idx) => {
                     if (ev.bellStyle === 'none' || !ev.bellPeakTime) return null;
@@ -1057,29 +1077,31 @@ export default function FermentChart({
                     const dashArray = ev.bellStyle === 'solid' ? undefined :
                                        ev.bellStyle === 'dotted' ? '3 3' :
                                        '3 3';
+                    const bellPath = ev.hasFridgePhase && fridgeOutHBF !== null && feedToFridgeOutH !== null
+                      ? makeFridgePhaseBellPath(
+                          feedHBF, fridgeOutHBF, fridgePeakH, fridgeSigma,
+                          feedToFridgeOutH, starterColdFactor, fridgeHeightAtRemoval, W, WH
+                        )
+                      : makeBellPath(peakHBF, sigma, W, WH, feedHBF);
                     return (
-                      <path
-                        key={`ev-bell-${idx}`}
-                        d={
-                          ev.hasFridgePhase && fridgeOutHBF !== null && feedToFridgeOutH !== null
-                            ? makeFridgePhaseBellPath(
-                                feedHBF,
-                                fridgeOutHBF,
-                                fridgePeakH,
-                                fridgeSigma,
-                                feedToFridgeOutH,
-                                starterColdFactor,
-                                fridgeHeightAtRemoval,
-                                W, WH
-                              )
-                            : makeBellPath(peakHBF, sigma, W, WH, feedHBF)
-                        }
-                        fill={fillStyle}
-                        stroke={strokeStyle}
-                        strokeWidth={strokeWidth}
-                        strokeDasharray={dashArray}
-                        clipPath={`url(#chart-area-clip-${chartId})`}
-                      />
+                      <g key={`ev-bell-${idx}`}>
+                        <path
+                          d={bellPath}
+                          fill={fillStyle}
+                          stroke={strokeStyle}
+                          strokeWidth={strokeWidth}
+                          strokeDasharray={dashArray}
+                          clipPath={`url(#chart-area-clip-${chartId})`}
+                        />
+                        {ev.hasFridgePhase && fridgeOutHBF !== null && feedToFridgeOutH !== null && (
+                          <path
+                            d={bellPath}
+                            fill={COLD_TINT_FILL}
+                            stroke="none"
+                            clipPath={`url(#fridge-phase-tint-clip-${chartId})`}
+                          />
+                        )}
+                      </g>
                     );
                   })}
                 </>
@@ -1232,8 +1254,8 @@ export default function FermentChart({
           </>
         )}
 
-        {/* ── RT vs Fridge comparison overlay ── */}
-        {isLevain && showFridgeComparison
+        {/* ── RT vs Fridge comparison overlay (non-sourdough only) ── */}
+        {isLevain && showFridgeComparison && !useEventDrivenStarter
          && compFridgePeakHBF !== null
          && compFridgeOutHBF !== null && (
           <>
