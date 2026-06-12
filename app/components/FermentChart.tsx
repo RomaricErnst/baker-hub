@@ -1580,12 +1580,10 @@ export default function FermentChart({
           );
         })()}
 
-        {/* Path B diamonds: Refresh, Into Fridge, Out of Fridge */}
+        {/* Path B diamonds: Refresh only (In/Out shown as cold-storage region, not cluttering diamonds) */}
         {isFridgeHoldPath && fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null && (() => {
           const items = [
-            { hbf: fridgeHoldRefreshHBF, label: isFr ? 'Rafraîchi' : 'Refresh',       fillColor: '#4A7FA5' },
-            { hbf: fridgeHoldInHBF,      label: isFr ? 'Au frigo' : 'Into fridge',    fillColor: '#96B4D2' },
-            { hbf: fridgeHoldOutHBF,     label: isFr ? 'Sortie' : 'Out of fridge',    fillColor: '#96B4D2' },
+            { hbf: fridgeHoldRefreshHBF, label: isFr ? 'Rafraîchi' : 'Refresh', fillColor: '#4A7FA5' },
           ];
           return (
             <g>
