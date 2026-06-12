@@ -1207,5 +1207,8 @@
     },
     "back": "Back",
     "perPizza": "per pizza"
+  },
+  "taste": {
+    "info": "Tangier leans on a longer cold proof and fewer starter refreshes — more sour, more complex. Milder uses a shorter cold proof and an extra refresh — gentler, sweeter. Balanced keeps the standard timing. This adjusts the schedule the engine builds; it doesn't change your ingredients."
   }
 }

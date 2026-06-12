@@ -1246,6 +1246,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [nextFeedRatioOverride, setNextFeedRatioOverride] = useState<1 | 2 | 4 | 5 | 10 | null>(nextFeedRatioOverrideProp ?? null);
   const [lastFeedRatioEditing, setLastFeedRatioEditing] = useState(false);
   const [showRatioInfo, setShowRatioInfo]       = useState(false);
+  const [showTasteInfo, setShowTasteInfo]       = useState(false);
   const [showStarterTips, setShowStarterTips] = useState(false);
 
   // Sync sourdough state from props when they change (session restore case).
@@ -3860,6 +3861,95 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         : 'Your starter needs feeding — the plan will guide you.')}
                 </div>
               )}
+
+              {/* ── Last feed ratio (belongs to the feed) ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
+                {!lastFeedRatioEditing ? (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '.5rem',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: '.78rem',
+                    color: 'var(--smoke)',
+                  }}>
+                    <span>
+                      {isFr ? `Nourri à 1:${lastFeedRatio}:${lastFeedRatio}` : `Fed at 1:${lastFeedRatio}:${lastFeedRatio}`}
+                    </span>
+                    <button
+                      onClick={() => setLastFeedRatioEditing(true)}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                        fontSize: '.72rem',
+                        textDecoration: 'underline', textUnderlineOffset: '2px',
+                        padding: 0,
+                      }}
+                    >
+                      {isFr ? 'modifier →' : 'change →'}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.3rem' }}>
+                      <div style={{ ...STARTER_LABEL_STYLE, marginBottom: 0 }}>
+                        {isFr ? 'Ratio du dernier nourrissage' : 'Last feed ratio'}
+                      </div>
+                      <button
+                        onClick={() => setShowRatioInfo(v => !v)}
+                        aria-label="Info"
+                        style={{
+                          width: 16, height: 16, borderRadius: '50%',
+                          border: '1px solid var(--smoke)',
+                          background: showRatioInfo ? 'var(--smoke)' : 'transparent',
+                          color: showRatioInfo ? 'white' : 'var(--smoke)',
+                          fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+                          cursor: 'pointer', display: 'inline-flex',
+                          alignItems: 'center', justifyContent: 'center',
+                          padding: 0, lineHeight: 1, flexShrink: 0,
+                        }}
+                      >i</button>
+                    </div>
+                    {showRatioInfo && (
+                      <div style={{ fontSize: '.73rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: '.5rem' }}>
+                        {isFr
+                          ? "Levain : eau : farine. Le ratio que vous avez utilisé la dernière fois — aide à dessiner la courbe historique correctement."
+                          : 'Starter : water : flour. The ratio you used for your last feed — helps draw the historical curve correctly.'}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
+                      {([1, 2, 4, 5, 10] as const).map(r => (
+                        <button
+                          key={r}
+                          onClick={() => {
+                            setLastFeedRatio(r);
+                            onLastFeedRatioChange?.(r);
+                            setLastFeedRatioEditing(false);
+                          }}
+                          style={{
+                            padding: '.3rem .65rem', borderRadius: '20px',
+                            border: `1.5px solid ${lastFeedRatio === r ? 'var(--bread)' : 'var(--border)'}`,
+                            background: lastFeedRatio === r ? 'rgba(139,105,20,0.10)' : 'transparent',
+                            color: lastFeedRatio === r ? 'var(--bread)' : 'var(--smoke)',
+                            fontFamily: 'var(--font-dm-mono)', fontSize: '.78rem', cursor: 'pointer',
+                          }}
+                        >
+                          1:{r}:{r}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setLastFeedRatioEditing(false)}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                        fontSize: '.72rem',
+                        textDecoration: 'underline', textUnderlineOffset: '2px',
+                        padding: 0, alignSelf: 'flex-start', marginTop: '.2rem',
+                      }}
+                    >
+                      {isFr ? 'terminé' : 'done'}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           )}
 
@@ -3895,108 +3985,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               </button>
             </div>
           </div>
-
-          {/* ── Last feed ratio (collapsed by default) ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
-            {!lastFeedRatioEditing ? (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '.5rem',
-                fontFamily: 'var(--font-dm-mono)', fontSize: '.78rem',
-                color: 'var(--smoke)',
-              }}>
-                <span>
-                  {isFr ? `Nourri à 1:${lastFeedRatio}:${lastFeedRatio}` : `Fed at 1:${lastFeedRatio}:${lastFeedRatio}`}
-                </span>
-                <button
-                  onClick={() => setLastFeedRatioEditing(true)}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
-                    fontSize: '.72rem',
-                    textDecoration: 'underline', textUnderlineOffset: '2px',
-                    padding: 0,
-                  }}
-                >
-                  {isFr ? 'modifier →' : 'change →'}
-                </button>
-              </div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.3rem' }}>
-                  <div style={{ ...STARTER_LABEL_STYLE, marginBottom: 0 }}>
-                    {isFr ? 'Ratio du dernier nourrissage' : 'Last feed ratio'}
-                  </div>
-                  <button
-                    onClick={() => setShowRatioInfo(v => !v)}
-                    aria-label="Info"
-                    style={{
-                      width: 16, height: 16, borderRadius: '50%',
-                      border: '1px solid var(--smoke)',
-                      background: showRatioInfo ? 'var(--smoke)' : 'transparent',
-                      color: showRatioInfo ? 'white' : 'var(--smoke)',
-                      fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
-                      cursor: 'pointer', display: 'inline-flex',
-                      alignItems: 'center', justifyContent: 'center',
-                      padding: 0, lineHeight: 1, flexShrink: 0,
-                    }}
-                  >i</button>
-                </div>
-                {showRatioInfo && (
-                  <div style={{ fontSize: '.73rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: '.5rem' }}>
-                    {isFr
-                      ? "Levain : eau : farine. Le ratio que vous avez utilisé la dernière fois — aide à dessiner la courbe historique correctement."
-                      : 'Starter : water : flour. The ratio you used for your last feed — helps draw the historical curve correctly.'}
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
-                  {([1, 2, 4, 5, 10] as const).map(r => (
-                    <button
-                      key={r}
-                      onClick={() => {
-                        setLastFeedRatio(r);
-                        onLastFeedRatioChange?.(r);
-                        setLastFeedRatioEditing(false);
-                      }}
-                      style={{
-                        padding: '.3rem .65rem', borderRadius: '20px',
-                        border: `1.5px solid ${lastFeedRatio === r ? 'var(--bread)' : 'var(--border)'}`,
-                        background: lastFeedRatio === r ? 'rgba(139,105,20,0.10)' : 'transparent',
-                        color: lastFeedRatio === r ? 'var(--bread)' : 'var(--smoke)',
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '.78rem', cursor: 'pointer',
-                      }}
-                    >
-                      1:{r}:{r}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setLastFeedRatioEditing(false)}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
-                    fontSize: '.72rem',
-                    textDecoration: 'underline', textUnderlineOffset: '2px',
-                    padding: 0, alignSelf: 'flex-start', marginTop: '.2rem',
-                  }}
-                >
-                  {isFr ? 'terminé' : 'done'}
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* ── Fridge suggestion (still-rising, mix too far from RT peak) ── */}
-          {isSourdough && solverResult?.fridgeSuggestion && starterLocation === 'rt' && (
-            <div style={{
-              fontSize: '.7rem',
-              color: 'var(--smoke)',
-              fontFamily: 'var(--font-dm-sans)',
-              lineHeight: 1.5,
-              fontStyle: 'italic',
-            }}>
-              {solverResult.fridgeSuggestion}
-            </div>
-          )}
 
           {/* ── Mode B toggle link / picker ── */}
           {planningMode === 'last_fed' && (
@@ -4109,8 +4097,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           {/* ── Tang taste control (setup input, not card output) ── */}
           {_tangRelevant && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
-              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                {isFr ? 'GOÛT' : 'TASTE'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                  {isFr ? 'GOÛT' : 'TASTE'}
+                </span>
+                <button
+                  onClick={() => setShowTasteInfo(v => !v)}
+                  aria-label={isFr ? 'En savoir plus' : 'Learn more'}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'var(--smoke)', padding: 0,
+                    fontFamily: 'var(--font-dm-mono)',
+                    fontSize: '.7rem', lineHeight: 1,
+                  }}
+                >ⓘ</button>
               </div>
               <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
                 {(['mild', 'balanced', 'tangy'] as const).map(t => (
@@ -4133,11 +4133,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   </button>
                 ))}
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4 }}>
-                {isFr
-                  ? 'Ajuste le rafraîchi et la pousse au froid pour un pain plus doux ou plus acidulé.'
-                  : 'Shifts starter refresh and cold proof for a milder or tangier loaf.'}
-              </div>
+              {showTasteInfo && (
+                <div style={{ marginTop: '.4rem', fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>
+                  {t('taste.info')}
+                </div>
+              )}
             </div>
           )}
 
