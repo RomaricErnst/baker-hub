@@ -1937,6 +1937,33 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     return new Date(fridgeOut.getTime() + rtToPeakH * 3600000);
   }
 
+  // Revival cycles (refresh feeds) a fridge starter needs before mixing.
+  // Single source of truth — monotonic in age, maturity-aware, tang-aware.
+  // Cross-checked vs real Singapore recipe: 1 refresh at 3-5 days is correct.
+  //   age        mature  young
+  //   today        0       0
+  //   yesterday    0       1
+  //   days23       1       1
+  //   days45       1       2
+  //   week         2       2
+  function revivalCycles(
+    age: typeof lastFedAge, mature: boolean, t: 'mild' | 'balanced' | 'tangy'
+  ): number {
+    let n: number;
+    switch (age) {
+      case 'today':     n = 0; break;
+      case 'yesterday': n = mature ? 0 : 1; break;
+      case 'days23':    n = 1; break;
+      case 'days45':    n = mature ? 1 : 2; break;
+      case 'week':      n = 2; break;
+      default:          n = 0;
+    }
+    if (t === 'mild' && n < 2 && (age === 'days23' || age === 'days45' || age === 'week')) {
+      n = Math.min(2, n + 1);
+    }
+    return n;
+  }
+
   // ── Sourdough: derive peak time from inputs (returns values, no setState) ──
   function deriveStarterPeakTime(bakeTime: Date, targetMixTime?: Date | null): DerivedStarterState {
     const NULL_RESULT: DerivedStarterState = {
@@ -1969,14 +1996,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // Cold storage extends starter viability ~3-4× vs RT, but after ~5-7 days
         // in fridge, starter activity drops significantly and needs revival cycles.
         // Revival threshold: lastFedAge in {'days45', 'week'} OR fridge dwell > 5 days.
-        // Maturity-aware revival (science-backed):
-        //   week+    → always revive (yeast + LAB both need rebuilding)
-        //   4-5 days → revive ONLY if young/weak; a mature starter recovers
-        //              in a single refresh.
-        const needsRevival =
-          lastFedAge === 'week' ||
-          (lastFedAge === 'days45' && !starterMature) ||
-          (lastFedAge === 'days45' && starterMature && tang === 'mild');
+        // Any starter needing >=1 refresh cycle is in revival territory.
+        const _cycles = revivalCycles(lastFedAge, starterMature, tang);
+        const needsRevival = _cycles >= 1;
 
         if (needsRevival) {
           // Signal solver: this starter needs revival cycles. starterRefeedTime=now
@@ -2279,10 +2301,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             //   - week+: at least 2 revival refreshes before active feed (deep revival)
             //   - days45: at least 1 revival refresh
             //   - else: no minimum (gap drives count)
-            // Mature cultures need fewer forced revival feeds; mild tang adds a 2nd refresh.
-            const MIN_INTERMEDIATES =
-              lastFedAge === 'week'   ? (starterMature ? 1 : 2) :
-              lastFedAge === 'days45' ? ((!starterMature || tang === 'mild') ? 1 : 0) : 0;
+            // cycles=1 → 0 intermediates (just the pre-mix); cycles=2 → 1 intermediate + pre-mix.
+            const MIN_INTERMEDIATES = Math.max(0, revivalCycles(lastFedAge, starterMature, tang) - 1);
             const gapBasedCount = Math.floor(gapH / refreshSpacingH);
             const numIntermediate = Math.min(MAX_INTERMEDIATES + 1,
               Math.max(MIN_INTERMEDIATES + 1, gapBasedCount));
@@ -2731,9 +2751,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // baker needs 1-2 full peak cycles to revive before normal dough cycle.
     // Minimum revival overhead: 1 cycle ~ adjPeakH; deep revival ~ 2 cycles.
     const _revivalOverheadH = (() => {
-      if (lastFedAge === 'week')   return adjPeakH * (starterMature ? 1.25 : 2.25);
-      if (lastFedAge === 'days45') return adjPeakH * ((!starterMature || tang === 'mild') ? 1.25 : 0);
-      return 0;
+      // ~1.25 peak-cycles overhead per revival cycle (feed + rise time).
+      const cycles = revivalCycles(lastFedAge, starterMature, tang);
+      return adjPeakH * 1.25 * cycles;
     })();
     const effectiveMinFermH = minFermH + _revivalOverheadH;
 
@@ -2796,9 +2816,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // ── Scoring helpers ──────────────────────────────
 
     function starterScore(mixHBF: number, peakHBF: number): 0 | 1 | 2 {
+      // HBF: larger = earlier. mixHBF > peakHBF means mix BEFORE peak (starter
+      // still rising — safer; allow slightly more tolerance on this side).
+      const beforePeak = mixHBF > peakHBF;
       const gap = Math.abs(mixHBF - peakHBF);
-      if (gap <= TOL)       return 2;
-      if (gap <= TOL + 1.5) return 1;
+      const tol2 = beforePeak ? TOL + 0.5 : TOL;
+      if (gap <= tol2)       return 2;
+      if (gap <= tol2 + 1.5) return 1;
       return 0;
     }
 
@@ -3977,7 +4001,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           {/* ── Mode B toggle link / picker ── */}
           {planningMode === 'last_fed' && (
             <button
-              onClick={() => { setPlanningMode('know_peak'); onPlanningModeChange?.('know_peak'); }}
+              onClick={() => {
+                setPlanningMode('know_peak');
+                onPlanningModeChange?.('know_peak');
+                if (!knownPeakTime) {
+                  const seed = new Date();
+                  seed.setDate(seed.getDate() + 1);
+                  seed.setHours(9, 0, 0, 0);
+                  setKnownPeakTime(seed);
+                  onKnownPeakTimeChange?.(seed);
+                }
+              }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: 'var(--smoke)', fontSize: '.68rem',
