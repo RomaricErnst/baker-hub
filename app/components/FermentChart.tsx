@@ -215,55 +215,6 @@ function makePlateauBellPath(
   return pts.join(' ');
 }
 
-// ── Honest temp-accurate dough cold-retard curve ─────────────
-// Fermentation progress is monotonic-increasing: mix → warm bulk (steep
-// rise) → cold retard (nearly flat, crawl) → warm proof (steep rise).
-// The flat belongs in the MIDDLE at the real cold window, NOT near bake.
-// coldFactor = Q10≈2 rate ratio (same as starter fridge formula).
-function makeColdRetardDoughPath(
-  mixHBF: number,
-  bulkFermH: number,
-  coldRetardH: number,
-  finalProofH: number,
-  kitchenTemp: number,
-  fridgeTemp: number,
-  W: number, wh: number,
-): string {
-  const coldFactor  = Math.pow(2, (kitchenTemp - fridgeTemp) / 10);
-  const coldStartHBF = mixHBF - bulkFermH;
-  const coldEndHBF   = mixHBF - bulkFermH - coldRetardH;
-  const warmBulkEq  = bulkFermH;
-  const coldEq      = coldRetardH / coldFactor;
-  const proofSpanH  = Math.max(0.01, coldEndHBF);
-  const proofEq     = proofSpanH;
-  const totalEq     = Math.max(0.01, warmBulkEq + coldEq + proofEq);
-  function progress(hbf: number): number {
-    if (hbf >= mixHBF) return 0;
-    if (hbf <= 0)      return 1;
-    let eq = 0;
-    const p1Lo = Math.max(hbf, coldStartHBF);
-    eq += Math.max(0, mixHBF - p1Lo);
-    if (hbf >= coldStartHBF) return eq / totalEq;
-    const p2Lo = Math.max(hbf, coldEndHBF);
-    eq += Math.max(0, coldStartHBF - p2Lo) / coldFactor;
-    if (hbf >= coldEndHBF) return eq / totalEq;
-    eq += Math.max(0, coldEndHBF - hbf);
-    return Math.min(1, eq / totalEq);
-  }
-  const N = 320;
-  const pts: string[] = [];
-  for (let i = 0; i <= N; i++) {
-    const hbf = mixHBF - (i / N) * mixHBF;
-    const x = hToX(hbf, W, wh);
-    const y = BL - progress(hbf) * MAXH;
-    pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
-  }
-  pts.push(`L ${hToX(0,      W, wh).toFixed(1)} ${BL}`);
-  pts.push(`L ${hToX(mixHBF, W, wh).toFixed(1)} ${BL}`);
-  pts.push('Z');
-  return pts.join(' ');
-}
-
 function makeFridgePhaseBellPath(
   feedHBF: number,
   fridgeOutHBF: number,
@@ -417,13 +368,28 @@ export default function FermentChart({
   // DOUGH_SWEET_CENTER = offset from mix to dough peak = coldH + rtH per style
   // Passed as sweetCenterH from SchedulePicker. Fallback: 26h cold, 6h RT.
   // When mixHBF = DOUGH_SWEET_CENTER → doughPeakHBF = 0 = bake (correct).
-  const DOUGH_SIG          = hasColdRetard ? 18 : Math.max(3, WH * 0.35);
   // For sourdough RT-only (no cold retard), dough needs ~adjPeakH for the
   // levain to peak inside it. Non-sourdough RT-only uses 6h default.
   const DOUGH_SWEET_CENTER_NO_RETARD = isLevain && starterAdjPeakH
     ? Math.max(6, starterAdjPeakH * 0.85)
     : 6;
   const DOUGH_SWEET_CENTER = sweetCenterH ?? (hasColdRetard ? 26 : DOUGH_SWEET_CENTER_NO_RETARD);
+
+  // Bell width responds to kitchen temperature (Q10) and the style's ferment
+  // length. Warmer kitchen → faster ferment → tighter bell. Longer cold
+  // retard / sweet center → wider bell. Shared by sourdough AND yeasted
+  // cold-retard styles (both flow through hasColdRetard + phases).
+  const _warmSpeed = Math.pow(2, (kitchenTemp - 22) / 10);  // vs 22°C baseline
+  const _coldRetardH_sig = phases?.coldRetardH ?? 0;
+  const _bulkH_sig       = phases?.bulkFermH   ?? 0;
+  const _sweetCenterMag  = DOUGH_SWEET_CENTER;               // style ferment length
+  const DOUGH_SIG = hasColdRetard
+    // Cold-retard: width driven by cold duration + temp-scaled warm flanks.
+    ? Math.max(8, Math.min(WH * 0.6,
+        _coldRetardH_sig * 0.35 + (_bulkH_sig / Math.max(0.5, _warmSpeed)) + 4))
+    // RT-only: width scales with the style's sweet center, tightened by heat.
+    : Math.max(3, Math.min(WH * 0.5,
+        (_sweetCenterMag * 0.55) / Math.max(0.5, _warmSpeed)));
 
   // Two-temperature poolish protocol:
   // needsFridge = offset > RT peak time for this style+temp
@@ -452,15 +418,18 @@ export default function FermentChart({
   const prefStartAbsHBF = effectiveMixHBF + prefOffsetH;
   const doughPeakHBF = effectiveMixHBF - DOUGH_SWEET_CENTER;
 
-  // Dough cold window boundaries (for tint clip + new curve)
+  // Dough cold window boundaries (for tint clip)
   const _doughBulkH  = phases?.bulkFermH   ?? 0;
   const _doughColdH  = phases?.coldRetardH  ?? 0;
-  const _doughProofH = phases?.finalProofH  ?? 0;
-  const _doughFridgeT = fridgeTemp ?? 4;
   const _doughColdStartHBF = effectiveMixHBF - _doughBulkH;         // into fridge
   const _doughColdEndHBF   = effectiveMixHBF - _doughBulkH - _doughColdH; // out of fridge
-  const _useColdRetardCurve = hasColdRetard && _doughColdH > 0 && _doughBulkH >= 0
+  const _showDoughColdTint = hasColdRetard && _doughColdH > 0 && _doughBulkH >= 0
     && effectiveMixHBF > _doughBulkH + _doughColdH;
+  // Quality plateau half-width for cold-retard dough — small, style-scaled
+  // (NOT the fridge window — just a gentle peak hold on the bell).
+  const _doughPlateauHalfW = hasColdRetard
+    ? Math.min(6, Math.max(2, DOUGH_SWEET_CENTER * 0.10))
+    : 0;
   // Both fridge and RT: peak relative to prefStartAbsHBF so curve slides with diamond.
   // Fridge: peak is optH hours after start (at optimal → peaks at mix, earlier/later → shifts).
   const prefOptHFridge = getPrefOptH(prefermentType, kitchenTemp, true);
@@ -986,7 +955,7 @@ export default function FermentChart({
             </clipPath>
           )}
           {/* Dough cold-retard tint clip: spans fridge-in to fridge-out */}
-          {_useColdRetardCurve && (
+          {_showDoughColdTint && (
             <clipPath id={`dough-cold-tint-clip-${chartId}`}>
               <rect
                 x={hToX(_doughColdStartHBF, W, WH)}
@@ -1396,19 +1365,19 @@ export default function FermentChart({
         )}
 
 
-        {/* ── Dough curve (cold-retard: honest piecewise; RT-only: bell) ── */}
+        {/* ── Dough curve (bell, anchored to mix; cold retard → plateau bell) ── */}
         <path
-          d={_useColdRetardCurve
-            ? makeColdRetardDoughPath(effectiveMixHBF, _doughBulkH, _doughColdH, _doughProofH, kitchenTemp, _doughFridgeT, W, WH)
+          d={hasColdRetard
+            ? makePlateauBellPath(doughPeakHBF, DOUGH_SIG, _doughPlateauHalfW, W, WH, effectiveMixHBF)
             : makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF)
           }
           fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
           clipPath={`url(#chart-area-clip-${chartId})`}
         />
-        {/* Cold-retard dough: tint the fridge window */}
-        {_useColdRetardCurve && (
+        {/* Cold-retard dough: tint the cold middle of the bell */}
+        {_showDoughColdTint && (
           <path
-            d={makeColdRetardDoughPath(effectiveMixHBF, _doughBulkH, _doughColdH, _doughProofH, kitchenTemp, _doughFridgeT, W, WH)}
+            d={makePlateauBellPath(doughPeakHBF, DOUGH_SIG, _doughPlateauHalfW, W, WH, effectiveMixHBF)}
             fill={COLD_TINT_FILL}
             stroke="none"
             clipPath={`url(#dough-cold-tint-clip-${chartId})`}
@@ -1416,7 +1385,7 @@ export default function FermentChart({
         )}
         <line
           x1={hToX(effectiveMixHBF, W, WH)}
-          y1={_useColdRetardCurve ? BL : BL - bell(effectiveMixHBF, doughPeakHBF, DOUGH_SIG) * MAXH}
+          y1={BL - bell(effectiveMixHBF, doughPeakHBF, DOUGH_SIG) * MAXH}
           x2={hToX(effectiveMixHBF, W, WH)}
           y2={BL}
           stroke={`${SAGE}A5`} strokeWidth={1.5}
@@ -1670,7 +1639,7 @@ export default function FermentChart({
         })()}
 
         {/* Path B diamonds: Refresh only (In/Out shown as cold-storage region, not cluttering diamonds) */}
-        {isFridgeHoldPath && fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null && (() => {
+        {!useEventDrivenStarter && isFridgeHoldPath && fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null && (() => {
           const items = [
             { hbf: fridgeHoldRefreshHBF, label: isFr ? 'Rafraîchi' : 'Refresh', fillColor: '#4A7FA5' },
           ];
