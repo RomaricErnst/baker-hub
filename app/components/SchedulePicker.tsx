@@ -3432,7 +3432,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     _usingPeak2      = best.usingPeak2;
     _feed2Time       = best.feed2Ms ? new Date(best.feed2Ms) : null;
-    _starterPillState = best.sscore === 2 ? 'green' : 'yellow';
+    // Green requires BOTH: starter at peak at mix (sscore 2) AND the plan is
+    // actually executable within the baker's availability (foundValid = every
+    // action — mix, feed/refresh, pre-mix, intermediates, fridge in/out —
+    // clears blockers). A starter-perfect plan with a feed in a blocked
+    // window is NOT green; the baker can't run it.
+    _starterPillState = (best.sscore === 2 && foundValid) ? 'green' : 'yellow';
     setRefeedSuggestion(null);
 
     // If a future-feed candidate won, override flags accordingly.
@@ -3522,7 +3527,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (
       ratioMode === 'recommend'
       && planningMode !== 'know_peak'
-      && lastFedAge !== 'week'
       && !_windowTooShort
     ) {
       // Pure per-ratio evaluator — runs candidate gen with ratio-local values
