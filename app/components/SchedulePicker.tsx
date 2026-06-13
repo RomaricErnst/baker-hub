@@ -2623,6 +2623,35 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         }
 
         if (!_isFridgeHoldPath && starterLocation === 'fridge' && _newFridgeOut) {
+          // Pair fridge_out with a fridge_in event so the chart's cold phase
+          // visibly spans the gap (previously the long fridge dwell rendered
+          // as an empty stretch). fridge_in is the moment the starter goes
+          // BACK into the fridge after the latest refresh peaked — or, when
+          // no refresh planned, when the baker put it in originally
+          // (≈ lastFedTime).
+          const latestRefreshPeakMs = events
+            .filter(e => (e.kind === 'refresh' || e.kind === 'intermediate_refresh') && e.bellPeakTime)
+            .reduce<number | null>((acc, e) => {
+              const t = e.bellPeakTime!.getTime();
+              return acc === null || t > acc ? t : acc;
+            }, null);
+          const fridgeInMs = latestRefreshPeakMs ?? (lastFedTime?.getTime() ?? null);
+          if (fridgeInMs !== null && fridgeInMs < _newFridgeOut.getTime()) {
+            events.push({
+              kind: 'fridge_in',
+              time: new Date(fridgeInMs),
+              isPast: fridgeInMs < nowMs,
+              isActive: false,
+              isDraggable: false,
+              label: isFr ? 'Au frigo' : 'Into Fridge',
+              cardTimeFormat: 'absolute',
+              cardNote: latestRefreshPeakMs !== null
+                ? (isFr ? 'Au pic — ralentit la fermentation' : 'At peak — slows fermentation')
+                : (isFr ? 'Conservation au froid' : 'Cold storage'),
+              bellStyle: 'none',
+              bellSigmaScale: 1.0,
+            });
+          }
           const _warmupH_fo = getStarterFridgeWarmupH(kitchenTemp);
           const _cf_fo = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
           const _fpH_fo = adjPeakH_last_eff * _cf_fo;
@@ -3427,20 +3456,33 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       return out;
     }
 
+    // Full action-time list for a candidate — used by candidateValid (block
+    // rejection) AND by the event builder. Sharing one helper keeps the scored
+    // plan and the rendered plan in lockstep: no scored-vs-rendered divergence,
+    // which is what produced earlier false-green pills with feeds/fridge
+    // transitions in blockers.
+    function getCandidateActions(cand: Candidate, adjPeakH_for: number, ratioMult_for: number): (number | null | undefined)[] {
+      const candMixMs = bakeMs - cand.mixHBF * 3600000;
+      const out: (number | null | undefined)[] = [candMixMs, cand.feedMs, cand.feed2Ms];
+      // Fridge transitions ARE baker actions — if the baker is at work or
+      // asleep, opening the fridge is a real problem. Treat them as hard
+      // constraints just like feeds and mix.
+      if (cand.isFridgePath) {
+        // Fridge scan: honest removal time is in fridgeOutMs; otherwise
+        // estimate from mix − warmup (Peak 1 fridge candidates).
+        out.push(cand.fridgeOutMs ?? (candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000));
+      }
+      if (cand.isFridgeHoldPath) {
+        out.push(cand.fridgeHoldRefreshMs, cand.fridgeHoldInMs, cand.fridgeHoldOutMs);
+      }
+      out.push(...computeIntermediatesForCandidate(cand, adjPeakH_for, ratioMult_for));
+      return out;
+    }
+
     let best = candidates[0];
     let foundValid = false;
     for (const cand of candidates) {
-      const candMixMs = bakeMs - cand.mixHBF * 3600000;
-      const actions: (number | null | undefined)[] = [candMixMs, cand.feedMs, cand.feed2Ms];
-      if (cand.isFridgePath) {
-        actions.push(candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000);
-      }
-      if (cand.isFridgeHoldPath) {
-        actions.push(cand.fridgeHoldRefreshMs, cand.fridgeHoldInMs, cand.fridgeHoldOutMs);
-      }
-      // Include intermediate-refresh feed times for blocker clearance.
-      actions.push(...computeIntermediatesForCandidate(cand, adjPeakH, ratioMultiplier));
-      if (candidateValid(actions)) {
+      if (candidateValid(getCandidateActions(cand, adjPeakH, ratioMultiplier))) {
         best = cand;
         foundValid = true;
         break;
@@ -3804,13 +3846,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         let bestR = candidates_r[0];
         let foundValidR = false;
         for (const cand of candidates_r) {
-          const candMixMs = bakeMs - cand.mixHBF * 3600000;
-          const actions: (number | null | undefined)[] = [candMixMs, cand.feedMs, cand.feed2Ms];
-          if (cand.isFridgePath) {
-            actions.push(candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000);
-          }
-          actions.push(...computeIntermediatesForCandidate(cand, adjPeakH_r, ratioMult_r));
-          if (candidateValid(actions)) {
+          // Reuse the shared helper so the per-ratio search treats fridge
+          // transitions as hard constraints just like the main solver does.
+          if (candidateValid(getCandidateActions(cand, adjPeakH_r, ratioMult_r))) {
             bestR = cand;
             foundValidR = true;
             break;
@@ -4308,8 +4346,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 )}
                 <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
                   {([
-                    { id: 'recommend', en: 'Recommend best for schedule', fr: 'Recommandé pour le planning' },
-                    { id: 'keep',      en: 'Keep my usual',                fr: 'Garder mon habitude' },
+                    { id: 'recommend', en: 'Optimized',          fr: 'Optimisé' },
+                    { id: 'keep',      en: 'Same as last feed',  fr: 'Comme le dernier rafraîchi' },
                   ] as { id: 'recommend' | 'keep'; en: string; fr: string }[]).map(opt => (
                     <button
                       key={opt.id}
@@ -4326,14 +4364,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                           }
                         }
                       }}
+                      // Match sibling pills (lastFeedRatio chips) — no bold on
+                      // selected, so this toggle doesn't pop out more than its
+                      // neighbours in the setup section.
                       style={{
                         padding: '.3rem .65rem', borderRadius: '20px',
                         border: `1.5px solid ${ratioMode === opt.id ? 'var(--bread)' : 'var(--border)'}`,
                         background: ratioMode === opt.id ? 'rgba(139,105,20,0.10)' : 'transparent',
                         color: ratioMode === opt.id ? 'var(--bread)' : 'var(--smoke)',
                         fontFamily: 'var(--font-dm-mono)', fontSize: '.78rem', cursor: 'pointer',
-                        fontWeight: ratioMode === opt.id ? 600 : 400,
-                        transition: 'all 0.15s ease',
                       }}
                     >
                       {isFr ? opt.fr : opt.en}
@@ -5572,6 +5611,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       {isFr ? 'LEVAIN' : 'STARTER'}
                     </div>
                   </div>
+
+                  {/* Chosen feed ratio — the ratio driving the planned feeds.
+                      In recommend mode this is whatever the engine settled on
+                      (nextFeedRatio after auto-apply); in keep mode it's
+                      lastFeedRatio. Muted DM Mono, not bold. */}
+                  {isSourdough && planningMode !== 'know_peak' && (() => {
+                    const r = nextFeedRatio;
+                    return (
+                      <div style={{
+                        fontSize: '11px', color: 'var(--smoke)',
+                        fontFamily: 'var(--font-dm-mono)',
+                        marginTop: '-.35rem', marginBottom: '.6rem',
+                      }}>
+                        {isFr ? `Rafraîchi à 1:${r}:${r}` : `Feeding at 1:${r}:${r}`}
+                      </div>
+                    );
+                  })()}
 
                   {/* Event-driven render (sourdough only) — replaces feedPlan + standalone blocks */}
                   {isSourdough && solverResult?.starterEvents && solverResult.starterEvents.length > 0 && (() => {

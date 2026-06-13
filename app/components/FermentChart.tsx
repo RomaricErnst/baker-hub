@@ -63,7 +63,7 @@ export interface FermentChartProps {
 // ── Constants ────────────────────────────────────────────────
 const WINDOW_H_DEFAULT = 96;
 const PAD       = 16;
-const CHART_H   = 252;
+const CHART_H   = 280;   // raised from 252 so two-line labels and any row-1/2 stacked labels don't clip / crowd the "Drag the diamonds" caption below
 const TOP_PAD   = 72;   // space above curves for window labels
 const BL        = 175;  // baseline = TOP_PAD + curve height area
 const MAXH      = 110;  // max bell height (fits within TOP_PAD to BL)
@@ -855,22 +855,62 @@ export default function FermentChart({
   const DIAMOND_LABEL = { fontSize: 11, fontWeight: 600, fontFamily: 'DM Mono, monospace' } as const;
   const TICK_LABEL    = { fontSize: 11, fontWeight: 400, fontFamily: 'DM Mono, monospace' } as const;
 
+  // ── Two-line label helper ────────────────────────────────
+  // Split at the LAST space so the wider word isn't orphaned: "Refresh Feed"
+  // → ["Refresh","Feed"]; "Refresh Feed 2" → ["Refresh Feed","2"] ...wait, we
+  // actually want "Refresh"/"Feed 2" so the wider word stays anchored.
+  // Strategy: split at the FIRST space when the text has ≥3 chars before
+  // a remainder ≥2 chars; otherwise split at last space. Practical effect:
+  // "Refresh Feed" → ["Refresh","Feed"]; "Refresh Feed 2" → ["Refresh","Feed 2"];
+  // "Pre-mix Feed" → ["Pre-mix","Feed"]; "Start Dough" → ["Start","Dough"];
+  // "Last fed" → ["Last","fed"]. Single-word labels stay one line.
+  const splitLabel = (text: string): [string] | [string, string] => {
+    const i = text.indexOf(' ');
+    if (i < 0) return [text];
+    const head = text.slice(0, i);
+    const tail = text.slice(i + 1);
+    if (head.length === 0 || tail.length === 0) return [text];
+    return [head, tail];
+  };
+  const LINE_HEIGHT = 12;
+  const splitText = (text: string, x: number): React.ReactNode => {
+    const lines = splitLabel(text);
+    if (lines.length === 1) return lines[0];
+    return (
+      <>
+        <tspan x={x} dy="0">{lines[0]}</tspan>
+        <tspan x={x} dy={LINE_HEIGHT}>{lines[1]}</tspan>
+      </>
+    );
+  };
+  // Footprint = WIDER line × 6.6px (DM Mono @ 11px ≈ 6.6px/char) + 6px padding.
+  // Used by the stacker so labels split into two lines need only their longest
+  // WORD to clear neighbours, not the full one-line span.
+  const labelFootprint = (text: string): number => {
+    const lines = splitLabel(text);
+    const widest = Math.max(...lines.map(l => l.length));
+    return widest * 6.6 + 6;
+  };
+
   // ── Diamond-label row layout ─────────────────────────────
-  // Single level when there's horizontal room, stack top-down only on collision.
-  // Pre-pass: collect every diamond label that will render with its (key, x),
-  // sort left→right, assign row 0/1/2 by walking and tracking last placed x per row.
-  const LABEL_ROW_1   = AXIS_Y + S + 18;
-  const ROW_STEP      = 16;
-  const MIN_LABEL_GAP = 46;
-  const SUBLABEL_DY   = 14;  // protocol indicator offset under pref label
-  const diamondLabels: { key: string; x: number }[] = [];
+  // Width-aware top-down stacking: row 0 by default, push to 1/2 ONLY when
+  // a label's footprint overlaps the last placed label on the same row.
+  // Two-line labels shrink the footprint to ~half, so almost everything sits
+  // on a single tier.
+  const LABEL_ROW_1 = AXIS_Y + S + 18;
+  const ROW_STEP    = 26;    // raised from 16: each label is now 2 lines
+  const SUBLABEL_DY = 26;   // pref protocol indicator — sits BELOW both lines of the parent label
+  const diamondLabels: { key: string; x: number; text: string }[] = [];
 
   // Mix label — always rendered
-  diamondLabels.push({ key: 'mix', x: mixX });
+  diamondLabels.push({ key: 'mix', x: mixX, text: isFr ? 'Pétrir' : 'Start Dough' });
 
   // Pref label (non-levain pref, or levain w/o knownPeak rendered as legacy diamond)
   if (hasPref && !knownPeakHBF && !isLevain) {
-    diamondLabels.push({ key: 'pref', x: activePrefX });
+    const prefText = prefermentType === 'biga'
+      ? t('cardLabels.makeBiga')
+      : t('cardLabels.makePoolish');
+    diamondLabels.push({ key: 'pref', x: activePrefX, text: prefText });
   }
 
   // Event-driven diamonds (sourdough). Match render's idx: filter by !==
@@ -882,38 +922,41 @@ export default function FermentChart({
         if (ev.kind === 'fridge_in') return;
         const hbf = (bakeMs - ev.time.getTime()) / 3600000;
         if (hbf < 0 || hbf > WH) return;
-        diamondLabels.push({ key: `ev-${idx}`, x: hToX(hbf, W, WH) });
+        diamondLabels.push({ key: `ev-${idx}`, x: hToX(hbf, W, WH), text: ev.label });
       });
   }
 
   // Comparison overlay "Remove"
   if (isLevain && showFridgeComparison && !useEventDrivenStarter
       && compFridgePeakHBF !== null && compFridgeOutHBF !== null) {
-    diamondLabels.push({ key: 'comp-remove', x: hToX(compFridgeOutHBF, W, WH) });
+    diamondLabels.push({ key: 'comp-remove', x: hToX(compFridgeOutHBF, W, WH), text: isFr ? 'Sortir' : 'Remove' });
   }
 
   // Historical pref diamond "Last fed"
   if (!useEventDrivenStarter && hasPref && isLevain && histPrefX !== null && !allClose) {
-    diamondLabels.push({ key: 'last-fed', x: histPrefX });
+    diamondLabels.push({ key: 'last-fed', x: histPrefX, text: isFr ? 'Dernier rafraîchi' : 'Last fed' });
   }
 
   // Refeed "Feed"
   if (!useEventDrivenStarter && isLevain && refeedHBF !== null && depletedAtHBF !== null
       && refeedHBF > effectiveMixHBF
       && Math.abs(hToX(refeedHBF, W, WH) - activePrefX) > 20) {
-    diamondLabels.push({ key: 'refeed', x: hToX(refeedHBF, W, WH) });
+    diamondLabels.push({ key: 'refeed', x: hToX(refeedHBF, W, WH), text: 'Feed' });
   }
 
   // Feed circle (single cycle, no Peak 2)
   if (!useEventDrivenStarter && isLevain && activeFeedHBF !== null && histFeedHBF === null
       && (!knownPeakHBF || starterRedPill) && activeFeedHBF > 0) {
-    diamondLabels.push({ key: 'feed-circle', x: hToX(activeFeedHBF, W, WH) });
+    diamondLabels.push({ key: 'feed-circle', x: hToX(activeFeedHBF, W, WH), text: isFr ? 'Rafraîchi' : 'Feed' });
   }
 
   // Active feed diamond (Peak2 scenario)
   if (!useEventDrivenStarter && isLevain && activeFeedHBF !== null && histFeedHBF !== null
       && (!knownPeakHBF || starterRedPill || starterFeed2Time) && activeFeedHBF > 0 && !allClose) {
-    diamondLabels.push({ key: 'feed-diamond', x: activePrefX });
+    const text = starterRedPill
+      ? (isFr ? 'Rafraîchi final' : 'Pre-mix Feed')
+      : (isFr ? 'Prochain rafraîchi' : 'Next Feed');
+    diamondLabels.push({ key: 'feed-diamond', x: activePrefX, text });
   }
 
   // Refresh feeds (kept, same dedup logic as render)
@@ -933,9 +976,13 @@ export default function FermentChart({
       if (kept.some(k => Math.abs(r.x - k.x) < 35)) continue;
       kept.push(r);
     }
-    for (const r of kept) {
-      diamondLabels.push({ key: `refresh-${r.idx}`, x: r.x });
-    }
+    const showNumbers = kept.length > 1;
+    kept.forEach((r, displayIdx) => {
+      const text = showNumbers
+        ? (isFr ? `Rafraîchi ${displayIdx + 1}` : `Refresh Feed ${displayIdx + 1}`)
+        : (isFr ? 'Rafraîchi' : 'Refresh Feed');
+      diamondLabels.push({ key: `refresh-${r.idx}`, x: r.x, text });
+    });
   }
 
   // Path B Refresh
@@ -943,20 +990,24 @@ export default function FermentChart({
       && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null) {
     const x = hToX(fridgeHoldRefreshHBF, W, WH);
     if (x >= 0 && x <= W) {
-      diamondLabels.push({ key: 'pathb-refresh', x });
+      diamondLabels.push({ key: 'pathb-refresh', x, text: isFr ? 'Rafraîchi' : 'Refresh' });
     }
   }
 
-  // Assign rows: sort left→right, walk and place each on lowest row free at MIN_LABEL_GAP
+  // Footprint-overlap stacking: sort left→right, place each on lowest row
+  // whose last-placed label's right edge doesn't overlap this label's left.
   const labelRows = new Map<string, number>();
   {
-    const lastXPerRow = [-Infinity, -Infinity, -Infinity];
+    const lastRightPerRow = [-Infinity, -Infinity, -Infinity];
     const sorted = [...diamondLabels].sort((a, b) => a.x - b.x);
     for (const lbl of sorted) {
+      const half = labelFootprint(lbl.text) / 2;
+      const left  = lbl.x - half;
+      const right = lbl.x + half;
       let row = 0;
-      while (row < 2 && lbl.x - lastXPerRow[row] < MIN_LABEL_GAP) row++;
+      while (row < 2 && left < lastRightPerRow[row]) row++;
       labelRows.set(lbl.key, row);
-      lastXPerRow[row] = lbl.x;
+      lastRightPerRow[row] = right;
     }
   }
   const labelY = (key: string): number =>
@@ -1489,7 +1540,7 @@ export default function FermentChart({
               fill="rgba(74,127,165,0.9)"
               textAnchor="middle"
             >
-              {isFr ? 'Sortir' : 'Remove'}
+              {splitText(isFr ? 'Sortir' : 'Remove', hToX(compFridgeOutHBF, W, WH))}
             </text>
           </>
         )}
@@ -1581,8 +1632,11 @@ export default function FermentChart({
                                 isIntermediate ? '#4A7FA5' :
                                 isFridgeOut ? '#5A9DC9' :
                                 ev.isActive ? 'white' : 'rgba(74,127,165,0.75)';
-          const diamondSize = isIntermediate ? S * 0.7 : S;
-          const points = `${x},${AXIS_Y - diamondSize} ${x + diamondSize},${AXIS_Y} ${x},${AXIS_Y + diamondSize} ${x - diamondSize},${AXIS_Y}`;
+          // All diamonds share the same half-width (S) so the chart reads
+          // visually consistent — active/inactive differ ONLY by fillOpacity
+          // (set on the polygon below), never by size. Bake (triangle) is a
+          // different shape and keeps its own footprint.
+          const points = `${x},${AXIS_Y - S} ${x + S},${AXIS_Y} ${x},${AXIS_Y + S} ${x - S},${AXIS_Y}`;
           const labelFill = isHistorical ? 'var(--smoke)' :
                             isIntermediate ? '#4A7FA5' :
                             isFridgeOut ? '#5A9DC9' :
@@ -1607,7 +1661,7 @@ export default function FermentChart({
                 fillOpacity={ev.isActive ? 0.9 : 0.6}
                 textAnchor="middle"
               >
-                {ev.label}
+                {splitText(ev.label, x)}
               </text>
             </g>
           );
@@ -1626,7 +1680,7 @@ export default function FermentChart({
                 fontWeight={DIAMOND_LABEL.fontWeight}
                 fontFamily={DIAMOND_LABEL.fontFamily}
                 fill="var(--smoke)" textAnchor="middle">
-                {isFr ? 'Dernier rafraîchi' : 'Last fed'}
+                {splitText(isFr ? 'Dernier rafraîchi' : 'Last fed', histPrefX)}
               </text>
             )}
           </g>
@@ -1650,7 +1704,7 @@ export default function FermentChart({
               fill="var(--smoke)"
               textAnchor="middle"
             >
-              Feed
+              {splitText('Feed', hToX(refeedHBF, W, WH))}
             </text>
           </g>
         )}
@@ -1677,7 +1731,7 @@ export default function FermentChart({
               fill="rgba(74,127,165,0.75)"
               textAnchor="middle"
             >
-              {isFr ? 'Rafraîchi' : 'Feed'}
+              {splitText(isFr ? 'Rafraîchi' : 'Feed', hToX(activeFeedHBF, W, WH))}
             </text>
           </g>
         )}
@@ -1705,9 +1759,12 @@ export default function FermentChart({
                 fill={prefColor}
                 textAnchor="middle"
               >
-                {starterRedPill
-                  ? (isFr ? 'Rafraîchi final' : 'Pre-mix Feed')
-                  : (isFr ? 'Prochain rafraîchi' : 'Next Feed')}
+                {splitText(
+                  starterRedPill
+                    ? (isFr ? 'Rafraîchi final' : 'Pre-mix Feed')
+                    : (isFr ? 'Prochain rafraîchi' : 'Next Feed'),
+                  activePrefX
+                )}
               </text>
             )}
           </g>
@@ -1741,7 +1798,7 @@ export default function FermentChart({
                 return (
                   <g key={`refresh-${r.idx}`}>
                     <polygon
-                      points={`${r.x},${AXIS_Y - S * 0.7} ${r.x + S * 0.7},${AXIS_Y} ${r.x},${AXIS_Y + S * 0.7} ${r.x - S * 0.7},${AXIS_Y}`}
+                      points={`${r.x},${AXIS_Y - S} ${r.x + S},${AXIS_Y} ${r.x},${AXIS_Y + S} ${r.x - S},${AXIS_Y}`}
                       fill="rgba(74,127,165,0.5)"
                       stroke="#4A7FA5"
                       strokeWidth={1}
@@ -1752,7 +1809,7 @@ export default function FermentChart({
                       fontWeight={DIAMOND_LABEL.fontWeight}
                       fontFamily={DIAMOND_LABEL.fontFamily}
                       fill="#4A7FA5">
-                      {labelText}
+                      {splitText(labelText, r.x)}
                     </text>
                   </g>
                 );
@@ -1788,7 +1845,7 @@ export default function FermentChart({
                       fontFamily={DIAMOND_LABEL.fontFamily}
                       textAnchor="middle"
                     >
-                      {item.label}
+                      {splitText(item.label, x)}
                     </text>
                   </g>
                 );
@@ -1817,13 +1874,16 @@ export default function FermentChart({
               fill={prefColor}
               textAnchor="middle"
             >
-              {isLevain
-                ? (histFeedHBF !== null
-                    ? (isFr ? 'Prochain repas' : 'Next Feed')
-                    : (isFr ? 'Repas' : 'Feed'))
-                : prefermentType === 'biga'
-                  ? t('cardLabels.makeBiga')
-                  : t('cardLabels.makePoolish')}
+              {splitText(
+                isLevain
+                  ? (histFeedHBF !== null
+                      ? (isFr ? 'Prochain repas' : 'Next Feed')
+                      : (isFr ? 'Repas' : 'Feed'))
+                  : prefermentType === 'biga'
+                    ? t('cardLabels.makeBiga')
+                    : t('cardLabels.makePoolish'),
+                activePrefX
+              )}
             </text>
             {/* Protocol indicator — ❄ Fridge or 🌡 RT (sub-label below pref) */}
             <text
@@ -1862,7 +1922,7 @@ export default function FermentChart({
           fontFamily={DIAMOND_LABEL.fontFamily}
           fill="#3D5A30"
           textAnchor="middle"
-        >Start Dough</text>
+        >{splitText(isFr ? 'Pétrir' : 'Start Dough', mixX)}</text>
 
         {/* ── Ghost diamond (recommended position) ── */}
         {recommendedMixHBF != null &&
