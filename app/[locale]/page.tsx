@@ -350,6 +350,7 @@ export default function Home() {
   const [lastFeedRatio, setLastFeedRatio]   = useState<1 | 2 | 4 | 5 | 10>(1);
   const [nextFeedRatio, setNextFeedRatio]   = useState<1 | 2 | 4 | 5 | 10>(1);
   const [nextFeedRatioOverride, setNextFeedRatioOverride] = useState<1 | 2 | 4 | 5 | 10 | null>(null);
+  const [ratioMode, setRatioMode] = useState<'recommend' | 'keep'>('recommend');
   const [starterPeakTime, setStarterPeakTime] = useState<Date | null>(null);
   const [starterMature, setStarterMature]   = useState(true);
   const [starterHasRye, setStarterHasRye]   = useState(false);
@@ -571,6 +572,9 @@ export default function Home() {
     if (_nfr) setNextFeedRatio(_nfr as 1 | 2 | 4 | 5 | 10);
     if (session.nextFeedRatioOverride !== undefined) {
       setNextFeedRatioOverride(session.nextFeedRatioOverride as 1 | 2 | 4 | 5 | 10 | null);
+    }
+    if (session.ratioMode === 'keep' || session.ratioMode === 'recommend') {
+      setRatioMode(session.ratioMode);
     }
     if (session.starterMature !== undefined) setStarterMature(Boolean(session.starterMature));
     if (session.starterHasRye !== undefined) setStarterHasRye(Boolean(session.starterHasRye));
@@ -817,6 +821,7 @@ export default function Home() {
       lastFeedRatio,
       nextFeedRatio,
       nextFeedRatioOverride,
+      ratioMode,
       starterMature, starterHasRye, tang,
       fridgeOutTime: fridgeOutTime?.getTime() ?? null,
       usingPeak2,
@@ -942,6 +947,7 @@ export default function Home() {
     setLastFeedRatio(1);
     setNextFeedRatio(1);
     setNextFeedRatioOverride(null);
+    setRatioMode('recommend');
     setStarterPeakTime(null);
   }
 
@@ -1686,6 +1692,8 @@ export default function Home() {
                 onNextFeedRatioChange={setNextFeedRatio}
                 nextFeedRatioOverride={nextFeedRatioOverride}
                 onNextFeedRatioOverrideChange={setNextFeedRatioOverride}
+                ratioMode={ratioMode}
+                onRatioModeChange={setRatioMode}
                 onStarterPeakTimeChange={setStarterPeakTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
@@ -2500,6 +2508,8 @@ export default function Home() {
                 onNextFeedRatioChange={setNextFeedRatio}
                 nextFeedRatioOverride={nextFeedRatioOverride}
                 onNextFeedRatioOverrideChange={setNextFeedRatioOverride}
+                ratioMode={ratioMode}
+                onRatioModeChange={setRatioMode}
                 onStarterPeakTimeChange={setStarterPeakTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}

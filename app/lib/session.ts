@@ -48,6 +48,7 @@ export interface SessionData {
   lastFeedRatio?: number;
   nextFeedRatio?: number;
   nextFeedRatioOverride?: number | null;
+  ratioMode?: 'recommend' | 'keep';
   starterMature?: boolean;
   starterHasRye?: boolean;
   tang?: string;
