@@ -382,11 +382,14 @@ export default function FermentChart({
   const _warmSpeed = Math.pow(2, (kitchenTemp - 22) / 10);  // vs 22°C baseline
   const _coldRetardH_sig = phases?.coldRetardH ?? 0;
   const _bulkH_sig       = phases?.bulkFermH   ?? 0;
+  const _proofH_sig      = phases?.finalProofH ?? 0;
   const _sweetCenterMag  = DOUGH_SWEET_CENTER;               // style ferment length
   const DOUGH_SIG = hasColdRetard
-    // Cold-retard: width driven by cold duration + temp-scaled warm flanks.
+    // Cold-retard: baseline width from the cold duration + warm flanks, then
+    // the WHOLE bell tightens as the kitchen warms (sqrt = gentle, not extreme).
     ? Math.max(8, Math.min(WH * 0.6,
-        _coldRetardH_sig * 0.35 + (_bulkH_sig / Math.max(0.5, _warmSpeed)) + 4))
+        (_coldRetardH_sig * 0.45 + _bulkH_sig + _proofH_sig + 4)
+          / Math.sqrt(Math.max(0.5, _warmSpeed))))
     // RT-only: width scales with the style's sweet center, tightened by heat.
     : Math.max(3, Math.min(WH * 0.5,
         (_sweetCenterMag * 0.55) / Math.max(0.5, _warmSpeed)));
