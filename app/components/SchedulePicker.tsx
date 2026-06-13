@@ -2332,16 +2332,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             const numIntermediate = Math.min(MAX_INTERMEDIATES + 1,
               Math.max(MIN_INTERMEDIATES + 1, gapBasedCount));
 
+            // Same minimum spacing rule as computeIntermediatesForCandidate
+            // and the bridge generator — keeps render aligned with validation.
+            const minFeedGapH_build = adjPeakH_eff * 0.75;
             for (let i = 1; i < numIntermediate; i++) {
               const ft = new Date(startMs + i * refreshSpacingH * 3600000);
               // Snap to 7am-10pm sleeping hours
               const h = ft.getHours();
               if (h < 7) { ft.setHours(7, 0, 0, 0); }
               else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
-              // Guards: must be future, must clear blockers, must precede next major feed
+              // Guards: must be future, must precede next major feed by ≥ minFeedGapH,
+              // and must clear blockers.
               if (
                 ft.getTime() > Date.now() &&
-                ft.getTime() < nextMajorFeedMs - 30 * 60000 &&
+                ft.getTime() < nextMajorFeedMs - minFeedGapH_build * 3600000 &&
                 !inBlockerMs(ft.getTime())
               ) {
                 _intermediateRefreshFeeds.push(ft);
@@ -3263,9 +3267,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           ? new Date(baseFeed3.getTime() + 15 * 60000)
           : new Date(finalRefreshPeakMs + 12 * 3600000);
 
+        // Minimum gap between consecutive feeds. A feed should follow the prior
+        // feed's near-peak, never <1h later — that would mean feeding before the
+        // earlier cycle had a chance to wake the starter. adjPeakH × 0.75 ≈ 13h
+        // at 17.8h adjPeak.
+        const minFeedGapH = adjPeakH * 0.75;
         for (let t3 = Math.max(searchStart3.getTime(), earliestPreMixMs); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
           if (t3 <= nowMs3) continue;
-          if (t3 <= finalRefreshMs) continue;  // pre-mix must follow the final refresh
+          // Pre-mix must follow the FINAL refresh by ≥ minFeedGapH. If this
+          // can't be satisfied for current nBridge, the inner loop emits no
+          // candidates and the outer loop's smaller nBridge will (the
+          // 2-feed plan spaces correctly at ~24h).
+          if (t3 - finalRefreshMs < minFeedGapH * 3600000) continue;
           const stretchFactor3 = computePreMixStretchFactor(t3, finalRefreshPeakMs);
           const peakT3 = new Date(t3 + adjPeakH * stretchFactor3 * 3600000);
           const mHBF3  = (bakeMs - peakT3.getTime()) / 3600000;
@@ -3443,46 +3456,86 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const MIN_INT = Math.max(0, revivalCycles(lastFedAge, starterMature, tang) - 1);
       const gapBased = Math.floor(gapH / refreshSpacingH);
       const numIntermediate = Math.min(MAX_INT + 1, Math.max(MIN_INT + 1, gapBased));
+      // Minimum spacing between any feed and the NEXT feed in the chain — a
+      // feed <13h before the next means you'd be feeding before the prior
+      // cycle had time to wake the starter. Drop the last intermediate when
+      // it would sit too close to nextMajorFeedMs; fewer feeds is better when
+      // equivalent.
+      const minFeedGapH = adjPeakH_for * 0.75;
       const out: number[] = [];
       for (let i = 1; i < numIntermediate; i++) {
         const ft = new Date(startMs + i * refreshSpacingH * 3600000);
         const h = ft.getHours();
         if (h < 7) ft.setHours(7, 0, 0, 0);
         else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
-        if (ft.getTime() > Date.now() && ft.getTime() < nextMajorFeedMs - 30 * 60000) {
+        if (ft.getTime() > Date.now() && ft.getTime() < nextMajorFeedMs - minFeedGapH * 3600000) {
           out.push(ft.getTime());
         }
       }
       return out;
     }
 
-    // Full action-time list for a candidate — used by candidateValid (block
-    // rejection) AND by the event builder. Sharing one helper keeps the scored
-    // plan and the rendered plan in lockstep: no scored-vs-rendered divergence,
-    // which is what produced earlier false-green pills with feeds/fridge
-    // transitions in blockers.
-    function getCandidateActions(cand: Candidate, adjPeakH_for: number, ratioMult_for: number): (number | null | undefined)[] {
+    // candidateActionTimes — the EXHAUSTIVE list of every baker action the
+    // candidate plan implies. Used by candidateValid (block rejection) AND by
+    // the event builder reads the same fields, so the scored plan and the
+    // rendered plan match exactly. Previous false-green bugs traced to this
+    // helper missing actions (pre-mix, primary refresh, fridge_in/out for
+    // non-Path-B fridge starters), which let blocker-violating plans pass.
+    function candidateActionTimes(cand: Candidate, adjPeakH_for: number, ratioMult_for: number): (number | null | undefined)[] {
       const candMixMs = bakeMs - cand.mixHBF * 3600000;
-      const out: (number | null | undefined)[] = [candMixMs, cand.feedMs, cand.feed2Ms];
-      // Fridge transitions ARE baker actions — if the baker is at work or
-      // asleep, opening the fridge is a real problem. Treat them as hard
-      // constraints just like feeds and mix.
-      if (cand.isFridgePath) {
-        // Fridge scan: honest removal time is in fridgeOutMs; otherwise
-        // estimate from mix − warmup (Peak 1 fridge candidates).
-        out.push(cand.fridgeOutMs ?? (candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000));
+      const out: (number | null | undefined)[] = [
+        candMixMs,        // mix
+        cand.feedMs,      // primary feed (Peak1: lastFed; Peak2/refeed: refresh time; future-feed: pre-mix)
+        cand.feed2Ms,     // pre-mix (when distinct from feed)
+      ];
+      // Primary refresh @ _starterRefeedTime — the "refresh now" baker action
+      // emitted by the event builder for declining/depleted starters. Was
+      // previously NOT in the actions list, so a refresh in Nights passed.
+      if (_starterRefeedTime) {
+        out.push(_starterRefeedTime.getTime());
       }
+      // Bridging refreshes + post-hoc intermediate refreshes. Shared helper
+      // ensures validation and render use the same chain.
+      out.push(...computeIntermediatesForCandidate(cand, adjPeakH_for, ratioMult_for));
+      // Path B: refresh + fridge in/out.
       if (cand.isFridgeHoldPath) {
         out.push(cand.fridgeHoldRefreshMs, cand.fridgeHoldInMs, cand.fridgeHoldOutMs);
       }
-      out.push(...computeIntermediatesForCandidate(cand, adjPeakH_for, ratioMult_for));
+      // ANY fridge starter — Path B and non-Path-B alike — has a fridge_out
+      // baker action (taking starter out for pre-mix prep). For non-Path-B,
+      // the event builder uses _newFridgeOut = cand.fridgeOutMs ?? (newMix −
+      // warmupH); validate the SAME value here.
+      if (starterLocation === 'fridge' && !cand.isFridgeHoldPath) {
+        const fridgeOutMs_pred = cand.fridgeOutMs
+          ?? (candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000);
+        out.push(fridgeOutMs_pred);
+        // fridge_in for non-Path-B fridge starter = latest refresh peak (primary
+        // _starterRefeedTime peak, or the latest bridge/intermediate peak when
+        // a chain exists). Event builder picks this same value when emitting
+        // the fridge_in event — match it here.
+        const refreshPeaks: number[] = [];
+        if (_starterRefeedTime) {
+          refreshPeaks.push(_starterRefeedTime.getTime() + adjPeakH_for * _refreshStretchFactor * 3600000);
+        }
+        if (cand.bridgeRefreshMs) {
+          for (const b of cand.bridgeRefreshMs) refreshPeaks.push(b + adjPeakH_for * 3600000);
+        }
+        if (refreshPeaks.length > 0) {
+          out.push(Math.max(...refreshPeaks));
+        }
+      }
+      // Fridge scan (RT starter → fridge), no fridge-hold: validate the
+      // candidate's honest removal time (unchanged from before).
+      if (cand.isFridgePath && !cand.isFridgeHoldPath && starterLocation !== 'fridge') {
+        out.push(cand.fridgeOutMs ?? (candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000));
+      }
       return out;
     }
 
     let best = candidates[0];
     let foundValid = false;
     for (const cand of candidates) {
-      if (candidateValid(getCandidateActions(cand, adjPeakH, ratioMultiplier))) {
+      if (candidateValid(candidateActionTimes(cand, adjPeakH, ratioMultiplier))) {
         best = cand;
         foundValid = true;
         break;
@@ -3810,9 +3863,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             const searchEnd3 = baseFeed3
               ? new Date(baseFeed3.getTime() + 15 * 60000)
               : new Date(finalRefreshPeakMs_r + 12 * 3600000);
+            const minFeedGapH_r = adjPeakH_r * 0.75;
             for (let t3 = Math.max(searchStart3.getTime(), earliestPreMixMs); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
               if (t3 <= nowMs_r) continue;
-              if (t3 <= finalRefreshMs_r) continue;
+              // Pre-mix must be ≥ minFeedGapH after the final bridge — mirrors
+              // the main solver's spacing rule.
+              if (t3 - finalRefreshMs_r < minFeedGapH_r * 3600000) continue;
               const stretchFactor3 = computePreMixStretchFactor(t3, finalRefreshPeakMs_r);
               const peakT3 = new Date(t3 + adjPeakH_r * stretchFactor3 * 3600000);
               const mHBF3  = (bakeMs - peakT3.getTime()) / 3600000;
@@ -3848,7 +3904,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         for (const cand of candidates_r) {
           // Reuse the shared helper so the per-ratio search treats fridge
           // transitions as hard constraints just like the main solver does.
-          if (candidateValid(getCandidateActions(cand, adjPeakH_r, ratioMult_r))) {
+          if (candidateValid(candidateActionTimes(cand, adjPeakH_r, ratioMult_r))) {
             bestR = cand;
             foundValidR = true;
             break;

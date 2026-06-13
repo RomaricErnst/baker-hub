@@ -426,13 +426,21 @@ export default function FermentChart({
   const prefStartAbsHBF = effectiveMixHBF + prefOffsetH;
   const doughPeakHBF = effectiveMixHBF - DOUGH_SWEET_CENTER;
 
-  // Dough cold window boundaries (for tint clip)
+  // Dough cold window boundaries (for tint clip).
+  // The cold window spans from (mix + bulk) to (mix + bulk + cold). When the
+  // style spec asks for more cold than fits in the window between mix and
+  // bake, the cold portion gets truncated at bake — clamp the end to ≥ 0 so
+  // the clip width stays positive and the tint still renders the visible
+  // portion. (Previously gated on mixHBF > bulkH+coldH, which silently hid
+  // the entire cold fill for configs like 18°C/72h with coldH 53.3, sweet
+  // center at mixHBF 20 — the cold phase WAS active in the plan but unshaded.)
   const _doughBulkH  = phases?.bulkFermH   ?? 0;
   const _doughColdH  = phases?.coldRetardH  ?? 0;
-  const _doughColdStartHBF = effectiveMixHBF - _doughBulkH;         // into fridge
-  const _doughColdEndHBF   = effectiveMixHBF - _doughBulkH - _doughColdH; // out of fridge
-  const _showDoughColdTint = hasColdRetard && _doughColdH > 0 && _doughBulkH >= 0
-    && effectiveMixHBF > _doughBulkH + _doughColdH;
+  const _doughColdStartHBF = effectiveMixHBF - _doughBulkH;
+  const _doughColdEndHBF   = Math.max(0, effectiveMixHBF - _doughBulkH - _doughColdH);
+  const _showDoughColdTint = hasColdRetard && _doughColdH > 0
+    && _doughBulkH >= 0
+    && _doughColdStartHBF > _doughColdEndHBF;
   // Quality plateau half-width for cold-retard dough — small, style-scaled
   // (NOT the fridge window — just a gentle peak hold on the bell).
   const _doughPlateauHalfW = hasColdRetard
@@ -1556,10 +1564,16 @@ export default function FermentChart({
           clipPath={`url(#chart-area-clip-${chartId})`}
         />
         {/* Cold-retard dough: tint the cold middle of the bell with a darker
-            shade of the dough's OWN hue (green), not a shared blue wash. */}
+            shade of the dough's OWN hue (green), not a shared blue wash.
+            Use the SAME bell-path generator as the main dough bell so the
+            tint hugs the actual visible curve on both branches (plateau-bell
+            and plain-bell). */}
         {_showDoughColdTint && (
           <path
-            d={makePlateauBellPath(doughPeakHBF, DOUGH_SIG, _doughPlateauHalfW, W, WH, effectiveMixHBF)}
+            d={hasColdRetard
+              ? makePlateauBellPath(doughPeakHBF, DOUGH_SIG, _doughPlateauHalfW, W, WH, effectiveMixHBF)
+              : makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF)
+            }
             fill={DOUGH_COLD_FILL}
             stroke="none"
             clipPath={`url(#dough-cold-tint-clip-${chartId})`}
