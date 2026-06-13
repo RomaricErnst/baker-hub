@@ -2227,6 +2227,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _newFridgeOut: Date | null = fridgeOutTime;
     let _adjPeakH: number | null = null;
     let _fridgeFeedTime: Date | null = null;
+    // Bridge-candidate refresh chain (additional to primary @now refresh) —
+    // set when a bridging candidate wins; consumed by buildAndSetResult to
+    // render exactly the refreshes the candidate was scored on.
+    let _bridgeRefreshMs: number[] | null = null;
     let _recommendedNextFeedRatio: 1 | 2 | 4 | 5 | 10 | null = null;
 
     // Get derived starter state (no setState calls inside)
@@ -2267,7 +2271,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // events).
       const _intermediateRefreshFeeds: Date[] = [];
 
-      if (_isFridgeHoldPath) {
+      if (_bridgeRefreshMs && _bridgeRefreshMs.length > 0) {
+        // Bridge-candidate winner — render exactly the refresh chain it was
+        // scored on. Avoids any divergence between the scored plan and the
+        // chart/card display (and prevents duplicate post-hoc intermediates).
+        for (const ms of _bridgeRefreshMs) {
+          _intermediateRefreshFeeds.push(new Date(ms));
+        }
+      } else if (_isFridgeHoldPath) {
         // Path B owns its own refresh visualisation — skip the multi-refresh array
       } else {
         // Long-horizon intermediates: if the gap from refresh (or last feed)
@@ -2943,6 +2954,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       fridgeHoldOutMs?:     number;
       // Fridge scan: honest removal time (mix = fridgeOut + rtToPeakH, not mix − warmupH)
       fridgeOutMs?:         number;
+      // Bridging refreshes ADDITIONAL to the primary @now refresh, used to
+      // close the 6–24h dead zone between a single refresh peak and pre-mix.
+      // Order: earliest first. The last entry is the "final" refresh whose
+      // peak the pre-mix is timed against. nBridge=0 → undefined.
+      bridgeRefreshMs?: number[];
     }
 
     const candidates: Candidate[] = [];
@@ -3176,45 +3192,67 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       (Date.now() - lastFedTime.getTime()) / 3600000 > adjPeakH
     ) {
       const nowMs3 = Date.now();
-      const refreshMs = nowMs3;
-      const refreshPeakMs = refreshMs + _adjPeakH_refresh * 3600000;
-      // Pre-mix feed must come AFTER refresh has had time to peak (or close to it)
-      // Allow pre-mix feed to start as early as refreshPeakMs - 1h (some overlap ok)
-      const earliestPreMixMs = refreshPeakMs - 12 * 3600000;  // allow up to 12h before refresh peak; scoring penalty applies
-      const baseFeed3 = targetMixTime
-        ? new Date(targetMixTime.getTime() - adjPeakH * 3600000)
-        : null;
-      const searchStart3 = baseFeed3
-        ? new Date(baseFeed3.getTime() - 15 * 60000)
-        : new Date(refreshPeakMs - 12 * 3600000);
-      const searchEnd3 = baseFeed3
-        ? new Date(baseFeed3.getTime() + 15 * 60000)
-        : new Date(refreshPeakMs + 12 * 3600000);
+      // Refresh spacing matches the post-hoc intermediate-refresh logic used
+      // in buildAndSetResult (peak-shoulder timing ≈ adjPeakH × 1.25).
+      const refreshSpacingH_bridge = adjPeakH * 1.25;
 
-      if (!inBlockerMs(refreshMs)) {
+      // nBridge = number of EXTRA refreshes inserted between the primary
+      // refresh @now and the pre-mix feed. nBridge=0 keeps the original
+      // single-refresh behaviour (no regression). nBridge≥1 closes the
+      // 6–24h dead zone between a single refresh peak and the pre-mix.
+      // Cap at 2 → total feeds incl. pre-mix ≤ 3 (matches MAX_INTERMEDIATES).
+      for (let nBridge = 0; nBridge <= 2; nBridge++) {
+        const refreshMs = nowMs3;
+        if (inBlockerMs(refreshMs)) break;  // primary @now blocked → no chain possible
+
+        const finalRefreshMs     = nowMs3 + nBridge * refreshSpacingH_bridge * 3600000;
+        const finalRefreshPeakMs = finalRefreshMs + _adjPeakH_refresh * 3600000;
+
+        // Bridge refresh times — additional to the primary @now. The LAST
+        // entry is the "final" refresh whose peak the pre-mix is timed
+        // against. Empty when nBridge=0.
+        const bridges: number[] = [];
+        for (let i = 1; i <= nBridge; i++) {
+          bridges.push(nowMs3 + i * refreshSpacingH_bridge * 3600000);
+        }
+
+        // Reject the whole chain early if any bridge falls in a blocker.
+        let bridgesOk = true;
+        for (const br of bridges) {
+          if (inBlockerMs(br)) { bridgesOk = false; break; }
+        }
+        if (!bridgesOk) continue;
+
+        const earliestPreMixMs = finalRefreshPeakMs - 12 * 3600000;
+        const baseFeed3 = targetMixTime
+          ? new Date(targetMixTime.getTime() - adjPeakH * 3600000)
+          : null;
+        const searchStart3 = baseFeed3
+          ? new Date(baseFeed3.getTime() - 15 * 60000)
+          : new Date(finalRefreshPeakMs - 12 * 3600000);
+        const searchEnd3 = baseFeed3
+          ? new Date(baseFeed3.getTime() + 15 * 60000)
+          : new Date(finalRefreshPeakMs + 12 * 3600000);
+
         for (let t3 = Math.max(searchStart3.getTime(), earliestPreMixMs); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
           if (t3 <= nowMs3) continue;
-          const stretchFactor3 = computePreMixStretchFactor(t3, refreshPeakMs);
+          if (t3 <= finalRefreshMs) continue;  // pre-mix must follow the final refresh
+          const stretchFactor3 = computePreMixStretchFactor(t3, finalRefreshPeakMs);
           const peakT3 = new Date(t3 + adjPeakH * stretchFactor3 * 3600000);
           const mHBF3  = (bakeMs - peakT3.getTime()) / 3600000;
           if (mHBF3 < sweetToHBF - 4 || mHBF3 > sweetFromHBF + 4) continue;
           if (bakeMs - mHBF3 * 3600000 <= nowMs3) continue;
           if (inBlocker(mHBF3)) continue;
           if (inBlockerMs(t3)) continue;
-          // Biological minimum gap: pre-mix must be no earlier than
-          // adjPeakH × 0.5 before refresh peak (= half refresh cycle has
-          // elapsed since refresh feed), and no later than 6h after refresh
-          // peak (starter declining beyond that point).
-          const _gapPreCheck3 = (t3 - refreshPeakMs) / 3600000;
+          // Biological gap window — anchored to the FINAL refresh's peak.
+          // Pre-mix between adjPeakH × 0.5 before final-peak and 6h after.
+          const _gapPreCheck3 = (t3 - finalRefreshPeakMs) / 3600000;
           const _maxEarly = adjPeakH * 0.5;
           if (_gapPreCheck3 < -_maxEarly || _gapPreCheck3 > 6) continue;
           const sc3 = combinedScore(mHBF3, mHBF3, t3, true);
           const ss3 = starterScore(mHBF3, mHBF3);
           if (ss3 === 0) continue;
-          // Biology penalty: pre-mix sweet spot is AT refresh peak (0h gap).
-          // Earlier than peak → starter not yet matured, pre-mix peak stretches.
-          // Later than peak → starter declining, pre-mix peaks weaker.
-          const gapFromRefreshPeakH = (t3 - refreshPeakMs) / 3600000;
+          const gapFromRefreshPeakH = (t3 - finalRefreshPeakMs) / 3600000;
           const biologyPenalty = (() => {
             if (gapFromRefreshPeakH >= 0 && gapFromRefreshPeakH <= 3) return 0;
             if (gapFromRefreshPeakH > 3 && gapFromRefreshPeakH <= 6) return -(gapFromRefreshPeakH - 3) * 2;
@@ -3224,11 +3262,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             if (gapFromRefreshPeakH < -1 && gapFromRefreshPeakH >= -2) return -5;
             return -10 - Math.min(20, (Math.abs(gapFromRefreshPeakH) - 2) * 3);
           })();
+          // Convenience cost: prefer fewer feeds when scores otherwise tie.
+          const bridgeCost = nBridge * 2;
           candidates.push({
             mixHBF: mHBF3, peakHBF: mHBF3, feedMs: t3,
             usingPeak2: false, feed2Ms: t3,
-            score: sc3 + 12 + biologyPenalty, sscore: ss3,
+            score: sc3 + 12 + biologyPenalty - bridgeCost, sscore: ss3,
             isFutureFeedPath: true,
+            bridgeRefreshMs: bridges.length > 0 ? [...bridges] : undefined,
           });
         }
       }
@@ -3259,12 +3300,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const searchStart_pathB = targetMixTime
         ? new Date(baseFeed_pathB.getTime() - 15 * 60000)
         : new Date(baseFeed_pathB.getTime() - 24 * 3600000);
+      // Widened upper bound (was +2h) so mid-range pre-mix feeds — which peak
+      // at a later, in-zone mix — are reachable via Path B as well.
       const searchEnd_pathB = targetMixTime
         ? new Date(baseFeed_pathB.getTime() + 15 * 60000)
-        : new Date(baseFeed_pathB.getTime() + 2 * 3600000);
+        : new Date(baseFeed_pathB.getTime() + 14 * 3600000);
       const minHoldH = 6;
       const maxHoldH = 120; // 5 days
-      const minGapFromRefreshPeakH = 24; // require at least 24h between refresh peak and pre-mix
+      // Lowered from 24h so fridge-hold covers mid-range gaps too — a 10h+
+      // fridge hold is still a clean route compared to multiple RT refreshes.
+      const minGapFromRefreshPeakH = 10;
 
       if (!inBlockerMs(refreshMs_pathB)) {
         for (let t = searchStart_pathB.getTime(); t <= searchEnd_pathB.getTime(); t += 15 * 60000) {
@@ -3349,6 +3394,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // refreshes land in blockers (previously only checked mix/feed/feed2/fridge).
     // Reuses the outer adjPeakH/ratioMultiplier (current solver ratio).
     function computeIntermediatesForCandidate(cand: Candidate, adjPeakH_for: number, ratioMult_for: number): number[] {
+      // Bridge candidates carry their own refresh chain — use it as-is so the
+      // candidateValid check and the post-hoc render share the same source.
+      if (cand.bridgeRefreshMs && cand.bridgeRefreshMs.length > 0) {
+        return cand.bridgeRefreshMs;
+      }
       if (planningMode !== 'last_fed' || !lastFedTime) return [];
       const refreshSpacingH = peakH * ryeF * matF * ratioMult_for * 1.25;
       const candMixMs = bakeMs - cand.mixHBF * 3600000;
@@ -3432,6 +3482,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     _usingPeak2      = best.usingPeak2;
     _feed2Time       = best.feed2Ms ? new Date(best.feed2Ms) : null;
+    _bridgeRefreshMs = best.bridgeRefreshMs ?? null;
     // Green requires BOTH: starter at peak at mix (sscore 2) AND the plan is
     // actually executable within the baker's availability (foundValid = every
     // action — mix, feed/refresh, pre-mix, intermediates, fridge in/out —
@@ -3683,45 +3734,63 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           }
         }
 
-        // Refresh + future-feed (declining/depleted, RT)
+        // Refresh + future-feed (declining/depleted, RT) — mirrors the main
+        // solver: nBridge loop over [0,1,2] to close the 6–24h dead zone
+        // between a single refresh peak and pre-mix.
         if (
           planningMode === 'last_fed' && lastFedTime &&
           starterLocation === 'rt' &&
           (Date.now() - lastFedTime.getTime()) / 3600000 > adjPeakH_r
         ) {
-          const refreshMs = Date.now();
-          const refreshPeakMs = refreshMs + _adjPeakH_refresh_r * 3600000;
-          const earliestPreMixMs = refreshPeakMs - 12 * 3600000;
-          const baseFeed3 = targetMixTime
-            ? new Date(targetMixTime.getTime() - adjPeakH_r * 3600000)
-            : null;
-          const searchStart3 = baseFeed3
-            ? new Date(baseFeed3.getTime() - 15 * 60000)
-            : new Date(refreshPeakMs - 12 * 3600000);
-          const searchEnd3 = baseFeed3
-            ? new Date(baseFeed3.getTime() + 15 * 60000)
-            : new Date(refreshPeakMs + 12 * 3600000);
-          if (!inBlockerMs(refreshMs)) {
+          const nowMs3 = Date.now();
+          const refreshSpacingH_bridge_r = adjPeakH_r * 1.25;
+          for (let nBridge = 0; nBridge <= 2; nBridge++) {
+            const refreshMs = nowMs3;
+            if (inBlockerMs(refreshMs)) break;
+            const finalRefreshMs_r     = nowMs3 + nBridge * refreshSpacingH_bridge_r * 3600000;
+            const finalRefreshPeakMs_r = finalRefreshMs_r + _adjPeakH_refresh_r * 3600000;
+            const bridges_r: number[] = [];
+            for (let i = 1; i <= nBridge; i++) {
+              bridges_r.push(nowMs3 + i * refreshSpacingH_bridge_r * 3600000);
+            }
+            let bridgesOk = true;
+            for (const br of bridges_r) {
+              if (inBlockerMs(br)) { bridgesOk = false; break; }
+            }
+            if (!bridgesOk) continue;
+            const earliestPreMixMs = finalRefreshPeakMs_r - 12 * 3600000;
+            const baseFeed3 = targetMixTime
+              ? new Date(targetMixTime.getTime() - adjPeakH_r * 3600000)
+              : null;
+            const searchStart3 = baseFeed3
+              ? new Date(baseFeed3.getTime() - 15 * 60000)
+              : new Date(finalRefreshPeakMs_r - 12 * 3600000);
+            const searchEnd3 = baseFeed3
+              ? new Date(baseFeed3.getTime() + 15 * 60000)
+              : new Date(finalRefreshPeakMs_r + 12 * 3600000);
             for (let t3 = Math.max(searchStart3.getTime(), earliestPreMixMs); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
               if (t3 <= nowMs_r) continue;
-              const stretchFactor3 = computePreMixStretchFactor(t3, refreshPeakMs);
+              if (t3 <= finalRefreshMs_r) continue;
+              const stretchFactor3 = computePreMixStretchFactor(t3, finalRefreshPeakMs_r);
               const peakT3 = new Date(t3 + adjPeakH_r * stretchFactor3 * 3600000);
               const mHBF3  = (bakeMs - peakT3.getTime()) / 3600000;
               if (mHBF3 < sweetToHBF - 4 || mHBF3 > sweetFromHBF + 4) continue;
               if (bakeMs - mHBF3 * 3600000 <= nowMs_r) continue;
               if (inBlocker(mHBF3)) continue;
               if (inBlockerMs(t3)) continue;
-              const _gp3 = (t3 - refreshPeakMs) / 3600000;
+              const _gp3 = (t3 - finalRefreshPeakMs_r) / 3600000;
               const _me3 = adjPeakH_r * 0.5;
               if (_gp3 < -_me3 || _gp3 > 6) continue;
               const sc3 = combinedScore_r(mHBF3, mHBF3, t3, true);
               const ss3 = starterScore_r(mHBF3, mHBF3);
               if (ss3 === 0) continue;
+              const bridgeCost = nBridge * 2;
               candidates_r.push({
                 mixHBF: mHBF3, peakHBF: mHBF3, feedMs: t3,
                 usingPeak2: false, feed2Ms: t3,
-                score: sc3 + 12, sscore: ss3,
+                score: sc3 + 12 - bridgeCost, sscore: ss3,
                 isFutureFeedPath: true,
+                bridgeRefreshMs: bridges_r.length > 0 ? [...bridges_r] : undefined,
               });
             }
           }
