@@ -2945,19 +2945,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         timeMs > b.from.getTime() && timeMs < b.to.getTime()
       );
     }
-    // candidateValid takes a candidate + ratio context and INTERNALLY calls
-    // candidateActionTimes — the helper used to be a separate hop that callers
-    // had to remember to invoke, leaving room for false-green when an obsolete
-    // call site bypassed it. Wiring is now explicit: every candidateValid call
-    // gets the full action set (mix + every feed + every refresh + every
-    // fridge transition) checked against blockers. Returns false if ANY action
-    // sits in a blocker.
-    function candidateValid(cand: Candidate, adjPeakH_for: number, ratioMult_for: number): boolean {
-      const times = candidateActionTimes(cand, adjPeakH_for, ratioMult_for);
-      for (const ms of times) {
+    // candidateValid READS the candidate's stored action-time list and rejects
+    // any candidate whose actions touch a blocker. The list was populated by
+    // pushCand → computeActionTimes at gen time using the SAME outer state the
+    // event builder will read at render — so render == validation by
+    // construction, no scored-vs-rendered divergence.
+    function candidateActionTimes(cand: Candidate): number[] {
+      return cand.actionTimesMs ?? [];
+    }
+    function candidateValid(cand: Candidate): boolean {
+      for (const ms of candidateActionTimes(cand)) {
         if (ms != null && inBlockerMs(ms)) return false;
       }
-      // Mix-HBF blocker also enforced — same boundary as candidate gen.
       if (inBlocker(cand.mixHBF)) return false;
       return true;
     }
@@ -3009,9 +3008,76 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // Order: earliest first. The last entry is the "final" refresh whose
       // peak the pre-mix is timed against. nBridge=0 → undefined.
       bridgeRefreshMs?: number[];
+      // SINGLE SOURCE OF TRUTH for blocker validation. Populated at gen time
+      // (by computeActionTimes below) using the same outer-scope values the
+      // event builder will use to render. candidateActionTimes(cand) reads
+      // this field verbatim — no recomputation, so the validator and the
+      // renderer can never diverge. Required-by-convention: every push site
+      // sets it via the pushCand helper.
+      actionTimesMs?: number[];
+    }
+
+    // Compute the full baker-action-time list for a candidate at gen time —
+    // the values come from the SAME outer-scope state (_starterRefeedTime,
+    // _refreshStretchFactor, starterLocation, kitchenTemp, …) that the event
+    // builder will later read, so validation and render are guaranteed to see
+    // identical timestamps. No recomputation happens at validation time.
+    function computeActionTimes(
+      c: Omit<Candidate, 'actionTimesMs'>,
+      adjPeakH_for: number,
+      ratioMult_for: number,
+    ): number[] {
+      const candMixMs = bakeMs - c.mixHBF * 3600000;
+      const out: number[] = [candMixMs];
+      if (c.feedMs != null) out.push(c.feedMs);
+      if (c.feed2Ms != null && c.feed2Ms !== c.feedMs) out.push(c.feed2Ms);
+      // Path B refresh + fridge in/out — already stored on the candidate.
+      if (c.fridgeHoldRefreshMs != null) out.push(c.fridgeHoldRefreshMs);
+      if (c.fridgeHoldInMs != null)      out.push(c.fridgeHoldInMs);
+      if (c.fridgeHoldOutMs != null)     out.push(c.fridgeHoldOutMs);
+      // Fridge scan: honest removal time.
+      if (c.fridgeOutMs != null && !c.isFridgeHoldPath) out.push(c.fridgeOutMs);
+      // Bridge refreshes — already stored on the candidate.
+      if (c.bridgeRefreshMs) out.push(...c.bridgeRefreshMs);
+      // Non-Path-B paths emit a primary refresh at _starterRefeedTime (Path B
+      // uses its own fridgeHoldRefreshMs which is already the same value).
+      if (!c.isFridgeHoldPath && _starterRefeedTime && !c.usingPeak2) {
+        out.push(_starterRefeedTime.getTime());
+      }
+      // Intermediate refreshes — only the post-hoc computation path; bridge
+      // candidates already carry their refresh chain in bridgeRefreshMs.
+      if (!c.isFridgeHoldPath && !c.bridgeRefreshMs) {
+        const intermediates = computeIntermediatesForCandidate(c as Candidate, adjPeakH_for, ratioMult_for);
+        for (const t of intermediates) out.push(t);
+      }
+      // Non-Path-B fridge starter: the event builder emits a fridge_in (at the
+      // latest refresh peak) and a fridge_out (newMix − warmupH, or cand.
+      // fridgeOutMs if set). Both are baker actions; both must clear blockers.
+      if (starterLocation === 'fridge' && !c.isFridgeHoldPath) {
+        const fridgeOutPred = c.fridgeOutMs
+          ?? (candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000);
+        out.push(fridgeOutPred);
+        const refreshPeaks: number[] = [];
+        if (_starterRefeedTime) {
+          refreshPeaks.push(_starterRefeedTime.getTime() + adjPeakH_for * _refreshStretchFactor * 3600000);
+        }
+        if (c.bridgeRefreshMs) {
+          for (const b of c.bridgeRefreshMs) refreshPeaks.push(b + adjPeakH_for * 3600000);
+        }
+        if (refreshPeaks.length > 0) out.push(Math.max(...refreshPeaks));
+      }
+      return out;
     }
 
     const candidates: Candidate[] = [];
+    // pushCand wraps candidate creation so actionTimesMs is ALWAYS populated.
+    // Bypassing this would reintroduce the validator-vs-render divergence.
+    function pushCand(c: Omit<Candidate, 'actionTimesMs'>): void {
+      candidates.push({
+        ...c,
+        actionTimesMs: computeActionTimes(c, adjPeakH, ratioMultiplier),
+      });
+    }
 
     const nowMs = Date.now();
 
@@ -3027,7 +3093,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         if (inBlocker(mixHBF)) continue;
         const ss = starterScore(mixHBF, peak1HBF);
         if (ss === 0) continue;
-        candidates.push({
+        pushCand({
           mixHBF, peakHBF: peak1HBF, feedMs: feed1Ms,
           usingPeak2: false, feed2Ms: null,
           score: combinedScore(mixHBF, peak1HBF, feed1Ms), sscore: ss,
@@ -3048,7 +3114,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           if (inBlockerMs(troughMs)) continue;
           const ss = starterScore(mixHBF, peak2AHBF);
           if (ss === 0) continue;
-          candidates.push({
+          pushCand({
             mixHBF, peakHBF: peak2AHBF, feedMs: troughMs,
             usingPeak2: true, feed2Ms: troughMs,
             score: combinedScore(mixHBF, peak2AHBF, troughMs, true), sscore: ss,
@@ -3066,7 +3132,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           if (inBlocker(mixHBF)) continue;
           const ss = starterScore(mixHBF, peak2BHBF);
           if (ss === 0) continue;
-          candidates.push({
+          pushCand({
             mixHBF, peakHBF: peak2BHBF, feedMs: refeedMs,
             usingPeak2: true, feed2Ms: refeedMs,
             score: combinedScore(mixHBF, peak2BHBF, refeedMs, true) + 6, sscore: ss,
@@ -3088,7 +3154,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const gap = Math.abs(mixHBF - fridgePeakHBF);
         const ss: 0 | 1 | 2 = gap <= fridgeTOL ? 2 : gap <= fridgeTOL + 1.5 ? 1 : 0;
         if (ss === 0) continue;
-        candidates.push({
+        pushCand({
           mixHBF,
           peakHBF: fridgePeakHBF,
           feedMs: fridgeFeedMs,
@@ -3140,7 +3206,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const peakHBF_honest = (bakeMs - peakMs) / 3600000;
         const ss = starterScore(mixHBF, peakHBF_honest);
         if (ss === 0 && ds < 2) continue;
-        candidates.push({
+        pushCand({
           mixHBF, peakHBF: peakHBF_honest, feedMs: lastFedMs,
           usingPeak2: false, feed2Ms: null,
           score: combinedScore(mixHBF, peakHBF_honest, lastFedMs) + (ss === 2 ? 10 : ss === 1 ? 5 : 0),
@@ -3215,7 +3281,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           if (gapFromPeakH >= -2) return -5;
           return -10 - Math.min(20, (Math.abs(gapFromPeakH) - 2) * 3);
         })();
-        candidates.push({
+        pushCand({
           mixHBF: mHBF2, peakHBF: mHBF2, feedMs: t2,
           usingPeak2: false, feed2Ms: t2,
           score: sc2 + _depletionPenalty + _subPeakPenalty, sscore: ss2,
@@ -3328,7 +3394,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           })();
           // Convenience cost: prefer fewer feeds when scores otherwise tie.
           const bridgeCost = nBridge * 2;
-          candidates.push({
+          pushCand({
             mixHBF: mHBF3, peakHBF: mHBF3, feedMs: t3,
             usingPeak2: false, feed2Ms: t3,
             score: sc3 + 12 + biologyPenalty - bridgeCost, sscore: ss3,
@@ -3412,7 +3478,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const rtRefreshesAvoided = Math.max(0, Math.floor(gapFromNowToPreMixH / troughH) - 1);
           const pathBBonus = 8 + rtRefreshesAvoided * 3;
 
-          candidates.push({
+          pushCand({
             mixHBF: mHBF, peakHBF: mHBF, feedMs: t,
             usingPeak2: false, feed2Ms: t,
             score: sc + pathBBonus, sscore: ss,
@@ -3506,67 +3572,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       return out;
     }
 
-    // candidateActionTimes — the EXHAUSTIVE list of every baker action the
-    // candidate plan implies. Used by candidateValid (block rejection) AND by
-    // the event builder reads the same fields, so the scored plan and the
-    // rendered plan match exactly. Previous false-green bugs traced to this
-    // helper missing actions (pre-mix, primary refresh, fridge_in/out for
-    // non-Path-B fridge starters), which let blocker-violating plans pass.
-    function candidateActionTimes(cand: Candidate, adjPeakH_for: number, ratioMult_for: number): (number | null | undefined)[] {
-      const candMixMs = bakeMs - cand.mixHBF * 3600000;
-      const out: (number | null | undefined)[] = [
-        candMixMs,        // mix
-        cand.feedMs,      // primary feed (Peak1: lastFed; Peak2/refeed: refresh time; future-feed: pre-mix)
-        cand.feed2Ms,     // pre-mix (when distinct from feed)
-      ];
-      // Primary refresh @ _starterRefeedTime — the "refresh now" baker action
-      // emitted by the event builder for declining/depleted starters. Was
-      // previously NOT in the actions list, so a refresh in Nights passed.
-      if (_starterRefeedTime) {
-        out.push(_starterRefeedTime.getTime());
-      }
-      // Bridging refreshes + post-hoc intermediate refreshes. Shared helper
-      // ensures validation and render use the same chain.
-      out.push(...computeIntermediatesForCandidate(cand, adjPeakH_for, ratioMult_for));
-      // Path B: refresh + fridge in/out.
-      if (cand.isFridgeHoldPath) {
-        out.push(cand.fridgeHoldRefreshMs, cand.fridgeHoldInMs, cand.fridgeHoldOutMs);
-      }
-      // ANY fridge starter — Path B and non-Path-B alike — has a fridge_out
-      // baker action (taking starter out for pre-mix prep). For non-Path-B,
-      // the event builder uses _newFridgeOut = cand.fridgeOutMs ?? (newMix −
-      // warmupH); validate the SAME value here.
-      if (starterLocation === 'fridge' && !cand.isFridgeHoldPath) {
-        const fridgeOutMs_pred = cand.fridgeOutMs
-          ?? (candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000);
-        out.push(fridgeOutMs_pred);
-        // fridge_in for non-Path-B fridge starter = latest refresh peak (primary
-        // _starterRefeedTime peak, or the latest bridge/intermediate peak when
-        // a chain exists). Event builder picks this same value when emitting
-        // the fridge_in event — match it here.
-        const refreshPeaks: number[] = [];
-        if (_starterRefeedTime) {
-          refreshPeaks.push(_starterRefeedTime.getTime() + adjPeakH_for * _refreshStretchFactor * 3600000);
-        }
-        if (cand.bridgeRefreshMs) {
-          for (const b of cand.bridgeRefreshMs) refreshPeaks.push(b + adjPeakH_for * 3600000);
-        }
-        if (refreshPeaks.length > 0) {
-          out.push(Math.max(...refreshPeaks));
-        }
-      }
-      // Fridge scan (RT starter → fridge), no fridge-hold: validate the
-      // candidate's honest removal time (unchanged from before).
-      if (cand.isFridgePath && !cand.isFridgeHoldPath && starterLocation !== 'fridge') {
-        out.push(cand.fridgeOutMs ?? (candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000));
-      }
-      return out;
-    }
-
     let best = candidates[0];
     let foundValid = false;
     for (const cand of candidates) {
-      if (candidateValid(cand, adjPeakH, ratioMultiplier)) {
+      if (candidateValid(cand)) {
         best = cand;
         foundValid = true;
         break;
@@ -3767,6 +3776,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const scanTo_r   = Math.max(sweetToHBF - 2, minTotalRT + 0.5);
         const candidates_r: Candidate[] = [];
         const nowMs_r = Date.now();
+        // Per-ratio pushCand — like the main solver's pushCand but using the
+        // per-ratio adjPeakH_r/ratioMult_r so each candidate's stored action
+        // times reflect THIS ratio's plan.
+        function pushCand_r(c: Omit<Candidate, 'actionTimesMs'>): void {
+          candidates_r.push({
+            ...c,
+            actionTimesMs: computeActionTimes(c, adjPeakH_r, ratioMult_r),
+          });
+        }
 
         const feed1Ms_r = peakTime
           ? (lastFedTime ? lastFedTime.getTime() : peakTime.getTime() - adjPeakH_r * 3600000)
@@ -3779,7 +3797,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             if (inBlocker(mixHBF)) continue;
             const ss = starterScore_r(mixHBF, peak1HBF);
             if (ss === 0) continue;
-            candidates_r.push({
+            pushCand_r({
               mixHBF, peakHBF: peak1HBF, feedMs: feed1Ms_r,
               usingPeak2: false, feed2Ms: null,
               score: combinedScore_r(mixHBF, peak1HBF, feed1Ms_r), sscore: ss,
@@ -3797,7 +3815,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               if (inBlockerMs(troughMs)) continue;
               const ss = starterScore_r(mixHBF, peak2AHBF);
               if (ss === 0) continue;
-              candidates_r.push({
+              pushCand_r({
                 mixHBF, peakHBF: peak2AHBF, feedMs: troughMs,
                 usingPeak2: true, feed2Ms: troughMs,
                 score: combinedScore_r(mixHBF, peak2AHBF, troughMs, true), sscore: ss,
@@ -3812,7 +3830,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               if (inBlocker(mixHBF)) continue;
               const ss = starterScore_r(mixHBF, peak2BHBF);
               if (ss === 0) continue;
-              candidates_r.push({
+              pushCand_r({
                 mixHBF, peakHBF: peak2BHBF, feedMs: refeedMs,
                 usingPeak2: true, feed2Ms: refeedMs,
                 score: combinedScore_r(mixHBF, peak2BHBF, refeedMs, true) + 6, sscore: ss,
@@ -3851,7 +3869,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             const sc2 = combinedScore_r(mHBF2, mHBF2, t2, true);
             const ss2 = starterScore_r(mHBF2, mHBF2);
             if (ss2 === 0) continue;
-            candidates_r.push({
+            pushCand_r({
               mixHBF: mHBF2, peakHBF: mHBF2, feedMs: t2,
               usingPeak2: false, feed2Ms: t2,
               score: sc2, sscore: ss2,
@@ -3914,7 +3932,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               const ss3 = starterScore_r(mHBF3, mHBF3);
               if (ss3 === 0) continue;
               const bridgeCost = nBridge * 2;
-              candidates_r.push({
+              pushCand_r({
                 mixHBF: mHBF3, peakHBF: mHBF3, feedMs: t3,
                 usingPeak2: false, feed2Ms: t3,
                 score: sc3 + 12 - bridgeCost, sscore: ss3,
@@ -3933,9 +3951,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         let bestR = candidates_r[0];
         let foundValidR = false;
         for (const cand of candidates_r) {
-          // Reuse the shared helper so the per-ratio search treats fridge
-          // transitions as hard constraints just like the main solver does.
-          if (candidateValid(cand, adjPeakH_r, ratioMult_r)) {
+          // Per-ratio candidates carry their own actionTimesMs (populated by
+          // pushCand_r at gen time). candidateValid reads cand.actionTimesMs
+          // directly — no params needed.
+          if (candidateValid(cand)) {
             bestR = cand;
             foundValidR = true;
             break;
