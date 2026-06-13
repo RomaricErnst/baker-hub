@@ -1366,6 +1366,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [editingPref, setEditingPref] = useState(false);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
   const [localBlocks, setLocalBlocks] = useState<AvailabilityBlock[]>(blocks);
+  // Keep localBlocks in sync with the parent's blocks prop. Without this, any
+  // sourdough re-solve NOT triggered by a chip toggle (e.g. age/location/
+  // taste/ratio change → useEffect re-solve) could read a STALE localBlocks
+  // and pass a blocker-violating plan as green. The chip-toggle path
+  // (applyAndUpdate) sets localBlocks synchronously; this useEffect catches
+  // every other prop update.
+  useEffect(() => {
+    setLocalBlocks(blocks);
+  }, [blocks]);
 
   const prefLabel = prefermentType === 'poolish' ? tRoot('preferment.makePoolish')
     : prefermentType === 'biga' ? tRoot('preferment.makeBiga')
@@ -1402,9 +1411,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setWindowTooShort(false);
     setSuggestedBakeTimeBread(null);
 
-    // Sourdough uses its own engine — non-sourdough schedule computation must not run
+    // Sourdough uses its own engine — non-sourdough schedule computation must not run.
+    // Pass currentBlocks as blocksOverride so the solver sees the same blockers
+    // the caller intended (matches applyAndUpdate's explicit-blocks contract).
     if (isSourdough) {
-      findOptimalPositionSourdough(et);
+      findOptimalPositionSourdough(et, undefined, currentBlocks);
       return;
     }
 
@@ -1753,7 +1764,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     hasManuallyDragged.current = false;
     // findOptimalPositionSourdough now calls deriveStarterPeakTime internally
     // and commits a single atomic setSolverResult at every exit point.
-    findOptimalPositionSourdough(pendingEatTime);
+    // Pass the parent's blocks prop as blocksOverride so the solver NEVER
+    // reads from a stale localBlocks state — the parent prop is the single
+    // source of truth, kept current by the onChange callback.
+    findOptimalPositionSourdough(pendingEatTime, undefined, blocks);
     // Restore startComputed so the plan panel is visible after session restore
     // or bake-time change — the solver ran, so we have a result to show.
     if (lastFedAge !== null || (planningMode === 'know_peak' && knownPeakTime)) {
@@ -2526,11 +2540,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             bellStyle: 'dotted',
             bellPeakTime: refreshPeakAt,
             bellSigmaScale: refreshStretch,
-            // The refresh bell spans into the fridge — flag the fridge phase so
-            // the chart draws the cold-widened bell + dark-blue cold fill
-            // across the hold span. Without this, the curve showed a plain RT
-            // bell while the card claimed a fridge hold.
-            hasFridgePhase: true,
+            // hasFridgePhase is NOT set here. Path B's biology is "refresh at
+            // RT → rise to peak → put in fridge at peak → flat cold plateau"
+            // — the opposite of makeFridgePhaseBellPath's "fed-then-fridge"
+            // shape. The chart renders a separate cold plateau between the
+            // fridge_in and fridge_out events (see FermentChart fridge-hold
+            // block) so the curve shows: rise to peak → flat cold band →
+            // resume.
           });
           events.push({
             kind: 'fridge_in',

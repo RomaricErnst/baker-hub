@@ -1332,6 +1332,55 @@ export default function FermentChart({
                       </g>
                     );
                   })}
+                  {/* ── Fridge-hold cold plateau ─────────────────────────────
+                      Path B (refresh @ RT → peak → INTO FRIDGE → cold dwell →
+                      OUT → pre-mix) needs a visible cold plateau spanning
+                      fridge_in → fridge_out — the refresh bell peaks AT
+                      fridge_in and the plateau holds at peak height across
+                      the hold, matching the biology (fermentation paused in
+                      cold). Without it, the curve would just decline from
+                      the refresh peak, leaving the long fridge dwell empty
+                      and the card vs. curve disagreeing about "fridge hold". */}
+                  {(() => {
+                    if (!fridgeIn || !fridgeOut) return null;
+                    const inHBF  = (bakeMs - fridgeIn.time.getTime())  / 3600000;
+                    const outHBF = (bakeMs - fridgeOut.time.getTime()) / 3600000;
+                    // fridge_in must precede fridge_out (HBF: in > out) by at
+                    // least 1h to qualify as a "hold" worth drawing.
+                    if (inHBF - outHBF < 1) return null;
+                    const inX  = hToX(inHBF,  W, WH);
+                    const outX = hToX(outHBF, W, WH);
+                    if (outX <= inX) return null;
+                    // Plateau height = the refresh bell's peak (MAXH at peak)
+                    // so the plateau joins the bell flush.
+                    const plateauTopY = BL - MAXH;
+                    return (
+                      <g>
+                        {/* Cold-fill band across the hold span — same dark-blue
+                            shade as the legend's "Darker = in fridge". */}
+                        <rect
+                          x={inX}
+                          y={plateauTopY}
+                          width={outX - inX}
+                          height={BL - plateauTopY}
+                          fill={STARTER_COLD_FILL}
+                          stroke="none"
+                          clipPath={`url(#chart-area-clip-${chartId})`}
+                        />
+                        {/* Flat-top dashed line connecting refresh peak to
+                            fridge_out — reads as the starter's cold plateau. */}
+                        <line
+                          x1={inX}
+                          y1={plateauTopY}
+                          x2={outX}
+                          y2={plateauTopY}
+                          stroke={`${prefColor}A5`}
+                          strokeWidth={1.5}
+                          strokeDasharray="4 3"
+                        />
+                      </g>
+                    );
+                  })()}
                 </>
               );
             })()}
