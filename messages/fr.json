@@ -1100,8 +1100,9 @@
     },
     "bakeLabel": "Cuisson",
     "chart": {
-      "starterInFridge": "Levain au frigo",
-      "inFridge": "Au frigo / pousse au froid"
+      "legendStarter": "Levain",
+      "legendDough": "Pâte",
+      "legendTempCaption": "Plus clair = ambiante · Plus foncé = au frigo"
     }
   },
   "prefermentSlider": {

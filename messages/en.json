@@ -1100,8 +1100,9 @@
     },
     "bakeLabel": "Bake",
     "chart": {
-      "starterInFridge": "Starter in fridge",
-      "inFridge": "In fridge / cold proof"
+      "legendStarter": "Starter",
+      "legendDough": "Dough",
+      "legendTempCaption": "Lighter = room temp · Darker = in fridge"
     }
   },
   "prefermentSlider": {

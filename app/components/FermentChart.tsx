@@ -362,7 +362,12 @@ export default function FermentChart({
   const CHAR            = '#1A1612';
   const DARK_SAGE       = '#3D5A30';
   const DARK_SAGE_STR   = '#4A6B3A';
-  const COLD_TINT_FILL  = 'rgba(108,150,196,0.30)';
+  // Cold/fridge = a darker shade of the element's OWN hue, NOT a shared blue
+  // wash. Hue encodes WHICH element (blue=starter, green=dough); shade
+  // encodes WHICH state (light=RT, dark=fridge). Still solid fills so they
+  // stay orthogonal to the blocker's red diagonal hatch (no clash).
+  const STARTER_COLD_FILL = 'rgba(42, 82, 130, 0.34)';   // dark blue
+  const DOUGH_COLD_FILL   = 'rgba(42, 79, 48, 0.30)';    // dark green
 
   // ── Physics ──────────────────────────────────────────────
   // DOUGH_SWEET_CENTER = offset from mix to dough peak = coldH + rtH per style
@@ -963,40 +968,49 @@ export default function FermentChart({
       ref={containerRef}
       style={{ width: '100%', userSelect: 'none', overflow: 'hidden', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
     >
-      {/* ── Curve legend ── */}
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '8px' }}>
-        {hasPref && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <svg width="24" height="10" viewBox="0 0 24 10">
-              <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke={prefColor} strokeWidth="2" fill="none" strokeLinecap="round"/>
-            </svg>
-            <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-              {prefermentType === 'biga' ? 'Biga' :
-               prefermentType === 'levain' || prefermentType === 'sourdough' ? 'Starter' :
-               'Poolish'}
-            </span>
+      {/* ── Curve legend ── two diagonal-split swatches per element
+          (light = RT, dark = fridge). Hue encodes WHICH element, shade
+          encodes WHICH state. Caption appears only when this bake has a
+          cold phase to teach about. */}
+      {(() => {
+        const hasAnyCold = fridgeOutHBF !== null || (hasColdRetard && _doughColdH > 0);
+        const starterLightFill = `${prefColor}2E`;
+        const doughLightFill   = `${SAGE}2E`;
+        const labelStyle: React.CSSProperties = {
+          fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+        };
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              {hasPref && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <svg width="24" height="12" viewBox="0 0 24 12">
+                    <path d="M0,0 L24,0 L0,12 Z" fill={starterLightFill} />
+                    <path d="M24,0 L24,12 L0,12 Z" fill={STARTER_COLD_FILL} />
+                    <rect x="0.5" y="0.5" width="23" height="11" fill="none"
+                      stroke="var(--border)" strokeWidth="0.5" rx="1.5" />
+                  </svg>
+                  <span style={labelStyle}>{t('chart.legendStarter')}</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <svg width="24" height="12" viewBox="0 0 24 12">
+                  <path d="M0,0 L24,0 L0,12 Z" fill={doughLightFill} />
+                  <path d="M24,0 L24,12 L0,12 Z" fill={DOUGH_COLD_FILL} />
+                  <rect x="0.5" y="0.5" width="23" height="11" fill="none"
+                    stroke="var(--border)" strokeWidth="0.5" rx="1.5" />
+                </svg>
+                <span style={labelStyle}>{t('chart.legendDough')}</span>
+              </div>
+            </div>
+            {hasAnyCold && (
+              <div style={{ ...labelStyle, fontSize: '10px' }}>
+                {t('chart.legendTempCaption')}
+              </div>
+            )}
           </div>
-        )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <svg width="24" height="10" viewBox="0 0 24 10">
-            <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke="#4A6B3A" strokeWidth="2" fill="none" strokeLinecap="round"/>
-          </svg>
-          <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-            Dough
-          </span>
-        </div>
-        {(fridgeOutHBF !== null || (hasColdRetard && _doughColdH > 0)) && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <svg width="24" height="10" viewBox="0 0 24 10">
-              <rect x="1" y="1" width="22" height="8" rx="1.5"
-                fill="rgba(108,150,196,0.30)" stroke="rgba(108,150,196,0.6)" strokeWidth="0.75" />
-            </svg>
-            <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-              {t('chart.inFridge')}
-            </span>
-          </div>
-        )}
-      </div>
+        );
+      })()}
       <svg
         ref={svgRef}
         width={W}
@@ -1251,7 +1265,7 @@ export default function FermentChart({
                         {ev.hasFridgePhase && fridgeOutHBF !== null && feedToFridgeOutH !== null && (
                           <path
                             d={bellPath}
-                            fill={COLD_TINT_FILL}
+                            fill={STARTER_COLD_FILL}
                             stroke="none"
                             clipPath={`url(#fridge-phase-tint-clip-${chartId})`}
                           />
@@ -1490,11 +1504,12 @@ export default function FermentChart({
           fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
           clipPath={`url(#chart-area-clip-${chartId})`}
         />
-        {/* Cold-retard dough: tint the cold middle of the bell */}
+        {/* Cold-retard dough: tint the cold middle of the bell with a darker
+            shade of the dough's OWN hue (green), not a shared blue wash. */}
         {_showDoughColdTint && (
           <path
             d={makePlateauBellPath(doughPeakHBF, DOUGH_SIG, _doughPlateauHalfW, W, WH, effectiveMixHBF)}
-            fill={COLD_TINT_FILL}
+            fill={DOUGH_COLD_FILL}
             stroke="none"
             clipPath={`url(#dough-cold-tint-clip-${chartId})`}
           />
