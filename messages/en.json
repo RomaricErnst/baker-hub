@@ -1100,7 +1100,8 @@
     },
     "bakeLabel": "Bake",
     "chart": {
-      "starterInFridge": "Starter in fridge"
+      "starterInFridge": "Starter in fridge",
+      "inFridge": "In fridge / cold proof"
     }
   },
   "prefermentSlider": {

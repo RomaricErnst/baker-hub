@@ -1100,7 +1100,8 @@
     },
     "bakeLabel": "Cuisson",
     "chart": {
-      "starterInFridge": "Levain au frigo"
+      "starterInFridge": "Levain au frigo",
+      "inFridge": "Au frigo / pousse au froid"
     }
   },
   "prefermentSlider": {
