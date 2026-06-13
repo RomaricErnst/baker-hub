@@ -323,6 +323,46 @@ const CONTENT: Record<string, LocaleContent> = {
           ),
         },
         {
+          title: 'The sourdough engine',
+          body: (
+            <>
+              <P>Sourdough is the hardest thing to schedule, because a living starter doesn't keep a fixed clock — its timing shifts with how it's stored, how recently it was fed, how mature it is, and how warm your kitchen runs. Most tools ignore all of that and hand you a generic timeline. Baker Hub models it.</P>
+
+              <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>What it asks you</p>
+              <P>Two plain questions, no jargon: <strong style={{color:CHAR}}>where has your starter been</strong> (room temperature or fridge) and <strong style={{color:CHAR}}>when did you last feed it</strong> (today through a week-plus ago). Plus how active it is — mature, young, or rye. That's enough for the engine to work out everything else.</P>
+
+              <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>How it reads your starter</p>
+              <P>From those answers it estimates when your starter will next peak — the short window when it's at full strength and ready to mix. Peak timing is temperature-driven: a healthy starter peaks roughly <strong style={{color:CHAR}}>3–4 hours after feeding in a tropical kitchen</strong> (30–32°C), but closer to <strong style={{color:CHAR}}>6–9 hours in a temperate one</strong> (22°C). A young or rye starter runs slower again. The same starter, in two different kitchens, is two different clocks — and the engine treats them that way.</P>
+
+              <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>The decision it walks through</p>
+              <P>Every plan follows the same honest path, in order:</P>
+              <BulletList items={[
+                <><strong style={{color:CHAR}}>Is your starter ready, or does it need waking?</strong> A starter fed today at room temperature may already be near peak. One that's been in the fridge for days needs reviving first.</>,
+                <><strong style={{color:CHAR}}>How many refreshes does reviving take?</strong> This scales with how long it's rested and how mature it is — never more work than the biology calls for (the next section).</>,
+                <><strong style={{color:CHAR}}>When should the final feed land</strong> so the starter peaks exactly at mix time? The engine works this backwards from your bake time.</>,
+                <><strong style={{color:CHAR}}>Does that feed time fall in an hour you're available?</strong> If not, it tries to move it — by shifting the feed, or by suggesting a different feed ratio (below).</>,
+                <><strong style={{color:CHAR}}>Is there enough total time for the dough to ferment properly after mixing?</strong> If a bake time is too tight to do this well, the engine says so rather than handing you a plan that won't work.</>,
+              ]} />
+              <P>At each step it prefers the plan you can actually execute over a theoretically perfect one you can't.</P>
+
+              <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Waking a cold starter</p>
+              <P>A starter that's lived in the fridge needs reviving before it can raise bread, and how much depends on how long it's been resting. The engine scales this the way an experienced baker would: a mature starter fed in the last few days needs a <strong style={{color:CHAR}}>single refresh</strong>; one that's been cold for a week needs <strong style={{color:CHAR}}>two</strong>. A young or weaker starter gets one more than a mature one at the same age. It never asks for busywork — and it never sends you to bake with a starter that hasn't been properly woken. When a second refresh would genuinely make a milder, stronger loaf, it offers it; it doesn't force it.</P>
+
+              <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Feed ratio & timing</p>
+              <P>The ratio you feed at (1:1:1 through 1:10:10) changes how fast your starter peaks — a bigger feed has further to climb, so it takes longer. This is a quiet but powerful lever. If your ideal feed time lands in the middle of your night or your workday, the engine can <strong style={{color:CHAR}}>recommend a different ratio</strong> that shifts the peak into a more workable hour, and tells you in plain words what it changed and why — for example, moving a 3am feed to a 7am one by feeding at a higher ratio. You stay in control: keep your usual ratio, or take the suggestion.</P>
+
+              <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Planned around your life</p>
+              <P>Tell the engine the hours you're unavailable and it shapes the whole plan around them — feed times, refresh times, and the mix itself are nudged out of your blocked windows wherever the biology allows. It won't pretend a 3am feed is ideal, but it will work to avoid asking for one. And it's honest when a tight bake time simply doesn't leave enough room: it tells you, and suggests the earliest bake that would.</P>
+
+              <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Taste, if you want it</p>
+              <P>A <strong style={{color:CHAR}}>Milder / Balanced / Tangier</strong> choice nudges two levers at once: how long the dough cold-proofs, and how the starter is refreshed. Tangier leans on a longer cold proof and fewer refreshes — more acid, more depth. Milder uses a shorter cold proof and an extra refresh — gentler, sweeter. Balanced keeps the standard timing. It adjusts the schedule the engine builds; it never changes your ingredients.</P>
+
+              <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>If you already track your starter</p>
+              <p style={{ margin: 0, ...bodyText }}>Prefer to watch your jar yourself? Switch to <strong style={{color:CHAR}}>"I know when my starter will peak"</strong> and give the engine the time directly — it builds the entire plan backwards from there, skipping the estimation.</p>
+            </>
+          ),
+        },
+        {
           title: 'The yeast engine',
           body: (
             <>
@@ -412,7 +452,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <>
               <P>Baker Hub models fermentation from first principles, but some variables are outside the current scope:</P>
               <BulletList items={[
-                'Starter health and hydration for sourdough — the engine assumes a well-fed, active starter at the stated maturity level',
+                'Your starter\'s exact hydration and the precise state of the microbes inside it — the engine models storage, last-feed age, maturity, and kitchen temperature, but it can\'t see your specific jar. Use the activity setting and, if you track peaks yourself, the "I know when my starter will peak" option for the closest fit.',
                 'Altitude — lower atmospheric pressure slightly affects fermentation rate and oven behaviour',
                 'Humidity effects on flour absorption beyond the ±2% hydration correction',
                 'Dough temperature changes during cold retard (assumes fridge reaches target temperature within 1h)',
@@ -511,6 +551,46 @@ const CONTENT: Record<string, LocaleContent> = {
             <P>Chaque pizza est associée aux styles de pâte compatibles — une Marinara n'apparaîtra pas pour une pizza pan, un Detroit ne s'affichera pas pour une napolitaine. Les suggestions correspondent toujours à ce que votre pâte peut réellement faire.</P>
             <P><strong style={{ color: CHAR }}>Guide de préparation, adapté à votre groupe.</strong> L'onglet Prép génère un planning complet de préparation des ingrédients en remontant depuis l'heure de cuisson — égoutter la mozzarella 30 minutes avant, couper la charcuterie 15 minutes avant, déchirer le basilic juste avant de servir. Les quantités s'adaptent automatiquement au nombre de pizzas.</P>
             <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Liste de courses.</strong> Ingrédients de la pâte et garnitures combinés en une seule liste. Cochez au fur et à mesure.</p>
+          </>
+        ),
+      },
+      {
+        title: 'Le moteur de levain',
+        body: (
+          <>
+            <P>Le levain est ce qu'il y a de plus difficile à planifier, car un levain vivant ne suit pas d'horloge fixe — son rythme change selon la façon dont il est conservé, depuis combien de temps il a été nourri, sa maturité, et la chaleur de votre cuisine. La plupart des outils ignorent tout cela et vous donnent un planning générique. Baker Hub le modélise.</P>
+
+            <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Ce qu'il vous demande</p>
+            <P>Deux questions simples, sans jargon : <strong style={{color:CHAR}}>où votre levain a-t-il été conservé</strong> (température ambiante ou frigo) et <strong style={{color:CHAR}}>quand l'avez-vous nourri pour la dernière fois</strong> (d'aujourd'hui à il y a plus d'une semaine). Plus son niveau d'activité — mûr, jeune, ou de seigle. Cela suffit au moteur pour déduire tout le reste.</P>
+
+            <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Comment il lit votre levain</p>
+            <P>À partir de ces réponses, il estime quand votre levain atteindra son prochain pic — la courte fenêtre où il est à pleine force et prêt pour le pétrissage. Ce timing dépend de la température : un levain en bonne santé atteint son pic environ <strong style={{color:CHAR}}>3 à 4 heures après le rafraîchi dans une cuisine tropicale</strong> (30–32°C), mais plutôt <strong style={{color:CHAR}}>6 à 9 heures dans une cuisine tempérée</strong> (22°C). Un levain jeune ou de seigle est encore plus lent. Le même levain, dans deux cuisines différentes, ce sont deux horloges différentes — et le moteur les traite comme telles.</P>
+
+            <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>La décision qu'il déroule</p>
+            <P>Chaque plan suit le même cheminement honnête, dans cet ordre :</P>
+            <BulletList items={[
+              <><strong style={{color:CHAR}}>Votre levain est-il prêt, ou doit-il être réveillé ?</strong> Un levain nourri aujourd'hui à température ambiante peut déjà être proche de son pic. Un levain resté au frigo plusieurs jours doit d'abord être réactivé.</>,
+              <><strong style={{color:CHAR}}>Combien de rafraîchis la réactivation demande-t-elle ?</strong> Cela dépend du temps de repos et de la maturité — jamais plus de travail que la biologie ne l'exige (section suivante).</>,
+              <><strong style={{color:CHAR}}>Quand placer le rafraîchi final</strong> pour que le levain atteigne son pic exactement au moment du pétrissage ? Le moteur le calcule à rebours depuis votre heure de cuisson.</>,
+              <><strong style={{color:CHAR}}>Ce moment tombe-t-il à une heure où vous êtes disponible ?</strong> Sinon, il tente de le déplacer — en décalant le rafraîchi, ou en suggérant un autre ratio de rafraîchi (ci-dessous).</>,
+              <><strong style={{color:CHAR}}>Reste-t-il assez de temps pour que la pâte fermente correctement après le pétrissage ?</strong> Si l'heure de cuisson est trop juste pour bien faire les choses, le moteur le dit, plutôt que de vous remettre un plan qui ne tiendra pas.</>,
+            ]} />
+            <P>À chaque étape, il préfère un plan que vous pouvez réellement exécuter à un plan théoriquement parfait mais irréalisable.</P>
+
+            <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Réveiller un levain au frigo</p>
+            <P>Un levain qui a séjourné au frigo doit être réactivé avant de pouvoir lever un pain, et la quantité de travail dépend de la durée du repos. Le moteur l'ajuste comme le ferait un boulanger expérimenté : un levain mûr nourri ces derniers jours ne demande qu'<strong style={{color:CHAR}}>un seul rafraîchi</strong> ; un levain resté au froid une semaine en demande <strong style={{color:CHAR}}>deux</strong>. Un levain jeune ou plus faible en reçoit un de plus qu'un levain mûr du même âge. Il ne demande jamais de travail inutile — et il ne vous envoie jamais cuire avec un levain qui n'a pas été correctement réveillé. Lorsqu'un second rafraîchi rendrait vraiment le pain plus doux et plus vigoureux, il le propose ; il ne l'impose pas.</P>
+
+            <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Ratio et timing du rafraîchi</p>
+            <P>Le ratio auquel vous nourrissez (de 1:1:1 à 1:10:10) change la vitesse à laquelle votre levain atteint son pic — un rafraîchi plus important a plus de chemin à parcourir, il met donc plus de temps. C'est un levier discret mais puissant. Si votre moment de rafraîchi idéal tombe au milieu de la nuit ou de votre journée de travail, le moteur peut <strong style={{color:CHAR}}>recommander un autre ratio</strong> qui décale le pic vers une heure plus praticable, et vous explique en mots simples ce qu'il a changé et pourquoi — par exemple, faire passer un rafraîchi de 3h du matin à 7h en nourrissant à un ratio plus élevé. Vous gardez la main : conservez votre ratio habituel, ou suivez la suggestion.</P>
+
+            <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Planifié autour de votre vie</p>
+            <P>Indiquez au moteur les heures où vous n'êtes pas disponible et il façonne tout le plan autour d'elles — les rafraîchis et le pétrissage lui-même sont déplacés hors de vos créneaux bloqués partout où la biologie le permet. Il ne prétendra pas qu'un rafraîchi à 3h du matin est idéal, mais il s'efforcera de ne pas vous le demander. Et il est honnête lorsqu'une heure de cuisson trop juste ne laisse tout simplement pas assez de marge : il vous le dit, et suggère la première heure de cuisson qui conviendrait.</P>
+
+            <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Le goût, si vous le souhaitez</p>
+            <P>Un choix <strong style={{color:CHAR}}>Plus doux / Équilibré / Plus acidulé</strong> ajuste deux leviers à la fois : la durée de la pousse au froid de la pâte, et la façon dont le levain est rafraîchi. Plus acidulé s'appuie sur une pousse au froid plus longue et moins de rafraîchis — plus d'acidité, plus de profondeur. Plus doux utilise une pousse au froid plus courte et un rafraîchi supplémentaire — plus tendre, plus doux. Équilibré conserve le timing standard. Cela ajuste le planning que le moteur construit ; jamais vos ingrédients.</P>
+
+            <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Si vous suivez déjà votre levain</p>
+            <p style={{ margin: 0, ...bodyText }}>Vous préférez surveiller votre pot vous-même ? Passez en mode <strong style={{color:CHAR}}>« Je sais quand mon levain sera à son pic »</strong> et donnez l'heure directement au moteur — il construit tout le plan à rebours à partir de là, sans passer par l'estimation.</p>
           </>
         ),
       },
@@ -644,7 +724,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <p style={{ marginBottom: '8px', ...bodyText }}>Honnête sur nos limites :</p>
             <BulletList items={[
               "Variation des protéines de farine entre différents sacs d'une même marque (W peut varier de ±15 %)",
-              "Différences d'activité du levain entre cultures",
+              "L'hydratation exacte de votre levain et l'état précis des micro-organismes qu'il contient — le moteur modélise le stockage, l'âge du dernier rafraîchi, la maturité et la température de la cuisine, mais il ne peut pas voir votre pot précis. Utilisez le réglage d'activité et, si vous suivez les pics vous-même, l'option « Je sais quand mon levain sera à son pic » pour le meilleur ajustement.",
               "Effets de l'altitude sur la fermentation",
               "Effets de la dureté et de la teneur minérale de l'eau sur la levure",
               "Variation de masse thermique entre modèles spécifiques de fours domestiques",
