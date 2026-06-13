@@ -2526,6 +2526,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             bellStyle: 'dotted',
             bellPeakTime: refreshPeakAt,
             bellSigmaScale: refreshStretch,
+            // The refresh bell spans into the fridge — flag the fridge phase so
+            // the chart draws the cold-widened bell + dark-blue cold fill
+            // across the hold span. Without this, the curve showed a plain RT
+            // bell while the card claimed a fridge hold.
+            hasFridgePhase: true,
           });
           events.push({
             kind: 'fridge_in',
@@ -3478,12 +3483,27 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const rtRefreshesAvoided = Math.max(0, Math.floor(gapFromNowToPreMixH / troughH) - 1);
           const pathBBonus = 8 + rtRefreshesAvoided * 3;
 
+          // Coherence guard at the source: chronological ordering must hold —
+          // refresh < fridge_in < fridge_out < pre-mix. Any malformed Path B
+          // candidate is rejected here so the pool never carries a "fridge_out
+          // before fridge_in" hybrid that renders incoherently downstream.
+          if (
+            !(refreshMs_pathB < fridgeInMs
+              && fridgeInMs < fridgeOutMs
+              && fridgeOutMs < t)
+          ) continue;
+          // Pure fridge-hold candidate — NO isFutureFeedPath flag. The earlier
+          // dual-flag hybrid had two render blocks fire independently: the
+          // future-feed block drew a plain bell on the curve while the
+          // fridge-hold block bolted fridge_in/out onto the card — curve and
+          // card disagreed. Pure fridge-hold → one render path, one source of
+          // truth; pre-mix / feed reporting handled inside the isFridgeHoldPath
+          // branch downstream.
           pushCand({
             mixHBF: mHBF, peakHBF: mHBF, feedMs: t,
             usingPeak2: false, feed2Ms: t,
             score: sc + pathBBonus, sscore: ss,
             isFridgeHoldPath: true,
-            isFutureFeedPath: true, // keeps existing winner logic working
             fridgeHoldRefreshMs: refreshMs_pathB,
             fridgeHoldInMs: fridgeInMs,
             fridgeHoldOutMs: fridgeOutMs,
@@ -3638,6 +3658,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       _fridgeHoldRefreshTime = best.fridgeHoldRefreshMs ? new Date(best.fridgeHoldRefreshMs) : null;
       _fridgeHoldInTime = best.fridgeHoldInMs ? new Date(best.fridgeHoldInMs) : null;
       _fridgeHoldOutTime = best.fridgeHoldOutMs ? new Date(best.fridgeHoldOutMs) : null;
+      // Path B's pre-mix is a future feed action — surface it the same way the
+      // future-feed block did before. Without this, a pure fridge-hold winner
+      // would silently lose the refeed suggestion. (Path B always sets
+      // usingPeak2: false at the candidate level, no need to override.)
+      if (_feed2Time) setRefeedSuggestion(_feed2Time);
+      // Mirror _newFridgeOut to the candidate's own fridge_out so the chart's
+      // fridgeOutHBF derives from the same timestamp the card shows. Without
+      // this, RT-starter Path B winners had _newFridgeOut = null → the chart
+      // drew a plain future-feed bell while the card claimed a fridge hold.
+      if (_fridgeHoldOutTime) {
+        _newFridgeOut = _fridgeHoldOutTime;
+      }
     }
 
     // Drift note for yellow positions
@@ -3680,11 +3712,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       }
     }
 
-    const activeFeed = (best.isFutureFeedPath || best.usingPeak2) && best.feed2Ms
+    // Path B's pre-mix is also a future feed action (the candidate just doesn't
+    // carry isFutureFeedPath since that flag now means "future-feed render
+    // path"). Include isFridgeHoldPath so the active-feed reporting picks up
+    // the Path B pre-mix correctly.
+    const _winnerHasFutureFeed = best.isFutureFeedPath || best.isFridgeHoldPath || best.usingPeak2;
+    const activeFeed = _winnerHasFutureFeed && best.feed2Ms
       ? new Date(best.feed2Ms)
       : lastFedTime ?? new Date(best.feedMs);
     onFeedTimeChange?.(activeFeed);
-    if ((best.isFutureFeedPath || best.usingPeak2) && best.feed2Ms) {
+    if (_winnerHasFutureFeed && best.feed2Ms) {
       onFeed2TimeChange?.(new Date(best.feed2Ms));
     }
 
