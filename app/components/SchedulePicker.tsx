@@ -2239,6 +2239,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _suggestedBakeTime: Date | null = null;
     let _newPendingStart: Date = pendingStart;
     let _newFridgeOut: Date | null = fridgeOutTime;
+    // Canonical fridge_in / fridge_out times for a non-Path-B fridge winner,
+    // mirrored from best.renderFridgeInMs / best.renderFridgeOutMs once the
+    // winner is selected. Read by the event builder's Block 2 to render
+    // fridge_in / fridge_out at the EXACT timestamps candidateValid checked
+    // (the values pushCand stored via computeNonPathBFridgeTimes). Null when
+    // the winner is RT-only or Path B (Path B uses its own _fridgeHold*
+    // mirrors). Render == validation by construction.
+    let _renderFridgeInMs:  number | null = null;
+    let _renderFridgeOutMs: number | null = null;
     let _adjPeakH: number | null = null;
     let _fridgeFeedTime: Date | null = null;
     // Bridge-candidate refresh chain (additional to primary @now refresh) —
@@ -2719,57 +2728,40 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           });
         }
 
-        // Block 2 — non-Path-B fridge starter fridge_in/fridge_out emission.
+        // Block 2 — non-Path-B fridge starter fridge_in / fridge_out emission.
         // Gated mutually-exclusive with Block 1: !_isFridgeHoldPath AND no
-        // Path B mirror set. The mirror checks (_fridgeHoldOutTime == null)
-        // are belt-and-suspenders: in normal flow _isFridgeHoldPath ↔
-        // _fridgeHoldOutTime are set together (line ~3673), but if either
-        // ever leaked through alone (stale state, partial reset) the mirror
-        // guard prevents Block 2 from re-emitting fridge_out at a different
-        // timestamp than the validator checked.
+        // Path B mirror set. Both event times are now read from the winning
+        // candidate's stored fields (mirrored as _renderFridgeInMs /
+        // _renderFridgeOutMs from best.renderFridgeInMs / best.renderFridgeOutMs,
+        // populated at gen time by pushCand → computeNonPathBFridgeTimes —
+        // the SAME function and adjPeakH the validator used).
         //
-        // INVARIANT (this block): the emitted fridge_out's `time` is
-        // _newFridgeOut, which for a non-Path-B fridge winner equals
-        // best.fridgeOutMs (line ~3641) — the EXACT ms that
-        // computeActionTimes pushed into actionTimesMs for candidateValid
-        // to scan. The _warmupH_fo / _dwellH_fo / _cf_fo math below is
-        // CARD-NOTE-ONLY ("~X min to reach room temp") and never affects
-        // the event's `time` field. The emitted fridge_in's `time` is the
-        // latest refresh bellPeakTime which uses the same adjPeakH_next_eff
-        // × refreshStretch formula the validator's computeActionTimes uses
-        // for Math.max(refreshPeaks) — so render == validation by
-        // construction.
+        // INVARIANT: every fridge timestamp the event builder renders is
+        // byte-identical to a stored candidate field, which is byte-identical
+        // to the value candidateActionTimes / candidateValid scanned. The old
+        // render-time recompute (latestRefreshPeakMs from rendered events,
+        // _newFridgeOut from newMix − warmupH) is gone — it diverged from the
+        // validator when an intermediate refresh peak ran later than the
+        // primary, and let plans with fridge actions in blockers pass as
+        // green (the false-green root cause). Render-only card-note math
+        // (warmup minutes) stays here but never touches the event time.
         if (!_isFridgeHoldPath
             && _fridgeHoldOutTime == null
             && _fridgeHoldInTime == null
             && _fridgeHoldRefreshTime == null
             && starterLocation === 'fridge'
-            && _newFridgeOut) {
-          // Pair fridge_out with a fridge_in event so the chart's cold phase
-          // visibly spans the gap (previously the long fridge dwell rendered
-          // as an empty stretch). fridge_in is the moment the starter goes
-          // BACK into the fridge after the latest refresh peaked — or, when
-          // no refresh planned, when the baker put it in originally
-          // (≈ lastFedTime).
-          const latestRefreshPeakMs = events
-            .filter(e => (e.kind === 'refresh' || e.kind === 'intermediate_refresh') && e.bellPeakTime)
-            .reduce<number | null>((acc, e) => {
-              const t = e.bellPeakTime!.getTime();
-              return acc === null || t > acc ? t : acc;
-            }, null);
-          const fridgeInMs = latestRefreshPeakMs ?? (lastFedTime?.getTime() ?? null);
-          if (fridgeInMs !== null && fridgeInMs < _newFridgeOut.getTime()) {
+            && _renderFridgeOutMs != null) {
+          const fridgeOutDate = new Date(_renderFridgeOutMs);
+          if (_renderFridgeInMs != null && _renderFridgeInMs < _renderFridgeOutMs) {
             events.push({
               kind: 'fridge_in',
-              time: new Date(fridgeInMs),
-              isPast: fridgeInMs < nowMs,
+              time: new Date(_renderFridgeInMs),
+              isPast: _renderFridgeInMs < nowMs,
               isActive: false,
               isDraggable: false,
               label: isFr ? 'Au frigo' : 'Into Fridge',
               cardTimeFormat: 'absolute',
-              cardNote: latestRefreshPeakMs !== null
-                ? (isFr ? 'Au pic — ralentit la fermentation' : 'At peak — slows fermentation')
-                : (isFr ? 'Conservation au froid' : 'Cold storage'),
+              cardNote: isFr ? 'Au pic — ralentit la fermentation' : 'At peak — slows fermentation',
               bellStyle: 'none',
               bellSigmaScale: 1.0,
             });
@@ -2778,15 +2770,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const _cf_fo = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
           const _fpH_fo = adjPeakH_last_eff * _cf_fo;
           const _dwellH_fo = lastFedTime
-            ? (_newFridgeOut.getTime() - lastFedTime.getTime()) / 3600000
+            ? (_renderFridgeOutMs - lastFedTime.getTime()) / 3600000
             : _fpH_fo;
           const _rtToPeak_fo = Math.max(_warmupH_fo, (_fpH_fo - _dwellH_fo) / _cf_fo);
           const _foNoteMin = Math.round(_rtToPeak_fo * 60);
           const _showExtendedNote = _rtToPeak_fo > _warmupH_fo + 0.25;
           events.push({
             kind: 'fridge_out',
-            time: _newFridgeOut,
-            isPast: _newFridgeOut.getTime() < nowMs,
+            time: fridgeOutDate,
+            isPast: _renderFridgeOutMs < nowMs,
             isActive: false,
             isDraggable: false,
             label: isFr ? 'Sortie du frigo' : 'Remove from Fridge',
@@ -3129,6 +3121,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // renderer can never diverge. Required-by-convention: every push site
       // sets it via the pushCand helper.
       actionTimesMs?: number[];
+      // Canonical fridge_in / fridge_out for NON-Path-B fridge plans (set at
+      // gen time by pushCand → computeNonPathBFridgeTimes using the SAME
+      // formulas the event builder's Block 2 used to recompute at render).
+      // computeActionTimes pushes these into actionTimesMs so candidateValid
+      // checks them; the event builder reads the winning candidate's values
+      // (mirrored into _renderFridgeInMs / _renderFridgeOutMs) and renders
+      // fridge_in / fridge_out at exactly those timestamps. Render ==
+      // validation by construction for non-Path-B too, not just Path B.
+      // Null when the plan does not involve a fridge transition.
+      renderFridgeInMs?:  number;
+      renderFridgeOutMs?: number;
     }
 
     // CANONICAL fridge-hold action-time source. For a Path B (fridge-hold)
@@ -3153,6 +3156,45 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         fridgeOutMs: c.fridgeHoldOutMs,
         preMixMs:    c.feed2Ms,
       };
+    }
+
+    // Canonical fridge_in / fridge_out source for NON-Path-B fridge plans.
+    // Returns the times the event builder's Block 2 would have synthesized at
+    // render — but computed ONCE at candidate gen time, stored on the
+    // candidate, and read identically by validator and renderer. Mirrors the
+    // formulas used in the previous render-time recompute: fridge_out =
+    // c.fridgeOutMs (fridge scan) OR newMix − warmupH; fridge_in = the latest
+    // refresh peak among the primary refresh, any bridge refreshes, AND
+    // intermediate refreshes (the renderer's reduce-max considered all three).
+    // Returns null when the plan does not involve a fridge transition.
+    function computeNonPathBFridgeTimes(
+      c: Pick<Candidate, 'mixHBF' | 'fridgeOutMs' | 'bridgeRefreshMs' | 'isFridgeHoldPath' | 'usingPeak2'>,
+      adjPeakH_for:  number,
+      ratioMult_for: number,
+    ): { fridgeInMs: number; fridgeOutMs: number } | null {
+      if (c.isFridgeHoldPath) return null;
+      if (starterLocation !== 'fridge') return null;
+      const candMixMs = bakeMs - c.mixHBF * 3600000;
+      const fridgeOutMs = c.fridgeOutMs
+        ?? (candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000);
+      const refreshPeaks: number[] = [];
+      if (_starterRefeedTime && !c.usingPeak2) {
+        refreshPeaks.push(_starterRefeedTime.getTime() + adjPeakH_for * _refreshStretchFactor * 3600000);
+      }
+      if (c.bridgeRefreshMs) {
+        for (const b of c.bridgeRefreshMs) refreshPeaks.push(b + adjPeakH_for * 3600000);
+      } else {
+        // Include intermediate refresh peaks too — the renderer's Block 2
+        // reduces over BOTH refresh and intermediate_refresh events, so the
+        // validator must consider them or false-green when an intermediate
+        // peak lands later than the primary peak and lands in a blocker.
+        const intermediates = computeIntermediatesForCandidate(c as Candidate, adjPeakH_for, ratioMult_for);
+        for (const t of intermediates) refreshPeaks.push(t + adjPeakH_for * 3600000);
+      }
+      const fridgeInMs = refreshPeaks.length > 0
+        ? Math.max(...refreshPeaks)
+        : (lastFedTime?.getTime() ?? candMixMs);
+      return { fridgeInMs, fridgeOutMs };
     }
 
     // Compute the full baker-action-time list for a candidate at gen time —
@@ -3182,8 +3224,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       if (c.fridgeHoldRefreshMs != null) out.push(c.fridgeHoldRefreshMs);
       if (c.fridgeHoldInMs != null)      out.push(c.fridgeHoldInMs);
       if (c.fridgeHoldOutMs != null)     out.push(c.fridgeHoldOutMs);
-      // Fridge scan: honest removal time.
-      if (c.fridgeOutMs != null && !c.isFridgeHoldPath) out.push(c.fridgeOutMs);
       // Bridge refreshes — already stored on the candidate.
       if (c.bridgeRefreshMs) out.push(...c.bridgeRefreshMs);
       // Non-Path-B paths emit a primary refresh at _starterRefeedTime (Path B
@@ -3197,32 +3237,38 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const intermediates = computeIntermediatesForCandidate(c as Candidate, adjPeakH_for, ratioMult_for);
         for (const t of intermediates) out.push(t);
       }
-      // Non-Path-B fridge starter: the event builder emits a fridge_in (at the
-      // latest refresh peak) and a fridge_out (newMix − warmupH, or cand.
-      // fridgeOutMs if set). Both are baker actions; both must clear blockers.
-      if (starterLocation === 'fridge' && !c.isFridgeHoldPath) {
-        const fridgeOutPred = c.fridgeOutMs
-          ?? (candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000);
-        out.push(fridgeOutPred);
-        const refreshPeaks: number[] = [];
-        if (_starterRefeedTime) {
-          refreshPeaks.push(_starterRefeedTime.getTime() + adjPeakH_for * _refreshStretchFactor * 3600000);
-        }
-        if (c.bridgeRefreshMs) {
-          for (const b of c.bridgeRefreshMs) refreshPeaks.push(b + adjPeakH_for * 3600000);
-        }
-        if (refreshPeaks.length > 0) out.push(Math.max(...refreshPeaks));
-      }
+      // Non-Path-B fridge starter fridge_in / fridge_out: READ from the
+      // candidate's stored values — populated at gen time by pushCand via
+      // computeNonPathBFridgeTimes, the SAME function that drives the event
+      // builder's render. Render == validation by construction; the render-
+      // time recompute that previously synthesized these from
+      // latestRefreshPeak and newMix − warmupH (and silently diverged from
+      // what the validator was checking) is gone.
+      if (c.renderFridgeInMs  != null) out.push(c.renderFridgeInMs);
+      if (c.renderFridgeOutMs != null) out.push(c.renderFridgeOutMs);
       return out;
     }
 
     const candidates: Candidate[] = [];
     // pushCand wraps candidate creation so actionTimesMs is ALWAYS populated.
     // Bypassing this would reintroduce the validator-vs-render divergence.
+    // For non-Path-B fridge plans, also populates renderFridgeInMs /
+    // renderFridgeOutMs so the event builder reads identical stored values
+    // (one canonical source for both validation and render). Candidates
+    // whose stored fridge_in is not strictly before fridge_out are rejected
+    // at gen time — the same coherence guard the Path B generator already
+    // enforces, applied to non-Path-B too.
     function pushCand(c: Omit<Candidate, 'actionTimesMs'>): void {
-      candidates.push({
+      const fridgeTimes = computeNonPathBFridgeTimes(c, adjPeakH, ratioMultiplier);
+      if (fridgeTimes && !(fridgeTimes.fridgeInMs < fridgeTimes.fridgeOutMs)) return;
+      const enriched: Omit<Candidate, 'actionTimesMs'> = {
         ...c,
-        actionTimesMs: computeActionTimes(c, adjPeakH, ratioMultiplier),
+        renderFridgeInMs:  fridgeTimes?.fridgeInMs,
+        renderFridgeOutMs: fridgeTimes?.fridgeOutMs,
+      };
+      candidates.push({
+        ...enriched,
+        actionTimesMs: computeActionTimes(enriched, adjPeakH, ratioMultiplier),
       });
     }
 
@@ -3795,6 +3841,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       if (_feed2Time) setRefeedSuggestion(_feed2Time);
     }
 
+    // Mirror the non-Path-B fridge winner's stored fridge_in / fridge_out
+    // (set at gen time by pushCand → computeNonPathBFridgeTimes) so the event
+    // builder's Block 2 reads the SAME canonical timestamps candidateValid
+    // checked. Only meaningful for non-Path-B fridge winners; Path B uses the
+    // _fridgeHold* mirrors below.
+    if (!best.isFridgeHoldPath) {
+      if (best.renderFridgeInMs  != null) _renderFridgeInMs  = best.renderFridgeInMs;
+      if (best.renderFridgeOutMs != null) _renderFridgeOutMs = best.renderFridgeOutMs;
+      // Align _newFridgeOut (chart prop + non-event card paths) to the stored
+      // value so the chart and the card never see a different fridge_out than
+      // the validator did. Path B is handled by the block below.
+      if (best.renderFridgeOutMs != null) _newFridgeOut = new Date(best.renderFridgeOutMs);
+    }
+
     if (best.isFridgeHoldPath) {
       _isFridgeHoldPath = true;
       _fridgeHoldRefreshTime = best.fridgeHoldRefreshMs ? new Date(best.fridgeHoldRefreshMs) : null;
@@ -3963,11 +4023,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const nowMs_r = Date.now();
         // Per-ratio pushCand — like the main solver's pushCand but using the
         // per-ratio adjPeakH_r/ratioMult_r so each candidate's stored action
-        // times reflect THIS ratio's plan.
+        // times reflect THIS ratio's plan. Also stores renderFridgeInMs /
+        // renderFridgeOutMs with the per-ratio adjPeakH_r so candidateValid
+        // (called via foundValidR below) checks the SAME fridge timestamps the
+        // event builder would render for this ratio. Without this, the ratio
+        // search's allClear silently passed plans whose fridge actions land in
+        // blockers — and rec stayed null because every ratio looked clear.
         function pushCand_r(c: Omit<Candidate, 'actionTimesMs'>): void {
-          candidates_r.push({
+          const fridgeTimes = computeNonPathBFridgeTimes(c, adjPeakH_r, ratioMult_r);
+          if (fridgeTimes && !(fridgeTimes.fridgeInMs < fridgeTimes.fridgeOutMs)) return;
+          const enriched: Omit<Candidate, 'actionTimesMs'> = {
             ...c,
-            actionTimesMs: computeActionTimes(c, adjPeakH_r, ratioMult_r),
+            renderFridgeInMs:  fridgeTimes?.fridgeInMs,
+            renderFridgeOutMs: fridgeTimes?.fridgeOutMs,
+          };
+          candidates_r.push({
+            ...enriched,
+            actionTimesMs: computeActionTimes(enriched, adjPeakH_r, ratioMult_r),
           });
         }
 
