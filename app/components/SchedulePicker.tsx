@@ -2922,7 +2922,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               ? _feed2Time
               : (solverResult?.starterFridgeInTime ?? new Date()))
           : null,
-        peakTime: (starterLocation === 'fridge' && _newFridgeOut && lastFedTime)
+        // Path B (fridge-hold) takes precedence regardless of starterLocation:
+        // the active peak is the POST-FRIDGE pre-mix peak (= _feed2Time +
+        // adjPeakH × preMixStretch), the SAME value the pre_mix event's
+        // bellPeakTime uses (event builder lines ~2719/2781). Previously
+        // peakTime branched on starterLocation === 'fridge'; an RT-initiated
+        // Path B plan fell through to the _starterFeedTime branch and
+        // returned the stale REFRESH peak — the card PEAK row, the chart
+        // active peak, and the pre_mix bell ended up disagreeing.
+        // adjPeakH_next_eff in the event builder is computed from the same
+        // (peakH × ryeF × matF × ratioMultiplier) inputs as the outer
+        // _adjPeakH (line ~2985), so the two formulas are byte-identical.
+        peakTime: (_isFridgeHoldPath && _feed2Time && _adjPeakH)
+          ? new Date(_feed2Time.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
+          : (starterLocation === 'fridge' && _newFridgeOut && lastFedTime)
           ? fridgePeakAfterRemoval(_newFridgeOut, lastFedTime, _adjPeakH ?? adjPeakH_derived ?? 14)
           : (starterLocation === 'fridge' && _newFridgeOut)
           ? new Date(_newFridgeOut.getTime() + getStarterFridgeWarmupH(kitchenTemp) * 3600000)
