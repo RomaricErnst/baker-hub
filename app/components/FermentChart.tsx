@@ -184,6 +184,45 @@ function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_D
   return pts.join(' ');
 }
 
+// Bell that RISES to peak (same gaussian as makeBellPath), then HOLDS FLAT at
+// peak height across the cold hold (peak→fridgeOut), then drops to baseline at
+// fridgeOut. Used for the starter refresh bell of a fridge-hold plan so the
+// curve doesn't descend through the long fridge dwell (fermentation paused in
+// cold) — the following pre_mix bell renders separately and takes over after
+// fridge_out. peakHBF is expected to equal fridgeInHBF (or differ by minutes);
+// the plateau starts at min(peakHBF, fridgeInHBF) so the path stays monotone.
+function makeBellWithFridgePlateau(
+  peakHBF: number,
+  sigma: number,
+  fridgeInHBF: number,
+  fridgeOutHBF: number,
+  W: number, wh: number,
+  feedHBF: number,
+): string {
+  const N = 200;
+  const plateauStartHBF = Math.min(peakHBF, fridgeInHBF);
+  // Normalize like makeBellPath: floor at feedHBF anchors the rise at baseline.
+  const floor = bell(feedHBF, peakHBF, sigma);
+  const range = Math.max(0.01, 1 - floor);
+  const pts: string[] = [];
+  pts.push(`M ${hToX(feedHBF, W, wh).toFixed(1)} ${BL}`);
+  // Rising portion: hbf descends from feedHBF (left, baseline) to plateauStartHBF (right of feed, peak).
+  for (let i = 1; i <= N; i++) {
+    const t = i / N;
+    const hbf = feedHBF - t * (feedHBF - plateauStartHBF);
+    const normH = (bell(hbf, peakHBF, sigma) - floor) / range;
+    const yClamped = BL - Math.max(0, Math.min(1, normH)) * MAXH;
+    pts.push(`L ${hToX(hbf, W, wh).toFixed(1)} ${yClamped.toFixed(1)}`);
+  }
+  const plateauY = BL - MAXH;
+  pts.push(`L ${hToX(plateauStartHBF, W, wh).toFixed(1)} ${plateauY.toFixed(1)}`);
+  pts.push(`L ${hToX(fridgeOutHBF, W, wh).toFixed(1)} ${plateauY.toFixed(1)}`);
+  pts.push(`L ${hToX(fridgeOutHBF, W, wh).toFixed(1)} ${BL}`);
+  pts.push(`L ${hToX(feedHBF, W, wh).toFixed(1)} ${BL}`);
+  pts.push('Z');
+  return pts.join(' ');
+}
+
 // ── Plateau bell path (for fridge poolish/biga) ────────────
 // Flat-top bell: plateau centred on peakHBF, tapered sides
 function makePlateauBellPath(
@@ -1057,21 +1096,29 @@ export default function FermentChart({
                     const dashArray = ev.bellStyle === 'solid' ? undefined :
                                        ev.bellStyle === 'dotted' ? '3 3' :
                                        '3 3';
+                    // Per-event fridge-hold detection: this bell "owns" the
+                    // following fridge_in/fridge_out pair iff its peak lines
+                    // up with the next fridge_in (within 2h) and a
+                    // fridge_out follows. The old ev.hasFridgePhase flag is
+                    // never set by the engine, and the scalar
+                    // fridgeOutHBF / feedToFridgeOutH derived from
+                    // starterFeedTime point at the ORIGINAL last_fed — not
+                    // the refresh whose peak goes into the fridge. Walking
+                    // the events array here gives each bell its own hold.
+                    const myIdx = idx;
+                    const nextFridgeIn  = starterEvents.find((e, j) => j > myIdx && e.kind === 'fridge_in');
+                    const nextFridgeOut = starterEvents.find((e, j) => j > myIdx && e.kind === 'fridge_out');
+                    const ownsHold = !!nextFridgeIn && !!nextFridgeOut
+                      && Math.abs(nextFridgeIn.time.getTime() - ev.bellPeakTime.getTime()) <= 2 * 3600000
+                      && nextFridgeOut.time.getTime() > nextFridgeIn.time.getTime();
+                    const fridgeInHBF_ev  = ownsHold && nextFridgeIn  ? (bakeMs - nextFridgeIn.time.getTime())  / 3600000 : null;
+                    const fridgeOutHBF_ev = ownsHold && nextFridgeOut ? (bakeMs - nextFridgeOut.time.getTime()) / 3600000 : null;
                     return (
                       <path
                         key={`ev-bell-${idx}`}
                         d={
-                          ev.hasFridgePhase && fridgeOutHBF !== null && feedToFridgeOutH !== null
-                            ? makeFridgePhaseBellPath(
-                                feedHBF,
-                                fridgeOutHBF,
-                                fridgePeakH,
-                                fridgeSigma,
-                                feedToFridgeOutH,
-                                starterColdFactor,
-                                fridgeHeightAtRemoval,
-                                W, WH
-                              )
+                          ownsHold && fridgeInHBF_ev !== null && fridgeOutHBF_ev !== null
+                            ? makeBellWithFridgePlateau(peakHBF, sigma, fridgeInHBF_ev, fridgeOutHBF_ev, W, WH, feedHBF)
                             : makeBellPath(peakHBF, sigma, W, WH, feedHBF)
                         }
                         fill={fillStyle}
