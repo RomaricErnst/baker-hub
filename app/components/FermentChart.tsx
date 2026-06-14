@@ -1132,17 +1132,32 @@ export default function FermentChart({
               </clipPath>
             );
           })}
-          {/* Fridge-phase tint clip: spans from feed (left) to fridgeOut (right) */}
-          {useEventDrivenStarter && activeFeedHBF !== null && fridgeOutHBF !== null && (
-            <clipPath id={`fridge-phase-tint-clip-${chartId}`}>
-              <rect
-                x={hToX(activeFeedHBF, W, WH)}
-                y={0}
-                width={Math.max(0, hToX(fridgeOutHBF, W, WH) - hToX(activeFeedHBF, W, WH))}
-                height={CHART_H}
-              />
-            </clipPath>
-          )}
+          {/* Fridge-phase tint clip: spans the REAL fridge_in → fridge_out
+              period, derived from the fridge_in event when present (matches
+              the single-source-of-truth times the card and validator both
+              read) so the dark-blue cold tint coincides EXACTLY with the
+              cold span the bell shape models. Falls back to activeFeedHBF
+              only when no fridge_in event exists (legacy non-event paths) —
+              for a starter fed straight into the fridge those are the same
+              instant anyway. INVARIANT: bell cold span (slow gaussian) and
+              tint span (dark fill) describe the same fridge_in → fridge_out
+              interval; no RT-shape rise hides under a partial tint. */}
+          {useEventDrivenStarter && activeFeedHBF !== null && fridgeOutHBF !== null && (() => {
+            const fridgeInEv = starterEvents.find(e => e.kind === 'fridge_in');
+            const tintLeftHBF = fridgeInEv
+              ? (bakeMs - fridgeInEv.time.getTime()) / 3600000
+              : activeFeedHBF;
+            return (
+              <clipPath id={`fridge-phase-tint-clip-${chartId}`}>
+                <rect
+                  x={hToX(tintLeftHBF, W, WH)}
+                  y={0}
+                  width={Math.max(0, hToX(fridgeOutHBF, W, WH) - hToX(tintLeftHBF, W, WH))}
+                  height={CHART_H}
+                />
+              </clipPath>
+            );
+          })()}
           {/* Dough cold-retard tint clip: spans fridge-in to fridge-out */}
           {_showDoughColdTint && (
             <clipPath id={`dough-cold-tint-clip-${chartId}`}>

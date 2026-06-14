@@ -2560,6 +2560,26 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // where one mirror is null (better to drop one event than to let
         // Block 2 re-emit fridge_out at a different timestamp).
         if (_isFridgeHoldPath) {
+          // Coherence safety net (defense in depth): the Path B generator
+          // (line ~3506) already enforces refresh < fridge_in < fridge_out <
+          // pre-mix on the CANDIDATE before pushing it into the pool, so any
+          // _isFridgeHoldPath winner is coherent by construction. This check
+          // re-verifies the ordering on the exact ms that are about to be
+          // rendered, so a future regression that broke the generator guard
+          // (or a stale-mirror leak) can't silently emit out-before-in
+          // events. If the four mirrors disagree on ordering, drop the fridge
+          // pair from the render (refresh + pre-mix still emit) rather than
+          // draw an impossible cold band. This is render-time triage; the
+          // root fix is always in the candidate generator.
+          const _coherent = (
+            _fridgeHoldRefreshTime
+            && _fridgeHoldInTime
+            && _fridgeHoldOutTime
+            && _feed2Time
+            && _fridgeHoldRefreshTime.getTime() <= _fridgeHoldInTime.getTime()
+            && _fridgeHoldInTime.getTime() < _fridgeHoldOutTime.getTime()
+            && _fridgeHoldOutTime.getTime() <= _feed2Time.getTime()
+          );
           if (_fridgeHoldRefreshTime) {
             const refreshPeakAt = new Date(_fridgeHoldRefreshTime.getTime() + adjPeakH_next_eff * refreshStretch * 3600000);
             events.push({
@@ -2585,7 +2605,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               // resume.
             });
           }
-          if (_fridgeHoldInTime) {
+          if (_fridgeHoldInTime && _coherent) {
             events.push({
               kind: 'fridge_in',
               time: _fridgeHoldInTime,
@@ -2599,7 +2619,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               bellSigmaScale: 1.0,
             });
           }
-          if (_fridgeHoldOutTime) {
+          if (_fridgeHoldOutTime && _coherent) {
             const warmupMin = Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60);
             events.push({
               kind: 'fridge_out',
