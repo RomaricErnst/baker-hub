@@ -416,7 +416,8 @@ export default function FermentChart({
   // wash. Hue encodes WHICH element (blue=starter, green=dough); shade
   // encodes WHICH state (light=RT, dark=fridge). Still solid fills so they
   // stay orthogonal to the blocker's red diagonal hatch (no clash).
-  const STARTER_COLD_FILL = 'rgba(42, 82, 130, 0.34)';   // dark blue
+  // STARTER_COLD_FILL removed with the fridge-tint box; reintroduce only
+  // when a properly shaped fridge curve replaces the rectangular plateau.
   const DOUGH_COLD_FILL   = 'rgba(42, 79, 48, 0.30)';    // dark green
 
   // ── Physics ──────────────────────────────────────────────
@@ -1094,8 +1095,7 @@ export default function FermentChart({
               {hasPref && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <svg width="24" height="12" viewBox="0 0 24 12">
-                    <path d="M0,0 L24,0 L0,12 Z" fill={starterLightFill} />
-                    <path d="M24,0 L24,12 L0,12 Z" fill={STARTER_COLD_FILL} />
+                    <path d="M0,0 L24,0 L24,12 L0,12 Z" fill={starterLightFill} />
                     <rect x="0.5" y="0.5" width="23" height="11" fill="none"
                       stroke="var(--border)" strokeWidth="0.5" rx="1.5" />
                   </svg>
@@ -1182,32 +1182,10 @@ export default function FermentChart({
               </clipPath>
             );
           })}
-          {/* Fridge-phase tint clip: spans the REAL fridge_in → fridge_out
-              period, derived from the fridge_in event when present (matches
-              the single-source-of-truth times the card and validator both
-              read) so the dark-blue cold tint coincides EXACTLY with the
-              cold span the bell shape models. Falls back to activeFeedHBF
-              only when no fridge_in event exists (legacy non-event paths) —
-              for a starter fed straight into the fridge those are the same
-              instant anyway. INVARIANT: bell cold span (slow gaussian) and
-              tint span (dark fill) describe the same fridge_in → fridge_out
-              interval; no RT-shape rise hides under a partial tint. */}
-          {useEventDrivenStarter && activeFeedHBF !== null && fridgeOutHBF !== null && (() => {
-            const fridgeInEv = starterEvents.find(e => e.kind === 'fridge_in');
-            const tintLeftHBF = fridgeInEv
-              ? (bakeMs - fridgeInEv.time.getTime()) / 3600000
-              : activeFeedHBF;
-            return (
-              <clipPath id={`fridge-phase-tint-clip-${chartId}`}>
-                <rect
-                  x={hToX(tintLeftHBF, W, WH)}
-                  y={0}
-                  width={Math.max(0, hToX(fridgeOutHBF, W, WH) - hToX(tintLeftHBF, W, WH))}
-                  height={CHART_H}
-                />
-              </clipPath>
-            );
-          })()}
+          {/* fridge-phase-tint clip removed — the dark-blue overlay it drove
+              produced a flat-topped box across the fridge hold rather than
+              fermentation-curve shading. Restore here only after a properly
+              shaped fridge curve exists. */}
           {/* Dough cold-retard tint clip: spans fridge-in to fridge-out */}
           {_showDoughColdTint && (
             <clipPath id={`dough-cold-tint-clip-${chartId}`}>
@@ -1391,66 +1369,17 @@ export default function FermentChart({
                           strokeDasharray={dashArray}
                           clipPath={`url(#chart-area-clip-${chartId})`}
                         />
-                        {ev.hasFridgePhase && fridgeOutHBF !== null && feedToFridgeOutH !== null && (
-                          <path
-                            d={bellPath}
-                            fill={STARTER_COLD_FILL}
-                            stroke="none"
-                            clipPath={`url(#fridge-phase-tint-clip-${chartId})`}
-                          />
-                        )}
+                        {/* Fridge-phase tint path removed with the clip
+                            above — see comment at clip site. */}
                       </g>
                     );
                   })}
-                  {/* ── Fridge-hold cold plateau ─────────────────────────────
-                      Path B (refresh @ RT → peak → INTO FRIDGE → cold dwell →
-                      OUT → pre-mix) needs a visible cold plateau spanning
-                      fridge_in → fridge_out — the refresh bell peaks AT
-                      fridge_in and the plateau holds at peak height across
-                      the hold, matching the biology (fermentation paused in
-                      cold). Without it, the curve would just decline from
-                      the refresh peak, leaving the long fridge dwell empty
-                      and the card vs. curve disagreeing about "fridge hold". */}
-                  {(() => {
-                    if (!fridgeIn || !fridgeOut) return null;
-                    const inHBF  = (bakeMs - fridgeIn.time.getTime())  / 3600000;
-                    const outHBF = (bakeMs - fridgeOut.time.getTime()) / 3600000;
-                    // fridge_in must precede fridge_out (HBF: in > out) by at
-                    // least 1h to qualify as a "hold" worth drawing.
-                    if (inHBF - outHBF < 1) return null;
-                    const inX  = hToX(inHBF,  W, WH);
-                    const outX = hToX(outHBF, W, WH);
-                    if (outX <= inX) return null;
-                    // Plateau height = the refresh bell's peak (MAXH at peak)
-                    // so the plateau joins the bell flush.
-                    const plateauTopY = BL - MAXH;
-                    return (
-                      <g>
-                        {/* Cold-fill band across the hold span — same dark-blue
-                            shade as the legend's "Darker = in fridge". */}
-                        <rect
-                          x={inX}
-                          y={plateauTopY}
-                          width={outX - inX}
-                          height={BL - plateauTopY}
-                          fill={STARTER_COLD_FILL}
-                          stroke="none"
-                          clipPath={`url(#chart-area-clip-${chartId})`}
-                        />
-                        {/* Flat-top dashed line connecting refresh peak to
-                            fridge_out — reads as the starter's cold plateau. */}
-                        <line
-                          x1={inX}
-                          y1={plateauTopY}
-                          x2={outX}
-                          y2={plateauTopY}
-                          stroke={`${prefColor}A5`}
-                          strokeWidth={1.5}
-                          strokeDasharray="4 3"
-                        />
-                      </g>
-                    );
-                  })()}
+                  {/* Fridge-hold cold plateau rectangle removed — it rendered
+                      as a full-height "blue box" across the hold that looked
+                      nothing like a fermentation curve. The starter renders as
+                      a normal bell; fridge timing is conveyed by the card
+                      events (Into Fridge / Out of Fridge) instead of a chart
+                      plateau. */}
                 </>
               );
             })()}
