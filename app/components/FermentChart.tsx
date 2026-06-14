@@ -215,35 +215,85 @@ function makePlateauBellPath(
   return pts.join(' ');
 }
 
+// Biologically-correct fridge-phase bell: rise → flat cold plateau → resume.
+//
+// HBF convention: larger HBF = earlier (further before bake). feedHBF is the
+// largest, fridgeOutHBF the smallest, fridgeInHBF in between (or equal to
+// feedHBF if fed straight into the fridge).
+//
+// Three segments, drawn from feed (rightmost-on-time / leftmost-on-chart) to 0
+// (bake):
+//   (i)  Rise feed → fridge_in. Rate depends on whether the starter reached its
+//        RT peak before going into the fridge:
+//          - If the RT gap (feedHBF − fridgeInHBF) ≥ ~½ adjPeakH, the starter
+//            rose at RT rate to (near) peak — use a narrow RT-rate gaussian
+//            centred at the RT peak.
+//          - Otherwise (fed straight into fridge), use a wide cold-rate gaussian
+//            centred at the cold peak so the climb is gentle across the whole
+//            cold span.
+//        We compute heightAtFridgeIn from that rise.
+//   (ii) FLAT cold plateau fridge_in → fridge_out at heightAtFridgeIn. The
+//        biology: fermentation is ~5× slower in the cold, so the curve must
+//        NOT follow a gaussian DOWN after a peak — it holds. (Previous bug:
+//        gaussian centred at feed − fridgePeakH descended through the hold,
+//        producing the "first bell going down" the user reported.)
+//   (iii) Resume fridge_out → 0. Short linear warmup to ~1.0 over starterWarmupH,
+//        then gradual gaussian decline toward bake.
+//
+// Never drops to zero abruptly: all descents are gradual gaussians.
 function makeFridgePhaseBellPath(
   feedHBF: number,
+  fridgeInHBF: number,
   fridgeOutHBF: number,
+  adjPeakH: number,
   fridgePeakH: number,
-  fridgeSigma: number,
-  feedToFridgeOutH: number,
-  starterColdFactor: number,
-  fridgeHeightAtRemoval: number,
+  starterWarmupH: number,
   W: number,
   WH: number,
 ): string {
   const N = 300;
   const pts: string[] = [];
+
+  const rtGapH = Math.max(0, feedHBF - fridgeInHBF);
+  const chilledAtPeak = rtGapH >= adjPeakH * 0.5;
+
+  const rtSigma = Math.max(0.5, adjPeakH * 0.35);
+  const rtBellCenter = feedHBF - adjPeakH;
+  const coldSigma = Math.max(1.0, fridgePeakH * 0.4);
+  const coldBellCenter = feedHBF - fridgePeakH;
+
+  const heightAtFridgeIn = chilledAtPeak
+    ? Math.exp(-0.5 * ((fridgeInHBF - rtBellCenter) / rtSigma) ** 2)
+    : Math.exp(-0.5 * ((fridgeInHBF - coldBellCenter) / coldSigma) ** 2);
+
+  const warmupSafeH = Math.max(0.25, starterWarmupH);
+  const warmupPeakHBF = Math.max(0, fridgeOutHBF - warmupSafeH);
+  const decaySigma = Math.max(1.0, adjPeakH * 0.5);
+
   for (let i = 0; i <= N; i++) {
     const hbf = (i / N) * feedHBF;
     let normH: number;
-    if (hbf >= fridgeOutHBF) {
-      const fridgeBellCenter = feedHBF - fridgePeakH;
-      const rawFridgeH = Math.exp(-0.5 * ((hbf - fridgeBellCenter) / fridgeSigma) ** 2);
-      const fridgeAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - fridgeBellCenter) / fridgeSigma) ** 2);
-      normH = fridgeAtRemoval > 0
-        ? rawFridgeH / fridgeAtRemoval * fridgeHeightAtRemoval
-        : rawFridgeH;
+
+    if (hbf >= fridgeInHBF) {
+      // (i) Rise: feed → fridge_in
+      normH = chilledAtPeak
+        ? Math.exp(-0.5 * ((hbf - rtBellCenter) / rtSigma) ** 2)
+        : Math.exp(-0.5 * ((hbf - coldBellCenter) / coldSigma) ** 2);
+    } else if (hbf >= fridgeOutHBF) {
+      // (ii) Cold plateau: fridge_in → fridge_out (FLAT at heightAtFridgeIn).
+      normH = heightAtFridgeIn;
+    } else if (hbf >= warmupPeakHBF) {
+      // (iii-a) Linear warmup from heightAtFridgeIn at fridge_out up to ~1.0
+      //         at warmupPeakHBF (≈ fridge_out − warmupH).
+      const t = warmupSafeH > 0 ? (fridgeOutHBF - hbf) / warmupSafeH : 1;
+      normH = heightAtFridgeIn + (1 - heightAtFridgeIn) * Math.max(0, Math.min(1, t));
     } else {
-      const rtHoursAfterRemoval = fridgeOutHBF - hbf;
-      const fridgeEquivAfterRemoval = rtHoursAfterRemoval * starterColdFactor;
-      const totalEquivH = feedToFridgeOutH + fridgeEquivAfterRemoval;
-      normH = Math.exp(-0.5 * ((totalEquivH - fridgePeakH) / fridgeSigma) ** 2);
+      // (iii-b) Gaussian decline from warmup peak toward 0 HBF (bake). Never
+      //         a vertical drop — gradual decay.
+      const dist = warmupPeakHBF - hbf;
+      normH = Math.exp(-0.5 * (dist / decaySigma) ** 2);
     }
+
     normH = Math.max(0, Math.min(1, normH));
     const x = hToX(hbf, W, WH);
     const y = BL - normH * MAXH;
@@ -1320,10 +1370,19 @@ export default function FermentChart({
                     const dashArray = ev.bellStyle === 'solid' ? undefined :
                                        ev.bellStyle === 'dotted' ? '3 3' :
                                        '3 3';
-                    const bellPath = ev.hasFridgePhase && fridgeOutHBF !== null && feedToFridgeOutH !== null
+                    // fridge_in for this bell: prefer the canonical fridge_in
+                      // event (same single-source the card and validator read);
+                      // fall back to feedHBF for the "fed straight into fridge"
+                      // case (fridge_in == feed). This makes the bell shape
+                      // (rise → plateau → resume) coincide exactly with the
+                      // fridge_in → fridge_out span the dark-blue tint covers.
+                      const fridgeInHBF_bell = fridgeIn
+                        ? (bakeMs - fridgeIn.time.getTime()) / 3600000
+                        : feedHBF;
+                      const bellPath = ev.hasFridgePhase && fridgeOutHBF !== null && feedToFridgeOutH !== null
                       ? makeFridgePhaseBellPath(
-                          feedHBF, fridgeOutHBF, fridgePeakH, fridgeSigma,
-                          feedToFridgeOutH, starterColdFactor, fridgeHeightAtRemoval, W, WH
+                          feedHBF, fridgeInHBF_bell, fridgeOutHBF,
+                          effectivePeakH, fridgePeakH, starterWarmupH, W, WH
                         )
                       : makeBellPath(peakHBF, sigma, W, WH, feedHBF);
                     return (

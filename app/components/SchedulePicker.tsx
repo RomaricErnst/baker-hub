@@ -3131,6 +3131,30 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       actionTimesMs?: number[];
     }
 
+    // CANONICAL fridge-hold action-time source. For a Path B (fridge-hold)
+    // candidate, returns the four baker-action timestamps EXCLUSIVELY from the
+    // candidate's stored fields — never recomputed from latestRefreshPeak,
+    // _newFridgeOut, or any other derived value. This is the single source the
+    // validator (computeActionTimes), the event builder (Block 1), the result
+    // mirrors (fridgeHoldInTime / fridgeHoldOutTime), and any ratio-search
+    // sub-evaluator MUST read from when reasoning about a fridge-hold plan, so
+    // every consumer agrees byte-for-byte on what time each action lands at.
+    // Returns null for non-Path-B candidates (those use the non-fridge-hold
+    // paths in computeActionTimes below).
+    function fridgeHoldActionTimes(
+      c: Pick<Candidate, 'isFridgeHoldPath' | 'fridgeHoldRefreshMs' | 'fridgeHoldInMs' | 'fridgeHoldOutMs' | 'feed2Ms'>,
+    ): { refreshMs: number; fridgeInMs: number; fridgeOutMs: number; preMixMs: number } | null {
+      if (!c.isFridgeHoldPath) return null;
+      if (c.fridgeHoldRefreshMs == null || c.fridgeHoldInMs == null
+          || c.fridgeHoldOutMs == null || c.feed2Ms == null) return null;
+      return {
+        refreshMs:   c.fridgeHoldRefreshMs,
+        fridgeInMs:  c.fridgeHoldInMs,
+        fridgeOutMs: c.fridgeHoldOutMs,
+        preMixMs:    c.feed2Ms,
+      };
+    }
+
     // Compute the full baker-action-time list for a candidate at gen time —
     // the values come from the SAME outer-scope state (_starterRefeedTime,
     // _refreshStretchFactor, starterLocation, kitchenTemp, …) that the event
@@ -3143,6 +3167,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     ): number[] {
       const candMixMs = bakeMs - c.mixHBF * 3600000;
       const out: number[] = [candMixMs];
+      // For a Path B (fridge-hold) candidate, draw EXCLUSIVELY from
+      // fridgeHoldActionTimes — the canonical single source. The candidate's
+      // feedMs is the pre-mix feed which already maps to preMixMs, so no extra
+      // feed* push needed; bridge refreshes are not applicable to Path B.
+      const fh = fridgeHoldActionTimes(c);
+      if (fh) {
+        out.push(fh.refreshMs, fh.fridgeInMs, fh.fridgeOutMs, fh.preMixMs);
+        return out;
+      }
       if (c.feedMs != null) out.push(c.feedMs);
       if (c.feed2Ms != null && c.feed2Ms !== c.feedMs) out.push(c.feed2Ms);
       // Path B refresh + fridge in/out — already stored on the candidate.
