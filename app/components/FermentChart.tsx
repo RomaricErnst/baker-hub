@@ -265,19 +265,53 @@ function makeFridgePhaseBellPath(
   W: number,
   WH: number,
 ): string {
+  // Cold-phase shape constants (eyeball-tunable). Biology: cold PROLONGS the
+  // peak (broad plateau, fermentation ~5× slower) and the post-peak decline is
+  // SLOW and levels off well above baseline — a starter held days stays risen,
+  // only slightly deflated, until it eventually needs a refresh feed (Pantry
+  // Mama; The Sourdough Journey; r/Sourdough). Pure symmetric gaussian fell
+  // off too fast and collapsed toward zero through the long hold.
+  const PLATEAU_W      = fridgePeakH * 0.6;   // broad plateau either side of cold peak
+  const DECLINE_SIGMA  = fridgeSigma * 2.5;   // widened decline beyond the plateau
+  const FRIDGE_FLOOR   = 0.6;                 // never below 0.6 · peak within the hold
   const N = 300;
   const pts: string[] = [];
   for (let i = 0; i <= N; i++) {
     const hbf = (i / N) * feedHBF;
     let normH: number;
     if (hbf >= fridgeOutHBF) {
+      // IN-FRIDGE branch: rising side keeps the original gaussian (preserves
+      // continuity with the RT rise from the feed). The descending side (hbf
+      // past fridgeBellCenter, i.e. closer to bake) holds a flat plateau out
+      // to PLATEAU_W from the peak, then declines with the wider
+      // DECLINE_SIGMA and floors at FRIDGE_FLOOR so the long hold doesn't
+      // gaussian-collapse. The existing normalization-to-fridgeHeightAtRemoval
+      // is preserved so the in-fridge curve at fridgeOutHBF still meets the
+      // RT-warmup branch below continuously (the seamless two-sigma join).
       const fridgeBellCenter = feedHBF - fridgePeakH;
-      const rawFridgeH = Math.exp(-0.5 * ((hbf - fridgeBellCenter) / fridgeSigma) ** 2);
+      let rawFridgeH: number;
+      if (hbf >= fridgeBellCenter - PLATEAU_W && hbf <= fridgeBellCenter + PLATEAU_W) {
+        // Plateau window (centred on cold peak): standard gaussian — at the
+        // peak it's 1.0, and within PLATEAU_W of the peak the gaussian is
+        // already broad and near-1, reading as a held plateau.
+        rawFridgeH = Math.exp(-0.5 * ((hbf - fridgeBellCenter) / fridgeSigma) ** 2);
+      } else if (hbf < fridgeBellCenter - PLATEAU_W) {
+        // Past peak, beyond plateau (decline side): widened gaussian + floor.
+        const declineDist = (fridgeBellCenter - PLATEAU_W) - hbf;
+        const declineGauss = Math.exp(-0.5 * (declineDist / DECLINE_SIGMA) ** 2);
+        rawFridgeH = Math.max(FRIDGE_FLOOR, declineGauss);
+      } else {
+        // Rising side, beyond plateau (closer to feed): standard gaussian.
+        rawFridgeH = Math.exp(-0.5 * ((hbf - fridgeBellCenter) / fridgeSigma) ** 2);
+      }
       const fridgeAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - fridgeBellCenter) / fridgeSigma) ** 2);
       normH = fridgeAtRemoval > 0
         ? rawFridgeH / fridgeAtRemoval * fridgeHeightAtRemoval
         : rawFridgeH;
     } else {
+      // RT-WARMUP branch (after fridge_out) — UNCHANGED. Converts elapsed RT
+      // hours to cold-equivalent and evaluates the same symmetric gaussian on
+      // a totalEquivH axis, so it resumes continuously to the pre-mix bell.
       const rtHoursAfterRemoval = fridgeOutHBF - hbf;
       const fridgeEquivAfterRemoval = rtHoursAfterRemoval * starterColdFactor;
       const totalEquivH = feedToFridgeOutH + fridgeEquivAfterRemoval;
@@ -505,8 +539,14 @@ export default function FermentChart({
   const starterPeakH   = isLevain ? getPrefPeakH_RT('sourdough', kitchenTemp, styleKey) : 0;
   const starterWarmupH = isLevain ? getStarterFridgeWarmupH(kitchenTemp) : 0;
 
-  // Q10 cold activity model for fridge starter
-  const starterColdFactor = isLevain && starterFridgeOutTime
+  // Q10 cold activity model for fridge starter. Trigger when EITHER the
+  // legacy scalar prop is set OR the event list carries a fridge_out — the
+  // per-event bell rendering reads coldFactor for the warmup branch of
+  // makeFridgePhaseBellPath and would silently fall back to coldFactor=1
+  // (no cold model) if only events are populated.
+  const _hasAnyFridgeOut = !!starterFridgeOutTime
+    || starterEvents.some(e => e.kind === 'fridge_out');
+  const starterColdFactor = isLevain && _hasAnyFridgeOut
     ? Math.pow(2, (kitchenTemp - fridgeTemp) / 10)
     : 1;
 
@@ -1097,28 +1137,49 @@ export default function FermentChart({
                                        ev.bellStyle === 'dotted' ? '3 3' :
                                        '3 3';
                     // Per-event fridge-hold detection: this bell "owns" the
-                    // following fridge_in/fridge_out pair iff its peak lines
-                    // up with the next fridge_in (within 2h) and a
-                    // fridge_out follows. The old ev.hasFridgePhase flag is
-                    // never set by the engine, and the scalar
-                    // fridgeOutHBF / feedToFridgeOutH derived from
-                    // starterFeedTime point at the ORIGINAL last_fed — not
-                    // the refresh whose peak goes into the fridge. Walking
-                    // the events array here gives each bell its own hold.
+                    // following fridge_in / fridge_out pair iff its peak lines
+                    // up with the next fridge_in (within 2h) and a fridge_out
+                    // follows. The old ev.hasFridgePhase flag is never set by
+                    // the engine, and the scalar fridgeOutHBF /
+                    // feedToFridgeOutH derived from starterFeedTime point at
+                    // the ORIGINAL last_fed — not the refresh whose peak goes
+                    // into the fridge. Walking the events array here gives
+                    // each bell its own hold AND the per-event geometry that
+                    // makeFridgePhaseBellPath needs.
+                    //
+                    // CARD-ALIGNMENT INVARIANT: the card renders INTO FRIDGE
+                    // from _fridgeHoldInTime and OUT OF FRIDGE from
+                    // _fridgeHoldOutTime (SchedulePicker), and the engine
+                    // emits the fridge_in / fridge_out events from those SAME
+                    // values — so the cold-phase span on the curve equals the
+                    // card's stated times by construction. Never recompute
+                    // fridge times in the chart from anything else.
                     const myIdx = idx;
                     const nextFridgeIn  = starterEvents.find((e, j) => j > myIdx && e.kind === 'fridge_in');
                     const nextFridgeOut = starterEvents.find((e, j) => j > myIdx && e.kind === 'fridge_out');
                     const ownsHold = !!nextFridgeIn && !!nextFridgeOut
                       && Math.abs(nextFridgeIn.time.getTime() - ev.bellPeakTime.getTime()) <= 2 * 3600000
                       && nextFridgeOut.time.getTime() > nextFridgeIn.time.getTime();
-                    const fridgeInHBF_ev  = ownsHold && nextFridgeIn  ? (bakeMs - nextFridgeIn.time.getTime())  / 3600000 : null;
-                    const fridgeOutHBF_ev = ownsHold && nextFridgeOut ? (bakeMs - nextFridgeOut.time.getTime()) / 3600000 : null;
+                    const fridgeOutHBF_ev      = ownsHold && nextFridgeOut ? (bakeMs - nextFridgeOut.time.getTime()) / 3600000 : null;
+                    const feedToFridgeOutH_ev  = ownsHold && fridgeOutHBF_ev !== null ? (feedHBF - fridgeOutHBF_ev) : null;
+                    // fridgeHeightAtRemoval_ev: the symmetric-gaussian bell
+                    // value at this event's fridge_out — same formula the
+                    // scalar prop used, but anchored to THIS bell's feed and
+                    // hold. Keeps makeFridgePhaseBellPath's existing
+                    // normalization (so the in-fridge branch and the RT
+                    // warmup branch meet continuously at fridgeOutHBF_ev).
+                    const fridgeHeightAtRemoval_ev = feedToFridgeOutH_ev !== null
+                      ? Math.exp(-0.5 * ((feedToFridgeOutH_ev - fridgePeakH) / fridgeSigma) ** 2)
+                      : 0;
                     return (
                       <path
                         key={`ev-bell-${idx}`}
                         d={
-                          ownsHold && fridgeInHBF_ev !== null && fridgeOutHBF_ev !== null
-                            ? makeBellWithFridgePlateau(peakHBF, sigma, fridgeInHBF_ev, fridgeOutHBF_ev, W, WH, feedHBF)
+                          ownsHold && fridgeOutHBF_ev !== null && feedToFridgeOutH_ev !== null
+                            ? makeFridgePhaseBellPath(
+                                feedHBF, fridgeOutHBF_ev, fridgePeakH, fridgeSigma,
+                                feedToFridgeOutH_ev, starterColdFactor, fridgeHeightAtRemoval_ev, W, WH
+                              )
                             : makeBellPath(peakHBF, sigma, W, WH, feedHBF)
                         }
                         fill={fillStyle}
