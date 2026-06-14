@@ -1370,21 +1370,17 @@ export default function FermentChart({
                     const dashArray = ev.bellStyle === 'solid' ? undefined :
                                        ev.bellStyle === 'dotted' ? '3 3' :
                                        '3 3';
-                    // fridge_in for this bell: prefer the canonical fridge_in
-                      // event (same single-source the card and validator read);
-                      // fall back to feedHBF for the "fed straight into fridge"
-                      // case (fridge_in == feed). This makes the bell shape
-                      // (rise → plateau → resume) coincide exactly with the
-                      // fridge_in → fridge_out span the dark-blue tint covers.
-                      const fridgeInHBF_bell = fridgeIn
-                        ? (bakeMs - fridgeIn.time.getTime()) / 3600000
-                        : feedHBF;
-                      const bellPath = ev.hasFridgePhase && fridgeOutHBF !== null && feedToFridgeOutH !== null
-                      ? makeFridgePhaseBellPath(
-                          feedHBF, fridgeInHBF_bell, fridgeOutHBF,
-                          effectivePeakH, fridgePeakH, starterWarmupH, W, WH
-                        )
-                      : makeBellPath(peakHBF, sigma, W, WH, feedHBF);
+                    // Starter bell shape: always a NORMAL bell (rise then
+                      // fall) anchored at its peak. The previous fridge-phase
+                      // path drew a flat-topped plateau "window box" across the
+                      // fridge hold that looked nothing like a fermentation
+                      // curve — explicitly reverted here. makeFridgePhaseBellPath
+                      // is left defined but unused so a future, properly-shaped
+                      // fridge curve can be revisited without re-deriving the
+                      // signature. The cold tint path below still renders the
+                      // darker "in fridge" shade clipped under this normal bell,
+                      // so the legend ("Darker = in fridge") stays accurate.
+                      const bellPath = makeBellPath(peakHBF, sigma, W, WH, feedHBF);
                     return (
                       <g key={`ev-bell-${idx}`}>
                         <path
