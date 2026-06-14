@@ -2438,6 +2438,34 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       })();
 
       // ── Canonical starter event list (sourdough only) ──
+      //
+      // INVARIANT: every action time (fridge_in / fridge_out / pre-mix / refresh /
+      // intermediate_refresh) RENDERED below must be byte-identical to the
+      // corresponding value in the winning candidate's actionTimesMs (the list
+      // candidateValid scans). No render-time recomputation of any action
+      // timestamp — the candidate's stored ms (best.fridgeHoldInMs,
+      // best.fridgeHoldOutMs, best.feed2Ms, best.fridgeHoldRefreshMs,
+      // best.fridgeOutMs, best.bridgeRefreshMs) is the SINGLE SOURCE OF TRUTH,
+      // surfaced via the _* mirrors set when the winner is committed (see
+      // lines ~3640/3672 where _newFridgeOut and the _fridgeHold* mirrors are
+      // assigned). If the chart needs a derived time (e.g. a bell peak),
+      // derive it FROM the stored action time — never recompute the action
+      // time itself with its own formula. Validator and render reading
+      // different values of the SAME logical timestamp is the root cause of
+      // false-green pills, where a fridge action sits in a blocker but the
+      // plan validates against a different timestamp that doesn't.
+      //
+      // MUTUAL EXCLUSION (fridge_in / fridge_out emission):
+      //   - _isFridgeHoldPath winner → ONLY the Path B block (just below)
+      //     emits fridge_in/out, both from candidate-stored ms.
+      //   - non-Path-B fridge starter → ONLY the Block 2 block (further
+      //     below, gated on !_isFridgeHoldPath) emits fridge_in/out, both
+      //     derived from candidate-stored ms via _newFridgeOut and the
+      //     rendered refresh peaks.
+      //   - RT starter (non-Path-B) → no fridge_in/out emitted.
+      // The two blocks must NEVER both fire for one winning plan; if they
+      // did and disagreed, the validator would check one timestamp while the
+      // chart and card rendered another.
       const _starterEvents: StarterEvent[] = (() => {
         const events: StarterEvent[] = [];
         const nowMs = Date.now();
@@ -2520,75 +2548,95 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           });
         }
 
-        if (_isFridgeHoldPath
-            && _fridgeHoldRefreshTime
-            && _fridgeHoldInTime
-            && _fridgeHoldOutTime
-            && _feed2Time) {
-          const refreshPeakAt = new Date(_fridgeHoldRefreshTime.getTime() + adjPeakH_next_eff * refreshStretch * 3600000);
-          events.push({
-            kind: 'refresh',
-            time: _fridgeHoldRefreshTime,
-            isPast: _fridgeHoldRefreshTime.getTime() < nowMs - 60 * 60 * 1000,
-            isActive: false,
-            isDraggable: false,
-            label: isFr ? 'Rafraîchi' : 'Refresh Feed',
-            cardTimeFormat: 'relative',
-            cardNote: isFr
-              ? `Pic vers ${fmtCardHM(refreshPeakAt, isFr)} — puis au frigo`
-              : `Peak around ${fmtCardHM(refreshPeakAt, isFr)} — then refrigerate`,
-            bellStyle: 'dotted',
-            bellPeakTime: refreshPeakAt,
-            bellSigmaScale: refreshStretch,
-            // hasFridgePhase is NOT set here. Path B's biology is "refresh at
-            // RT → rise to peak → put in fridge at peak → flat cold plateau"
-            // — the opposite of makeFridgePhaseBellPath's "fed-then-fridge"
-            // shape. The chart renders a separate cold plateau between the
-            // fridge_in and fridge_out events (see FermentChart fridge-hold
-            // block) so the curve shows: rise to peak → flat cold band →
-            // resume.
-          });
-          events.push({
-            kind: 'fridge_in',
-            time: _fridgeHoldInTime,
-            isPast: _fridgeHoldInTime.getTime() < nowMs,
-            isActive: false,
-            isDraggable: false,
-            label: isFr ? 'Au frigo' : 'Into Fridge',
-            cardTimeFormat: 'absolute',
-            cardNote: isFr ? 'Au pic — ralentit la fermentation' : 'At peak — slows fermentation',
-            bellStyle: 'none',
-            bellSigmaScale: 1.0,
-          });
-          const warmupMin = Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60);
-          events.push({
-            kind: 'fridge_out',
-            time: _fridgeHoldOutTime,
-            isPast: _fridgeHoldOutTime.getTime() < nowMs,
-            isActive: false,
-            isDraggable: false,
-            label: isFr ? 'Sortie du frigo' : 'Out of Fridge',
-            cardTimeFormat: 'absolute',
-            cardNote: isFr
-              ? `Tempérer ~${warmupMin} min avant le rafraîchi final`
-              : `Warm up ~${warmupMin} min before pre-mix feed`,
-            bellStyle: 'none',
-            bellSigmaScale: 1.0,
-          });
-          const preMixPeakAt = new Date(_feed2Time.getTime() + adjPeakH_next_eff * preMixStretch * 3600000);
-          events.push({
-            kind: 'pre_mix',
-            time: _feed2Time,
-            isPast: _feed2Time.getTime() < nowMs,
-            isActive: true,
-            isDraggable: true,
-            label: isFr ? 'Rafraîchi final' : 'Pre-mix Feed',
-            cardTimeFormat: 'absolute',
-            cardNote: isFr ? `Pic vers ${fmtCardHM(preMixPeakAt, isFr)}` : `Peak around ${fmtCardHM(preMixPeakAt, isFr)}`,
-            bellStyle: 'solid',
-            bellPeakTime: preMixPeakAt,
-            bellSigmaScale: preMixStretch,
-          });
+        // Block 1 — Path B (fridge-hold) winner. Gated on _isFridgeHoldPath
+        // ALONE so a Path B winner can NEVER silently fall through to
+        // Block 2's _newFridgeOut math. _isFridgeHoldPath is set only at
+        // line ~3673 when best.isFridgeHoldPath is true, and Path B candidate
+        // creation (line ~3518) populates fridgeHoldRefreshMs /
+        // fridgeHoldInMs / fridgeHoldOutMs / feed2Ms together — so all four
+        // _* mirrors will be non-null in practice. Each individual events.push
+        // below is now guarded by the corresponding mirror so we always
+        // return early for a Path B winner, even in the degenerate case
+        // where one mirror is null (better to drop one event than to let
+        // Block 2 re-emit fridge_out at a different timestamp).
+        if (_isFridgeHoldPath) {
+          if (_fridgeHoldRefreshTime) {
+            const refreshPeakAt = new Date(_fridgeHoldRefreshTime.getTime() + adjPeakH_next_eff * refreshStretch * 3600000);
+            events.push({
+              kind: 'refresh',
+              time: _fridgeHoldRefreshTime,
+              isPast: _fridgeHoldRefreshTime.getTime() < nowMs - 60 * 60 * 1000,
+              isActive: false,
+              isDraggable: false,
+              label: isFr ? 'Rafraîchi' : 'Refresh Feed',
+              cardTimeFormat: 'relative',
+              cardNote: isFr
+                ? `Pic vers ${fmtCardHM(refreshPeakAt, isFr)} — puis au frigo`
+                : `Peak around ${fmtCardHM(refreshPeakAt, isFr)} — then refrigerate`,
+              bellStyle: 'dotted',
+              bellPeakTime: refreshPeakAt,
+              bellSigmaScale: refreshStretch,
+              // hasFridgePhase is NOT set here. Path B's biology is "refresh at
+              // RT → rise to peak → put in fridge at peak → flat cold plateau"
+              // — the opposite of makeFridgePhaseBellPath's "fed-then-fridge"
+              // shape. The chart renders a separate cold plateau between the
+              // fridge_in and fridge_out events (see FermentChart fridge-hold
+              // block) so the curve shows: rise to peak → flat cold band →
+              // resume.
+            });
+          }
+          if (_fridgeHoldInTime) {
+            events.push({
+              kind: 'fridge_in',
+              time: _fridgeHoldInTime,
+              isPast: _fridgeHoldInTime.getTime() < nowMs,
+              isActive: false,
+              isDraggable: false,
+              label: isFr ? 'Au frigo' : 'Into Fridge',
+              cardTimeFormat: 'absolute',
+              cardNote: isFr ? 'Au pic — ralentit la fermentation' : 'At peak — slows fermentation',
+              bellStyle: 'none',
+              bellSigmaScale: 1.0,
+            });
+          }
+          if (_fridgeHoldOutTime) {
+            const warmupMin = Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60);
+            events.push({
+              kind: 'fridge_out',
+              time: _fridgeHoldOutTime,
+              isPast: _fridgeHoldOutTime.getTime() < nowMs,
+              isActive: false,
+              isDraggable: false,
+              label: isFr ? 'Sortie du frigo' : 'Out of Fridge',
+              cardTimeFormat: 'absolute',
+              cardNote: isFr
+                ? `Tempérer ~${warmupMin} min avant le rafraîchi final`
+                : `Warm up ~${warmupMin} min before pre-mix feed`,
+              bellStyle: 'none',
+              bellSigmaScale: 1.0,
+            });
+          }
+          if (_feed2Time) {
+            const preMixPeakAt = new Date(_feed2Time.getTime() + adjPeakH_next_eff * preMixStretch * 3600000);
+            events.push({
+              kind: 'pre_mix',
+              time: _feed2Time,
+              isPast: _feed2Time.getTime() < nowMs,
+              isActive: true,
+              isDraggable: true,
+              label: isFr ? 'Rafraîchi final' : 'Pre-mix Feed',
+              cardTimeFormat: 'absolute',
+              cardNote: isFr ? `Pic vers ${fmtCardHM(preMixPeakAt, isFr)}` : `Peak around ${fmtCardHM(preMixPeakAt, isFr)}`,
+              bellStyle: 'solid',
+              bellPeakTime: preMixPeakAt,
+              bellSigmaScale: preMixStretch,
+            });
+          }
+          // Always return early for a Path B winner — even if some _* mirror
+          // was null and we emitted fewer events. Falling through would let
+          // Block 2 recompute fridge_out at newMix − warmupH and emit a
+          // SECOND fridge_out at a different timestamp than the validator
+          // checked (best.fridgeHoldOutMs) — the false-green hiding spot.
           events.sort((a, b) => a.time.getTime() - b.time.getTime());
           return events;
         }
@@ -2651,7 +2699,32 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           });
         }
 
-        if (!_isFridgeHoldPath && starterLocation === 'fridge' && _newFridgeOut) {
+        // Block 2 — non-Path-B fridge starter fridge_in/fridge_out emission.
+        // Gated mutually-exclusive with Block 1: !_isFridgeHoldPath AND no
+        // Path B mirror set. The mirror checks (_fridgeHoldOutTime == null)
+        // are belt-and-suspenders: in normal flow _isFridgeHoldPath ↔
+        // _fridgeHoldOutTime are set together (line ~3673), but if either
+        // ever leaked through alone (stale state, partial reset) the mirror
+        // guard prevents Block 2 from re-emitting fridge_out at a different
+        // timestamp than the validator checked.
+        //
+        // INVARIANT (this block): the emitted fridge_out's `time` is
+        // _newFridgeOut, which for a non-Path-B fridge winner equals
+        // best.fridgeOutMs (line ~3641) — the EXACT ms that
+        // computeActionTimes pushed into actionTimesMs for candidateValid
+        // to scan. The _warmupH_fo / _dwellH_fo / _cf_fo math below is
+        // CARD-NOTE-ONLY ("~X min to reach room temp") and never affects
+        // the event's `time` field. The emitted fridge_in's `time` is the
+        // latest refresh bellPeakTime which uses the same adjPeakH_next_eff
+        // × refreshStretch formula the validator's computeActionTimes uses
+        // for Math.max(refreshPeaks) — so render == validation by
+        // construction.
+        if (!_isFridgeHoldPath
+            && _fridgeHoldOutTime == null
+            && _fridgeHoldInTime == null
+            && _fridgeHoldRefreshTime == null
+            && starterLocation === 'fridge'
+            && _newFridgeOut) {
           // Pair fridge_out with a fridge_in event so the chart's cold phase
           // visibly spans the gap (previously the long fridge dwell rendered
           // as an empty stretch). fridge_in is the moment the starter goes
@@ -3679,12 +3752,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // would silently lose the refeed suggestion. (Path B always sets
       // usingPeak2: false at the candidate level, no need to override.)
       if (_feed2Time) setRefeedSuggestion(_feed2Time);
-      // Mirror _newFridgeOut to the candidate's own fridge_out so the chart's
-      // fridgeOutHBF derives from the same timestamp the card shows. Without
-      // this, RT-starter Path B winners had _newFridgeOut = null → the chart
-      // drew a plain future-feed bell while the card claimed a fridge hold.
-      if (_fridgeHoldOutTime) {
-        _newFridgeOut = _fridgeHoldOutTime;
+      // Force _newFridgeOut to the Path B winner's stored fridge_out
+      // (best.fridgeHoldOutMs) — the EXACT ms candidateValid checked via
+      // computeActionTimes. This MUST run unconditionally for a Path B
+      // winner, BEFORE any later code can read _newFridgeOut: it overrides
+      // any earlier assignment (e.g. line ~3713's `newMix − warmupH`
+      // fallback when starterLocation === 'fridge') so the chart's
+      // starterFridgeOutTime prop and the card's fridge_out event are both
+      // byte-identical to the validator's stored timestamp. Reading
+      // best.fridgeHoldOutMs directly (not the _fridgeHoldOutTime mirror)
+      // avoids any chance of a null mirror leaking the wrong value through.
+      if (best.fridgeHoldOutMs) {
+        _newFridgeOut = new Date(best.fridgeHoldOutMs);
       }
     }
 
