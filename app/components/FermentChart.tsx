@@ -1157,9 +1157,29 @@ export default function FermentChart({
                     const myIdx = idx;
                     const nextFridgeIn  = starterEvents.find((e, j) => j > myIdx && e.kind === 'fridge_in');
                     const nextFridgeOut = starterEvents.find((e, j) => j > myIdx && e.kind === 'fridge_out');
+                    // Topology, not proximity: this bell owns the following
+                    // fridge_in/out iff it is the LAST bell-bearing event
+                    // before that fridge_in (no other bell sits between).
+                    // The previous 2h-to-peak heuristic assumed the bell
+                    // peaks at RT then gets chilled AT peak — true for
+                    // refresh→fridge, but for fed-straight-into-fridge
+                    // (Fridge / Today or Yesterday) fridge_in = the feed
+                    // and the peak is the COLD peak ~42h later, so the gap
+                    // is ~42h → ownsHold falsed → the cold curve never
+                    // rendered and the bell collapsed to a flat baseline
+                    // dotted line. Topology handles both cases: last_fed
+                    // owns when there's no refresh between it and
+                    // fridge_in; the refresh owns when there is.
+                    const fiIdx = nextFridgeIn ? starterEvents.indexOf(nextFridgeIn) : -1;
+                    const noBellBetween = fiIdx > idx && !starterEvents.some((e, j) =>
+                      j > idx && j < fiIdx && e.bellStyle && e.bellStyle !== 'none');
+                    // ev.bellStyle is already narrowed away from 'none' by
+                    // the early `if (ev.bellStyle === 'none') return null;`
+                    // at the top of this map callback.
                     const ownsHold = !!nextFridgeIn && !!nextFridgeOut
-                      && Math.abs(nextFridgeIn.time.getTime() - ev.bellPeakTime.getTime()) <= 2 * 3600000
-                      && nextFridgeOut.time.getTime() > nextFridgeIn.time.getTime();
+                      && nextFridgeOut.time.getTime() > nextFridgeIn.time.getTime()
+                      && nextFridgeIn.time.getTime() >= bellStartMs
+                      && noBellBetween;
                     const fridgeOutHBF_ev      = ownsHold && nextFridgeOut ? (bakeMs - nextFridgeOut.time.getTime()) / 3600000 : null;
                     const feedToFridgeOutH_ev  = ownsHold && fridgeOutHBF_ev !== null ? (feedHBF - fridgeOutHBF_ev) : null;
                     // fridgeHeightAtRemoval_ev: the symmetric-gaussian bell
@@ -1689,7 +1709,14 @@ export default function FermentChart({
         })()}
 
         {/* Path B diamonds: Refresh only (In/Out shown as cold-storage region, not cluttering diamonds) */}
-        {isFridgeHoldPath && fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null && (() => {
+        {!useEventDrivenStarter && isFridgeHoldPath && fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null && (() => {
+          // Path-B legacy diamond block — must NOT fire when the engine is
+          // emitting starterEvents (the event-driven diamond block at line
+          // ~1482 already renders the refresh diamond + 'Refresh Feed' label
+          // below the axis). Without this gate we drew a SECOND tiny
+          // diamond + a 'Refresh' label landing on the tick-mark row.
+          // Mirrors the !useEventDrivenStarter guard on the Path-B bell
+          // block (line ~1027) and the legacy intermediate block (~1640).
           const items = [
             { hbf: fridgeHoldRefreshHBF, label: isFr ? 'Rafraîchi' : 'Refresh', fillColor: '#4A7FA5' },
           ];
