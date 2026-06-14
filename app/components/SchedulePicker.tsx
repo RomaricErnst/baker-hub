@@ -2569,6 +2569,27 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             && !_hasFutureFeedPath
             && !_planHasRefresh;
 
+          // De-dupe: when the first scheduled refresh (primary, first
+          // intermediate, or Path B) lands within ~1h of lastFedTime, the
+          // "refresh" IS that same feed — surfacing both a historical
+          // last_fed event AND a coincident refresh would stack two diamonds
+          // and two labels at the same x. Suppress the separate last_fed
+          // event in that case; the refresh push downstream already carries
+          // the diamond + 'Refresh Feed' label. The historical last_fed
+          // still renders when it is meaningfully earlier than the first
+          // refresh (a genuinely distinct past feed — e.g. fed 2–3 days
+          // ago, refresh planned now).
+          const SAME_MOMENT_MS = 60 * 60 * 1000;
+          const _firstRefreshMs: number | null =
+            _starterRefeedTime?.getTime()
+            ?? _fridgeHoldRefreshTime?.getTime()
+            ?? (_intermediateRefreshFeeds.length > 0
+                  ? _intermediateRefreshFeeds[0].getTime()
+                  : null);
+          const _firstRefreshCoincidesWithLastFed =
+            _firstRefreshMs !== null
+            && Math.abs(_firstRefreshMs - lastFedTime.getTime()) <= SAME_MOMENT_MS;
+
           // Bell peak time:
           //  - When active in fridge AND engine has set _newFridgeOut:
           //      peak = fridgeOut + warmupH (engine's actual plan)
@@ -2584,24 +2605,26 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 : new Date(lastFedTime.getTime() + adjPeakH_last_eff * _coldFactor_evt * 3600000))
             : new Date(lastFedTime.getTime() + adjPeakH_last_eff * 3600000);
 
-          events.push({
-            kind: 'last_fed',
-            time: lastFedTime,
-            isPast: lastFedTime.getTime() < nowMs,
-            isActive: isLastFedActiveInFridge,
-            isDraggable: false,
-            label: isFr ? 'Dernier rafraîchi' : 'Last fed',
-            cardTimeFormat: 'absolute',
-            cardNote: isLastFedActiveInFridge
-              ? (isFr
-                  ? `Au frigo — pic vers ${fmtCardHM(lastFedBellPeakTime, isFr)}`
-                  : `Held in fridge — peak around ${fmtCardHM(lastFedBellPeakTime, isFr)}`)
-              : undefined,
-            bellStyle: isLastFedActiveInFridge ? 'solid' : 'historical_dotted',
-            bellPeakTime: lastFedBellPeakTime,
-            bellSigmaScale: 1.0,
-            hasFridgePhase: isLastFedActiveInFridge,
-          });
+          if (!_firstRefreshCoincidesWithLastFed) {
+            events.push({
+              kind: 'last_fed',
+              time: lastFedTime,
+              isPast: lastFedTime.getTime() < nowMs,
+              isActive: isLastFedActiveInFridge,
+              isDraggable: false,
+              label: isFr ? 'Dernier rafraîchi' : 'Last fed',
+              cardTimeFormat: 'absolute',
+              cardNote: isLastFedActiveInFridge
+                ? (isFr
+                    ? `Au frigo — pic vers ${fmtCardHM(lastFedBellPeakTime, isFr)}`
+                    : `Held in fridge — peak around ${fmtCardHM(lastFedBellPeakTime, isFr)}`)
+                : undefined,
+              bellStyle: isLastFedActiveInFridge ? 'solid' : 'historical_dotted',
+              bellPeakTime: lastFedBellPeakTime,
+              bellSigmaScale: 1.0,
+              hasFridgePhase: isLastFedActiveInFridge,
+            });
+          }
         }
 
         // Block 1 — Path B (fridge-hold) winner. Gated on _isFridgeHoldPath
