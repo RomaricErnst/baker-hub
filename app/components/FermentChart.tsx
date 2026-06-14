@@ -63,7 +63,7 @@ export interface FermentChartProps {
 // ── Constants ────────────────────────────────────────────────
 const WINDOW_H_DEFAULT = 96;
 const PAD       = 16;
-const CHART_H   = 280;   // raised from 252 so two-line labels and any row-1/2 stacked labels don't clip / crowd the "Drag the diamonds" caption below
+const CHART_H   = 252;
 const TOP_PAD   = 72;   // space above curves for window labels
 const BL        = 175;  // baseline = TOP_PAD + curve height area
 const MAXH      = 110;  // max bell height (fits within TOP_PAD to BL)
@@ -215,85 +215,35 @@ function makePlateauBellPath(
   return pts.join(' ');
 }
 
-// Biologically-correct fridge-phase bell: rise → flat cold plateau → resume.
-//
-// HBF convention: larger HBF = earlier (further before bake). feedHBF is the
-// largest, fridgeOutHBF the smallest, fridgeInHBF in between (or equal to
-// feedHBF if fed straight into the fridge).
-//
-// Three segments, drawn from feed (rightmost-on-time / leftmost-on-chart) to 0
-// (bake):
-//   (i)  Rise feed → fridge_in. Rate depends on whether the starter reached its
-//        RT peak before going into the fridge:
-//          - If the RT gap (feedHBF − fridgeInHBF) ≥ ~½ adjPeakH, the starter
-//            rose at RT rate to (near) peak — use a narrow RT-rate gaussian
-//            centred at the RT peak.
-//          - Otherwise (fed straight into fridge), use a wide cold-rate gaussian
-//            centred at the cold peak so the climb is gentle across the whole
-//            cold span.
-//        We compute heightAtFridgeIn from that rise.
-//   (ii) FLAT cold plateau fridge_in → fridge_out at heightAtFridgeIn. The
-//        biology: fermentation is ~5× slower in the cold, so the curve must
-//        NOT follow a gaussian DOWN after a peak — it holds. (Previous bug:
-//        gaussian centred at feed − fridgePeakH descended through the hold,
-//        producing the "first bell going down" the user reported.)
-//   (iii) Resume fridge_out → 0. Short linear warmup to ~1.0 over starterWarmupH,
-//        then gradual gaussian decline toward bake.
-//
-// Never drops to zero abruptly: all descents are gradual gaussians.
 function makeFridgePhaseBellPath(
   feedHBF: number,
-  fridgeInHBF: number,
   fridgeOutHBF: number,
-  adjPeakH: number,
   fridgePeakH: number,
-  starterWarmupH: number,
+  fridgeSigma: number,
+  feedToFridgeOutH: number,
+  starterColdFactor: number,
+  fridgeHeightAtRemoval: number,
   W: number,
   WH: number,
 ): string {
   const N = 300;
   const pts: string[] = [];
-
-  const rtGapH = Math.max(0, feedHBF - fridgeInHBF);
-  const chilledAtPeak = rtGapH >= adjPeakH * 0.5;
-
-  const rtSigma = Math.max(0.5, adjPeakH * 0.35);
-  const rtBellCenter = feedHBF - adjPeakH;
-  const coldSigma = Math.max(1.0, fridgePeakH * 0.4);
-  const coldBellCenter = feedHBF - fridgePeakH;
-
-  const heightAtFridgeIn = chilledAtPeak
-    ? Math.exp(-0.5 * ((fridgeInHBF - rtBellCenter) / rtSigma) ** 2)
-    : Math.exp(-0.5 * ((fridgeInHBF - coldBellCenter) / coldSigma) ** 2);
-
-  const warmupSafeH = Math.max(0.25, starterWarmupH);
-  const warmupPeakHBF = Math.max(0, fridgeOutHBF - warmupSafeH);
-  const decaySigma = Math.max(1.0, adjPeakH * 0.5);
-
   for (let i = 0; i <= N; i++) {
     const hbf = (i / N) * feedHBF;
     let normH: number;
-
-    if (hbf >= fridgeInHBF) {
-      // (i) Rise: feed → fridge_in
-      normH = chilledAtPeak
-        ? Math.exp(-0.5 * ((hbf - rtBellCenter) / rtSigma) ** 2)
-        : Math.exp(-0.5 * ((hbf - coldBellCenter) / coldSigma) ** 2);
-    } else if (hbf >= fridgeOutHBF) {
-      // (ii) Cold plateau: fridge_in → fridge_out (FLAT at heightAtFridgeIn).
-      normH = heightAtFridgeIn;
-    } else if (hbf >= warmupPeakHBF) {
-      // (iii-a) Linear warmup from heightAtFridgeIn at fridge_out up to ~1.0
-      //         at warmupPeakHBF (≈ fridge_out − warmupH).
-      const t = warmupSafeH > 0 ? (fridgeOutHBF - hbf) / warmupSafeH : 1;
-      normH = heightAtFridgeIn + (1 - heightAtFridgeIn) * Math.max(0, Math.min(1, t));
+    if (hbf >= fridgeOutHBF) {
+      const fridgeBellCenter = feedHBF - fridgePeakH;
+      const rawFridgeH = Math.exp(-0.5 * ((hbf - fridgeBellCenter) / fridgeSigma) ** 2);
+      const fridgeAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - fridgeBellCenter) / fridgeSigma) ** 2);
+      normH = fridgeAtRemoval > 0
+        ? rawFridgeH / fridgeAtRemoval * fridgeHeightAtRemoval
+        : rawFridgeH;
     } else {
-      // (iii-b) Gaussian decline from warmup peak toward 0 HBF (bake). Never
-      //         a vertical drop — gradual decay.
-      const dist = warmupPeakHBF - hbf;
-      normH = Math.exp(-0.5 * (dist / decaySigma) ** 2);
+      const rtHoursAfterRemoval = fridgeOutHBF - hbf;
+      const fridgeEquivAfterRemoval = rtHoursAfterRemoval * starterColdFactor;
+      const totalEquivH = feedToFridgeOutH + fridgeEquivAfterRemoval;
+      normH = Math.exp(-0.5 * ((totalEquivH - fridgePeakH) / fridgeSigma) ** 2);
     }
-
     normH = Math.max(0, Math.min(1, normH));
     const x = hToX(hbf, W, WH);
     const y = BL - normH * MAXH;
@@ -412,43 +362,18 @@ export default function FermentChart({
   const CHAR            = '#1A1612';
   const DARK_SAGE       = '#3D5A30';
   const DARK_SAGE_STR   = '#4A6B3A';
-  // Cold/fridge = a darker shade of the element's OWN hue, NOT a shared blue
-  // wash. Hue encodes WHICH element (blue=starter, green=dough); shade
-  // encodes WHICH state (light=RT, dark=fridge). Still solid fills so they
-  // stay orthogonal to the blocker's red diagonal hatch (no clash).
-  // STARTER_COLD_FILL removed with the fridge-tint box; reintroduce only
-  // when a properly shaped fridge curve replaces the rectangular plateau.
-  const DOUGH_COLD_FILL   = 'rgba(42, 79, 48, 0.30)';    // dark green
 
   // ── Physics ──────────────────────────────────────────────
   // DOUGH_SWEET_CENTER = offset from mix to dough peak = coldH + rtH per style
   // Passed as sweetCenterH from SchedulePicker. Fallback: 26h cold, 6h RT.
   // When mixHBF = DOUGH_SWEET_CENTER → doughPeakHBF = 0 = bake (correct).
+  const DOUGH_SIG          = hasColdRetard ? 18 : Math.max(3, WH * 0.35);
   // For sourdough RT-only (no cold retard), dough needs ~adjPeakH for the
   // levain to peak inside it. Non-sourdough RT-only uses 6h default.
   const DOUGH_SWEET_CENTER_NO_RETARD = isLevain && starterAdjPeakH
     ? Math.max(6, starterAdjPeakH * 0.85)
     : 6;
   const DOUGH_SWEET_CENTER = sweetCenterH ?? (hasColdRetard ? 26 : DOUGH_SWEET_CENTER_NO_RETARD);
-
-  // Bell width responds to kitchen temperature (Q10) and the style's ferment
-  // length. Warmer kitchen → faster ferment → tighter bell. Longer cold
-  // retard / sweet center → wider bell. Shared by sourdough AND yeasted
-  // cold-retard styles (both flow through hasColdRetard + phases).
-  const _warmSpeed = Math.pow(2, (kitchenTemp - 22) / 10);  // vs 22°C baseline
-  const _coldRetardH_sig = phases?.coldRetardH ?? 0;
-  const _bulkH_sig       = phases?.bulkFermH   ?? 0;
-  const _proofH_sig      = phases?.finalProofH ?? 0;
-  const _sweetCenterMag  = DOUGH_SWEET_CENTER;               // style ferment length
-  const DOUGH_SIG = hasColdRetard
-    // Cold-retard: baseline width from the cold duration + warm flanks, then
-    // the WHOLE bell tightens as the kitchen warms (sqrt = gentle, not extreme).
-    ? Math.max(8, Math.min(WH * 0.6,
-        (_coldRetardH_sig * 0.45 + _bulkH_sig + _proofH_sig + 4)
-          / Math.sqrt(Math.max(0.5, _warmSpeed))))
-    // RT-only: width scales with the style's sweet center, tightened by heat.
-    : Math.max(3, Math.min(WH * 0.5,
-        (_sweetCenterMag * 0.55) / Math.max(0.5, _warmSpeed)));
 
   // Two-temperature poolish protocol:
   // needsFridge = offset > RT peak time for this style+temp
@@ -476,27 +401,6 @@ export default function FermentChart({
 
   const prefStartAbsHBF = effectiveMixHBF + prefOffsetH;
   const doughPeakHBF = effectiveMixHBF - DOUGH_SWEET_CENTER;
-
-  // Dough cold window boundaries (for tint clip).
-  // The cold window spans from (mix + bulk) to (mix + bulk + cold). When the
-  // style spec asks for more cold than fits in the window between mix and
-  // bake, the cold portion gets truncated at bake — clamp the end to ≥ 0 so
-  // the clip width stays positive and the tint still renders the visible
-  // portion. (Previously gated on mixHBF > bulkH+coldH, which silently hid
-  // the entire cold fill for configs like 18°C/72h with coldH 53.3, sweet
-  // center at mixHBF 20 — the cold phase WAS active in the plan but unshaded.)
-  const _doughBulkH  = phases?.bulkFermH   ?? 0;
-  const _doughColdH  = phases?.coldRetardH  ?? 0;
-  const _doughColdStartHBF = effectiveMixHBF - _doughBulkH;
-  const _doughColdEndHBF   = Math.max(0, effectiveMixHBF - _doughBulkH - _doughColdH);
-  const _showDoughColdTint = hasColdRetard && _doughColdH > 0
-    && _doughBulkH >= 0
-    && _doughColdStartHBF > _doughColdEndHBF;
-  // Quality plateau half-width for cold-retard dough — small, style-scaled
-  // (NOT the fridge window — just a gentle peak hold on the bell).
-  const _doughPlateauHalfW = hasColdRetard
-    ? Math.min(6, Math.max(2, DOUGH_SWEET_CENTER * 0.10))
-    : 0;
   // Both fridge and RT: peak relative to prefStartAbsHBF so curve slides with diamond.
   // Fridge: peak is optH hours after start (at optimal → peaks at mix, earlier/later → shifts).
   const prefOptHFridge = getPrefOptH(prefermentType, kitchenTemp, true);
@@ -665,9 +569,7 @@ export default function FermentChart({
   const isFridgeHoldPath = fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null;
 
   // ── Label collision detection ────────────────────────────
-  // allClose: hist + active + mix all within ~80px → suppress the secondary
-  // labels (Last fed, Next/Pre-mix Feed) because the row stacker can't help
-  // when the three diamonds occupy the same horizontal slot.
+  const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 100;
   const allClose = isLevain && histPrefX !== null
     && Math.abs((histPrefX ?? 0) - activePrefX) < 80
     && Math.abs(activePrefX - mixX) < 80;
@@ -695,7 +597,7 @@ export default function FermentChart({
     firstTick.setHours(Math.floor(firstTick.getHours() / tickIntervalH) * tickIntervalH);
     for (let tMs = firstTick.getTime(); tMs > bakeMs - WH * 3600000; tMs -= tickIntervalH * 3600000) {
       const h = (bakeMs - tMs) / 3600000;
-      if (h < 1.0) continue;
+      if (h < 1.5) continue;
       if (h > WH - 0.5) continue;
       const tick = new Date(tMs);
       const wd = tick.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' });
@@ -707,23 +609,6 @@ export default function FermentChart({
         : isFr ? `${hr}h`
         : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
       ticks.push({ x: hToX(h, W, WH), label: `${wd} ${timeLabel}` });
-    }
-    // If the leftmost tick is more than 25% of W from the left edge, add one more interval
-    if (ticks.length > 0 && ticks[ticks.length - 1].x > PAD + W * 0.25) {
-      const extraMs = firstTick.getTime() - ticks.length * tickIntervalH * 3600000;
-      const extraH = (bakeMs - extraMs) / 3600000;
-      if (extraH > 1.0 && extraH < WH) {
-        const extraTick = new Date(extraMs);
-        const wd = extraTick.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' });
-        const hr = extraTick.getHours();
-        const timeLabel = hr === 0 ? t('tickLabels.midnight')
-          : hr === 6 ? t('tickLabels.6am')
-          : hr === 12 ? t('tickLabels.noon')
-          : hr === 18 ? t('tickLabels.6pm')
-          : isFr ? `${hr}h`
-          : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
-        ticks.push({ x: hToX(extraH, W, WH), label: `${wd} ${timeLabel}` });
-      }
     }
   }
 
@@ -910,216 +795,35 @@ export default function FermentChart({
     );
   }
 
-  // ── Label typography (unified) ───────────────────────────
-  const DIAMOND_LABEL = { fontSize: 11, fontWeight: 600, fontFamily: 'DM Mono, monospace' } as const;
-  const TICK_LABEL    = { fontSize: 11, fontWeight: 400, fontFamily: 'DM Mono, monospace' } as const;
-
-  // ── Two-line label helper ────────────────────────────────
-  // Split at the LAST space so the wider word isn't orphaned: "Refresh Feed"
-  // → ["Refresh","Feed"]; "Refresh Feed 2" → ["Refresh Feed","2"] ...wait, we
-  // actually want "Refresh"/"Feed 2" so the wider word stays anchored.
-  // Strategy: split at the FIRST space when the text has ≥3 chars before
-  // a remainder ≥2 chars; otherwise split at last space. Practical effect:
-  // "Refresh Feed" → ["Refresh","Feed"]; "Refresh Feed 2" → ["Refresh","Feed 2"];
-  // "Pre-mix Feed" → ["Pre-mix","Feed"]; "Start Dough" → ["Start","Dough"];
-  // "Last fed" → ["Last","fed"]. Single-word labels stay one line.
-  const splitLabel = (text: string): [string] | [string, string] => {
-    const i = text.indexOf(' ');
-    if (i < 0) return [text];
-    const head = text.slice(0, i);
-    const tail = text.slice(i + 1);
-    if (head.length === 0 || tail.length === 0) return [text];
-    return [head, tail];
-  };
-  const LINE_HEIGHT = 12;
-  const splitText = (text: string, x: number): React.ReactNode => {
-    const lines = splitLabel(text);
-    if (lines.length === 1) return lines[0];
-    return (
-      <>
-        <tspan x={x} dy="0">{lines[0]}</tspan>
-        <tspan x={x} dy={LINE_HEIGHT}>{lines[1]}</tspan>
-      </>
-    );
-  };
-  // Footprint = WIDER line × 6.6px (DM Mono @ 11px ≈ 6.6px/char) + 6px padding.
-  // Used by the stacker so labels split into two lines need only their longest
-  // WORD to clear neighbours, not the full one-line span.
-  const labelFootprint = (text: string): number => {
-    const lines = splitLabel(text);
-    const widest = Math.max(...lines.map(l => l.length));
-    return widest * 6.6 + 6;
-  };
-
-  // ── Diamond-label row layout ─────────────────────────────
-  // Width-aware top-down stacking: row 0 by default, push to 1/2 ONLY when
-  // a label's footprint overlaps the last placed label on the same row.
-  // Two-line labels shrink the footprint to ~half, so almost everything sits
-  // on a single tier.
-  const LABEL_ROW_1 = AXIS_Y + S + 18;
-  const ROW_STEP    = 26;    // raised from 16: each label is now 2 lines
-  const SUBLABEL_DY = 26;   // pref protocol indicator — sits BELOW both lines of the parent label
-  const diamondLabels: { key: string; x: number; text: string }[] = [];
-
-  // Mix label — always rendered
-  diamondLabels.push({ key: 'mix', x: mixX, text: isFr ? 'Pétrir' : 'Start Dough' });
-
-  // Pref label (non-levain pref, or levain w/o knownPeak rendered as legacy diamond)
-  if (hasPref && !knownPeakHBF && !isLevain) {
-    const prefText = prefermentType === 'biga'
-      ? t('cardLabels.makeBiga')
-      : t('cardLabels.makePoolish');
-    diamondLabels.push({ key: 'pref', x: activePrefX, text: prefText });
-  }
-
-  // Event-driven diamonds (sourdough). Match render's idx: filter by !==
-  // fridge_out, then skip fridge_in inside the loop so idx stays post-filter.
-  if (useEventDrivenStarter) {
-    starterEvents
-      .filter(ev => ev.kind !== 'fridge_out')
-      .forEach((ev, idx) => {
-        if (ev.kind === 'fridge_in') return;
-        const hbf = (bakeMs - ev.time.getTime()) / 3600000;
-        if (hbf < 0 || hbf > WH) return;
-        diamondLabels.push({ key: `ev-${idx}`, x: hToX(hbf, W, WH), text: ev.label });
-      });
-  }
-
-  // Comparison overlay "Remove"
-  if (isLevain && showFridgeComparison && !useEventDrivenStarter
-      && compFridgePeakHBF !== null && compFridgeOutHBF !== null) {
-    diamondLabels.push({ key: 'comp-remove', x: hToX(compFridgeOutHBF, W, WH), text: isFr ? 'Sortir' : 'Remove' });
-  }
-
-  // Historical pref diamond "Last fed"
-  if (!useEventDrivenStarter && hasPref && isLevain && histPrefX !== null && !allClose) {
-    diamondLabels.push({ key: 'last-fed', x: histPrefX, text: isFr ? 'Dernier rafraîchi' : 'Last fed' });
-  }
-
-  // Refeed "Feed"
-  if (!useEventDrivenStarter && isLevain && refeedHBF !== null && depletedAtHBF !== null
-      && refeedHBF > effectiveMixHBF
-      && Math.abs(hToX(refeedHBF, W, WH) - activePrefX) > 20) {
-    diamondLabels.push({ key: 'refeed', x: hToX(refeedHBF, W, WH), text: 'Feed' });
-  }
-
-  // Feed circle (single cycle, no Peak 2)
-  if (!useEventDrivenStarter && isLevain && activeFeedHBF !== null && histFeedHBF === null
-      && (!knownPeakHBF || starterRedPill) && activeFeedHBF > 0) {
-    diamondLabels.push({ key: 'feed-circle', x: hToX(activeFeedHBF, W, WH), text: isFr ? 'Rafraîchi' : 'Feed' });
-  }
-
-  // Active feed diamond (Peak2 scenario)
-  if (!useEventDrivenStarter && isLevain && activeFeedHBF !== null && histFeedHBF !== null
-      && (!knownPeakHBF || starterRedPill || starterFeed2Time) && activeFeedHBF > 0 && !allClose) {
-    const text = starterRedPill
-      ? (isFr ? 'Rafraîchi final' : 'Pre-mix Feed')
-      : (isFr ? 'Prochain rafraîchi' : 'Next Feed');
-    diamondLabels.push({ key: 'feed-diamond', x: activePrefX, text });
-  }
-
-  // Refresh feeds (kept, same dedup logic as render)
-  if (!useEventDrivenStarter && isLevain && starterIntermediateFeeds.length > 0) {
-    const refreshes = starterIntermediateFeeds.map((ft, idx) => {
-      const hbf = (eatTime.getTime() - ft.getTime()) / 3600000;
-      return { ft, hbf, x: hToX(hbf, W, WH), idx };
-    });
-    const vis = refreshes.filter(r => r.hbf >= 0 && r.hbf <= WH);
-    vis.sort((a, b) => b.hbf - a.hbf);
-    const activeX = activeFeedHBF !== null ? hToX(activeFeedHBF, W, WH) : null;
-    const histX = histFeedHBF !== null ? hToX(histFeedHBF, W, WH) : null;
-    const kept: typeof vis = [];
-    for (const r of vis) {
-      if (activeX !== null && Math.abs(r.x - activeX) < 35) continue;
-      if (histX !== null && Math.abs(r.x - histX) < 35) continue;
-      if (kept.some(k => Math.abs(r.x - k.x) < 35)) continue;
-      kept.push(r);
-    }
-    const showNumbers = kept.length > 1;
-    kept.forEach((r, displayIdx) => {
-      const text = showNumbers
-        ? (isFr ? `Rafraîchi ${displayIdx + 1}` : `Refresh Feed ${displayIdx + 1}`)
-        : (isFr ? 'Rafraîchi' : 'Refresh Feed');
-      diamondLabels.push({ key: `refresh-${r.idx}`, x: r.x, text });
-    });
-  }
-
-  // Path B Refresh
-  if (!useEventDrivenStarter && isFridgeHoldPath && fridgeHoldRefreshHBF !== null
-      && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null) {
-    const x = hToX(fridgeHoldRefreshHBF, W, WH);
-    if (x >= 0 && x <= W) {
-      diamondLabels.push({ key: 'pathb-refresh', x, text: isFr ? 'Rafraîchi' : 'Refresh' });
-    }
-  }
-
-  // Footprint-overlap stacking: sort left→right, place each on lowest row
-  // whose last-placed label's right edge doesn't overlap this label's left.
-  const labelRows = new Map<string, number>();
-  {
-    const lastRightPerRow = [-Infinity, -Infinity, -Infinity];
-    const sorted = [...diamondLabels].sort((a, b) => a.x - b.x);
-    for (const lbl of sorted) {
-      const half = labelFootprint(lbl.text) / 2;
-      const left  = lbl.x - half;
-      const right = lbl.x + half;
-      let row = 0;
-      while (row < 2 && left < lastRightPerRow[row]) row++;
-      labelRows.set(lbl.key, row);
-      lastRightPerRow[row] = right;
-    }
-  }
-  const labelY = (key: string): number =>
-    LABEL_ROW_1 + (labelRows.get(key) ?? 0) * ROW_STEP;
-
   // ── Render ───────────────────────────────────────────────
   return (
     <div
       ref={containerRef}
       style={{ width: '100%', userSelect: 'none', overflow: 'hidden', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
     >
-      {/* ── Curve legend ── two diagonal-split swatches per element
-          (light = RT, dark = fridge). Hue encodes WHICH element, shade
-          encodes WHICH state. Caption appears only when this bake has a
-          cold phase to teach about. */}
-      {(() => {
-        const hasAnyCold = fridgeOutHBF !== null || (hasColdRetard && _doughColdH > 0);
-        const starterLightFill = `${prefColor}2E`;
-        const doughLightFill   = `${SAGE}2E`;
-        const labelStyle: React.CSSProperties = {
-          fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
-        };
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '8px' }}>
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-              {hasPref && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <svg width="24" height="12" viewBox="0 0 24 12">
-                    <path d="M0,0 L24,0 L24,12 L0,12 Z" fill={starterLightFill} />
-                    <rect x="0.5" y="0.5" width="23" height="11" fill="none"
-                      stroke="var(--border)" strokeWidth="0.5" rx="1.5" />
-                  </svg>
-                  <span style={labelStyle}>{t('chart.legendStarter')}</span>
-                </div>
-              )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <svg width="24" height="12" viewBox="0 0 24 12">
-                  <path d="M0,0 L24,0 L0,12 Z" fill={doughLightFill} />
-                  <path d="M24,0 L24,12 L0,12 Z" fill={DOUGH_COLD_FILL} />
-                  <rect x="0.5" y="0.5" width="23" height="11" fill="none"
-                    stroke="var(--border)" strokeWidth="0.5" rx="1.5" />
-                </svg>
-                <span style={labelStyle}>{t('chart.legendDough')}</span>
-              </div>
-            </div>
-            {hasAnyCold && (
-              <div style={{ ...labelStyle, fontSize: '10px' }}>
-                {t('chart.legendTempCaption')}
-              </div>
-            )}
+      {/* ── Curve legend ── */}
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '8px' }}>
+        {hasPref && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <svg width="24" height="10" viewBox="0 0 24 10">
+              <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke={prefColor} strokeWidth="2" fill="none" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+              {prefermentType === 'biga' ? 'Biga' :
+               prefermentType === 'levain' || prefermentType === 'sourdough' ? 'Starter' :
+               'Poolish'}
+            </span>
           </div>
-        );
-      })()}
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <svg width="24" height="10" viewBox="0 0 24 10">
+            <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke="#4A6B3A" strokeWidth="2" fill="none" strokeLinecap="round"/>
+          </svg>
+          <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+            Dough
+          </span>
+        </div>
+      </div>
       <svg
         ref={svgRef}
         width={W}
@@ -1182,21 +886,6 @@ export default function FermentChart({
               </clipPath>
             );
           })}
-          {/* fridge-phase-tint clip removed — the dark-blue overlay it drove
-              produced a flat-topped box across the fridge hold rather than
-              fermentation-curve shading. Restore here only after a properly
-              shaped fridge curve exists. */}
-          {/* Dough cold-retard tint clip: spans fridge-in to fridge-out */}
-          {_showDoughColdTint && (
-            <clipPath id={`dough-cold-tint-clip-${chartId}`}>
-              <rect
-                x={hToX(_doughColdStartHBF, W, WH)}
-                y={0}
-                width={Math.max(0, hToX(_doughColdEndHBF, W, WH) - hToX(_doughColdStartHBF, W, WH))}
-                height={CHART_H}
-              />
-            </clipPath>
-          )}
         </defs>
 
         {/* ── Bake reference line ── */}
@@ -1330,6 +1019,26 @@ export default function FermentChart({
               const fridgeHasIn = !!fridgeIn;
               return (
                 <>
+                  {/* Cold-storage flat region (Path B): low baseline between fridge_in and fridge_out */}
+                  {fridgeHasIn && fridgeOut && (() => {
+                    const inHBF = (bakeMs - fridgeIn.time.getTime()) / 3600000;
+                    const outHBF = (bakeMs - fridgeOut.time.getTime()) / 3600000;
+                    if (inHBF <= 0 || outHBF <= 0) return null;
+                    const xIn = hToX(inHBF, W, WH);
+                    const xOut = hToX(outHBF, W, WH);
+                    return (
+                      <rect
+                        x={Math.min(xIn, xOut)}
+                        y={BL - 4}
+                        width={Math.abs(xOut - xIn)}
+                        height={4}
+                        fill="rgba(74,127,165,0.10)"
+                        stroke="rgba(74,127,165,0.25)"
+                        strokeWidth={0.5}
+                        strokeDasharray="2 3"
+                      />
+                    );
+                  })()}
                   {/* Bells — one per event with bellStyle !== 'none' */}
                   {starterEvents.map((ev, idx) => {
                     if (ev.bellStyle === 'none' || !ev.bellPeakTime) return null;
@@ -1348,38 +1057,31 @@ export default function FermentChart({
                     const dashArray = ev.bellStyle === 'solid' ? undefined :
                                        ev.bellStyle === 'dotted' ? '3 3' :
                                        '3 3';
-                    // Starter bell shape: always a NORMAL bell (rise then
-                      // fall) anchored at its peak. The previous fridge-phase
-                      // path drew a flat-topped plateau "window box" across the
-                      // fridge hold that looked nothing like a fermentation
-                      // curve — explicitly reverted here. makeFridgePhaseBellPath
-                      // is left defined but unused so a future, properly-shaped
-                      // fridge curve can be revisited without re-deriving the
-                      // signature. The cold tint path below still renders the
-                      // darker "in fridge" shade clipped under this normal bell,
-                      // so the legend ("Darker = in fridge") stays accurate.
-                      const bellPath = makeBellPath(peakHBF, sigma, W, WH, feedHBF);
                     return (
-                      <g key={`ev-bell-${idx}`}>
-                        <path
-                          d={bellPath}
-                          fill={fillStyle}
-                          stroke={strokeStyle}
-                          strokeWidth={strokeWidth}
-                          strokeDasharray={dashArray}
-                          clipPath={`url(#chart-area-clip-${chartId})`}
-                        />
-                        {/* Fridge-phase tint path removed with the clip
-                            above — see comment at clip site. */}
-                      </g>
+                      <path
+                        key={`ev-bell-${idx}`}
+                        d={
+                          ev.hasFridgePhase && fridgeOutHBF !== null && feedToFridgeOutH !== null
+                            ? makeFridgePhaseBellPath(
+                                feedHBF,
+                                fridgeOutHBF,
+                                fridgePeakH,
+                                fridgeSigma,
+                                feedToFridgeOutH,
+                                starterColdFactor,
+                                fridgeHeightAtRemoval,
+                                W, WH
+                              )
+                            : makeBellPath(peakHBF, sigma, W, WH, feedHBF)
+                        }
+                        fill={fillStyle}
+                        stroke={strokeStyle}
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={dashArray}
+                        clipPath={`url(#chart-area-clip-${chartId})`}
+                      />
                     );
                   })}
-                  {/* Fridge-hold cold plateau rectangle removed — it rendered
-                      as a full-height "blue box" across the hold that looked
-                      nothing like a fermentation curve. The starter renders as
-                      a normal bell; fridge timing is conveyed by the card
-                      events (Into Fridge / Out of Fridge) instead of a chart
-                      plateau. */}
                 </>
               );
             })()}
@@ -1530,8 +1232,8 @@ export default function FermentChart({
           </>
         )}
 
-        {/* ── RT vs Fridge comparison overlay (non-sourdough only) ── */}
-        {isLevain && showFridgeComparison && !useEventDrivenStarter
+        {/* ── RT vs Fridge comparison overlay ── */}
+        {isLevain && showFridgeComparison
          && compFridgePeakHBF !== null
          && compFridgeOutHBF !== null && (
           <>
@@ -1589,47 +1291,43 @@ export default function FermentChart({
             />
             <text
               x={hToX(compFridgeOutHBF, W, WH)}
-              y={labelY('comp-remove')}
-              fontSize={DIAMOND_LABEL.fontSize}
-              fontWeight={DIAMOND_LABEL.fontWeight}
-              fontFamily={DIAMOND_LABEL.fontFamily}
+              y={AXIS_Y + 50}
+              fontSize={9}
               fill="rgba(74,127,165,0.9)"
+              fontFamily="DM Mono, monospace"
+              fontWeight="600"
               textAnchor="middle"
             >
-              {splitText(isFr ? 'Sortir' : 'Remove', hToX(compFridgeOutHBF, W, WH))}
+              {isFr ? 'Sortir' : 'Remove'}
             </text>
           </>
         )}
 
 
-        {/* ── Dough curve (bell, anchored to mix; cold retard → plateau bell) ── */}
+        {/* ── Dough bell (drawn on top) ── */}
         <path
-          d={hasColdRetard
-            ? makePlateauBellPath(doughPeakHBF, DOUGH_SIG, _doughPlateauHalfW, W, WH, effectiveMixHBF)
-            : makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF)
-          }
+          d={(() => {
+            const doughPlateauHalfW = hasColdRetard
+              ? Math.min(8, Math.max(2, (sweetFromH ?? 26) * 0.14))
+              : 0;
+            return doughPlateauHalfW > 0
+              ? makePlateauBellPath(doughPeakHBF, DOUGH_SIG, doughPlateauHalfW, W, WH, effectiveMixHBF)
+              : makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF);
+          })()}
           fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
           clipPath={`url(#chart-area-clip-${chartId})`}
         />
-        {/* Cold-retard dough: tint the cold middle of the bell with a darker
-            shade of the dough's OWN hue (green), not a shared blue wash.
-            Use the SAME bell-path generator as the main dough bell so the
-            tint hugs the actual visible curve on both branches (plateau-bell
-            and plain-bell). */}
-        {_showDoughColdTint && (
-          <path
-            d={hasColdRetard
-              ? makePlateauBellPath(doughPeakHBF, DOUGH_SIG, _doughPlateauHalfW, W, WH, effectiveMixHBF)
-              : makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF)
-            }
-            fill={DOUGH_COLD_FILL}
-            stroke="none"
-            clipPath={`url(#dough-cold-tint-clip-${chartId})`}
-          />
-        )}
         <line
           x1={hToX(effectiveMixHBF, W, WH)}
-          y1={BL - bell(effectiveMixHBF, doughPeakHBF, DOUGH_SIG) * MAXH}
+          y1={BL - (() => {
+            const doughPlateauHalfW = hasColdRetard
+              ? Math.min(8, Math.max(2, (sweetFromH ?? 26) * 0.14))
+              : 0;
+            if (doughPlateauHalfW === 0) return bell(effectiveMixHBF, doughPeakHBF, DOUGH_SIG);
+            const dist = Math.abs(effectiveMixHBF - doughPeakHBF);
+            return dist <= doughPlateauHalfW ? 1.0
+              : Math.exp(-0.5 * ((dist - doughPlateauHalfW) / DOUGH_SIG) ** 2);
+          })() * MAXH}
           x2={hToX(effectiveMixHBF, W, WH)}
           y2={BL}
           stroke={`${SAGE}A5`} strokeWidth={1.5}
@@ -1644,12 +1342,11 @@ export default function FermentChart({
         <line x1={PAD} y1={AXIS_Y} x2={W - PAD} y2={AXIS_Y}
           stroke="var(--border)" strokeWidth={1} />
 
-        {/* ── Ticks — max 5, min 32px apart, exclude near Bake ── */}
+        {/* ── Ticks — max 5, min 32px apart ── */}
         {(() => {
           const visible: typeof ticks = [];
           for (const tk of ticks) {
             if (visible.length >= 5) break;
-            if (Math.abs(tk.x - bakeX) < 40) continue;  // Bake always wins its space
             const prev = visible[visible.length - 1];
             if (!prev || Math.abs(tk.x - prev.x) >= 32) visible.push(tk);
           }
@@ -1658,11 +1355,8 @@ export default function FermentChart({
           <g key={i}>
             <line x1={tk.x} y1={AXIS_Y} x2={tk.x} y2={AXIS_Y + 3}
               stroke="var(--border)" strokeWidth={1} />
-            <text x={tk.x} y={AXIS_Y + 20}
-              fontSize={TICK_LABEL.fontSize}
-              fontWeight={TICK_LABEL.fontWeight}
-              fontFamily={TICK_LABEL.fontFamily}
-              fill="var(--smoke)" textAnchor="middle">
+            <text x={tk.x} y={AXIS_Y + 20} fontSize={12} fill="var(--smoke)"
+              fontFamily="DM Mono, monospace" textAnchor="middle">
               {tk.label}
             </text>
           </g>
@@ -1673,8 +1367,7 @@ export default function FermentChart({
           points={`${bakeX - 8},${AXIS_Y} ${bakeX},${AXIS_Y - 12} ${bakeX + 8},${AXIS_Y}`}
           fill={TERRA}
         />
-        <text x={bakeX} y={AXIS_Y + 20}
-          fontSize={TICK_LABEL.fontSize} fontWeight={600} fill={TERRA}
+        <text x={bakeX} y={AXIS_Y + 20} fontSize={14} fontWeight="600" fill={TERRA}
           fontFamily="DM Mono, monospace" textAnchor="middle">{t('bakeLabel')}</text>
 
         {/* ── Event-driven diamonds + labels (sourdough) ── */}
@@ -1694,11 +1387,15 @@ export default function FermentChart({
                                 isIntermediate ? '#4A7FA5' :
                                 isFridgeOut ? '#5A9DC9' :
                                 ev.isActive ? 'white' : 'rgba(74,127,165,0.75)';
-          // All diamonds share the same half-width (S) so the chart reads
-          // visually consistent — active/inactive differ ONLY by fillOpacity
-          // (set on the polygon below), never by size. Bake (triangle) is a
-          // different shape and keeps its own footprint.
-          const points = `${x},${AXIS_Y - S} ${x + S},${AXIS_Y} ${x},${AXIS_Y + S} ${x - S},${AXIS_Y}`;
+          const diamondSize = isIntermediate ? S * 0.7 : S;
+          const points = `${x},${AXIS_Y - diamondSize} ${x + diamondSize},${AXIS_Y} ${x},${AXIS_Y + diamondSize} ${x - diamondSize},${AXIS_Y}`;
+          const tickPositions = ticks.map(tk => tk.x);
+          const collidesWithTick = tickPositions.some(tx => Math.abs(x - tx) < 55);
+          const labelY = collidesWithTick ? AXIS_Y + S + 42 : AXIS_Y + S + 22;
+          // Parity stagger: adjacent diamond labels alternate rows to avoid crowding
+          // in week+ multi-feed plans (Refresh / Into fridge / Out of fridge).
+          const crowdOffset = (idx % 2 === 1) ? 14 : 0;
+          const finalLabelY = labelY + crowdOffset;
           const labelFill = isHistorical ? 'var(--smoke)' :
                             isIntermediate ? '#4A7FA5' :
                             isFridgeOut ? '#5A9DC9' :
@@ -1715,38 +1412,38 @@ export default function FermentChart({
               />
               <text
                 x={x}
-                y={labelY(`ev-${idx}`)}
-                fontSize={DIAMOND_LABEL.fontSize}
-                fontWeight={DIAMOND_LABEL.fontWeight}
-                fontFamily={DIAMOND_LABEL.fontFamily}
+                y={finalLabelY}
+                fontSize={10}
                 fill={labelFill}
-                fillOpacity={ev.isActive ? 0.9 : 0.6}
+                fontFamily="DM Mono, monospace"
                 textAnchor="middle"
+                fontWeight={ev.isActive ? '600' : '500'}
               >
-                {splitText(ev.label, x)}
+                {ev.label}
               </text>
             </g>
           );
         })}
 
         {/* ── Historical feed diamond (muted, Feed 1 in Peak 2 scenario) ── */}
-        {!useEventDrivenStarter && hasPref && isLevain && histPrefX !== null && (
-          <g pointerEvents="none">
-            <polygon
-              points={`${histPrefX},${AXIS_Y - S} ${histPrefX + S},${AXIS_Y} ${histPrefX},${AXIS_Y + S} ${histPrefX - S},${AXIS_Y}`}
-              fill="rgba(74,127,165,0.20)" stroke="rgba(74,127,165,0.45)" strokeWidth={1.5}
-            />
-            {!allClose && (
-              <text x={histPrefX} y={labelY('last-fed')}
-                fontSize={DIAMOND_LABEL.fontSize}
-                fontWeight={DIAMOND_LABEL.fontWeight}
-                fontFamily={DIAMOND_LABEL.fontFamily}
-                fill="var(--smoke)" textAnchor="middle">
-                {splitText(isFr ? 'Dernier rafraîchi' : 'Last fed', histPrefX)}
-              </text>
-            )}
-          </g>
-        )}
+        {!useEventDrivenStarter && hasPref && isLevain && histPrefX !== null && (() => {
+          const histLabelsClose = histPrefX !== null && Math.abs(activePrefX - (histPrefX ?? 0)) < 90;
+          return (
+            <g pointerEvents="none">
+              <polygon
+                points={`${histPrefX},${AXIS_Y - S} ${histPrefX + S},${AXIS_Y} ${histPrefX},${AXIS_Y + S} ${histPrefX - S},${AXIS_Y}`}
+                fill="rgba(74,127,165,0.20)" stroke="rgba(74,127,165,0.45)" strokeWidth={1.5}
+              />
+              {!allClose && (
+                <text x={histPrefX} y={histLabelsClose ? AXIS_Y + 52 : AXIS_Y + 36}
+                  fontSize={11} fill="var(--smoke)"
+                  fontFamily="DM Mono, monospace" textAnchor="middle" fontWeight="600">
+                  {isFr ? 'Dernier rafraîchi' : 'Last fed'}
+                </text>
+              )}
+            </g>
+          );
+        })()}
 
         {/* ── Refeed diamond (depleted state) ── */}
         {!useEventDrivenStarter && isLevain && refeedHBF !== null && depletedAtHBF !== null
@@ -1759,14 +1456,14 @@ export default function FermentChart({
             />
             <text
               x={hToX(refeedHBF, W, WH)}
-              y={labelY('refeed')}
-              fontSize={DIAMOND_LABEL.fontSize}
-              fontWeight={DIAMOND_LABEL.fontWeight}
-              fontFamily={DIAMOND_LABEL.fontFamily}
+              y={AXIS_Y + 36}
+              fontSize={11}
               fill="var(--smoke)"
+              fontFamily="DM Mono, monospace"
               textAnchor="middle"
+              fontWeight="600"
             >
-              {splitText('Feed', hToX(refeedHBF, W, WH))}
+              Feed
             </text>
           </g>
         )}
@@ -1786,14 +1483,13 @@ export default function FermentChart({
             />
             <text
               x={hToX(activeFeedHBF, W, WH)}
-              y={labelY('feed-circle')}
-              fontSize={DIAMOND_LABEL.fontSize}
-              fontWeight={DIAMOND_LABEL.fontWeight}
-              fontFamily={DIAMOND_LABEL.fontFamily}
+              y={AXIS_Y + 36}
+              fontSize={10}
               fill="rgba(74,127,165,0.75)"
+              fontFamily="DM Mono, monospace"
               textAnchor="middle"
             >
-              {splitText(isFr ? 'Rafraîchi' : 'Feed', hToX(activeFeedHBF, W, WH))}
+              {isFr ? 'Rafraîchi' : 'Feed'}
             </text>
           </g>
         )}
@@ -1801,36 +1497,36 @@ export default function FermentChart({
         {/* Active feed diamond — hasFutureFeedPath or Peak2 scenario */}
         {!useEventDrivenStarter && isLevain && activeFeedHBF !== null && histFeedHBF !== null
          && (!knownPeakHBF || starterRedPill || starterFeed2Time)
-         && activeFeedHBF > 0 && (
-          <g>
-            <polygon
-              points={`${activePrefX},${AXIS_Y - S} ${activePrefX + S},${AXIS_Y} ${activePrefX},${AXIS_Y + S} ${activePrefX - S},${AXIS_Y}`}
-              fill={prefColor}
-              stroke="white"
-              strokeWidth={1.5}
-              style={{ cursor: 'pointer' }}
-              onPointerDown={e => onPointerDown(e, 'pref')}
-            />
-            {!allClose && (
-              <text
-                x={activePrefX}
-                y={labelY('feed-diamond')}
-                fontSize={DIAMOND_LABEL.fontSize}
-                fontWeight={DIAMOND_LABEL.fontWeight}
-                fontFamily={DIAMOND_LABEL.fontFamily}
+         && activeFeedHBF > 0 && (() => {
+          const labelsClose = Math.abs(activePrefX - (histPrefX ?? 0)) < 70;
+          return (
+            <g>
+              <polygon
+                points={`${activePrefX},${AXIS_Y - S} ${activePrefX + S},${AXIS_Y} ${activePrefX},${AXIS_Y + S} ${activePrefX - S},${AXIS_Y}`}
                 fill={prefColor}
-                textAnchor="middle"
-              >
-                {splitText(
-                  starterRedPill
+                stroke="white"
+                strokeWidth={1.5}
+                style={{ cursor: 'pointer' }}
+                onPointerDown={e => onPointerDown(e, 'pref')}
+              />
+              {!allClose && (
+                <text
+                  x={activePrefX}
+                  y={labelsClose ? AXIS_Y + 52 : AXIS_Y + 36}
+                  fontSize={10}
+                  fill={prefColor}
+                  fontFamily="DM Mono, monospace"
+                  textAnchor="middle"
+                  fontWeight="600"
+                >
+                  {starterRedPill
                     ? (isFr ? 'Rafraîchi final' : 'Pre-mix Feed')
-                    : (isFr ? 'Prochain rafraîchi' : 'Next Feed'),
-                  activePrefX
-                )}
-              </text>
-            )}
-          </g>
-        )}
+                    : (isFr ? 'Prochain rafraîchi' : 'Next Feed')}
+                </text>
+              )}
+            </g>
+          );
+        })()}
 
         {/* Refresh Feed markers — one diamond per intermediate feed cycle */}
         {!useEventDrivenStarter && isLevain && starterIntermediateFeeds.length > 0 && (() => {
@@ -1860,19 +1556,23 @@ export default function FermentChart({
                 return (
                   <g key={`refresh-${r.idx}`}>
                     <polygon
-                      points={`${r.x},${AXIS_Y - S} ${r.x + S},${AXIS_Y} ${r.x},${AXIS_Y + S} ${r.x - S},${AXIS_Y}`}
+                      points={`${r.x},${AXIS_Y - S * 0.7} ${r.x + S * 0.7},${AXIS_Y} ${r.x},${AXIS_Y + S * 0.7} ${r.x - S * 0.7},${AXIS_Y}`}
                       fill="rgba(74,127,165,0.5)"
                       stroke="#4A7FA5"
                       strokeWidth={1}
                     />
-                    <text x={r.x} y={labelY(`refresh-${r.idx}`)}
-                      textAnchor="middle"
-                      fontSize={DIAMOND_LABEL.fontSize}
-                      fontWeight={DIAMOND_LABEL.fontWeight}
-                      fontFamily={DIAMOND_LABEL.fontFamily}
-                      fill="#4A7FA5">
-                      {splitText(labelText, r.x)}
-                    </text>
+                    {(() => {
+                      const tickPositions = ticks.map(tk => tk.x);
+                      const collidesWithTick = tickPositions.some(tx => Math.abs(r.x - tx) < 55);
+                      const activeX = activeFeedHBF !== null ? hToX(activeFeedHBF, W, WH) : null;
+                      const collidesWithActive = activeX !== null && Math.abs(r.x - activeX) < 50;
+                      const labelY = (collidesWithTick || collidesWithActive) ? AXIS_Y + S + 42 : AXIS_Y + S + 22;
+                      return (
+                        <text x={r.x} y={labelY} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
+                          {labelText}
+                        </text>
+                      );
+                    })()}
                   </g>
                 );
               })}
@@ -1881,7 +1581,7 @@ export default function FermentChart({
         })()}
 
         {/* Path B diamonds: Refresh only (In/Out shown as cold-storage region, not cluttering diamonds) */}
-        {!useEventDrivenStarter && isFridgeHoldPath && fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null && (() => {
+        {isFridgeHoldPath && fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null && (() => {
           const items = [
             { hbf: fridgeHoldRefreshHBF, label: isFr ? 'Rafraîchi' : 'Refresh', fillColor: '#4A7FA5' },
           ];
@@ -1900,14 +1600,13 @@ export default function FermentChart({
                     />
                     <text
                       x={x}
-                      y={labelY('pathb-refresh')}
+                      y={AXIS_Y + 22}
                       fill="var(--smoke)"
-                      fontSize={DIAMOND_LABEL.fontSize}
-                      fontWeight={DIAMOND_LABEL.fontWeight}
-                      fontFamily={DIAMOND_LABEL.fontFamily}
+                      fontSize="9"
+                      fontFamily="var(--font-dm-mono)"
                       textAnchor="middle"
                     >
-                      {splitText(item.label, x)}
+                      {item.label}
                     </text>
                   </g>
                 );
@@ -1929,31 +1628,28 @@ export default function FermentChart({
           <>
             <text
               x={activePrefX}
-              y={labelY('pref')}
-              fontSize={DIAMOND_LABEL.fontSize}
-              fontWeight={DIAMOND_LABEL.fontWeight}
-              fontFamily={DIAMOND_LABEL.fontFamily}
+              y={allClose ? AXIS_Y + 20 : labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
+              fontSize={12}
               fill={prefColor}
+              fontFamily="DM Mono, monospace"
               textAnchor="middle"
+              fontWeight="600"
             >
-              {splitText(
-                isLevain
-                  ? (histFeedHBF !== null
-                      ? (isFr ? 'Prochain repas' : 'Next Feed')
-                      : (isFr ? 'Repas' : 'Feed'))
-                  : prefermentType === 'biga'
-                    ? t('cardLabels.makeBiga')
-                    : t('cardLabels.makePoolish'),
-                activePrefX
-              )}
+              {isLevain
+                ? (histFeedHBF !== null
+                    ? (isFr ? 'Prochain repas' : 'Next Feed')
+                    : (isFr ? 'Repas' : 'Feed'))
+                : prefermentType === 'biga'
+                  ? t('cardLabels.makeBiga')
+                  : t('cardLabels.makePoolish')}
             </text>
-            {/* Protocol indicator — ❄ Fridge or 🌡 RT (sub-label below pref) */}
+            {/* Protocol indicator — ❄ Fridge or 🌡 RT */}
             <text
               x={activePrefX}
-              y={labelY('pref') + SUBLABEL_DY}
-              fontSize={DIAMOND_LABEL.fontSize}
-              fontFamily={DIAMOND_LABEL.fontFamily}
+              y={allClose ? AXIS_Y + 34 : labelsClose ? AXIS_Y + 64 : AXIS_Y + 50}
+              fontSize={10}
               fill={prefNeedsFridge ? '#6A8FAF' : '#C4A030'}
+              fontFamily="DM Mono, monospace"
               textAnchor="middle"
               opacity={0.85}
             >
@@ -1978,13 +1674,11 @@ export default function FermentChart({
         )}
         {/* ── Mix label ── */}
         <text
-          x={mixX} y={labelY('mix')}
-          fontSize={DIAMOND_LABEL.fontSize}
-          fontWeight={DIAMOND_LABEL.fontWeight}
-          fontFamily={DIAMOND_LABEL.fontFamily}
-          fill="#3D5A30"
-          textAnchor="middle"
-        >{splitText(isFr ? 'Pétrir' : 'Start Dough', mixX)}</text>
+          x={mixX} y={allClose ? AXIS_Y + 52 : labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
+          fontSize={12} fill="#3D5A30"
+          fontFamily="DM Mono, monospace"
+          textAnchor="middle" fontWeight="600"
+        >Start Dough</text>
 
         {/* ── Ghost diamond (recommended position) ── */}
         {recommendedMixHBF != null &&
