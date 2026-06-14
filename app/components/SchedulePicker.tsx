@@ -2539,15 +2539,35 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         }
 
         if (lastFedTime) {
+          // _planHasRefresh: does the live plan schedule any refresh feed
+          // (primary, intermediate, or Path B)? Read from
+          // _intermediateRefreshFeeds (populated above, before this push, at
+          // lines ~2326–2331 and 2390–2406 — the SAME array the
+          // intermediate_refresh events below iterate). The events array
+          // can't be scanned here because primary/intermediate refresh
+          // pushes happen AFTER this last_fed push; intermediates is the
+          // live source. Primary refresh is implicitly covered by
+          // !_starterRefeedTime, Path B by !_isFridgeHoldPath; this catches
+          // the missing case (fridge starter with scheduled intermediate
+          // feeds but no primary refresh).
+          const _planHasRefresh = _intermediateRefreshFeeds.length > 0;
           // Detect: fridge is holding the last feed as the active cycle.
           // (No refresh planned, no path B, no future feed — engine is using
           // the existing feed and removing from fridge at the right time.)
+          // Without !_planHasRefresh, an intermediate-refresh plan kept the
+          // last_fed bell active with a 46h-distant COLD peak (lastFed +
+          // adjPeakH × coldFactor, line ~2564); the chart fell back to
+          // plain makeBellPath at that distant peak — the "flat for ~2 days
+          // then spike" shape. With the guard, last_fed switches to the
+          // historical_dotted RT cycle (peak ~adjPeakH after feed, line
+          // ~2565) and the refresh bells carry the story.
           const isLastFedActiveInFridge =
             starterLocation === 'fridge'
             && !_isFridgeHoldPath
             && !_starterRefeedTime
             && !_usingPeak2
-            && !_hasFutureFeedPath;
+            && !_hasFutureFeedPath
+            && !_planHasRefresh;
 
           // Bell peak time:
           //  - When active in fridge AND engine has set _newFridgeOut:
