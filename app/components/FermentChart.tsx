@@ -191,6 +191,19 @@ function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_D
 // cold) — the following pre_mix bell renders separately and takes over after
 // fridge_out. peakHBF is expected to equal fridgeInHBF (or differ by minutes);
 // the plateau starts at min(peakHBF, fridgeInHBF) so the path stays monotone.
+// Bell for the "chilled-at-peak" sub-case: starter rose at RT to its peak,
+// the peak coincides with fridge_in, and the cold hold spans fridge_in →
+// fridge_out. Biology: a starter chilled AT its peak does NOT re-rise in the
+// cold — it holds a broad near-peak plateau then declines gently. Shape:
+//   1. RT-rate gaussian rise from feed (baseline) to peak at fridgeInHBF.
+//   2. Gentle linear decline across the cold hold from 1.0 at peak to
+//      PLATEAU_END_HEIGHT (≈0.85) at fridgeOut — broad plateau with a
+//      slow drift, not a flat top, matching slow cold fermentation.
+//   3. Drop to baseline at fridgeOut; the pre_mix event's bell renders
+//      separately and resumes from there.
+// Use this when chilledAtPeak is true (peak time ≈ fridge_in time). The
+// other shape (slow cold rise to a cold peak mid-hold) is in
+// makeFridgePhaseBellPath and is correct only for fed-straight-into-fridge.
 function makeBellWithFridgePlateau(
   peakHBF: number,
   sigma: number,
@@ -199,6 +212,7 @@ function makeBellWithFridgePlateau(
   W: number, wh: number,
   feedHBF: number,
 ): string {
+  const PLATEAU_END_HEIGHT = 0.85;
   const N = 200;
   const plateauStartHBF = Math.min(peakHBF, fridgeInHBF);
   // Normalize like makeBellPath: floor at feedHBF anchors the rise at baseline.
@@ -206,7 +220,8 @@ function makeBellWithFridgePlateau(
   const range = Math.max(0.01, 1 - floor);
   const pts: string[] = [];
   pts.push(`M ${hToX(feedHBF, W, wh).toFixed(1)} ${BL}`);
-  // Rising portion: hbf descends from feedHBF (left, baseline) to plateauStartHBF (right of feed, peak).
+  // (1) Rising portion: hbf descends from feedHBF (left, baseline) to
+  //     plateauStartHBF (right of feed, peak).
   for (let i = 1; i <= N; i++) {
     const t = i / N;
     const hbf = feedHBF - t * (feedHBF - plateauStartHBF);
@@ -214,9 +229,18 @@ function makeBellWithFridgePlateau(
     const yClamped = BL - Math.max(0, Math.min(1, normH)) * MAXH;
     pts.push(`L ${hToX(hbf, W, wh).toFixed(1)} ${yClamped.toFixed(1)}`);
   }
-  const plateauY = BL - MAXH;
-  pts.push(`L ${hToX(plateauStartHBF, W, wh).toFixed(1)} ${plateauY.toFixed(1)}`);
-  pts.push(`L ${hToX(fridgeOutHBF, W, wh).toFixed(1)} ${plateauY.toFixed(1)}`);
+  // (2) Gentle decline across the cold hold: linear from 1.0 at the peak to
+  //     PLATEAU_END_HEIGHT at fridge_out.
+  const plateauSteps = 40;
+  const span = plateauStartHBF - fridgeOutHBF;
+  for (let i = 1; i <= plateauSteps; i++) {
+    const t = i / plateauSteps;
+    const hbf = plateauStartHBF - t * span;
+    const h = 1 - t * (1 - PLATEAU_END_HEIGHT);
+    const y = BL - h * MAXH;
+    pts.push(`L ${hToX(hbf, W, wh).toFixed(1)} ${y.toFixed(1)}`);
+  }
+  // (3) Drop to baseline at fridge_out; pre-mix bell takes over from here.
   pts.push(`L ${hToX(fridgeOutHBF, W, wh).toFixed(1)} ${BL}`);
   pts.push(`L ${hToX(feedHBF, W, wh).toFixed(1)} ${BL}`);
   pts.push('Z');
@@ -1180,6 +1204,7 @@ export default function FermentChart({
                       && nextFridgeOut.time.getTime() > nextFridgeIn.time.getTime()
                       && nextFridgeIn.time.getTime() >= bellStartMs
                       && noBellBetween;
+                    const fridgeInHBF_ev       = ownsHold && nextFridgeIn  ? (bakeMs - nextFridgeIn.time.getTime())  / 3600000 : null;
                     const fridgeOutHBF_ev      = ownsHold && nextFridgeOut ? (bakeMs - nextFridgeOut.time.getTime()) / 3600000 : null;
                     const feedToFridgeOutH_ev  = ownsHold && fridgeOutHBF_ev !== null ? (feedHBF - fridgeOutHBF_ev) : null;
                     // fridgeHeightAtRemoval_ev: the symmetric-gaussian bell
@@ -1191,16 +1216,29 @@ export default function FermentChart({
                     const fridgeHeightAtRemoval_ev = feedToFridgeOutH_ev !== null
                       ? Math.exp(-0.5 * ((feedToFridgeOutH_ev - fridgePeakH) / fridgeSigma) ** 2)
                       : 0;
+                    // Sub-case split: a starter chilled AT its RT peak
+                    // (ev.bellPeakTime ≈ fridge_in within 2h) plateaus +
+                    // gently declines through the hold — it does NOT re-rise
+                    // in the cold. makeFridgePhaseBellPath centres a cold
+                    // gaussian at feedHBF − fridgePeakH (the cold peak hours
+                    // after feed) which is only correct when fed straight
+                    // into the fridge (peak well AFTER fridge_in). Routing
+                    // chilled-at-peak through that function landed a wrong
+                    // mid-hold cold peak and a sharp post-peak drop.
+                    const chilledAtPeak = ownsHold && fridgeInHBF_ev !== null
+                      && Math.abs(ev.bellPeakTime.getTime() - nextFridgeIn!.time.getTime()) <= 2 * 3600000;
                     return (
                       <path
                         key={`ev-bell-${idx}`}
                         d={
-                          ownsHold && fridgeOutHBF_ev !== null && feedToFridgeOutH_ev !== null
-                            ? makeFridgePhaseBellPath(
-                                feedHBF, fridgeOutHBF_ev, fridgePeakH, fridgeSigma,
-                                feedToFridgeOutH_ev, starterColdFactor, fridgeHeightAtRemoval_ev, W, WH
-                              )
-                            : makeBellPath(peakHBF, sigma, W, WH, feedHBF)
+                          ownsHold && fridgeOutHBF_ev !== null && fridgeInHBF_ev !== null && chilledAtPeak
+                            ? makeBellWithFridgePlateau(peakHBF, sigma, fridgeInHBF_ev, fridgeOutHBF_ev, W, WH, feedHBF)
+                            : ownsHold && fridgeOutHBF_ev !== null && feedToFridgeOutH_ev !== null
+                              ? makeFridgePhaseBellPath(
+                                  feedHBF, fridgeOutHBF_ev, fridgePeakH, fridgeSigma,
+                                  feedToFridgeOutH_ev, starterColdFactor, fridgeHeightAtRemoval_ev, W, WH
+                                )
+                              : makeBellPath(peakHBF, sigma, W, WH, feedHBF)
                         }
                         fill={fillStyle}
                         stroke={strokeStyle}
