@@ -337,6 +337,22 @@ function applyBlockerOverlap(
 
 // ── Start suggestion engine ───────────────────
 // Default suggestion = NOW (rounded to nearest hour).
+// Climate-aware warm-fermentation reduction for sourdough. In hot kitchens
+// sourdough over-ferments at room temp (Perfect Loaf summer guide; Sourdough
+// Journey "two-stage bulk"; Culinary Exploration), so experts SHORTEN the warm
+// phase and SHIFT the balance toward cold. The freed warm time is absorbed by
+// the existing cold maximization (capped at preferredColdH downstream); coldH /
+// minColdH / minTotalFermH are unchanged. Commercial yeast returns baseRtH —
+// climate adjusts yeast dose there, not timing. Floors prevent unreasonably
+// short warm phases at the extremes.
+function climateRtH(baseRtH: number, kitchenTemp: number, isSourdough: boolean): number {
+  if (!isSourdough) return baseRtH;
+  if (kitchenTemp >= 33) return Math.max(1.5, baseRtH * 0.45);
+  if (kitchenTemp >= 30) return Math.max(2,   baseRtH * 0.60);
+  if (kitchenTemp >= 28) return Math.max(2.5, baseRtH * 0.75);
+  return baseRtH;
+}
+
 // Only suggest a later start when baker has more time than the preferred
 // fermentation window — in that case, push start to eatTime − (targetFermH + preheatH)
 // so the full fermentation window is used.
@@ -346,6 +362,7 @@ function computeSuggestion(
   preheatMin: number,
   styleKey: string,
   kitchenTemp: number,
+  isSourdough: boolean,
 ) {
   const now = new Date();
   const preheatH = preheatMin / 60;
@@ -354,12 +371,12 @@ function computeSuggestion(
 
   const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
 
-  let tropicalFactor = 1;
-  if (kitchenTemp >= 33) tropicalFactor = 1.25;
-  else if (kitchenTemp >= 30) tropicalFactor = 1.15;
-
-  const rtH_adjusted  = defaults.rtH / tropicalFactor;
-  const standardFermH = defaults.coldH + rtH_adjusted;
+  // Sourdough gets the stronger climateRtH reduction (0.45–0.75x at 28–33°C+);
+  // commercial yeast unchanged. Replaces the prior /tropicalFactor (~1.15) which
+  // was too weak AND inconsistently applied (only here; the actual sweet-zone
+  // sites used raw defaults.rtH).
+  const rtH_adjusted   = climateRtH(defaults.rtH, kitchenTemp, isSourdough);
+  const standardFermH  = defaults.coldH + rtH_adjusted;
   const preferredColdH = defaults.preferredColdH ?? null;
   const preferredFermH = preferredColdH !== null ? preferredColdH + rtH_adjusted : null;
 
@@ -1508,7 +1525,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const poolishMinH = localPrefGoesInFridge ? 12 : 3;
 
     // sweetCenter = coldH + rtH = the style sweet spot where dough peaks at bake
-    // This is a style constant — NOT climate sensitive (climate adjusts yeast, not timing)
+    // For SOURDOUGH: rtH is climate-sensitive — hot kitchens over-ferment at RT,
+    // so climateRtH shifts more of the ferment toward cold (the freed warm time
+    // is absorbed by the cold cap downstream). For commercial yeast climateRtH
+    // returns baseRtH (climate adjusts yeast dose, not timing).
     // sweetFrom = leftmost boundary (preferredColdH + rtH) — widest useful cold
     // sweetTo = rightmost boundary (minimum viable total fermentation)
     const _biasedColdSolver = biasCold(
@@ -1516,20 +1536,21 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       scaledDefaults.minColdH ?? 0,
       scaledDefaults.preferredColdH ?? scaledDefaults.coldH
     );
-    const optimalColdH = hasColdLocal ? (_biasedColdSolver + defaults.rtH) : 0;
+    const _rtH_solver = climateRtH(defaults.rtH, kitchenTemp, isSourdough);
+    const optimalColdH = hasColdLocal ? (_biasedColdSolver + _rtH_solver) : 0;
     const sweetCenterRaw = hasColdLocal
-      ? _biasedColdSolver + defaults.rtH         // dough peaks at bake at this position
-      : defaults.rtH;                             // RT only: peak at rtH before bake
+      ? _biasedColdSolver + _rtH_solver         // dough peaks at bake at this position
+      : _rtH_solver;                             // RT only: peak at rtH before bake
     // sweetFrom = right edge of dough quality plateau (not preferredColdH which is the target).
     // plateauHalfW is how far from sweetCenter bake can be while still at peak quality.
     // Beyond this, dough is on the decline — mixInZone=false, score drops.
     // Scaled by flourStrength: stronger flour has wider plateau tolerance.
     const plateauHalfW = hasColdLocal
       ? Math.round((defaults.coldH ?? 24) * 0.35 * (flourStrength ?? 1.0))  // ~8h for 24h cold, W250
-      : Math.round((defaults.rtH ?? 2) * 0.75);  // ~1.5h for 2h RT
+      : Math.round((_rtH_solver ?? 2) * 0.75);  // ~1.5h for 2h RT
     const sweetFromRaw = hasColdLocal
-      ? Math.min(72, (defaults.coldH ?? 24) + (defaults.rtH ?? 2) + plateauHalfW)
-      : (defaults.rtH ?? 2) + plateauHalfW;
+      ? Math.min(72, (defaults.coldH ?? 24) + (_rtH_solver ?? 2) + plateauHalfW)
+      : (_rtH_solver ?? 2) + plateauHalfW;
     // Use minTotalFermH as the right boundary — matches the card's green zone
     // and is the scientifically correct absolute minimum for acceptable results.
     // This is style-sensitive: each style defines its own minTotalFermH.
@@ -1727,7 +1748,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (isSourdough) {
       const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
       const sweetCenter = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0)
-        + sfDef.rtH + (sfDef.minTotalFermH ?? 12)) / 2;
+        + climateRtH(sfDef.rtH, kitchenTemp, isSourdough) + (sfDef.minTotalFermH ?? 12)) / 2;
       setPendingStart(new Date(pendingEatTime.getTime() - sweetCenter * 3600000));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1780,8 +1801,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
 
   const suggestion = useMemo(
-    () => computeSuggestion(pendingEatTime, preheatMin, styleKey, kitchenTemp),
-    [pendingEatTime, preheatMin, styleKey, kitchenTemp],
+    () => computeSuggestion(pendingEatTime, preheatMin, styleKey, kitchenTemp, isSourdough),
+    [pendingEatTime, preheatMin, styleKey, kitchenTemp, isSourdough],
   );
 
   // FIX 2: climate-aware pref fridge flag
@@ -1810,22 +1831,26 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }, [pendingEatTime, blocks]);
   const _tropFactor = kitchenTemp >= 33 ? 1.25 : kitchenTemp >= 30 ? 1.15 : 1.0;
   const _prefColdH = _sfDef.preferredColdH ?? _sfDef.coldH;
+  // SOURDOUGH: climateRtH shrinks the warm phase at hot kitchen temps so the
+  // rendered sweet zone shifts cold-ward in sync with the solver (lines ~1519
+  // above) — chart green zone == card sweet zone at 30°C / 35°C. Commercial
+  // yeast unchanged (climateRtH returns baseRtH there).
+  const _rtH_render = climateRtH(_sfDef.rtH, kitchenTemp, isSourdough);
   // Green zone: always shows full style window — NOT clipped to nowHBF.
   // Zone guides the baker on what's ideal. Diamond clamped to nowHBF separately.
-  const renderSweetFrom = _prefColdH + _sfDef.rtH;
+  const renderSweetFrom = _prefColdH + _rtH_render;
   const renderSweetTo   = _sfDef.minTotalFermH ?? 4;
   // Yellow zone extends 2h past green right edge
   const renderYellowTo  = Math.max(0.5, renderSweetTo - 2);
   // _optimalMix = style sweet spot where dough peaks at bake = coldH + rtH
-  // For RT-only styles, use rtH. Climate adjusts yeast not timing so no tropFactor here.
   const _biasedColdRender = biasCold(
     _sfDef.coldH,
     _sfDef.minColdH ?? 0,
     _sfDef.preferredColdH ?? _sfDef.coldH
   );
   const _optimalMix = _sfDef.coldH > 0
-    ? _biasedColdRender + _sfDef.rtH
-    : _sfDef.rtH;
+    ? _biasedColdRender + _rtH_render
+    : _rtH_render;
   // Dough peaks at bake when mix is in sweet zone — cold retard duration
   // flexes to match mix position. Outside sweet zone, bell shifts to show
   // under/over fermentation honestly. RT-only styles use fixed _optimalMix.
@@ -2070,7 +2095,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // Use targetMixTime if available (passed from solver with post-blocker position),
         // otherwise fall back to ideal mix from sweet center. Never use raw pendingStart (may be stale).
         const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
-        const sweetCenterH = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0) + sfDef.rtH
+        const sweetCenterH = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0)
+          + climateRtH(sfDef.rtH, kitchenTemp, isSourdough)
           + (sfDef.minTotalFermH ?? 12)) / 2;
         const referenceMixTime = targetMixTime
           ?? new Date(bakeTime.getTime() - sweetCenterH * 3600000);
@@ -2095,9 +2121,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           // (starter still rising at removal — best case)
           // Also check: RT path doesn't already give green-green at a reasonable hour
           // If rtPeakTime is already in the sweet zone, no need for fridge.
-          const localSweetFrom = (sfDef.preferredColdH ?? sfDef.coldH ?? 0) + (sfDef.rtH ?? 2)
-            + Math.round(((sfDef.coldH ?? 0) + (sfDef.rtH ?? 2)) * 0.35);
-          const localSweetTo = sfDef.minTotalFermH ?? (sfDef.rtH ?? 2);
+          const _rtH_local = climateRtH(sfDef.rtH ?? 2, kitchenTemp, isSourdough);
+          const localSweetFrom = (sfDef.preferredColdH ?? sfDef.coldH ?? 0) + _rtH_local
+            + Math.round(((sfDef.coldH ?? 0) + _rtH_local) * 0.35);
+          const localSweetTo = sfDef.minTotalFermH ?? _rtH_local;
           const rtPeakInZone = rtPeakTime !== null && (() => {
             const rtPeakHBF = (bakeTime.getTime() - rtPeakTime.getTime()) / 3600000;
             return rtPeakHBF >= localSweetTo && rtPeakHBF <= localSweetFrom;
@@ -4457,7 +4484,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     if (isSourdough) {
                       const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
                       const sweetCenter = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0)
-                        + sfDef.rtH + (sfDef.minTotalFermH ?? 12)) / 2;
+                        + climateRtH(sfDef.rtH, kitchenTemp, isSourdough) + (sfDef.minTotalFermH ?? 12)) / 2;
                       setPendingStart(new Date(pendingEatTime.getTime() - sweetCenter * 3600000));
                     }
                   }}
