@@ -3636,14 +3636,28 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     //   - Pre-mix feed is far enough out that fridge hold makes sense (>= 24h
     //     from refresh peak to pre-mix feed)
     //   - Fridge hold duration is reasonable (6h <= hold <= 120h / 5 days)
+    // Hot-kitchen relaxation: at kitchenTemp >= 28 with a multi-hour bake
+    // horizon, allow Path B even when the starter is just-fed (rising at
+    // RT) — _starterRefeedTime is null in that state, so the previous gate
+    // never generated a fridge-hold candidate and the engine returned an
+    // RT pre-mix that biologically over-ferments. Fall back to the
+    // existing feed (lastFedTime) as the refresh anchor: refresh-peak
+    // becomes lastFedTime + adjPeakH (the starter's natural RT peak), and
+    // the chill-at-peak plan unrolls from there. Temperate kitchens
+    // (<28°C) keep the original gate and the RT plan.
+    const _pathBHotEligible =
+      !_starterRefeedTime
+      && kitchenTemp >= 28
+      && lastFedTime
+      && (bakeMs - Date.now()) / 3600000 >= 24;
     if (
-      _starterRefeedTime &&
+      (_starterRefeedTime || _pathBHotEligible) &&
       planningMode === 'last_fed' && lastFedTime &&
       (starterLocation === 'rt' || starterLocation === 'fridge')
     ) {
       const warmupH_pathB = getStarterFridgeWarmupH(kitchenTemp);
       const nowMs_pathB = Date.now();
-      const refreshMs_pathB = _starterRefeedTime.getTime();
+      const refreshMs_pathB = (_starterRefeedTime ?? lastFedTime).getTime();
       const refreshPeakMs = refreshMs_pathB + _adjPeakH_refresh * 3600000;
       const idealMixTime_pathB = targetMixTime ?? new Date(bakeMs - ((sweetFromHBF + sweetToHBF) / 2) * 3600000);
       const baseFeed_pathB = new Date(idealMixTime_pathB.getTime() - adjPeakH * 3600000);
@@ -3693,10 +3707,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           if (ss === 0) continue;
 
           // Bonus: cleaner than multi-refresh-at-RT for far bakes.
-          // Scales with RT refreshes avoided.
+          // Scales with RT refreshes avoided, AND with kitchen temperature.
+          // Biology (Sourdough Journey hot-climate guidance; expert
+          // consensus): at ≥30°C a just-fed starter peaks in ~4h then sours
+          // fast, so holding/refeeding at RT across a 1–2 day bake
+          // over-ferments it — the correct move is to chill. hotBias gives
+          // Path B a strong scoring edge at medium horizons (+2d), where the
+          // RT pre-mix used to out-score it. Temperate kitchens (<28°C) are
+          // unaffected (hotBias = 0); short same-day bakes still fall
+          // through to RT because no usable hold window fits there.
           const gapFromNowToPreMixH = (t - nowMs_pathB) / 3600000;
           const rtRefreshesAvoided = Math.max(0, Math.floor(gapFromNowToPreMixH / troughH) - 1);
-          const pathBBonus = 8 + rtRefreshesAvoided * 3;
+          const hotBias =
+            kitchenTemp >= 33 ? 14
+            : kitchenTemp >= 30 ? 10
+            : kitchenTemp >= 28 ? 6
+            : 0;
+          const pathBBonus = 8 + rtRefreshesAvoided * 3 + hotBias;
 
           // Coherence guard at the source: chronological ordering must hold —
           // refresh < fridge_in < fridge_out < pre-mix. Any malformed Path B
