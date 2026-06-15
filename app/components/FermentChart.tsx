@@ -278,72 +278,60 @@ function makePlateauBellPath(
   return pts.join(' ');
 }
 
+// Fed-straight-into-fridge starter bell: a SINGLE peaks-once hump anchored on
+// the CARD peak (peakHBF — read from ev.bellPeakTime, which equals
+// solverResult.peakTime by construction). Replaces the prior cold-gaussian-
+// centred-at-feedHBF-minus-fridgePeakH version, which could place the peak
+// mid-hold (off by hours from the card) and which carried an unconditional
+// post-removal RT-warmup re-rise that produced a second bump.
+//
+// Biology: rise from feed (baseline) at cold rate to peak; one peak ONLY;
+// past the peak (closer to bake) hold a broad plateau then decline gently
+// with a floor (cold-fermented starter deflates slowly, never collapses).
+// When the plan removes the starter BEFORE its peak (peakHBF < fridgeOutHBF),
+// the same rising gaussian continues smoothly past fridge_out to peak (the
+// warm acceleration is subsumed by the single rise — no separate re-rise
+// branch). When removed AT/AFTER peak (peakHBF ≥ fridgeOutHBF), the curve
+// is already past the peak by fridge_out and is on the plateau/decline side.
+// In both sub-cases the peak coincides with peakHBF on the chart.
 function makeFridgePhaseBellPath(
   feedHBF: number,
-  fridgeOutHBF: number,
+  peakHBF: number,
   fridgePeakH: number,
   fridgeSigma: number,
-  feedToFridgeOutH: number,
-  starterColdFactor: number,
-  fridgeHeightAtRemoval: number,
   W: number,
   WH: number,
 ): string {
-  // Cold-phase shape constants (eyeball-tunable). Biology: cold PROLONGS the
-  // peak (broad plateau, fermentation ~5× slower) and the post-peak decline is
-  // SLOW and levels off well above baseline — a starter held days stays risen,
-  // only slightly deflated, until it eventually needs a refresh feed (Pantry
-  // Mama; The Sourdough Journey; r/Sourdough). Pure symmetric gaussian fell
-  // off too fast and collapsed toward zero through the long hold.
-  const PLATEAU_W      = fridgePeakH * 0.6;   // broad plateau either side of cold peak
-  const DECLINE_SIGMA  = fridgeSigma * 2.5;   // widened decline beyond the plateau
-  const FRIDGE_FLOOR   = 0.6;                 // never below 0.6 · peak within the hold
+  const PLATEAU_W     = fridgePeakH * 0.6;
+  const DECLINE_SIGMA = fridgeSigma * 2.5;
+  const FRIDGE_FLOOR  = 0.6;
   const N = 300;
   const pts: string[] = [];
   for (let i = 0; i <= N; i++) {
     const hbf = (i / N) * feedHBF;
-    let normH: number;
-    if (hbf >= fridgeOutHBF) {
-      // IN-FRIDGE branch: rising side keeps the original gaussian (preserves
-      // continuity with the RT rise from the feed). The descending side (hbf
-      // past fridgeBellCenter, i.e. closer to bake) holds a flat plateau out
-      // to PLATEAU_W from the peak, then declines with the wider
-      // DECLINE_SIGMA and floors at FRIDGE_FLOOR so the long hold doesn't
-      // gaussian-collapse. The existing normalization-to-fridgeHeightAtRemoval
-      // is preserved so the in-fridge curve at fridgeOutHBF still meets the
-      // RT-warmup branch below continuously (the seamless two-sigma join).
-      const fridgeBellCenter = feedHBF - fridgePeakH;
-      let rawFridgeH: number;
-      if (hbf >= fridgeBellCenter - PLATEAU_W && hbf <= fridgeBellCenter + PLATEAU_W) {
-        // Plateau window (centred on cold peak): standard gaussian — at the
-        // peak it's 1.0, and within PLATEAU_W of the peak the gaussian is
-        // already broad and near-1, reading as a held plateau.
-        rawFridgeH = Math.exp(-0.5 * ((hbf - fridgeBellCenter) / fridgeSigma) ** 2);
-      } else if (hbf < fridgeBellCenter - PLATEAU_W) {
-        // Past peak, beyond plateau (decline side): widened gaussian + floor.
-        const declineDist = (fridgeBellCenter - PLATEAU_W) - hbf;
-        const declineGauss = Math.exp(-0.5 * (declineDist / DECLINE_SIGMA) ** 2);
-        rawFridgeH = Math.max(FRIDGE_FLOOR, declineGauss);
-      } else {
-        // Rising side, beyond plateau (closer to feed): standard gaussian.
-        rawFridgeH = Math.exp(-0.5 * ((hbf - fridgeBellCenter) / fridgeSigma) ** 2);
-      }
-      const fridgeAtRemoval = Math.exp(-0.5 * ((fridgeOutHBF - fridgeBellCenter) / fridgeSigma) ** 2);
-      normH = fridgeAtRemoval > 0
-        ? rawFridgeH / fridgeAtRemoval * fridgeHeightAtRemoval
-        : rawFridgeH;
+    let h: number;
+    if (hbf >= peakHBF) {
+      // Rising side (before the peak in time): one gaussian approaching 1.0
+      // at peakHBF. Width scales with fridgeSigma so the cold rise reads
+      // gently across the long pre-peak span.
+      h = Math.exp(-0.5 * ((hbf - peakHBF) / fridgeSigma) ** 2);
     } else {
-      // RT-WARMUP branch (after fridge_out) — UNCHANGED. Converts elapsed RT
-      // hours to cold-equivalent and evaluates the same symmetric gaussian on
-      // a totalEquivH axis, so it resumes continuously to the pre-mix bell.
-      const rtHoursAfterRemoval = fridgeOutHBF - hbf;
-      const fridgeEquivAfterRemoval = rtHoursAfterRemoval * starterColdFactor;
-      const totalEquivH = feedToFridgeOutH + fridgeEquivAfterRemoval;
-      normH = Math.exp(-0.5 * ((totalEquivH - fridgePeakH) / fridgeSigma) ** 2);
+      // Past the peak (closer to bake): plateau within PLATEAU_W, then
+      // floored gaussian decline with DECLINE_SIGMA. At dist = PLATEAU_W the
+      // plateau (1.0) meets the decline (exp(0) = 1.0) — continuous, no
+      // notch — and the floor prevents a collapse to baseline.
+      const dist = peakHBF - hbf;
+      if (dist <= PLATEAU_W) {
+        h = 1.0;
+      } else {
+        const declineDist = dist - PLATEAU_W;
+        const declineGauss = Math.exp(-0.5 * (declineDist / DECLINE_SIGMA) ** 2);
+        h = Math.max(FRIDGE_FLOOR, declineGauss);
+      }
     }
-    normH = Math.max(0, Math.min(1, normH));
+    h = Math.max(0, Math.min(1, h));
     const x = hToX(hbf, W, WH);
-    const y = BL - normH * MAXH;
+    const y = BL - h * MAXH;
     pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
   }
   pts.push(`L ${hToX(feedHBF, W, WH).toFixed(1)} ${BL}`);
@@ -694,6 +682,17 @@ export default function FermentChart({
   // Adaptive ticks: clock-aligned, stepping backward from bake time
   const tickIntervalH = WH <= 18 ? 3 : WH <= 48 ? 6 : WH <= 96 ? 12 : 24;
   const ticks: { x: number; label: string }[] = [];
+  const _fmtTickLabel = (d: Date): string => {
+    const wd = d.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' });
+    const hr = d.getHours();
+    const timeLabel = hr === 0 ? t('tickLabels.midnight')
+      : hr === 6 ? t('tickLabels.6am')
+      : hr === 12 ? t('tickLabels.noon')
+      : hr === 18 ? t('tickLabels.6pm')
+      : isFr ? `${hr}h`
+      : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
+    return `${wd} ${timeLabel}`;
+  };
   {
     const firstTick = new Date(bakeMs);
     firstTick.setMinutes(0, 0, 0);
@@ -702,16 +701,24 @@ export default function FermentChart({
       const h = (bakeMs - tMs) / 3600000;
       if (h < 1.5) continue;
       if (h > WH - 0.5) continue;
-      const tick = new Date(tMs);
-      const wd = tick.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' });
-      const hr = tick.getHours();
-      const timeLabel = hr === 0 ? t('tickLabels.midnight')
-        : hr === 6 ? t('tickLabels.6am')
-        : hr === 12 ? t('tickLabels.noon')
-        : hr === 18 ? t('tickLabels.6pm')
-        : isFr ? `${hr}h`
-        : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
-      ticks.push({ x: hToX(h, W, WH), label: `${wd} ${timeLabel}` });
+      ticks.push({ x: hToX(h, W, WH), label: _fmtTickLabel(new Date(tMs)) });
+    }
+  }
+  // Feed-day tick: when the earliest rendered event (typically "Last fed")
+  // falls beyond the last clock-aligned tick, the leftmost feed day had no
+  // labeled tick. Add one anchored on the earliest event time so the feed
+  // day is dated on the axis. Skip if a clock-aligned tick already sits
+  // within ~32 px (the same dedupe stride the renderer uses).
+  if (useEventDrivenStarter && starterEvents.length > 0) {
+    const earliestEv = starterEvents.reduce(
+      (acc, ev) => (ev.time.getTime() < acc.time.getTime() ? ev : acc),
+      starterEvents[0],
+    );
+    const earliestHBF = (bakeMs - earliestEv.time.getTime()) / 3600000;
+    if (earliestHBF > 1.5 && earliestHBF < WH - 0.5) {
+      const x = hToX(earliestHBF, W, WH);
+      const hasNearby = ticks.some(tk => Math.abs(tk.x - x) < 32);
+      if (!hasNearby) ticks.push({ x, label: _fmtTickLabel(earliestEv.time) });
     }
   }
 
@@ -1206,16 +1213,6 @@ export default function FermentChart({
                       && noBellBetween;
                     const fridgeInHBF_ev       = ownsHold && nextFridgeIn  ? (bakeMs - nextFridgeIn.time.getTime())  / 3600000 : null;
                     const fridgeOutHBF_ev      = ownsHold && nextFridgeOut ? (bakeMs - nextFridgeOut.time.getTime()) / 3600000 : null;
-                    const feedToFridgeOutH_ev  = ownsHold && fridgeOutHBF_ev !== null ? (feedHBF - fridgeOutHBF_ev) : null;
-                    // fridgeHeightAtRemoval_ev: the symmetric-gaussian bell
-                    // value at this event's fridge_out — same formula the
-                    // scalar prop used, but anchored to THIS bell's feed and
-                    // hold. Keeps makeFridgePhaseBellPath's existing
-                    // normalization (so the in-fridge branch and the RT
-                    // warmup branch meet continuously at fridgeOutHBF_ev).
-                    const fridgeHeightAtRemoval_ev = feedToFridgeOutH_ev !== null
-                      ? Math.exp(-0.5 * ((feedToFridgeOutH_ev - fridgePeakH) / fridgeSigma) ** 2)
-                      : 0;
                     // Sub-case split: a starter chilled AT its RT peak
                     // (ev.bellPeakTime ≈ fridge_in within 2h) plateaus +
                     // gently declines through the hold — it does NOT re-rise
@@ -1233,11 +1230,8 @@ export default function FermentChart({
                         d={
                           ownsHold && fridgeOutHBF_ev !== null && fridgeInHBF_ev !== null && chilledAtPeak
                             ? makeBellWithFridgePlateau(peakHBF, sigma, fridgeInHBF_ev, fridgeOutHBF_ev, W, WH, feedHBF)
-                            : ownsHold && fridgeOutHBF_ev !== null && feedToFridgeOutH_ev !== null
-                              ? makeFridgePhaseBellPath(
-                                  feedHBF, fridgeOutHBF_ev, fridgePeakH, fridgeSigma,
-                                  feedToFridgeOutH_ev, starterColdFactor, fridgeHeightAtRemoval_ev, W, WH
-                                )
+                            : ownsHold && fridgeOutHBF_ev !== null
+                              ? makeFridgePhaseBellPath(feedHBF, peakHBF, fridgePeakH, fridgeSigma, W, WH)
                               : makeBellPath(peakHBF, sigma, W, WH, feedHBF)
                         }
                         fill={fillStyle}
