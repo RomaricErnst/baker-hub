@@ -1594,9 +1594,12 @@ export default function FermentChart({
           // the same row and overlap. Greedy placement: a label drops to the
           // next row only if it sits within LABEL_MIN_DX of one already placed
           // on that row. Mirrors the intermediate-refresh block's approach.
-          const LABEL_MIN_DX = 46;
           const ROW_H = 14;
           const tickPositions = ticks.map(tk => tk.x);
+          // Width-aware spacing — the old fixed 46px gap let long labels like
+          // "Refresh Feed 1" (~90px) overlap neighbours and the green
+          // "Start Dough" mix label.
+          const labelPxW = (s: string) => s.length * 6.2 + 8;
           const visible = starterEvents
             .filter(ev => ev.kind !== 'fridge_out' && ev.kind !== 'fridge_in')
             .map((ev, idx) => {
@@ -1607,15 +1610,20 @@ export default function FermentChart({
             .filter((v): v is { ev: StarterEvent; idx: number; x: number } => v !== null)
             .sort((a, b) => a.x - b.x);
           // Assign rows greedily left-to-right.
-          const placed: { x: number; row: number }[] = [];
-          const rowFor = (x: number): number => {
+          // Pre-seed the mix diamond's "Start Dough" label (12px font, drawn
+          // in its own block at ~rows 0–1) so event labels keep clear of it.
+          const placed: { x: number; row: number; w: number }[] = [
+            { x: mixX, row: 0, w: 92 },
+            { x: mixX, row: 1, w: 92 },
+          ];
+          const rowFor = (x: number, w: number): number => {
             let row = 0;
-            // increase row until no already-placed label on that row is too close
+            // increase row until no already-placed label on that row overlaps
             // (bounded to 3 rows so labels never march too far down)
-            while (row < 3 && placed.some(p => p.row === row && Math.abs(p.x - x) < LABEL_MIN_DX)) {
+            while (row < 3 && placed.some(p => p.row === row && Math.abs(p.x - x) < (p.w + w) / 2)) {
               row++;
             }
-            placed.push({ x, row });
+            placed.push({ x, row, w });
             return row;
           };
           return visible.map(({ ev, idx, x }) => {
@@ -1631,7 +1639,7 @@ export default function FermentChart({
             const points = `${x},${AXIS_Y - diamondSize} ${x + diamondSize},${AXIS_Y} ${x},${AXIS_Y + diamondSize} ${x - diamondSize},${AXIS_Y}`;
             const collidesWithTick = tickPositions.some(tx => Math.abs(x - tx) < 55);
             const baseLabelY = collidesWithTick ? AXIS_Y + S + 42 : AXIS_Y + S + 22;
-            const finalLabelY = baseLabelY + rowFor(x) * ROW_H;
+            const finalLabelY = baseLabelY + rowFor(x, labelPxW(ev.label)) * ROW_H;
             const labelFill = isHistorical ? 'var(--smoke)' :
                               isIntermediate ? '#4A7FA5' :
                               ev.isActive ? prefColor : 'rgba(74,127,165,0.75)';
