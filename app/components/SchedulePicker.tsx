@@ -28,6 +28,8 @@ export interface StarterEvent {
   bellStartTime?: Date;
   bellSigmaScale: number;
   hasFridgePhase?: boolean;
+  /** Time was derived from a vague chip ("2–3 days ago") — card shows ≈ */
+  timeIsEstimate?: boolean;
 }
 
 interface SourdoughSolverResult {
@@ -2663,11 +2665,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           //      peak = lastFed + adjPeakH (RT cycle)
           const _coldFactor_evt = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
           const _warmupH_evt = getStarterFridgeWarmupH(kitchenTemp);
+          // A starter that sat in the FRIDGE since its last feed rises at
+          // cold speed regardless of whether that cycle is still active —
+          // the historical bell previously used the RT peak (~6h after
+          // feed, tall narrow spike) while the card correctly described the
+          // fridge peak, so chart and card told different stories.
+          const _lastFedInFridge = starterLocation === 'fridge';
           const lastFedBellPeakTime = isLastFedActiveInFridge
             ? (_newFridgeOut
                 ? fridgePeakAfterRemoval(_newFridgeOut, lastFedTime, adjPeakH_last_eff)
                 : new Date(lastFedTime.getTime() + adjPeakH_last_eff * _coldFactor_evt * 3600000))
-            : new Date(lastFedTime.getTime() + adjPeakH_last_eff * 3600000);
+            : new Date(lastFedTime.getTime() + adjPeakH_last_eff * (_lastFedInFridge ? _coldFactor_evt : 1) * 3600000);
 
           if (!_firstRefreshCoincidesWithLastFed) {
             events.push({
@@ -2678,6 +2686,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               isDraggable: false,
               label: isFr ? 'Dernier rafraîchi' : 'Last fed',
               cardTimeFormat: 'absolute',
+              // Age chips ("2–3 days ago") derive a precise-looking time —
+              // flag it so the card shows ≈ instead of implying we know
+              // it was exactly 8:15am.
+              timeIsEstimate: lastFedAge === 'days23' || lastFedAge === 'days45' || lastFedAge === 'week',
               cardNote: isLastFedActiveInFridge
                 ? (isFr
                     ? `Au frigo — pic vers ${fmtCardHM(lastFedBellPeakTime, isFr)}`
@@ -2685,7 +2697,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 : undefined,
               bellStyle: isLastFedActiveInFridge ? 'solid' : 'historical_dotted',
               bellPeakTime: lastFedBellPeakTime,
-              bellSigmaScale: 1.0,
+              // Cold rise is ~coldFactor slower — widen the bell to match,
+              // otherwise the spike contradicts the fridge narrative.
+              bellSigmaScale: _lastFedInFridge ? Math.max(1, _coldFactor_evt) : 1.0,
               hasFridgePhase: isLastFedActiveInFridge,
             });
           }
@@ -2723,20 +2737,35 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             && _fridgeHoldInTime.getTime() < _fridgeHoldOutTime.getTime()
             && _fridgeHoldOutTime.getTime() <= _feed2Time.getTime()
           );
+          // A cold hold shorter than 2h is engine noise, not a real fridge
+          // step — don't send the baker to the fridge for minutes, and don't
+          // render a zero-width cold band.
+          const _holdH = _fridgeHoldInTime && _fridgeHoldOutTime
+            ? (_fridgeHoldOutTime.getTime() - _fridgeHoldInTime.getTime()) / 3600000
+            : 0;
+          const _meaningfulHold = _holdH >= 2;
           if (_fridgeHoldRefreshTime) {
             const refreshPeakAt = new Date(_fridgeHoldRefreshTime.getTime() + adjPeakH_next_eff * refreshStretch * 3600000);
+            // This refresh is the baker's NEXT ACTION when it's now/upcoming —
+            // it rendered as a faint dotted sliver ("the Now curve is not
+            // shown") while only the final pre-mix feed got the solid bell.
+            const _refreshUpcoming = _fridgeHoldRefreshTime.getTime() >= nowMs - 60 * 60 * 1000;
             events.push({
               kind: 'refresh',
               time: _fridgeHoldRefreshTime,
               isPast: _fridgeHoldRefreshTime.getTime() < nowMs - 60 * 60 * 1000,
-              isActive: false,
+              isActive: _refreshUpcoming,
               isDraggable: false,
               label: isFr ? 'Rafraîchi' : 'Refresh Feed',
               cardTimeFormat: 'relative',
-              cardNote: isFr
-                ? `Pic vers ${fmtCardHM(refreshPeakAt, isFr)} — puis au frigo`
-                : `Peak around ${fmtCardHM(refreshPeakAt, isFr)} — then refrigerate`,
-              bellStyle: 'dotted',
+              cardNote: _meaningfulHold
+                ? (isFr
+                    ? `Pic vers ${fmtCardHM(refreshPeakAt, isFr)} — puis au frigo`
+                    : `Peak around ${fmtCardHM(refreshPeakAt, isFr)} — then refrigerate`)
+                : (isFr
+                    ? `Pic vers ${fmtCardHM(refreshPeakAt, isFr)}`
+                    : `Peak around ${fmtCardHM(refreshPeakAt, isFr)}`),
+              bellStyle: _refreshUpcoming ? 'solid' : 'dotted',
               bellPeakTime: refreshPeakAt,
               bellSigmaScale: refreshStretch,
               // hasFridgePhase is NOT set here. Path B's biology is "refresh at
@@ -2748,7 +2777,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               // resume.
             });
           }
-          if (_fridgeHoldInTime && _coherent) {
+          if (_fridgeHoldInTime && _coherent && _meaningfulHold) {
             events.push({
               kind: 'fridge_in',
               time: _fridgeHoldInTime,
@@ -2762,7 +2791,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               bellSigmaScale: 1.0,
             });
           }
-          if (_fridgeHoldOutTime && _coherent) {
+          if (_fridgeHoldOutTime && _coherent && _meaningfulHold) {
             const warmupMin = Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60);
             events.push({
               kind: 'fridge_out',
@@ -5017,8 +5046,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             </div>
             <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
               {([
-                { value: true,  label: 'Active & healthy' },
-                { value: false, label: 'Young (<6 months)' },
+                { value: true,  label: isFr ? 'Actif & en forme' : 'Active & healthy' },
+                { value: false, label: isFr ? 'Jeune (<6 mois)' : 'Young (<6 months)' },
               ] as { value: boolean; label: string }[]).map(opt => (
                 <button
                   key={String(opt.value)}
@@ -5038,7 +5067,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   fontFamily: 'var(--font-dm-sans)', fontSize: '.8rem', cursor: 'pointer',
                 }}
               >
-                Rye starter
+                {isFr ? 'Levain de seigle' : 'Rye starter'}
               </button>
             </div>
           </div>
@@ -5208,7 +5237,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Blocker section — always visible */}
       <div style={{ marginBottom: '1rem' }}>
         <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--char)', marginBottom: '.6rem' }}>
-          Block your unavailable times — we&apos;ll plan around them.
+          {isFr
+            ? 'Bloquez vos indisponibilités — nous planifions autour.'
+            : <>Block your unavailable times — we&apos;ll plan around them.</>}
         </div>
         <div>
 
@@ -6293,7 +6324,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                                 const hm = fmtCardHM(rounded, isFr);
                                 return isFr ? `Maintenant · ${hm}` : `Now · ${hm}`;
                               })()
-                            : fmtCardDT(ev.time, isFr);
+                            // "≈" — times derived from an age chip ("2–3 days
+                            // ago") are estimates, not something we know to
+                            // the minute
+                            : `${ev.timeIsEstimate ? '≈ ' : ''}${fmtCardDT(ev.time, isFr)}`;
                           const labelUpper = ev.label.toUpperCase();
                           return (
                             <div key={`ev-card-${i}`}>

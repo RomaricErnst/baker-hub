@@ -185,18 +185,26 @@ function snap15(h: number): number {
 // Sample bell curve into a closed SVG path
 function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_DEFAULT, startHBF?: number): string {
   const N = 260;
-  const pts: string[] = [];
   const left = startHBF ?? wh;
   const floor = startHBF !== undefined ? bell(startHBF, peakHBF, sigma) : 0;
   const range = Math.max(0.01, 1 - floor);
+  // Sample bake-side (hbf=0) → feed-side (hbf=left)
+  const raw: Array<{ x: number; y: number; h: number }> = [];
   for (let i = 0; i <= N; i++) {
     const hbf = (i / N) * left;
-    const x = hToX(hbf, W, wh);
-    const y = BL - ((bell(hbf, peakHBF, sigma) - floor) / range) * MAXH;
-    pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
+    const h = (bell(hbf, peakHBF, sigma) - floor) / range;
+    raw.push({ x: hToX(hbf, W, wh), y: BL - h * MAXH, h });
+  }
+  // Trim the decayed bake-side tail: the path used to run feed→bake hugging
+  // the baseline 1–3px up after the bell decays; with a dashed stroke that
+  // rendered as a phantom dotted line across the chart.
+  let s = 0;
+  while (s < raw.length - 2 && raw[s].h < 0.006) s++;
+  const pts: string[] = [`M ${raw[s].x.toFixed(1)} ${BL}`];
+  for (let i = s; i < raw.length; i++) {
+    pts.push(`L ${raw[i].x.toFixed(1)} ${raw[i].y.toFixed(1)}`);
   }
   pts.push(`L ${hToX(left, W, wh).toFixed(1)} ${BL}`);
-  pts.push(`L ${hToX(0,    W, wh).toFixed(1)} ${BL}`);
   pts.push('Z');
   return pts.join(' ');
 }
@@ -945,7 +953,7 @@ export default function FermentChart({
             </svg>
             <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
               {prefermentType === 'biga' ? 'Biga' :
-               prefermentType === 'levain' || prefermentType === 'sourdough' ? 'Starter' :
+               prefermentType === 'levain' || prefermentType === 'sourdough' ? (isFr ? 'Levain' : 'Starter') :
                'Poolish'}
             </span>
           </div>
@@ -1630,7 +1638,11 @@ export default function FermentChart({
           points={`${bakeX - 8},${AXIS_Y} ${bakeX},${AXIS_Y - 12} ${bakeX + 8},${AXIS_Y}`}
           fill={TERRA}
         />
-        <text x={bakeX} y={AXIS_Y + 20} fontSize={14} fontWeight="600" fill={TERRA}
+        <text
+          // Clamp inside the chart — centred on bakeX the FR "Cuisson" label
+          // ran off the right edge ("Cuisso…")
+          x={Math.min(bakeX, W - (t('bakeLabel').length * 8.4) / 2 - 2)}
+          y={AXIS_Y + 20} fontSize={14} fontWeight="600" fill={TERRA}
           fontFamily="DM Mono, monospace" textAnchor="middle">{t('bakeLabel')}</text>
 
         {/* ── Event-driven diamonds + labels (sourdough) ── */}
@@ -1978,7 +1990,7 @@ export default function FermentChart({
           fontSize={12} fill="#3D5A30"
           fontFamily="DM Mono, monospace"
           textAnchor="middle" fontWeight="600"
-        >Start Dough</text>
+        >{isFr ? 'Pétrissage' : 'Start Dough'}</text>
 
         {/* ── Ghost diamond (recommended position) ── */}
         {recommendedMixHBF != null &&
