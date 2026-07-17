@@ -254,6 +254,7 @@ function computeWaterInfo(
   waterGrams: number,
   ambientTemp: number,
   isSpiral: boolean,
+  isFr = false,
 ): WaterInfo {
   // Physics-based ice split
   const rawIce = waterGrams * (ambientTemp - targetTemp) / (targetTemp + 80);
@@ -269,21 +270,21 @@ function computeWaterInfo(
 
   if (needsIce) {
     // Full ice protocol
-    tempGuidance = 'add ice — see water row below';
+    tempGuidance = isFr ? 'ajoutez de la glace — voir la ligne eau ci-dessous' : 'add ice — see water row below';
     iceGuidance = isSpiral
-      ? `${iceGrams}g ice + ${tapGrams}g water — add ice directly to bowl`
-      : `mix ${iceGrams}g ice + ${tapGrams}g water, stir 1 min, strain before using`;
+      ? (isFr ? `${iceGrams}g de glace + ${tapGrams}g d'eau — glace directement dans la cuve` : `${iceGrams}g ice + ${tapGrams}g water — add ice directly to bowl`)
+      : (isFr ? `mélangez ${iceGrams}g de glace + ${tapGrams}g d'eau, remuez 1 min, filtrez avant usage` : `mix ${iceGrams}g ice + ${tapGrams}g water, stir 1 min, strain before using`);
   } else if (iceGrams >= 20 && tempDiff >= 3) {
     // Ice helpful but not critical — suggest as an easy option
-    tempGuidance = `chilled water, or add ${iceGrams}g ice to ${tapGrams}g water`;
+    tempGuidance = isFr ? `eau bien froide, ou ${iceGrams}g de glace dans ${tapGrams}g d'eau` : `chilled water, or add ${iceGrams}g ice to ${tapGrams}g water`;
   } else if (tempDiff >= 12) {
-    tempGuidance = 'very cold water';
+    tempGuidance = isFr ? 'eau très froide' : 'very cold water';
   } else if (tempDiff >= 5) {
-    tempGuidance = 'chilled water';
+    tempGuidance = isFr ? 'eau bien froide' : 'chilled water';
   } else if (tempDiff >= 2) {
-    tempGuidance = 'slightly below room temperature';
+    tempGuidance = isFr ? 'légèrement plus fraîche que la pièce' : 'slightly below room temperature';
   } else {
-    tempGuidance = 'at room temperature';
+    tempGuidance = isFr ? 'à température ambiante' : 'at room temperature';
   }
 
   return { targetTemp, needsIce, iceGrams, tapGrams, iceGuidance, tempGuidance };
@@ -534,11 +535,11 @@ export default function RecipeOutput({
   const itemLabel = numItems === 1 ? 'ball / loaf' : numItems <= 4 ? 'balls' : 'pieces';
 
   const isSpiral = mixerType === 'spiral';
-  const waterInfo = computeWaterInfo(waterTemp, water, kitchenTemp, isSpiral);
+  const waterInfo = computeWaterInfo(waterTemp, water, kitchenTemp, isSpiral, locale === 'fr');
   // For preferment mode: ice protocol applies to final dough water only
   // Preferment water is mixed by hand at RT — no DDT adjustment needed
   const finalDoughWaterInfo = result.preferment
-    ? computeWaterInfo(waterTemp, result.preferment.finalWater, kitchenTemp, isSpiral)
+    ? computeWaterInfo(waterTemp, result.preferment.finalWater, kitchenTemp, isSpiral, locale === 'fr')
     : null;
 
   // Water row sub-line: source-agnostic temperature guidance
