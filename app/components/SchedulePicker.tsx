@@ -1391,12 +1391,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   //   - Solver found a recommendation different from current nextFeedRatio
   // Convergence: once applied, solver re-runs and finds same recommendation
   // (stable plan). No further changes.
+  const ratioApplyHistoryRef = useRef<number[]>([]);
   useEffect(() => {
     if (ratioMode === 'keep') return;
     if (nextFeedRatioOverride !== null) return;
     const rec = solverResult?.recommendedNextFeedRatio;
     if (rec == null) return;
-    if (rec === nextFeedRatio) return;
+    if (rec === nextFeedRatio) { ratioApplyHistoryRef.current.length = 0; return; }
+    // Oscillation guard — in tight windows (e.g. week+ revival + next-morning
+    // bake) ratio A makes the plan too short → engine recommends B → with B
+    // the plan fits → engine recommends A again → infinite apply loop
+    // (React #185). If we're about to re-apply a ratio we already cycled
+    // through, keep the current one and stop.
+    const hist = ratioApplyHistoryRef.current;
+    if (hist.includes(rec)) { hist.length = 0; return; }
+    hist.push(nextFeedRatio);
+    if (hist.length > 4) hist.shift();
     setNextFeedRatio(rec);
     onNextFeedRatioChange?.(rec);
   }, [solverResult?.recommendedNextFeedRatio, nextFeedRatioOverride, ratioMode]); // eslint-disable-line react-hooks/exhaustive-deps
