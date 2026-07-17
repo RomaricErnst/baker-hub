@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PizzaPartyTab } from './PizzaPartyTabBar';
 import ToppingSelector from './ToppingSelector';
 import PrepTab from './pizzaParty/PrepTab';
@@ -64,10 +64,42 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
     if (getQtysRef) getQtysRef.current = () => qtys;
   }, [qtys, getQtysRef]);
 
+  // Nav #7 — changing dough quantity silently rewrites party slots;
+  // whisper it so the change is never a surprise.
+  const [slotNote, setSlotNote] = useState<string | null>(null);
+  const prevNumItemsRef = useRef<number | null>(null);
+  useEffect(() => {
+    const prev = prevNumItemsRef.current;
+    prevNumItemsRef.current = numItems;
+    if (prev === null || prev === numItems) return;
+    const hasSelection = Object.values(qtys).some(v => v > 0);
+    if (!hasSelection) return;
+    setSlotNote(locale === 'fr'
+      ? `Quantité de pâte modifiée — ${numItems} pizzas à garnir`
+      : `Dough quantity changed — ${numItems} pizzas to top`);
+    const tmr = setTimeout(() => setSlotNote(null), 5000);
+    return () => clearTimeout(tmr);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [numItems]);
+
   const showSelector = activeTab === 'pick' || activeTab === 'shop';
 
   return (
     <div>
+      {slotNote && (
+        <div style={{
+          background: 'rgba(212,168,83,0.12)',
+          border: '1px solid rgba(212,168,83,0.25)',
+          borderRadius: '10px',
+          padding: '9px 13px',
+          marginBottom: '10px',
+          fontFamily: 'var(--font-dm-mono)',
+          fontSize: '12px',
+          color: 'var(--ash, #3D3530)',
+        }}>
+          🍕 {slotNote}
+        </div>
+      )}
       {/* ToppingSelector stays mounted across pick/shop to preserve filter state */}
       <div style={{ display: showSelector ? 'block' : 'none' }}>
         <ToppingSelector

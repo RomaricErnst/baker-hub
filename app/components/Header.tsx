@@ -230,6 +230,7 @@ export default function Header({
   onNewSession,
   onLoadBakeEvent,
   onResumeBakeEvent,
+  onRebakeBakeEvent,
   openSessionId,
   onShareSessionClose,
 }: {
@@ -246,6 +247,7 @@ export default function Header({
   onNewSession?: () => void;
   onLoadBakeEvent?: (event: BakeEvent) => void;
   onResumeBakeEvent?: (event: BakeEvent) => void;
+  onRebakeBakeEvent?: (event: BakeEvent) => void;
   openSessionId?: string | null;
   onShareSessionClose?: () => void;
 }) {
@@ -723,6 +725,26 @@ export default function Header({
                               padding: '2px 8px', borderRadius: '20px',
                               background: 'rgba(196,82,42,0.15)', color: 'var(--terra)',
                             }}>Baked</span>
+                          )}
+                          {/* Nav #5 — clone this session onto the next matching weekday/time */}
+                          {onRebakeBakeEvent && event.dough_snapshot?.eatTime && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRebakeBakeEvent(event);
+                                setMenuOpen(false);
+                              }}
+                              style={{
+                                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                                padding: '2px 9px', borderRadius: '20px',
+                                background: 'rgba(255,255,255,0.08)',
+                                border: '1px solid rgba(255,255,255,0.15)',
+                                color: 'var(--cream)', cursor: 'pointer',
+                                lineHeight: '1.6',
+                              }}
+                            >
+                              ↻ {locale === 'fr' ? 'Refaire' : 'Rebake'}
+                            </button>
                           )}
                         </div>
                       </div>

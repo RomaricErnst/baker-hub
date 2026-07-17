@@ -131,6 +131,49 @@ const STYLE_HYDRATION_ZONES: Record<string, {
 };
 const FALLBACK_ZONE = { min: 50, classicMin: 60, classicMax: 70, advancedMax: 78, max: 85, name: 'Custom' };
 
+// ── Step jump chips (review mode) ─────────────
+// The filled setup accordion is ~6 screens tall on mobile; this compact
+// sticky row lets a returning baker jump straight to any step.
+function StepJumpChips({ steps, idPrefix }: { steps: { n: number; label: string }[]; idPrefix: string }) {
+  return (
+    <div style={{
+      position: 'sticky', top: '62px', zIndex: 30,
+      display: 'flex', gap: '6px', overflowX: 'auto',
+      padding: '8px 4px', margin: '0 -4px 4px',
+      background: 'var(--cream)',
+      WebkitOverflowScrolling: 'touch',
+      scrollbarWidth: 'none',
+    }}>
+      {steps.map(s => (
+        <button
+          key={s.n}
+          onClick={() => {
+            const el = document.getElementById(`${idPrefix}-${s.n}`);
+            if (el) {
+              const top = el.getBoundingClientRect().top + window.scrollY - 112;
+              window.scrollTo({ top, behavior: 'auto' });
+            }
+          }}
+          style={{
+            flex: '0 0 auto',
+            background: 'var(--warm)',
+            border: '1px solid var(--border)',
+            borderRadius: '20px',
+            padding: '6px 12px',
+            fontSize: '11px',
+            fontFamily: 'var(--font-dm-mono)',
+            color: 'var(--ash)',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ── Step card ────────────────────────────────
 function StepCard({
   num, title, activeStep, highestStep, summary, onEdit, children, idPrefix = 'step', reviewMode = false, canComplete = true,
@@ -623,6 +666,32 @@ export default function Home() {
       setProtocolStale(true);
     }
   }, [bakeType, styleKey, numItems, itemWeight, ovenType, mixerType, yeastType, kitchenTemp, humidity, fridgeTemp, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct]);
+
+  // Nav #1 — after an upstream edit (single-tap choices) with a plan already
+  // built, re-open + scroll to the baking-plan step so the chart never
+  // "disappears" behind a collapsed summary. Normal accordion flow only —
+  // in reviewMode every card is already expanded (sticky stale pill covers it).
+  const planReturnMountedRef = useRef(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!planReturnMountedRef.current) { planReturnMountedRef.current = true; return; }
+    if (isRestoringRef.current || reviewMode || !eatTime || activeTab !== 'setup') return;
+    const isCustom = tab === 'custom';
+    const planStep = isCustom ? 9 : 7;
+    const highest = isCustom ? advancedHighestStep : highestStep;
+    const active = isCustom ? advancedStep : activeStep;
+    if (highest < planStep || active >= planStep) return;
+    const tmr = setTimeout(() => {
+      if (isCustom) { setAdvancedStep(9); setAdvancedHighestStep(p => Math.max(p, 9)); }
+      else { setActiveStep(7); setHighestStep(p => Math.max(p, 7)); }
+      const el = document.getElementById(isCustom ? 'adv-step-9' : 'step-7');
+      if (el) {
+        const top = el.getBoundingClientRect().top + window.scrollY - 70;
+        window.scrollTo({ top, behavior: 'auto' });
+      }
+    }, 650);
+    return () => clearTimeout(tmr);
+  }, [styleKey, ovenType, mixerType, yeastType, prefermentType]);
 
   useEffect(() => {
     setScheduleReady(false);
@@ -1134,6 +1203,111 @@ export default function Home() {
     }, 150);
   }
 
+  // ── Resume / rebake a saved bake event ──
+  // Nav #5 — rebake clones a saved session with every scheduled time shifted
+  // rigidly to the next matching weekday/time, as a fresh unsaved session.
+  async function restoreFromBakeEvent(event: BakeEvent, opts?: { rebake?: boolean }) {
+
+    if (!event.dough_snapshot) return;
+    isRestoringRef.current = true;
+    const snap = event.dough_snapshot;
+    const rb = !!opts?.rebake;
+    let deltaMs = 0;
+    if (rb && snap.eatTime) {
+      const oldEat = new Date(snap.eatTime);
+      const next = new Date(oldEat.getTime());
+      const now = Date.now();
+      while (next.getTime() <= now) next.setDate(next.getDate() + 7);
+      deltaMs = next.getTime() - oldEat.getTime();
+    }
+    const shiftD = (d: Date) => rb ? new Date(d.getTime() + deltaMs) : d;
+    setTab(snap.tab as 'simple' | 'custom');
+    setBakeType(snap.bakeType as BakeType | null);
+    setStyleKey(snap.styleKey as StyleKey | null);
+    setNumItems(snap.numItems);
+    setItemWeight(snap.itemWeight);
+    setPizzaDiameter(snap.pizzaDiameter);
+    setOvenType(snap.ovenType as AnyOvenType | null);
+    setMixerType(snap.mixerType as MixerType | null);
+    setYeastType(snap.yeastType as YeastType | null);
+    setKitchenTemp(snap.kitchenTemp);
+    setHumidity(snap.humidity);
+    setFridgeTemp(snap.fridgeTemp);
+    if (snap.flourBlend) setFlourBlend(snap.flourBlend as FlourBlend);
+    setPrefermentType(snap.prefermentType as PrefermentType);
+    setPrefermentFlourPct(snap.prefermentFlourPct);
+    setPrefOffsetH(snap.prefOffsetH);
+    setManualHydration(snap.manualHydration);
+    setManualOil(snap.manualOil);
+    setManualSugar(snap.manualSugar);
+    setManualSalt(snap.manualSalt);
+    setTargetDoughTemp(snap.targetDoughTemp);
+    setFlourInFridge(snap.flourInFridge);
+    setWastePct(snap.wastePct);
+    setPriorityOverride(snap.priorityOverride);
+    if (snap.eatTime) setEatTime(shiftD(new Date(snap.eatTime)));
+    if (snap.startTime) setStartTime(shiftD(new Date(snap.startTime)));
+    if (snap.blocks?.length) {
+      setBlocks((snap.blocks as unknown[]).map((b) => {
+        const bl = b as { label: string; from: number; to: number };
+        return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)) };
+      }));
+    }
+    setRecipeGenerated(snap.recipeGenerated);
+    setModeChosen(snap.modeChosen);
+    // Sourdough starter state — snapshots saved after Jul 2026 include these
+    if (snap.starterState) setStarterState(snap.starterState as 'rt_fed' | 'fridge_unfed' | 'fridge_fed');
+    if (snap.starterLocation) setStarterLocation(snap.starterLocation as 'rt' | 'fridge');
+    if (snap.planningMode) setPlanningMode(snap.planningMode as 'last_fed' | 'know_peak');
+    if (snap.lastFedTime) setLastFedTime(new Date(snap.lastFedTime));
+    if (snap.knownPeakTime) setKnownPeakTime(new Date(snap.knownPeakTime));
+    if (snap.lastFedAge !== undefined) setLastFedAge((snap.lastFedAge as 'today'|'yesterday'|'days23'|'days45'|'week'|null) ?? null);
+    const _snapLfr = snap.lastFeedRatio ?? snap.feedRatio;
+    if (_snapLfr) setLastFeedRatio(_snapLfr as 1 | 2 | 4 | 5 | 10);
+    const _snapNfr = snap.nextFeedRatio ?? snap.lastFeedRatio ?? snap.feedRatio;
+    if (_snapNfr) setNextFeedRatio(_snapNfr as 1 | 2 | 4 | 5 | 10);
+    if (snap.nextFeedRatioOverride !== undefined) setNextFeedRatioOverride(snap.nextFeedRatioOverride as 1 | 2 | 4 | 5 | 10 | null);
+    if (snap.ratioMode === 'keep' || snap.ratioMode === 'recommend') setRatioMode(snap.ratioMode);
+    if (snap.starterMature !== undefined) setStarterMature(Boolean(snap.starterMature));
+    if (snap.starterHasRye !== undefined) setStarterHasRye(Boolean(snap.starterHasRye));
+    if (snap.tang) setTang(snap.tang as 'mild' | 'balanced' | 'tangy');
+    if (snap.fridgeOutTime) setFridgeOutTime(new Date(snap.fridgeOutTime));
+    if (snap.usingPeak2 !== undefined) setUsingPeak2(Boolean(snap.usingPeak2));
+    if (snap.feed2Time) setFeed2Time(new Date(snap.feed2Time));
+    if (snap.starterFridgeInTime) setStarterFridgeInTime(new Date(snap.starterFridgeInTime));
+    if (rb) setBakedDone(false); else if (snap.bakedDone) setBakedDone(true);
+    setBakeEventId(rb ? null : event.id);
+    if (snap.recipeGenerated) {
+      setAdvancedStep(snap.tab === 'custom' ? 99 : 1);
+      setActiveStep(snap.tab === 'custom' ? 1 : 99);
+      setShowResults(true);
+      setProtocolStale(false);
+      setSessionSaved(!rb);
+      setSessionRestored(true);
+      setReviewMode(true);
+      // Nav #2 — land the baker back on the tab they left (Recipe/Guide),
+      // not a review-mode Setup they must decode. Rebakes start on Setup.
+      const savedTab = snap.activeTab as 'setup' | 'plan' | 'guide' | 'pizzaparty';
+      if (rb || !savedTab) setActiveTab('setup');
+      else if (savedTab === 'pizzaparty' && snap.bakeType !== 'pizza') setActiveTab('plan');
+      else setActiveTab(savedTab);
+      setTimeout(() => { isRestoringRef.current = false; }, 200);
+    }
+    // Restore pizza selections from DB if available
+    if (event.pizza_party_id) {
+      const { fetchPizzaPartySlots } = await import('../lib/supabase/fetchBakeEvents');
+      const slotsMap = await fetchPizzaPartySlots([event.id]);
+      const slots = slotsMap[event.id] ?? [];
+      if (slots.length > 0) {
+        const qtys: Record<string, number> = {};
+        for (const slot of slots) {
+          qtys[slot.preset_id] = (qtys[slot.preset_id] ?? 0) + (slot.qty ?? 1);
+        }
+        setPizzaPartyQtys(qtys);
+      }
+    }
+  }
+
   // ── Computed: Generate button / progress ──
   const simpleRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime);
   const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend);
@@ -1211,92 +1385,8 @@ export default function Home() {
             }
           }}
           onNewSession={startOver}
-          onResumeBakeEvent={async (event: BakeEvent) => {
-            if (!event.dough_snapshot) return;
-            isRestoringRef.current = true;
-            const snap = event.dough_snapshot;
-            setTab(snap.tab as 'simple' | 'custom');
-            setBakeType(snap.bakeType as BakeType | null);
-            setStyleKey(snap.styleKey as StyleKey | null);
-            setNumItems(snap.numItems);
-            setItemWeight(snap.itemWeight);
-            setPizzaDiameter(snap.pizzaDiameter);
-            setOvenType(snap.ovenType as AnyOvenType | null);
-            setMixerType(snap.mixerType as MixerType | null);
-            setYeastType(snap.yeastType as YeastType | null);
-            setKitchenTemp(snap.kitchenTemp);
-            setHumidity(snap.humidity);
-            setFridgeTemp(snap.fridgeTemp);
-            if (snap.flourBlend) setFlourBlend(snap.flourBlend as FlourBlend);
-            setPrefermentType(snap.prefermentType as PrefermentType);
-            setPrefermentFlourPct(snap.prefermentFlourPct);
-            setPrefOffsetH(snap.prefOffsetH);
-            setManualHydration(snap.manualHydration);
-            setManualOil(snap.manualOil);
-            setManualSugar(snap.manualSugar);
-            setManualSalt(snap.manualSalt);
-            setTargetDoughTemp(snap.targetDoughTemp);
-            setFlourInFridge(snap.flourInFridge);
-            setWastePct(snap.wastePct);
-            setPriorityOverride(snap.priorityOverride);
-            if (snap.eatTime) setEatTime(new Date(snap.eatTime));
-            if (snap.startTime) setStartTime(new Date(snap.startTime));
-            if (snap.blocks?.length) {
-              setBlocks((snap.blocks as unknown[]).map((b) => {
-                const bl = b as { label: string; from: number; to: number };
-                return { label: bl.label, from: new Date(bl.from), to: new Date(bl.to) };
-              }));
-            }
-            setRecipeGenerated(snap.recipeGenerated);
-            setModeChosen(snap.modeChosen);
-            // Sourdough starter state — snapshots saved after Jul 2026 include these
-            if (snap.starterState) setStarterState(snap.starterState as 'rt_fed' | 'fridge_unfed' | 'fridge_fed');
-            if (snap.starterLocation) setStarterLocation(snap.starterLocation as 'rt' | 'fridge');
-            if (snap.planningMode) setPlanningMode(snap.planningMode as 'last_fed' | 'know_peak');
-            if (snap.lastFedTime) setLastFedTime(new Date(snap.lastFedTime));
-            if (snap.knownPeakTime) setKnownPeakTime(new Date(snap.knownPeakTime));
-            if (snap.lastFedAge !== undefined) setLastFedAge((snap.lastFedAge as 'today'|'yesterday'|'days23'|'days45'|'week'|null) ?? null);
-            const _snapLfr = snap.lastFeedRatio ?? snap.feedRatio;
-            if (_snapLfr) setLastFeedRatio(_snapLfr as 1 | 2 | 4 | 5 | 10);
-            const _snapNfr = snap.nextFeedRatio ?? snap.lastFeedRatio ?? snap.feedRatio;
-            if (_snapNfr) setNextFeedRatio(_snapNfr as 1 | 2 | 4 | 5 | 10);
-            if (snap.nextFeedRatioOverride !== undefined) setNextFeedRatioOverride(snap.nextFeedRatioOverride as 1 | 2 | 4 | 5 | 10 | null);
-            if (snap.ratioMode === 'keep' || snap.ratioMode === 'recommend') setRatioMode(snap.ratioMode);
-            if (snap.starterMature !== undefined) setStarterMature(Boolean(snap.starterMature));
-            if (snap.starterHasRye !== undefined) setStarterHasRye(Boolean(snap.starterHasRye));
-            if (snap.tang) setTang(snap.tang as 'mild' | 'balanced' | 'tangy');
-            if (snap.fridgeOutTime) setFridgeOutTime(new Date(snap.fridgeOutTime));
-            if (snap.usingPeak2 !== undefined) setUsingPeak2(Boolean(snap.usingPeak2));
-            if (snap.feed2Time) setFeed2Time(new Date(snap.feed2Time));
-            if (snap.starterFridgeInTime) setStarterFridgeInTime(new Date(snap.starterFridgeInTime));
-            if (snap.bakedDone) setBakedDone(true);
-            setBakeEventId(event.id);
-            if (snap.recipeGenerated) {
-              setActiveTab(snap.activeTab as 'setup' | 'plan' | 'guide' | 'pizzaparty');
-              setAdvancedStep(snap.tab === 'custom' ? 99 : 1);
-              setActiveStep(snap.tab === 'custom' ? 1 : 99);
-              setShowResults(true);
-              setProtocolStale(false);
-              setSessionSaved(true);
-              setSessionRestored(true);
-              setReviewMode(true);
-              setActiveTab('setup');
-              setTimeout(() => { isRestoringRef.current = false; }, 200);
-            }
-            // Restore pizza selections from DB if available
-            if (event.pizza_party_id) {
-              const { fetchPizzaPartySlots } = await import('../lib/supabase/fetchBakeEvents');
-              const slotsMap = await fetchPizzaPartySlots([event.id]);
-              const slots = slotsMap[event.id] ?? [];
-              if (slots.length > 0) {
-                const qtys: Record<string, number> = {};
-                for (const slot of slots) {
-                  qtys[slot.preset_id] = (qtys[slot.preset_id] ?? 0) + (slot.qty ?? 1);
-                }
-                setPizzaPartyQtys(qtys);
-              }
-            }
-          }}
+          onResumeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event); }}
+          onRebakeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event, { rebake: true }); }}
         />
 
 
@@ -1353,6 +1443,54 @@ export default function Home() {
 
       {/* ── Main content ───────────────────── */}
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) calc(80px + env(safe-area-inset-bottom, 0px))' }}>
+
+        {/* ── Nav #6: welcome-back inline banner (was a fixed toast that
+             covered tap targets above the bottom nav) ── */}
+        {showWelcomeBack && activeTab === 'setup' && (
+          <div style={{
+            background: 'var(--warm)',
+            border: '1px solid var(--border)',
+            borderRadius: '14px',
+            padding: '12px 14px',
+            margin: '0 0 14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            flexWrap: 'wrap',
+            boxShadow: 'var(--card-shadow, 0 2px 12px rgba(26,22,18,0.06))',
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              color: 'var(--smoke)', textTransform: 'uppercase',
+              letterSpacing: '.08em', flex: '1 1 auto',
+            }}>
+              {locale === 'fr' ? 'Session précédente trouvée' : 'Previous session found'}
+            </span>
+            <button
+              onClick={answerWelcomeBack}
+              style={{
+                background: 'var(--terra)', border: 'none',
+                color: 'white', cursor: 'pointer', fontSize: '13px',
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+                padding: '8px 14px', borderRadius: '8px', whiteSpace: 'nowrap',
+              }}
+            >
+              {locale === 'fr' ? 'Reprendre →' : 'Resume →'}
+            </button>
+            <button
+              onClick={() => { startOver(); answerWelcomeBack(); }}
+              style={{
+                background: 'none', border: 'none',
+                color: 'var(--smoke)', cursor: 'pointer',
+                fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
+                padding: '4px 0', whiteSpace: 'nowrap',
+                textDecoration: 'underline', textUnderlineOffset: '2px',
+              }}
+            >
+              {locale === 'fr' ? 'Recommencer' : 'Start fresh'}
+            </button>
+          </div>
+        )}
 
         {/* ── Hero + bake type picker ── */}
         {activeTab === 'setup' && (
@@ -1564,6 +1702,22 @@ export default function Home() {
               }}>
                 ↩ {locale === 'fr' ? 'Session précédente chargée — vérifiez vos réglages ci-dessous' : 'Previous session loaded — review your settings below'}
               </div>
+            )}
+
+            {/* ── Nav #3: step jump chips (review mode) ── */}
+            {reviewMode && (
+              <StepJumpChips
+                idPrefix="step"
+                steps={[
+                  { n: 1, label: locale === 'fr' ? 'Style' : 'Style' },
+                  { n: 2, label: locale === 'fr' ? 'Quantité' : 'Quantity' },
+                  { n: 3, label: locale === 'fr' ? 'Four' : 'Oven' },
+                  { n: 4, label: locale === 'fr' ? 'Climat' : 'Climate' },
+                  { n: 5, label: locale === 'fr' ? 'Pétrin' : 'Mixer' },
+                  { n: 6, label: locale === 'fr' ? 'Levure' : 'Yeast' },
+                  { n: 7, label: locale === 'fr' ? 'Plan' : 'Plan' },
+                ]}
+              />
             )}
 
             {/* ─── STEP 1: Style picker ────────────── */}
@@ -2250,6 +2404,25 @@ export default function Home() {
               }}>
                 ↩ {locale === 'fr' ? 'Session précédente chargée — vérifiez vos réglages ci-dessous' : 'Previous session loaded — review your settings below'}
               </div>
+            )}
+
+            {/* ── Nav #3: step jump chips (review mode) ── */}
+            {reviewMode && (
+              <StepJumpChips
+                idPrefix="adv-step"
+                steps={[
+                  { n: 1, label: locale === 'fr' ? 'Style' : 'Style' },
+                  { n: 2, label: locale === 'fr' ? 'Quantité' : 'Quantity' },
+                  { n: 3, label: locale === 'fr' ? 'Four' : 'Oven' },
+                  { n: 4, label: locale === 'fr' ? 'Climat' : 'Climate' },
+                  { n: 5, label: locale === 'fr' ? 'Pétrin' : 'Mixer' },
+                  { n: 6, label: locale === 'fr' ? 'Farine' : 'Flour' },
+                  { n: 7, label: locale === 'fr' ? 'Levure' : 'Yeast' },
+                  { n: 8, label: locale === 'fr' ? 'Préferment' : 'Preferment' },
+                  { n: 9, label: locale === 'fr' ? 'Plan' : 'Plan' },
+                  { n: 10, label: locale === 'fr' ? 'Pâte' : 'Dough' },
+                ]}
+              />
             )}
 
             {/* ─── ADV STEP 1: Style picker ────────── */}
@@ -3761,70 +3934,33 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Welcome back toast ── */}
-      {showWelcomeBack && (
-        <div style={{
-          position: 'fixed',
-          // Sit above the bottom tab bar — at 24px it covered Recipe/Guide
-          // and stole a first-time user's first taps.
-          bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'var(--char)',
-          borderRadius: 12,
-          padding: '12px 16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-          zIndex: 9999,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          animation: 'fadeInUp 0.3s ease',
-          minWidth: 260,
-          maxWidth: 320,
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-              color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase',
-              letterSpacing: '.08em',
-            }}>
-              {locale === 'fr' ? 'Session précédente trouvée' : 'Previous session found'}
-            </span>
-            <button
-              onClick={answerWelcomeBack}
-              style={{
-                background: 'none', border: 'none',
-                color: 'rgba(255,255,255,0.3)', cursor: 'pointer',
-                fontSize: '14px', padding: '0 0 0 8px', lineHeight: 1,
-              }}
-            >✕</button>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button
-              onClick={answerWelcomeBack}
-              style={{
-                flex: 1, background: 'var(--terra)', border: 'none',
-                color: 'white', cursor: 'pointer', fontSize: '13px',
-                fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-                padding: '8px 14px', borderRadius: '8px', whiteSpace: 'nowrap',
-              }}
-            >
-              {locale === 'fr' ? 'Reprendre →' : 'Resume →'}
-            </button>
-            <button
-              onClick={() => { startOver(); answerWelcomeBack(); }}
-              style={{
-                background: 'none', border: 'none',
-                color: 'rgba(255,255,255,0.35)', cursor: 'pointer',
-                fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
-                padding: '4px 0', whiteSpace: 'nowrap',
-                textDecoration: 'underline', textUnderlineOffset: '2px',
-              }}
-            >
-              {locale === 'fr' ? 'Recommencer' : 'Start fresh'}
-            </button>
-          </div>
-        </div>
+      {/* ── Nav #4: sticky Update-plan pill — surfaces regeneration
+           whenever the config is stale, so it's never below the fold ── */}
+      {protocolStale && recipeGenerated && canGenerate && activeTab === 'setup' && (
+        <button
+          onClick={handleGenerate}
+          style={{
+            position: 'fixed',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))',
+            zIndex: 9999,
+            background: 'var(--terra)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '22px',
+            padding: '11px 20px',
+            fontSize: '13px',
+            fontFamily: 'var(--font-dm-sans)',
+            fontWeight: 600,
+            boxShadow: '0 4px 16px rgba(196,82,42,0.35)',
+            cursor: 'pointer',
+            animation: 'fadeInUp 0.3s ease',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {locale === 'fr' ? 'Mettre à jour le plan →' : 'Update plan →'}
+        </button>
       )}
 
     </div>
