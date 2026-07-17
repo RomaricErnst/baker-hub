@@ -856,6 +856,18 @@ export default function Home() {
 
   // ── Handlers ──────────────────────────────
   function selectBakeType(bt: BakeType) {
+    // Switching to bread retires any Pizza Party selections + their persisted
+    // ticks so a bread bake never carries stale pizza toppings (spec: hide +
+    // uncheck Pizza Night silently). Switching to pizza keeps nothing stale
+    // because bread has no pizza-party state.
+    if (bt === 'bread') {
+      setPizzaPartyQtys({});
+      setPizzaPartyTab('pick');
+      try {
+        localStorage.removeItem('bh_shop_ticks_v1');
+        localStorage.removeItem('bh_prep_ticks_v1');
+      } catch {}
+    }
     setBakeType(bt);
     setStyleKey(null);
     setOvenType(null);
@@ -1313,6 +1325,18 @@ export default function Home() {
             </em>
           </h1>
           )}
+          {!bakeType && (
+            <p style={{
+              fontFamily: 'var(--font-dm-sans)',
+              fontSize: 'clamp(0.85rem, 3vw, 0.95rem)',
+              color: 'var(--smoke)',
+              lineHeight: 1.5,
+              margin: '-8px auto 20px',
+              maxWidth: '30rem',
+            }}>
+              {t('hero.subtitle')}
+            </p>
+          )}
 
           {/* Pizza / Bread picker — full cards before selection, compact toggle after */}
           {!bakeType && (
@@ -1323,8 +1347,15 @@ export default function Home() {
             ]).map(opt => (
               <div
                 key={opt.type}
+                role="button"
+                tabIndex={0}
+                aria-label={opt.label}
+                aria-pressed={bakeType === opt.type}
                 onClick={() => {
                   selectBakeType(opt.type);
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectBakeType(opt.type); }
                 }}
                 onMouseEnter={() => setHoveredBakeType(opt.type)}
                 onMouseLeave={() => setHoveredBakeType(null)}
@@ -1389,6 +1420,13 @@ export default function Home() {
                 ]).map(m => (
                   <div
                     key={m.key}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={m.title}
+                    aria-pressed={tab === m.key}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLDivElement).click(); }
+                    }}
                     onClick={() => {
                       if (m.key === 'simple' && tab === 'custom') {
                         customOnlyStateRef.current = { flourBlend, hydration: manualHydration, oil: manualOil, sugar: manualSugar, prefermentType, prefermentFlourPct };
