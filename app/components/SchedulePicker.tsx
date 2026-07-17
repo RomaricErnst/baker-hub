@@ -2326,6 +2326,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (planningMode === 'last_fed' && (!lastFedTime || lastFedAge === null)) return;
     if (planningMode === 'know_peak' && !knownPeakTime) return;
 
+    // HOISTED — must be initialized before ANY buildAndSetResult() call.
+    // inBlocker/inBlockerMs close over this const; the windowTooShort /
+    // revival early-exit invokes buildAndSetResult (whose intermediate-feed
+    // block calls inBlockerMs) BEFORE the old declaration point further down
+    // → TDZ crash ("Cannot access before initialization") for week+ starters
+    // with short windows. Keep this at the very top of the solver.
+    const effectiveBlocks = blocksOverride ?? (isSourdough ? localBlocks : blocks);
+
     // Reset drag state — any solver run means inputs changed, drag position is stale.
     // When triggered by a drag, preserve hasDragged so the label stays "Your plan".
     hasManuallyDragged.current = false;
@@ -3247,7 +3255,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Sourdough's live blocker source is localBlocks (the blocks prop lags by
     // a render because the parent updates async). Non-sourdough uses blocks.
     // blocksOverride (passed by applyAndUpdate) always wins when present.
-    const effectiveBlocks = blocksOverride ?? (isSourdough ? localBlocks : blocks);
+    // NOTE: effectiveBlocks is declared at the TOP of the solver (TDZ fix).
     function inBlocker(mixHBF: number): boolean {
       return effectiveBlocks.some(b => {
         const s = (bakeMs - b.from.getTime()) / 3600000;
