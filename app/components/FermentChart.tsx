@@ -963,7 +963,7 @@ export default function FermentChart({
             <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke="#4A6B3A" strokeWidth="2" fill="none" strokeLinecap="round"/>
           </svg>
           <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
-            Dough
+            {isFr ? 'Pâte' : 'Dough'}
           </span>
         </div>
       </div>
