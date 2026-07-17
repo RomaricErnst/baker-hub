@@ -688,9 +688,9 @@ export default function RecipeOutput({
               return (
                 <div style={{ marginTop: '.6rem' }}>
                   {[
-                    { label: 'Flour', pct: '100%', value: `${Math.round(totalFlour).toLocaleString()}g` },
-                    { label: 'Water', pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: `${Math.round(totalWater).toLocaleString()}g` },
-                    { label: 'Salt',  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: `${Math.round(totalSalt).toLocaleString()}g` },
+                    { label: 'Flour', pct: '100%', value: u === 'imperial' ? wStr(totalFlour) : `${Math.round(totalFlour).toLocaleString()}g` },
+                    { label: 'Water', pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalWater) : `${Math.round(totalWater).toLocaleString()}g` },
+                    { label: 'Salt',  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalSalt) : `${Math.round(totalSalt).toLocaleString()}g` },
                     ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
                   ].map((row, i) => (
                     <div key={i} style={{
@@ -804,7 +804,7 @@ export default function RecipeOutput({
                   {t('recipeOutput.totalDough')}
                 </div>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  {(numItems * itemWeight).toLocaleString('en')} g
+                  {u === 'imperial' ? wStr(numItems * itemWeight) : `${(numItems * itemWeight).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
                 </div>
                 <div style={{ minWidth: '4rem' }} />
               </div>
@@ -834,9 +834,9 @@ export default function RecipeOutput({
                   return (
                     <div style={{ marginTop: '.6rem' }}>
                       {[
-                        { label: t('recipe.flour'), pct: '100%', value: `${Math.round(totalFlour).toLocaleString()}g` },
-                        { label: t('recipe.water'), pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: `${Math.round(totalWater).toLocaleString()}g` },
-                        { label: t('recipe.salt'),  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: `${Math.round(totalSalt).toLocaleString()}g` },
+                        { label: t('recipe.flour'), pct: '100%', value: u === 'imperial' ? wStr(totalFlour) : `${Math.round(totalFlour).toLocaleString()}g` },
+                        { label: t('recipe.water'), pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalWater) : `${Math.round(totalWater).toLocaleString()}g` },
+                        { label: t('recipe.salt'),  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalSalt) : `${Math.round(totalSalt).toLocaleString()}g` },
                         ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
                       ].map((row, i) => (
                         <div key={i} style={{
