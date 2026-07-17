@@ -81,9 +81,26 @@ const S = 13;
 // than bread styles. Biga always goes to fridge so RT peak not applicable.
 export function getPrefPeakH_RT(type: string, temp: number, styleKey = 'neapolitan'): number {
   if (type === 'biga') return 0; // always fridge — no RT peak concept
+
+  // Sourdough / levain: hours from a 1:1:1 feed to peak for a vigorous MATURE
+  // starter. Calibrated to real-world timing (Modernist Bread Vol.6 + practice):
+  // a healthy levain at ~22°C peaks in ~6h, not the ~12h the old shared curve
+  // returned. maturity (matF), rye (ryeF) and feed ratio (ratioMultiplier) are
+  // applied on top of this base by the caller. Slightly conservative at the
+  // cool end so a busy baker planning ahead does not undershoot the peak.
+  if (type === 'sourdough' || type === 'levain') {
+    if (temp >= 32) return 2.5;
+    if (temp >= 30) return 3;
+    if (temp >= 28) return 3.5;
+    if (temp >= 26) return 4.5;
+    if (temp >= 24) return 5.5;
+    if (temp >= 22) return 6;
+    return 7.5; // ≤ ~20°C
+  }
+
   const isBread = ['pain_campagne','pain_levain','baguette','pain_complet',
                    'pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
-  // Bread styles: slightly slower RT peak (lower yeast, more enzymatic)
+  // Poolish (commercial yeast) — bread styles: slightly slower RT peak
   if (isBread) {
     if (temp >= 32) return 3;
     if (temp >= 30) return 4;
@@ -92,7 +109,7 @@ export function getPrefPeakH_RT(type: string, temp: number, styleKey = 'neapolit
     if (temp >= 24) return 9;
     return 12;
   }
-  // Pizza / sourdough styles
+  // Poolish — pizza styles
   if (temp >= 32) return 3;
   if (temp >= 30) return 4;
   if (temp >= 28) return 5;

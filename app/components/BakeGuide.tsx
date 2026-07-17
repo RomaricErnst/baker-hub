@@ -890,7 +890,7 @@ export default function BakeGuide({
                       const peakH = getPrefPeakH_RT(
                         'sourdough', kitchenTemp, styleKey ?? 'neapolitan'
                       );
-                      const ratioMult = 1 + 0.35 * Math.log(feedRatio);
+                      const ratioMult = 1 + 0.5 * Math.log(feedRatio);
                       const adj = peakH
                         * (starterMature ? 1.0 : 1.2)
                         * (starterHasRye ? 0.8 : 1.0)

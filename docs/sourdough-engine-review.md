@@ -66,9 +66,20 @@ time and blocker calc — high blast radius this close to launch.
 (`1 + 0.35·ln(r)`); real starters stretch ~2.5–3×. A stronger coefficient (≈0.5) would let
 the ratio trick actually rescue awkward windows, which is the whole point of the feature.
 
-Both are defensible either way. Recommendation: ship the launch on the current conservative
-calibration (safe, already tuned), and treat A/B as a fast-follow tuning pass with live
-scenario testing — unless you'd rather bite it now.
+**DECISION (Jul 17): applied both now.** Sourdough peak curve recalibrated to real-world
+vigorous-levain timing (1:1:1 @ 22°C: 12h → 6h) as a dedicated `sourdough`/`levain` branch
+in `getPrefPeakH_RT`, leaving the poolish curves untouched. Ratio coefficient raised
+0.35 → 0.5 (spread 1.81× → 2.15×). New numbers:
+
+| temp | 1:1:1 | 1:2:2 | 1:4:4 | 1:5:5 | 1:10:10 |
+|------|-------|-------|-------|-------|---------|
+| 22°C |  6.0h |  8.1h | 10.2h | 10.8h | 12.9h |
+| 26°C |  4.5h |  6.1h |  7.6h |  8.1h |  9.7h  |
+| 30°C |  3.0h |  4.0h |  5.1h |  5.4h |  6.5h  |
+
+Side benefit: shorter peak → smaller `minViableH` → fewer false "window too short" flags,
+which directly helps the busy-baker use case. Still slightly conservative at the cool end
+so planning ahead doesn't undershoot the peak.
 
 ## Simplicity note
 

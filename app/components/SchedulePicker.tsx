@@ -2037,7 +2037,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const peakH = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
     const ryeF  = starterHasRye ? 0.8 : 1.0;
     const matF  = starterMature ? 1.0 : 1.2;
-    const ratioMultiplier = 1 + 0.35 * Math.log(lastFeedRatio);
+    const ratioMultiplier = 1 + 0.5 * Math.log(lastFeedRatio);
     const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
     const troughH  = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * ratioMultiplier;
     const warmupH  = getStarterFridgeWarmupH(kitchenTemp);
@@ -2349,7 +2349,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           if (adjPeakH_eff) {
             const ryeF = starterHasRye ? 0.8 : 1.0;
             const matF = starterMature ? 1.0 : 1.2;
-            const ratioMult = 1 + 0.35 * Math.log(nextFeedRatio);
+            const ratioMult = 1 + 0.5 * Math.log(nextFeedRatio);
             // Refresh spacing: use peak-shoulder timing (~peakH × 1.25) instead of trough.
             // Baker best practice — refresh at/just past peak when starter is still strong,
             // not at trough (fully depleted). Peak-shoulder = peakH × 1.25 ≈ 17h at 22°C
@@ -2523,8 +2523,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const peakH_base_evt = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
         const ryeF_evt = starterHasRye ? 0.8 : 1.0;
         const matF_evt = starterMature ? 1.0 : 1.2;
-        const ratioMult_last_evt = 1 + 0.35 * Math.log(lastFeedRatio);
-        const ratioMult_next_evt = 1 + 0.35 * Math.log(nextFeedRatio);
+        const ratioMult_last_evt = 1 + 0.5 * Math.log(lastFeedRatio);
+        const ratioMult_next_evt = 1 + 0.5 * Math.log(nextFeedRatio);
         const adjPeakH_last_eff = peakH_base_evt * ryeF_evt * matF_evt * ratioMult_last_evt;
         const adjPeakH_next_eff = peakH_base_evt * ryeF_evt * matF_evt * ratioMult_next_evt;
 
@@ -3003,7 +3003,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const peakH   = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
     const ryeF    = starterHasRye ? 0.8 : 1.0;
     const matF    = starterMature ? 1.0 : 1.2;
-    const ratioMultiplier = 1 + 0.35 * Math.log(nextFeedRatio);
+    const ratioMultiplier = 1 + 0.5 * Math.log(nextFeedRatio);
     const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
     _adjPeakH = adjPeakH;
 
@@ -4094,7 +4094,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         bestScore: number;
         windowTooShort: boolean;
       } => {
-        const ratioMult_r = 1 + 0.35 * Math.log(r);
+        const ratioMult_r = 1 + 0.5 * Math.log(r);
         const adjPeakH_r  = peakH * ryeF * matF * ratioMult_r;
         const _revivalOverheadH_r = adjPeakH_r * 1.25 * revivalCycles(lastFedAge, starterMature, tang);
         const effectiveMinFermH_r = minFermH + _revivalOverheadH_r;
@@ -5941,7 +5941,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             {/* ── Sourdough Starter Plan card ── */}
             {isSourdough && startComputed && lastFedAge !== null && (() => {
               const peakH     = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
-              const ratioMult = 1 + 0.35 * Math.log(lastFeedRatio);
+              const ratioMult = 1 + 0.5 * Math.log(lastFeedRatio);
               const ryeF      = starterHasRye ? 0.8 : 1.0;
               const matF      = starterMature ? 1.0 : 1.2;
               const adjPeakH  = peakH * ryeF * matF * ratioMult;
