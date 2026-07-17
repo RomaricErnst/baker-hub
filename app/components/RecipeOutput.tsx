@@ -757,7 +757,7 @@ export default function RecipeOutput({
                   {t('recipeOutput.prefTotalRow', { name: pd.name })}
                 </div>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  ~{prefTotal} g
+                  ~{wStr(prefTotal)}
                 </div>
                 <div style={{ minWidth: '4rem' }} />
               </div>
@@ -1027,7 +1027,7 @@ export default function RecipeOutput({
               {t('recipeOutput.totalDough')}
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-              {(numItems * itemWeight).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g
+              {u === 'imperial' ? wStr(numItems * itemWeight) : `${(numItems * itemWeight).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
             </div>
             <div style={{ minWidth: '4rem' }} />
           </div>

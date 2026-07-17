@@ -45,7 +45,13 @@ export function weightUnit(units: UnitSystem): string {
 }
 // Display a stored gram value in the baker's system
 export function displayWeight(g: number, units: UnitSystem): string {
-  if (units === 'imperial') return `${gToOz(g)} oz`;
+  if (units === 'imperial') {
+    // Yeast-scale amounts: 0.5g rounded to 0.1oz precision showed "0 oz".
+    // No kitchen oz-scale resolves these anyway — show grams (precision
+    // scales are metric) so the number stays usable.
+    if (g > 0 && g < 6) return `${parseFloat(g.toFixed(1))} g`;
+    return `${gToOz(g)} oz`;
+  }
   if (g <= 0) return '0 g';
   if (g < 1) return `${Math.max(0.1, parseFloat(g.toFixed(1)))} g`;
   // One decimal below 10g — yeast-scale amounts lose meaningful precision
