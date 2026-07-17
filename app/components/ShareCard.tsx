@@ -94,6 +94,9 @@ export default function ShareCard({
   const [format, setFormat] = useState<'post' | 'square' | 'story'>('post');
   const [selectedPhotoUrls, setSelectedPhotoUrls] = useState<string[]>([]);
   const [cameraPhotoUrls, setCameraPhotoUrls] = useState<string[]>([]);
+  // Per-photo vertical crop anchor — auto center-crop beheaded cornicione
+  // close-ups; ⊙/↑/↓ cycles where the slot focuses.
+  const [photoCrops, setPhotoCrops] = useState<Record<string, 'center' | 'top' | 'bottom'>>({});
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sharedOk, setSharedOk] = useState(false);
@@ -308,7 +311,7 @@ export default function ShareCard({
     run();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [template, format, selectedPhotoUrls, customTitle, bakerName, editableCaption, protocolLines,
+  }, [template, format, selectedPhotoUrls, photoCrops, customTitle, bakerName, editableCaption, protocolLines,
       specLine, flourLine, weightsLine, timingLine, gearLine, pizzaDisplayLines, bakeDate]);
 
   // ── Canvas draw ──
@@ -457,11 +460,12 @@ export default function ShareCard({
       } catch { return null; }
     }
 
-    function drawCover(img: HTMLImageElement, x: number, y: number, w: number, h: number) {
+    function drawCover(img: HTMLImageElement, x: number, y: number, w: number, h: number, anchor: 'center' | 'top' | 'bottom' = 'center') {
       const scale = Math.max(w / img.width, h / img.height);
       const iw = img.width * scale;
       const ih = img.height * scale;
-      ctx.drawImage(img, x + (w - iw) / 2, y + (h - ih) / 2, iw, ih);
+      const dy = anchor === 'top' ? 0 : anchor === 'bottom' ? (h - ih) : (h - ih) / 2;
+      ctx.drawImage(img, x + (w - iw) / 2, y + dy, iw, ih);
     }
 
     // Photo zone
@@ -473,7 +477,7 @@ export default function ShareCard({
           ctx.beginPath();
           ctx.rect(0, 0, 1080, photoZoneHeight);
           ctx.clip();
-          drawCover(img, 0, 0, 1080, photoZoneHeight);
+          drawCover(img, 0, 0, 1080, photoZoneHeight, photoCrops[selectedPhotoUrls[0]] ?? 'center');
           ctx.restore();
         }
       }
@@ -495,7 +499,7 @@ export default function ShareCard({
             ctx.beginPath();
             ctx.rect(x, 0, slotW, photoZoneHeight);
             ctx.clip();
-            drawCover(img, x, 0, slotW, photoZoneHeight);
+            drawCover(img, x, 0, slotW, photoZoneHeight, photoCrops[selectedPhotoUrls[i]] ?? 'center');
             ctx.restore();
           }
         }
@@ -520,7 +524,7 @@ export default function ShareCard({
             ctx.beginPath();
             ctx.rect(x, y, slotW, slotH);
             ctx.clip();
-            drawCover(img, x, y, slotW, slotH);
+            drawCover(img, x, y, slotW, slotH, photoCrops[selectedPhotoUrls[i]] ?? 'center');
             ctx.restore();
           }
         }
@@ -846,24 +850,67 @@ export default function ShareCard({
               </span>
             </div>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {allPhotos.map((p, i) => (
+              {allPhotos.map((p, i) => {
+                const selIdx = selectedPhotoUrls.indexOf(p.url);
+                const isSel = selIdx !== -1;
+                const crop = photoCrops[p.url] ?? 'center';
+                const cropGlyph = crop === 'top' ? '↑' : crop === 'bottom' ? '↓' : '⊙';
+                const miniBtn: React.CSSProperties = {
+                  position: 'absolute', width: '20px', height: '20px',
+                  borderRadius: '6px', border: 'none', cursor: 'pointer',
+                  background: 'rgba(26,22,18,0.72)', color: '#fff',
+                  fontSize: '11px', lineHeight: '20px', textAlign: 'center', padding: 0,
+                };
+                return (
                 <div
                   key={i}
                   onClick={() => togglePhoto(p.url)}
                   style={{
                     width: '72px', height: '72px', borderRadius: '8px', overflow: 'hidden',
                     cursor: 'pointer', position: 'relative', flexShrink: 0,
-                    outline: selectedPhotoUrls.includes(p.url) ? '2.5px solid var(--gold)' : '2px solid transparent',
+                    outline: isSel ? '2.5px solid var(--gold)' : '2px solid transparent',
                   }}
                 >
                   <img src={p.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} alt="" />
-                  {selectedPhotoUrls.includes(p.url) && (
-                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(212,168,83,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ color: 'white', fontSize: '18px' }}>✓</span>
-                    </div>
+                  {isSel && (
+                    <>
+                      {/* Order badge — slot position on the card */}
+                      <span style={{
+                        position: 'absolute', top: '3px', left: '3px',
+                        minWidth: '18px', height: '18px', borderRadius: '9px',
+                        background: 'var(--gold)', color: '#1A1612',
+                        fontSize: '11px', fontWeight: 700, lineHeight: '18px',
+                        textAlign: 'center', padding: '0 4px',
+                        fontFamily: 'var(--font-dm-mono)',
+                      }}>{selIdx + 1}</span>
+                      {/* Make hero — move to slot 1 */}
+                      {selIdx > 0 && (
+                        <button
+                          title={l === 'fr' ? 'Mettre en premier' : 'Make first photo'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPhotoUrls(prev => [p.url, ...prev.filter(u => u !== p.url)]);
+                          }}
+                          style={{ ...miniBtn, bottom: '3px', left: '3px' }}
+                        >★</button>
+                      )}
+                      {/* Crop anchor cycle: center → top → bottom */}
+                      <button
+                        title={l === 'fr' ? 'Cadrage : centre / haut / bas' : 'Crop: centre / top / bottom'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPhotoCrops(prev => ({
+                            ...prev,
+                            [p.url]: crop === 'center' ? 'top' : crop === 'top' ? 'bottom' : 'center',
+                          }));
+                        }}
+                        style={{ ...miniBtn, bottom: '3px', right: '3px' }}
+                      >{cropGlyph}</button>
+                    </>
                   )}
                 </div>
-              ))}
+                );
+              })}
 
               <label style={{
                 width: '72px', height: '72px', borderRadius: '8px',

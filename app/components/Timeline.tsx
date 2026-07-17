@@ -329,10 +329,19 @@ export function buildItems(
 
   // Final Proof — merged with warmup/rest. Starts when dough comes out of fridge.
   // Duration runs to bakeStart (preheat overlaps with end of proof).
-  const finalProofStepStart =
+  const finalProofStepStartRaw =
     schedule.rtWarmupStart ??
     (schedule.restRtHours > 0 ? schedule.coldRetardEnd : null) ??
     schedule.finalProofStart;
+  // Express plans stamped Divide & Ball and Final Proof at the same minute —
+  // proof can't start until the balls exist. Clamp the displayed start to
+  // divide end (display only; total window is unchanged).
+  const divideEndMs = schedule.divideBallTime
+    ? schedule.divideBallTime.getTime() + divideH * 3600000
+    : null;
+  const finalProofStepStart = finalProofStepStartRaw && divideEndMs && finalProofStepStartRaw.getTime() < divideEndMs
+    ? new Date(divideEndMs)
+    : finalProofStepStartRaw;
   // Show warmup + actual proof window only — preheat is parallel/independent.
   const warmupStepH = schedule.rtWarmupStart && schedule.rtWarmupEnd
     ? Math.max(0, (schedule.rtWarmupEnd.getTime() - schedule.rtWarmupStart.getTime()) / 3600000)

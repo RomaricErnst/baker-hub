@@ -1279,11 +1279,17 @@ export default function FermentChart({
                     // mid-hold cold peak and a sharp post-peak drop.
                     const chilledAtPeak = ownsHold && fridgeInHBF_ev !== null
                       && Math.abs(ev.bellPeakTime.getTime() - nextFridgeIn!.time.getTime()) <= 2 * 3600000;
+                    // Cold-phase geometry MUST come from the event's own
+                    // bellPeakTime (card-aligned). Passing the chart-level
+                    // fridgePeakH re-derived the peak with the NEXT feed's
+                    // optimized ratio — the bell peaked ~10h later than the
+                    // card said for a fed-straight-into-fridge starter.
+                    const feedToPeakH_ev = Math.max(1, feedHBF - peakHBF);
                     const bellD =
                       ownsHold && fridgeOutHBF_ev !== null && fridgeInHBF_ev !== null && chilledAtPeak
                         ? makeBellWithFridgePlateau(peakHBF, sigma, fridgeInHBF_ev, fridgeOutHBF_ev, W, WH, feedHBF)
                         : ownsHold && fridgeOutHBF_ev !== null
-                          ? makeFridgePhaseBellPath(feedHBF, peakHBF, fridgePeakH, fridgeSigma, W, WH)
+                          ? makeFridgePhaseBellPath(feedHBF, peakHBF, feedToPeakH_ev, feedToPeakH_ev * 0.4, W, WH)
                           : makeBellPath(peakHBF, sigma, W, WH, feedHBF);
                     // Solid (active) bell: the starter is consumed at Start
                     // Dough — fade the curve after mixX so the "what if

@@ -1141,6 +1141,12 @@ export default function Home() {
 
   // ── Styles ────────────────────────────────
   const isBread = bakeType === 'bread';
+  // Localized style name — data.ts carries nameFr but several surfaces used .name unconditionally
+  const styleDisplayName = (sk: string | null | undefined): string => {
+    if (!sk) return '';
+    const st = (ALL_STYLES as Record<string, { name?: string; nameFr?: string }>)[sk];
+    return (locale === 'fr' ? st?.nameFr : undefined) ?? st?.name ?? sk;
+  };
   const accentColor = isBread ? 'var(--bread)' : 'var(--terra)';
 
   // ── Render ────────────────────────────────
@@ -1165,7 +1171,7 @@ export default function Home() {
           onShareSessionClose={() => setShareSessionId(null)}
           sessionSummary={(() => {
             if (!styleKey || !eatTime) return '';
-            const styleName = (ALL_STYLES as Record<string, { name?: string }>)[styleKey]?.name ?? styleKey;
+            const styleName = styleDisplayName(styleKey);
             const dateStr = eatTime.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
             // Time only — formatTime() prefixes the weekday, and dateStr
             // already has it ("Sat 18 Jul, Sat 19:00" duplication)
@@ -1925,7 +1931,7 @@ export default function Home() {
                 <div ref={resultsRef} style={{ marginTop: '1rem' }}>
                   {bakeTimeIsPast && sessionRestored ? (
                     <PostBakeLanding
-                      styleName={ALL_STYLES[styleKey as StyleKey]?.name ?? styleKey ?? ''}
+                      styleName={styleDisplayName(styleKey)}
                       eatTime={eatTime}
                       bakeEventId={bakeEventId}
                       onYes={() => {
@@ -1960,7 +1966,7 @@ export default function Home() {
                             result={displayRecipe ?? recipe}
                             numItems={numItems}
                             itemWeight={itemWeight}
-                            styleName={ALL_STYLES[styleKey!].name}
+                            styleName={styleDisplayName(styleKey)}
                             mixerType={mixerType!}
                             kitchenTemp={kitchenTemp}
                             fridgeTemp={fridgeTemp}
@@ -3204,7 +3210,7 @@ export default function Home() {
                 <div style={{ marginTop: '1rem' }}>
                   {bakeTimeIsPast && sessionRestored ? (
                     <PostBakeLanding
-                      styleName={ALL_STYLES[styleKey as StyleKey]?.name ?? styleKey ?? ''}
+                      styleName={styleDisplayName(styleKey)}
                       eatTime={eatTime}
                       bakeEventId={bakeEventId}
                       onYes={() => {
@@ -3233,7 +3239,7 @@ export default function Home() {
                             result={advancedDisplayRecipe ?? advancedRecipe}
                             numItems={numItems}
                             itemWeight={itemWeight}
-                            styleName={ALL_STYLES[styleKey!].name}
+                            styleName={styleDisplayName(styleKey)}
                             mixerType={mixerType!}
                             kitchenTemp={kitchenTemp}
                             fridgeTemp={fridgeTemp}

@@ -2916,6 +2916,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             && _renderFridgeOutMs != null) {
           const fridgeOutDate = new Date(_renderFridgeOutMs);
           if (_renderFridgeInMs != null && _renderFridgeInMs < _renderFridgeOutMs) {
+            // "At peak" is only true when the starter was chilled at its peak.
+            // Fed-straight-into-fridge (fridge_in ≈ last feed) needs honest copy.
+            const _straightIn = lastFedTime
+              && Math.abs(_renderFridgeInMs - lastFedTime.getTime()) < 60 * 60 * 1000;
             events.push({
               kind: 'fridge_in',
               time: new Date(_renderFridgeInMs),
@@ -2924,7 +2928,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               isDraggable: false,
               label: isFr ? 'Au frigo' : 'Into Fridge',
               cardTimeFormat: 'absolute',
-              cardNote: isFr ? 'Au pic — ralentit la fermentation' : 'At peak — slows fermentation',
+              cardNote: _straightIn
+                ? (isFr ? 'Directement au frigo — montée lente au froid' : 'Straight to the fridge — slow cold rise')
+                : (isFr ? 'Au pic — ralentit la fermentation' : 'At peak — slows fermentation'),
               bellStyle: 'none',
               bellSigmaScale: 1.0,
             });
