@@ -784,8 +784,13 @@ export default function FermentChart({
   // Protocol indicator already shown below diamond — no need to repeat in pill
   const prefOptHChart  = prefermentType === 'biga' ? 48 : prefNeedsFridge ? 18 : rtPeakH;
   const prefMaxHChart  = prefermentType === 'biga' ? 72 : prefNeedsFridge ? 24 : rtPeakH * 1.5;
-  const prefInZone     = hasPref && prefOffsetH >= 3 && prefOffsetH <= prefOptHChart;
-  const prefEarlyOk    = hasPref && prefOffsetH > prefOptHChart && prefOffsetH <= prefMaxHChart;
+  // Biga green mirrors solver + card: 24h→58h (optH 48, −24h/+10h plateau)
+  const prefInZone     = prefermentType === 'biga'
+    ? hasPref && prefOffsetH >= 24 && prefOffsetH <= 58
+    : hasPref && prefOffsetH >= 3 && prefOffsetH <= prefOptHChart;
+  const prefEarlyOk    = prefermentType === 'biga'
+    ? hasPref && prefOffsetH > 58 && prefOffsetH <= prefMaxHChart
+    : hasPref && prefOffsetH > prefOptHChart && prefOffsetH <= prefMaxHChart;
   const prefTooShort   = hasPref && prefOffsetH < 3;
   const prefStatus = prefInZone   ? t('prefStatus.readyAtMix')
     : prefEarlyOk                 ? t('prefStatus.earlyOk')

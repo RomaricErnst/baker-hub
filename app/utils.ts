@@ -811,6 +811,7 @@ export function calculateRecipe(
   wastePct?: number,                       // custom mode only — mixing loss buffer
   prefGoesInFridgeOverride?: boolean,      // custom mode only — from SchedulePicker
   feedToMixH?: number,                     // sourdough only — hours from feed to mix
+  prefActualHours?: number,                // actual planned preferment window (prefOffsetH)
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = (ovenType in OVEN_TYPES)
@@ -977,6 +978,7 @@ export function calculateRecipe(
         kitchenTemp, fridgeTemp, prefInFridge,
         flourPctOverride,
         yeastType,
+        prefActualHours,
       )
     : null;
 

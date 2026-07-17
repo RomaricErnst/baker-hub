@@ -704,7 +704,14 @@ function findOptimalPosition(
       // the comfort window guard and the scoring block below.
       const fridgePlateauH  = prefermentType === 'biga' ? 10 : prefGoesInFridge ? 3 : 0;
       const scorePlateauH   = fridgePlateauH; // upper bound (over-fermented side)
-      const scorePlateauH_LOW = prefGoesInFridge && prefermentType === 'poolish' ? 5 : fridgePlateauH; // lower bound (wider — underdeveloped is safer)
+      // Lower bound (underdeveloped side) — wider, because under-fermented is safer.
+      // Biga: 24h — fridge biga at 4–6°C is scientifically solid from ~24h
+      // (Modernist Pizza: 24–48h standard practice, 48h optimal, 72h max).
+      // Green zone becomes 24h→58h so day/night-blocked bakers can still reach
+      // double green instead of a false "window too short".
+      const scorePlateauH_LOW = prefermentType === 'biga' ? 24
+        : prefGoesInFridge && prefermentType === 'poolish' ? 5
+        : fridgePlateauH; // lower bound (wider — underdeveloped is safer)
       const scoreRTPeakTol  = kitchenTemp >= 30 ? 0.5
                             : kitchenTemp >= 28 ? 0.75
                             : kitchenTemp >= 24 ? 1.0
@@ -5839,9 +5846,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // RT: ~25% of peak time — climate-sensitive minimum for meaningful fermentation.
         // e.g. 30°C peak=4h → min=1h, 22°C peak=9h → min=2h, 18°C peak=13h → min=3h
         const prefMinHCard = prefGoesInFridge ? 3 : Math.max(1, Math.round(prefRTPeakH * 0.25));
-        // Plateau half-width: poolish fridge ±3h upper / +5h lower (asymmetric), biga ±10h, RT ±0
+        // Plateau half-width: poolish fridge ±3h upper / +5h lower (asymmetric),
+        // biga +10h upper / 24h lower (green 24–58h, mirrors solver), RT ±0
         const fridgePlateauH    = prefGoesInFridge ? (prefermentType === 'biga' ? 10 : 3) : 0;
-        const cardPrefPlateauH_LOW = prefGoesInFridge && prefermentType === 'poolish' ? 5 : fridgePlateauH;
+        const cardPrefPlateauH_LOW = prefermentType === 'biga' ? 24
+          : prefGoesInFridge && prefermentType === 'poolish' ? 5
+          : fridgePlateauH;
         // Climate-aware RT zones — absolute hour offsets, not percentages.
         // rtPeakH is already climate-sensitive (4h at 30°C, 11h at 18°C).
         // Green: at or just past peak (±1.5h window)

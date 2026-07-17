@@ -825,13 +825,30 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
   const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({});
   const [shoppingLocation, setShoppingLocation] = useState<string>('international');
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  // Persisted so ticks survive leaving/reopening the app (cleared on Start Over)
+  const shopTicksHydrated = useState(() => ({ done: false }))[0];
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem('bh_shopping_location');
       if (saved) setShoppingLocation(saved);
     } catch {}
+    try {
+      const rawTicks = localStorage.getItem('bh_shop_ticks_v1');
+      if (rawTicks) {
+        const restored = JSON.parse(rawTicks) as Record<string, boolean>;
+        setTicked(prev => ({ ...restored, ...prev }));
+      }
+    } catch {}
+    shopTicksHydrated.done = true;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!shopTicksHydrated.done) return;
+    try { localStorage.setItem('bh_shop_ticks_v1', JSON.stringify(ticked)); } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticked]);
 
   const { sections } = buildShoppingList(qtys, locale, styleKey);
   const totalSelected = Object.values(qtys).filter(q => q > 0).length;

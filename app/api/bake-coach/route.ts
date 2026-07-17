@@ -18,7 +18,11 @@ function isPan(sk: string)      { return sk === 'pan'; }
 function isRoman(sk: string)    { return sk === 'roman' || sk === 'pizza_romana'; }
 
 function buildSystemPrompt(stepId: string, styleKey: string, ovenType?: string, pizzaName?: string, beforeBake?: string[], afterBake?: string[]): string {
-  const base = `You are an expert bread and pizza coach. Reply in 2-3 sentences maximum. Be direct and actionable. Be honest — do not soften real problems or invent praise that isn't warranted, but never be harsh. Be warm without being effusive — avoid "great job" or "amazing". For clear issues be direct. For ambiguous things be measured — you are reading a photo, not tasting or touching the dough, so show appropriate humility about what you cannot fully assess from an image. Never say "I can see" or "the image shows". Never mention the photo.`;
+  const base = `You are an expert bread and pizza coach. Reply in this EXACT structure, nothing else:
+Line 1: a 2–5 word verdict (e.g. "Ready to use", "Not yet — give it ~30 min", "Past peak but usable").
+Line 2: the single most useful action right now, one short sentence.
+Line 3 (only if genuinely needed): one thing to watch, one short sentence.
+Never exceed 3 lines. No paragraphs, no greetings. Be honest — do not soften real problems or invent praise, but never be harsh. For ambiguous photos be measured — you are reading a photo, not touching the dough. Never say "I can see" or "the image shows". Never mention the photo.`;
 
   switch (stepId) {
 
@@ -213,11 +217,12 @@ IF BAKED — assess ALL of the following in order:
    - Cheese overhanging the edge
    - After-bake ingredients accidentally baked (wilted basil, cooked prosciutto)
 
-━━━ OUTPUT FORMAT ━━━
-Line 1: State the stage — Base, Topped, or Baked
-Line 2: One specific thing done well
-Line 3–4: One or two most important things to improve, specific and actionable
-Line 5 (optional): One concrete tip for next time
+━━━ OUTPUT FORMAT — STRICT ━━━
+Line 1: Stage + short verdict, e.g. "Baked — solid bake" or "Topped — one fix before the oven"
+Line 2: "✓ " + the one specific thing done well (under 15 words)
+Line 3: "→ " + the single most important improvement, specific and actionable (under 20 words)
+Line 4 (only if truly important): "→ " + one more improvement (under 20 words)
+Four lines maximum. No paragraphs. Every line stands alone.
 
 
 TONE:
@@ -228,7 +233,7 @@ STRICT RULES:
 - Never give generic advice — anchor everything to what you actually see
 - Never guess an ingredient name if unsure — describe what you see instead
 - Do not praise something you cannot actually verify from the image
-- Maximum 5 sentences after the stage identification
+- Follow the OUTPUT FORMAT above exactly — four short lines maximum
 - If locale is French, reply entirely in French`;
     }
 
@@ -239,11 +244,33 @@ STRICT RULES:
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64, mimeType, stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName, beforeBake, afterBake } =
+    const { imageBase64, mimeType, stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName, beforeBake, afterBake, question, stepTitle } =
       await req.json();
 
-    if (!imageBase64 || !stepId) {
+    if (!stepId || (!imageBase64 && !question)) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const model0 = process.env.ANTHROPIC_VISION_MODEL ?? 'claude-haiku-4-5-20251001';
+
+    // ── Text-only coach: baker asks a question about the current step ──
+    if (!imageBase64 && question) {
+      const q = String(question).slice(0, 500);
+      const ovenCtx = ovenType === 'pizza_oven' ? 'wood/gas pizza oven 450–500°C'
+        : ovenType === 'electric_pizza' ? 'electric pizza oven 350–420°C'
+        : ovenType === 'home_oven_steel' ? 'home oven with steel/stone 250–280°C'
+        : ovenType ? 'standard home oven 220–260°C' : '';
+      const sys = `You are an expert bread and pizza coach answering a home baker's question mid-bake. They are currently at the "${stepTitle ?? stepId}" step of their plan.
+Context: style ${styleKey || 'unknown'}${ovenCtx ? `, oven: ${ovenCtx}` : ''}${kitchenTemp ? `, kitchen ${kitchenTemp}°C` : ''}${prefermentType && prefermentType !== 'none' ? `, preferment: ${prefermentType}` : ''}.
+Rules: answer in 2–4 sentences maximum, direct and actionable, anchored to their context. Be honest about uncertainty. Never invent measurements they didn't give. No greetings, no sign-off.${locale === 'fr' ? ' Reply entirely in French.' : ''}`;
+      const r = await client.messages.create({
+        model: model0,
+        max_tokens: 300,
+        system: sys,
+        messages: [{ role: 'user', content: q }],
+      });
+      const answer = r.content.filter(b => b.type === 'text').map(b => (b as { type: 'text'; text: string }).text).join('');
+      return NextResponse.json({ feedback: answer });
     }
 
     const systemPrompt = buildSystemPrompt(stepId, styleKey ?? '', ovenType, pizzaName, beforeBake, afterBake);

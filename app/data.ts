@@ -705,6 +705,7 @@ export function computePrefermentRecipe(
   prefGoesInFridge?: boolean, // default false for poolish, true for biga
   flourPctOverride?: number,
   yeastType?: string,         // for output conversion (default 'instant' = IDY)
+  actualFermentH?: number,    // baker's REAL planned window (from scheduler) — yeast calibrated to it
 ): {
   prefFlour: number;
   prefWater: number;
@@ -732,11 +733,22 @@ export function computePrefermentRecipe(
   const effectiveFT = fridgeTemp ?? 4;
   const isInFridge = prefermentType === 'biga' || (prefGoesInFridge ?? false);
 
+  // Calibrate yeast to the baker's ACTUAL planned window when the scheduler
+  // provides it — a 20h biga needs more yeast than a 48h one. Falls back to
+  // the scientific optimum per type. Clamped to each type's viable range so a
+  // dragged/degenerate offset can't produce absurd yeast amounts.
   let prefFermentH: number;
   if (prefermentType === 'biga') {
-    prefFermentH = 48;
+    prefFermentH = actualFermentH !== undefined && actualFermentH > 0
+      ? Math.max(12, Math.min(72, actualFermentH))
+      : 48;
   } else if (isInFridge) {
-    prefFermentH = 18; // fridge poolish optimal peak
+    prefFermentH = actualFermentH !== undefined && actualFermentH > 0
+      ? Math.max(6, Math.min(24, actualFermentH))
+      : 18; // fridge poolish optimal peak
+  } else if (actualFermentH !== undefined && actualFermentH > 0) {
+    // RT poolish: calibrate to the real planned window (clamped to viable RT range)
+    prefFermentH = Math.max(2, Math.min(16, actualFermentH));
   } else {
     // RT poolish peak hours, temp-dependent
     if (effectiveKT >= 32)      prefFermentH = 3;

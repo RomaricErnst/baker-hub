@@ -7,6 +7,7 @@ import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
 import { type UnitSystem, displayTemp, tempC, tempRange } from '../utils/units';
 import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
+import { GUIDE_FAQ } from '../lib/guideFaq';
 
 interface BakeGuideProps {
   schedule: ScheduleResult;
@@ -156,7 +157,7 @@ function StepCard({
         onClick={onToggle}
         style={{
           display: 'flex', alignItems: 'center', gap: '.75rem',
-          padding: '1rem 1.25rem', cursor: 'pointer',
+          padding: '.8rem 1.1rem', cursor: 'pointer',
           borderLeft: `4px solid ${ea}`,
         }}
       >
@@ -203,8 +204,12 @@ function StepCard({
             </div>
           )}
         </div>
-        <span style={{ color: D.smoke, fontSize: '.8rem', flexShrink: 0 }}>
-          {open ? '▲' : '▼'}
+        <span style={{
+          color: D.smoke, fontSize: '.8rem', flexShrink: 0,
+          display: 'inline-block', transition: 'transform .2s',
+          transform: open ? 'rotate(180deg)' : 'none',
+        }}>
+          ▾
         </span>
       </div>
       {/* Card body */}
@@ -411,7 +416,7 @@ function CoachButton({
           marginBottom: '10px',
           position: 'relative',
         }}>
-          <div style={{ color: '#F5F0E8', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>
+          <div style={{ color: '#F5F0E8', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
             {feedback}
           </div>
           <button
@@ -480,6 +485,191 @@ function CoachButton({
   );
 }
 
+// ── Ask Maestro — free-text question about the current step ──────
+function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType }: {
+  stepId: string; stepTitle: string; styleKey: string; kitchenTemp: number;
+  prefermentType?: string; locale: string; ovenType?: string;
+}) {
+  const [q, setQ] = useState('');
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const l = locale === 'fr' ? 'fr' : 'en';
+
+  async function ask() {
+    const question = q.trim();
+    if (!question || loading) return;
+    setLoading(true); setError(false); setAnswer(null);
+    try {
+      const res = await fetch('/api/bake-coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType }),
+      });
+      const data = await res.json();
+      if (data.feedback) setAnswer(data.feedback); else setError(true);
+    } catch { setError(true); } finally { setLoading(false); }
+  }
+
+  return (
+    <div style={{ marginTop: '12px' }}>
+      <div style={{ display: 'flex', gap: '6px' }}>
+        <input
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') ask(); }}
+          placeholder={l === 'fr' ? 'Posez une question sur cette étape…' : 'Ask a question about this step…'}
+          style={{
+            flex: 1, border: `1px solid ${D.border}`, borderRadius: '8px',
+            padding: '8px 10px', fontSize: '13px', fontFamily: 'var(--font-dm-sans)',
+            color: D.char, background: '#fff', outline: 'none',
+          }}
+        />
+        <button
+          onClick={ask}
+          disabled={loading || !q.trim()}
+          style={{
+            background: '#1A1612', color: '#F5F0E8', border: 'none',
+            borderRadius: '8px', padding: '8px 14px', fontSize: '12px',
+            fontFamily: 'var(--font-dm-mono)', cursor: loading || !q.trim() ? 'default' : 'pointer',
+            opacity: loading || !q.trim() ? 0.6 : 1, whiteSpace: 'nowrap',
+          }}
+        >
+          {loading ? (l === 'fr' ? '…' : '…') : (l === 'fr' ? 'Demander' : 'Ask')}
+        </button>
+      </div>
+      {answer && (
+        <div style={{
+          background: '#1A1612', borderLeft: '3px solid #C4522A', borderRadius: '10px',
+          padding: '12px 14px', marginTop: '8px',
+          color: '#F5F0E8', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, whiteSpace: 'pre-line',
+        }}>
+          {answer}
+          <div>
+            <button
+              onClick={() => { setAnswer(null); setQ(''); }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
+                textDecoration: 'underline', padding: 0, marginTop: '6px',
+              }}
+            >
+              {l === 'fr' ? 'Autre question' : 'Ask another'}
+            </button>
+          </div>
+        </div>
+      )}
+      {error && (
+        <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic', marginTop: '6px', fontFamily: 'var(--font-dm-sans)' }}>
+          {l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.'}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Step extras — Tips & tricks / FAQ / Maestro tabs ─────────────
+// Keeps the timeline clean: the step card shows only "what to do";
+// everything secondary lives behind these three pills, closed by default.
+function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType }: {
+  tips: React.ReactNode;
+  faqKey?: string;
+  coachStepId?: string;
+  coachTitle: string;
+  styleKey: string;
+  kitchenTemp: number;
+  prefermentType?: string;
+  locale: string;
+  ovenType?: string;
+}) {
+  const [tab, setTab] = useState<'tips' | 'faq' | 'coach' | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const l = locale === 'fr' ? 'fr' : 'en';
+  const faq = faqKey ? (GUIDE_FAQ[faqKey] ?? []) : [];
+
+  const pills: Array<{ id: 'tips' | 'faq' | 'coach'; label: string }> = [
+    { id: 'tips', label: l === 'fr' ? '💡 Astuces' : '💡 Tips & tricks' },
+    ...(faq.length > 0 ? [{ id: 'faq' as const, label: 'FAQ' }] : []),
+    { id: 'coach', label: l === 'fr' ? '✨ Maestro' : '✨ Maestro' },
+  ];
+
+  return (
+    <div style={{ marginTop: '1rem', borderTop: `1px solid ${D.border}`, paddingTop: '.85rem' }}>
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        {pills.map(p => (
+          <button
+            key={p.id}
+            onClick={() => setTab(prev => prev === p.id ? null : p.id)}
+            style={{
+              border: tab === p.id ? `1.5px solid ${D.terra}` : `1px solid ${D.border}`,
+              background: tab === p.id ? '#fff' : 'transparent',
+              color: tab === p.id ? D.terra : D.smoke,
+              borderRadius: '20px', padding: '5px 12px',
+              fontSize: '12px', fontFamily: 'var(--font-dm-mono)',
+              cursor: 'pointer', transition: 'all .15s',
+            }}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'tips' && <div style={{ marginTop: '.25rem' }}>{tips}</div>}
+
+      {tab === 'faq' && (
+        <div style={{ marginTop: '.75rem', display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
+          {faq.map((f, i) => (
+            <div key={i} style={{ border: `1px solid ${D.border}`, borderRadius: '10px', overflow: 'hidden' }}>
+              <button
+                onClick={() => setOpenFaq(prev => prev === i ? null : i)}
+                style={{
+                  width: '100%', textAlign: 'left', background: openFaq === i ? '#fff' : 'transparent',
+                  border: 'none', cursor: 'pointer', padding: '.6rem .75rem',
+                  fontSize: '.8rem', fontWeight: 600, color: D.char,
+                  fontFamily: 'var(--font-dm-sans)',
+                  display: 'flex', justifyContent: 'space-between', gap: '.5rem',
+                }}
+              >
+                <span>{f.q[l]}</span>
+                <span style={{ color: D.smoke, flexShrink: 0 }}>{openFaq === i ? '−' : '+'}</span>
+              </button>
+              {openFaq === i && (
+                <div style={{ padding: '0 .75rem .65rem', fontSize: '.78rem', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-dm-sans)' }}>
+                  {f.a[l]}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'coach' && (
+        <div style={{ marginTop: '.25rem' }}>
+          {coachStepId && (
+            <CoachButton
+              stepId={coachStepId}
+              styleKey={styleKey}
+              kitchenTemp={kitchenTemp}
+              prefermentType={prefermentType}
+              locale={locale}
+              ovenType={ovenType}
+            />
+          )}
+          <AskMaestro
+            stepId={coachStepId ?? faqKey ?? 'mix'}
+            stepTitle={coachTitle}
+            styleKey={styleKey}
+            kitchenTemp={kitchenTemp}
+            prefermentType={prefermentType}
+            locale={locale}
+            ovenType={ovenType}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── External link ────────────────────────────────────
 function ExtLink({ href, label }: { href: string; label: string }) {
   return (
@@ -519,6 +709,25 @@ export default function BakeGuide({
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const t = useTranslations('bakeGuide');
+  // Persist ticked steps so reopening the app mid-bake keeps progress
+  const doneHydrated = useRef(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('bh_guide_done_v1');
+      if (raw) {
+        const arr = JSON.parse(raw) as number[];
+        if (arr.length > 0) {
+          setDoneSteps(new Set(arr));
+          setCurrentStep(Math.max(...arr) + 1);
+        }
+      }
+    } catch {}
+    doneHydrated.current = true;
+  }, []);
+  useEffect(() => {
+    if (!doneHydrated.current) return;
+    try { localStorage.setItem('bh_guide_done_v1', JSON.stringify([...doneSteps])); } catch {}
+  }, [doneSteps]);
 
   useEffect(() => {
     if (currentStep > 0) {
@@ -631,16 +840,23 @@ export default function BakeGuide({
             )}
           </Section>
 
-          <Section icon="👁️" title={t('sectionTitles.watchForReady')}>
-            <Bullets items={t.raw(isPoolish ? 'poolish.readyWhen' : 'biga.readyWhen') as string[]} />
-          </Section>
-
-          <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
-            <Bullets items={t.raw(isPoolish ? 'poolish.pitfalls' : 'biga.pitfalls') as string[]} />
-          </Section>
-          <div style={{ marginTop: '.5rem' }}>
-            <LearnLink term="preferment_ready" label={l === 'fr' ? 'Est-il prêt ?' : 'Is it ready?'} onOpen={setLearnTerm} showSparkle={true} />
-          </div>
+          <StepExtras
+            tips={<>
+              <Section icon="👁️" title={t('sectionTitles.watchForReady')}>
+                <Bullets items={t.raw(isPoolish ? 'poolish.readyWhen' : 'biga.readyWhen') as string[]} />
+              </Section>
+              <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+                <Bullets items={t.raw(isPoolish ? 'poolish.pitfalls' : 'biga.pitfalls') as string[]} />
+              </Section>
+              <div style={{ marginTop: '.5rem' }}>
+                <LearnLink term="preferment_ready" label={l === 'fr' ? 'Est-il prêt ?' : 'Is it ready?'} onOpen={setLearnTerm} showSparkle={true} />
+              </div>
+            </>}
+            faqKey={isPoolish ? 'poolish' : 'biga'}
+            coachStepId={isPoolish ? 'poolish' : 'biga'}
+            coachTitle={isPoolish ? t('stepTitles.makePoolish') : t('stepTitles.makeBiga')}
+            styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
+          />
         </StepCard>
       )}
 
@@ -666,36 +882,44 @@ export default function BakeGuide({
                   : []),
               ]} />
             </Section>
-            <Section icon={null} title={t('sectionTitles.readyWhen')}>
-              <Bullets items={[
-                `At ${displayTemp(kitchenTemp, u)}: peaks in ${(() => {
-                  const peakH = getPrefPeakH_RT(
-                    'sourdough', kitchenTemp, styleKey ?? 'neapolitan'
-                  );
-                  const ratioMult = 1 + 0.35 * Math.log(feedRatio);
-                  const adj = peakH
-                    * (starterMature ? 1.0 : 1.2)
-                    * (starterHasRye ? 0.8 : 1.0)
-                    * ratioMult;
-                  return `${Math.round(adj * 0.8)}–${Math.round(adj * 1.2)}h`;
-                })()}`,
-                'Doubled or more in volume',
-                'Dome-shaped surface, not yet collapsed',
-                'Bubbles visible through the sides of the jar',
-                'Smells pleasantly sour, not alcoholic',
-              ]} />
-            </Section>
-            <Section icon={null} title={t('sectionTitles.pitfalls')}>
-              <Bullets items={t.raw('starter.pitfalls') as string[]} />
-            </Section>
-            <div style={{ marginTop: '.5rem' }}>
-              <LearnLink
-                term="preferment_ready"
-                label={l === 'fr' ? 'Est-il prêt ?' : 'Is it ready?'}
-                onOpen={setLearnTerm}
-                showSparkle={true}
-              />
-            </div>
+            <StepExtras
+              tips={<>
+                <Section icon={null} title={t('sectionTitles.readyWhen')}>
+                  <Bullets items={[
+                    `At ${displayTemp(kitchenTemp, u)}: peaks in ${(() => {
+                      const peakH = getPrefPeakH_RT(
+                        'sourdough', kitchenTemp, styleKey ?? 'neapolitan'
+                      );
+                      const ratioMult = 1 + 0.35 * Math.log(feedRatio);
+                      const adj = peakH
+                        * (starterMature ? 1.0 : 1.2)
+                        * (starterHasRye ? 0.8 : 1.0)
+                        * ratioMult;
+                      return `${Math.round(adj * 0.8)}–${Math.round(adj * 1.2)}h`;
+                    })()}`,
+                    'Doubled or more in volume',
+                    'Dome-shaped surface, not yet collapsed',
+                    'Bubbles visible through the sides of the jar',
+                    'Smells pleasantly sour, not alcoholic',
+                  ]} />
+                </Section>
+                <Section icon={null} title={t('sectionTitles.pitfalls')}>
+                  <Bullets items={t.raw('starter.pitfalls') as string[]} />
+                </Section>
+                <div style={{ marginTop: '.5rem' }}>
+                  <LearnLink
+                    term="preferment_ready"
+                    label={l === 'fr' ? 'Est-il prêt ?' : 'Is it ready?'}
+                    onOpen={setLearnTerm}
+                    showSparkle={true}
+                  />
+                </div>
+              </>}
+              faqKey="starter"
+              coachStepId="starter"
+              coachTitle={usingPeak2 ? 'Feed your starter — first feed' : 'Feed your starter'}
+              styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
+            />
           </StepCard>
 
           {/* Put starter in fridge — fridge_fed state only */}
@@ -761,13 +985,21 @@ export default function BakeGuide({
                     note: 'the second peak builds more acidity — expect a stronger, more complex flavour' },
                 ]} />
               </Section>
-              <Section icon={null} title={t('sectionTitles.readyWhen')}>
-                <Bullets items={[
-                  'Same signs as the first feed — dome, doubled, bubbles at the sides',
-                  'Flavour will be slightly more sour than the first peak',
-                  'Mix at the dome — do not wait for it to collapse',
-                ]} />
-              </Section>
+              <StepExtras
+                tips={
+                  <Section icon={null} title={t('sectionTitles.readyWhen')}>
+                    <Bullets items={[
+                      'Same signs as the first feed — dome, doubled, bubbles at the sides',
+                      'Flavour will be slightly more sour than the first peak',
+                      'Mix at the dome — do not wait for it to collapse',
+                    ]} />
+                  </Section>
+                }
+                faqKey="starter"
+                coachStepId="starter"
+                coachTitle="Feed your starter — second feed"
+                styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
+              />
             </StepCard>
           )}
         </>
@@ -892,36 +1124,47 @@ export default function BakeGuide({
           <Bullets items={[
             ...(recipe?.waterTemp != null ? [`Water temperature: ${Math.round(recipe.waterTemp)}°C`] : []),
             `Target Final Dough Temperature (FDT): ${isNeapolitan ? tempC(23, u) : tempC(24, u)}`,
-            ...(t.raw('mix.waterTempBullets') as string[]),
-            `FDT above ${tempC(28, u)}: refrigerate dough for 15 min before bulk fermentation`,
           ]} />
-          <div style={{ marginTop: '.5rem' }}>
-            <LearnLink term="fdt" label="What is FDT?" onOpen={setLearnTerm} />
-          </div>
         </Section>
 
-        <Section icon="👁️" title={t('sectionTitles.watchFor')}>
-          <Bullets items={[
-            mixerType === 'spiral'
-              ? t('mix.watchForPumpkin')
-              : t('mix.watchForSmooth'),
-            ...(t.raw('mix.watchForAll') as string[]),
-          ]} />
-          <div style={{ marginTop: '.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <LearnLink term="windowpane" label="Windowpane test" onOpen={setLearnTerm} showSparkle={true} />
-            {mixerType === 'hand' && !isSourdough && <LearnLink term="autolyse" label="Autolyse" onOpen={setLearnTerm} />}
-            {isSpiral && <LearnLink term="pumpkin" label="Pumpkin shape" onOpen={setLearnTerm} />}
-            {hydration > 70 && <LearnLink term="bassinage" label="Bassinage" onOpen={setLearnTerm} />}
-          </div>
-        </Section>
-
-        <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
-          <Bullets items={[
-            ...(t.raw('mix.pitfalls') as string[]).slice(0, 2),
-            isSpiral ? `Ignoring FDT — spiral mixers generate heat, dough can exceed ${tempC(28, u)} without noticing` : '',
-            (t.raw('mix.pitfalls') as string[])[2],
-          ].filter(Boolean)} />
-        </Section>
+        <StepExtras
+          tips={<>
+            <Section icon="🌡️" title={t('sectionTitles.waterTemp')}>
+              <Bullets items={[
+                ...(t.raw('mix.waterTempBullets') as string[]),
+                `FDT above ${tempC(28, u)}: refrigerate dough for 15 min before bulk fermentation`,
+              ]} />
+              <div style={{ marginTop: '.5rem' }}>
+                <LearnLink term="fdt" label="What is FDT?" onOpen={setLearnTerm} />
+              </div>
+            </Section>
+            <Section icon="👁️" title={t('sectionTitles.watchFor')}>
+              <Bullets items={[
+                mixerType === 'spiral'
+                  ? t('mix.watchForPumpkin')
+                  : t('mix.watchForSmooth'),
+                ...(t.raw('mix.watchForAll') as string[]),
+              ]} />
+              <div style={{ marginTop: '.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <LearnLink term="windowpane" label="Windowpane test" onOpen={setLearnTerm} showSparkle={true} />
+                {mixerType === 'hand' && !isSourdough && <LearnLink term="autolyse" label="Autolyse" onOpen={setLearnTerm} />}
+                {isSpiral && <LearnLink term="pumpkin" label="Pumpkin shape" onOpen={setLearnTerm} />}
+                {hydration > 70 && <LearnLink term="bassinage" label="Bassinage" onOpen={setLearnTerm} />}
+              </div>
+            </Section>
+            <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+              <Bullets items={[
+                ...(t.raw('mix.pitfalls') as string[]).slice(0, 2),
+                isSpiral ? `Ignoring FDT — spiral mixers generate heat, dough can exceed ${tempC(28, u)} without noticing` : '',
+                (t.raw('mix.pitfalls') as string[])[2],
+              ].filter(Boolean)} />
+            </Section>
+          </>}
+          faqKey="mix"
+          coachStepId="mix"
+          coachTitle={t('stepTitles.mixDough')}
+          styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
+        />
       </StepCard>
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
@@ -946,26 +1189,33 @@ export default function BakeGuide({
           ]} />
         </Section>
 
-        <Section icon="👁️" title="Watch for — bulk is done when">
-          <Bullets items={t.raw('bulk.watchFor') as string[]} />
-          <div style={{ marginTop: '.5rem' }}>
-            <LearnLink term="bulk_fermentation" label="Bulk fermentation guide" onOpen={setLearnTerm} showSparkle={true} />
-          </div>
-        </Section>
-
-        <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
-          <Bullets items={[
-            ...(hydration >= 70 ? [
-              oil > 0
-                ? `Enriched dough at ${hydration}%: use lightly oiled hands for stretch & folds — fat in the dough means oil is a better barrier than water`
-                : hydration >= 75
-                ? `At ${hydration}% hydration, sticky is expected — keep a bowl of water nearby and wet your hands before every fold. Never add flour to the bench. Quick, confident movements stick less than slow hesitant ones.`
-                : `Wet hands for stretch & folds — dip your hands in water before each set. Avoids sticking without altering hydration like bench flour would.`,
-            ] : []),
-            `Bulk in a warm spot above ${tempC(26, u)} — dough ferments too fast, less flavour`,
-            ...(t.raw('bulk.pitfallsBase') as string[]),
-          ]} />
-        </Section>
+        <StepExtras
+          tips={<>
+            <Section icon="👁️" title="Watch for — bulk is done when">
+              <Bullets items={t.raw('bulk.watchFor') as string[]} />
+              <div style={{ marginTop: '.5rem' }}>
+                <LearnLink term="bulk_fermentation" label="Bulk fermentation guide" onOpen={setLearnTerm} showSparkle={true} />
+              </div>
+            </Section>
+            <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+              <Bullets items={[
+                ...(hydration >= 70 ? [
+                  oil > 0
+                    ? `Enriched dough at ${hydration}%: use lightly oiled hands for stretch & folds — fat in the dough means oil is a better barrier than water`
+                    : hydration >= 75
+                    ? `At ${hydration}% hydration, sticky is expected — keep a bowl of water nearby and wet your hands before every fold. Never add flour to the bench. Quick, confident movements stick less than slow hesitant ones.`
+                    : `Wet hands for stretch & folds — dip your hands in water before each set. Avoids sticking without altering hydration like bench flour would.`,
+                ] : []),
+                `Bulk in a warm spot above ${tempC(26, u)} — dough ferments too fast, less flavour`,
+                ...(t.raw('bulk.pitfallsBase') as string[]),
+              ]} />
+            </Section>
+          </>}
+          faqKey="bulk"
+          coachStepId="bulk"
+          coachTitle={t('stepTitles.bulkFerm')}
+          styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
+        />
       </StepCard>
 
       {/* ── STEP: Cold Retard 1 ──────────────────────── */}
@@ -984,17 +1234,23 @@ export default function BakeGuide({
             ]} />
           </Section>
 
-          <Section icon="👁️" title={t('sectionTitles.whatToExpect')}>
-            <Bullets items={t.raw('coldRetard.watchFor') as string[]} />
-          </Section>
-
-          <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
-            <Bullets items={[
-              (t.raw('coldRetard.pitfalls') as string[])[0],
-              `Fridge temperature above ${tempC(8, u)}: dough over-ferments during retard — check your fridge`,
-              (t.raw('coldRetard.pitfalls') as string[])[1],
-            ]} />
-          </Section>
+          <StepExtras
+            tips={<>
+              <Section icon="👁️" title={t('sectionTitles.whatToExpect')}>
+                <Bullets items={t.raw('coldRetard.watchFor') as string[]} />
+              </Section>
+              <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+                <Bullets items={[
+                  (t.raw('coldRetard.pitfalls') as string[])[0],
+                  `Fridge temperature above ${tempC(8, u)}: dough over-ferments during retard — check your fridge`,
+                  (t.raw('coldRetard.pitfalls') as string[])[1],
+                ]} />
+              </Section>
+            </>}
+            faqKey="cold"
+            coachTitle={isTwoPhase ? t('stepTitles.coldRetardWhole') : t('stepTitles.coldRetard')}
+            styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
+          />
         </StepCard>
       )}
 
@@ -1043,47 +1299,54 @@ export default function BakeGuide({
             )}
           </Section>
 
-          <Section icon="👁️" title={isBread ? t('sectionTitles.watchFor') : t('sectionTitles.watchForBall')}>
-            <Bullets items={isFougasse
-              ? (t.raw('divide.fougasse.watchFor') as string[])
-              : isBaguette
-              ? (t.raw('divide.baguette.watchFor') as string[])
-              : isLoafTin
-              ? (t.raw('divide.loafTin.watchFor') as string[])
-              : isBread
-              ? (t.raw('divide.boule.watchFor') as string[])
-              : [
-                ...(t.raw('divide.pizza.watchFor') as string[]),
-                `At ${displayTemp(kitchenTemp, u)}, work within ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} — warm kitchens make balls proof quickly`,
-              ]
-            } />
-          </Section>
-
-          <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
-            <Bullets items={isFougasse
-              ? (t.raw('divide.fougasse.pitfalls') as string[])
-              : isBaguette
-              ? (t.raw('divide.baguette.pitfalls') as string[])
-              : isLoafTin
-              ? (t.raw('divide.loafTin.pitfalls') as string[])
-              : isBread ? [
-                ...(hydration >= 70 ? [
-                  oil > 0
-                    ? `Enriched dough at ${hydration}%: use lightly oiled hands for shaping — fat in the dough means oil is a better barrier than water`
-                    : hydration >= 75
-                    ? `At ${hydration}% hydration, sticky is normal. Keep a bowl of water nearby and wet your hands before handling — never use bench flour. Use a bench scraper to lift pieces. Move quickly and with confidence.`
-                    : `Wet hands prevent sticking at this hydration. Keep a small bowl of water nearby and dip your hands before each touch. Avoid bench flour — it hydrates instantly and makes things worse.`,
-                ] : []),
-                ...(t.raw('divide.boule.pitfalls') as string[]),
-              ] : [
-                ...(t.raw('divide.pizza.pitfalls') as string[]),
-                `Hot kitchen (${kitchenTemp >= 30 ? 'like yours at ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}): get balls into their boxes fast — they proof very quickly at warm temps`,
-              ]
-            } />
-          </Section>
-          <div style={{ marginTop: '.5rem' }}>
-            <LearnLink term="shape_check" label={l === 'fr' ? 'Vérifier ma forme' : 'Check your shape'} onOpen={setLearnTerm} showSparkle={true} />
-          </div>
+          <StepExtras
+            tips={<>
+              <Section icon="👁️" title={isBread ? t('sectionTitles.watchFor') : t('sectionTitles.watchForBall')}>
+                <Bullets items={isFougasse
+                  ? (t.raw('divide.fougasse.watchFor') as string[])
+                  : isBaguette
+                  ? (t.raw('divide.baguette.watchFor') as string[])
+                  : isLoafTin
+                  ? (t.raw('divide.loafTin.watchFor') as string[])
+                  : isBread
+                  ? (t.raw('divide.boule.watchFor') as string[])
+                  : [
+                    ...(t.raw('divide.pizza.watchFor') as string[]),
+                    `At ${displayTemp(kitchenTemp, u)}, work within ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} — warm kitchens make balls proof quickly`,
+                  ]
+                } />
+              </Section>
+              <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+                <Bullets items={isFougasse
+                  ? (t.raw('divide.fougasse.pitfalls') as string[])
+                  : isBaguette
+                  ? (t.raw('divide.baguette.pitfalls') as string[])
+                  : isLoafTin
+                  ? (t.raw('divide.loafTin.pitfalls') as string[])
+                  : isBread ? [
+                    ...(hydration >= 70 ? [
+                      oil > 0
+                        ? `Enriched dough at ${hydration}%: use lightly oiled hands for shaping — fat in the dough means oil is a better barrier than water`
+                        : hydration >= 75
+                        ? `At ${hydration}% hydration, sticky is normal. Keep a bowl of water nearby and wet your hands before handling — never use bench flour. Use a bench scraper to lift pieces. Move quickly and with confidence.`
+                        : `Wet hands prevent sticking at this hydration. Keep a small bowl of water nearby and dip your hands before each touch. Avoid bench flour — it hydrates instantly and makes things worse.`,
+                    ] : []),
+                    ...(t.raw('divide.boule.pitfalls') as string[]),
+                  ] : [
+                    ...(t.raw('divide.pizza.pitfalls') as string[]),
+                    `Hot kitchen (${kitchenTemp >= 30 ? 'like yours at ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}): get balls into their boxes fast — they proof very quickly at warm temps`,
+                  ]
+                } />
+              </Section>
+              <div style={{ marginTop: '.5rem' }}>
+                <LearnLink term="shape_check" label={l === 'fr' ? 'Vérifier ma forme' : 'Check your shape'} onOpen={setLearnTerm} showSparkle={true} />
+              </div>
+            </>}
+            faqKey="divide"
+            coachStepId="shape"
+            coachTitle={isBread ? t('stepTitles.divideShape') : t('stepTitles.divideBall')}
+            styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
+          />
         </StepCard>
       )}
 
@@ -1103,13 +1366,19 @@ export default function BakeGuide({
             ]} />
           </Section>
 
-          <Section icon="👁️" title={t('sectionTitles.whatToExpect')}>
-            <Bullets items={t.raw('coldBalls.watchFor') as string[]} />
-          </Section>
-
-          <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
-            <Bullets items={t.raw('coldBalls.pitfalls') as string[]} />
-          </Section>
+          <StepExtras
+            tips={<>
+              <Section icon="👁️" title={t('sectionTitles.whatToExpect')}>
+                <Bullets items={t.raw('coldBalls.watchFor') as string[]} />
+              </Section>
+              <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+                <Bullets items={t.raw('coldBalls.pitfalls') as string[]} />
+              </Section>
+            </>}
+            faqKey="cold"
+            coachTitle={isBread ? t('stepTitles.coldProof') : t('stepTitles.coldRetardBalls')}
+            styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
+          />
         </StepCard>
       )}
 
@@ -1141,21 +1410,28 @@ export default function BakeGuide({
             ]} />
           </Section>
 
-          <Section icon="👁️" title={t('sectionTitles.pokeTest')}>
-            <Bullets items={t.raw('finalProof.pokeResponses') as string[]} />
-            <div style={{ marginTop: '.5rem' }}>
-              <LearnLink term="poke_test" label="Full poke test guide" onOpen={setLearnTerm} showSparkle={true} />
-            </div>
-          </Section>
-
-          <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
-            <Bullets items={[
-              (t.raw('finalProof.pitfalls') as string[])[0],
-              (t.raw('finalProof.pitfalls') as string[])[1],
-              `Warm kitchen (${displayTemp(kitchenTemp, u)}): proof can complete in ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} after warmup — check early`,
-              (t.raw('finalProof.pitfalls') as string[])[2],
-            ]} />
-          </Section>
+          <StepExtras
+            tips={<>
+              <Section icon="👁️" title={t('sectionTitles.pokeTest')}>
+                <Bullets items={t.raw('finalProof.pokeResponses') as string[]} />
+                <div style={{ marginTop: '.5rem' }}>
+                  <LearnLink term="poke_test" label="Full poke test guide" onOpen={setLearnTerm} showSparkle={true} />
+                </div>
+              </Section>
+              <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+                <Bullets items={[
+                  (t.raw('finalProof.pitfalls') as string[])[0],
+                  (t.raw('finalProof.pitfalls') as string[])[1],
+                  `Warm kitchen (${displayTemp(kitchenTemp, u)}): proof can complete in ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} after warmup — check early`,
+                  (t.raw('finalProof.pitfalls') as string[])[2],
+                ]} />
+              </Section>
+            </>}
+            faqKey="proof"
+            coachStepId="proof"
+            coachTitle={t('stepTitles.finalProof')}
+            styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
+          />
         </StepCard>
       )}
 
@@ -1188,23 +1464,30 @@ export default function BakeGuide({
           )}
         </Section>
 
-        <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
-          <Bullets items={isBread
-            ? (t.raw(
-                ovenType === 'dutch_oven' ? 'preheat.dutch.pitfalls' :
-                ovenType === 'home_oven_stone_bread' ? 'preheat.stoneBread.pitfalls' :
-                ovenType === 'steam_oven' ? 'preheat.steam.pitfalls' :
-                ovenType === 'wood_fired' ? 'preheat.woodBread.pitfalls' :
-                'preheat.standardBread.pitfalls'
-              ) as string[])
-            : (t.raw(
-                ovenType === 'pizza_oven' ? 'preheat.pizzaOven.pitfalls' :
-                ovenType === 'electric_pizza' ? 'preheat.electricPizza.pitfalls' :
-                ovenType === 'home_oven_steel' ? 'preheat.homeSteel.pitfalls' :
-                'preheat.homeStandard.pitfalls'
-              ) as string[])
-          } />
-        </Section>
+        <StepExtras
+          tips={
+            <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+              <Bullets items={isBread
+                ? (t.raw(
+                    ovenType === 'dutch_oven' ? 'preheat.dutch.pitfalls' :
+                    ovenType === 'home_oven_stone_bread' ? 'preheat.stoneBread.pitfalls' :
+                    ovenType === 'steam_oven' ? 'preheat.steam.pitfalls' :
+                    ovenType === 'wood_fired' ? 'preheat.woodBread.pitfalls' :
+                    'preheat.standardBread.pitfalls'
+                  ) as string[])
+                : (t.raw(
+                    ovenType === 'pizza_oven' ? 'preheat.pizzaOven.pitfalls' :
+                    ovenType === 'electric_pizza' ? 'preheat.electricPizza.pitfalls' :
+                    ovenType === 'home_oven_steel' ? 'preheat.homeSteel.pitfalls' :
+                    'preheat.homeStandard.pitfalls'
+                  ) as string[])
+              } />
+            </Section>
+          }
+          faqKey="preheat"
+          coachTitle={t('stepTitles.preheatOven')}
+          styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
+        />
       </StepCard>
 
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
@@ -1247,51 +1530,57 @@ export default function BakeGuide({
           )}
         </Section>
 
-        <Section icon="👁️" title={t('sectionTitles.watchFor')}>
-          {isBread ? (
-            <Bullets items={t.raw('bake.dutch.watchFor') as string[]} />
-          ) : ovenType === 'pizza_oven' ? (
-            <Bullets items={t.raw('bake.pizzaOven.watchFor') as string[]} />
-          ) : ovenType === 'electric_pizza' ? (
-            <Bullets items={t.raw('bake.electricPizza.watchFor') as string[]} />
-          ) : ovenType === 'home_oven_steel' ? (
-            <Bullets items={t.raw('bake.homeSteel.watchFor') as string[]} />
-          ) : (
-            <Bullets items={t.raw('bake.homeStandard.watchFor') as string[]} />
-          )}
-        </Section>
-
-        <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
-          <Bullets items={isBread
-            ? (t.raw(
-                ovenType === 'dutch_oven' ? 'bake.dutch.pitfalls' :
-                ovenType === 'home_oven_stone_bread' ? 'bake.stoneBread.pitfalls' :
-                ovenType === 'steam_oven' ? 'bake.steam.pitfalls' :
-                ovenType === 'wood_fired' ? 'bake.woodBread.pitfalls' :
-                'bake.standardBread.pitfalls'
-              ) as string[])
-            : (t.raw(
-                ovenType === 'pizza_oven' ? 'bake.pizzaOven.pitfalls' :
-                ovenType === 'electric_pizza' ? 'bake.electricPizza.pitfalls' :
-                ovenType === 'home_oven_steel' ? 'bake.homeSteel.pitfalls' :
-                'bake.homeStandard.pitfalls'
-              ) as string[])
-          } />
-        </Section>
-
-        {isBread && (
-          <Section icon="🎓" title={t('sectionTitles.learnMore')}>
-            <ExtLink href="https://www.theperfectloaf.com/guides/how-to-score-bread-dough/" label={t('bake.learnMoreScoring')} />
-            <div style={{ marginTop: '.5rem' }}>
-              <LearnLink term="score_technique" label={l === 'fr' ? 'Technique de grignage' : 'Scoring technique'} onOpen={setLearnTerm} showSparkle={true} />
-            </div>
-          </Section>
-        )}
-        {!isBread && (
-          <div style={{ marginTop: '.5rem' }}>
-            <LearnLink term="stretch_bake" label={l === 'fr' ? 'Étirer et cuire' : 'Stretch & bake tips'} onOpen={setLearnTerm} showSparkle={true} />
-          </div>
-        )}
+        <StepExtras
+          tips={<>
+            <Section icon="👁️" title={t('sectionTitles.watchFor')}>
+              {isBread ? (
+                <Bullets items={t.raw('bake.dutch.watchFor') as string[]} />
+              ) : ovenType === 'pizza_oven' ? (
+                <Bullets items={t.raw('bake.pizzaOven.watchFor') as string[]} />
+              ) : ovenType === 'electric_pizza' ? (
+                <Bullets items={t.raw('bake.electricPizza.watchFor') as string[]} />
+              ) : ovenType === 'home_oven_steel' ? (
+                <Bullets items={t.raw('bake.homeSteel.watchFor') as string[]} />
+              ) : (
+                <Bullets items={t.raw('bake.homeStandard.watchFor') as string[]} />
+              )}
+            </Section>
+            <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+              <Bullets items={isBread
+                ? (t.raw(
+                    ovenType === 'dutch_oven' ? 'bake.dutch.pitfalls' :
+                    ovenType === 'home_oven_stone_bread' ? 'bake.stoneBread.pitfalls' :
+                    ovenType === 'steam_oven' ? 'bake.steam.pitfalls' :
+                    ovenType === 'wood_fired' ? 'bake.woodBread.pitfalls' :
+                    'bake.standardBread.pitfalls'
+                  ) as string[])
+                : (t.raw(
+                    ovenType === 'pizza_oven' ? 'bake.pizzaOven.pitfalls' :
+                    ovenType === 'electric_pizza' ? 'bake.electricPizza.pitfalls' :
+                    ovenType === 'home_oven_steel' ? 'bake.homeSteel.pitfalls' :
+                    'bake.homeStandard.pitfalls'
+                  ) as string[])
+              } />
+            </Section>
+            {isBread && (
+              <Section icon="🎓" title={t('sectionTitles.learnMore')}>
+                <ExtLink href="https://www.theperfectloaf.com/guides/how-to-score-bread-dough/" label={t('bake.learnMoreScoring')} />
+                <div style={{ marginTop: '.5rem' }}>
+                  <LearnLink term="score_technique" label={l === 'fr' ? 'Technique de grignage' : 'Scoring technique'} onOpen={setLearnTerm} showSparkle={true} />
+                </div>
+              </Section>
+            )}
+            {!isBread && (
+              <div style={{ marginTop: '.5rem' }}>
+                <LearnLink term="stretch_bake" label={l === 'fr' ? 'Étirer et cuire' : 'Stretch & bake tips'} onOpen={setLearnTerm} showSparkle={true} />
+              </div>
+            )}
+          </>}
+          faqKey="bake"
+          coachStepId={isBread ? 'bake' : 'pizza_maestro'}
+          coachTitle={t('stepTitles.bakeEat')}
+          styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
+        />
         {!isBread && onNavigateToPizzaParty && (
           <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${D.border}` }}>
             <button

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { PIZZAS, DESSERT_PIZZAS } from '../../lib/toppingDatabase';
 import type { Ingredient, IngredientUnit } from '../../lib/toppingTypes';
@@ -75,7 +75,24 @@ function assignStation(task: PrepTask): string {
 export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }: Props) {
   const t = useTranslations('prep');
   const l = locale as 'en' | 'fr';
+  // Persisted so ticks survive leaving/reopening the app (cleared on Start Over)
   const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const ticksHydrated = useState(() => ({ done: false }))[0];
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('bh_prep_ticks_v1');
+      if (raw) setCompleted(new Set(JSON.parse(raw) as string[]));
+    } catch {}
+    ticksHydrated.done = true;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!ticksHydrated.done) return;
+    try { localStorage.setItem('bh_prep_ticks_v1', JSON.stringify([...completed])); } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completed]);
 
   function toggle(id: string) {
     setCompleted(prev => {

@@ -33,6 +33,7 @@ interface RecipeOutputProps {
   usingPeak2?: boolean;
   feedRatio?: 1 | 2 | 4 | 5 | 10;
   starterLocation?: 'rt' | 'fridge';
+  onEditSetup?: () => void;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -460,6 +461,7 @@ export default function RecipeOutput({
   result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
   feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
+  onEditSetup,
 }: RecipeOutputProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -694,6 +696,21 @@ export default function RecipeOutput({
               );
             })()}
           </div>
+        )}
+        {/* Edit setup — third entry point, right where bakers look for it */}
+        {onEditSetup && (
+          <button
+            onClick={onEditSetup}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              marginTop: '.35rem',
+              fontSize: '.72rem', color: 'rgba(212,168,83,0.7)',
+              fontFamily: 'var(--font-dm-mono)',
+              textDecoration: 'underline', textUnderlineOffset: '3px',
+            }}
+          >
+            {t('generate.editSetup')}
+          </button>
         )}
       </div>
 
@@ -1125,8 +1142,28 @@ export default function RecipeOutput({
       )}
 
 
-      {/* ── Yeast details ─────────────────────────── */}
-      {yeastInfo && (
+      {/* ── Yeast details ───────────────────────────
+          Hidden in preferment mode: all commercial yeast lives in the
+          poolish/biga there, so callouts based on the main-dough yeast
+          amount would contradict the preferment card. */}
+      {yeastInfo && hasPref && result.preferment && result.preferment.prefYeastGrams > 0 && result.preferment.prefYeastGrams < 0.5 && (
+        <div style={{
+          background: '#FFFBEE',
+          border: '1.5px solid #D4A853',
+          borderRadius: '12px',
+          padding: '.85rem 1rem',
+        }}>
+          <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.3rem' }}>
+            <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#7A5A10' }}>
+              {t('recipeOutput.precisionScaleTitle')}
+            </span>
+          </div>
+          <div style={{ fontSize: '.78rem', color: '#5A4010', lineHeight: 1.6, paddingLeft: '1.5rem' }}>
+            {t('recipeOutput.precisionScaleBody', { amount: wStr(result.preferment.prefYeastGrams) })}
+          </div>
+        </div>
+      )}
+      {yeastInfo && !hasPref && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.65rem' }}>
 
           {/* Min floor callout — shown when 0.5g IDY floor was applied */}

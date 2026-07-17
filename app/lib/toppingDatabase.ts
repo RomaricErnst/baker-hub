@@ -368,7 +368,7 @@ export const ING: Record<string, Ingredient> = {
   grilledChicken: {
     id: 'grilled_chicken', category: 'meat', bakeOrder: 'before',
     name: { en: 'Grilled chicken', fr: 'Poulet grillé' },
-    prepNote: { en: 'Slice thin, season well before adding', fr: 'Trancher finement, bien assaisonner avant d\'ajouter', timing: 30 },
+    prepNote: { en: 'Grill or pan-cook fully first, then slice thin and season — raw chicken must never go on a pizza', fr: 'Griller ou cuire complètement à la poêle d\'abord, puis trancher finement et assaisonner — le poulet cru ne va jamais sur une pizza', timing: 30 },
     qtyPerPizza: { amount: 120, unit: 'g', noteEN: '1 breast per pizza', noteFR: '1 blanc par pizza' },
   },
 
@@ -1061,7 +1061,7 @@ export const ING: Record<string, Ingredient> = {
   merguez: {
     id: 'merguez', category: 'meat', bakeOrder: 'before',
     name: { en: 'Merguez sausage', fr: 'Merguez' },
-    prepNote: { en: 'Slice thin — spiced lamb sausage with harissa', fr: "Trancher finement — saucisse d'agneau épicée au harissa" },
+    prepNote: { en: 'Pre-cook fully in a pan, then slice — merguez is a raw sausage and will not cook through on the pizza', fr: "Précuire complètement à la poêle, puis trancher — la merguez est une saucisse crue qui ne cuira pas à cœur sur la pizza", timing: 15 },
     qtyPerPizza: { amount: 100, unit: 'g', noteEN: '2–3 merguez · sliced', noteFR: '2–3 merguez · tranchées' },
     goodEnough: { name: { en: 'Chorizo or spiced lamb sausage', fr: "Chorizo ou saucisse d'agneau épicée" } },
     compromise: { name: { en: 'Spicy Italian sausage — different spice profile', fr: "Saucisse italienne épicée — profil d'épices différent" } },
@@ -1170,7 +1170,7 @@ export const ING: Record<string, Ingredient> = {
   salsiccia: {
     id: 'salsiccia', category: 'meat', bakeOrder: 'before',
     name: { en: 'Italian sausage (salsiccia)', fr: 'Saucisse italienne (salsiccia)' },
-    prepNote: { en: 'Remove casing, crumble over pizza before baking', fr: 'Retirer le boyau, émietter sur la pizza avant cuisson', timing: 5 },
+    prepNote: { en: 'Remove casing, crumble and pan-brown ~5 min — raw sausage will not cook through in a home oven. Only a 450°C+ pizza oven cooks raw crumbles the traditional way.', fr: "Retirer le boyau, émietter et dorer à la poêle ~5 min — la saucisse crue ne cuit pas à cœur dans un four domestique. Seul un four à pizza 450°C+ cuit les miettes crues à la traditionnelle.", timing: 15 },
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'crumble or slice', noteFR: 'émietter ou trancher' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
     goodEnough: { name: { en: 'Any good pork sausage, casing removed', fr: 'Toute bonne saucisse de porc, sans boyau' } },

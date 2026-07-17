@@ -727,6 +727,7 @@ export default function Home() {
         wastePct,
         prefGoesInFridge,
         feedToMixH,
+        prefermentType !== 'none' && prefermentType !== 'levain' && prefOffsetH > 0 ? prefOffsetH : undefined,
       );
     } catch {
       return null;
@@ -797,15 +798,19 @@ export default function Home() {
     };
   }
 
-  // Auto-save session to localStorage — placed after computed values to avoid TDZ
-  useSessionSave(
-    {
+  // Single source of truth for the session snapshot.
+  // Used by autosave, the Save button AND handleGenerate — keeping these
+  // three in sync is what preserves startTime / schedule / sourdough state
+  // when the baker resumes a session (localStorage or DB).
+  function buildSessionPayload(overrides?: Partial<Omit<SessionData, 'version' | 'savedAt'>>): Omit<SessionData, 'version' | 'savedAt'> {
+    return {
       tab, bakeType, styleKey, numItems, itemWeight, pizzaDiameter,
       ovenType, mixerType, yeastType,
       kitchenTemp, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
       manualHydration, manualOil, manualSugar, manualSalt,
       targetDoughTemp, flourInFridge, wastePct, priorityOverride,
+      prefGoesInFridge,
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
@@ -827,7 +832,13 @@ export default function Home() {
       usingPeak2,
       feed2Time: feed2Time?.getTime() ?? null,
       starterFridgeInTime: starterFridgeInTime?.getTime() ?? null,
-    },
+      ...overrides,
+    };
+  }
+
+  // Auto-save session to localStorage — placed after computed values to avoid TDZ
+  useSessionSave(
+    buildSessionPayload(),
     () => {},
   );
 
@@ -850,7 +861,27 @@ export default function Home() {
     setOvenType(null);
     setActiveStep(1);
     setHighestStep(1);
+    // Custom flow counters must reset too — otherwise a stale high step
+    // leaves later steps (Oven, Mixer…) marked completed while their
+    // values were just cleared, making them look "skipped".
+    setAdvancedStep(1);
+    setAdvancedHighestStep(1);
     setModeChosen(true);
+  }
+
+  // First step whose value is genuinely missing — used when switching
+  // Simple ↔ Custom so the baker lands exactly where input is needed,
+  // with everything already answered marked complete (no re-clicking).
+  function firstIncompleteStep(isCustom: boolean): number {
+    if (!styleKey) return 1;
+    if (!ovenType) return 3;          // qty (2) + climate (4) have sane defaults
+    if (!mixerType) return 5;
+    if (isCustom) {
+      if (!yeastType) return 7;       // flour (6) has a default blend
+      return 9;                       // preferment (8) defaults to Direct — scheduler is the goal
+    }
+    if (!yeastType) return 6;
+    return 7;                         // scheduler
   }
 
   function selectStyle(sk: StyleKey) {
@@ -922,6 +953,12 @@ export default function Home() {
     setPizzasConfirmed(false);
     customOnlyStateRef.current = null;
     clearSession();
+    // Clear persisted Pizza Party ticks + guide progress — they belong to the old bake
+    try {
+      localStorage.removeItem('bh_shop_ticks_v1');
+      localStorage.removeItem('bh_prep_ticks_v1');
+      localStorage.removeItem('bh_guide_done_v1');
+    } catch {}
     setSessionSaved(false);
     setSessionRestored(false);
     setReviewMode(false);
@@ -970,17 +1007,11 @@ export default function Home() {
     setActiveTab('plan');
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
     if (user) {
-      const sessionPayload = {
-        tab, bakeType: bakeType ?? '', styleKey, numItems, itemWeight,
-        pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
-        fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
-        manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-        flourInFridge, wastePct, priorityOverride, prefGoesInFridge,
-        eatTime: eatTime?.getTime() ?? null,
-        blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-        recipeGenerated: true, activeTab: 'plan' as const, modeChosen,
-        computedRecipe: buildComputedRecipe(),
-      };
+      const sessionPayload = buildSessionPayload({
+        bakeType: bakeType ?? '',
+        recipeGenerated: true,
+        activeTab: 'plan',
+      });
       upsertBakeEvent({ session: sessionPayload as SessionData })
         .then(id => { if (id) setBakeEventId(id); });
     }
@@ -1096,19 +1127,7 @@ export default function Home() {
             ? `${manualHydration}% · ${prefermentType !== 'none' ? prefermentType.charAt(0).toUpperCase() + prefermentType.slice(1) + ' · ' : ''}Custom`
             : ''}
           onSaveSession={async () => {
-            const sessionPayload = {
-              tab, bakeType, styleKey, numItems, itemWeight,
-              pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
-              fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
-              manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-              flourInFridge, wastePct, priorityOverride,
-              eatTime: eatTime?.getTime() ?? null,
-              blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-              recipeGenerated, activeTab, modeChosen,
-              pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
-              bakedDone,
-              computedRecipe: buildComputedRecipe(),
-            };
+            const sessionPayload = buildSessionPayload();
             const currentQtys = pizzaPartyGetQtysRef.current?.() ?? pizzaPartyQtys;
             saveSession(sessionPayload);
             if (user) {
@@ -1172,6 +1191,27 @@ export default function Home() {
             }
             setRecipeGenerated(snap.recipeGenerated);
             setModeChosen(snap.modeChosen);
+            // Sourdough starter state — snapshots saved after Jul 2026 include these
+            if (snap.starterState) setStarterState(snap.starterState as 'rt_fed' | 'fridge_unfed' | 'fridge_fed');
+            if (snap.starterLocation) setStarterLocation(snap.starterLocation as 'rt' | 'fridge');
+            if (snap.planningMode) setPlanningMode(snap.planningMode as 'last_fed' | 'know_peak');
+            if (snap.lastFedTime) setLastFedTime(new Date(snap.lastFedTime));
+            if (snap.knownPeakTime) setKnownPeakTime(new Date(snap.knownPeakTime));
+            if (snap.lastFedAge !== undefined) setLastFedAge((snap.lastFedAge as 'today'|'yesterday'|'days23'|'days45'|'week'|null) ?? null);
+            const _snapLfr = snap.lastFeedRatio ?? snap.feedRatio;
+            if (_snapLfr) setLastFeedRatio(_snapLfr as 1 | 2 | 4 | 5 | 10);
+            const _snapNfr = snap.nextFeedRatio ?? snap.lastFeedRatio ?? snap.feedRatio;
+            if (_snapNfr) setNextFeedRatio(_snapNfr as 1 | 2 | 4 | 5 | 10);
+            if (snap.nextFeedRatioOverride !== undefined) setNextFeedRatioOverride(snap.nextFeedRatioOverride as 1 | 2 | 4 | 5 | 10 | null);
+            if (snap.ratioMode === 'keep' || snap.ratioMode === 'recommend') setRatioMode(snap.ratioMode);
+            if (snap.starterMature !== undefined) setStarterMature(Boolean(snap.starterMature));
+            if (snap.starterHasRye !== undefined) setStarterHasRye(Boolean(snap.starterHasRye));
+            if (snap.tang) setTang(snap.tang as 'mild' | 'balanced' | 'tangy');
+            if (snap.fridgeOutTime) setFridgeOutTime(new Date(snap.fridgeOutTime));
+            if (snap.usingPeak2 !== undefined) setUsingPeak2(Boolean(snap.usingPeak2));
+            if (snap.feed2Time) setFeed2Time(new Date(snap.feed2Time));
+            if (snap.starterFridgeInTime) setStarterFridgeInTime(new Date(snap.starterFridgeInTime));
+            if (snap.bakedDone) setBakedDone(true);
             setBakeEventId(event.id);
             if (snap.recipeGenerated) {
               setActiveTab(snap.activeTab as 'setup' | 'plan' | 'guide' | 'pizzaparty');
@@ -1369,6 +1409,16 @@ export default function Home() {
                         }
                       }
                       setTab(m.key); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
+                      // Land on the first step that actually needs input —
+                      // completed choices carry over, no re-clicking required.
+                      const _target = firstIncompleteStep(m.key === 'custom');
+                      if (m.key === 'custom') {
+                        setAdvancedStep(_target);
+                        setAdvancedHighestStep(prev => Math.max(prev, _target));
+                      } else {
+                        setActiveStep(_target);
+                        setHighestStep(prev => Math.max(prev, _target));
+                      }
                       suppressNextScrollRef.current = true;
                     }}
                     style={{
@@ -1586,6 +1636,7 @@ export default function Home() {
                 selected={ovenType}
                 onSelect={ot => { setOvenType(ot); advance(3); }}
               />
+              {!reviewMode && ovenType && <ContinueBtn onClick={() => advance(3)} />}
             </StepCard>
 
             {/* ─── STEP 5: Climate ─────────────────── */}
@@ -1626,6 +1677,7 @@ export default function Home() {
                 bakeType={bakeType ?? undefined}
                 kitchenTemp={kitchenTemp}
               />
+              {!reviewMode && mixerType && <ContinueBtn onClick={() => advance(5)} />}
             </StepCard>
 
             {/* ─── STEP 7: Yeast type ──────────────── */}
@@ -1645,6 +1697,7 @@ export default function Home() {
                 disabledNote={locale === 'fr' ? 'Le levain nécessite le mode Avancé' : 'Sourdough requires Custom mode'}
                 styleKey={styleKey}
               />
+              {!reviewMode && yeastType && yeastType !== 'sourdough' && <ContinueBtn onClick={() => advance(6)} />}
             </StepCard>
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
@@ -1813,6 +1866,7 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
 
                           <RecipeOutput
+                            onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
                             result={displayRecipe ?? recipe}
                             numItems={numItems}
                             itemWeight={itemWeight}
@@ -2277,6 +2331,7 @@ export default function Home() {
                 selected={ovenType}
                 onSelect={ot => { setOvenType(ot); advanceAdv(3); }}
               />
+              {!reviewMode && ovenType && <ContinueBtn onClick={() => advanceAdv(3)} />}
             </StepCard>
 
             {/* ─── ADV STEP 5: Climate ─────────────── */}
@@ -2319,6 +2374,7 @@ export default function Home() {
                 bakeType={bakeType ?? undefined}
                 kitchenTemp={kitchenTemp}
               />
+              {!reviewMode && mixerType && <ContinueBtn onClick={() => advanceAdv(5)} />}
             </StepCard>
 
             {/* ─── ADV STEP 7: Flour ───────────────── */}
@@ -2399,6 +2455,7 @@ export default function Home() {
                 onClose={() => {}}
                 styleKey={styleKey}
               />
+              {!reviewMode && yeastType && yeastType !== 'sourdough' && <ContinueBtn onClick={() => advanceAdv(7)} />}
               {styleKey === 'pain_levain' && yeastType === 'sourdough' && advancedStep === 7 && (
                 <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.5rem', textAlign: 'center' }}>
                   {locale === 'fr' ? 'Levain présélectionné — appuyez pour confirmer' : 'Sourdough pre-selected — tap to confirm'}
@@ -3073,6 +3130,7 @@ export default function Home() {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
                           <RecipeOutput
+                            onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
                             result={advancedDisplayRecipe ?? advancedRecipe}
                             numItems={numItems}
                             itemWeight={itemWeight}
