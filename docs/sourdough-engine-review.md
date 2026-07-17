@@ -2,8 +2,78 @@
 
 ## The end game (restated)
 
-Give a busy baker a pragmatic, executable plan built from three inputs: the state of their starter (where it lives, when it was last fed, how it behaves), when they want to bake, and when they are actually free. Keep it simple on the surface, mimic best practice underneath, and use tricks like feed-ratio changes to hit the sweet spot when time is awkward.
+Give a busy baker a pragmatic, executable plan built from three inputs: the state of
+their starter (where it lives, when it was last fed, how it behaves), when they want to
+bake, and when they are actually free. Keep it simple on the surface, mimic best practice
+underneath, and use tricks like feed-ratio changes to hit the sweet spot when time is
+awkward.
 
-## How the engine works today (plain language)
+## How the current engine works (as built)
 
-The solver derives the starter's biological state from last-feed time, location, maturity, rye, and feed ratio, then generates every plan a good baker would consider: use the coming peak directly (Peak 1), wait for the trough and refeed (Peak 2A), refeed right now (Peak 2B), schedule a future feed timed so the starter peaks exactly at mix, refresh now then bridge with 1–2 extra feeds for long horizons, hold the starter in the fridge between refresh and pre-mix for 2+ day plans (Path B), and fridge-removal scans for cold starters. Every candidate carries a canonical list of its baker-action timestamps, computed once at generation time; the blocker validator and the chart/card renderer read that same list, so what gets scored is exactly what gets drawn. Scoring is tiered: starter-at-peak and dough-in-zone are worth 100 points each and always dominate; cold-retard length, tang preference, and feed-hour comfort only break ties between biologically equal plans. A second stage re-evaluates the whole plan at every feed ratio (1:1 → 1:10) and recommends a ratio change when it clears blockers the current ratio can't, or scores meaningfully better — this
+`findOptimalPositionSourdough` generates competing candidate plans and scores them:
+
+- **Peak 1** — use the current/upcoming peak directly (feed already done or imminent).
+- **Peak 2A** — let the starter fall to its trough, refeed, use the second peak.
+- **Peak 2B** — refeed now (starter declining/depleted), use that peak.
+- **Future-feed** — schedule a single future feed timed so the starter peaks at mix.
+- **Refresh + bridges** — 1–2 intermediate refreshes to close a 6–24h dead zone.
+- **Path B (fridge hold)** — refresh, peak, chill, then a pre-mix feed; for 2+ day bakes.
+
+Each candidate is scored `(starterScore + doughScore) × 100 + retardBonus×weight +
+mixComfort×2 + feedComfort×3`, then the highest-scoring candidate whose every action
+(mix, feeds, fridge in/out, intermediates) clears the baker's blockers wins. A second
+pass (Stage 2) re-runs the whole evaluation at each feed ratio (1:1:1 … 1:10:10) and
+recommends the ratio that best clears blockers / scores highest — this is the "trick to
+find the sweet spot based on available time" the brief asks for.
+
+## What is genuinely good here
+
+- The three-input framing (starter state / bake time / availability) is exactly right.
+- The candidate-competition design is the correct shape for "pick the most pragmatic plan."
+- The ratio search is a real, differentiated lever, and it is already wired end to end.
+- Chart ↔ card ↔ solver share canonical timestamps by construction (the `actionTimesMs` /
+  `renderFridgeInMs` machinery) — the historic "graph and card disagree" class of bug is
+  structurally prevented now.
+
+## Fixes shipped in this pass
+
+1. **Mix-hour comfort** — `reasonableHour()` returned a flat `1` for all sourdough, so a
+   3 a.m. Start Dough cost nothing and could win a tie. Both `combinedScore` and the
+   per-ratio `combinedScore_r` now add `feedComfort(mixHour) × 2`, so humane mix times win
+   biologically-equal ties without ever overriding a starter/dough score tier.
+2. **FR translation** of the depleted-starter note (was English-only).
+3. **Session persistence** (separate batch) — starter location, last-fed age, ratio,
+   peak/feed times now save and restore from both localStorage and the DB, so a resumed
+   sourdough plan no longer collapses to "now."
+
+## Two calibration questions for the owner (NOT changed unilaterally)
+
+Numbers from the pure biology functions, mature wheat levain, `pain_levain`:
+
+| temp | 1:1:1 | 1:2:2 | 1:4:4 | 1:5:5 | 1:10:10 |
+|------|-------|-------|-------|-------|---------|
+| 22°C | 12.0h | 14.9h | 17.8h | 18.8h | 21.7h |
+| 26°C |  7.0h |  8.7h | 10.4h | 10.9h | 12.6h |
+| 30°C |  4.0h |  5.0h |  5.9h |  6.3h |  7.2h |
+
+**A. Base peak may run slow.** A vigorous 1:1:1 levain at 22°C typically peaks in ~5–8h;
+the engine says 12h. Erring long is the *safe* direction for planning (you won't miss the
+peak), but it makes the app tell bakers to feed earlier than a confident baker would. This
+is a one-line change to `getPrefPeakH_RT`, but it ripples through every bell curve, card
+time and blocker calc — high blast radius this close to launch.
+
+**B. Ratio lever is under-powered.** 1:1:1 → 1:10:10 only stretches the peak 1.81×
+(`1 + 0.35·ln(r)`); real starters stretch ~2.5–3×. A stronger coefficient (≈0.5) would let
+the ratio trick actually rescue awkward windows, which is the whole point of the feature.
+
+Both are defensible either way. Recommendation: ship the launch on the current conservative
+calibration (safe, already tuned), and treat A/B as a fast-follow tuning pass with live
+scenario testing — unless you'd rather bite it now.
+
+## Simplicity note
+
+`SchedulePicker.tsx` is ~6.7k lines and the solver carries six candidate families plus
+bridges and Path B. It is impressively correct but heavy. If post-launch feedback shows
+bakers only ever hit 2–3 of these paths in practice, there is a real opportunity to retire
+the rarely-used branches and shrink the surface area — a maintainability win, not a
+user-facing one. Flagged for later, not for the 5-day window.
