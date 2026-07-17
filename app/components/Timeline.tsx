@@ -671,7 +671,9 @@ export default function Timeline({
                   const water90 = mainWater ? Math.round(mainWater * 0.9) : null;
                   const water10 = mainWater ? mainWater - (water90 ?? 0) : null;
                   const saltG = recipe ? Math.round(recipe.salt) : null;
-                  const yeastG = recipe?.yeast?.grams ? String(parseFloat(recipe.yeast.grams.toFixed(1))) : null;
+                  // convertedGrams, NOT grams — grams is the IDY-equivalent; showing
+                  // it here made fresh-yeast bakers add ~1/3 of the needed yeast
+                  const yeastG = recipe?.yeast?.convertedGrams ? String(parseFloat(recipe.yeast.convertedGrams.toFixed(1))) : null;
 
                   const flour90Label = mainFlour && water90 && water10
                     ? `${mainFlour}g flour + ${water90}g water — hold back ${water10}g for later`

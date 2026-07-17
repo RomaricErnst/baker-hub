@@ -17,6 +17,7 @@ interface RecipeOutputProps {
   totalColdHours?: number;
   mode?: 'simple' | 'custom';
   bakeType?: 'pizza' | 'bread';
+  ovenType?: string | null;
   prefermentType?: PrefermentType;
   priorityOverride?: string | null;
   onPriorityOverride?: (p: string | null) => void;
@@ -461,7 +462,7 @@ function StarterPrepCard({
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', prefermentType,
+  result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
   feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
   onEditSetup,
@@ -506,7 +507,18 @@ export default function RecipeOutput({
     + (!hasPref && yeastGramsTotal > 0 ? yeastGramsTotal : 0);
 
   const yeastInfo = yeast as YeastResult | null;
-  const yeastTypeName = yeastInfo ? YEAST_TYPES[yeastInfo.yeastType]?.name ?? yeastInfo.yeastType : '';
+  // Translated yeast name — data.ts names are English-only ("Fresh Yeast"
+  // showed untranslated on the FR recipe card)
+  const yeastTypeName = yeastInfo
+    ? (() => {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return (t as any)(`recipe.yeastNames.${yeastInfo.yeastType}`) as string;
+        } catch {
+          return YEAST_TYPES[yeastInfo.yeastType]?.name ?? yeastInfo.yeastType;
+        }
+      })()
+    : '';
 
   // Baker's percentages (relative to flour)
   const waterPct  = Math.round(water  / flour * 1000) / 10;
@@ -854,12 +866,12 @@ export default function RecipeOutput({
           {/* Card header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem' }}>
             <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--cream)' }}>
-              Ingredients
+              {t('recipe.ingredients')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', width: '100%', maxWidth: '75%' }}>
               <span />
-              <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em' }}>Weight</span>
-              <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em', minWidth: '4rem' }}>Baker&apos;s %</span>
+              <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em' }}>{t('recipe.weight')}</span>
+              <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em', minWidth: '4rem' }}>{t('recipe.bakersPercent')}</span>
             </div>
           </div>
 
@@ -1012,10 +1024,10 @@ export default function RecipeOutput({
           {/* TOTAL DOUGH row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
             <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
-              Total Dough
+              {t('recipeOutput.totalDough')}
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-              {(numItems * itemWeight).toLocaleString('en')} g
+              {(numItems * itemWeight).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g
             </div>
             <div style={{ minWidth: '4rem' }} />
           </div>
@@ -1128,6 +1140,27 @@ export default function RecipeOutput({
           </div>
         </div>
       )}
+
+      {/* ── Oven-capacity reality check for big pizza batches ──
+          Most home setups bake one pizza at a time; a 12-pizza party is
+          ~an hour of oven time nobody warned the host about. */}
+      {bakeType === 'pizza' && numItems >= 6 && (() => {
+        const minsPerPizza: Record<string, number> = {
+          pizza_oven: 2, home_oven_steel: 7, home_oven_standard: 9, electric_pizza: 5,
+        };
+        const per = minsPerPizza[ovenType ?? ''] ?? 7;
+        const totalMin = Math.round(numItems * per / 5) * 5;
+        return (
+          <div style={{
+            background: 'var(--warm)', border: '1px solid var(--border)',
+            borderRadius: '12px', padding: '.85rem 1.1rem',
+            fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.55,
+            fontFamily: 'var(--font-dm-sans)',
+          }}>
+            {t('recipeOutput.ovenCapacityNote', { n: numItems, mins: totalMin })}
+          </div>
+        );
+      })()}
 
 
       {/* ── Yeast details ───────────────────────────

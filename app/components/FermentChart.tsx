@@ -1271,16 +1271,45 @@ export default function FermentChart({
                     // mid-hold cold peak and a sharp post-peak drop.
                     const chilledAtPeak = ownsHold && fridgeInHBF_ev !== null
                       && Math.abs(ev.bellPeakTime.getTime() - nextFridgeIn!.time.getTime()) <= 2 * 3600000;
+                    const bellD =
+                      ownsHold && fridgeOutHBF_ev !== null && fridgeInHBF_ev !== null && chilledAtPeak
+                        ? makeBellWithFridgePlateau(peakHBF, sigma, fridgeInHBF_ev, fridgeOutHBF_ev, W, WH, feedHBF)
+                        : ownsHold && fridgeOutHBF_ev !== null
+                          ? makeFridgePhaseBellPath(feedHBF, peakHBF, fridgePeakH, fridgeSigma, W, WH)
+                          : makeBellPath(peakHBF, sigma, W, WH, feedHBF);
+                    // Solid (active) bell: the starter is consumed at Start
+                    // Dough — fade the curve after mixX so the "what if
+                    // unused" tail reads as hypothetical, not as noise.
+                    if (ev.bellStyle === 'solid' && mixX > 0 && mixX < W) {
+                      return (
+                        <g key={`ev-bell-${idx}`} clipPath={`url(#chart-area-clip-${chartId})`}>
+                          <defs>
+                            <clipPath id={`premix-clip-${chartId}-${idx}`}>
+                              <rect x={0} y={0} width={Math.max(0, mixX)} height={CHART_H} />
+                            </clipPath>
+                            <clipPath id={`postmix-clip-${chartId}-${idx}`}>
+                              <rect x={Math.max(0, mixX)} y={0} width={Math.max(0, W - mixX)} height={CHART_H} />
+                            </clipPath>
+                          </defs>
+                          <path
+                            d={bellD}
+                            fill={fillStyle} stroke={strokeStyle}
+                            strokeWidth={strokeWidth} strokeDasharray={dashArray}
+                            clipPath={`url(#premix-clip-${chartId}-${idx})`}
+                          />
+                          <path
+                            d={bellD}
+                            fill={`${prefColor}10`} stroke={`${prefColor}45`}
+                            strokeWidth={1} strokeDasharray="3 3"
+                            clipPath={`url(#postmix-clip-${chartId}-${idx})`}
+                          />
+                        </g>
+                      );
+                    }
                     return (
                       <path
                         key={`ev-bell-${idx}`}
-                        d={
-                          ownsHold && fridgeOutHBF_ev !== null && fridgeInHBF_ev !== null && chilledAtPeak
-                            ? makeBellWithFridgePlateau(peakHBF, sigma, fridgeInHBF_ev, fridgeOutHBF_ev, W, WH, feedHBF)
-                            : ownsHold && fridgeOutHBF_ev !== null
-                              ? makeFridgePhaseBellPath(feedHBF, peakHBF, fridgePeakH, fridgeSigma, W, WH)
-                              : makeBellPath(peakHBF, sigma, W, WH, feedHBF)
-                        }
+                        d={bellD}
                         fill={fillStyle}
                         stroke={strokeStyle}
                         strokeWidth={strokeWidth}
@@ -1358,8 +1387,8 @@ export default function FermentChart({
             {(!isLevain || (depletedAtHBF === null && !useEventDrivenStarter)) && (
               <>
                 {/* Warmup + active bell (RT or after fridge removal, including fridge portion) */}
-                <path
-                  d={(() => {
+                {(() => {
+                  const legacyBellD = (() => {
                     // When fridge comparison is showing, suppress this bell entirely —
                     // the comparison overlay is the single authoritative curve.
                     if (isLevain && showFridgeComparison) {
@@ -1421,12 +1450,32 @@ export default function FermentChart({
                       return makePlateauBellPath(peakHBF, prefSig, plateauHalfW, W, WH, feedHBF);
                     }
                     return makeBellPath(peakHBF, starterSigmaH * starterPreMixStretchFactor, W, WH, feedHBF);
-                  })()}
-                  fill={`${prefColor}2E`}
-                  stroke={`${prefColor}A5`}
-                  strokeWidth={1.5}
-                  clipPath={`url(#chart-area-clip-${chartId})`}
-                />
+                  })();
+                  // Starter/preferment is consumed at Start Dough — fade the
+                  // curve after mixX so the tail reads as hypothetical.
+                  if (mixX > 0 && mixX < W) {
+                    return (
+                      <g clipPath={`url(#chart-area-clip-${chartId})`}>
+                        <defs>
+                          <clipPath id={`legacy-premix-clip-${chartId}`}>
+                            <rect x={0} y={0} width={Math.max(0, mixX)} height={CHART_H} />
+                          </clipPath>
+                          <clipPath id={`legacy-postmix-clip-${chartId}`}>
+                            <rect x={Math.max(0, mixX)} y={0} width={Math.max(0, W - mixX)} height={CHART_H} />
+                          </clipPath>
+                        </defs>
+                        <path d={legacyBellD} fill={`${prefColor}2E`} stroke={`${prefColor}A5`}
+                          strokeWidth={1.5} clipPath={`url(#legacy-premix-clip-${chartId})`} />
+                        <path d={legacyBellD} fill={`${prefColor}10`} stroke={`${prefColor}45`}
+                          strokeWidth={1} strokeDasharray="3 3" clipPath={`url(#legacy-postmix-clip-${chartId})`} />
+                      </g>
+                    );
+                  }
+                  return (
+                    <path d={legacyBellD} fill={`${prefColor}2E`} stroke={`${prefColor}A5`}
+                      strokeWidth={1.5} clipPath={`url(#chart-area-clip-${chartId})`} />
+                  );
+                })()}
               </>
             )}
 

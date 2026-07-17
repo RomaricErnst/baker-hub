@@ -384,6 +384,7 @@
     "largeBatchTitle": "Large batch — mix in stages",
     "largeBatchFinalDough": "Your final dough is ~{grams}g — more than your {mixer} can handle at once. Split into {n} batches.",
     "largeBatchTotal": "Your total dough is {grams}g — more than your {mixer} can handle at once. Split into {n} batches.",
+    "ovenCapacityNote": "🍕 {n} pizzas, one at a time in your oven — plan for about {mins} min of baking. Launching in waves keeps every pizza hot; guests rarely mind eating in rounds.",
     "batchHeader": "Final dough per batch ({n} × ~{grams}g)",
     "batchHeaderSimple": "Per batch ({n} × ~{grams}g)",
     "flourFinalDough": "Flour (final dough)",
@@ -501,6 +502,12 @@
     "ingredients": "Ingredients",
     "weight": "Weight",
     "bakersPercent": "Baker's %",
+    "yeastNames": {
+      "instant": "Instant Dry",
+      "active_dry": "Active Dry",
+      "fresh": "Fresh Yeast",
+      "sourdough": "Sourdough Starter"
+    },
     "flour": "Flour",
     "water": "Water",
     "salt": "Salt",

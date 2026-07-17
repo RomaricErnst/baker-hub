@@ -954,20 +954,30 @@ export function calculateRecipe(
     if (yeast && prefermentType && prefermentType !== 'none') {
       const prefData = PREFERMENT_TYPES[prefermentType];
       if (prefData.yeastReduction > 0) {
+        const newGrams = Math.max(0.5, yeast.grams * (1 - prefData.yeastReduction));
+        const newConvertedGrams = Math.max(0.5, yeast.convertedGrams * (1 - prefData.yeastReduction));
         yeast = {
           ...yeast,
-          grams: Math.max(0.5, yeast.grams * (1 - prefData.yeastReduction)),
-          convertedGrams: Math.max(0.5, yeast.convertedGrams * (1 - prefData.yeastReduction)),
+          grams: newGrams,
+          convertedGrams: newConvertedGrams,
+          // Keep percentages in lockstep with grams (recomputed from grams so
+          // the 0.5g floor stays consistent) — displays diverged otherwise.
+          pct: Math.round(newGrams / flour * 100 * 10000) / 10000,
+          convertedPct: Math.round(newConvertedGrams / flour * 100 * 10000) / 10000,
         };
       }
     }
 
-    // Osmotic stress correction — sugar > 2% slows yeast
-    if (yeast && sugarG > 2) {
+    // Osmotic stress correction — sugar above 2% OF FLOUR slows yeast.
+    // (Was `sugarG > 2` — grams, not percent — so any dough with more than
+    // 2g total sugar silently got +20% yeast.)
+    if (yeast && flour > 0 && (sugarG / flour) * 100 > 2) {
       yeast = {
         ...yeast,
         grams: Math.round(yeast.grams * 1.2 * 1000) / 1000,
         convertedGrams: Math.round(yeast.convertedGrams * 1.2 * 1000) / 1000,
+        pct: Math.round(yeast.pct * 1.2 * 10000) / 10000,
+        convertedPct: Math.round(yeast.convertedPct * 1.2 * 10000) / 10000,
         osmoticStress: true,
         warnings: [...yeast.warnings, 'Sugar above 2% creates osmotic stress — yeast amount increased 20%. Consider SAF Gold osmotolerant yeast for best results.'],
       };

@@ -384,6 +384,7 @@
     "largeBatchTitle": "Grande quantité — pétrir en plusieurs fois",
     "largeBatchFinalDough": "Votre pâte finale fait ~{grams}g — trop pour votre {mixer} en une fois. Divisez en {n} pétrissages.",
     "largeBatchTotal": "Votre pâte totale fait {grams}g — trop pour votre {mixer} en une fois. Divisez en {n} pétrissages.",
+    "ovenCapacityNote": "🍕 {n} pizzas, une à la fois dans votre four — prévoyez environ {mins} min de cuisson. Enfourner par vagues garde chaque pizza bien chaude ; vos invités mangeront par tournées.",
     "batchHeader": "Pâte finale par pétrissage ({n} × ~{grams}g)",
     "batchHeaderSimple": "Par pétrissage ({n} × ~{grams}g)",
     "flourFinalDough": "Farine (pâte finale)",
@@ -501,6 +502,12 @@
     "ingredients": "Ingrédients",
     "weight": "Poids",
     "bakersPercent": "% boulanger",
+    "yeastNames": {
+      "instant": "Levure sèche instantanée",
+      "active_dry": "Levure sèche active",
+      "fresh": "Levure fraîche",
+      "sourdough": "Levain"
+    },
     "flour": "Farine",
     "water": "Eau",
     "salt": "Sel",

@@ -588,9 +588,20 @@ export default function Home() {
     setReviewMode(true);
     setActiveStep(99);
     setAdvancedStep(99);
-    setShowWelcomeBack(true);
+    // Toast respawned on every reload/locale switch until acted on —
+    // once dismissed/answered in this browser session, stay quiet.
+    let wbDismissed = false;
+    try { wbDismissed = sessionStorage.getItem('bh_wb_answered') === '1'; } catch {}
+    setShowWelcomeBack(!wbDismissed);
     setTimeout(() => { isRestoringRef.current = false; }, 200);
   }, []);
+
+  // Any user answer to the welcome-back toast (resume, start fresh, dismiss)
+  // silences it for the rest of the browser session.
+  function answerWelcomeBack() {
+    try { sessionStorage.setItem('bh_wb_answered', '1'); } catch {}
+    setShowWelcomeBack(false);
+  }
 
   // Scroll to results when they appear
   useEffect(() => {
@@ -1156,7 +1167,9 @@ export default function Home() {
             if (!styleKey || !eatTime) return '';
             const styleName = (ALL_STYLES as Record<string, { name?: string }>)[styleKey]?.name ?? styleKey;
             const dateStr = eatTime.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-            const timeStr = formatTime(eatTime);
+            // Time only — formatTime() prefixes the weekday, and dateStr
+            // already has it ("Sat 18 Jul, Sat 19:00" duplication)
+            const timeStr = eatTime.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: 'numeric', minute: '2-digit' });
             const itemLabel = bakeType === 'bread'
               ? (numItems === 1 ? 'loaf' : 'loaves')
               : (numItems === 1 ? 'pizza' : 'pizzas');
@@ -1649,7 +1662,7 @@ export default function Home() {
                       {/* Diameter tile — stepper replaces slider */}
                       {showDiam && (
                         <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 10px', overflow: 'hidden' }}>
-                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>◎ Diameter</div>
+                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>◎ {locale === 'fr' ? 'Diamètre' : 'Diameter'}</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                             <button onClick={() => { const d = Math.max(22, pizzaDiameter - 1); setPizzaDiameter(d); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                             <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', minWidth: '48px', textAlign: 'center' }}>{pizzaDiameter}<span style={{ fontSize: '.8rem', fontWeight: 500, color: 'var(--smoke)', marginLeft: '2px' }}>cm</span></span>
@@ -1745,6 +1758,8 @@ export default function Home() {
               onEdit={() => setActiveStep(5)}
             >
               <MixerPicker
+                            totalDoughG={numItems * itemWeight}
+                            locale={locale}
                 selected={mixerType}
                 onSelect={mt => { setMixerType(mt); advance(5); }}
                 styleKey={styleKey ?? undefined}
@@ -1940,6 +1955,7 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
 
                           <RecipeOutput
+                            ovenType={ovenType}
                             onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
                             result={displayRecipe ?? recipe}
                             numItems={numItems}
@@ -2345,7 +2361,7 @@ export default function Home() {
 
                       {showDiam && (
                         <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 10px', overflow: 'hidden' }}>
-                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>◎ Diameter</div>
+                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>◎ {locale === 'fr' ? 'Diamètre' : 'Diameter'}</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
                             <button onClick={() => { const d = Math.max(22, pizzaDiameter - 1); setPizzaDiameter(d); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                             <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', minWidth: '48px', textAlign: 'center' }}>{pizzaDiameter}<span style={{ fontSize: '.8rem', fontWeight: 500, color: 'var(--smoke)', marginLeft: '2px' }}>cm</span></span>
@@ -2444,6 +2460,8 @@ export default function Home() {
               onEdit={() => setAdvancedStep(5)}
             >
               <MixerPicker
+                            totalDoughG={numItems * itemWeight}
+                            locale={locale}
                 selected={mixerType}
                 onSelect={mt => { setMixerType(mt); advanceAdv(5); }}
                 styleKey={styleKey ?? undefined}
@@ -3210,6 +3228,7 @@ export default function Home() {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
                           <RecipeOutput
+                            ovenType={ovenType}
                             onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
                             result={advancedDisplayRecipe ?? advancedRecipe}
                             numItems={numItems}
@@ -3766,7 +3785,7 @@ export default function Home() {
               {locale === 'fr' ? 'Session précédente trouvée' : 'Previous session found'}
             </span>
             <button
-              onClick={() => setShowWelcomeBack(false)}
+              onClick={answerWelcomeBack}
               style={{
                 background: 'none', border: 'none',
                 color: 'rgba(255,255,255,0.3)', cursor: 'pointer',
@@ -3776,7 +3795,7 @@ export default function Home() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button
-              onClick={() => setShowWelcomeBack(false)}
+              onClick={answerWelcomeBack}
               style={{
                 flex: 1, background: 'var(--terra)', border: 'none',
                 color: 'white', cursor: 'pointer', fontSize: '13px',
@@ -3787,7 +3806,7 @@ export default function Home() {
               {locale === 'fr' ? 'Reprendre →' : 'Resume →'}
             </button>
             <button
-              onClick={() => { startOver(); setShowWelcomeBack(false); }}
+              onClick={() => { startOver(); answerWelcomeBack(); }}
               style={{
                 background: 'none', border: 'none',
                 color: 'rgba(255,255,255,0.35)', cursor: 'pointer',
@@ -3796,7 +3815,7 @@ export default function Home() {
                 textDecoration: 'underline', textUnderlineOffset: '2px',
               }}
             >
-              {locale === 'fr' ? 'Nouveau bake' : 'Start fresh'}
+              {locale === 'fr' ? 'Recommencer' : 'Start fresh'}
             </button>
           </div>
         </div>

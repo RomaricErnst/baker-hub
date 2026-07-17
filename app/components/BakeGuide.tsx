@@ -762,7 +762,8 @@ export default function BakeGuide({
   const bgWater90   = bgMainWater ? Math.round(bgMainWater * 0.9) : null;
   const bgWater10   = bgMainWater ? bgMainWater - (bgWater90 ?? 0) : null;
   const bgSaltG     = recipe ? Math.round(recipe.salt) : null;
-  const bgYeastG    = recipe?.yeast?.grams ? String(parseFloat(recipe.yeast.grams.toFixed(1))) : null;
+  // convertedGrams, NOT grams — grams is the IDY-equivalent (see Timeline)
+  const bgYeastG    = recipe?.yeast?.convertedGrams ? String(parseFloat(recipe.yeast.convertedGrams.toFixed(1))) : null;
   // Mix STARTS before bulk fermentation — header and Mix step previously used
   // bulkFermStart, so the Guide disagreed with the Recipe timeline by the
   // mixing duration (16:15 vs 16:00 / 25h45 vs 26h).

@@ -11,6 +11,10 @@ interface MixerPickerProps {
   styleKey?: string;
   bakeType?: 'pizza' | 'bread';
   kitchenTemp?: number;
+  /** Projected total dough (numItems × itemWeight) — surfaces the stand-mixer
+      batch note at selection time instead of only on the recipe page. */
+  totalDoughG?: number;
+  locale?: string;
 }
 
 const NO_KNEAD_WARNING: Partial<Record<string, string>> = {
@@ -18,7 +22,7 @@ const NO_KNEAD_WARNING: Partial<Record<string, string>> = {
   newyork: 'No-knead gives marginal structure for New York slices. Stand mixing recommended for a foldable crust.',
 };
 
-export default function MixerPicker({ selected, onSelect, styleKey, bakeType, kitchenTemp }: MixerPickerProps) {
+export default function MixerPicker({ selected, onSelect, styleKey, bakeType, kitchenTemp, totalDoughG, locale }: MixerPickerProps) {
   const t = useTranslations('mixer');
   const [expanded, setExpanded] = useState(!selected);
 
@@ -55,6 +59,20 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
             selectedId={selected ?? ''}
             onSelect={(id) => { onSelect(id as MixerType); setExpanded(false); }}
           />
+        </div>
+      )}
+
+      {/* Early batch hint — the 1500g cap otherwise only appears on the
+          recipe page, after the baker has already committed to the mixer */}
+      {selected === 'stand' && (totalDoughG ?? 0) > 1500 && (
+        <div style={{
+          marginTop: '.75rem', background: '#FDFBF2', border: '1px solid #E8D890',
+          borderRadius: '10px', padding: '.7rem .9rem', fontSize: '.78rem',
+          color: '#7A5A10', lineHeight: 1.55,
+        }}>
+          {locale === 'fr'
+            ? `Avec ${totalDoughG}g de pâte, vous pétrirez en ${Math.ceil((totalDoughG ?? 0) / 1500)} fois — le plan s'en occupe.`
+            : `With ${totalDoughG}g of dough you'll mix in ${Math.ceil((totalDoughG ?? 0) / 1500)} batches — the plan handles it.`}
         </div>
       )}
 

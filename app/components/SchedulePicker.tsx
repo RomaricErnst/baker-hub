@@ -5537,6 +5537,26 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <div style={{ fontSize: '.7rem', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.4rem' }}>
           {hasDragged ? t('schedulerTitle.yours') : t('schedulerTitle.recommended')}
         </div>
+        {/* Why this plan — one calm line naming the main scheduling decision.
+            The engine chooses well but silently; naming the reason builds trust. */}
+        {startComputed && (() => {
+          const windowH = (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000;
+          const coldH = schedule?.totalColdHours ?? 0;
+          const why = kitchenTemp >= 30
+            ? (isFr ? `Cuisine à ${kitchenTemp}°C — la majeure partie de la fermentation se fait au frigo.` : `${kitchenTemp}°C kitchen — most of the fermentation happens in the fridge.`)
+            : windowH <= 8
+            ? (isFr ? 'Fenêtre courte — plan rapide, un peu plus de levure.' : 'Short window — a quicker plan with a little more yeast.')
+            : kitchenTemp <= 18
+            ? (isFr ? `Cuisine fraîche (${kitchenTemp}°C) — chaque étape reçoit un peu plus de temps.` : `Cool kitchen (${kitchenTemp}°C) — each stage gets a little more time.`)
+            : coldH >= 12
+            ? (isFr ? `${Math.round(coldH)}h au froid — plus de goût et un horaire plus souple.` : `${Math.round(coldH)}h in the fridge — deeper flavour and a more flexible timing.`)
+            : (isFr ? `Calculé à rebours depuis votre heure de cuisson, à ${kitchenTemp}°C.` : `Timed backwards from your bake time at ${kitchenTemp}°C.`);
+          return (
+            <div style={{ fontSize: '.74rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '.6rem', lineHeight: 1.5 }}>
+              {why}
+            </div>
+          );
+        })()}
         {startComputed ? (
           mode === 'simple' ? (
             <SimpleColourBar

@@ -48,6 +48,9 @@ export function displayWeight(g: number, units: UnitSystem): string {
   if (units === 'imperial') return `${gToOz(g)} oz`;
   if (g <= 0) return '0 g';
   if (g < 1) return `${Math.max(0.1, parseFloat(g.toFixed(1)))} g`;
+  // One decimal below 10g — yeast-scale amounts lose meaningful precision
+  // when rounded to whole grams ("6 g" card vs "5.6g" mixing order).
+  if (g < 10) return `${parseFloat(g.toFixed(1))} g`;
   const rounded = Math.round(g);
   return `${rounded >= 1000 ? rounded.toLocaleString() : rounded} g`;
 }
