@@ -63,7 +63,7 @@ export interface FermentChartProps {
 // ── Constants ────────────────────────────────────────────────
 const WINDOW_H_DEFAULT = 96;
 const PAD       = 16;
-const CHART_H   = 252;
+const CHART_H   = 272;  // tall enough for 3 staggered label rows below the axis (was 252 — row-2 labels clipped)
 const TOP_PAD   = 72;   // space above curves for window labels
 const BL        = 175;  // baseline = TOP_PAD + curve height area
 const MAXH      = 110;  // max bell height (fits within TOP_PAD to BL)
