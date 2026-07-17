@@ -74,7 +74,7 @@ const YEAST_SHORT: Record<string, string> = {
 export default function ShareCard({
   styleName, sessionName, numItems, itemWeight, hydration, prefLabel, flourLine,
   recipeFlour, recipeWater, recipeSalt, coldH, rtH,
-  bakedQtys, localSlots, sessionPhotos, locale, status,
+  bakedQtys, localSlots, sessionPhotos, locale, status, bakeType,
   ovenType, mixerType, manualOil, manualSugar, yeastType, yeastGrams, bakeDate, protocolLines, onClose,
 }: ShareCardProps) {
   const l = locale === 'fr' ? 'fr' : 'en';
@@ -90,11 +90,24 @@ export default function ShareCard({
     () => (typeof window !== 'undefined' ? localStorage.getItem(LS_BAKER) ?? '' : '')
   );
   const [template, setTemplate] = useState<'full' | 'two' | 'four' | 'protocol'>('protocol');
+  // Export format for photo templates — IG/FB post (4:5), square (1:1), story (9:16)
+  const [format, setFormat] = useState<'post' | 'square' | 'story'>('post');
   const [selectedPhotoUrls, setSelectedPhotoUrls] = useState<string[]>([]);
   const [cameraPhotoUrls, setCameraPhotoUrls] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sharedOk, setSharedOk] = useState(false);
+  const [imgCopied, setImgCopied] = useState(false);
+  const [copyingImg, setCopyingImg] = useState(false);
+  const [canCopyImage, setCanCopyImage] = useState(false);
+  useEffect(() => {
+    // Clipboard image copy — desktop browsers (Chrome/Edge/Safari); pastes
+    // straight into IG/FB web composers, faster than download + re-upload.
+    setCanCopyImage(
+      typeof navigator !== 'undefined' &&
+      !!navigator.clipboard && typeof window !== 'undefined' && 'ClipboardItem' in window
+    );
+  }, []);
   const [previewLoading, setPreviewLoading] = useState(true);
   // Decoded-image cache — without it every redraw re-fetches all photos from
   // Supabase, leaving black photo slots for seconds on each edit.
@@ -152,6 +165,28 @@ export default function ShareCard({
     mixerType ? (MIXER_LABEL[mixerType] ?? mixerType) : null,
   ].filter(Boolean).join(' · ') || null;
 
+  // Ready-to-post hashtag block — style/bake aware
+  const hashtagLine = (() => {
+    const tags: string[] = [];
+    const sn = styleName.toLowerCase();
+    if (bakeType === 'bread') {
+      if (yeastType === 'sourdough') tags.push('#sourdough', '#sourdoughbread');
+      tags.push('#bread', '#homemadebread', '#breadbaking');
+      if (sn.includes('baguette')) tags.push('#baguette');
+      if (sn.includes('focaccia')) tags.push('#focaccia');
+      if (sn.includes('brioche')) tags.push('#brioche');
+    } else {
+      if (sn.includes('neapolitan')) tags.push('#neapolitanpizza');
+      if (sn.includes('new york')) tags.push('#newyorkpizza');
+      if (sn.includes('roman')) tags.push('#romanpizza');
+      if (sn.includes('detroit') || sn.includes('pan')) tags.push('#panpizza');
+      tags.push('#pizza', '#homemadepizza', '#pizzanight');
+      if (yeastType === 'sourdough') tags.push('#sourdoughpizza');
+    }
+    tags.push('#bakerhub');
+    return tags.join(' ');
+  })();
+
   const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
   const pizzaEntries: [string, number][] =
     bakedQtys && Object.values(bakedQtys).some(v => v > 0)
@@ -191,8 +226,9 @@ export default function ShareCard({
     bodyLineCount * LINE_H_CALC + // body lines
     60                            // branding
   );
-  const photoZoneHeight = 1350 - panelHeight;
-  const photoZoneRatio = photoZoneHeight / 1350;
+  const EXPORT_H = format === 'story' ? 1920 : format === 'square' ? 1080 : 1350;
+  const photoZoneHeight = EXPORT_H - panelHeight;
+  const photoZoneRatio = photoZoneHeight / EXPORT_H;
 
   const displayTitle = (() => {
     const stripped = customTitle
@@ -218,7 +254,7 @@ export default function ShareCard({
 
   // ── Editable caption ──
   const defaultCaption = template === 'protocol' && protocolLines?.length
-    ? protocolLines.join('\n')
+    ? [...protocolLines, '', hashtagLine].join('\n')
     : [
         customTitle,
         '',
@@ -232,6 +268,8 @@ export default function ShareCard({
         '',
         ...(bakerName ? [`Baked by ${bakerName}`] : []),
         'Planned with bakerhub.app',
+        '',
+        hashtagLine,
       ].join('\n');
 
   const [editableCaption, setEditableCaption] = useState(defaultCaption);
@@ -270,7 +308,7 @@ export default function ShareCard({
     run();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [template, selectedPhotoUrls, customTitle, bakerName, editableCaption, protocolLines,
+  }, [template, format, selectedPhotoUrls, customTitle, bakerName, editableCaption, protocolLines,
       specLine, flourLine, weightsLine, timingLine, gearLine, pizzaDisplayLines, bakeDate]);
 
   // ── Canvas draw ──
@@ -398,10 +436,10 @@ export default function ShareCard({
     }
 
     canvas.width = 1080;
-    canvas.height = 1350;
+    canvas.height = EXPORT_H;
 
     ctx.fillStyle = '#1A1612';
-    ctx.fillRect(0, 0, 1080, 1350);
+    ctx.fillRect(0, 0, 1080, EXPORT_H);
 
     const imgCache = imgCacheRef.current;
     async function loadImg(url: string): Promise<HTMLImageElement | null> {
@@ -604,6 +642,24 @@ export default function ShareCard({
     setGenerating(false);
   }
 
+  async function handleCopyImage() {
+    setCopyingImg(true);
+    try {
+      const canvas = await drawCard();
+      if (!canvas) return;
+      const blob = await new Promise<Blob | null>(resolve =>
+        canvas.toBlob(resolve, 'image/png')
+      );
+      if (!blob) return;
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob }),
+      ]);
+      setImgCopied(true);
+      setTimeout(() => setImgCopied(false), 3000);
+    } catch (e) { console.error('copy image error:', e); }
+    setCopyingImg(false);
+  }
+
   const inputStyle: React.CSSProperties = {
     fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
     padding: '8px 10px', borderRadius: '8px',
@@ -749,6 +805,35 @@ export default function ShareCard({
           </div>
         </div>
 
+        {/* Format picker — photo templates only */}
+        {template !== 'protocol' && (
+          <div>
+            <div style={sectionLbl}>{l === 'fr' ? 'Format' : 'Size'}</div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {([
+                ['post',   l === 'fr' ? 'Post 4:5' : 'Post 4:5'],
+                ['square', l === 'fr' ? 'Carré 1:1' : 'Square 1:1'],
+                ['story',  'Story 9:16'],
+              ] as const).map(([key, lbl]) => (
+                <button
+                  key={key}
+                  onClick={() => setFormat(key)}
+                  style={{
+                    flex: 1, padding: '8px 6px', borderRadius: '20px',
+                    border: format === key ? '1.5px solid var(--gold)' : '1px solid var(--border)',
+                    background: format === key ? 'rgba(212,168,83,0.10)' : 'transparent',
+                    color: format === key ? 'var(--char)' : 'var(--smoke)',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                    cursor: 'pointer', transition: 'all 0.15s ease',
+                  }}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Photo picker */}
         {template !== 'protocol' && (
           <div>
@@ -891,6 +976,28 @@ export default function ShareCard({
             ? (l === 'fr' ? 'Génération...' : 'Generating...')
             : (l === 'fr' ? '✦ Partager' : '✦ Share this bake')}
         </button>
+        {canCopyImage && (
+          <button
+            onClick={handleCopyImage}
+            disabled={copyingImg}
+            style={{
+              width: '100%', padding: '11px', marginTop: '8px',
+              background: 'transparent',
+              border: `1px solid ${imgCopied ? 'var(--sage)' : 'var(--border)'}`,
+              color: imgCopied ? 'var(--sage)' : 'var(--smoke)',
+              borderRadius: '12px',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+              cursor: copyingImg ? 'default' : 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {imgCopied
+              ? (l === 'fr' ? 'Image copiée ✓ — collez-la où vous voulez' : 'Image copied ✓ — paste it anywhere')
+              : copyingImg
+              ? (l === 'fr' ? 'Copie…' : 'Copying…')
+              : (l === 'fr' ? 'Copier l’image' : 'Copy image to clipboard')}
+          </button>
+        )}
         <p style={{
           fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
           color: sharedOk ? 'var(--sage)' : 'var(--smoke)', textAlign: 'center',
