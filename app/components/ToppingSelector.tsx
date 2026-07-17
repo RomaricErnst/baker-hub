@@ -1154,6 +1154,25 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough }: Props) {
   const l = locale as 'en' | 'fr';
 
+  // On-screen keyboard detection — position:fixed bottom bars anchor to the
+  // shrunken visual viewport when the mobile keyboard opens (e.g. tapping the
+  // ingredient search), leaving the summary bar "stuck" mid-screen. Hide it
+  // while the keyboard is up; the resize event on close restores it.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return;
+    const onResize = () => {
+      setKeyboardOpen(vv.height < window.innerHeight * 0.8);
+    };
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', onResize);
+    };
+  }, []);
+
   const handleWheelScroll = (e: React.WheelEvent<HTMLDivElement>) => {
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       e.currentTarget.scrollLeft += e.deltaY;
@@ -2363,8 +2382,10 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         </>
       )}
 
-      {/* ── Sticky bar — always visible when pizzas pill active ── */}
-      {activePill === 'pizzas' && (
+      {/* ── Sticky bar — always visible when pizzas pill active ──
+           Hidden while the mobile keyboard is open: fixed bars anchor to the
+           visual viewport and would float mid-screen above the keyboard. */}
+      {activePill === 'pizzas' && !keyboardOpen && (
         <div style={{
           position: 'fixed', bottom: '69px', left: 0, right: 0,
           background: '#1A1612',
