@@ -725,7 +725,7 @@ export default function RecipeOutput({
             {/* CARD 1: Make your preferment */}
             <div style={{ background: 'var(--char)', borderRadius: '18px', padding: '1.5rem 1.6rem', border: '1px solid rgba(212,168,83,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
               <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--cream)', marginBottom: '1rem' }}>
-                Make your {pd.name}
+                {t('recipeOutput.makeYourPref', { name: pd.name })}
               </div>
               <IngRow
                 label={t('recipeOutput.ingredientFlour')}
@@ -754,7 +754,7 @@ export default function RecipeOutput({
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
                 <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
-                  {pd.name} total
+                  {t('recipeOutput.prefTotalRow', { name: pd.name })}
                 </div>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   ~{prefTotal} g
@@ -766,12 +766,12 @@ export default function RecipeOutput({
             {/* CARD 2: Final dough */}
             <div style={{ background: 'var(--char)', borderRadius: '18px', padding: '1.5rem 1.6rem', border: '1px solid rgba(212,168,83,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
               <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--cream)', marginBottom: '.3rem' }}>
-                Final dough
+                {t('recipeOutput.finalDoughTitle')}
               </div>
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: D.muted, marginBottom: '1rem' }}>
-                Add your {pd.name} to the remaining ingredients
+                {t('recipeOutput.addPrefToRest', { name: pd.name })}
               </div>
-              <IngRow label={`Your ${pd.name} (all of it)`} grams={wStr(prefTotal)} noPct highlight />
+              <IngRow label={t('recipeOutput.yourPrefAll', { name: pd.name })} grams={wStr(prefTotal)} noPct highlight />
               {mode === 'custom' && flourBlend && flourBlend.flour2 && flourBlend.ratio1 < 100 ? (() => {
                 const f1 = FLOUR_DATA[flourBlend.flour1];
                 const f2 = FLOUR_DATA[flourBlend.flour2];

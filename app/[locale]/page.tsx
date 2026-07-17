@@ -1556,7 +1556,7 @@ export default function Home() {
                 color: 'var(--gold)',
                 marginBottom: '4px',
               }}>
-                ↩ Previous session loaded — review your settings below
+                ↩ {locale === 'fr' ? 'Session précédente chargée — vérifiez vos réglages ci-dessous' : 'Previous session loaded — review your settings below'}
               </div>
             )}
 
@@ -2242,7 +2242,7 @@ export default function Home() {
                 color: 'var(--gold)',
                 marginBottom: '4px',
               }}>
-                ↩ Previous session loaded — review your settings below
+                ↩ {locale === 'fr' ? 'Session précédente chargée — vérifiez vos réglages ci-dessous' : 'Previous session loaded — review your settings below'}
               </div>
             )}
 
