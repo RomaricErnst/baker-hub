@@ -1112,6 +1112,17 @@ export default function FermentChart({
                     strokeWidth={0.5}
                     strokeDasharray="4 2"
                   />
+                  {/* Label the region — unlabeled it reads as a rendering
+                      glitch hugging the axis */}
+                  {fridgeOutX - fridgeInX > 40 && (
+                    <text
+                      x={(fridgeInX + fridgeOutX) / 2} y={AXIS_Y - 16}
+                      fontSize={9} fill="rgba(74,127,165,0.75)"
+                      textAnchor="middle" fontFamily="DM Mono, monospace"
+                    >
+                      ❄ {isFr ? 'frigo' : 'fridge'}
+                    </text>
+                  )}
                   {/* Fridge-in marker */}
                   <line
                     x1={fridgeInX} y1={AXIS_Y - 12}
@@ -1162,16 +1173,27 @@ export default function FermentChart({
                     const xIn = hToX(inHBF, W, WH);
                     const xOut = hToX(outHBF, W, WH);
                     return (
-                      <rect
-                        x={Math.min(xIn, xOut)}
-                        y={BL - 4}
-                        width={Math.abs(xOut - xIn)}
-                        height={4}
-                        fill="rgba(74,127,165,0.10)"
-                        stroke="rgba(74,127,165,0.25)"
-                        strokeWidth={0.5}
-                        strokeDasharray="2 3"
-                      />
+                      <g>
+                        <rect
+                          x={Math.min(xIn, xOut)}
+                          y={BL - 4}
+                          width={Math.abs(xOut - xIn)}
+                          height={4}
+                          fill="rgba(74,127,165,0.10)"
+                          stroke="rgba(74,127,165,0.25)"
+                          strokeWidth={0.5}
+                          strokeDasharray="2 3"
+                        />
+                        {Math.abs(xOut - xIn) > 40 && (
+                          <text
+                            x={(xIn + xOut) / 2} y={BL - 8}
+                            fontSize={9} fill="rgba(74,127,165,0.75)"
+                            textAnchor="middle" fontFamily="DM Mono, monospace"
+                          >
+                            ❄ {isFr ? 'frigo' : 'fridge'}
+                          </text>
+                        )}
+                      </g>
                     );
                   })()}
                   {/* Bells — one per event with bellStyle !== 'none' */}
@@ -1527,13 +1549,20 @@ export default function FermentChart({
         <line x1={PAD} y1={AXIS_Y} x2={W - PAD} y2={AXIS_Y}
           stroke="var(--border)" strokeWidth={1} />
 
-        {/* ── Ticks — max 5, min 32px apart ── */}
+        {/* ── Ticks — label-aware spacing (fixed 32px gap let 55px-wide
+             labels overlap on narrow screens, and the last tick collided
+             with the Bake label) ── */}
         {(() => {
           const visible: typeof ticks = [];
+          const labelPx = (s: string) => s.length * 7.2 + 10; // DM Mono 12px ≈ 7.2px/char
+          const bakeClear = (t('bakeLabel').length * 8.4) / 2 + 14; // Bake is 14px semibold
           for (const tk of ticks) {
             if (visible.length >= 5) break;
+            // Keep clear of the Bake label at the right edge
+            if (Math.abs(bakeX - tk.x) < labelPx(tk.label) / 2 + bakeClear) continue;
             const prev = visible[visible.length - 1];
-            if (!prev || Math.abs(tk.x - prev.x) >= 32) visible.push(tk);
+            const needed = prev ? (labelPx(tk.label) + labelPx(prev.label)) / 2 : 0;
+            if (!prev || Math.abs(tk.x - prev.x) >= needed) visible.push(tk);
           }
           return visible;
         })().map((tk, i) => (

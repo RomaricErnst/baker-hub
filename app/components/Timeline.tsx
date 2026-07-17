@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   type AvailabilityBlock,
@@ -443,8 +443,16 @@ export default function Timeline({
 
   const isSourdough = styleKey === 'sourdough' || styleKey === 'pain_levain';
 
-  const items  = buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t, bakeType);
-  const phases = buildPhases(schedule, preheatMin, t);
+  // Memoized — rebuilding every render made rapid state changes janky
+  // (one observed full renderer freeze during fast scroll + re-render)
+  const items = useMemo(
+    () => buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t, bakeType),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, bakeType],
+  );
+  const phases = useMemo(() => buildPhases(schedule, preheatMin, t),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schedule, preheatMin]);
 
   const lastStepId = items[items.length - 1]?.id;
 
@@ -467,6 +475,18 @@ export default function Timeline({
             {formatTime(startTime)} → {formatTime(eatTime)}
             {' · '}{hoursLabel((eatTime.getTime() - startTime.getTime()) / 3600000)} total
           </div>
+          {/* Quick-bake honesty note — short windows silently produced an
+              express plan with no hint that it trades flavour for speed */}
+          {(eatTime.getTime() - startTime.getTime()) / 3600000 <= 8 && (
+            <div style={{
+              marginTop: '.7rem', padding: '10px 14px',
+              background: '#FDFBF2', border: '1px solid #E8D890',
+              borderRadius: '10px', fontSize: '.78rem', color: '#7A5A10',
+              lineHeight: 1.55,
+            }}>
+              {t('timeline.quickBakeNote')}
+            </div>
+          )}
         </div>
 
         {/* Start Bake Guide button removed — baker uses tab navigation instead */}
@@ -651,7 +671,7 @@ export default function Timeline({
                   const water90 = mainWater ? Math.round(mainWater * 0.9) : null;
                   const water10 = mainWater ? mainWater - (water90 ?? 0) : null;
                   const saltG = recipe ? Math.round(recipe.salt) : null;
-                  const yeastG = recipe?.yeast?.grams ? recipe.yeast.grams.toFixed(1) : null;
+                  const yeastG = recipe?.yeast?.grams ? String(parseFloat(recipe.yeast.grams.toFixed(1))) : null;
 
                   const flour90Label = mainFlour && water90 && water10
                     ? `${mainFlour}g flour + ${water90}g water — hold back ${water10}g for later`

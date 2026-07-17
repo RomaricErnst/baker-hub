@@ -172,6 +172,9 @@ interface Props {
   onStyleKeyChange?: (key: string) => void;
   doughConfigured?: boolean;
   onGoToMyDough?: () => void;
+  /** Dough ingredients from the generated recipe — shown as a
+      "For your dough" section so the baker shops once. */
+  recipeIngredients?: Array<{ name: string; amount: string }>;
 }
 
 // ─── Sub-region maps ─────────────────────────────────────────
@@ -1151,7 +1154,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients }: Props) {
   const l = locale as 'en' | 'fr';
 
   // On-screen keyboard detection — position:fixed bottom bars anchor to the
@@ -1372,10 +1375,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   ? (STYLE_NAMES_FR[styleKey] ?? styleKey)
                   : (STYLE_NAMES[styleKey] ?? styleKey))
               : (l === 'fr' ? 'Tous les styles' : 'All styles')}
-            {' · '}
-            <span style={{ color: '#8A7F78' }}>
-              {filtered.length} {l === 'fr' ? 'pizzas' : 'pizzas'}
-            </span>
+            {/* Count lives in the "Showing N" filter row below — next to the
+                style name it briefly read as "you're making 112 pizzas" */}
             {Object.values(filter).some(v => Array.isArray(v) ? v.length > 0 : v !== null && v !== 'all') && (
               <span
                 onClick={clearAll}
@@ -2022,6 +2023,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           locale={locale}
           numItems={numItems}
           styleKey={styleKey}
+          recipeIngredients={recipeIngredients}
         />
       )}
 

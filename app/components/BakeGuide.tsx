@@ -762,7 +762,11 @@ export default function BakeGuide({
   const bgWater90   = bgMainWater ? Math.round(bgMainWater * 0.9) : null;
   const bgWater10   = bgMainWater ? bgMainWater - (bgWater90 ?? 0) : null;
   const bgSaltG     = recipe ? Math.round(recipe.salt) : null;
-  const bgYeastG    = recipe?.yeast?.grams ? recipe.yeast.grams.toFixed(1) : null;
+  const bgYeastG    = recipe?.yeast?.grams ? String(parseFloat(recipe.yeast.grams.toFixed(1))) : null;
+  // Mix STARTS before bulk fermentation — header and Mix step previously used
+  // bulkFermStart, so the Guide disagreed with the Recipe timeline by the
+  // mixing duration (16:15 vs 16:00 / 25h45 vs 26h).
+  const bgMixStart  = new Date(schedule.bulkFermStart.getTime() - (schedule.mixingDurationH ?? 0.25) * 3600000);
   const bgPoolishG  = recipe?.preferment
     ? Math.round((recipe.preferment.prefFlour ?? 0) + (recipe.preferment.prefWater ?? 0) + (recipe.preferment.prefYeastGrams ?? 0))
     : null;
@@ -808,7 +812,7 @@ export default function BakeGuide({
           Step-by-step bake guide
         </div>
         <div style={{ fontSize: '.75rem', color: D.smoke, fontFamily: 'var(--font-dm-mono)', marginTop: '.2rem' }}>
-          {formatTime(schedule.bulkFermStart)} → {formatTime(schedule.bakeStart)} · {hoursLabel((schedule.bakeStart.getTime() - schedule.bulkFermStart.getTime()) / 3600000)} total
+          {formatTime(bgMixStart)} → {formatTime(schedule.bakeStart)} · {hoursLabel((schedule.bakeStart.getTime() - bgMixStart.getTime()) / 3600000)} total
         </div>
       </div>
 
@@ -1007,7 +1011,7 @@ export default function BakeGuide({
 
       {/* ── STEP: Mix Dough ─────────────────────────── */}
       <StepCard number={n()} {...sc()} icon={<IconMix />} title={t('stepTitles.mixDough')}
-        time={schedule.bulkFermStart} duration={schedule.mixingDurationH} accent={D.ash}>
+        time={bgMixStart} duration={schedule.mixingDurationH} accent={D.ash}>
 
         <Section icon="🥄" title={t('sectionTitles.mixingOrder')}>
           {mixerType === 'hand' && !isSourdough && (

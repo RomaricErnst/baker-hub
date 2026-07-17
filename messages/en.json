@@ -294,6 +294,7 @@
   },
   "timeline": {
     "bakingProtocol": "Your baking protocol",
+    "quickBakeNote": "Quick-bake plan — this dough trades fermentation depth for speed. It will bake up fine today; when you can plan a day ahead, a slow ferment brings fuller flavour and a lighter crumb.",
     "startBaking": "Start Baking Mode",
     "autoAdjusted": "Schedule auto-adjusted — a room temperature window was too long for your kitchen temperature. A cold retard phase was added automatically to prevent over-fermentation.",
     "steps": {

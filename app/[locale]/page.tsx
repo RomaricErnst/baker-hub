@@ -736,6 +736,24 @@ export default function Home() {
 
   const advancedDisplayRecipe = advancedRecipe;
 
+  // Dough ingredients for the Pizza Party shopping list — the host shops once.
+  const doughShoppingItems = useMemo(() => {
+    const cr = tab === 'custom' ? advancedRecipe : recipe;
+    if (!cr) return undefined;
+    const items: Array<{ name: string; amount: string }> = [
+      { name: locale === 'fr' ? 'Farine' : 'Flour', amount: `${Math.round(cr.flour)}g` },
+      { name: locale === 'fr' ? 'Sel' : 'Salt', amount: `${Math.round(cr.salt)}g` },
+    ];
+    const yg = cr.preferment != null ? cr.preferment.prefYeastGrams : cr.yeast?.convertedGrams;
+    if (yeastType === 'sourdough') {
+      items.push({ name: locale === 'fr' ? 'Levain actif' : 'Active starter', amount: '—' });
+    } else if (yg && yg > 0) {
+      items.push({ name: locale === 'fr' ? 'Levure' : 'Yeast', amount: `${parseFloat(Number(yg).toFixed(1))}g` });
+    }
+    if ((cr.oil ?? 0) > 0) items.push({ name: locale === 'fr' ? 'Huile d’olive' : 'Olive oil', amount: `${Math.round(cr.oil ?? 0)}g` });
+    return items;
+  }, [tab, advancedRecipe, recipe, yeastType, locale]);
+
   // Builds the computedRecipe payload from the live recipe object — single source of truth
   function buildComputedRecipe(): SessionData['computedRecipe'] {
     const cr = tab === 'custom' ? advancedRecipe : recipe;
@@ -932,7 +950,9 @@ export default function Home() {
       const el = document.getElementById(`step-${target}`);
       if (el) {
         const top = el.getBoundingClientRect().top + window.scrollY - 70;
-        window.scrollTo({ top, behavior: 'smooth' });
+        // Instant scroll — smooth scrolling kept options moving under the
+        // baker's finger during step transitions, causing mis-taps.
+        window.scrollTo({ top, behavior: 'auto' });
       }
     }, 150);
   }
@@ -947,7 +967,9 @@ export default function Home() {
       const el = document.getElementById(`adv-step-${target}`);
       if (el) {
         const top = el.getBoundingClientRect().top + window.scrollY - 70;
-        window.scrollTo({ top, behavior: 'smooth' });
+        // Instant scroll — smooth scrolling kept options moving under the
+        // baker's finger during step transitions, causing mis-taps.
+        window.scrollTo({ top, behavior: 'auto' });
       }
     }, 150);
   }
@@ -966,6 +988,7 @@ export default function Home() {
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
     setModeChosen(false);
+    setTab('simple'); // full reset — keeping the previous mode made Custom look pre-selected to a fresh user
     setPizzaPartyTab('pick');
     setPizzasConfirmed(false);
     customOnlyStateRef.current = null;
@@ -1340,6 +1363,13 @@ export default function Home() {
               maxWidth: '30rem',
             }}>
               {t('hero.subtitle')}
+              <span style={{
+                display: 'block', marginTop: '6px',
+                fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
+                color: 'var(--gold)', letterSpacing: '.03em',
+              }}>
+                {locale === 'fr' ? '≈ 2 minutes jusqu’à votre plan complet' : '≈ 2 minutes to your full plan'}
+              </span>
             </p>
           )}
 
@@ -1379,11 +1409,12 @@ export default function Home() {
                   transition: 'all .2s',
                 }}
               >
-                {/* Full-bleed image */}
+                {/* Full-bleed image — clamped: at 38vh the Bread card sat
+                    fully below the fold on phones and could be missed */}
                 <img
                   src={opt.image}
                   alt={opt.label}
-                  style={{ width: '100%', height: '38vh', objectFit: 'cover', display: 'block' }}
+                  style={{ width: '100%', height: 'clamp(180px, 30vh, 340px)', objectFit: 'cover', display: 'block' }}
                 />
                 {/* Gradient overlay with text */}
                 <div style={{
@@ -2126,6 +2157,7 @@ export default function Home() {
                   getQtysRef={pizzaPartyGetQtysRef}
                   onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
                   ovenType={ovenType ?? undefined}
+                  recipeIngredients={doughShoppingItems}
                   onEnsureBakeEvent={async () => {
                     if (bakeEventId) return bakeEventId;
                     if (!user) return null;
@@ -2488,7 +2520,9 @@ export default function Home() {
                       const el = document.getElementById('adv-step-9');
                       if (el) {
                         const top = el.getBoundingClientRect().top + window.scrollY - 70;
-                        window.scrollTo({ top, behavior: 'smooth' });
+                        // Instant scroll — smooth scrolling kept options moving under the
+        // baker's finger during step transitions, causing mis-taps.
+        window.scrollTo({ top, behavior: 'auto' });
                       }
                     }, 150);
                   } else {
@@ -2516,7 +2550,9 @@ export default function Home() {
                         const el = document.getElementById('adv-step-9');
                         if (el) {
                           const top = el.getBoundingClientRect().top + window.scrollY - 70;
-                          window.scrollTo({ top, behavior: 'smooth' });
+                          // Instant scroll — smooth scrolling kept options moving under the
+        // baker's finger during step transitions, causing mis-taps.
+        window.scrollTo({ top, behavior: 'auto' });
                         }
                       }, 150);
                     }}
@@ -3394,6 +3430,7 @@ export default function Home() {
                   getQtysRef={pizzaPartyGetQtysRef}
                   onGoToMyDough={() => { setActiveTab('setup'); setNavHidden(false); }}
                   ovenType={ovenType ?? undefined}
+                  recipeIngredients={doughShoppingItems}
                   onEnsureBakeEvent={async () => {
                     if (bakeEventId) return bakeEventId;
                     if (!user) return null;
@@ -3703,7 +3740,9 @@ export default function Home() {
       {showWelcomeBack && (
         <div style={{
           position: 'fixed',
-          bottom: 24,
+          // Sit above the bottom tab bar — at 24px it covered Recipe/Guide
+          // and stole a first-time user's first taps.
+          bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))',
           left: '50%',
           transform: 'translateX(-50%)',
           background: 'var(--char)',

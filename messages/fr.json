@@ -294,6 +294,7 @@
   },
   "timeline": {
     "bakingProtocol": "Votre protocole de cuisson",
+    "quickBakeNote": "Plan express — cette pâte privilégie la rapidité à la profondeur de fermentation. Elle cuira très bien aujourd'hui ; avec un jour d'avance, une fermentation lente apporte plus de goût et une mie plus légère.",
     "startBaking": "Démarrer le mode cuisson",
     "autoAdjusted": "Planning ajusté automatiquement — une fenêtre à température ambiante était trop longue. Une phase de pousse au froid a été ajoutée pour éviter la surfermentation.",
     "steps": {

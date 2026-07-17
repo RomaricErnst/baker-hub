@@ -46,6 +46,9 @@ function pctStr(n: number): string {
 function wStr(n: number): string {
   if (n <= 0) return '0 g';
   if (n < 1) return `${Math.max(0.1, parseFloat(n.toFixed(1)))} g`;
+  // Keep one decimal below 10g — rounding 4.7g yeast to "5 g" here while the
+  // mixing order says "4.7g" made the two cards disagree.
+  if (n < 10) return `${parseFloat(n.toFixed(1))} g`;
   const rounded = Math.round(n);
   return `${rounded >= 1000 ? rounded.toLocaleString() : rounded} g`;
 }

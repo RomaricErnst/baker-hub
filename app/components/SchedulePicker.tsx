@@ -1160,6 +1160,25 @@ function SimpleColourBar({
         </g>
       </svg>
 
+      {/* Colour legend — zone labels vanish when zones are narrow, leaving
+          first-time bakers guessing what green/gold/terra mean */}
+      <div style={{
+        display: 'flex', justifyContent: 'center', gap: '14px', flexWrap: 'wrap',
+        marginTop: '4px', fontSize: '10px', color: 'var(--smoke)',
+        fontFamily: 'var(--font-dm-mono)',
+      }}>
+        {([
+          ['rgba(107,122,90,0.7)', locale === 'fr' ? 'idéal' : 'sweet spot'],
+          ['rgba(212,168,83,0.7)', locale === 'fr' ? 'correct' : 'still ok'],
+          ['rgba(196,82,42,0.45)', locale === 'fr' ? 'risqué' : 'pushing it'],
+        ] as const).map(([c, lbl]) => (
+          <span key={lbl} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: 10, height: 6, borderRadius: 3, background: c, display: 'inline-block' }} />
+            {lbl}
+          </span>
+        ))}
+      </div>
+
       {/* Info cards */}
       <div style={{ display: 'flex', gap: '6px', marginTop: '.6rem', justifyContent: 'center' }}>
         <div style={{
@@ -1223,6 +1242,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     return d.coldH ?? 0;
   });
   const dateInputRef = useRef<HTMLInputElement>(null);
+  // Deferred apply for the native date picker on touch devices.
+  // iOS fires a `change` event (valued today) the moment the wheel opens;
+  // applying eatTime immediately runs the solver + re-renders and the native
+  // sheet dismisses before the baker can pick a date. On coarse pointers we
+  // apply on blur (sheet closed), with a debounced fallback that waits until
+  // the input is no longer focused.
+  const applyDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const applyRetriesRef = useRef(0);
   const [pickerDateTime, setPickerDateTime] = useState<string>(() => {
     if (alreadySet && eatTime) {
       const d = eatTime;
@@ -4566,7 +4593,39 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               onChange={e => {
                 const d = e.target.value;
                 setPickerDate(d);
-                if (d && pickerHour !== null) applyTimePick(d, pickerHour, pickerMinute);
+                if (!d || pickerHour === null) return;
+                const coarse = typeof window !== 'undefined'
+                  && window.matchMedia?.('(pointer: coarse)').matches;
+                if (!coarse) {
+                  applyTimePick(d, pickerHour, pickerMinute);
+                  return;
+                }
+                // Touch device: defer the heavy apply until the native picker
+                // is closed — see applyDebounceRef comment.
+                if (applyDebounceRef.current) clearTimeout(applyDebounceRef.current);
+                applyRetriesRef.current = 0;
+                const tryApply = () => {
+                  applyDebounceRef.current = null;
+                  const latest = dateInputRef.current?.value ?? d;
+                  const stillFocused = typeof document !== 'undefined'
+                    && document.activeElement === dateInputRef.current;
+                  if (stillFocused && applyRetriesRef.current < 4) {
+                    applyRetriesRef.current += 1;
+                    applyDebounceRef.current = setTimeout(tryApply, 900);
+                    return;
+                  }
+                  if (latest) applyTimePick(latest, pickerHour, pickerMinute);
+                };
+                applyDebounceRef.current = setTimeout(tryApply, 900);
+              }}
+              onBlur={() => {
+                // Picker closed — apply immediately with the final value.
+                if (applyDebounceRef.current) {
+                  clearTimeout(applyDebounceRef.current);
+                  applyDebounceRef.current = null;
+                  const d = dateInputRef.current?.value ?? '';
+                  if (d && pickerHour !== null) applyTimePick(d, pickerHour, pickerMinute);
+                }
               }}
               onClick={e => {
                 // Desktop browsers need showPicker() to open the calendar.
@@ -6683,11 +6742,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               </div>
             )}
 
-            {/* Mix card */}
+            {/* Mix card — stretch full width whenever a sibling card exists
+                (preferment OR sourdough starter card above), otherwise the
+                Start Dough card renders narrower than the Starter card */}
             <div style={{
               background: 'var(--cream)', border: '1.5px solid var(--border)',
               borderRadius: '10px', padding: '14px 16px',
-              ...(cardPrefTime ? { flex: 1, minWidth: '120px' } : { minWidth: '160px', maxWidth: '260px' }),
+              ...(cardPrefTime || isSourdough ? { flex: 1, minWidth: '120px' } : { minWidth: '160px', maxWidth: '260px' }),
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
                 <div style={{ width: 8, height: 8, background: '#3D5A30', transform: 'rotate(45deg)', flexShrink: 0 }} />

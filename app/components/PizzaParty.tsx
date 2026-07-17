@@ -28,6 +28,7 @@ interface PizzaPartyProps {
   onShare?: () => Promise<void> | void;
   sessionSaved?: boolean;
   onBakedQtysChange?: (qtys: Record<string, number>) => void;
+  recipeIngredients?: Array<{ name: string; amount: string }>;
 }
 
 function tabToPill(tab: Tab): Pill {
@@ -41,7 +42,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange, recipeIngredients }: PizzaPartyProps) {
   const [qtys, setQtys] = useState<Record<string, number>>(initialQtys ?? {});
   const [styleKey, setStyleKey] = useState<string | undefined>(initialStyleKey);
   const [pickStyleKey, setPickStyleKey] = useState<string | undefined>(initialStyleKey);
@@ -84,6 +85,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           onStyleChange={setStyleKey}
           doughConfigured={doughConfigured}
           onGoToMyDough={onGoToMyDough}
+          recipeIngredients={recipeIngredients}
         />
       </div>
 
