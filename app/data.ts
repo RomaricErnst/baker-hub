@@ -706,6 +706,7 @@ export function computePrefermentRecipe(
   flourPctOverride?: number,
   yeastType?: string,         // for output conversion (default 'instant' = IDY)
   actualFermentH?: number,    // baker's REAL planned window (from scheduler) — yeast calibrated to it
+  nTargetGramsIDY?: number,   // whole-dough leavening requirement (direct-engine IDY grams) — makes dosing fraction-independent
 ): {
   prefFlour: number;
   prefWater: number;
@@ -774,13 +775,44 @@ export function computePrefermentRecipe(
       : 1 / 3.1;   // RT poolish: no salt, 100% hydration (tropical already in rtIDYPref)
 
   const idyPct = Math.max(YEAST_MIN_PCT_PREF, rawPct * correctionFactor);
-  const prefYeastGramsIDY = Math.round(prefFlour * idyPct / 100 * 10) / 10;
+
+  // ── Peak-ripening dose ──────────────────────────────────────────────
+  // The seed that makes THIS preferment ripe (at peak) at mix time, for its
+  // own flour and window. Scales with preferment flour — a bigger biga needs
+  // proportionally more seed to peak on the same clock.
+  const peakDoseIDY = prefFlour * idyPct / 100;
+
+  // ── Whole-dough leavening requirement (fraction-independent) ─────────
+  // A preferment is a yeast farm: the seed multiplies while it ripens, and
+  // the grown population is what actually leavens the FINAL dough. So the
+  // seed must be large enough to DELIVER the leavening the whole dough needs
+  // over its whole schedule — that target (nTargetGramsIDY) comes from the
+  // direct-dough engine and is based on TOTAL flour, so it no longer depends
+  // on the preferment fraction.
+  //
+  //   delivered ≈ seed × G,   G = 2^(fermH / tD(T))   (population growth)
+  //   tD(T) = doubling time, Q10=2, anchored at 22.1h @6°C so this reproduces
+  //   the validated points (20% biga 46h≈0.1g, fridge poolish 18h≈0.3g).
+  //
+  // We take the LARGER of the peak dose and the leavening dose so the
+  // preferment is never under-ripe AND never under-delivers. This only ever
+  // tops up an underdose (low fraction + long/warm final ferment); at the
+  // validated fractions it is a no-op.
+  let prefYeastGramsIDY = peakDoseIDY;
+  if (nTargetGramsIDY !== undefined && nTargetGramsIDY > 0) {
+    const fermTemp = isInFridge ? effectiveFT : effectiveKT;
+    const tD = 22.1 * Math.pow(2, -(fermTemp - 6) / 10); // doubling time (h)
+    const growth = Math.pow(2, prefFermentH / tD);        // population multiple
+    const leaveningDoseIDY = nTargetGramsIDY / growth;
+    prefYeastGramsIDY = Math.max(peakDoseIDY, leaveningDoseIDY);
+  }
+  prefYeastGramsIDY = Math.round(prefYeastGramsIDY * 10) / 10;
 
   // Convert to baker's selected yeast type
   const yeastConversion = yeastType === 'active_dry' ? 1.33
     : yeastType === 'fresh' ? 3.00
     : 1.00;
-  const prefYeastGrams = Math.round(prefFlour * idyPct * yeastConversion / 100 * 10) / 10;
+  const prefYeastGrams = Math.round(prefYeastGramsIDY * yeastConversion * 10) / 10;
 
   const finalWater = totalWaterGrams - prefWater;
 

@@ -1672,6 +1672,7 @@ export default function Home() {
                 styleKey={styleKey}
                 selected={ovenType}
                 onSelect={ot => { setOvenType(ot); advance(3); }}
+                onPreselect={setOvenType}
               />
               {!reviewMode && ovenType && <ContinueBtn onClick={() => advance(3)} />}
             </StepCard>
@@ -2367,6 +2368,7 @@ export default function Home() {
                 styleKey={styleKey}
                 selected={ovenType}
                 onSelect={ot => { setOvenType(ot); advanceAdv(3); }}
+                onPreselect={setOvenType}
               />
               {!reviewMode && ovenType && <ContinueBtn onClick={() => advanceAdv(3)} />}
             </StepCard>

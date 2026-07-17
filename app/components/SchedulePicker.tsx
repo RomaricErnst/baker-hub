@@ -4496,12 +4496,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               }}
               onClick={e => {
                 // Desktop browsers need showPicker() to open the calendar.
-                // iOS opens natively on tap — showPicker() throws or no-ops there.
-                // Single handler on the input itself — no double-trigger.
+                // On touch devices (iOS/Android) the tap ALREADY opens the native
+                // picker — calling showPicker() on top of it double-triggers and
+                // dismisses the sheet on first tap ("field collapses" bug).
+                // Only call it for fine pointers (mouse/trackpad).
+                if (typeof window !== 'undefined'
+                    && window.matchMedia?.('(pointer: coarse)').matches) return;
                 try {
                   (e.currentTarget as HTMLInputElement).showPicker?.();
                 } catch {
-                  // iOS or older browsers — native behavior already opens picker
+                  // Older browsers — native behavior already opens picker
                 }
               }}
               style={{

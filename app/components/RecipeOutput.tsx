@@ -697,21 +697,6 @@ export default function RecipeOutput({
             })()}
           </div>
         )}
-        {/* Edit setup — third entry point, right where bakers look for it */}
-        {onEditSetup && (
-          <button
-            onClick={onEditSetup}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-              marginTop: '.35rem',
-              fontSize: '.72rem', color: 'rgba(212,168,83,0.7)',
-              fontFamily: 'var(--font-dm-mono)',
-              textDecoration: 'underline', textUnderlineOffset: '3px',
-            }}
-          >
-            {t('generate.editSetup')}
-          </button>
-        )}
       </div>
 
       {/* ── Ingredients / Preferment cards ──────── */}
@@ -1313,6 +1298,24 @@ export default function RecipeOutput({
             locale={locale}
           />
 
+        </div>
+      )}
+
+      {/* Edit setup — third entry point: below the recipe cards, above the protocol */}
+      {onEditSetup && (
+        <div style={{ textAlign: 'center' }}>
+          <button
+            onClick={onEditSetup}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '4px 0',
+              fontSize: '.78rem', color: 'var(--smoke)',
+              fontFamily: 'var(--font-dm-mono)',
+              textDecoration: 'underline', textUnderlineOffset: '3px',
+            }}
+          >
+            {t('generate.editSetup')}
+          </button>
         </div>
       )}
 

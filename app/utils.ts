@@ -911,6 +911,7 @@ export function calculateRecipe(
   // Yeast or sourdough
   let yeast: YeastResult | null = null;
   let sourdough: SourdoughResult | null = null;
+  let directNeedIDY: number | undefined;   // whole-dough IDY need — feeds preferment dosing
 
   const autoPriority = derivePriority(schedule);
   const effectivePriority = manualPriorityOverride !== undefined ? manualPriorityOverride : autoPriority;
@@ -943,6 +944,11 @@ export function calculateRecipe(
         convertedGrams: Math.round(flour * idyPct * conversion / 100 * 1000) / 1000,
       };
     }
+
+    // Whole-dough leavening requirement (direct-engine IDY grams), captured
+    // BEFORE any preferment reduction — this is what the preferment must
+    // ultimately deliver, and drives fraction-independent preferment dosing.
+    directNeedIDY = yeast ? yeast.grams : undefined;
 
     // Apply yeast reduction from preferment
     if (yeast && prefermentType && prefermentType !== 'none') {
@@ -979,6 +985,7 @@ export function calculateRecipe(
         flourPctOverride,
         yeastType,
         prefActualHours,
+        directNeedIDY,
       )
     : null;
 

@@ -19,16 +19,20 @@ interface OvenPickerProps {
   styleKey?: string | null;
   selected: AnyOvenType | null;
   onSelect: (oven: AnyOvenType) => void;
+  /** Pre-fill a sensible default WITHOUT advancing the step.
+   *  onSelect advances the flow, so it must only run on a real user tap —
+   *  calling it from the mount effect made the oven step skip itself. */
+  onPreselect?: (oven: AnyOvenType) => void;
 }
 
-export default function OvenPicker({ bakeType, styleKey, selected, onSelect }: OvenPickerProps) {
+export default function OvenPicker({ bakeType, styleKey, selected, onSelect, onPreselect }: OvenPickerProps) {
   const t = useTranslations('oven');
   const locale = useLocale();
   const [expanded, setExpanded] = useState(true);
 
   useEffect(() => {
-    if (selected === null && bakeType === 'pizza') {
-      onSelect('home_oven_steel' as AnyOvenType);
+    if (selected === null && bakeType === 'pizza' && onPreselect) {
+      onPreselect('home_oven_steel' as AnyOvenType);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
