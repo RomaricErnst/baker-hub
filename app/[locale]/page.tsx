@@ -134,10 +134,10 @@ const FALLBACK_ZONE = { min: 50, classicMin: 60, classicMax: 70, advancedMax: 78
 // ── Step jump chips (review mode) ─────────────
 // The filled setup accordion is ~6 screens tall on mobile; this compact
 // sticky row lets a returning baker jump straight to any step.
-function StepJumpChips({ steps, idPrefix }: { steps: { n: number; label: string }[]; idPrefix: string }) {
+function StepJumpChips({ steps, idPrefix, topOffset = 62 }: { steps: { n: number; label: string }[]; idPrefix: string; topOffset?: number }) {
   return (
     <div style={{
-      position: 'sticky', top: '62px', zIndex: 30,
+      position: 'sticky', top: `${topOffset}px`, zIndex: 30,
       display: 'flex', gap: '6px', overflowX: 'auto',
       padding: '8px 4px', margin: '0 -4px 4px',
       background: 'var(--cream)',
@@ -150,7 +150,7 @@ function StepJumpChips({ steps, idPrefix }: { steps: { n: number; label: string 
           onClick={() => {
             const el = document.getElementById(`${idPrefix}-${s.n}`);
             if (el) {
-              const top = el.getBoundingClientRect().top + window.scrollY - 112;
+              const top = el.getBoundingClientRect().top + window.scrollY - (topOffset + 52);
               window.scrollTo({ top, behavior: 'auto' });
             }
           }}
@@ -1210,6 +1210,7 @@ export default function Home() {
 
     if (!event.dough_snapshot) return;
     isRestoringRef.current = true;
+    setShowWelcomeBack(false);
     const snap = event.dough_snapshot;
     const rb = !!opts?.rebake;
     let deltaMs = 0;
@@ -1707,6 +1708,7 @@ export default function Home() {
             {/* ── Nav #3: step jump chips (review mode) ── */}
             {reviewMode && (
               <StepJumpChips
+                topOffset={bakeType === 'pizza' ? 97 : 62}
                 idPrefix="step"
                 steps={[
                   { n: 1, label: locale === 'fr' ? 'Style' : 'Style' },
@@ -2409,6 +2411,7 @@ export default function Home() {
             {/* ── Nav #3: step jump chips (review mode) ── */}
             {reviewMode && (
               <StepJumpChips
+                topOffset={bakeType === 'pizza' ? 97 : 62}
                 idPrefix="adv-step"
                 steps={[
                   { n: 1, label: locale === 'fr' ? 'Style' : 'Style' },

@@ -77,8 +77,6 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
     setSlotNote(locale === 'fr'
       ? `Quantité de pâte modifiée — ${numItems} pizzas à garnir`
       : `Dough quantity changed — ${numItems} pizzas to top`);
-    const tmr = setTimeout(() => setSlotNote(null), 5000);
-    return () => clearTimeout(tmr);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [numItems]);
 
@@ -96,8 +94,19 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           fontFamily: 'var(--font-dm-mono)',
           fontSize: '12px',
           color: 'var(--ash, #3D3530)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
         }}>
-          🍕 {slotNote}
+          <span style={{ flex: 1 }}>🍕 {slotNote}</span>
+          <button
+            onClick={() => setSlotNote(null)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--smoke, #8A7F78)', fontSize: '13px',
+              padding: '0 2px', lineHeight: 1, flexShrink: 0,
+            }}
+          >✕</button>
         </div>
       )}
       {/* ToppingSelector stays mounted across pick/shop to preserve filter state */}
