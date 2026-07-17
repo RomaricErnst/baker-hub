@@ -763,6 +763,11 @@ export default function Home() {
           prefRemoveFromFridgeTime ?? null,
           cr.hydration ?? undefined,
           cr.oil ?? undefined,
+          // CRITICAL: without the translator, buildItems falls back to (k) => k
+          // and raw i18n keys (timeline.steps.mixing…) get serialized into the
+          // session — they then appear verbatim on the share card + caption.
+          (key, params) => t(key, params),
+          bakeType ?? undefined,
         );
         for (const step of steps) {
           if (step.kind === 'step') {

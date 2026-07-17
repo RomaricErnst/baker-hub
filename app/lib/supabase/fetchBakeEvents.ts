@@ -16,6 +16,10 @@ export interface BakeEvent {
 }
 
 export function bakeEventTitle(event: BakeEvent): string {
+  // Custom session name (stored in notes via updateSessionName) always wins —
+  // keeps sidebar cards in sync with the name edited in the session popup.
+  const customName = event.notes?.trim();
+  if (customName) return customName;
   const snap = event.dough_snapshot;
   if (!snap) return 'Session';
   const style = (ALL_STYLES as Record<string, { name: string }>)[snap.styleKey ?? ''];

@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, computeBlendProfile,
   type MixerType, type StyleKey, type AnyOvenType,
@@ -61,6 +61,7 @@ export default function SessionViewer({
 }: SessionViewerProps) {
   const locale = useLocale();
   const l = locale === 'fr' ? 'fr' : 'en';
+  const tRoot = useTranslations();
 
   const [localSlots, setLocalSlots] = useState<PizzaPartySlot[]>([]);
   const [photos, setPhotos] = useState<BakePhoto[]>([]);
@@ -238,8 +239,15 @@ export default function SessionViewer({
     if (savedSteps?.length) {
       for (const step of savedSteps) {
         const isSubStep = step.id === 'remove_pref_fridge';
-        const label = step.label
-          .replace(/[^\x00-\x7F]/g, '')
+        // Legacy sessions serialized raw i18n keys (timeline.steps.mixing…)
+        // because buildItems was called without a translator — translate them
+        // here so old sessions still share a readable protocol.
+        const rawLabel = /^timeline\.[\w.]+$/.test(step.label)
+          ? (() => { try { return tRoot(step.label); } catch { return step.label; } })()
+          : step.label;
+        // Strip emoji/pictographs only — keep accented characters (French labels).
+        const label = rawLabel
+          .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{2190}-\u{21FF}]/gu, '')
           .trim();
         lines.push(`${isSubStep ? '  ' : ''}${fmt(new Date(step.time))}  ${label}`);
       }
@@ -286,7 +294,7 @@ export default function SessionViewer({
     return lines;
   }, [cr, snap, styleName, flourBlendName, displayFlour, displayWater,
       displaySalt, displayHydration, yeastRounded, prefLabel,
-      bakedQtys, localSlots]);
+      bakedQtys, localSlots, tRoot]);
 
   if (!event || !snap) return null;
   if (typeof document === 'undefined') return null;
@@ -594,11 +602,13 @@ export default function SessionViewer({
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
-                    capture="environment"
+                    multiple
                     style={{ display: 'none' }}
                     onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) await handlePhotoUpload(file);
+                      // Bakers shoot several photos — accept them all in one pick,
+                      // capped at the 6-photo session limit.
+                      const files = Array.from(e.target.files ?? []).slice(0, Math.max(0, 6 - photos.length));
+                      for (const file of files) await handlePhotoUpload(file);
                       e.target.value = '';
                     }}
                   />

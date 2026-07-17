@@ -94,6 +94,11 @@ export default function ShareCard({
   const [cameraPhotoUrls, setCameraPhotoUrls] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sharedOk, setSharedOk] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(true);
+  // Decoded-image cache — without it every redraw re-fetches all photos from
+  // Supabase, leaving black photo slots for seconds on each edit.
+  const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   useEffect(() => { localStorage.setItem(LS_TITLE, customTitle); }, [customTitle]);
   useEffect(() => { localStorage.setItem(LS_BAKER, bakerName); }, [bakerName]);
@@ -234,28 +239,33 @@ export default function ShareCard({
   useEffect(() => {
     setEditableCaption(defaultCaption);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customTitle, bakerName, specLine, weightsLine, timingLine]);
+  }, [customTitle, bakerName, specLine, weightsLine, timingLine, template, protocolLines]);
 
   // Re-render preview canvas whenever any input changes
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
+      setPreviewLoading(true);
       try { await document.fonts.ready; } catch { /* ok */ }
       await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       if (cancelled) return;
       const canvas = await drawCard();
       if (cancelled || !canvas || !previewCanvasRef.current) return;
       const preview = previewCanvasRef.current;
-      const w = preview.clientWidth || 300;
+      const w = preview.clientWidth || preview.parentElement?.clientWidth || 300;
       const scale = w / canvas.width;
       preview.width = w;
       preview.height = Math.round(canvas.height * scale);
+      // Explicit CSS height — without it the preview container can collapse
+      // to 0px (overflow:hidden parent) and the live preview is never visible.
+      preview.style.height = `${Math.round(canvas.height * scale)}px`;
       const ctx = preview.getContext('2d');
       if (!ctx) return;
       ctx.save();
       ctx.scale(scale, scale);
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
+      setPreviewLoading(false);
     };
     run();
     return () => { cancelled = true; };
@@ -320,17 +330,23 @@ export default function ShareCard({
         y += 34;
       }
 
-      // Title — single line, shrink to fit, never wrap
+      // Title — single line, shrink to fit; ellipsis when even the floor
+      // size overflows (long titles used to clip off the card edge)
       {
         let titleSize = 44;
         ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
-        while (ctx.measureText(displayTitle).width > CONTENT_W_P && titleSize > 20) {
+        while (ctx.measureText(displayTitle).width > CONTENT_W_P && titleSize > 26) {
           titleSize--;
           ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
         }
+        let shownTitle = displayTitle;
+        while (shownTitle.length > 4 && ctx.measureText(shownTitle === displayTitle ? shownTitle : `${shownTitle}…`).width > CONTENT_W_P) {
+          shownTitle = shownTitle.slice(0, -1).trimEnd();
+        }
+        if (shownTitle !== displayTitle) shownTitle = `${shownTitle}…`;
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'left';
-        ctx.fillText(displayTitle, MARGIN, y + titleSize);
+        ctx.fillText(shownTitle, MARGIN, y + titleSize);
         y += titleSize + 22;
       }
 
@@ -387,13 +403,16 @@ export default function ShareCard({
     ctx.fillStyle = '#1A1612';
     ctx.fillRect(0, 0, 1080, 1350);
 
+    const imgCache = imgCacheRef.current;
     async function loadImg(url: string): Promise<HTMLImageElement | null> {
+      const cached = imgCache.get(url);
+      if (cached) return cached;
       try {
         const blob = await fetch(url).then(r => r.blob());
         const blobUrl = URL.createObjectURL(blob);
         return new Promise(resolve => {
           const img = new Image();
-          img.onload = () => { URL.revokeObjectURL(blobUrl); resolve(img); };
+          img.onload = () => { URL.revokeObjectURL(blobUrl); imgCache.set(url, img); resolve(img); };
           img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(null); };
           img.src = blobUrl;
         });
@@ -495,17 +514,23 @@ export default function ShareCard({
       y += 34;
     }
 
-    // Title — Playfair, single line, shrink to fit, NEVER wrap
+    // Title — Playfair, single line, shrink to fit; ellipsis when even the
+    // floor size overflows (long titles used to clip off the card edge)
     {
       let titleSize = 44;
       ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
-      while (ctx.measureText(displayTitle).width > CONTENT_W && titleSize > 20) {
+      while (ctx.measureText(displayTitle).width > CONTENT_W && titleSize > 26) {
         titleSize--;
         ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
       }
+      let shownTitle = displayTitle;
+      while (shownTitle.length > 4 && ctx.measureText(shownTitle === displayTitle ? shownTitle : `${shownTitle}…`).width > CONTENT_W) {
+        shownTitle = shownTitle.slice(0, -1).trimEnd();
+      }
+      if (shownTitle !== displayTitle) shownTitle = `${shownTitle}…`;
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'left';
-      ctx.fillText(displayTitle, 72, y + titleSize);
+      ctx.fillText(shownTitle, 72, y + titleSize);
       y += titleSize + 20;
     }
 
@@ -565,11 +590,15 @@ export default function ShareCard({
       if (typeof navigator !== 'undefined' && navigator.share &&
           navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: customTitle });
+        setSharedOk(true);
+        setTimeout(() => setSharedOk(false), 4000);
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.download = 'my-bake.png'; a.click();
         URL.revokeObjectURL(url);
+        setSharedOk(true);
+        setTimeout(() => setSharedOk(false), 4000);
       }
     } catch (e) { console.error('share error:', e); }
     setGenerating(false);
@@ -614,11 +643,22 @@ export default function ShareCard({
       <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
         {/* Live preview — exact scaled render of export canvas */}
-        <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', background: '#1A1612' }}>
+        <div style={{ position: 'relative', width: '100%', minHeight: '160px', borderRadius: '12px', overflow: 'hidden', background: '#1A1612' }}>
           <canvas
             ref={previewCanvasRef}
             style={{ width: '100%', display: 'block', borderRadius: '12px' }}
           />
+          {previewLoading && (
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(26,22,18,0.55)',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              color: 'rgba(255,255,255,0.6)', letterSpacing: '.06em',
+            }}>
+              {l === 'fr' ? 'Aperçu en cours…' : 'Rendering preview…'}
+            </div>
+          )}
         </div>
 
         {/* Editable fields */}
@@ -853,12 +893,17 @@ export default function ShareCard({
         </button>
         <p style={{
           fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
-          color: 'var(--smoke)', textAlign: 'center',
-          marginTop: '8px', opacity: 0.6,
+          color: sharedOk ? 'var(--sage)' : 'var(--smoke)', textAlign: 'center',
+          marginTop: '8px', opacity: sharedOk ? 1 : 0.6,
+          transition: 'color 0.2s ease',
         }}>
-          {l === 'fr'
-            ? 'Partage natif iOS/Android · Téléchargement PNG sur desktop'
-            : 'Native share on iOS/Android · Downloads PNG on desktop'}
+          {sharedOk
+            ? (l === 'fr'
+                ? 'Image enregistrée ✓ — collez-la dans votre post'
+                : 'Image saved ✓ — drop it into your post')
+            : (l === 'fr'
+                ? 'Partage natif iOS/Android · Téléchargement PNG sur desktop'
+                : 'Native share on iOS/Android · Downloads PNG on desktop')}
         </p>
       </div>
     </div>
