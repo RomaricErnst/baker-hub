@@ -182,7 +182,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
       gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
       gap: '.75rem',
     }}>
-      {(Object.entries(styles) as [string, { name: string; nameFr?: string; emoji: string; image?: string; desc: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
+      {(Object.entries(styles) as [string, { name: string; nameFr?: string; emoji: string; image?: string; desc: string; descFr?: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
         const isSelected = selected === key;
         const isDisabled = disabledIds.includes(key);
         const art = STYLE_ART[key];
@@ -263,7 +263,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
               } as React.CSSProperties}>
-                {style.desc}
+                {locale === 'fr' && style.descFr ? style.descFr : style.desc}
               </div>
             </div>
           </div>

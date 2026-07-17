@@ -1801,7 +1801,7 @@ export default function Home() {
               activeStep={activeStep}
               highestStep={highestStep}
               reviewMode={reviewMode}
-              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : undefined}
+              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}` : undefined}
               onEdit={() => setActiveStep(7)}
             >
               <SchedulePicker
@@ -2630,7 +2630,7 @@ export default function Home() {
               activeStep={advancedStep}
               highestStep={advancedHighestStep}
               reviewMode={reviewMode}
-              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)} · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : undefined}
+              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}` : undefined}
               onEdit={() => setAdvancedStep(9)}
             >
               <SchedulePicker

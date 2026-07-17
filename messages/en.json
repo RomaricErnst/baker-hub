@@ -181,8 +181,8 @@
     "adjustDoughLabel": "Dough:",
     "adjustDoughVerb": "drag the green diamond — curve should be near its peak at Bake",
     "adjustPrefVerb": "drag the gold diamond — curve should be near its peak at Start Dough",
-    "summaryFridgeBlock": "fridge block",
-    "summaryFridgeBlocks": "fridge blocks"
+    "summaryFridgeBlock": "busy window",
+    "summaryFridgeBlocks": "busy windows"
   },
   "dialIn": {
     "title": "Dial in your dough",
