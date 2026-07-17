@@ -1960,6 +1960,28 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const _effectiveBlocks = isSourdough ? localBlocks : blocks;
   const isWorkActive = _effectiveBlocks.some(b => b.label.startsWith('Work · '));
 
+  // Default night block (sourdough). Multi-day levain plans otherwise schedule
+  // refresh/fridge-out actions overnight (1–4am) because nothing pulls feed
+  // times toward waking hours — the audit's dominant default-mode complaint.
+  // Night blockers are how the engine is designed to shape humane hours, so we
+  // enable them by default and surface them as a clearable toggle. Applied once,
+  // only when: sourdough, bake time set, not a restored session (which carries
+  // its own blocks), and the baker has no blockers yet. If the baker later
+  // clears nights, the ref keeps us from re-adding them.
+  const nightsDefaultApplied = useRef(false);
+  useEffect(() => {
+    if (!isSourdough || !eatTimeSet || sessionRestored) return;
+    if (nightsDefaultApplied.current) return;
+    if (nights.length === 0) return;
+    // Already has any blocker (from session/parent or a prior manual toggle) →
+    // respect it, don't override.
+    if (_effectiveBlocks.length > 0) { nightsDefaultApplied.current = true; return; }
+    nightsDefaultApplied.current = true;
+    const nightBlocks = nights.map(n => ({ from: n.blockStart, to: n.blockEnd, label: n.label }));
+    applyAndUpdate(nightBlocks);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSourdough, eatTimeSet, sessionRestored, nights]);
+
   // ── Phase transitions ────────────────────────
   function confirmBakeTime() {
     const dt = pickerDateTimeRef.current;
@@ -2273,6 +2295,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _sourdoughSweetTo: number | null = null;
     let _windowTooShort = false;
     let _suggestedBakeTime: Date | null = null;
+    let _farHorizonPlan = false;
     let _newPendingStart: Date = pendingStart;
     let _newFridgeOut: Date | null = fridgeOutTime;
     // Canonical fridge_in / fridge_out times for a non-Path-B fridge winner,
@@ -2440,6 +2463,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           return isFr
             ? 'Pas assez de temps avant la cuisson. Essayez une cuisson plus tardive.'
             : 'Not enough time before bake. Try a later bake time.';
+        }
+        if (_farHorizonPlan) {
+          return isFr
+            ? 'Cuisson lointaine — gardez votre levain sur son rythme habituel, puis faites ce rafraîchi de montée pour qu\'il pique au pétrissage.'
+            : 'Bake is far out — keep your starter on its usual feeding schedule, then do this build feed so it peaks at mix.';
         }
         if (_isFridgeHoldPath) {
           return isFr
@@ -3683,8 +3711,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             if (gapFromRefreshPeakH < -1 && gapFromRefreshPeakH >= -2) return -5;
             return -10 - Math.min(20, (Math.abs(gapFromRefreshPeakH) - 2) * 3);
           })();
-          // Convenience cost: prefer fewer feeds when scores otherwise tie.
-          const bridgeCost = nBridge * 2;
+          // Convenience cost: prefer fewer feeds. Raised from ×2 to ×8 so a
+          // 3-feed RT chain (nBridge≥1) doesn't edge out a cleaner 2-feed
+          // fridge-hold plan on marginal biology — stacking room-temp refreshes
+          // is not how bakers work for multi-day builds.
+          const bridgeCost = nBridge * 8;
           pushCand({
             mixHBF: mHBF3, peakHBF: mHBF3, feedMs: t3,
             usingPeak2: false, feed2Ms: t3,
@@ -3794,7 +3825,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             : kitchenTemp >= 30 ? 10
             : kitchenTemp >= 28 ? 6
             : 0;
-          const pathBBonus = 8 + rtRefreshesAvoided * 3 + hotBias;
+          // Multi-day retard bias: for any 2-day+ bake, a fridge retard is the
+          // industry-standard build (refresh → chill → pre-mix), simpler and
+          // better than stacking 2-3 room-temp refreshes. Below 28°C hotBias is
+          // 0, so without this a temperate 2-day plan picked a 3-feed RT bridge
+          // chain over the cleaner 2-feed fridge hold. Applies regardless of
+          // temperature; hot kitchens still get the extra hotBias on top.
+          const bakeHorizonH_pathB = (bakeMs - nowMs_pathB) / 3600000;
+          const multiDayBias = bakeHorizonH_pathB >= 30 ? 12 : 0;
+          const pathBBonus = 8 + rtRefreshesAvoided * 3 + hotBias + multiDayBias;
 
           // Coherence guard at the source: chronological ordering must hold —
           // refresh < fridge_in < fridge_out < pre-mix. Any malformed Path B
@@ -3839,8 +3878,43 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         buildAndSetResult();
         return;
       }
-      _hasFutureFeedPath = false;
-      _starterPillState  = 'yellow';
+      // Far-horizon fallback. The window is long enough (not too short) but no
+      // candidate survived — this happens for bakes several days out where the
+      // "refresh now" anchored candidates all fall outside their biological gap
+      // windows and Path B exceeds its fridge-hold ceiling. Rather than a bare
+      // yellow card with no plan, emit a simple build-feed plan: the baker keeps
+      // the starter on its normal schedule, then does ONE build feed timed so it
+      // peaks at an in-zone mix. Feed is snapped to waking hours and out of
+      // blockers so it's executable.
+      {
+        const sweetCenterH = (localSweetFrom + localSweetTo) / 2;
+        const idealMix = new Date(bakeMs - sweetCenterH * 3600000);
+        let buildFeed = new Date(idealMix.getTime() - adjPeakH * 3600000);
+        // Snap feed into 7am–10pm.
+        const snapHumane = (d: Date) => {
+          const h = d.getHours();
+          if (h < 7) d.setHours(7, 0, 0, 0);
+          else if (h > 22) { d.setHours(7, 0, 0, 0); d.setDate(d.getDate() + 1); }
+          return d;
+        };
+        buildFeed = snapHumane(buildFeed);
+        // Nudge out of blockers (bounded).
+        let guard = 0;
+        while (inBlockerMs(buildFeed.getTime()) && guard++ < 48) {
+          buildFeed = snapHumane(new Date(buildFeed.getTime() + 60 * 60000));
+        }
+        const buildPeak = new Date(buildFeed.getTime() + adjPeakH * 3600000);
+        const mix = new Date(buildPeak.getTime());
+        _newPendingStart = mix.getTime() > Date.now() ? mix : idealMix;
+        _feed2Time = buildFeed.getTime() > Date.now() ? buildFeed : null;
+        _hasFutureFeedPath = _feed2Time !== null;
+        const mixHBF_fb = (bakeMs - _newPendingStart.getTime()) / 3600000;
+        const inZone = mixHBF_fb >= localSweetTo && mixHBF_fb <= localSweetFrom;
+        _starterPillState = inZone && _feed2Time && !inBlockerMs(_feed2Time.getTime()) ? 'green' : 'yellow';
+        _farHorizonPlan = true;
+        if (_feed2Time) setRefeedSuggestion(_feed2Time);
+        onChange(_newPendingStart, et, blocks);
+      }
       buildAndSetResult();
       return;
     }
@@ -4315,7 +4389,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               const sc3 = combinedScore_r(mHBF3, mHBF3, t3, true);
               const ss3 = starterScore_r(mHBF3, mHBF3);
               if (ss3 === 0) continue;
-              const bridgeCost = nBridge * 2;
+              const bridgeCost = nBridge * 8;
               pushCand_r({
                 mixHBF: mHBF3, peakHBF: mHBF3, feedMs: t3,
                 usingPeak2: false, feed2Ms: t3,

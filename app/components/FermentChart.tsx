@@ -469,7 +469,10 @@ export default function FermentChart({
   // DOUGH_SWEET_CENTER = offset from mix to dough peak = coldH + rtH per style
   // Passed as sweetCenterH from SchedulePicker. Fallback: 26h cold, 6h RT.
   // When mixHBF = DOUGH_SWEET_CENTER → doughPeakHBF = 0 = bake (correct).
-  const DOUGH_SIG          = hasColdRetard ? 18 : Math.max(3, WH * 0.35);
+  // Clamp the RT-only sigma: WH * 0.35 grows with the window (up to ~42 on a
+  // 120h chart) which flattens the bell into an uninformative smear. Cap at 12
+  // so an RT dough bell keeps a readable peak on wide windows.
+  const DOUGH_SIG          = hasColdRetard ? 18 : Math.max(3, Math.min(12, WH * 0.35));
   // For sourdough RT-only (no cold retard), dough needs ~adjPeakH for the
   // levain to peak inside it. Non-sourdough RT-only uses 6h default.
   const DOUGH_SWEET_CENTER_NO_RETARD = isLevain && starterAdjPeakH
@@ -1553,59 +1556,81 @@ export default function FermentChart({
           fontFamily="DM Mono, monospace" textAnchor="middle">{t('bakeLabel')}</text>
 
         {/* ── Event-driven diamonds + labels (sourdough) ── */}
-        {useEventDrivenStarter && starterEvents.filter(ev => ev.kind !== 'fridge_out').map((ev, idx) => {
-          if (ev.kind === 'fridge_in') return null;
-          const hbf = (bakeMs - ev.time.getTime()) / 3600000;
-          if (hbf < 0 || hbf > WH) return null;
-          const x = hToX(hbf, W, WH);
-          const isFridgeOut = ev.kind === 'fridge_out';
-          const isHistorical = ev.kind === 'last_fed' && ev.isPast;
-          const isIntermediate = ev.kind === 'intermediate_refresh';
-          const diamondFill = isHistorical ? 'rgba(74,127,165,0.20)' :
-                              isIntermediate ? 'rgba(74,127,165,0.5)' :
-                              isFridgeOut ? 'rgba(140,200,230,0.5)' :
-                              ev.isActive ? prefColor : 'rgba(74,127,165,0.45)';
-          const diamondStroke = isHistorical ? 'rgba(74,127,165,0.45)' :
-                                isIntermediate ? '#4A7FA5' :
-                                isFridgeOut ? '#5A9DC9' :
-                                ev.isActive ? 'white' : 'rgba(74,127,165,0.75)';
-          const diamondSize = isIntermediate ? S * 0.7 : S;
-          const points = `${x},${AXIS_Y - diamondSize} ${x + diamondSize},${AXIS_Y} ${x},${AXIS_Y + diamondSize} ${x - diamondSize},${AXIS_Y}`;
+        {useEventDrivenStarter && (() => {
+          // Build the list of visible, rendered events first, then assign each
+          // label a stacking ROW based on actual x-proximity — not array-index
+          // parity. Index parity broke when fridge_out was filtered and
+          // fridge_in return-null'd mid-map (their idx still counted), so two
+          // close labels (e.g. Out-of-fridge + Pre-mix within ~1h) could land on
+          // the same row and overlap. Greedy placement: a label drops to the
+          // next row only if it sits within LABEL_MIN_DX of one already placed
+          // on that row. Mirrors the intermediate-refresh block's approach.
+          const LABEL_MIN_DX = 46;
+          const ROW_H = 14;
           const tickPositions = ticks.map(tk => tk.x);
-          const collidesWithTick = tickPositions.some(tx => Math.abs(x - tx) < 55);
-          const labelY = collidesWithTick ? AXIS_Y + S + 42 : AXIS_Y + S + 22;
-          // Parity stagger: adjacent diamond labels alternate rows to avoid crowding
-          // in week+ multi-feed plans (Refresh / Into fridge / Out of fridge).
-          const crowdOffset = (idx % 2 === 1) ? 14 : 0;
-          const finalLabelY = labelY + crowdOffset;
-          const labelFill = isHistorical ? 'var(--smoke)' :
-                            isIntermediate ? '#4A7FA5' :
-                            isFridgeOut ? '#5A9DC9' :
-                            ev.isActive ? prefColor : 'rgba(74,127,165,0.75)';
-          return (
-            <g key={`ev-diamond-${idx}`} pointerEvents={ev.isDraggable ? 'auto' : 'none'}>
-              <polygon
-                points={points}
-                fill={diamondFill}
-                stroke={diamondStroke}
-                strokeWidth={1.5}
-                style={{ cursor: ev.isDraggable ? 'pointer' : 'default' }}
-                onPointerDown={ev.isDraggable ? (e) => onPointerDown(e, 'pref') : undefined}
-              />
-              <text
-                x={x}
-                y={finalLabelY}
-                fontSize={10}
-                fill={labelFill}
-                fontFamily="DM Mono, monospace"
-                textAnchor="middle"
-                fontWeight={ev.isActive ? '600' : '500'}
-              >
-                {ev.label}
-              </text>
-            </g>
-          );
-        })}
+          const visible = starterEvents
+            .filter(ev => ev.kind !== 'fridge_out' && ev.kind !== 'fridge_in')
+            .map((ev, idx) => {
+              const hbf = (bakeMs - ev.time.getTime()) / 3600000;
+              if (hbf < 0 || hbf > WH) return null;
+              return { ev, idx, x: hToX(hbf, W, WH) };
+            })
+            .filter((v): v is { ev: StarterEvent; idx: number; x: number } => v !== null)
+            .sort((a, b) => a.x - b.x);
+          // Assign rows greedily left-to-right.
+          const placed: { x: number; row: number }[] = [];
+          const rowFor = (x: number): number => {
+            let row = 0;
+            // increase row until no already-placed label on that row is too close
+            // (bounded to 3 rows so labels never march too far down)
+            while (row < 3 && placed.some(p => p.row === row && Math.abs(p.x - x) < LABEL_MIN_DX)) {
+              row++;
+            }
+            placed.push({ x, row });
+            return row;
+          };
+          return visible.map(({ ev, idx, x }) => {
+            const isHistorical = ev.kind === 'last_fed' && ev.isPast;
+            const isIntermediate = ev.kind === 'intermediate_refresh';
+            const diamondFill = isHistorical ? 'rgba(74,127,165,0.20)' :
+                                isIntermediate ? 'rgba(74,127,165,0.5)' :
+                                ev.isActive ? prefColor : 'rgba(74,127,165,0.45)';
+            const diamondStroke = isHistorical ? 'rgba(74,127,165,0.45)' :
+                                  isIntermediate ? '#4A7FA5' :
+                                  ev.isActive ? 'white' : 'rgba(74,127,165,0.75)';
+            const diamondSize = isIntermediate ? S * 0.7 : S;
+            const points = `${x},${AXIS_Y - diamondSize} ${x + diamondSize},${AXIS_Y} ${x},${AXIS_Y + diamondSize} ${x - diamondSize},${AXIS_Y}`;
+            const collidesWithTick = tickPositions.some(tx => Math.abs(x - tx) < 55);
+            const baseLabelY = collidesWithTick ? AXIS_Y + S + 42 : AXIS_Y + S + 22;
+            const finalLabelY = baseLabelY + rowFor(x) * ROW_H;
+            const labelFill = isHistorical ? 'var(--smoke)' :
+                              isIntermediate ? '#4A7FA5' :
+                              ev.isActive ? prefColor : 'rgba(74,127,165,0.75)';
+            return (
+              <g key={`ev-diamond-${idx}`} pointerEvents={ev.isDraggable ? 'auto' : 'none'}>
+                <polygon
+                  points={points}
+                  fill={diamondFill}
+                  stroke={diamondStroke}
+                  strokeWidth={1.5}
+                  style={{ cursor: ev.isDraggable ? 'pointer' : 'default' }}
+                  onPointerDown={ev.isDraggable ? (e) => onPointerDown(e, 'pref') : undefined}
+                />
+                <text
+                  x={x}
+                  y={finalLabelY}
+                  fontSize={10}
+                  fill={labelFill}
+                  fontFamily="DM Mono, monospace"
+                  textAnchor="middle"
+                  fontWeight={ev.isActive ? '600' : '500'}
+                >
+                  {ev.label}
+                </text>
+              </g>
+            );
+          });
+        })()}
 
         {/* ── Historical feed diamond (muted, Feed 1 in Peak 2 scenario) ── */}
         {!useEventDrivenStarter && hasPref && isLevain && histPrefX !== null && (() => {
