@@ -1252,6 +1252,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // the input is no longer focused.
   const applyDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const applyRetriesRef = useRef(0);
+  // Solver-initiated parent notifications: guard against update loops.
+  // Fallback/far-horizon solver paths call onChange mid-solve; if the parent
+  // re-renders with fresh array/Date identities the sourdough effect re-runs
+  // the solver, which notifies again → React #185 (observed with a week+
+  // revival starter + next-morning bake). Skip identical values and damp
+  // runaway repeats within a tick window.
+  const lastSolverNotifyRef = useRef<{ s: number; e: number } | null>(null);
+  const solverNotifyBudgetRef = useRef<{ t: number; n: number }>({ t: 0, n: 0 });
+  function notifyFromSolver(start: Date, et: Date, blks: AvailabilityBlock[]) {
+    const s = start.getTime(), e = et.getTime();
+    if (lastSolverNotifyRef.current && lastSolverNotifyRef.current.s === s && lastSolverNotifyRef.current.e === e) return;
+    const now = Date.now();
+    if (now - solverNotifyBudgetRef.current.t > 500) solverNotifyBudgetRef.current = { t: now, n: 0 };
+    if (++solverNotifyBudgetRef.current.n > 4) return;
+    lastSolverNotifyRef.current = { s, e };
+    onChange(start, et, blks);
+  }
   const [pickerDateTime, setPickerDateTime] = useState<string>(() => {
     if (alreadySet && eatTime) {
       const d = eatTime;
@@ -1721,7 +1738,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setRecommendedHBF(result.mixHBF);
       setShowFallbackPopup(false);
       setPendingStart(newStart);
-      onChange(newStart, et, currentBlocks);
+      notifyFromSolver(newStart, et, currentBlocks);
       setDismissedConflict(true);
       if (hasPrefActive) {
         setPrefOffsetH(result.prefHBF - result.mixHBF);
@@ -3975,7 +3992,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         _starterPillState = inZone && _feed2Time && !inBlockerMs(_feed2Time.getTime()) ? 'green' : 'yellow';
         _farHorizonPlan = true;
         if (_feed2Time) setRefeedSuggestion(_feed2Time);
-        onChange(_newPendingStart, et, blocks);
+        notifyFromSolver(_newPendingStart, et, blocks);
       }
       buildAndSetResult();
       return;
@@ -4063,7 +4080,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Solver still found best starter protocol for this position.
     const newMix = manualMixOverride ?? new Date(bakeMs - best.mixHBF * 3600000);
     _newPendingStart = newMix;
-    onChange(newMix, et, blocks);
+    notifyFromSolver(newMix, et, blocks);
 
     // Use the candidate's HONEST fridge-out time (mix = fridgeOut + rtToPeakH),
     // not mix − warmupH. The old recompute moved fridgeOut later than the
