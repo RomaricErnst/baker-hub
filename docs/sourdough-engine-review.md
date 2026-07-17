@@ -1,0 +1,9 @@
+# Sourdough Engine — Deep Review (July 17, 2026)
+
+## The end game (restated)
+
+Give a busy baker a pragmatic, executable plan built from three inputs: the state of their starter (where it lives, when it was last fed, how it behaves), when they want to bake, and when they are actually free. Keep it simple on the surface, mimic best practice underneath, and use tricks like feed-ratio changes to hit the sweet spot when time is awkward.
+
+## How the engine works today (plain language)
+
+The solver derives the starter's biological state from last-feed time, location, maturity, rye, and feed ratio, then generates every plan a good baker would consider: use the coming peak directly (Peak 1), wait for the trough and refeed (Peak 2A), refeed right now (Peak 2B), schedule a future feed timed so the starter peaks exactly at mix, refresh now then bridge with 1–2 extra feeds for long horizons, hold the starter in the fridge between refresh and pre-mix for 2+ day plans (Path B), and fridge-removal scans for cold starters. Every candidate carries a canonical list of its baker-action timestamps, computed once at generation time; the blocker validator and the chart/card renderer read that same list, so what gets scored is exactly what gets drawn. Scoring is tiered: starter-at-peak and dough-in-zone are worth 100 points each and always dominate; cold-retard length, tang preference, and feed-hour comfort only break ties between biologically equal plans. A second stage re-evaluates the whole plan at every feed ratio (1:1 → 1:10) and recommends a ratio change when it clears blockers the current ratio can't, or scores meaningfully better — this

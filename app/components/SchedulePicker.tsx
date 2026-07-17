@@ -2232,7 +2232,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         fridgeSuggestion: null,
         starterIsDepletedAt: troughTime,
         starterRefeedTime: refeedNow,
-        starterStateNote: 'Depleted — needs feeding. Schedule below assumes you feed it now.',
+        starterStateNote: locale === 'fr'
+          ? 'Épuisé — à nourrir. Le plan ci-dessous suppose un rafraîchi maintenant.'
+          : 'Depleted — needs feeding. Schedule below assumes you feed it now.',
         adjPeakH,
       };
     }
@@ -3170,9 +3172,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // Capped so a full starter-score tier (100 pts) always dominates —
       // tang only breaks ties between candidates the starter is equally happy with.
       const tangW = tang === 'balanced' ? 0 : 12;
+      // Mix-hour comfort ×2: the baker must be PRESENT to mix, so the mix hour
+      // matters on every path — including Peak 1, where the old reasonableHour
+      // constant (always 1 for sourdough) let a 3am Start Dough cost nothing.
+      // Weight 2 (max ±16) breaks ties between biologically-equal candidates
+      // without ever overriding a starter/dough score tier (100 pts each).
+      const mixComfort = feedComfort(bakeMs - mixHBF * 3600000);
       return (ss + ds) * 100
         + retardBonus(mixHBF) * (retardW + tangW)
-        + reasonableHour(mixHBF) * 5
+        + mixComfort * 2
         + feedComfort(comfortMs) * 3;
     }
 
@@ -4125,9 +4133,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const retardW = ss >= 2 ? 8 : 3;
           const comfortMs = usesMixForComfort ? (bakeMs - mixHBF * 3600000) : feedMs;
           const tangW = tang === 'balanced' ? 0 : 12;
+          // Mirror main combinedScore: mix-hour comfort ×2 on every path
+          const mixComfort = feedComfort(bakeMs - mixHBF * 3600000);
           return (ss + ds) * 100
             + retardBonus(mixHBF) * (retardW + tangW)
-            + reasonableHour(mixHBF) * 5
+            + mixComfort * 2
             + feedComfort(comfortMs) * 3;
         };
 
