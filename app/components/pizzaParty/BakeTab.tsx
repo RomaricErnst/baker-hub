@@ -7,6 +7,7 @@ import { createClient } from '@/app/lib/supabase/client';
 import { uploadPhoto, ALLOWED_MIME_TYPES } from '@/app/lib/photoUpload';
 import type { User } from '@supabase/supabase-js';
 import { useRef } from 'react';
+import PizzaPlaceholder from '../PizzaPlaceholder';
 
 // Word units need a space and a FR translation — raw join produced "5leaves".
 const UNIT_LABELS: Record<string, { en: string; fr: string }> = {
@@ -643,6 +644,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 }}
               >
                 <div style={{ height: '160px', background: '#1A1612', overflow: 'hidden', position: 'relative' }}>
+                  {pizza.id.startsWith('custom_') ? (
+                    <PizzaPlaceholder name={pizza.name[l]} size="card" />
+                  ) : (
                   <img
                     src={getImageSrc(pizza.id)}
                     alt=""
@@ -652,6 +656,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                       transition: 'filter 0.25s ease, opacity 0.25s ease' }}
                     onError={e => handleImageError(e, pizza.id)}
                   />
+                  )}
                   {(() => {
                     const baked = bakedCount;
                     if (baked === 0) return null;
@@ -781,12 +786,16 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
 
               {/* Hero image */}
               <div style={{ width: '100%', height: '180px', background: '#1A1612', overflow: 'hidden' }}>
+                {pizza.id.startsWith('custom_') ? (
+                  <PizzaPlaceholder name={pizza.name[l]} size="hero" />
+                ) : (
                 <img
                   src={getImageSrc(pizza.id)}
                   alt=""
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                   onError={e => handleImageError(e, pizza.id)}
                 />
+                )}
               </div>
 
               {/* Assembly note */}

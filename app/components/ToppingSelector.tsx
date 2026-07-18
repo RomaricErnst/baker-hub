@@ -12,6 +12,7 @@ import {
   type ComplexityTier, type RegionTag, type IngredientCategory,
 } from '../lib/toppingDatabase';
 import CreatePizzaSheet from './CreatePizzaSheet';
+import PizzaPlaceholder from './PizzaPlaceholder';
 import type { Locale, FlavorChip } from '../lib/toppingTypes';
 
 // ─── Ingredient chips ─────────────────────────────────────────
@@ -389,6 +390,9 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
       <div style={{ display: 'flex', gap: '8px', padding: '6px 10px 6px' }}>
         {/* Left: image spanning all rows */}
         <div style={{ width: '80px', height: '80px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, background: '#1A1612' }}>
+          {pizza.id.startsWith('custom_') ? (
+            <PizzaPlaceholder name={name} size="thumb" />
+          ) : (
           <img
             src={(() => {
               const variantMap: Record<string, string> = {
@@ -410,6 +414,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
               img.src = `/pizzas/${pizza.id}.webp`;
             }}
           />
+          )}
         </div>
         {/* Right: 3 rows */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
