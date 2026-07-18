@@ -1197,8 +1197,24 @@ export default function Home() {
       }
       const stylePool = bt === 'bread' ? BREAD_STYLES : PIZZA_STYLES;
       const prefStyle = (bt === 'bread' ? prof.styleKeyBread : prof.styleKeyPizza) ?? prof.styleKey;
+      let appliedStyle = false;
       if (prefStyle && prefStyle in stylePool) {
-        setStyleKey(prefStyle as StyleKey); applied = true;
+        setStyleKey(prefStyle as StyleKey); applied = true; appliedStyle = true;
+        // Same per-style defaults a manual pick applies via selectStyle —
+        // a prefilled Neapolitan must weigh like a Neapolitan.
+        const sk = prefStyle as StyleKey;
+        setManualHydration(undefined);
+        setManualOil(oilDefault(sk));
+        setManualSugar(sugarDefault(sk));
+        setNumItems(STYLE_BALL_DEFAULTS[sk] ?? (bt === 'bread' ? 1 : 4));
+        if (STYLE_HAS_DIAMETER.includes(sk)) {
+          const d = STYLE_DEFAULT_DIAMETER[sk] ?? 30;
+          setPizzaDiameter(d);
+          setPizzaCorn(1);
+          setItemWeight(pizzaWeightFromTable(sk, d, 1));
+        } else {
+          setItemWeight(ALL_STYLES[sk].ballW);
+        }
       }
       if (prof.mixerType && prof.mixerType in MIXER_TYPES) {
         setMixerType(prof.mixerType as MixerType); applied = true;
@@ -1214,6 +1230,13 @@ export default function Home() {
         setTang(prof.starter.tang);
       }
       if (applied) setProfilePrefilled(true);
+      // Style already answered by the profile — open on Quantity & Size
+      // instead of asking to re-confirm a choice the baker already made.
+      // The style card stays visible as a collapsed summary (Change).
+      if (appliedStyle) {
+        setActiveStep(2); setHighestStep(2);
+        setAdvancedStep(2); setAdvancedHighestStep(2);
+      }
     }
   }
 
@@ -1254,7 +1277,17 @@ export default function Home() {
   }
 
   function advance(from: number) {
-    const next = from + 1;
+    // Steps already answered (profile prefill) don't need re-validating —
+    // hop past them to the next one that still needs input. Only the
+    // value-backed steps are skippable: 3 oven, 5 mixer, 6 yeast. Quantity
+    // (2), climate (4) and the scheduler (7) always deserve a stop, and
+    // every skipped step stays editable as a collapsed summary.
+    let next = from + 1;
+    while (
+      (next === 3 && ovenType != null) ||
+      (next === 5 && mixerType != null) ||
+      (next === 6 && yeastType != null)
+    ) next++;
     const target = next > highestStep ? next : highestStep;
     setHighestStep(target);
     setActiveStep(target);
@@ -1974,6 +2007,11 @@ export default function Home() {
                     }}
                     style={{
                       flex: 1,
+                      // Cards must be allowed to shrink below their
+                      // content's min width — nowrap pill/subtitle rows
+                      // otherwise push the whole page wider than the
+                      // viewport on phones (their rows clip instead).
+                      minWidth: 0,
                       display: 'flex',
                       flexDirection: 'column',
                       border: tab === m.key ? '2px solid var(--terra)' : '0.5px solid var(--border)',
