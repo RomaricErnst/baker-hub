@@ -14,6 +14,7 @@ function formatQty(amount: number, unit: IngredientUnit, locale: string): string
     sprigs: { en: 'sprigs',  fr: 'brins' },
     tbsp:   { en: 'tbsp',    fr: 'càs' },
     pinch:  { en: 'pinches', fr: 'pincées' },
+    drizzle:{ en: 'drizzles', fr: 'filets' },
   };
   const label = unitLabels[unit]?.[locale as 'en' | 'fr'] ?? unit;
   return `${Math.round(amount)} ${label}`;

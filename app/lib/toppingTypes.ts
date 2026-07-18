@@ -110,6 +110,7 @@ export type IngredientUnit =
   | 'sprigs' // herb sprigs (thyme, rosemary)
   | 'tbsp'   // tablespoons (capers, honey, oil)
   | 'pinch'  // pinch (oregano, pepper, salt)
+  | 'drizzle' // finishing drizzle (olive oil, caramel)
 
 export type IngredientQty = {
   amount: number

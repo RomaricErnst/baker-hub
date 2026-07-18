@@ -531,9 +531,13 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
 
   function handleImageError(e: React.SyntheticEvent<HTMLImageElement>, pizzaId: string) {
     const img = e.target as HTMLImageElement;
-    if (!img.src.endsWith(`${pizzaId}.webp`)) {
-      img.src = `/pizzas/${pizzaId}.webp`;
+    if (img.src.endsWith(`${pizzaId}_pan.webp`)) { img.style.display = 'none'; return; }
+    if (img.src.endsWith(`${pizzaId}.webp`)) {
+      // Some pizzas only ship a _pan visual (Detroit, Chicago, cheeseburger)
+      img.src = `/pizzas/${pizzaId}_pan.webp`;
+      return;
     }
+    img.src = `/pizzas/${pizzaId}.webp`;
   }
 
   function getBeforeLabel(): string {

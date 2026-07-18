@@ -403,7 +403,12 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
             })()}
             alt={name}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            onError={e => {
+              const img = e.target as HTMLImageElement;
+              if (img.src.endsWith(`${pizza.id}_pan.webp`)) { img.style.display = 'none'; return; }
+              if (img.src.endsWith(`${pizza.id}.webp`)) { img.src = `/pizzas/${pizza.id}_pan.webp`; return; }
+              img.src = `/pizzas/${pizza.id}.webp`;
+            }}
           />
         </div>
         {/* Right: 3 rows */}
@@ -707,6 +712,7 @@ function formatQty(total: number, unit: string, locale: string): string {
     sprigs: { en: 'sprigs',  fr: 'brins' },
     tbsp:   { en: 'tbsp',    fr: 'càs' },
     pinch:  { en: 'pinches', fr: 'pincées' },
+    drizzle:{ en: 'drizzles', fr: 'filets' },
   };
   const label = unitLabels[unit]?.[l] ?? unit;
   return `${total} ${label}`;
