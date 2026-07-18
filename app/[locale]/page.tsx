@@ -1159,7 +1159,10 @@ export default function Home() {
     setActiveStep(target);
     setTimeout(() => {
       if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
-      const el = document.getElementById(`step-${target}`);
+      // Scroll to the NEXT section, not `target`: in a generated session
+      // highestStep is 99, step-99 doesn't exist and the baker saw nothing
+      // happen after picking a value. `next` is always a real section.
+      const el = document.getElementById(`step-${next}`);
       if (el) {
         const top = el.getBoundingClientRect().top + window.scrollY - 70;
         // Instant scroll — smooth scrolling kept options moving under the
@@ -1176,7 +1179,10 @@ export default function Home() {
     setAdvancedStep(target);
     setTimeout(() => {
       if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
-      const el = document.getElementById(`adv-step-${target}`);
+      // Scroll to the NEXT section, not `target`: in a generated session
+      // highestStep is 99, step-99 doesn't exist and the baker saw nothing
+      // happen after picking a value. `next` is always a real section.
+      const el = document.getElementById(`adv-step-${next}`);
       if (el) {
         const top = el.getBoundingClientRect().top + window.scrollY - 70;
         // Instant scroll — smooth scrolling kept options moving under the
