@@ -703,10 +703,10 @@ export default function ShareCard({
       <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
         {/* Live preview — exact scaled render of export canvas */}
-        <div style={{ position: 'relative', width: '100%', minHeight: '160px', borderRadius: '12px', overflow: 'hidden', background: '#1A1612' }}>
+        <div style={{ position: 'relative', width: '100%', minHeight: '160px', borderRadius: '12px', overflow: 'hidden', background: '#1A1612', display: 'flex', justifyContent: 'center' }}>
           <canvas
             ref={previewCanvasRef}
-            style={{ width: '100%', display: 'block', borderRadius: '12px' }}
+            style={{ maxWidth: '100%', maxHeight: '56vh', width: 'auto', height: 'auto', display: 'block', borderRadius: '12px' }}
           />
           {previewLoading && (
             <div style={{
@@ -821,7 +821,14 @@ export default function ShareCard({
               ] as const).map(([key, lbl]) => (
                 <button
                   key={key}
-                  onClick={() => setFormat(key)}
+                  onClick={() => {
+                    setFormat(key);
+                    // Smart default — free to override: story favours 4 (or 1)
+                    // photos, square favours 2, post favours 2 (or 1).
+                    const n = allPhotos.length;
+                    if (key === 'story') setTemplate(n >= 4 ? 'four' : 'full');
+                    else setTemplate(n >= 2 ? 'two' : 'full');
+                  }}
                   style={{
                     flex: 1, padding: '8px 6px', borderRadius: '20px',
                     border: format === key ? '1.5px solid var(--gold)' : '1px solid var(--border)',

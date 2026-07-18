@@ -770,7 +770,12 @@ export default function BakeGuide({
   // Mix STARTS before bulk fermentation — header and Mix step previously used
   // bulkFermStart, so the Guide disagreed with the Recipe timeline by the
   // mixing duration (16:15 vs 16:00 / 25h45 vs 26h).
-  const bgMixStart  = new Date(schedule.bulkFermStart.getTime() - (schedule.mixingDurationH ?? 0.25) * 3600000);
+  const bgMixStart  = (() => {
+    const raw = new Date(schedule.bulkFermStart.getTime() - (schedule.mixingDurationH ?? 0.25) * 3600000);
+    // Snap down to the quarter-hour grid — 19:46 is engine precision, not baker time
+    raw.setMinutes(Math.floor(raw.getMinutes() / 15) * 15, 0, 0);
+    return raw;
+  })();
   const bgPoolishG  = recipe?.preferment
     ? Math.round((recipe.preferment.prefFlour ?? 0) + (recipe.preferment.prefWater ?? 0) + (recipe.preferment.prefYeastGrams ?? 0))
     : null;
@@ -816,7 +821,10 @@ export default function BakeGuide({
           {_isFr ? 'Guide de cuisson pas à pas' : 'Step-by-step bake guide'}
         </div>
         <div style={{ fontSize: '.75rem', color: D.smoke, fontFamily: 'var(--font-dm-mono)', marginTop: '.2rem' }}>
-          {formatTime(bgMixStart, _fmtLocale)} → {formatTime(schedule.bakeStart, _fmtLocale)} · {hoursLabel((schedule.bakeStart.getTime() - bgMixStart.getTime()) / 3600000)} {_isFr ? 'au total' : 'total'}
+          {(() => {
+            const rangeStart = hasPref && prefStartTime && prefStartTime < bgMixStart ? prefStartTime : bgMixStart;
+            return <>{formatTime(rangeStart, _fmtLocale)} → {formatTime(schedule.bakeStart, _fmtLocale)} · {hoursLabel((schedule.bakeStart.getTime() - rangeStart.getTime()) / 3600000)} {_isFr ? 'au total' : 'total'}</>;
+          })()}
         </div>
       </div>
 
