@@ -514,6 +514,51 @@ const CONTENT: Record<string, LocaleContent> = {
         ),
       },
       {
+        title: 'Créneaux d’indisponibilité',
+        body: (
+          <>
+            <P>Les modes Simple et Avancé respectent tous deux vos heures bloquées. Marquez les créneaux où vous n’êtes pas disponible — heures de travail, nuit, ou toute période personnalisée — et le planificateur construit le plan autour.</P>
+            <P>En mode Simple, le planning évite de placer des étapes pendant vos créneaux bloqués. En mode Avancé, le moteur de recherche exclut ces heures des candidats pour le départ du préferment comme pour le pétrissage.</P>
+            <p style={{ margin: 0, ...bodyText }}>Une exception pratique : la <strong style={{ color: CHAR }}>fermentation en masse</strong> (le pointage initial après pétrissage) peut commencer jusqu’à 30 minutes avant un créneau bloqué. La pâte se retarde d’elle-même au frigo une fois que vous partez — inutile d’être là quand le pointage se termine.</p>
+          </>
+        ),
+      },
+      {
+        title: 'Comment les moteurs s’enchaînent',
+        body: (
+          <>
+            <P>Les moteurs de Baker Hub forment une chaîne où chaque sortie alimente la suivante.</P>
+            <P><strong style={{ color: CHAR }}>Le style et le four</strong> définissent le plan de fermentation — durée cible de pousse froide, fenêtre à température ambiante, hydratation de base. <strong style={{ color: CHAR }}>La force de la farine</strong> (valeur W) ajuste ce plan — une farine plus forte tolère une fermentation plus longue et profite de plus de froid. <strong style={{ color: CHAR }}>La température de la cuisine</strong> détermine la vitesse de fermentation et comprime ou étend la fenêtre utilisable.</P>
+            <P>Ces contraintes posées, le <strong style={{ color: CHAR }}>planificateur</strong> trouve la meilleure heure de pétrissage compte tenu de votre disponibilité réelle, avec les heures exactes de fermentation ambiante et froide. Le <strong style={{ color: CHAR }}>moteur de levure</strong> reçoit ces heures et calcule la quantité précise — la levure est toujours une sortie, jamais une entrée. Enfin, l’<strong style={{ color: CHAR }}>hydratation</strong> se superpose : base du style, type de four, climat, absorption de la farine — chaque facteur indépendant et vérifiable.</P>
+            <p style={{ margin: 0, ...bodyText }}>Modifiez n’importe quelle entrée et tout ce qui suit se recalcule automatiquement.</p>
+          </>
+        ),
+      },
+      {
+        title: 'Style & four',
+        body: (
+          <>
+            <P>Chaque style porte un plan de fermentation. La napolitaine vise 24 h de pousse froide + 2 h à température ambiante avant cuisson. La baguette vise 12 h de froid + 2 h TA. Les styles romain et pan sont purement TA — pas de pousse froide. Ces cibles reflètent le développement du gluten, les composés aromatiques et la texture que chaque style exige.</P>
+            <P>Le four façonne la recette indépendamment. Un four à pizza à 400–500 °C préfère une pâte un peu plus sèche (−2 % d’hydratation), sans huile ni sucre — la chaleur intense caramélise naturellement. Un four domestique avec pierre profite de +3 % ; un four domestique standard de +4 % ; une poêle en fonte de +6 %. Baker Hub applique ces corrections automatiquement ; chacune est modifiable en mode Avancé.</P>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Le préchauffage</strong> compte aussi pour le planning. Un four à bois demande 45–60 minutes de préchauffe en fin de planning — le planificateur l’exclut de la fenêtre de fermentation disponible.</p>
+          </>
+        ),
+      },
+      {
+        title: 'Climat & température de la cuisine',
+        body: (
+          <>
+            <P>La température de la cuisine est la variable la plus sensible de la fermentation. 5 °C d’écart doublent ou divisent par deux la vitesse. Baker Hub recalcule chaque seuil dynamiquement.</P>
+            <BulletList items={[
+              <>Dans une <strong style={{color:CHAR}}>cuisine tropicale</strong> (≥28 °C), le moteur applique une recalibration complète : pointage minimum raccourci (30 min contre 90 min en climat tempéré), fenêtres TA compressées, correction de levure renforcée. Au-delà de 30 °C, un facteur tropical supplémentaire s’applique.</>,
+              <>Le pic du <strong style={{color:CHAR}}>poolish TA</strong> passe de ~13 h à 18 °C à ~5 h à 30 °C — la fenêtre utilisable se réduit fortement en cuisine chaude.</>,
+              <>La <strong style={{color:CHAR}}>température du frigo</strong> compte aussi. La formule de pousse froide inclut une correction Q10 : <Code>Q10 = 2^((tempFrigo − 4) / 10)</Code>. Un frigo à 6 °C (typique) est légèrement plus actif qu’à 4 °C — un peu moins de levure. À 2 °C, un peu plus. Toute température de frigo est gérée correctement.</>,
+              <>Pour l’<strong style={{color:CHAR}}>hydratation</strong> : cuisine chaude (≥28 °C) ou très humide : −2 % — une correction de manipulation, pas de fermentation. Cuisine froide (≤18 °C) : +2 %.</>,
+            ]} />
+          </>
+        ),
+      },
+      {
         title: 'Pizza Party — de la pâte à la table',
         body: (
           <>
@@ -695,6 +740,41 @@ const CONTENT: Record<string, LocaleContent> = {
               "Tolérance blocker : la fermentation bulk peut commencer jusqu'à 30min avant un blocker — la pâte se retarde seule quand vous partez.",
             ]} />
             <p style={{ margin: '14px 0 0', ...bodyText }}>Deux boulangers avec la même recette mais des plannings, cuisines et farines différents obtiennent des quantités de levure différentes et des timings recommandés différents. C'est tout l'intérêt.</p>
+          </>
+        ),
+      },
+      {
+        title: 'Lire le graphique de fermentation',
+        body: (
+          <>
+            <P>Le graphique du mode Avancé est une visualisation en direct de la qualité — pas un planning, mais une image de la proximité de chaque étape avec son optimum biologique.</P>
+            <div style={{ margin: '16px 0', borderRadius: '10px', background: 'rgba(26,22,18,0.03)', padding: '16px' }}>
+              <svg viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto' }}>
+                <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(212,168,83,0.25)" stroke="#D4A853" strokeWidth="1.5" />
+                <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Poolish TA</text>
+                <text x="85" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">pic étroit</text>
+                <path d="M 155 120 Q 175 120 185 114 Q 195 105 198 90 Q 200 70 202 55 L 218 55 Q 220 70 222 90 Q 225 105 235 114 Q 245 120 265 120 Z" fill="rgba(212,168,83,0.25)" stroke="#D4A853" strokeWidth="1.5" />
+                <line x1="202" y1="55" x2="218" y2="55" stroke="#D4A853" strokeWidth="1.5" />
+                <text x="210" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Poolish frigo</text>
+                <text x="210" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">large plateau</text>
+                <line x1="202" y1="48" x2="218" y2="48" stroke="#D4A853" strokeWidth="1" strokeDasharray="2,2" />
+                <text x="210" y="46" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="7" fill="#D4A853">plateau</text>
+                <path d="M 285 120 Q 295 120 300 115 Q 305 108 308 95 Q 310 80 312 65 L 330 65 Q 332 80 334 95 Q 337 108 342 115 Q 350 120 390 120 Z" fill="rgba(107,122,90,0.2)" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
+                <line x1="312" y1="65" x2="330" y2="65" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
+                <text x="335" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Pâte</text>
+                <text x="335" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">pic à la cuisson</text>
+                <rect x="279" y="113" width="8" height="8" transform="rotate(45 283 117)" fill="#D4A853" />
+                <text x="283" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#D4A853">pétrissage ◆</text>
+                <polygon points="390,120 386,108 394,108" fill="#C4522A" />
+                <text x="388" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#C4522A">cuisson ▲</text>
+                <line x1="30" y1="120" x2="400" y2="120" stroke="#E8E0D5" strokeWidth="1" />
+                <text x="215" y="138" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#8A7F78">← plus tôt ——————— temps ——————— cuisson →</text>
+              </svg>
+            </div>
+            <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Deux courbes, deux histoires.</strong> La courbe dorée est le préferment (poolish ou biga) — elle doit culminer au pétrissage (◆ doré). La courbe vert-gris est la pâte finale — elle doit culminer à la cuisson (▲ rouge). Quand les deux s’alignent, vous obtenez le meilleur résultat possible de votre planning.</p>
+            <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Les formes reflètent la biologie.</strong> La fermentation TA produit une cloche haute et étroite — la levure culmine vite et décline vite ; une petite erreur de timing a un grand effet. La pousse froide produit un large plateau — biologie plus lente, fenêtre bien plus large. C’est pourquoi le froid est préféré : il pardonne.</p>
+            <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Les pastilles de statut.</strong> 🟢 Prêt = sur le plateau. 🟡 En développement = proche du pic, utilisable mais pas optimal. Quand aucune fenêtre de préferment viable n’existe, la courbe dorée disparaît — la carte recommande la pâte directe.</p>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Interagissez avec le graphique.</strong> Glissez le losange doré pour ajuster le départ du préferment, le losange vert pour l’heure de pétrissage. Les deux courbes se mettent à jour en temps réel. <em>Revenir à la recommandation</em> replace tout à l’optimum calculé.</p>
           </>
         ),
       },
