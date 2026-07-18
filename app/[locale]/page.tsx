@@ -4,7 +4,8 @@ import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import Header from '../components/Header';
 import ProfileSheet from '../components/ProfileSheet';
-import { loadProfile } from '../lib/profile';
+import { loadProfile, setProfileListener } from '../lib/profile';
+import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import StylePicker from '../components/StylePicker';
 import OvenPicker from '../components/OvenPicker';
 import MixerPicker from '../components/MixerPicker';
@@ -526,12 +527,27 @@ export default function Home() {
   // Auth state
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    let syncTimer: ReturnType<typeof setTimeout> | null = null;
+    let uid: string | null = null;
+    const armPush = () => {
+      if (!uid) return;
+      if (syncTimer) clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => { if (uid) void pushProfile(uid); }, 1500);
+    };
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      uid = data.user?.id ?? null;
+      if (uid) void pullAndMergeProfile(uid);
+    });
+    setProfileListener(armPush);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      const newUid = session?.user?.id ?? null;
+      if (newUid && newUid !== uid) void pullAndMergeProfile(newUid);
+      uid = newUid;
       setProtocolStale(false);
     });
-    return () => subscription.unsubscribe();
+    return () => { subscription.unsubscribe(); setProfileListener(null); if (syncTimer) clearTimeout(syncTimer); };
   }, []);
 
   // Welcome back — hydrate full wizard state from localStorage on mount

@@ -55,7 +55,13 @@ export interface BakerProfile {
     work: StandardBlocker;
   };
   customPizzas?: CustomPizzaDef[];
+  /** last local change, ms — drives newest-wins sync */
+  updatedAt?: number;
 }
+
+// Change listener — page registers a debounced Supabase push here.
+let profileListener: (() => void) | null = null;
+export function setProfileListener(fn: (() => void) | null): void { profileListener = fn; }
 
 export const DEFAULT_BLOCKERS = {
   sleep: { enabled: false, from: '23:00', to: '07:00' },
@@ -73,9 +79,11 @@ export function loadProfile(): BakerProfile | null {
   } catch { return null; }
 }
 
-export function saveProfile(p: BakerProfile): void {
+export function saveProfile(p: BakerProfile, opts?: { silent?: boolean }): void {
   if (typeof window === 'undefined') return;
-  try { localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...p, version: 1 })); } catch {}
+  const stamped = { ...p, version: 1 as const, updatedAt: opts?.silent ? p.updatedAt : Date.now() };
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(stamped)); } catch {}
+  if (!opts?.silent) profileListener?.();
 }
 
 export function updateProfile(patch: Partial<BakerProfile>): BakerProfile {
