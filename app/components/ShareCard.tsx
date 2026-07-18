@@ -78,6 +78,14 @@ export default function ShareCard({
   ovenType, mixerType, manualOil, manualSugar, yeastType, yeastGrams, bakeDate, protocolLines, onClose,
 }: ShareCardProps) {
   const l = locale === 'fr' ? 'fr' : 'en';
+  // "Caputo Nuvola" reads as a mystery word off-app — say flour/farine
+  // unless the name already does, or it's a % blend (already technical).
+  // Guards against "Bread Flour flour".
+  const flourShareLine = flourLine
+    ? (/(flour|farine|blend|%)/i.test(flourLine)
+        ? flourLine
+        : l === 'fr' ? `Farine ${flourLine}` : `${flourLine} flour`)
+    : null;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -227,7 +235,7 @@ export default function ShareCard({
 
   const bodyLineCount = [
     true,                    // specLine always
-    flourLine,               // optional
+    flourShareLine,          // optional
     weightsLine,             // always
     true,                    // timingLine always
     gearLine,                // optional
@@ -289,7 +297,7 @@ export default function ShareCard({
         customTitle,
         '',
         specLine,
-        ...(flourLine ? [flourLine] : []),
+        ...(flourShareLine ? [flourShareLine] : []),
         ...(weightsLine ? [weightsLine] : []),
         timingLine,
         ...(gearLine ? [gearLine] : []),
@@ -374,7 +382,7 @@ export default function ShareCard({
         : [
             customTitle, '',
             specLine,
-            ...(flourLine ? [flourLine] : []),
+            ...(flourShareLine ? [flourShareLine] : []),
             ...(weightsLine ? [weightsLine] : []),
             timingLine,
             ...(gearLine ? [gearLine] : []),
@@ -658,7 +666,7 @@ export default function ShareCard({
     }
 
     drawBodyLine(specLine, 0.85);
-    if (flourLine) drawBodyLine(flourLine, 0.60);
+    if (flourShareLine) drawBodyLine(flourShareLine, 0.60);
     if (weightsLine) drawBodyLine(weightsLine, 0.85);
     drawBodyLine(timingLine, 0.70);
     if (gearLine) drawBodyLine(gearLine, 0.70);
