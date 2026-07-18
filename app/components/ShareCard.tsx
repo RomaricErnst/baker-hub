@@ -283,7 +283,13 @@ export default function ShareCard({
   }, [customTitle, bakerName, specLine, weightsLine, timingLine, template, protocolLines]);
 
   // Re-render preview canvas whenever any input changes
-  useEffect(() => {
+  // Content-derived key: arrays like protocolLines are rebuilt every render;
+  // depending on their identity made the effect cancel itself in a loop
+  // (permanent 'Aperçu en cours…', stale canvas). Serialise once instead.
+  const previewKey = JSON.stringify([template, format, selectedPhotoUrls, photoCrops, customTitle,
+    bakerName, editableCaption, protocolLines, specLine, flourLine, weightsLine, timingLine,
+    gearLine, pizzaDisplayLines, bakeDate]);
+    useEffect(() => {
     let cancelled = false;
     const run = async () => {
       setPreviewLoading(true);
@@ -319,8 +325,7 @@ export default function ShareCard({
     run();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [template, format, selectedPhotoUrls, photoCrops, customTitle, bakerName, editableCaption, protocolLines,
-      specLine, flourLine, weightsLine, timingLine, gearLine, pizzaDisplayLines, bakeDate]);
+  }, [previewKey]);
 
   // ── Canvas draw ──
   async function drawCard(): Promise<HTMLCanvasElement | null> {
