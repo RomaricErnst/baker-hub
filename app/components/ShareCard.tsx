@@ -329,8 +329,11 @@ export default function ShareCard({
 
   // ── Canvas draw ──
   async function drawCard(): Promise<HTMLCanvasElement | null> {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
+    // Off-DOM canvas: the hidden ref canvas mounts AFTER the preview effect's
+    // first run, so drawing into it returned null on open and — with the
+    // stable previewKey no longer thrashing retries — the preview stayed a
+    // default 300x150. An owned canvas has no mount-order race.
+    const canvas = canvasRef.current ?? document.createElement('canvas');
     const ctxOrNull = canvas.getContext('2d');
     if (!ctxOrNull) return null;
     const ctx = ctxOrNull;
