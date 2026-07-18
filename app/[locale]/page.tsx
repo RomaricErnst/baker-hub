@@ -529,11 +529,25 @@ export default function Home() {
     const supabase = createClient();
     let syncTimer: ReturnType<typeof setTimeout> | null = null;
     let uid: string | null = null;
+    let dirty = false;
+    // 10s debounce lets a baker set every preference in one sitting → one
+    // write; the visibility/pagehide flush below guarantees nothing is lost
+    // when the app is backgrounded or closed before the timer fires.
     const armPush = () => {
       if (!uid) return;
+      dirty = true;
       if (syncTimer) clearTimeout(syncTimer);
-      syncTimer = setTimeout(() => { if (uid) void pushProfile(uid); }, 1500);
+      syncTimer = setTimeout(() => { if (uid) { dirty = false; void pushProfile(uid); } }, 10000);
     };
+    const flush = () => {
+      if (!uid || !dirty) return;
+      if (syncTimer) clearTimeout(syncTimer);
+      dirty = false;
+      void pushProfile(uid);
+    };
+    const onVis = () => { if (document.visibilityState === 'hidden') flush(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', flush);
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       uid = data.user?.id ?? null;
@@ -547,7 +561,12 @@ export default function Home() {
       uid = newUid;
       setProtocolStale(false);
     });
-    return () => { subscription.unsubscribe(); setProfileListener(null); if (syncTimer) clearTimeout(syncTimer); };
+    return () => {
+      subscription.unsubscribe(); setProfileListener(null);
+      if (syncTimer) clearTimeout(syncTimer);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', flush);
+    };
   }, []);
 
   // Welcome back — hydrate full wizard state from localStorage on mount
