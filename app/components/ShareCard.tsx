@@ -290,23 +290,31 @@ export default function ShareCard({
       try { await document.fonts.ready; } catch { /* ok */ }
       await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       if (cancelled) return;
-      const canvas = await drawCard();
-      if (cancelled || !canvas || !previewCanvasRef.current) return;
-      const preview = previewCanvasRef.current;
-      const w = preview.clientWidth || preview.parentElement?.clientWidth || 300;
-      const scale = w / canvas.width;
-      preview.width = w;
-      preview.height = Math.round(canvas.height * scale);
-      // Explicit CSS height — without it the preview container can collapse
-      // to 0px (overflow:hidden parent) and the live preview is never visible.
-      preview.style.height = `${Math.round(canvas.height * scale)}px`;
-      const ctx = preview.getContext('2d');
-      if (!ctx) return;
-      ctx.save();
-      ctx.scale(scale, scale);
-      ctx.drawImage(canvas, 0, 0);
-      ctx.restore();
-      setPreviewLoading(false);
+      try {
+        const canvas = await drawCard();
+        if (cancelled || !canvas || !previewCanvasRef.current) return;
+        const preview = previewCanvasRef.current;
+        const boxW = preview.parentElement?.clientWidth || 300;
+        const boxH = Math.round(window.innerHeight * 0.52);
+        // Contain-fit: the preview is always the export's exact aspect ratio,
+        // scaled down — a Story card previews tall, a Post card previews 4:5.
+        const scale = Math.min(boxW / canvas.width, boxH / canvas.height);
+        const dw = Math.round(canvas.width * scale);
+        const dh = Math.round(canvas.height * scale);
+        preview.width = dw; preview.height = dh;
+        preview.style.width = `${dw}px`;
+        preview.style.height = `${dh}px`;
+        const ctx = preview.getContext('2d');
+        if (!ctx) return;
+        ctx.save();
+        ctx.scale(scale, scale);
+        ctx.drawImage(canvas, 0, 0);
+        ctx.restore();
+      } catch (e) {
+        console.error('Preview render failed:', e);
+      } finally {
+        if (!cancelled) setPreviewLoading(false);
+      }
     };
     run();
     return () => { cancelled = true; };
@@ -446,6 +454,7 @@ export default function ShareCard({
 
     const imgCache = imgCacheRef.current;
     async function loadImg(url: string): Promise<HTMLImageElement | null> {
+      try {
       const cached = imgCache.get(url);
       if (cached) return cached;
       try {
@@ -457,7 +466,8 @@ export default function ShareCard({
           img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(null); };
           img.src = blobUrl;
         });
-      } catch { return null; }
+        } catch { return null; }
+    } catch { return null; }
     }
 
     function drawCover(img: HTMLImageElement, x: number, y: number, w: number, h: number, anchor: 'center' | 'top' | 'bottom' = 'center') {
@@ -706,7 +716,7 @@ export default function ShareCard({
         <div style={{ position: 'relative', width: '100%', minHeight: '160px', borderRadius: '12px', overflow: 'hidden', background: '#1A1612', display: 'flex', justifyContent: 'center' }}>
           <canvas
             ref={previewCanvasRef}
-            style={{ maxWidth: '100%', maxHeight: '56vh', width: 'auto', height: 'auto', display: 'block', borderRadius: '12px' }}
+            style={{ display: 'block', borderRadius: '12px' }}
           />
           {previewLoading && (
             <div style={{
