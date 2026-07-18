@@ -137,10 +137,11 @@ const FALLBACK_ZONE = { min: 50, classicMin: 60, classicMax: 70, advancedMax: 78
 // ── Step jump chips (review mode) ─────────────
 // The filled setup accordion is ~6 screens tall on mobile; this compact
 // sticky row lets a returning baker jump straight to any step.
-function StepJumpChips({ steps, idPrefix, topOffset = 62 }: { steps: { n: number; label: string }[]; idPrefix: string; topOffset?: number }) {
+function StepJumpChips({ steps, idPrefix, topOffset = 62, raised = false }: { steps: { n: number; label: string }[]; idPrefix: string; topOffset?: number; raised?: boolean }) {
   return (
     <div style={{
-      position: 'sticky', top: `${topOffset}px`, zIndex: 30,
+      position: 'sticky', top: raised ? '0px' : `${topOffset}px`, zIndex: 30,
+      transition: 'top 0.25s ease',
       display: 'flex', gap: '6px', overflowX: 'auto',
       padding: '8px 4px', margin: '0 -4px 4px',
       background: 'var(--cream)',
@@ -1756,7 +1757,7 @@ export default function Home() {
                       </span>
                       </div>
                     {/* Personality subtitle */}
-                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '10.5px', fontStyle: 'italic', color: 'var(--smoke)', margin: '1px 0 8px' }}>
+                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '9.5px', fontStyle: 'italic', color: 'var(--smoke)', margin: '1px 0 8px', whiteSpace: 'nowrap', overflow: 'hidden', letterSpacing: '-0.01em' }}>
                       {m.subtitle}
                     </div>
                     {/* Mode signature visual — the instrument you'll meet inside */}
@@ -1859,6 +1860,7 @@ export default function Home() {
             {/* ── Nav #3: step jump chips (review mode) ── */}
             {reviewMode && (
               <StepJumpChips
+                raised={navHidden}
                 topOffset={bakeType === 'pizza' ? 97 : 62}
                 idPrefix="step"
                 steps={[
@@ -2562,6 +2564,7 @@ export default function Home() {
             {/* ── Nav #3: step jump chips (review mode) ── */}
             {reviewMode && (
               <StepJumpChips
+                raised={navHidden}
                 topOffset={bakeType === 'pizza' ? 97 : 62}
                 idPrefix="adv-step"
                 steps={[

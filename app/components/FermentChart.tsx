@@ -68,6 +68,7 @@ const TOP_PAD   = 72;   // space above curves for window labels
 const BL        = 175;  // baseline = TOP_PAD + curve height area
 const MAXH      = 110;  // max bell height (fits within TOP_PAD to BL)
 const AXIS_Y    = 175;  // axis line = same as baseline BL
+const BLOCKER_TOP = BL - MAXH - 8; // blocker columns cap a touch above the tallest bell
 
 // DOUGH_SIG and DOUGH_SWEET_CENTER are computed inside the component
 // based on hasColdRetard — see derived physics section
@@ -689,6 +690,11 @@ export default function FermentChart({
 
   // ── Label collision detection ────────────────────────────
   const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 100;
+  // Keep centred diamond labels fully inside the canvas (12px mono ≈ 7.2px/char)
+  const clampLabelX = (x: number, text: string, fs = 12) => {
+    const half = text.length * fs * 0.3 + 4;
+    return Math.min(Math.max(x, half), W - half);
+  };
   const allClose = isLevain && histPrefX !== null
     && Math.abs((histPrefX ?? 0) - activePrefX) < 80
     && Math.abs(activePrefX - mixX) < 80;
@@ -991,7 +997,7 @@ export default function FermentChart({
             const x2 = hToX(hbfEnd,   W, WH);
             return (
               <clipPath key={i} id={`bc-${chartId}-${i}`}>
-                <rect x={x1} y={TOP_PAD} width={Math.max(0, x2 - x1)} height={AXIS_Y - TOP_PAD} />
+                <rect x={x1} y={BLOCKER_TOP} width={Math.max(0, x2 - x1)} height={AXIS_Y - BLOCKER_TOP} />
               </clipPath>
             );
           })}
@@ -1066,19 +1072,19 @@ export default function FermentChart({
           const n = Math.ceil((x2 - x1 + AXIS_Y) / 7) + 2;
           return (
             <g key={i}>
-              <rect x={x1} y={TOP_PAD} width={x2 - x1} height={AXIS_Y - TOP_PAD} fill="rgba(196,82,42,0.09)" />
+              <rect x={x1} y={BLOCKER_TOP} width={x2 - x1} height={AXIS_Y - BLOCKER_TOP} fill="rgba(196,82,42,0.09)" />
               <g clipPath={`url(#bc-${chartId}-${i})`}>
                 {Array.from({ length: n }, (_, j) => {
                   const ox = x1 + j * 7 - AXIS_Y;
                   return (
                     <line key={j}
-                      x1={ox} y1={TOP_PAD} x2={ox + AXIS_Y} y2={AXIS_Y}
+                      x1={ox} y1={BLOCKER_TOP} x2={ox + AXIS_Y} y2={AXIS_Y}
                       stroke="rgba(196,82,42,0.16)" strokeWidth={1}
                     />
                   );
                 })}
               </g>
-              <line x1={x1} y1={TOP_PAD} x2={x2} y2={TOP_PAD}
+              <line x1={x1} y1={BLOCKER_TOP} x2={x2} y2={BLOCKER_TOP}
                 stroke="rgba(196,82,42,0.5)" strokeWidth={2.5} />
             </g>
           );
@@ -1945,7 +1951,7 @@ export default function FermentChart({
         {hasPref && !knownPeakHBF && !isLevain && (
           <>
             <text
-              x={activePrefX}
+              x={clampLabelX(activePrefX, prefermentType === 'biga' ? t('cardLabels.makeBiga') : t('cardLabels.makePoolish'))}
               y={allClose ? AXIS_Y + 20 : labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
               fontSize={12}
               fill={prefColor}
@@ -1963,7 +1969,7 @@ export default function FermentChart({
             </text>
             {/* Protocol indicator — ❄ Fridge or 🌡 RT */}
             <text
-              x={activePrefX}
+              x={clampLabelX(activePrefX, '❄ Fridge', 10)}
               y={allClose ? AXIS_Y + 34 : labelsClose ? AXIS_Y + 64 : AXIS_Y + 50}
               fontSize={10}
               fill={prefNeedsFridge ? '#6A8FAF' : '#C4A030'}
@@ -1992,7 +1998,7 @@ export default function FermentChart({
         )}
         {/* ── Mix label ── */}
         <text
-          x={mixX} y={allClose ? AXIS_Y + 52 : labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
+          x={clampLabelX(mixX, isFr ? 'Pétrissage' : 'Start Dough')} y={allClose ? AXIS_Y + 52 : AXIS_Y + 36}
           fontSize={12} fill="#3D5A30"
           fontFamily="DM Mono, monospace"
           textAnchor="middle" fontWeight="600"
