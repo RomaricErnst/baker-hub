@@ -66,8 +66,15 @@
     "subtitle": "Planifiez vos pâtes à pizza & pain autour de votre emploi du temps — on gère le minutage."
   },
   "modeCards": {
+    "details": "+ de détails",
+    "hide": "− masquer",
     "simple": {
       "title": "Simple",
+      "subtitle": "« Je veux que ça marche »",
+      "barStart": "ven 18h30",
+      "barMid": "frigo",
+      "barEnd": "sam 19h",
+      "microLabel": "VOTRE PLANNING, EN QUELQUES ÉTAPES",
       "bullet1": "",
       "bullet2": "",
       "bullet3": "",
@@ -76,11 +83,13 @@
     },
     "custom": {
       "title": "Avancé",
+      "subtitle": "« Je veux tout contrôler »",
+      "chips": "65 % | °C | préferments & farines",
       "bullet1": "",
       "bullet2": "",
       "bullet3": "",
       "bullet4": "",
-      "collapsed": "· Votre farine & hydratation | · Préferment & levain | · Graphique de fermentation"
+      "collapsed": "· Votre farine & hydratation | · Poolish, biga ou levain | · Graphique de fermentation"
     }
   },
   "steps": {

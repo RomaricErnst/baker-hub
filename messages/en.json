@@ -66,8 +66,15 @@
     "subtitle": "Plan pizza & bread dough around your real schedule — we handle the timing."
   },
   "modeCards": {
+    "details": "+ details",
+    "hide": "− hide",
     "simple": {
       "title": "Simple",
+      "subtitle": "“I just want it to work”",
+      "barStart": "Fri 6:30 PM",
+      "barMid": "fridge",
+      "barEnd": "Sat 7 PM",
+      "microLabel": "YOUR PLAN, IN A FEW STEPS",
       "bullet1": "",
       "bullet2": "",
       "bullet3": "",
@@ -76,11 +83,13 @@
     },
     "custom": {
       "title": "Custom",
+      "subtitle": "“I want full control”",
+      "chips": "65% | °C | preferments & flours",
       "bullet1": "",
       "bullet2": "",
       "bullet3": "",
       "bullet4": "",
-      "collapsed": "· Flour blend & hydration | · Preferment & sourdough | · Fermentation graph"
+      "collapsed": "· Flour blend & hydration | · Poolish, biga or levain | · Fermentation graph"
     }
   },
   "steps": {

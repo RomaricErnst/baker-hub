@@ -503,6 +503,9 @@ export default function Home() {
   // M2 — Mode chosen: false on page load, true after baker selects a mode
   const [modeChosen, setModeChosen] = useState(false);
 
+  // Mode cards — per-card "+ details" expander (visual-first redesign)
+  const [modeDetailsOpen, setModeDetailsOpen] = useState<{ simple: boolean; custom: boolean }>({ simple: false, custom: false });
+
   // Custom mode — fermentation plan recommended
   const [scheduleReady, setScheduleReady] = useState(false);
 
@@ -1609,10 +1612,10 @@ export default function Home() {
             <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '14px', padding: '12px' }}>
 
               {/* Simple / Custom toggle */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: bakeType === 'pizza' ? '12px' : '0' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: bakeType === 'pizza' ? '12px' : '0' }}>
                 {([
-                  { key: 'simple' as const, title: t('modeCards.simple.title'), collapsed: t('modeCards.simple.collapsed') },
-                  { key: 'custom' as const, title: t('modeCards.custom.title'), collapsed: t('modeCards.custom.collapsed') },
+                  { key: 'simple' as const, title: t('modeCards.simple.title'), subtitle: t('modeCards.simple.subtitle'), collapsed: t('modeCards.simple.collapsed') },
+                  { key: 'custom' as const, title: t('modeCards.custom.title'), subtitle: t('modeCards.custom.subtitle'), collapsed: t('modeCards.custom.collapsed') },
                 ]).map(m => (
                   <div
                     key={m.key}
@@ -1665,16 +1668,68 @@ export default function Home() {
                       transition: 'all 0.15s',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 700, color: 'var(--char)' }}>
                         {m.title}
                       </span>
                       </div>
-                    <div style={{ fontSize: '11px', color: 'var(--smoke)', lineHeight: 1.7 }}>
-                      {m.collapsed.split('|').map((line, i) => (
-                        <div key={i}>{line.trim()}</div>
-                      ))}
+                    {/* Personality subtitle */}
+                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '10.5px', fontStyle: 'italic', color: 'var(--smoke)', margin: '1px 0 8px' }}>
+                      {m.subtitle}
                     </div>
+                    {/* Mode signature visual — the instrument you'll meet inside */}
+                    {m.key === 'simple' ? (
+                      <div>
+                        <div style={{ display: 'flex', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                          <span style={{ flex: 2, background: '#8BA888' }} />
+                          <span style={{ flex: 3, background: '#A8B8D0' }} />
+                          <span style={{ flex: 1.4, background: '#D4A853' }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-mono)', fontSize: '8.5px', color: 'var(--smoke)', marginTop: '4px' }}>
+                          <span>{t('modeCards.simple.barStart')}</span>
+                          <span>{t('modeCards.simple.barMid')}</span>
+                          <span>{t('modeCards.simple.barEnd')}</span>
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8.5px', letterSpacing: '0.04em', color: 'var(--smoke)', marginTop: '6px' }}>
+                          {t('modeCards.simple.microLabel')}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <svg viewBox="0 0 130 42" style={{ width: '100%', height: '34px', display: 'block' }} preserveAspectRatio="none" aria-hidden="true">
+                          <line x1="4" y1="34" x2="126" y2="34" stroke="#E8E0D5" strokeWidth="1.5" />
+                          <path d="M6 34 C24 34 28 8 40 8 C52 8 56 34 74 34" fill="none" stroke="#A8B8D0" strokeWidth="2" strokeLinecap="round" />
+                          <path d="M52 34 C72 34 76 12 88 12 C100 12 104 34 122 34" fill="none" stroke="#8BA888" strokeWidth="2" strokeLinecap="round" />
+                          {/* Diamond on the baseline — the draggable time marker, as in the real chart */}
+                          <polygon points="52,29.5 56.5,34 52,38.5 47.5,34" fill="#D4A853" stroke="#FDFBF7" strokeWidth="1" />
+                        </svg>
+                        <div style={{ display: 'flex', gap: '4px', marginTop: '6px', flexWrap: 'wrap' }}>
+                          {t('modeCards.custom.chips').split('|').map((c, i) => (
+                            <span key={i} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: 'var(--ash)', border: '1px solid var(--border)', borderRadius: '20px', padding: '2px 7px', background: 'rgba(26,22,18,0.03)', whiteSpace: 'nowrap' }}>
+                              {c.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Expandable details — the previous bullets */}
+                    {modeDetailsOpen[m.key] && (
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', lineHeight: 1.7, marginTop: '8px', borderTop: '1px dashed var(--border)', paddingTop: '7px' }}>
+                        {m.collapsed.split('|').map((line, i) => (
+                          <div key={i}>{line.trim()}</div>
+                        ))}
+                      </div>
+                    )}
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        setModeDetailsOpen(prev => ({ ...prev, [m.key]: !prev[m.key] }));
+                      }}
+                      onKeyDown={e => e.stopPropagation()}
+                      style={{ marginTop: '7px', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)', textDecoration: 'underline', textUnderlineOffset: '2px' }}
+                    >
+                      {modeDetailsOpen[m.key] ? t('modeCards.hide') : t('modeCards.details')}
+                    </button>
                   </div>
                 ))}
               </div>
