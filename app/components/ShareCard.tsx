@@ -112,6 +112,15 @@ export default function ShareCard({
     );
   }, []);
   const [previewLoading, setPreviewLoading] = useState(true);
+  // ≥720px: two-column sheet — sticky preview left, controls right
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 720px)');
+    const on = () => setWide(mq.matches);
+    on();
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
   // Decoded-image cache — without it every redraw re-fetches all photos from
   // Supabase, leaving black photo slots for seconds on each edit.
   const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
@@ -753,11 +762,25 @@ export default function ShareCard({
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '18px', padding: '4px' }}>✕</button>
       </div>
 
-      {/* Scrollable body */}
-      <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Scrollable body — single column on phones, preview left + sticky
+          on ≥720px so the card stays in view while editing */}
+      <div style={{
+        overflowY: 'auto', flex: 1, padding: '16px 20px 24px',
+        display: wide ? 'grid' : 'flex',
+        ...(wide
+          ? { gridTemplateColumns: 'minmax(280px, 44%) 1fr', columnGap: '24px', alignItems: 'start' }
+          : { flexDirection: 'column' as const, gap: '20px' }),
+      }}>
 
-        {/* Live preview — exact scaled render of export canvas */}
-        <div style={{ position: 'relative', width: '100%', minHeight: '160px', borderRadius: '12px', overflow: 'hidden', background: '#1A1612', display: 'flex', justifyContent: 'center' }}>
+        {/* Live preview — exact scaled render of export canvas. The dark
+            frame hugs the card (fit-content): no unused side gutters, its
+            width always matches the chosen format. */}
+        <div style={wide ? { position: 'sticky' as const, top: 0 } : undefined}>
+          <div style={{
+            position: 'relative', width: 'fit-content', maxWidth: '100%',
+            margin: '0 auto', minWidth: '140px', minHeight: '140px',
+            borderRadius: '12px', overflow: 'hidden', background: '#1A1612',
+          }}>
           <canvas
             ref={previewCanvasRef}
             style={{
@@ -767,7 +790,7 @@ export default function ShareCard({
               // before the first draw lands. Protocol cards have a dynamic
               // height, so they use the canvas's intrinsic ratio instead.
               width: 'auto', height: 'auto',
-              maxWidth: '100%', maxHeight: '52vh',
+              maxWidth: '100%', maxHeight: '62vh',
               ...(template !== 'protocol'
                 ? { aspectRatio: `1080 / ${EXPORT_H}` }
                 : {}),
@@ -784,7 +807,11 @@ export default function ShareCard({
               {l === 'fr' ? 'Aperçu en cours…' : 'Rendering preview…'}
             </div>
           )}
+          </div>
         </div>
+
+        {/* Controls column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
 
         {/* Editable fields */}
         <div>
@@ -906,6 +933,17 @@ export default function ShareCard({
                   {lbl}
                 </button>
               ))}
+            </div>
+            {/* Why the layout just changed — the size picks a suggested
+                photo count; the templates above remain free to override */}
+            <div style={{
+              fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+              color: 'var(--smoke)', opacity: 0.6, marginTop: '6px',
+              lineHeight: 1.5,
+            }}>
+              {l === 'fr'
+                ? 'Chaque format suggère sa mise en page — Story 4 photos, Post & Carré 2. Modifiable au-dessus.'
+                : 'Each size suggests a layout — Story favours 4 photos, Post & Square 2. Change it above.'}
             </div>
           </div>
         )}
@@ -1068,6 +1106,8 @@ export default function ShareCard({
             {copied ? (l === 'fr' ? 'Copié ! ✓' : 'Copied! ✓') : (l === 'fr' ? 'Copier la légende' : 'Copy caption')}
           </button>
         </div>
+
+        </div>{/* /Controls column */}
 
       </div>
 
