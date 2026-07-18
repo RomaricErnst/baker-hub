@@ -367,7 +367,7 @@ const CONTENT: Record<string, LocaleContent> = {
           body: (
             <>
               <P>Baker Hub's fermentation engine is built on two validated sources: Craig's empirical yeast formula (developed by the pizzamaking.com community) and Modernist Pizza Vol. 4 (Myhrvold et al.) — the most comprehensive empirical fermentation dataset available in print.</P>
-              <P>The formulas compute <strong style={{color:CHAR}}>IDY%</strong> — Instant Dry Yeast (IDY) as a percentage of flour weight. Baker Hub supports IDY, fresh yeast, and active dry yeast (ADY); each is converted from IDY using validated ratios (fresh yeast = IDY × 3, ADY = IDY × 1.25).</P>
+              <P>The formulas compute <strong style={{color:CHAR}}>IDY%</strong> — Instant Dry Yeast (IDY) as a percentage of flour weight. Baker Hub supports IDY, fresh yeast, and active dry yeast (ADY); each is converted from IDY using validated ratios (fresh yeast = IDY × 3, ADY = IDY × 1.33).</P>
               <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Room-temperature (RT) fermentation</strong></p>
               <p style={{ marginBottom: '14px' }}><Code>IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))</Code></p>
               <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Cold retard fermentation</strong></p>
@@ -403,7 +403,7 @@ const CONTENT: Record<string, LocaleContent> = {
               <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Water temperature — DDT method</strong></p>
               <p style={{ marginBottom: '10px' }}><Code>Water temp = (Target FDT × 3) − flour temp − kitchen temp − friction</Code></p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
-                {['Spiral +7°C', 'Stand +4°C', 'By hand +1°C', 'No-knead 0°C'].map(l => (
+                {['Spiral +8°C', 'Stand +5°C', 'By hand +1°C', 'No-knead 0°C'].map(l => (
                   <span key={l} style={{ ...monoSm, padding: '3px 10px', borderRadius: '20px', background: 'rgba(26,22,18,0.06)' }}>{l}</span>
                 ))}
               </div>
@@ -431,18 +431,23 @@ const CONTENT: Record<string, LocaleContent> = {
           body: (
             <>
               <P>The Pizza Party feature is built around one idea: once you've planned your dough, the rest of the evening should plan itself too.</P>
-              <P><strong style={{ color: CHAR }}>212 curated recipes.</strong> Baker Hub's pizza database covers 200 savoury pizzas and 12 dessert finales — each handpicked, not generated. Organised by tradition, occasion, taste, and dietary need.</P>
+              <P><strong style={{ color: CHAR }}>156 curated recipes.</strong> Baker Hub's pizza database covers 144 savoury pizzas and 12 dessert finales — each handpicked, not generated. Organised by tradition, occasion, taste, and dietary need.</P>
               <P><strong style={{ color: CHAR }}>Scaling.</strong> Select your pizzas, set your guest count, and Baker Hub scales every topping quantity automatically — with waste percentage and serving size per pizza factored in.</P>
               <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Bake tracking.</strong> The Bake tab tracks what's been fired and what's next. Maestro can assess each pizza as it comes out of the oven.</p>
             </>
           ),
         },
         {
-          title: 'Share your bakes',
+          title: 'Sessions — save, resume, rebake, share',
           body: (
             <>
-              <P>Baker Hub lets you share your session — recipe, schedule, and pizza selections — as a card you can post or send to friends. If you make something you're proud of, we'd love to see it.</P>
-              <p style={{ margin: 0, ...bodyText }}>Tag <strong style={{ color: CHAR }}>@bakerhub</strong> and <strong style={{ color: CHAR }}>#BakerHub</strong>.</p>
+              <P>Sign in (magic link or Google) and every bake becomes a <strong style={{ color: CHAR }}>session</strong> you can return to. Your full setup is saved — dough, schedule, starter state, pizza selections, and photos of the result.</P>
+              <BulletList items={[
+                <><strong style={{color:CHAR}}>Resume</strong> — reopen a session exactly where you left it, on the tab you were using. Not signed in? Your current session is still kept on this device.</>,
+                <><strong style={{color:CHAR}}>Rebake</strong> — one tap clones a past success onto the next matching weekday and time, with your whole schedule and blocked hours shifted along. Bakers repeat their wins.</>,
+                <><strong style={{color:CHAR}}>Photos</strong> — attach photos of each bake to build your own baking log over time.</>,
+                <><strong style={{color:CHAR}}>Share</strong> — export any session as a card (post, square, or story format) with your recipe, schedule, and photos. Tag <strong style={{color:CHAR}}>@bakerhub</strong> and <strong style={{color:CHAR}}>#BakerHub</strong> — if you make something you're proud of, we'd love to see it.</>,
+              ]} />
             </>
           ),
         },
@@ -499,11 +504,12 @@ const CONTENT: Record<string, LocaleContent> = {
         ),
       },
       {
-        title: 'Partagez vos fournées',
+        title: 'Mode Simple ou mode Avancé',
         body: (
           <>
-            <P>Baker Hub vous permet de partager votre session — recette, planning et sélections de pizzas — sous forme de carte à publier sur Instagram ou à envoyer à des amis. Si vous faites quelque chose dont vous êtes fier, nous serions ravis de le voir.</P>
-            <p style={{ margin: 0, ...bodyText }}>Taguez <strong style={{ color: CHAR }}>@bakerhub</strong> et <strong style={{ color: CHAR }}>#BakerHub</strong>.</p>
+            <P>Baker Hub propose deux modes, au choix au début de chaque session.</P>
+            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Mode Simple</strong> — guidé de bout en bout. Vous choisissez un style (napolitaine, baguette, pizza pan...), un four, une température de cuisine et une heure de cuisson. Baker Hub complète le reste : farine standard pour le style, hydratation de base, préferment recommandé automatiquement. Le résultat est un planning étape par étape — pétrissage, pointage, pousse froide, boulage, apprêt, cuisson.</p>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Mode Avancé</strong> — toutes les variables exposées. Choisissez votre farine exacte (ou un mélange de deux farines), entrez la température de votre frigo, changez le type de préferment, ajustez l'hydratation, saisissez la valeur W manuellement. Le planificateur cherche activement la meilleure heure de pétrissage et affiche un graphique de fermentation en direct. Le même moteur scientifique tourne dans les deux modes — l'Avancé expose simplement toutes ses entrées.</p>
           </>
         ),
       },
@@ -512,7 +518,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>La fonction Pizza Party est construite autour d'une idée simple : une fois que vous avez planifié votre pâte, le reste de la soirée devrait s'organiser tout seul.</P>
-            <P><strong style={{ color: CHAR }}>212 recettes sélectionnées.</strong> La base de données pizzas de Baker Hub couvre 200 pizzas salées et 12 desserts — chacun choisi à la main, pas généré. Organisés par tradition, occasion, goût et régime alimentaire pour trouver la bonne pizza au bon moment.</P>
+            <P><strong style={{ color: CHAR }}>156 recettes sélectionnées.</strong> La base de données pizzas de Baker Hub couvre 144 pizzas salées et 12 desserts — chacun choisi à la main, pas généré. Organisés par tradition, occasion, goût et régime alimentaire pour trouver la bonne pizza au bon moment.</P>
             <div style={{
               background: 'rgba(212,168,83,0.06)', borderLeft: `2px solid ${GOLD}`,
               borderRadius: '8px', padding: '12px', marginBottom: '12px',
@@ -603,7 +609,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <p style={{ marginBottom: '14px' }}><Code>IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))</Code></p>
             <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation en pousse froide</strong></p>
             <p style={{ marginBottom: '6px' }}><Code>IDY% = 7.5 / hours^1.313 ÷ Q10(fridgeTemp)</Code></p>
-            <P>où Q10 = 2^((tempFrigo−4)/10). Un réfrigérateur plus chaud est plus actif — le moteur tient compte de votre température réelle de réfrigérateur en mode Custom. Par défaut : 4 °C.</P>
+            <P>où Q10 = 2^((tempFrigo−4)/10). Un réfrigérateur plus chaud est plus actif — le moteur tient compte de votre température réelle de réfrigérateur en mode Custom. Par défaut : 6 °C (frigo domestique typique).</P>
             <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Mixte TA + froid</strong></p>
             <P>Une combinaison pondérée par l'activité où chaque phase est pondérée selon sa contribution à la fermentation. Validé par rapport aux tables de pâte en vrac de Modernist Pizza ; concordance entre 0 et 11 %.</P>
             <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Conversion du type de levure</strong></p>
@@ -656,7 +662,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Température de l'eau — méthode DDT</strong></p>
             <p style={{ marginBottom: '10px' }}><Code>Water temp = (Target FDT × 3) − flour temp − kitchen temp − friction</Code></p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
-              {['Spirale +7 °C', 'Robot +4 °C', 'À la main +1 °C', 'Sans pétrissage 0 °C'].map(l => (
+              {['Spirale +8 °C', 'Robot +5 °C', 'À la main +1 °C', 'Sans pétrissage 0 °C'].map(l => (
                 <span key={l} style={{ ...monoSm, padding: '3px 10px', borderRadius: '20px', background: 'rgba(26,22,18,0.06)' }}>{l}</span>
               ))}
             </div>
@@ -728,6 +734,20 @@ const CONTENT: Record<string, LocaleContent> = {
               "Effets de l'altitude sur la fermentation",
               "Effets de la dureté et de la teneur minérale de l'eau sur la levure",
               "Variation de masse thermique entre modèles spécifiques de fours domestiques",
+            ]} />
+          </>
+        ),
+      },
+      {
+        title: 'Sessions — sauvegarder, reprendre, refaire, partager',
+        body: (
+          <>
+            <P>Connectez-vous (lien magique ou Google) et chaque fournée devient une <strong style={{ color: CHAR }}>session</strong> à laquelle vous pouvez revenir. Toute votre configuration est sauvegardée — pâte, planning, état du levain, sélections de pizzas, et photos du résultat.</P>
+            <BulletList items={[
+              <><strong style={{color:CHAR}}>Reprendre</strong> — rouvrez une session exactement là où vous l'aviez laissée, sur l'onglet que vous utilisiez. Pas connecté ? Votre session en cours reste conservée sur cet appareil.</>,
+              <><strong style={{color:CHAR}}>Refaire</strong> — un tap clone une fournée réussie sur le prochain jour et horaire équivalents, avec tout le planning et vos créneaux bloqués décalés d'autant. Les boulangers refont leurs succès.</>,
+              <><strong style={{color:CHAR}}>Photos</strong> — ajoutez des photos de chaque fournée et construisez votre journal de boulange au fil du temps.</>,
+              <><strong style={{color:CHAR}}>Partager</strong> — exportez une session en carte (format post, carré ou story) avec recette, planning et photos. Taguez <strong style={{color:CHAR}}>@bakerhub</strong> et <strong style={{color:CHAR}}>#BakerHub</strong> — si vous faites quelque chose dont vous êtes fier, nous serions ravis de le voir.</>,
             ]} />
           </>
         ),

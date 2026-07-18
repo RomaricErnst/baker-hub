@@ -2438,9 +2438,14 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
           {/* Right: Dessert CTA when threshold reached */}
           {(() => {
-            const showDessert = doughConfigured
-              ? totalQty >= Math.ceil(numItems * 2 / 3) && totalQty < numItems && totalQty >= 3
-              : totalQty >= 3;
+            // Visible from ~2/3 of the party onward, and STAYS once the mains
+            // are complete — "mains sorted, now dessert?" is the natural moment.
+            // Hides only when a dessert is already picked.
+            const dessertSelected = Object.entries(qtys).some(([id, q]) =>
+              (q as number) > 0 && DESSERT_PIZZAS.some(dp => dp.id === id));
+            const showDessert = !dessertSelected && (doughConfigured
+              ? totalQty >= Math.min(numItems, Math.max(2, Math.ceil(numItems * 2 / 3)))
+              : totalQty >= 3);
             if (!showDessert) return null;
             return (
               <button

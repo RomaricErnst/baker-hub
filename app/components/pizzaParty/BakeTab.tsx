@@ -488,12 +488,16 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', padding: '16px' }}>
           {selectedEntries.map(({ pizza, qty }) => {
+            const bakedCount = doneCounts[pizza.id] ?? 0;
+            // Lightly muted when done — still clearly visible, since real
+            // parties rebake favourites beyond the plan.
+            const cardDone = qty > 0 && bakedCount >= qty;
             return (
               <div
                 key={pizza.id}
                 onClick={() => setSheetPizzaId(pizza.id)}
                 style={{
-                  border: '1px solid var(--border)',
+                  border: cardDone ? '1px solid rgba(107,122,90,0.45)' : '1px solid var(--border)',
                   borderRadius: '14px',
                   overflow: 'hidden',
                   cursor: 'pointer',
@@ -504,11 +508,14 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   <img
                     src={getImageSrc(pizza.id)}
                     alt=""
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                      filter: cardDone ? 'saturate(0.72) brightness(0.94)' : 'none',
+                      opacity: cardDone ? 0.92 : 1,
+                      transition: 'filter 0.25s ease, opacity 0.25s ease' }}
                     onError={e => handleImageError(e, pizza.id)}
                   />
                   {(() => {
-                    const baked = doneCounts[pizza.id] ?? 0;
+                    const baked = bakedCount;
                     if (baked === 0) return null;
                     const allDone = baked >= qty;
                     return (
