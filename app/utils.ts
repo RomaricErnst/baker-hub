@@ -89,7 +89,7 @@ export interface YeastResult {
   osmoticStress: boolean; // true when sugar > 2% — yeast amount increased 20%
 }
 
-export function recommendYeast(
+function recommendYeast(
   totalRTHours: number,
   kitchenTemp: number,
   totalColdHours: number,
@@ -248,7 +248,7 @@ export interface SourdoughResult {
   warning: string | null;
 }
 
-export function sourdoughGuidance(
+function sourdoughGuidance(
   kitchenTemp: number,
   flour: number,
   feedToMixH?: number,
@@ -1011,7 +1011,7 @@ export function calculateRecipe(
   };
 }
 
-export function prefermentLeadHours(prefermentType: PrefermentType): number {
+function prefermentLeadHours(prefermentType: PrefermentType): number {
   if (prefermentType === 'none') return 0;
   const p = PREFERMENT_TYPES[prefermentType];
   return 'fermentHoursMax' in p ? p.fermentHoursMax : 0;
@@ -1080,7 +1080,7 @@ export function formatTime(d: Date, locale?: string): string {
   return fr ? `${days[d.getDay()]} ${hh}h${mm}` : `${days[d.getDay()]} ${hh}:${mm}`;
 }
 
-export function toDateTimeLocal(d: Date): string {
+function toDateTimeLocal(d: Date): string {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:00`;
 }

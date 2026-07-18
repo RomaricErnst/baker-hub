@@ -580,7 +580,7 @@ export const FLOUR_DATA = {
 export type FlourKey = keyof typeof FLOUR_DATA;
 
 // ── FLOUR BRANDS ──────────────────────────
-export const FLOUR_BRANDS = {
+const FLOUR_BRANDS = {
   caputo: {
     name: 'Caputo',
     logo: '🔵',
@@ -602,7 +602,7 @@ export const FLOUR_BRANDS = {
   },
 } as const;
 
-export type BrandKey = keyof typeof FLOUR_BRANDS;
+type BrandKey = keyof typeof FLOUR_BRANDS;
 
 // ── PREFERMENT TYPES ──────────────────────
 export const PREFERMENT_TYPES = {
@@ -685,12 +685,6 @@ export const PREFERMENT_TYPES = {
     flourPctMin: 15, flourPctMax: 30, flourPctStep: 5,
   },
 } as const;
-
-export const PREFERMENT_LABELS: Record<string, (pct: number) => string> = {
-  poolish: (pct) => pct <= 35 ? 'Mild, light tang' : pct >= 60 ? 'Complex, intense' : 'Classic poolish',
-  biga:    (pct) => pct <= 30 ? 'Light structure' : pct >= 55 ? 'Very strong, chewy' : 'Classic biga',
-  levain:  (pct) => pct <= 15 ? 'Mild tang' : pct >= 28 ? 'Tangy, faster rise' : 'Classic levain',
-};
 
 export type PrefermentType = keyof typeof PREFERMENT_TYPES;
 

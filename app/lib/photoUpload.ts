@@ -1,8 +1,8 @@
 import { createClient } from '@/app/lib/supabase/client';
 
-export const PHOTO_BUCKET = 'bake-photos';
-export const PHOTO_LIMIT = 50;
-export const PHOTO_SOFT_WARN = 40;
+const PHOTO_BUCKET = 'bake-photos';
+const PHOTO_LIMIT = 50;
+const PHOTO_SOFT_WARN = 40;
 
 export const ALLOWED_MIME_TYPES = [
   'image/jpeg',
@@ -47,21 +47,6 @@ export function compressImage(file: File): Promise<Blob> {
     img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Image load failed')); };
     img.src = objectUrl;
   });
-}
-
-export async function countUserPhotos(userId: string): Promise<number> {
-  try {
-    const supabase = createClient();
-    const { data: events } = await supabase
-      .from('bake_events').select('id').eq('user_id', userId);
-    if (!events || events.length === 0) return 0;
-    const eventIds = events.map(e => e.id);
-    const { count } = await supabase
-      .from('bake_photos')
-      .select('id', { count: 'exact', head: true })
-      .in('bake_event_id', eventIds);
-    return count ?? 0;
-  } catch { return 0; }
 }
 
 export async function uploadPhoto(

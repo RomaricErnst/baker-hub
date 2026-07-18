@@ -40,9 +40,6 @@ export function gToOz(g: number): number {
 export function ozToG(oz: number): number {
   return Math.round(oz * 28.3495);
 }
-export function weightUnit(units: UnitSystem): string {
-  return units === 'imperial' ? 'oz' : 'g';
-}
 // Display a stored gram value in the baker's system
 export function displayWeight(g: number, units: UnitSystem): string {
   if (units === 'imperial') {
@@ -59,12 +56,4 @@ export function displayWeight(g: number, units: UnitSystem): string {
   if (g < 10) return `${parseFloat(g.toFixed(1))} g`;
   const rounded = Math.round(g);
   return `${rounded >= 1000 ? rounded.toLocaleString() : rounded} g`;
-}
-// Get display value from stored grams (number only, no unit)
-export function gToDisplay(g: number, units: UnitSystem): number {
-  return units === 'imperial' ? gToOz(g) : Math.round(g);
-}
-// Convert a typed display value back to grams for storage
-export function inputWeightToG(val: number, units: UnitSystem): number {
-  return units === 'imperial' ? ozToG(val) : val;
 }

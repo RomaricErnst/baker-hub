@@ -16,7 +16,6 @@ export {
   BASE_LABELS, OCCASION_LABELS, SEASON_LABELS,
   WINE_CATEGORY_LABELS, WINE_EXAMPLES,
   BUDGET_LABELS, COMPLEXITY_LABELS,
-  CATEGORY_LABELS, REGION_LABELS,
   INGREDIENT_CATEGORY_LABELS,
   getCurrentSeason, filterPizzas, getFilterCounts, DEFAULT_FILTER,
 } from './toppingTypes'
@@ -24,7 +23,7 @@ export type { IngredientUnit, IngredientQty } from './toppingTypes'
 
 // ─── Shared ingredients ──────────────────────────────────────
 
-export const ING: Record<string, Ingredient> = {
+const ING: Record<string, Ingredient> = {
 
   sanMarzano: {
     id: 'san_marzano', category: 'sauce', bakeOrder: 'before',
@@ -4847,10 +4846,3 @@ export function getPizzaById(id: string): Pizza | undefined {
   return [...PIZZAS, ...DESSERT_PIZZAS].find(p => p.id === id)
 }
 
-export function getAllPizzas(): Pizza[] {
-  return PIZZAS
-}
-
-export function getDessertPizzas(): Pizza[] {
-  return DESSERT_PIZZAS
-}

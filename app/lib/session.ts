@@ -93,7 +93,3 @@ export function loadSession(): SessionData | null {
 export function clearSession(): void {
   try { localStorage.removeItem(SESSION_KEY); } catch {}
 }
-
-export function hasSession(): boolean {
-  return loadSession() !== null;
-}
