@@ -745,6 +745,21 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [styleKey, yeastType, advancedStep, prefermentType, reviewMode]);
 
+  // Perceived-speed: once a pizza session is underway, warm the party chunk
+  // (and its 150-pizza database) during browser idle time — downloaded in the
+  // background, instant when the baker opens Ma Soirée Pizza. Not on boot
+  // (too early), not on tab tap (too late).
+  useEffect(() => {
+    if (bakeType !== 'pizza' || !modeChosen) return;
+    const w = window as unknown as { requestIdleCallback?: (cb: () => void) => number; cancelIdleCallback?: (id: number) => void };
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let idleId: number | null = null;
+    const warm = () => { void import('../components/PizzaParty'); };
+    if (w.requestIdleCallback) idleId = w.requestIdleCallback(warm);
+    else timer = setTimeout(warm, 1500);
+    return () => { if (idleId !== null && w.cancelIdleCallback) w.cancelIdleCallback(idleId); if (timer) clearTimeout(timer); };
+  }, [bakeType, modeChosen]);
+
   // Baker profile — standard blockers (sleep / work) applied once per fresh
   // session as soon as a bake time exists. Restored sessions keep their own.
   // eslint-disable-next-line react-hooks/exhaustive-deps

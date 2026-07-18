@@ -1282,6 +1282,27 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
     [filter, styleKey]
   );
 
+  // Perceived-speed: pre-warm the first screenful-and-a-half of card images
+  // during idle time so scrolling meets a full cache, re-armed per filter.
+  useEffect(() => {
+    const variantMap: Record<string, string> = { pizza_romana: '_pizza_romana', newyork: '_newyork', pan: '_pan', roman: '_roman' };
+    const suffix = (styleKey && variantMap[styleKey]) || '';
+    const w = window as unknown as { requestIdleCallback?: (cb: () => void) => number; cancelIdleCallback?: (id: number) => void };
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let idleId: number | null = null;
+    const warm = () => {
+      [...customPizzas.slice(0, 4), ...filtered.slice(0, 14)].forEach(pz => {
+        if (pz.id.startsWith('custom_')) return;
+        const img = new Image();
+        img.src = `/pizzas/${pz.id}${suffix}.webp`;
+      });
+    };
+    if (w.requestIdleCallback) idleId = w.requestIdleCallback(warm);
+    else timer = setTimeout(warm, 800);
+    return () => { if (idleId !== null && w.cancelIdleCallback) w.cancelIdleCallback(idleId); if (timer) clearTimeout(timer); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, styleKey]);
+
   // Current season for auto-detect label
   const currentSeason = getCurrentSeason();
 
