@@ -2022,6 +2022,20 @@ export default function FermentChart({
         )}
       </svg>
 
+      {/* Optional drag invitation — an offer, not an instruction; sits
+          right under the graph and retires after the first drag */}
+      {!hasDragged && !startTimeInPast && (
+        <div style={{
+          textAlign: 'center', fontSize: '11px', marginTop: '4px',
+          color: '#8A7F78', fontFamily: 'DM Sans, sans-serif',
+          fontStyle: 'italic',
+        }}>
+          {isFr
+            ? 'Envie d’ajuster ? Les losanges ◆ se déplacent'
+            : 'Want to tweak the times? The diamonds ◆ are draggable'}
+        </div>
+      )}
+
       {/* ── How to read this chart — permanent, collapsible, calm ── */}
       <div style={{ marginTop: '6px' }}>
         <button

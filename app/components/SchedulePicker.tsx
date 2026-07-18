@@ -5849,18 +5849,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {eatTimeSet && (
         <div style={{ marginTop: '6px', marginBottom: '.75rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
-          {/* Drag hint — always visible, disappears after first drag */}
-          {!hasDragged && mode !== 'simple' && !startTimeInPast && (
-            <div style={{
-              textAlign: 'center', fontSize: '11px',
-              color: '#8A7F78', fontFamily: 'DM Sans, sans-serif',
-              fontStyle: 'italic',
-            }}>
-              {locale === 'fr'
-                ? '← Glissez les losanges pour ajuster vos horaires →'
-                : '← Drag the diamonds to adjust your schedule →'}
-            </div>
-          )}
+          {/* Drag hint moved into FermentChart — it now sits directly under
+              the graph, above “How to read this chart”, as an invitation */}
 
           {/* Show timing guide checkbox — Custom mode only */}
           {mode !== 'simple' && <label style={{
