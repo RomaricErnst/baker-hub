@@ -908,7 +908,7 @@ function SimpleColourBar({
     { from: barWin,      to: goldL_HBF,   fill: 'rgba(120,115,110,0.45)', label: '' },
     { from: goldL_HBF,   to: tooEarlyHBF, fill: 'rgba(196,82,42,0.25)',   label: tRoot('schedulePicker.zoneLabels.tooEarly') },
     { from: tooEarlyHBF, to: sweetL_HBF,  fill: 'rgba(212,168,83,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
-    { from: sweetL_HBF,  to: sweetR_HBF,  fill: 'rgba(107,122,90,0.5)',  label: tRoot('schedulePicker.zoneLabels.startDough') },
+    { from: sweetL_HBF,  to: sweetR_HBF,  fill: 'rgba(107,122,90,0.5)',  label: '' },
     { from: sweetR_HBF,  to: goldR2_HBF,  fill: 'rgba(212,168,83,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
     { from: goldR2_HBF,  to: 0,           fill: 'rgba(196,82,42,0.25)',  label: tRoot('schedulePicker.zoneLabels.tooLate')  },
   ];
@@ -1009,8 +1009,8 @@ function SimpleColourBar({
       {/* Hint */}
       <div style={{ fontSize: '13px', color: 'var(--smoke)', textAlign: 'center', marginBottom: '8px' }}>
         {locale === 'fr'
-          ? '← Glissez le losange pour ajuster vos horaires →'
-          : '← Drag the diamond to set your start time →'}
+          ? <><span style={{ color: '#6B7A5A', fontWeight: 600 }}>✓ Meilleur créneau choisi</span> — glissez le losange pour le changer</>
+          : <><span style={{ color: '#6B7A5A', fontWeight: 600 }}>✓ Best start time set</span> — drag the diamond to change it</>}
       </div>
       <svg
         ref={svgRef}
@@ -1148,6 +1148,13 @@ function SimpleColourBar({
 
         {/* Diamond (draggable) */}
         <g style={{ cursor: dragging ? 'grabbing' : 'grab' }} onPointerDown={onPointerDown}>
+          <text
+            x={Math.min(Math.max(diamondX, 42), W - 42)} y={BAR_Y - 6}
+            fontSize={11} fontWeight={700} fill="#3D5A30"
+            fontFamily="DM Mono, monospace" textAnchor="middle"
+          >
+            {tRoot('schedulePicker.zoneLabels.startDough')}
+          </text>
           <polygon
             points={`${diamondX},${barCY - BAR_DS} ${diamondX + BAR_DS},${barCY} ${diamondX},${barCY + BAR_DS} ${diamondX - BAR_DS},${barCY}`}
             fill={dFill} stroke={dStroke} strokeWidth={1.5}

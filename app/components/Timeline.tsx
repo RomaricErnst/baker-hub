@@ -455,10 +455,18 @@ export default function Timeline({
 
   // Memoized — rebuilding every render made rapid state changes janky
   // (one observed full renderer freeze during fast scroll + re-render)
+  // Baker-facing times live on the quarter grid — 15:22 is engine precision,
+  // not kitchen time. Snap down, same convention as the Guide.
+  const displayStartTime = (() => {
+    const d = new Date(startTime);
+    d.setMinutes(Math.floor(d.getMinutes() / 15) * 15, 0, 0);
+    return d;
+  })();
+
   const items = useMemo(
-    () => buildItems(schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t, bakeType),
+    () => buildItems(schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t, bakeType),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [schedule, blocks, startTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, bakeType],
+    [schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, bakeType],
   );
   const phases = useMemo(() => buildPhases(schedule, preheatMin, t),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -482,8 +490,8 @@ export default function Timeline({
             Your baking protocol
           </div>
           <div style={{ fontSize: '.75rem', color: 'var(--smoke)', marginTop: '.1rem', fontFamily: 'var(--font-dm-mono)' }}>
-            {formatTime(startTime, _fmtLocale)} → {formatTime(eatTime, _fmtLocale)}
-            {' · '}{hoursLabel((eatTime.getTime() - startTime.getTime()) / 3600000)} total
+            {formatTime(displayStartTime, _fmtLocale)} → {formatTime(eatTime, _fmtLocale)}
+            {' · '}{hoursLabel((eatTime.getTime() - displayStartTime.getTime()) / 3600000)} total
           </div>
           {/* Quick-bake honesty note — short windows silently produced an
               express plan with no hint that it trades flavour for speed */}

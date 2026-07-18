@@ -1768,12 +1768,7 @@ export default function Home() {
                           <span style={{ flex: 3, background: '#A8B8D0' }} />
                           <span style={{ flex: 1.4, background: '#D4A853' }} />
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-mono)', fontSize: '8.5px', color: 'var(--smoke)', marginTop: '4px' }}>
-                          <span>{t('modeCards.simple.barStart')}</span>
-                          <span>{t('modeCards.simple.barMid')}</span>
-                          <span>{t('modeCards.simple.barEnd')}</span>
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8.5px', letterSpacing: '0.04em', color: 'var(--smoke)', marginTop: '6px' }}>
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8.5px', letterSpacing: '0.04em', color: 'var(--smoke)', marginTop: '6px', whiteSpace: 'nowrap', overflow: 'hidden' }}>
                           {t('modeCards.simple.microLabel')}
                         </div>
                       </div>
@@ -1786,9 +1781,9 @@ export default function Home() {
                           {/* Diamond on the baseline — the draggable time marker, as in the real chart */}
                           <polygon points="52,29.5 56.5,34 52,38.5 47.5,34" fill="#D4A853" stroke="#FDFBF7" strokeWidth="1" />
                         </svg>
-                        <div style={{ display: 'flex', gap: '4px', marginTop: '6px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '3px', marginTop: '6px', flexWrap: 'nowrap', overflow: 'hidden' }}>
                           {t('modeCards.custom.chips').split('|').map((c, i) => (
-                            <span key={i} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: 'var(--ash)', border: '1px solid var(--border)', borderRadius: '20px', padding: '2px 7px', background: 'rgba(26,22,18,0.03)', whiteSpace: 'nowrap' }}>
+                            <span key={i} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8.5px', color: 'var(--ash)', border: '1px solid var(--border)', borderRadius: '20px', padding: '2px 6px', background: 'rgba(26,22,18,0.03)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                               {c.trim()}
                             </span>
                           ))}
