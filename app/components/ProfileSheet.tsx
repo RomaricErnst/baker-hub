@@ -222,7 +222,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11.5px', color: 'var(--smoke)', padding: '0 16px 6px' }}>
           {fr ? 'Le planning évitera ces créneaux dans chaque nouvelle session.' : 'New sessions plan around these windows.'}
         </div>
-        {blockerRow('sleep', fr ? 'Sommeil' : 'Sleep')}
+        {blockerRow('sleep', fr ? 'Nuit' : 'Night')}
         {blockerRow('work', fr ? 'Travail' : 'Work')}
 
       </div>

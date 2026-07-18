@@ -786,7 +786,7 @@ export default function Home() {
         if (to < new Date() || from > eatTime) return;
         out.push({
           label: key === 'sleep'
-            ? (locale === 'fr' ? 'Sommeil' : 'Sleep')
+            ? (locale === 'fr' ? 'Nuit' : 'Night')
             : (locale === 'fr' ? 'Travail' : 'Work'),
           from, to,
         });
