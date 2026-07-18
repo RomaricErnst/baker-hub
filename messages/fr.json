@@ -74,7 +74,7 @@
       "barStart": "ven 18h30",
       "barMid": "frigo",
       "barEnd": "sam 19h",
-      "microLabel": "VOTRE PLANNING, EN QUELQUES ÉTAPES",
+      "microLabel": "VOTRE PLANNING, AUTOUR DE VOTRE VIE",
       "bullet1": "",
       "bullet2": "",
       "bullet3": "",
@@ -83,7 +83,7 @@
     },
     "custom": {
       "title": "Avancé",
-      "subtitle": "« Je veux tout contrôler »",
+      "subtitle": "« Je veux explorer et affiner »",
       "chips": "65 % | °C | préferments & farines",
       "bullet1": "",
       "bullet2": "",

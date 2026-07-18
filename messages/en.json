@@ -74,7 +74,7 @@
       "barStart": "Fri 6:30 PM",
       "barMid": "fridge",
       "barEnd": "Sat 7 PM",
-      "microLabel": "YOUR PLAN, IN A FEW STEPS",
+      "microLabel": "YOUR PLAN, AROUND YOUR LIFE",
       "bullet1": "",
       "bullet2": "",
       "bullet3": "",
@@ -83,7 +83,7 @@
     },
     "custom": {
       "title": "Custom",
-      "subtitle": "“I want full control”",
+      "subtitle": "“I want to explore and fine-tune”",
       "chips": "65% | °C | preferments & flours",
       "bullet1": "",
       "bullet2": "",

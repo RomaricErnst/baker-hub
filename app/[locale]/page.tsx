@@ -1612,7 +1612,7 @@ export default function Home() {
             <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '14px', padding: '12px' }}>
 
               {/* Simple / Custom toggle */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: bakeType === 'pizza' ? '12px' : '0' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch', marginBottom: bakeType === 'pizza' ? '12px' : '0' }}>
                 {([
                   { key: 'simple' as const, title: t('modeCards.simple.title'), subtitle: t('modeCards.simple.subtitle'), collapsed: t('modeCards.simple.collapsed') },
                   { key: 'custom' as const, title: t('modeCards.custom.title'), subtitle: t('modeCards.custom.subtitle'), collapsed: t('modeCards.custom.collapsed') },
@@ -1659,6 +1659,8 @@ export default function Home() {
                     }}
                     style={{
                       flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
                       border: tab === m.key ? '2px solid var(--terra)' : '0.5px solid var(--border)',
                       borderRadius: '10px',
                       padding: '10px 12px',
@@ -1726,7 +1728,7 @@ export default function Home() {
                         setModeDetailsOpen(prev => ({ ...prev, [m.key]: !prev[m.key] }));
                       }}
                       onKeyDown={e => e.stopPropagation()}
-                      style={{ marginTop: '7px', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)', textDecoration: 'underline', textUnderlineOffset: '2px' }}
+                      style={{ marginTop: 'auto', paddingTop: '7px', alignSelf: 'flex-start', background: 'none', border: 'none', paddingBottom: 0, paddingLeft: 0, paddingRight: 0, cursor: 'pointer', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)', textDecoration: 'underline', textUnderlineOffset: '2px' }}
                     >
                       {modeDetailsOpen[m.key] ? t('modeCards.hide') : t('modeCards.details')}
                     </button>
