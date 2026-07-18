@@ -4,6 +4,8 @@
 import { useState } from 'react';
 import { OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PIZZA_STYLES, BREAD_STYLES } from '../data';
 import { loadProfile, updateProfile, deleteCustomPizza, DEFAULT_BLOCKERS, type BakerProfile } from '../lib/profile';
+import { createClient } from '../lib/supabase/client';
+import { useEffect } from 'react';
 import type { StyleKey } from '../lib/toppingTypes';
 
 const S = {
@@ -24,6 +26,8 @@ const S = {
 export default function ProfileSheet({ locale, onClose }: { locale: string; onClose: () => void }) {
   const fr = locale === 'fr';
   const [profile, setProfile] = useState<BakerProfile>(() => ({ version: 1, ...(loadProfile() ?? {}) }));
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  useEffect(() => { createClient().auth.getUser().then(({ data }) => setSignedIn(!!data.user)); }, []);
 
   function patch(p: Partial<BakerProfile>) {
     setProfile(updateProfile(p));
@@ -101,6 +105,13 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
             </span>
             <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)', marginTop: '2px' }}>
               {fr ? 'Enregistré automatiquement à chaque changement — prérempli dans chaque nouvelle session.' : 'Saved automatically on every change — prefilled into each new session.'}
+              {signedIn !== null && (
+                <span style={{ display: 'block', marginTop: '2px', color: signedIn ? 'var(--sage, #6B7A5A)' : 'var(--smoke)' }}>
+                  {signedIn
+                    ? (fr ? 'Synchronisé avec votre compte ✓' : 'Synced with your account ✓')
+                    : (fr ? 'Local sur cet appareil — connectez-vous pour synchroniser' : 'Local to this device — sign in to sync')}
+                </span>
+              )}
             </div>
           </div>
           <button onClick={onClose} style={{
@@ -139,6 +150,15 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
             <button key={t} onClick={() => patch({ fridgeTemp: profile.fridgeTemp === t ? undefined : t })}
               style={S.pill(profile.fridgeTemp === t)}>
               <span style={{ fontFamily: 'var(--font-dm-mono)' }}>{t}°C</span>
+            </button>
+          ))}
+        </div>
+
+        <span style={S.label}>{fr ? 'Mode par défaut' : 'Default mode'}</span>
+        <div style={{ display: 'flex', gap: '6px', padding: '0 16px' }}>
+          {([['simple', 'Simple'], ['custom', fr ? 'Avancé' : 'Custom']] as const).map(([key, label]) => (
+            <button key={key} onClick={() => patch({ preferredMode: profile.preferredMode === key ? null : key })} style={S.pill(profile.preferredMode === key)}>
+              {label}
             </button>
           ))}
         </div>

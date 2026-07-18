@@ -2515,7 +2515,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   ? `Choisissez ${doughConfigured ? numItems : 'vos'} pizzas`
                   : `Select ${doughConfigured ? numItems : 'your'} pizzas`)
                 : (doughConfigured
-                  ? `${totalQty}/${numItems}`
+                  ? (totalQty > numItems
+                    ? <>{numItems}/{numItems} <span style={{ color: '#D4A853', fontWeight: 700 }}>+{totalQty - numItems}</span></>
+                    : `${totalQty}/${numItems}`)
                   : `${totalQty}`)}
             </span>
             {totalQty > 0 && (

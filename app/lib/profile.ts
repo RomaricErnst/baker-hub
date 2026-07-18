@@ -45,6 +45,7 @@ export interface BakerProfile {
   styleKey?: StyleKey | null; // legacy single field — read as fallback
   styleKeyPizza?: StyleKey | null;
   styleKeyBread?: StyleKey | null;
+  preferredMode?: 'simple' | 'custom' | null;
   starter?: {
     mature: boolean;
     hasRye: boolean;

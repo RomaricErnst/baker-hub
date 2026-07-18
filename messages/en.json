@@ -41,6 +41,7 @@
     "staleBanner": "⚠️ Settings changed — regenerate to update your bake plan",
     "regenerate": "Regenerate",
     "emptyBakePlan": "Complete your dough setup to generate your bake plan",
+    "nextHint": "Recipe now — step-by-step Guide on bake day.",
     "confirmOverwrite": "This will overwrite your saved bake plan. Continue?"
   },
   "pizzaParty": {

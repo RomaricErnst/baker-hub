@@ -138,7 +138,7 @@ const FALLBACK_ZONE = { min: 50, classicMin: 60, classicMax: 70, advancedMax: 78
 // ── Step jump chips (review mode) ─────────────
 // The filled setup accordion is ~6 screens tall on mobile; this compact
 // sticky row lets a returning baker jump straight to any step.
-function StepJumpChips({ steps, idPrefix, topOffset = 62, raised = false }: { steps: { n: number; label: string }[]; idPrefix: string; topOffset?: number; raised?: boolean }) {
+function StepJumpChips({ steps, idPrefix, topOffset = 62, raised = false, onBeforeJump }: { steps: { n: number; label: string }[]; idPrefix: string; topOffset?: number; raised?: boolean; onBeforeJump?: (n: number) => void }) {
   return (
     <div style={{
       position: 'sticky', top: raised ? '0px' : `${topOffset}px`, zIndex: 30,
@@ -153,6 +153,7 @@ function StepJumpChips({ steps, idPrefix, topOffset = 62, raised = false }: { st
         <button
           key={s.n}
           onClick={() => {
+            onBeforeJump?.(s.n);
             const el = document.getElementById(`${idPrefix}-${s.n}`);
             if (el) {
               const top = el.getBoundingClientRect().top + window.scrollY - (topOffset + 52);
@@ -1105,6 +1106,7 @@ export default function Home() {
         setYeastType(prof.yeastType as YeastType); applied = true;
       }
       if (prof.fridgeTemp !== undefined) { setFridgeTemp(prof.fridgeTemp); applied = true; }
+      if (prof.preferredMode) { setTab(prof.preferredMode); applied = true; }
       if (prof.starter) {
         setStarterMature(prof.starter.mature);
         setStarterHasRye(prof.starter.hasRye);
@@ -1872,6 +1874,18 @@ export default function Home() {
                 ))}
               </div>
 
+              {/* Gentle discovery — profile-less bakers learn preferences exist */}
+              {!profilePrefilled && !recipeGenerated && !loadProfile() && (
+                <div style={{
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                  color: 'var(--smoke)', letterSpacing: '.05em', margin: '10px 2px 0',
+                }}>
+                  {locale === 'fr'
+                    ? 'Astuce : ☰ Mes préférences préremplit four, pétrin & style à chaque session'
+                    : 'Tip: ☰ My preferences prefills oven, mixer & style every session'}
+                </div>
+              )}
+
               {/* Baker-profile prefill hint — observation, not an alarm */}
               {profilePrefilled && !recipeGenerated && (
                 <div style={{
@@ -1917,6 +1931,7 @@ export default function Home() {
               <StepJumpChips
                 raised={navHidden}
                 topOffset={bakeType === 'pizza' ? 97 : 62}
+                onBeforeJump={n2 => { setActiveStep(n2); setHighestStep(p2 => Math.max(p2, n2)); setReviewMode(true); }}
                 idPrefix="step"
                 steps={[
                   { n: 1, label: locale === 'fr' ? 'Style' : 'Style' },
@@ -2239,6 +2254,9 @@ export default function Home() {
                 >
                   {t('generate.generateBtn')}
                 </button>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--smoke)', textAlign: 'center', marginTop: '8px', letterSpacing: '.03em' }}>
+                  {t('generate.nextHint')}
+                </div>
               </div>
             )}
 
@@ -2621,6 +2639,7 @@ export default function Home() {
               <StepJumpChips
                 raised={navHidden}
                 topOffset={bakeType === 'pizza' ? 97 : 62}
+                onBeforeJump={n2 => { setAdvancedStep(n2); setAdvancedHighestStep(p2 => Math.max(p2, n2)); setReviewMode(true); }}
                 idPrefix="adv-step"
                 steps={[
                   { n: 1, label: locale === 'fr' ? 'Style' : 'Style' },

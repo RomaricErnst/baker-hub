@@ -41,6 +41,7 @@
     "staleBanner": "⚠️ Réglages modifiés — régénérez pour mettre à jour",
     "regenerate": "Régénérer",
     "emptyBakePlan": "Complétez vos paramètres pour générer votre recette",
+    "nextHint": "Recette maintenant — Guide pas-à-pas le jour J.",
     "confirmOverwrite": "Ceci écrasera votre recette sauvegardée. Continuer ?"
   },
   "pizzaParty": {
