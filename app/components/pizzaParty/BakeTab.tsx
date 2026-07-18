@@ -646,7 +646,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
               >
                 <div style={{ height: '160px', background: '#1A1612', overflow: 'hidden', position: 'relative' }}>
                   {pizza.id.startsWith('custom_') ? (
-                    <PizzaPlaceholder name={pizza.name[l]} size="card" />
+                    pizza.photoUrl
+                      ? <img src={pizza.photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      : <PizzaPlaceholder name={pizza.name[l]} size="card" />
                   ) : (
                   <img
                     src={getImageSrc(pizza.id)}
@@ -788,7 +790,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
               {/* Hero image */}
               <div style={{ width: '100%', height: '180px', background: '#1A1612', overflow: 'hidden' }}>
                 {pizza.id.startsWith('custom_') ? (
-                  <PizzaPlaceholder name={pizza.name[l]} size="hero" />
+                  pizza.photoUrl
+                    ? <img src={pizza.photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    : <PizzaPlaceholder name={pizza.name[l]} size="hero" />
                 ) : (
                 <img
                   src={getImageSrc(pizza.id)}

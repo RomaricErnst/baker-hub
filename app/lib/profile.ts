@@ -24,6 +24,8 @@ export interface CustomPizzaDef {
   ovenTemp: OvenTempTag; // inferred at creation, editable
   ingredients: CustomPizzaIngredient[];
   createdAt: number;
+  /** small JPEG data-URL, centre-cropped square */
+  photo?: string;
 }
 
 export interface StandardBlocker {
@@ -103,6 +105,7 @@ export function customPizzaToPizza(def: CustomPizzaDef): Pizza {
     ovenTemp: def.ovenTemp,
     wine: [],
     ingredients,
+    photoUrl: def.photo,
     flavour: { richness: 3, boldness: 3, creative: 5, refined: 3 },
   };
 }

@@ -12,6 +12,7 @@ import {
   type ComplexityTier, type RegionTag, type IngredientCategory,
 } from '../lib/toppingDatabase';
 import CreatePizzaSheet from './CreatePizzaSheet';
+import { loadCustomPizzas, type CustomPizzaDef } from '../lib/profile';
 import PizzaPlaceholder from './PizzaPlaceholder';
 import type { Locale, FlavorChip } from '../lib/toppingTypes';
 
@@ -391,7 +392,9 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
         {/* Left: image spanning all rows */}
         <div style={{ width: '80px', height: '80px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, background: '#1A1612' }}>
           {pizza.id.startsWith('custom_') ? (
-            <PizzaPlaceholder name={name} size="thumb" />
+            pizza.photoUrl
+              ? <img src={pizza.photoUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <PizzaPlaceholder name={name} size="thumb" />
           ) : (
           <img
             src={(() => {
@@ -1254,6 +1257,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // Custom pizzas — baker's own creations from the profile
   const [customVersion, setCustomVersion] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editDef, setEditDef] = useState<CustomPizzaDef | null>(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const customPizzas = useMemo(() => getCustomPizzaList(), [customVersion]);
 
@@ -2007,16 +2011,32 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     {l === 'fr' ? '+ Créer ma pizza' : '+ Create my pizza'}
                   </span>
                 </button>
+                {customPizzas.length > 0 && (
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '1.5px', margin: '4px 2px 0' }}>
+                    {l === 'fr' ? 'Mes pizzas' : 'My pizzas'}
+                  </div>
+                )}
                 {customPizzas.map(pizza => (
-                  <PizzaCard
-                    key={pizza.id}
-                    pizza={pizza}
-                    qty={getQty(pizza.id)}
-                    locale={locale}
-                    styleKey={styleKey}
-                    onQtyChange={(delta, e) => { e.stopPropagation(); changeQty(pizza.id, delta); }}
-                    onTap={() => setSheetId(pizza.id)}
-                  />
+                  <div key={pizza.id} style={{ position: 'relative' }}>
+                    <PizzaCard
+                      pizza={pizza}
+                      qty={getQty(pizza.id)}
+                      locale={locale}
+                      styleKey={styleKey}
+                      onQtyChange={(delta, e) => { e.stopPropagation(); changeQty(pizza.id, delta); }}
+                      onTap={() => setSheetId(pizza.id)}
+                    />
+                    <button
+                      onClick={e => { e.stopPropagation(); const d = loadCustomPizzas().find(x => x.id === pizza.id); if (d) setEditDef(d); }}
+                      title={l === 'fr' ? 'Modifier' : 'Edit'}
+                      style={{
+                        position: 'absolute', top: '6px', right: '6px',
+                        border: '1px solid #E8E0D5', borderRadius: '14px', padding: '3px 9px',
+                        background: 'rgba(253,251,247,0.92)', cursor: 'pointer',
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#C4522A',
+                      }}
+                    >✎</button>
+                  </div>
                 ))}
               </div>
 
@@ -2044,10 +2064,11 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
             </div>
 
-            {createOpen && (
+            {(createOpen || editDef) && (
               <CreatePizzaSheet
                 locale={locale}
-                onClose={() => setCreateOpen(false)}
+                initial={editDef ?? undefined}
+                onClose={() => { setCreateOpen(false); setEditDef(null); }}
                 onCreated={() => setCustomVersion(v => v + 1)}
               />
             )}

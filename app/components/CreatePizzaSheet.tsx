@@ -1,37 +1,34 @@
 'use client';
-// « Créer ma pizza » — build a custom pizza from catalogue ingredients or
-// free text. Saved to the baker profile; appears on every party surface.
+// « Créer ma pizza » v2 — guided flow: base → fromage → viande/mer → légumes
+// → finitions. Each group offers catalogue chips or free text; bake order is
+// preset per ingredient and toggleable. Also edits an existing creation.
 import { useMemo, useState } from 'react';
 import { PIZZAS, DESSERT_PIZZAS } from '../lib/toppingDatabase';
-import { saveCustomPizza, type CustomPizzaIngredient } from '../lib/profile';
+import { saveCustomPizza, type CustomPizzaDef, type CustomPizzaIngredient } from '../lib/profile';
 import type { Ingredient, IngredientCategory, IngredientUnit, OvenTempTag } from '../lib/toppingTypes';
 
 const UNITS: IngredientUnit[] = ['g', 'ml', 'pcs', 'slices', 'leaves', 'sprigs', 'tbsp', 'pinch'];
 
-const CAT_LABELS: Record<IngredientCategory, { en: string; fr: string }> = {
-  sauce:  { en: 'Sauces & bases', fr: 'Sauces & bases' },
-  base:   { en: 'Bases', fr: 'Bases' },
-  cheese: { en: 'Cheese', fr: 'Fromages' },
-  meat:   { en: 'Meat', fr: 'Viandes' },
-  seafood:{ en: 'Seafood', fr: 'Mer' },
-  veg:    { en: 'Vegetables', fr: 'Légumes' },
-  spice:  { en: 'Spices', fr: 'Épices' },
-  finish: { en: 'Finishing', fr: 'Finitions' },
-};
+// Guided groups, in topping order
+const GROUPS: Array<{ cats: IngredientCategory[]; en: string; fr: string; freeCat: IngredientCategory }> = [
+  { cats: ['sauce', 'base'], en: '1 · Base & sauce', fr: '1 · Base & sauce', freeCat: 'sauce' },
+  { cats: ['cheese'], en: '2 · Cheese', fr: '2 · Fromages', freeCat: 'cheese' },
+  { cats: ['meat', 'seafood'], en: '3 · Meat & sea', fr: '3 · Viandes & mer', freeCat: 'meat' },
+  { cats: ['veg'], en: '4 · Vegetables', fr: '4 · Légumes', freeCat: 'veg' },
+  { cats: ['spice', 'finish'], en: '5 · Finishing touches', fr: '5 · Finitions', freeCat: 'finish' },
+];
 
-export default function CreatePizzaSheet({ locale, onClose, onCreated }: {
-  locale: string; onClose: () => void; onCreated: () => void;
+export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }: {
+  locale: string; onClose: () => void; onCreated: () => void; initial?: CustomPizzaDef;
 }) {
   const fr = locale === 'fr';
   const l = fr ? 'fr' : 'en';
-  const [name, setName] = useState('');
-  const [search, setSearch] = useState('');
-  const [picked, setPicked] = useState<CustomPizzaIngredient[]>([]);
-  const [freeName, setFreeName] = useState('');
-  const [freeAmount, setFreeAmount] = useState('50');
-  const [freeUnit, setFreeUnit] = useState<IngredientUnit>('g');
+  const [name, setName] = useState(initial?.name ?? '');
+  const [picked, setPicked] = useState<CustomPizzaIngredient[]>(initial?.ingredients ?? []);
+  const [photo, setPhoto] = useState<string | undefined>(initial?.photo);
+  const [free, setFree] = useState<Record<string, { name: string; amount: string; unit: IngredientUnit }>>({});
+  const [openGroup, setOpenGroup] = useState(0);
 
-  // Unique catalogue across all pizzas, keyed by ingredient id
   const catalogue = useMemo(() => {
     const map = new Map<string, Ingredient>();
     [...PIZZAS, ...DESSERT_PIZZAS].forEach(p => p.ingredients.filter(Boolean).forEach(ing => {
@@ -40,44 +37,50 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated }: {
     return [...map.values()];
   }, []);
 
-  const results = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return [];
-    return catalogue
-      .filter(ing => (ing.name.en + ' ' + ing.name.fr).toLowerCase().includes(q))
-      .filter(ing => !picked.some(p => p.refId === ing.id))
-      .slice(0, 8);
-  }, [search, catalogue, picked]);
-
-  function addFromCatalogue(ing: Ingredient) {
+  function add(ing: Ingredient) {
     setPicked(prev => [...prev, {
-      refId: ing.id,
-      nameEn: ing.name.en,
-      nameFr: ing.name.fr,
+      refId: ing.id, nameEn: ing.name.en, nameFr: ing.name.fr,
       amount: ing.qtyPerPizza?.amount ?? 50,
       unit: ing.qtyPerPizza?.unit ?? 'g',
-      bakeOrder: ing.bakeOrder,
-      category: ing.category,
+      bakeOrder: ing.bakeOrder, category: ing.category,
     }]);
-    setSearch('');
   }
 
-  function addFree() {
-    const n = freeName.trim();
+  function addFree(gi: number) {
+    const f = free[gi] ?? { name: '', amount: '50', unit: 'g' as IngredientUnit };
+    const n = f.name.trim();
     if (!n) return;
+    const cat = GROUPS[gi].freeCat;
     setPicked(prev => [...prev, {
       nameEn: n, nameFr: n,
-      amount: Math.max(1, Number(freeAmount) || 50),
-      unit: freeUnit,
-      bakeOrder: 'before',
-      category: 'veg',
-      free: true,
+      amount: Math.max(1, Number(f.amount) || 50), unit: f.unit,
+      bakeOrder: cat === 'finish' ? 'after' : 'before',
+      category: cat, free: true,
     }]);
-    setFreeName(''); setFreeAmount('50');
+    setFree(prev => ({ ...prev, [gi]: { name: '', amount: '50', unit: 'g' } }));
   }
 
-  // ovenTemp inference — majority vote of database pizzas containing the
-  // picked catalogue ingredients; sweet finish pulls low, no vote = high.
+  async function attachPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      // Centre-crop square 640 — light enough for the profile store
+      const side = Math.min(img.width, img.height);
+      const sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+      const c = document.createElement('canvas');
+      c.width = 640; c.height = 640;
+      const ctx = c.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(img, sx, sy, side, side, 0, 0, 640, 640);
+      setPhoto(c.toDataURL('image/jpeg', 0.8));
+    };
+    img.src = url;
+  }
+
   function inferOvenTemp(): OvenTempTag {
     const votes: Record<OvenTempTag, number> = { high: 0, mid: 0, low: 0 };
     const refIds = picked.filter(p => p.refId).map(p => p.refId as string);
@@ -93,14 +96,14 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated }: {
     if (!name.trim() || picked.length === 0) return;
     const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 24) || 'pizza';
     saveCustomPizza({
-      id: `custom_${slug}_${Date.now()}`,
+      id: initial?.id ?? `custom_${slug}_${Date.now()}`,
       name: name.trim(),
       ovenTemp: inferOvenTemp(),
       ingredients: picked,
-      createdAt: Date.now(),
+      createdAt: initial?.createdAt ?? Date.now(),
+      photo,
     });
-    onCreated();
-    onClose();
+    onCreated(); onClose();
   }
 
   const canSave = name.trim().length > 0 && picked.length > 0;
@@ -121,28 +124,43 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated }: {
         <div style={{ width: 32, height: 3, background: '#E0D8CF', borderRadius: 2, margin: '12px auto 0', flexShrink: 0 }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px 10px', borderBottom: '1px solid #F0EAE3', flexShrink: 0 }}>
           <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '16px', fontWeight: 700, color: '#1A1612' }}>
-            {fr ? 'Créer ma pizza' : 'Create my pizza'}
+            {initial ? (fr ? 'Modifier ma pizza' : 'Edit my pizza') : (fr ? 'Créer ma pizza' : 'Create my pizza')}
           </span>
           <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: '50%', background: '#F5F0E8', border: 'none', fontSize: 14, color: '#8A7F78', cursor: 'pointer' }}>✕</button>
         </div>
 
         <div style={{ overflowY: 'auto', flex: 1, padding: '12px 14px' }}>
-          {/* Name */}
-          <input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder={fr ? 'Nom de votre pizza — ex. La Romaric' : 'Your pizza name — e.g. La Famiglia'}
-            style={{ ...input, fontFamily: 'Playfair Display, serif', fontWeight: 600, fontSize: '16px' }}
-          />
+          {/* Name + photo */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <label style={{ width: 56, height: 56, borderRadius: '12px', overflow: 'hidden', flexShrink: 0, cursor: 'pointer', border: '1px dashed #C8C0B8', background: '#F5F0E8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={attachPhoto} />
+              {photo ? (
+                <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <svg viewBox="0 0 20 20" width={20} height={20} fill="none" stroke="#8A7F78" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 7.5A1.5 1.5 0 012.5 6h.879a2 2 0 001.664-.89l.812-1.22A2 2 0 017.519 3h4.962a2 2 0 011.664.89l.812 1.22A2 2 0 0016.62 6H17.5A1.5 1.5 0 0119 7.5v8A1.5 1.5 0 0117.5 17h-15A1.5 1.5 0 011 15.5v-8z"/>
+                  <circle cx="10" cy="11" r="3"/>
+                </svg>
+              )}
+            </label>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder={fr ? 'Nom de votre pizza' : 'Your pizza name'}
+              style={{ ...input, fontFamily: 'Playfair Display, serif', fontWeight: 600, fontSize: '16px' }}
+            />
+          </div>
+          {photo && (
+            <button onClick={() => setPhoto(undefined)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '10.5px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: '4px 0 0' }}>
+              {fr ? 'Retirer la photo' : 'Remove photo'}
+            </button>
+          )}
 
-          {/* Picked ingredients */}
+          {/* Picked list */}
           {picked.length > 0 && (
             <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {picked.map((p, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: '7px',
-                  background: '#F5F0E8', border: '1px solid #E8E0D5', borderRadius: '10px', padding: '7px 10px',
-                }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', background: '#F5F0E8', border: '1px solid #E8E0D5', borderRadius: '10px', padding: '7px 10px' }}>
                   <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: '#1A1612', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {fr ? p.nameFr : p.nameEn}{p.free ? ' ✎' : ''}
                   </span>
@@ -152,9 +170,9 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated }: {
                       const v = Math.max(0, Number(e.target.value) || 0);
                       setPicked(prev => prev.map((x, j) => j === i ? { ...x, amount: v } : x));
                     }}
-                    style={{ width: '52px', border: '1px solid #E0D8CF', borderRadius: '6px', padding: '4px 6px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', textAlign: 'right', background: '#FDFBF7' }}
+                    style={{ width: '50px', border: '1px solid #E0D8CF', borderRadius: '6px', padding: '4px 6px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', textAlign: 'right', background: '#FDFBF7' }}
                   />
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#8A7F78', width: '38px' }}>{p.unit}</span>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#8A7F78', width: '34px' }}>{p.unit}</span>
                   <button
                     onClick={() => setPicked(prev => prev.map((x, j) => j === i ? { ...x, bakeOrder: x.bakeOrder === 'before' ? 'after' : 'before' } : x))}
                     style={{
@@ -173,56 +191,62 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated }: {
             </div>
           )}
 
-          {/* Catalogue search */}
-          <div style={{ marginTop: '14px' }}>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#C4522A', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '6px' }}>
-              {fr ? 'Ingrédients du catalogue' : 'Catalogue ingredients'}
-            </div>
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder={fr ? 'Rechercher — mozzarella, basilic…' : 'Search — mozzarella, basil…'}
-              style={input}
-            />
-            {results.length > 0 && (
-              <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {results.map(ing => (
-                  <button key={ing.id} onClick={() => addFromCatalogue(ing)} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
-                    background: '#FDFBF7', border: '1px solid #E8E0D5', borderRadius: '8px',
-                    padding: '8px 11px', cursor: 'pointer', textAlign: 'left',
-                  }}>
-                    <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: '#1A1612' }}>{ing.name[l]}</span>
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#8A7F78', flexShrink: 0 }}>
-                      {CAT_LABELS[ing.category][l]} · +
-                    </span>
-                  </button>
-                ))}
+          {/* Guided groups */}
+          {GROUPS.map((g, gi) => {
+            const opts = catalogue
+              .filter(ing => g.cats.includes(ing.category))
+              .filter(ing => !picked.some(p => p.refId === ing.id));
+            const isOpen = openGroup === gi;
+            const f = free[gi] ?? { name: '', amount: '50', unit: 'g' as IngredientUnit };
+            const nPicked = picked.filter(p => g.cats.includes(p.category)).length;
+            return (
+              <div key={gi} style={{ marginTop: '12px', border: '1px solid #F0EAE3', borderRadius: '12px', overflow: 'hidden' }}>
+                <button
+                  onClick={() => setOpenGroup(isOpen ? -1 : gi)}
+                  style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 12px', background: '#F5F0E8', border: 'none', cursor: 'pointer' }}
+                >
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#C4522A', textTransform: 'uppercase', letterSpacing: '1.2px', fontWeight: 700 }}>
+                    {fr ? g.fr : g.en}{nPicked > 0 ? ` · ${nPicked} ✓` : ''}
+                  </span>
+                  <span style={{ color: '#8A7F78', fontSize: '12px' }}>{isOpen ? '−' : '+'}</span>
+                </button>
+                {isOpen && (
+                  <div style={{ padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '132px', overflowY: 'auto' }}>
+                      {opts.map(ing => (
+                        <button key={ing.id} onClick={() => add(ing)} style={{
+                          border: '1px solid #E8E0D5', borderRadius: '16px', padding: '6px 11px',
+                          background: '#FDFBF7', cursor: 'pointer',
+                          fontFamily: 'var(--font-dm-sans)', fontSize: '12.5px', color: '#1A1612',
+                        }}>
+                          {ing.name[l]} +
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '10px' }}>
+                      <input value={f.name}
+                        onChange={e => setFree(prev => ({ ...prev, [gi]: { ...f, name: e.target.value } }))}
+                        placeholder={fr ? 'Autre — texte libre' : 'Other — free text'}
+                        style={{ ...input, flex: 1, width: 'auto', padding: '7px 10px', fontSize: '13px' }} />
+                      <input type="number" inputMode="numeric" value={f.amount}
+                        onChange={e => setFree(prev => ({ ...prev, [gi]: { ...f, amount: e.target.value } }))}
+                        style={{ ...input, width: '56px', padding: '7px 6px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', textAlign: 'right' }} />
+                      <select value={f.unit}
+                        onChange={e => setFree(prev => ({ ...prev, [gi]: { ...f, unit: e.target.value as IngredientUnit } }))}
+                        style={{ ...input, width: '72px', padding: '7px 4px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px' }}>
+                        {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                      <button onClick={() => addFree(gi)} disabled={!f.name.trim()} style={{
+                        border: 'none', borderRadius: '8px', padding: '8px 12px', cursor: f.name.trim() ? 'pointer' : 'default',
+                        background: f.name.trim() ? '#6B7A5A' : '#E0D8CF', color: 'white',
+                        fontFamily: 'var(--font-dm-sans)', fontSize: '13px', fontWeight: 600, flexShrink: 0,
+                      }}>+</button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Free text */}
-          <div style={{ marginTop: '14px' }}>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#C4522A', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '6px' }}>
-              {fr ? 'Ou en texte libre' : 'Or free text'}
-            </div>
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <input value={freeName} onChange={e => setFreeName(e.target.value)}
-                placeholder={fr ? 'Ingrédient' : 'Ingredient'} style={{ ...input, flex: '1 1 130px', width: 'auto' }} />
-              <input type="number" inputMode="numeric" value={freeAmount} onChange={e => setFreeAmount(e.target.value)}
-                style={{ ...input, width: '64px', fontFamily: 'var(--font-dm-mono)', textAlign: 'right' }} />
-              <select value={freeUnit} onChange={e => setFreeUnit(e.target.value as IngredientUnit)}
-                style={{ ...input, width: '84px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px' }}>
-                {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-              </select>
-              <button onClick={addFree} disabled={!freeName.trim()} style={{
-                border: 'none', borderRadius: '8px', padding: '9px 14px', cursor: freeName.trim() ? 'pointer' : 'default',
-                background: freeName.trim() ? '#6B7A5A' : '#E0D8CF', color: 'white',
-                fontFamily: 'var(--font-dm-sans)', fontSize: '13px', fontWeight: 600,
-              }}>+</button>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
         {/* Save bar */}
@@ -232,10 +256,10 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated }: {
             background: canSave ? '#C4522A' : '#E0D8CF', color: 'white', cursor: canSave ? 'pointer' : 'default',
             fontFamily: 'var(--font-dm-sans)', fontSize: '15px', fontWeight: 700,
           }}>
-            {fr ? 'Enregistrer ma pizza' : 'Save my pizza'}
+            {initial ? (fr ? 'Enregistrer les modifications' : 'Save changes') : (fr ? 'Enregistrer ma pizza' : 'Save my pizza')}
           </button>
           <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: '#8A7F78', textAlign: 'center', marginTop: '6px' }}>
-            {fr ? 'Sauvegardée dans votre profil — retrouvez-la à chaque soirée.' : 'Saved to your profile — back for every party.'}
+            {fr ? 'Sauvegardée dans votre profil — modifiable à tout moment.' : 'Saved to your profile — editable any time.'}
           </div>
         </div>
       </div>
