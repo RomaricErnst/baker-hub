@@ -6924,6 +6924,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         : sourdoughDoughYellow
                         ? (isFr ? 'Proche du pic — devrait être bien'
                                 : 'Near peak — should be fine')
+                        // When the solver flagged the window itself, the pill
+                        // must say that — not "under-fermentation risk", which
+                        // read as alarming (and wrong) for a mix sitting at
+                        // the LONG edge of the zone.
+                        : _windowTooShortRender
+                        ? (isFr ? 'Créneau trop court — voir la suggestion'
+                                : 'Window too tight — see the suggestion')
                         : mixOffsetH > doughZoneFrom + 2
                         ? (isFr ? 'Pétrissage trop tôt — risque de surfermentation'
                                 : 'Mix too early — over-fermentation risk')
