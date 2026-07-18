@@ -603,7 +603,13 @@ export default function Home() {
     if (!mixerType && prof.mixerType && prof.mixerType in MIXER_TYPES) {
       setMixerType(prof.mixerType as MixerType); applied = true;
     }
-    if (!yeastType && prof.yeastType && prof.yeastType in YEAST_TYPES) {
+    // Sourdough-native styles override the yeast preference (same rule as
+    // the tap-time prefill in selectBakeType).
+    const effStyle = styleKey ?? ((prefStyle && prefStyle in stylePool) ? prefStyle : null);
+    const lateWantsSourdough = ['pain_levain', 'sourdough'].includes(effStyle as string);
+    if (!yeastType && lateWantsSourdough) {
+      setYeastType('sourdough'); applied = true;
+    } else if (!yeastType && prof.yeastType && prof.yeastType in YEAST_TYPES) {
       setYeastType(prof.yeastType as YeastType); applied = true;
     }
     if (applied) setProfilePrefilled(true);
@@ -1219,13 +1225,18 @@ export default function Home() {
       if (prof.mixerType && prof.mixerType in MIXER_TYPES) {
         setMixerType(prof.mixerType as MixerType); applied = true;
       }
-      if (prof.yeastType && prof.yeastType in YEAST_TYPES) {
+      // Sourdough-native styles (pain au levain, pizza au levain) are
+      // sourdough by definition — the yeast preference yields to the style.
+      const styleWantsSourdough = ['pain_levain', 'sourdough'].includes(prefStyle as string);
+      if (styleWantsSourdough && appliedStyle) {
+        setYeastType('sourdough'); applied = true;
+      } else if (prof.yeastType && prof.yeastType in YEAST_TYPES) {
         setYeastType(prof.yeastType as YeastType); applied = true;
       }
       // Preferment — Custom-mode preference only (Simple has no preferment
       // step to change it in), and never on the sourdough path (levain).
       if (prof.prefermentType && prof.preferredMode === 'custom'
-          && prof.yeastType !== 'sourdough'
+          && prof.yeastType !== 'sourdough' && !(styleWantsSourdough && appliedStyle)
           && ['none', 'poolish', 'biga'].includes(prof.prefermentType)) {
         setPrefermentType(prof.prefermentType as PrefermentType); applied = true;
       }
@@ -1347,6 +1358,9 @@ export default function Home() {
   }
 
   function startOver() {
+    // Fresh session = fresh chance for profile blockers to apply — without
+    // this reset, only the first session per page load ever received them.
+    profileBlockersAppliedRef.current = false;
     setBakeType(null); setStyleKey(null);
     setNumItems(2); setItemWeight(270);
     setOvenType(null); setMixerType(null);
@@ -2586,6 +2600,7 @@ export default function Home() {
                           <RecipeOutput
                             ovenType={ovenType}
                             onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
+                            onOpenGuide={() => setActiveTab('guide')}
                             result={displayRecipe ?? recipe}
                             numItems={numItems}
                             itemWeight={itemWeight}
@@ -3881,6 +3896,7 @@ export default function Home() {
                           <RecipeOutput
                             ovenType={ovenType}
                             onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
+                            onOpenGuide={() => setActiveTab('guide')}
                             result={advancedDisplayRecipe ?? advancedRecipe}
                             numItems={numItems}
                             itemWeight={itemWeight}
