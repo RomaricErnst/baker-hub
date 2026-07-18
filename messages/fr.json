@@ -434,6 +434,7 @@
       "smell": "Odeur acidulée, pas alcoolique ✓"
     },
     "recipeReady": "Votre recette est prête",
+    "guideHint": "L'essentiel en un coup d'œil — le pas-à-pas détaillé vous attend dans le Guide →",
     "hydrationLabel": "hydratation",
     "mixingBuffer": "Inclut {pct}% de marge au pétrissage",
     "ingredientFlour": "Farine",

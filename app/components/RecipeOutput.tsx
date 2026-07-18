@@ -35,6 +35,7 @@ interface RecipeOutputProps {
   feedRatio?: 1 | 2 | 4 | 5 | 10;
   starterLocation?: 'rt' | 'fridge';
   onEditSetup?: () => void;
+  onOpenGuide?: () => void;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -466,7 +467,7 @@ export default function RecipeOutput({
   result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
   feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
-  onEditSetup,
+  onEditSetup, onOpenGuide,
 }: RecipeOutputProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -626,6 +627,21 @@ export default function RecipeOutput({
           }}>
             {t('recipeOutput.recipeReady')}
           </div>
+          {/* Newcomers read this tab as the whole story and miss the Guide —
+              one quiet line up top; the bottom CTA still catches readers */}
+          {onOpenGuide && (
+            <button
+              onClick={onOpenGuide}
+              style={{
+                background: 'none', border: 'none', padding: '0 0 .2rem', cursor: 'pointer',
+                fontFamily: 'var(--font-dm-mono)', fontSize: '.68rem',
+                color: 'var(--smoke)', textAlign: 'left',
+                textDecoration: 'underline', textUnderlineOffset: '2px',
+              }}
+            >
+              {t('recipeOutput.guideHint')}
+            </button>
+          )}
           <div style={{
             fontSize: '.78rem', color: 'var(--smoke)',
             fontFamily: 'var(--font-dm-mono)',

@@ -434,6 +434,7 @@
       "smell": "Smells tangy, not alcoholic ✓"
     },
     "recipeReady": "Your recipe is ready",
+    "guideHint": "The essentials at a glance — the detailed step-by-step lives in the Guide →",
     "hydrationLabel": "hydration",
     "mixingBuffer": "Includes {pct}% mixing buffer",
     "ingredientFlour": "Flour",
