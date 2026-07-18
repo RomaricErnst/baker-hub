@@ -294,7 +294,12 @@ export default function ShareCard({
     const run = async () => {
       setPreviewLoading(true);
       try { await document.fonts.ready; } catch { /* ok */ }
-      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      // rAF is paused in hidden/occluded tabs — race it with a timer so the
+      // preview also renders when the baker switches away mid-open.
+      await Promise.race([
+        new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+        new Promise<void>(resolve => setTimeout(resolve, 150)),
+      ]);
       if (cancelled) return;
       try {
         const canvas = await drawCard();
