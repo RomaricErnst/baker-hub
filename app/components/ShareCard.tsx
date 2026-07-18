@@ -198,9 +198,14 @@ export default function ShareCard({
 
   const pizzaLines: string[] = pizzaEntries.map(([id, qty]) => {
     const p = allPizzas.find(x => x.id === id);
+    // Custom slots aren't in the DB — prettify the raw preset id
+    // (custom_la_special_1784346299010 → "La Special") instead of leaking it.
     const name = p
       ? ((p.name as Record<string, string>)[l] ?? (p.name as Record<string, string>).en ?? id)
-      : id;
+      : id.startsWith('custom_')
+        ? id.replace(/^custom_/, '').replace(/_\d+$/, '').split('_')
+            .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+        : id;
     return qty > 1 ? `${name} ×${qty}` : name;
   });
 
@@ -318,22 +323,20 @@ export default function ShareCard({
         const canvas = await drawCard();
         if (cancelled || !canvas || !previewCanvasRef.current) return;
         const preview = previewCanvasRef.current;
-        const boxW = preview.parentElement?.clientWidth || 300;
-        const boxH = Math.round(window.innerHeight * 0.52);
-        // Contain-fit: the preview is always the export's exact aspect ratio,
-        // scaled down — a Story card previews tall, a Post card previews 4:5.
-        const scale = Math.min(boxW / canvas.width, boxH / canvas.height);
-        const dw = Math.round(canvas.width * scale);
-        const dh = Math.round(canvas.height * scale);
-        preview.width = dw; preview.height = dh;
-        preview.style.width = `${dw}px`;
-        preview.style.height = `${dh}px`;
+        // Copy at full export resolution — CSS owns the displayed size
+        // (aspect-ratio + max-width/max-height contain-fit). JS layout
+        // measurement here (parent clientWidth mid-sheet-animation,
+        // innerHeight with the keyboard open) produced wrong preview boxes
+        // on real devices; a failed run also left the canvas at its default
+        // 300×150 — a small wide rectangle regardless of format.
+        preview.width = canvas.width;
+        preview.height = canvas.height;
+        // Clear inline px sizes a previous version may have left behind
+        preview.style.removeProperty('width');
+        preview.style.removeProperty('height');
         const ctx = preview.getContext('2d');
         if (!ctx) return;
-        ctx.save();
-        ctx.scale(scale, scale);
         ctx.drawImage(canvas, 0, 0);
-        ctx.restore();
       } catch (e) {
         console.error('Preview render failed:', e);
       } finally {
@@ -440,15 +443,23 @@ export default function ShareCard({
 
         const isIndented = ln.startsWith('  ');
         const isHeader   = !isIndented && /^\w{3}\s\d{2}:\d{2}/.test(ln);
-        const size       = isIndented ? INDENT_SIZE : BODY_SIZE_P;
+        const baseSize   = isIndented ? INDENT_SIZE : BODY_SIZE_P;
         const weight     = isHeader ? '600' : '400';
         const opacity    = isHeader ? 0.92 : isIndented ? 0.60 : 0.80;
 
-        ctx.font      = `${weight} ${size}px ${FONT}`;
+        // Shrink-to-fit long lines; y-advance keeps the base rhythm so the
+        // precomputed totalH stays valid.
+        let size = baseSize;
+        const maxW = CONTENT_W_P - (isIndented ? 24 : 0);
+        ctx.font = `${weight} ${size}px ${FONT}`;
+        while (ctx.measureText(ln.trimStart()).width > maxW && size > 14) {
+          size--;
+          ctx.font = `${weight} ${size}px ${FONT}`;
+        }
         ctx.fillStyle = `rgba(255,255,255,${opacity})`;
         ctx.textAlign = 'left';
         ctx.fillText(ln.trimStart(), MARGIN + (isIndented ? 24 : 0), y);
-        y += size + LINE_GAP;
+        y += baseSize + LINE_GAP;
       }
 
       // Bottom divider
@@ -621,9 +632,16 @@ export default function ShareCard({
     ctx.stroke();
     y += 18;
 
-    // Body lines — all same font, same size, no italic
+    // Body lines — all same font, no italic. Shrink-to-fit like the title:
+    // long ingredient lines (oil/sugar suffixes) used to run off the card
+    // edge ("2g oi…"). Line height stays constant so the panel math holds.
     function drawBodyLine(text: string, opacity: number) {
-      ctx.font      = `400 ${BODY_SIZE}px "DM Mono", monospace`;
+      let size = BODY_SIZE;
+      ctx.font = `400 ${size}px "DM Mono", monospace`;
+      while (ctx.measureText(text).width > CONTENT_W && size > 15) {
+        size--;
+        ctx.font = `400 ${size}px "DM Mono", monospace`;
+      }
       ctx.fillStyle = `rgba(255,255,255,${opacity})`;
       ctx.textAlign = 'left';
       ctx.fillText(text, 72, y);
@@ -742,7 +760,18 @@ export default function ShareCard({
         <div style={{ position: 'relative', width: '100%', minHeight: '160px', borderRadius: '12px', overflow: 'hidden', background: '#1A1612', display: 'flex', justifyContent: 'center' }}>
           <canvas
             ref={previewCanvasRef}
-            style={{ display: 'block', borderRadius: '12px' }}
+            style={{
+              display: 'block', borderRadius: '12px',
+              // CSS-driven contain-fit: the box shape comes from the format,
+              // not from JS measurements — Story previews tall (9:16) even
+              // before the first draw lands. Protocol cards have a dynamic
+              // height, so they use the canvas's intrinsic ratio instead.
+              width: 'auto', height: 'auto',
+              maxWidth: '100%', maxHeight: '52vh',
+              ...(template !== 'protocol'
+                ? { aspectRatio: `1080 / ${EXPORT_H}` }
+                : {}),
+            }}
           />
           {previewLoading && (
             <div style={{
