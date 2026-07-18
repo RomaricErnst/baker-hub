@@ -438,6 +438,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
   const [showTechSheet, setShowTechSheet] = useState(false);
+  const [techTab, setTechTab] = useState<'tips' | 'faq' | 'maestro'>('tips');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const sheetScrollRef = useRef<HTMLDivElement>(null);
   const [photos, setPhotos] = useState<Record<string, string>>({});
@@ -986,20 +987,26 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 </>
               )}
 
-              {/* Technique & tips link */}
-              <div style={{ padding: '14px 16px 4px' }}>
-                <button
-                  onClick={() => setShowTechSheet(true)}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    color: 'var(--terra)', fontFamily: 'var(--font-dm-sans)',
-                    fontSize: '13px', fontWeight: 500,
-                    textDecoration: 'underline', textUnderlineOffset: '3px',
-                    display: 'inline-flex', alignItems: 'center', gap: '5px',
-                  }}
-                >
-                  {l === 'fr' ? 'Technique & conseils ✦' : 'Technique & tips ✦'}
-                </button>
+              {/* Technique chips — same language as the Guide's step extras */}
+              <div style={{ padding: '14px 16px 4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {([
+                  ['tips', l === 'fr' ? '💡 Conseils' : '💡 Tips & tricks'],
+                  ['faq', 'FAQ'],
+                  ['maestro', l === 'fr' ? '✨ Maestro' : '✨ Maestro'],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => { setTechTab(key); setShowTechSheet(true); }}
+                    style={{
+                      border: '1px solid var(--border)', borderRadius: '20px',
+                      background: 'var(--cream)', cursor: 'pointer',
+                      padding: '7px 13px', fontFamily: 'var(--font-dm-mono)',
+                      fontSize: '11.5px', color: 'var(--ash)', whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
 
               {/* Technique sheet */}
@@ -1031,8 +1038,33 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                         <button onClick={() => setShowTechSheet(false)} style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--cream)', cursor: 'pointer', fontSize: 16, color: 'var(--smoke)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                       </div>
 
+                      {/* Tab chips — mirror of the entry chips on the card */}
+                      <div style={{ display: 'flex', gap: '8px', padding: '12px 16px 0' }}>
+                        {([
+                          ['tips', l === 'fr' ? '💡 Conseils' : '💡 Tips & tricks'],
+                          ['faq', 'FAQ'],
+                          ['maestro', '✨ Maestro'],
+                        ] as const).map(([key, label]) => (
+                          <button
+                            key={key}
+                            onClick={() => setTechTab(key)}
+                            style={{
+                              border: techTab === key ? '1.5px solid var(--terra)' : '1px solid var(--border)',
+                              borderRadius: '20px',
+                              background: techTab === key ? 'rgba(196,82,42,0.07)' : 'transparent',
+                              cursor: 'pointer', padding: '7px 13px',
+                              fontFamily: 'var(--font-dm-mono)', fontSize: '11.5px',
+                              color: techTab === key ? 'var(--terra)' : 'var(--ash)',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+
                       {/* Sections */}
-                      {([
+                      {techTab === 'tips' && ([
                         {
                           key: 'STRETCH',
                           fr: 'ÉTIREMENT',
@@ -1076,7 +1108,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                         </div>
                       ))}
 
-                      {/* FAQ — same logic as the Guide: tips above, FAQ, Maestro below */}
+                      {/* FAQ */}
+                      {techTab === 'faq' && (
                       <div style={{ padding: '20px 16px 0' }}>
                         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '8px' }}>
                           FAQ
@@ -1103,8 +1136,10 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                           </div>
                         ))}
                       </div>
+                      )}
 
-                      {/* Maestro in tech sheet — unified text + photo input */}
+                      {/* Maestro — unified text + photo input */}
+                      {techTab === 'maestro' && (
                       <div style={{ padding: '20px 16px 8px' }}>
                         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '2px' }}>
                           Maestro ✦
@@ -1122,6 +1157,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                           ovenType={ovenType}
                         />
                       </div>
+                      )}
                     </div>
 
                     {/* Close bar */}
