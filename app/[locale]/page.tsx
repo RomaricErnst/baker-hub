@@ -520,8 +520,11 @@ export default function Home() {
   // prefill a bake type the baker already tapped (fresh-device login race).
   const [profilePullTick, setProfilePullTick] = useState(0);
   // Latest cloud session offered as « Reprendre » on a device with no
-  // localStorage session (fresh device / cleared storage).
+  // localStorage session (fresh device / cleared storage). Freshness must be
+  // captured AT MOUNT: the autosave effect recreates bh_session_v1 within
+  // milliseconds, so a later loadSession() check always sees a session.
   const [cloudResume, setCloudResume] = useState<BakeEvent | null>(null);
+  const freshDeviceRef = useRef(false);
   const profileBlockersAppliedRef = useRef(false);
 
   // Custom mode — fermentation plan recommended
@@ -612,7 +615,7 @@ export default function Home() {
   // snapshot; hydrate only on tap (never surprise-restore mid-setup).
   useEffect(() => {
     if (!user) { setCloudResume(null); return; }
-    if (loadSession() || sessionRestored || modeChosen) return;
+    if (!freshDeviceRef.current || sessionRestored || modeChosen) return;
     let wbDismissed = false;
     try { wbDismissed = sessionStorage.getItem('bh_wb_answered') === '1'; } catch {}
     if (wbDismissed) return;
@@ -622,7 +625,7 @@ export default function Home() {
         const { fetchBakeEvents } = await import('../lib/supabase/fetchBakeEvents');
         const events = await fetchBakeEvents();
         const latest = events.find(e => e.dough_snapshot?.recipeGenerated);
-        if (!cancelled && latest && !loadSession()) setCloudResume(latest);
+        if (!cancelled && latest) setCloudResume(latest);
       } catch { /* offline — no banner, observation only */ }
     })();
     return () => { cancelled = true; };
@@ -634,6 +637,9 @@ export default function Home() {
     isRestoringRef.current = true;
     const session = loadSession();
     if (!session) {
+      // Nothing local at mount — this is the one reliable "fresh device"
+      // moment (autosave will write a default session right after).
+      freshDeviceRef.current = true;
       isRestoringRef.current = false;
       return;
     }
