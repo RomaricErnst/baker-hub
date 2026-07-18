@@ -262,9 +262,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
 
           {/* Guided groups */}
           {GROUPS.map((g, gi) => {
-            const opts = catalogue
-              .filter(ing => g.cats.includes(ing.category))
-              .filter(ing => !picked.some(p => p.refId === ing.id));
+            const opts = catalogue.filter(ing => g.cats.includes(ing.category));
             const isOpen = openGroup === gi;
             const f = free[gi] ?? { name: '', amount: '50', unit: 'g' as IngredientUnit };
             const nPicked = picked.filter(p => g.cats.includes(p.category)).length;
@@ -282,15 +280,24 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                 {isOpen && (
                   <div style={{ padding: '10px 12px' }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '132px', overflowY: 'auto' }}>
-                      {opts.map(ing => (
-                        <button key={ing.id} onClick={() => add(ing)} style={{
-                          border: '1px solid #E8E0D5', borderRadius: '16px', padding: '6px 11px',
-                          background: '#FDFBF7', cursor: 'pointer',
-                          fontFamily: 'var(--font-dm-sans)', fontSize: '12.5px', color: '#1A1612',
-                        }}>
-                          {ing.name[l]} +
-                        </button>
-                      ))}
+                      {opts.map(ing => {
+                        const on = picked.some(x => x.refId === ing.id);
+                        const style = {
+                          border: on ? '1.5px solid #6B7A5A' : '1px solid #E8E0D5',
+                          borderRadius: '16px', padding: '6px 11px',
+                          background: on ? 'rgba(107,122,90,0.10)' : '#FDFBF7', cursor: 'pointer',
+                          fontFamily: 'var(--font-dm-sans)', fontSize: '12.5px',
+                          color: on ? '#4E5B42' : '#1A1612',
+                        };
+                        const label = on ? '\u2713 ' + ing.name[l] : ing.name[l] + ' +';
+                        return (
+                          <button
+                            key={ing.id}
+                            onClick={() => on ? setPicked(prev => prev.filter(x => x.refId !== ing.id)) : add(ing)}
+                            style={style}
+                          >{label}</button>
+                        );
+                      })}
                     </div>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '10px' }}>
                       <input value={f.name}

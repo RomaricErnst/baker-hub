@@ -1444,26 +1444,30 @@ export default function Home() {
             const sessionPayload = buildSessionPayload();
             const currentQtys = pizzaPartyGetQtysRef.current?.() ?? pizzaPartyQtys;
             saveSession(sessionPayload);
+            // Optimistic - local save just succeeded; cloud write continues
+            // in the background and reverts the pill on failure.
+            setSessionSaved(true);
             if (user) {
-              const { saveNamedSession, savePizzaPartySelections, updateBakeEvent } = await import('../lib/supabase/saveBakeEvent');
-              let id = bakeEventId;
-              if (!id) {
-                id = await saveNamedSession(sessionPayload as SessionData);
-                if (id) setBakeEventId(id);
-              } else {
-                await updateBakeEvent(id, sessionPayload as SessionData);
-              }
-              if (id) {
-                if (Object.keys(currentQtys).length > 0 && styleKey) {
-                  await savePizzaPartySelections(id, currentQtys, styleKey);
-                  await new Promise(resolve => setTimeout(resolve, 500));
+              try {
+                const { saveNamedSession, savePizzaPartySelections, updateBakeEvent } = await import('../lib/supabase/saveBakeEvent');
+                let id = bakeEventId;
+                if (!id) {
+                  id = await saveNamedSession(sessionPayload as SessionData);
+                  if (id) setBakeEventId(id);
+                } else {
+                  await updateBakeEvent(id, sessionPayload as SessionData);
                 }
-                setSessionSaved(true);
+                if (id && Object.keys(currentQtys).length > 0 && styleKey) {
+                  await savePizzaPartySelections(id, currentQtys, styleKey);
+                }
+                if (!id) setSessionSaved(false);
+              } catch (e) {
+                console.error('Cloud save failed:', e);
+                setSessionSaved(false);
               }
             } else {
               setShowSignInForSave(true);
               setTimeout(() => setShowSignInForSave(false), 4000);
-              setSessionSaved(true);
             }
           }}
           onNewSession={startOver}
