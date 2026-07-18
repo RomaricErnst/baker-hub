@@ -44,12 +44,17 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
   }, []);
 
   function add(ing: Ingredient) {
-    setPicked(prev => [...prev, {
-      refId: ing.id, nameEn: ing.name.en, nameFr: ing.name.fr,
-      amount: ing.qtyPerPizza?.amount ?? 50,
-      unit: ing.qtyPerPizza?.unit ?? 'g',
-      bakeOrder: ing.bakeOrder, category: ing.category,
-    }]);
+    setPicked(prev => [
+      // One base per pizza — picking a second base swaps the first,
+      // silently, the way a real pizza works. Sauces stay stackable.
+      ...(ing.category === 'base' ? prev.filter(x => x.category !== 'base') : prev),
+      {
+        refId: ing.id, nameEn: ing.name.en, nameFr: ing.name.fr,
+        amount: ing.qtyPerPizza?.amount ?? 50,
+        unit: ing.qtyPerPizza?.unit ?? 'g',
+        bakeOrder: ing.bakeOrder, category: ing.category,
+      },
+    ]);
   }
 
   function addFree(gi: number) {
