@@ -25,6 +25,137 @@ function fmtQtyUnit(amount: number | string, unit: string, fr: boolean): string 
   return `${amount}${u}`;
 }
 
+// ── AU FOUR / IN THE OVEN guidance ───────────────────────────────────────────
+// Oven-aware bake guidance: session ovenType × the pizza's ovenTemp tag.
+// Observations, never alarms. One or two short lines.
+type OvenTempKey = 'high' | 'mid' | 'low';
+type OvenGuideLines = { en: string[]; fr: string[] };
+type OvenGuide = Record<OvenTempKey, OvenGuideLines>;
+
+const PIZZA_OVEN_GUIDE: OvenGuide = {
+  high: {
+    en: ['≈ 60–90 s — quarter-turn every 20–30 s.', 'Leoparding comes fast: ready once the cornicione is puffed and spotted.'],
+    fr: ["≈ 60–90 s — tourner d'un quart toutes les 20–30 s.", 'Le léopardage vient vite : prête dès que le cornicione est gonflé et tacheté.'],
+  },
+  mid: {
+    en: ['Let the flame settle a little: ≈ 90–120 s, quarter-turn every 30 s.', 'Delicate toppings prefer this gentler heat.'],
+    fr: ['Flamme un peu retombée : ≈ 90–120 s, un quart de tour toutes les 30 s.', 'Les garnitures délicates préfèrent cette chaleur plus douce.'],
+  },
+  low: {
+    en: ['Oven mouth, gentle heat: ≈ 2–3 min, turning regularly.', 'A golden base is enough — sweet toppings colour quickly.'],
+    fr: ['En bouche de four, chaleur douce : ≈ 2–3 min en tournant régulièrement.', 'Une base dorée suffit — les garnitures sucrées colorent vite.'],
+  },
+};
+
+const STONE_GUIDE: OvenGuide = {
+  high: {
+    en: ['≈ 5–7 min on a well-preheated stone — rotate halfway.', 'The stone gives its best after 45–60 min of preheating.'],
+    fr: ['≈ 5–7 min sur pierre bien préchauffée — tourner à mi-cuisson.', 'La pierre donne le meilleur après 45–60 min de préchauffage.'],
+  },
+  mid: {
+    en: ['≈ 6–8 min on the stone — rotate halfway.', 'One rack lower lets the top brown without rushing the toppings.'],
+    fr: ['≈ 6–8 min sur pierre — tourner à mi-cuisson.', 'Une grille un cran plus bas laisse dorer le dessus sans brusquer les garnitures.'],
+  },
+  low: {
+    en: ['≈ 7–9 min on the stone, middle rack.', 'Colour is a better guide than the clock — sugar browns quickly.'],
+    fr: ['≈ 7–9 min sur pierre, grille médiane.', 'La couleur guide mieux que le chrono — le sucre dore vite.'],
+  },
+};
+
+const STANDARD_GUIDE: OvenGuide = {
+  high: {
+    en: ['≈ 8–10 min, top rack — finish 60 s under the broiler if it looks pale.', 'An upside-down baking sheet, well preheated, gets close to a stone.'],
+    fr: ['≈ 8–10 min, grille haute — finir 60 s sous le gril si elle reste pâle.', "Une plaque retournée et bien préchauffée s'approche de l'effet pierre."],
+  },
+  mid: {
+    en: ['≈ 9–11 min, upper-middle rack.', 'A short broil at the very end brings back colour if needed.'],
+    fr: ['≈ 9–11 min, grille médiane-haute.', 'Un passage court sous le gril en toute fin redonne de la couleur si besoin.'],
+  },
+  low: {
+    en: ['≈ 10–12 min, middle rack.', 'The base is ready when it lifts in one piece without folding.'],
+    fr: ['≈ 10–12 min, grille médiane.', "La base est prête quand elle se soulève d'un seul geste sans plier."],
+  },
+};
+
+const ELECTRIC_GUIDE: OvenGuide = {
+  high: {
+    en: ['≈ 2–3 min — keep an eye on the underside.', 'The base element marks quickly: a quarter-turn halfway evens it out.'],
+    fr: ['≈ 2–3 min — surveiller le dessous.', 'La sole marque vite : un quart de tour à mi-cuisson égalise la couleur.'],
+  },
+  mid: {
+    en: ['One notch lower: ≈ 3–4 min.', 'Delicate toppings appreciate the slightly longer bake.'],
+    fr: ['Thermostat un cran plus bas : ≈ 3–4 min.', 'Les garnitures délicates apprécient cette cuisson un peu plus longue.'],
+  },
+  low: {
+    en: ['Reduced power: ≈ 4–5 min.', 'The underside colours before the top — a peek around 3 min tells you where it is.'],
+    fr: ['Puissance réduite : ≈ 4–5 min.', "Le dessous colore avant le dessus — un coup d'œil vers 3 min situe la cuisson."],
+  },
+};
+
+const STEAM_GUIDE: OvenGuide = {
+  high: {
+    en: ['Steam off for pizza: ≈ 6–8 min on a well-preheated stone or tray.', "Steam serves bread — pizza crust prefers dry heat."],
+    fr: ['Sans vapeur pour la pizza : ≈ 6–8 min sur pierre ou plaque bien préchauffée.', 'La vapeur sert le pain — la croûte de pizza préfère la chaleur sèche.'],
+  },
+  mid: {
+    en: ['Steam off: ≈ 7–9 min, upper-middle rack.', 'Delicate toppings settle in nicely at this pace.'],
+    fr: ['Sans vapeur : ≈ 7–9 min, grille médiane-haute.', 'Les garnitures délicates apprécient ce rythme.'],
+  },
+  low: {
+    en: ['Steam off, moderate heat: ≈ 8–10 min.', 'Colour is a better guide than the clock — sugar browns quickly.'],
+    fr: ['Sans vapeur, chaleur modérée : ≈ 8–10 min.', 'La couleur guide mieux que le chrono — le sucre dore vite.'],
+  },
+};
+
+const DUTCH_GUIDE: OvenGuide = {
+  high: {
+    en: ['≈ 8–10 min, top rack, oven at max.', 'The Dutch oven shines for bread — for pizza, a well-preheated tray takes over.'],
+    fr: ['≈ 8–10 min, grille haute, four au maximum.', 'La cocotte brille pour le pain — pour la pizza, une plaque bien préchauffée prend le relais.'],
+  },
+  mid: {
+    en: ['≈ 9–11 min, upper-middle rack on a preheated tray.', 'A short broil at the very end brings back colour if needed.'],
+    fr: ['≈ 9–11 min, grille médiane-haute sur plaque préchauffée.', 'Un passage court sous le gril en toute fin redonne de la couleur si besoin.'],
+  },
+  low: {
+    en: ['≈ 10–12 min, middle rack on a preheated tray.', 'The base is ready when it lifts in one piece without folding.'],
+    fr: ['≈ 10–12 min, grille médiane sur plaque préchauffée.', "La base est prête quand elle se soulève d'un seul geste sans plier."],
+  },
+};
+
+const FALLBACK_GUIDE: OvenGuide = {
+  high: {
+    en: ['Oven at max on a well-preheated surface: ≈ 5–8 min depending on power.', 'Rotate halfway for even colour.'],
+    fr: ['Four au maximum sur support bien préchauffé : ≈ 5–8 min selon la puissance.', 'Tourner à mi-cuisson pour une couleur régulière.'],
+  },
+  mid: {
+    en: ['Slightly gentler heat: ≈ 7–9 min.', 'Delicate toppings prefer this pace.'],
+    fr: ['Chaleur un peu plus douce : ≈ 7–9 min.', 'Les garnitures délicates préfèrent ce rythme.'],
+  },
+  low: {
+    en: ['Moderate heat: ≈ 8–10 min.', 'Colour is a better guide than the clock — sugar browns quickly.'],
+    fr: ['Chaleur modérée : ≈ 8–10 min.', 'La couleur guide mieux que le chrono — le sucre dore vite.'],
+  },
+};
+
+// All 9 oven types (4 pizza + 5 bread) — bread ovens map to their closest
+// pizza behaviour so the section stays useful whatever the session carries.
+const OVEN_GUIDANCE: Record<string, OvenGuide> = {
+  pizza_oven: PIZZA_OVEN_GUIDE,
+  wood_fired: PIZZA_OVEN_GUIDE,
+  home_oven_steel: STONE_GUIDE,
+  home_oven_stone_bread: STONE_GUIDE,
+  home_oven_standard: STANDARD_GUIDE,
+  standard_bread: STANDARD_GUIDE,
+  electric_pizza: ELECTRIC_GUIDE,
+  steam_oven: STEAM_GUIDE,
+  dutch_oven: DUTCH_GUIDE,
+};
+
+function getOvenGuidance(ovenType: string | undefined, ovenTemp: OvenTempKey, l: 'en' | 'fr'): string[] {
+  const guide = (ovenType && OVEN_GUIDANCE[ovenType]) || FALLBACK_GUIDE;
+  return (guide[ovenTemp] ?? guide.high)[l];
+}
+
 
 interface BakeTabProps {
   selectedPizzas: Record<string, number>;
@@ -277,6 +408,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
   const [showTechSheet, setShowTechSheet] = useState(false);
+  const sheetScrollRef = useRef<HTMLDivElement>(null);
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [doneCounts, setDoneCounts] = useState<Record<string, number>>({});
 
@@ -423,6 +555,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
       <style>{`
         @keyframes bh-spin { to { transform: rotate(360deg); } }
         @keyframes slideUpSheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes bhPopIn { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.25); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes bhChipIn { from { transform: translateY(6px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
       `}</style>
 
       <div style={{ padding: '16px 16px 0' }}>
@@ -590,7 +724,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
             />
 
             {/* Sheet */}
-            <div style={{
+            <div ref={sheetScrollRef} style={{
               position: 'fixed', bottom: 0, left: 0, right: 0,
               background: 'var(--warm)',
               borderRadius: '16px 16px 0 0',
@@ -722,6 +856,31 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   ))}
                 </>
               )}
+
+              {/* AU FOUR / IN THE OVEN section */}
+              {(() => {
+                const lines = getOvenGuidance(ovenType, pizza.ovenTemp, l);
+                return (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '16px 16px 4px' }}>
+                      <div style={{ width: '3px', height: '16px', borderRadius: '2px', background: 'var(--bread)', flexShrink: 0 }} />
+                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--bread)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>
+                        {t('section.oven')}
+                      </span>
+                    </div>
+                    <div style={{ padding: '8px 16px 2px' }}>
+                      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: 'var(--ash)', lineHeight: 1.6 }}>
+                        {lines[0]}
+                      </div>
+                      {lines[1] && (
+                        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: 'var(--smoke)', lineHeight: 1.55, marginTop: '3px' }}>
+                          {lines[1]}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
 
               {/* AFTER section */}
               {afterIngredients.length > 0 && (
@@ -921,13 +1080,74 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 </div>
               )}
 
-              {/* Sticky footer: photo + baked stepper */}
+              {/* Sticky footer: completion chip + photo + baked stepper */}
+              {(() => {
+                const isComplete = qty > 0 && baked >= qty;
+                const nextEntry = isComplete
+                  ? selectedEntries.find(e =>
+                      e.pizza.id !== sheetPizzaId && (doneCounts[e.pizza.id] ?? 0) < e.qty
+                    ) ?? null
+                  : null;
+                return (
               <div style={{
                 position: 'sticky', bottom: 0,
                 background: 'var(--warm)',
                 borderTop: '1px solid var(--border)',
-                padding: '10px 16px',
                 paddingBottom: 'calc(10px + env(safe-area-inset-bottom, 0px))',
+              }}>
+                {/* Completion chip — additive, never blocks rebaking */}
+                {isComplete && nextEntry && (
+                  <button
+                    onClick={() => {
+                      setSheetPizzaId(nextEntry.pizza.id);
+                      setShowTechSheet(false);
+                      // Instant scroll only — smooth scrolling moves targets under fingers
+                      if (sheetScrollRef.current) sheetScrollRef.current.scrollTop = 0;
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      width: 'calc(100% - 32px)', margin: '10px 16px 0',
+                      padding: '13px 16px',
+                      background: 'rgba(107,122,90,0.10)',
+                      border: '1px solid rgba(107,122,90,0.4)',
+                      borderRadius: '12px', cursor: 'pointer',
+                      animation: 'bhChipIn 0.25s ease',
+                    }}
+                  >
+                    <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '14px', fontWeight: 600, color: '#6B7A5A' }}>
+                      {l === 'fr' ? `Suivante : ${nextEntry.pizza.name.fr}` : `Next: ${nextEntry.pizza.name.en}`}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '15px', color: '#6B7A5A', lineHeight: 1 }}>→</span>
+                  </button>
+                )}
+                {isComplete && !nextEntry && (
+                  <button
+                    onClick={() => { setSheetPizzaId(null); setShowTechSheet(false); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      width: 'calc(100% - 32px)', margin: '10px 16px 0',
+                      padding: '12px 16px', gap: '10px',
+                      background: 'rgba(107,122,90,0.10)',
+                      border: '1px solid rgba(107,122,90,0.4)',
+                      borderRadius: '12px', cursor: 'pointer',
+                      animation: 'bhChipIn 0.25s ease', textAlign: 'left',
+                    }}
+                  >
+                    <span style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                      <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '14px', fontWeight: 600, color: '#6B7A5A' }}>
+                        {l === 'fr' ? '✓ Toutes les pizzas cuites' : '✓ All pizzas baked'}
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', fontStyle: 'italic', color: 'var(--smoke)' }}>
+                        {l === 'fr' ? 'Belle fournée.' : 'A beautiful bake.'}
+                      </span>
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)', textDecoration: 'underline', flexShrink: 0 }}>
+                      {l === 'fr' ? 'Fermer' : 'Close'}
+                    </span>
+                  </button>
+                )}
+              <div style={{
+                padding: '10px 16px 0',
                 display: 'flex', gap: 10, alignItems: 'center',
               }}>
                 {/* Hidden photo input */}
@@ -995,8 +1215,21 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     }}
                   >−</button>
                   <div style={{ flex: 1, textAlign: 'center', fontFamily: 'DM Mono, monospace', lineHeight: 1.2 }}>
-                    <div style={{ fontWeight: 700, fontSize: '15px', color: baked > qty ? '#D4A853' : 'var(--char)' }}>
+                    <div style={{
+                      fontWeight: 700, fontSize: '15px',
+                      color: baked > qty ? '#D4A853' : isComplete ? '#6B7A5A' : 'var(--char)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                      transition: 'color 0.2s ease',
+                    }}>
                       {baked > qty ? baked : `${baked} / ${qty}`}
+                      {isComplete && baked <= qty && (
+                        <svg key={`bh-done-${sheetPizzaId}`} viewBox="0 0 12 12" width={12} height={12}
+                          fill="none" stroke="#6B7A5A" strokeWidth="2.4"
+                          strokeLinecap="round" strokeLinejoin="round"
+                          style={{ animation: 'bhPopIn 0.45s ease', flexShrink: 0 }}>
+                          <path d="M2 6.2l2.8 2.8L10 3.5"/>
+                        </svg>
+                      )}
                     </div>
                     <div style={{ fontSize: '10px', color: 'var(--smoke)', marginTop: '1px' }}>
                       {l === 'fr' ? 'cuites' : 'baked'}
@@ -1015,6 +1248,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   >+</button>
                 </div>
               </div>
+              </div>
+                );
+              })()}
 
               {/* Full-width photo hero with Maestro button overlaid */}
               {photos[sheetPizzaId] && (
