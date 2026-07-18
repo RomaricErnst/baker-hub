@@ -1069,10 +1069,15 @@ export function mixerHydrationWarning(
 // 6. TIME UTILITIES
 // ══════════════════════════════════════════
 
-export function formatTime(d: Date): string {
+export function formatTime(d: Date, locale?: string): string {
   if (!(d instanceof Date) || isNaN(d.getTime())) return '—';
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  return `${days[d.getDay()]} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const fr = locale === 'fr';
+  const days = fr
+    ? ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.']
+    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return fr ? `${days[d.getDay()]} ${hh}h${mm}` : `${days[d.getDay()]} ${hh}:${mm}`;
 }
 
 export function toDateTimeLocal(d: Date): string {

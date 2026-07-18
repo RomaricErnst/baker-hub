@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, tempC, displayTemp } from '../utils/units';
 import DecisionList from './DecisionList';
 import DecisionSummary from './DecisionSummary';
@@ -41,6 +41,23 @@ const WMO: Record<number, [emoji: string, desc: string]> = {
   96: ['⛈️', 'Thunderstorm + hail'],
   99: ['⛈️', 'Severe thunderstorm'],
 };
+
+const WMO_FR: Record<number, string> = {
+   0: 'Ciel dégagé',      1: 'Plutôt dégagé',    2: 'Partiellement nuageux', 3: 'Couvert',
+  45: 'Brouillard',       48: 'Brouillard givrant',
+  51: 'Bruine légère',    53: 'Bruine',          55: 'Forte bruine',
+  61: 'Pluie légère',     63: 'Pluie',           65: 'Forte pluie',
+  71: 'Neige légère',     73: 'Neige',           75: 'Forte neige',   77: 'Grésil',
+  80: 'Averses',          81: 'Fortes averses',  82: 'Averses violentes',
+  85: 'Averses de neige', 86: 'Fortes averses de neige',
+  95: 'Orage',            96: 'Orage avec grêle', 99: 'Orage violent',
+};
+
+function getWMODescFr(code: number): string {
+  if (WMO_FR[code]) return WMO_FR[code];
+  const lower = Object.keys(WMO_FR).map(Number).filter(k => k <= code).pop();
+  return lower !== undefined ? WMO_FR[lower] : 'Conditions inconnues';
+}
 
 function getWMO(code: number): [string, string] {
   // Try exact match, then nearest lower code
@@ -97,6 +114,7 @@ export default function ClimatePicker({
 }: ClimatePickerProps) {
   const u = units ?? 'metric';
   const tc = useTranslations('climate');
+  const isFr = useLocale() === 'fr';
   const [simpleExpanded, setSimpleExpanded] = useState(true);
   const [city, setCity] = useState('');
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -113,13 +131,13 @@ export default function ClimatePicker({
     try {
       // 1 — Geocoding
       const geoRes = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=en&format=json`
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=${isFr ? 'fr' : 'en'}&format=json`
       );
       if (!geoRes.ok) throw new Error('Geocoding request failed');
       const geoData = await geoRes.json();
 
       if (!geoData.results?.length) {
-        setFetchError(`City "${q}" not found. Try a different spelling or nearby city.`);
+        setFetchError(isFr ? `Ville « ${q} » introuvable. Essayez une autre orthographe ou une ville proche.` : `City "${q}" not found. Try a different spelling or nearby city.`);
         setLoading(false);
         return;
       }
@@ -145,7 +163,7 @@ export default function ClimatePicker({
       onChange(clampedTemp, humidityCategory(humidityPct), fridgeTemp);
 
     } catch (e) {
-      setFetchError(e instanceof Error ? e.message : 'Failed to fetch weather data.');
+      setFetchError(isFr ? 'Impossible de récupérer la météo.' : (e instanceof Error ? e.message : 'Failed to fetch weather data.'));
     } finally {
       setLoading(false);
     }
@@ -206,11 +224,11 @@ export default function ClimatePicker({
 
       {/* ── City search ─────────────────────────── */}
       <div>
-        <label style={SECTION_LABEL}>Get outdoor conditions</label>
+        <label style={SECTION_LABEL}>{isFr ? 'Conditions extérieures' : 'Get outdoor conditions'}</label>
         <div style={{ display: 'flex', gap: '.5rem' }}>
           <input
             type="text"
-            placeholder="City — e.g. Naples, Tokyo, Chicago"
+            placeholder={isFr ? 'Ville — ex. Naples, Tokyo, Paris' : 'City — e.g. Naples, Tokyo, Chicago'}
             value={city}
             onChange={e => setCity(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -242,7 +260,7 @@ export default function ClimatePicker({
               whiteSpace: 'nowrap',
             }}
           >
-            {loading ? 'Fetching…' : 'Get Climate'}
+            {loading ? (isFr ? 'Recherche…' : 'Fetching…') : (isFr ? 'Météo' : 'Get Climate')}
           </button>
         </div>
 
@@ -297,7 +315,7 @@ export default function ClimatePicker({
                   fontSize: '.75rem', color: 'var(--smoke)',
                   fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem',
                 }}>
-                  {wxDesc}
+                  {isFr ? getWMODescFr(weather.weatherCode) : wxDesc}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -324,7 +342,7 @@ export default function ClimatePicker({
       {/* ── Kitchen temperature ──────────────────── */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
-          <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>Kitchen temperature</label>
+          <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Température de la cuisine' : 'Kitchen temperature'}</label>
           <span style={{
             fontFamily: 'var(--font-dm-mono)',
             fontSize: '1.1rem',
@@ -351,9 +369,9 @@ export default function ClimatePicker({
           fontSize: '.65rem', color: 'var(--smoke)',
           fontFamily: 'var(--font-dm-mono)', marginTop: '.25rem',
         }}>
-          <span>{tempC(15, u)} cool</span>
-          <span>{tempC(22, u)} ideal</span>
-          <span>{tempC(30, u)} hot</span>
+          <span>{tempC(15, u)} {isFr ? 'froid' : 'cool'}</span>
+          <span>{tempC(22, u)} {isFr ? 'idéal' : 'ideal'}</span>
+          <span>{tempC(30, u)} {isFr ? 'chaud' : 'hot'}</span>
           <span>{tempC(38, u)}</span>
         </div>
 
@@ -369,7 +387,7 @@ export default function ClimatePicker({
             marginTop: '.75rem',
             lineHeight: 1.5,
           }}>
-            🌡️ In a warm climate, afternoon temps can push above {tempC(28, u)}. If your kitchen heats up during the day, consider entering your expected peak temperature instead.
+            🌡️ {isFr ? <>Sous un climat chaud, les après-midis peuvent dépasser {tempC(28, u)}. Si votre cuisine chauffe en journée, indiquez plutôt la température maximale attendue.</> : <>In a warm climate, afternoon temps can push above {tempC(28, u)}. If your kitchen heats up during the day, consider entering your expected peak temperature instead.</>}
           </div>
         )}
       </div>
@@ -377,7 +395,7 @@ export default function ClimatePicker({
       {/* ── Humidity ────────────────────────────── */}
       <div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '.5rem', marginBottom: '.5rem' }}>
-          <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>Kitchen humidity</label>
+          <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Humidité de la cuisine' : 'Kitchen humidity'}</label>
           {(() => {
             const active = HUMIDITY_OPTIONS.find(o => o.value === humidity);
             return active ? (
@@ -408,7 +426,7 @@ export default function ClimatePicker({
                   whiteSpace: 'nowrap',
                 }}
               >
-                {opt.label}
+                {isFr ? ({ dry: 'Sec', normal: 'Normale', humid: 'Humide', 'very-humid': 'Très humide' } as Record<string, string>)[opt.value] : opt.label}
               </button>
             );
           })}
@@ -419,7 +437,7 @@ export default function ClimatePicker({
       {mode === 'custom' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
-            <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>Fridge temperature</label>
+            <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Température du frigo' : 'Fridge temperature'}</label>
             <span style={{
               fontFamily: 'var(--font-dm-mono)',
               fontSize: '1.1rem',
@@ -447,7 +465,7 @@ export default function ClimatePicker({
           }}>
             <span>{tempC(1, u)}</span>
             <span>{tempC(6, u)} standard</span>
-            <span>{tempC(8, u)} warm</span>
+            <span>{tempC(8, u)} {isFr ? 'chaud' : 'warm'}</span>
             <span>{tempC(15, u)}</span>
           </div>
 
@@ -458,7 +476,7 @@ export default function ClimatePicker({
               background: '#EEF2FA', border: '1px solid #C4CDE0',
               borderRadius: '8px', padding: '.45rem .8rem',
             }}>
-              Fridge at <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> is warmer than the standard {tempC(6, u)} — yeast will be more active during cold retard.
+              {isFr ? <>Un frigo à <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> est plus chaud que le standard {tempC(6, u)} — la levure restera plus active pendant le froid.</> : <>Fridge at <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> is warmer than the standard {tempC(6, u)} — yeast will be more active during cold retard.</>}
             </div>
           )}
 

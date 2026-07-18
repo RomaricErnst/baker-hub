@@ -248,7 +248,9 @@ function StepCard({
 }
 
 // ── Stepper button ────────────────────────────
-function ContinueBtn({ onClick, label = 'Continue →' }: { onClick: () => void; label?: string }) {
+function ContinueBtn({ onClick, label }: { onClick: () => void; label?: string }) {
+  const _locale = useLocale();
+  const lbl = label ?? (_locale === 'fr' ? 'Continuer →' : 'Continue →');
   return (
     <button
       onClick={onClick}
@@ -262,7 +264,7 @@ function ContinueBtn({ onClick, label = 'Continue →' }: { onClick: () => void;
         boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
       }}
     >
-      {label}
+      {lbl}
     </button>
   );
 }
@@ -1957,7 +1959,7 @@ export default function Home() {
               activeStep={activeStep}
               highestStep={highestStep}
               reviewMode={reviewMode}
-              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}` : undefined}
+              summary={eatTime ? `${formatTime(startTime, locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}` : undefined}
               onEdit={() => setActiveStep(7)}
             >
               <SchedulePicker
@@ -2806,7 +2808,7 @@ export default function Home() {
               activeStep={advancedStep}
               highestStep={advancedHighestStep}
               reviewMode={reviewMode}
-              summary={eatTime ? `${formatTime(startTime)} → ${formatTime(eatTime)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}` : undefined}
+              summary={eatTime ? `${formatTime(startTime, locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}` : undefined}
               onEdit={() => setAdvancedStep(9)}
             >
               <SchedulePicker
@@ -2874,7 +2876,7 @@ export default function Home() {
             >
               <div>
                 <div style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '1rem', lineHeight: 1.5 }}>
-                  Defaults are set for your style — adjust if you know what you&apos;re doing.
+                  {locale === 'fr' ? 'Les valeurs par défaut correspondent à votre style — ajustez si vous savez ce que vous faites.' : <>Defaults are set for your style — adjust if you know what you&apos;re doing.</>}
                 </div>
 
                 {/* Preferment flour % slider */}

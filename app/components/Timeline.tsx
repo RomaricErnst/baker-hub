@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   type AvailabilityBlock,
   type ScheduleResult,
@@ -449,6 +449,7 @@ export default function Timeline({
 }: TimelineProps) {
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
   const t = useTranslations();
+  const _fmtLocale = useLocale();
 
   const isSourdough = styleKey === 'sourdough' || styleKey === 'pain_levain';
 
@@ -481,7 +482,7 @@ export default function Timeline({
             Your baking protocol
           </div>
           <div style={{ fontSize: '.75rem', color: 'var(--smoke)', marginTop: '.1rem', fontFamily: 'var(--font-dm-mono)' }}>
-            {formatTime(startTime)} → {formatTime(eatTime)}
+            {formatTime(startTime, _fmtLocale)} → {formatTime(eatTime, _fmtLocale)}
             {' · '}{hoursLabel((eatTime.getTime() - startTime.getTime()) / 3600000)} total
           </div>
           {/* Quick-bake honesty note — short windows silently produced an
@@ -571,7 +572,7 @@ export default function Timeline({
                 fontSize: '.7rem', color: 'var(--smoke)',
                 lineHeight: 1.4,
               }}>
-                {formatTime(item.time)}
+                {formatTime(item.time, _fmtLocale)}
               </div>
 
               {/* Dot + line column */}
@@ -863,7 +864,7 @@ export default function Timeline({
                       width: '6px', height: '6px', borderRadius: '50%',
                       background: th.dot, flexShrink: 0,
                     }} />
-                    {item.stepKind === 'cold' && `${formatTime(item.time)} → ends at ${formatTime(new Date(item.time.getTime() + (item.durationH ?? 0) * 3600000))}`}
+                    {item.stepKind === 'cold' && `${formatTime(item.time, _fmtLocale)} → ${_fmtLocale === 'fr' ? "jusqu'\u00e0" : 'ends at'} ${formatTime(new Date(item.time.getTime() + (item.durationH ?? 0) * 3600000), _fmtLocale)}`}
                     {item.stepKind === 'bulk_ferm' && t('timeline.blockLabels.bulkFerm', { dur: hoursLabel(item.durationH ?? 0) })}
                     {item.stepKind === 'final_proof' && t('timeline.blockLabels.finalProof', { dur: hoursLabel(schedule.finalProofHours) })}
                     {item.stepKind === 'rest_rt' && item.id !== 'remove_pref_fridge' && t('timeline.blockLabels.roomTemp', { dur: hoursLabel(item.durationH ?? 0) })}

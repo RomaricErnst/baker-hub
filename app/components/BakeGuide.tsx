@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
 import { MIXER_TYPES, type MixerType } from '../data';
 import LearnModal from './LearnModal';
@@ -145,6 +145,7 @@ function StepCard({
   divRef?: React.RefCallback<HTMLDivElement>;
 }) {
   const ea = done ? D.sage : accent;
+  const _fmtLocale = useLocale();
   return (
     <div ref={divRef} style={{
       background: D.warm, borderRadius: '18px',
@@ -199,7 +200,7 @@ function StepCard({
           }}>{title}</div>
           {time && (
             <div style={{ fontSize: '.72rem', color: D.smoke, fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem' }}>
-              {formatTime(time)}
+              {formatTime(time, _fmtLocale)}
               {duration ? ` · ${hoursLabel(duration)}` : ''}
             </div>
           )}
@@ -709,6 +710,8 @@ export default function BakeGuide({
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const t = useTranslations('bakeGuide');
+  const _fmtLocale = useLocale();
+  const _isFr = _fmtLocale === 'fr';
   // Persist ticked steps so reopening the app mid-bake keeps progress
   const doneHydrated = useRef(false);
   useEffect(() => {
@@ -810,10 +813,10 @@ export default function BakeGuide({
       {/* ── Header ──────────────────────────────────── */}
       <div style={{ marginBottom: '.25rem' }}>
         <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.2rem', fontWeight: 700, color: D.char }}>
-          Step-by-step bake guide
+          {_isFr ? 'Guide de cuisson pas à pas' : 'Step-by-step bake guide'}
         </div>
         <div style={{ fontSize: '.75rem', color: D.smoke, fontFamily: 'var(--font-dm-mono)', marginTop: '.2rem' }}>
-          {formatTime(bgMixStart)} → {formatTime(schedule.bakeStart)} · {hoursLabel((schedule.bakeStart.getTime() - bgMixStart.getTime()) / 3600000)} total
+          {formatTime(bgMixStart, _fmtLocale)} → {formatTime(schedule.bakeStart, _fmtLocale)} · {hoursLabel((schedule.bakeStart.getTime() - bgMixStart.getTime()) / 3600000)} {_isFr ? 'au total' : 'total'}
         </div>
       </div>
 
@@ -1234,7 +1237,7 @@ export default function BakeGuide({
           <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
               ...(t.raw('coldRetard.steps') as { bold: string; note: string }[]).slice(0, 2),
-              { bold: 'Set your alarm for Divide & Ball time', note: formatTime(schedule.divideBallTime ?? schedule.coldRetard1End) },
+              { bold: _isFr ? 'Réglez une alarme pour la division & le boulage' : 'Set your alarm for Divide & Ball time', note: formatTime(schedule.divideBallTime ?? schedule.coldRetard1End, _fmtLocale) },
               (t.raw('coldRetard.steps') as { bold: string; note: string }[])[2],
             ]} />
           </Section>
@@ -1367,7 +1370,7 @@ export default function BakeGuide({
           <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
               ...(t.raw('coldBalls.steps') as { bold: string; note: string }[]),
-              { bold: 'Set your alarm for warmup time', note: schedule.rtWarmupStart ? formatTime(schedule.rtWarmupStart) : 'see schedule' },
+              { bold: _isFr ? 'Réglez une alarme pour la remise à température' : 'Set your alarm for warmup time', note: schedule.rtWarmupStart ? formatTime(schedule.rtWarmupStart, _fmtLocale) : (_isFr ? 'voir le planning' : 'see schedule') },
             ]} />
           </Section>
 
