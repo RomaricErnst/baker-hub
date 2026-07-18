@@ -92,7 +92,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         position: 'fixed', bottom: 0, left: 0, right: 0,
         background: 'var(--cream)', borderRadius: '16px 16px 0 0',
         zIndex: 300, maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
-        paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+        paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
       }}>
         <div style={{ width: 36, height: 4, background: 'rgba(0,0,0,0.15)', borderRadius: 2, margin: '14px auto 10px' }} />
         <div style={{
@@ -121,6 +121,44 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           }}>×</button>
         </div>
 
+        <span style={S.label}>{fr ? 'Mode par défaut' : 'Default mode'}</span>
+        <div style={{ display: 'flex', gap: '6px', padding: '0 16px' }}>
+          {([['simple', 'Simple'], ['custom', fr ? 'Avancé' : 'Custom']] as const).map(([key, label]) => (
+            <button key={key} onClick={() => patch({ preferredMode: profile.preferredMode === key ? null : key })} style={S.pill(profile.preferredMode === key)}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <span style={S.label}>{fr ? 'Mes pizzas' : 'My pizzas'}</span>
+        {customs.length === 0 ? (
+          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', padding: '0 16px' }}>
+            {fr ? 'Créez vos pizzas depuis Ma Soirée Pizza — elles vivront ici.' : 'Create pizzas from My Pizza Party — they will live here.'}
+          </div>
+        ) : customs.map(cp => (
+          <div key={cp.id} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            margin: '0 16px 6px', padding: '9px 12px',
+            background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '10px',
+          }}>
+            <div>
+              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>{cp.name}</div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--smoke)' }}>
+                {cp.ingredients.length} {fr ? 'ingrédients' : 'ingredients'}
+              </div>
+            </div>
+            <button
+              onClick={() => { deleteCustomPizza(cp.id); setProfile({ version: 1, ...(loadProfile() ?? {}) }); }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)',
+                textDecoration: 'underline', textUnderlineOffset: '2px',
+              }}
+            >
+              {fr ? 'Supprimer' : 'Delete'}
+            </button>
+          </div>
+        ))}
         <span style={S.label}>{fr ? 'Four — pizza' : 'Oven — pizza'}</span>
         {pillRow(
           Object.entries(OVEN_TYPES).map(([key, v]) => ({ key, label: fr ? v.nameFr : v.name })),
@@ -150,15 +188,6 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
             <button key={t} onClick={() => patch({ fridgeTemp: profile.fridgeTemp === t ? undefined : t })}
               style={S.pill(profile.fridgeTemp === t)}>
               <span style={{ fontFamily: 'var(--font-dm-mono)' }}>{t}°C</span>
-            </button>
-          ))}
-        </div>
-
-        <span style={S.label}>{fr ? 'Mode par défaut' : 'Default mode'}</span>
-        <div style={{ display: 'flex', gap: '6px', padding: '0 16px' }}>
-          {([['simple', 'Simple'], ['custom', fr ? 'Avancé' : 'Custom']] as const).map(([key, label]) => (
-            <button key={key} onClick={() => patch({ preferredMode: profile.preferredMode === key ? null : key })} style={S.pill(profile.preferredMode === key)}>
-              {label}
             </button>
           ))}
         </div>
@@ -196,35 +225,6 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         {blockerRow('sleep', fr ? 'Sommeil' : 'Sleep')}
         {blockerRow('work', fr ? 'Travail' : 'Work')}
 
-        <span style={S.label}>{fr ? 'Mes pizzas' : 'My pizzas'}</span>
-        {customs.length === 0 ? (
-          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', padding: '0 16px' }}>
-            {fr ? 'Créez vos pizzas depuis Ma Soirée Pizza — elles vivront ici.' : 'Create pizzas from My Pizza Party — they will live here.'}
-          </div>
-        ) : customs.map(cp => (
-          <div key={cp.id} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            margin: '0 16px 6px', padding: '9px 12px',
-            background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '10px',
-          }}>
-            <div>
-              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>{cp.name}</div>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--smoke)' }}>
-                {cp.ingredients.length} {fr ? 'ingrédients' : 'ingredients'}
-              </div>
-            </div>
-            <button
-              onClick={() => { deleteCustomPizza(cp.id); setProfile({ version: 1, ...(loadProfile() ?? {}) }); }}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)',
-                textDecoration: 'underline', textUnderlineOffset: '2px',
-              }}
-            >
-              {fr ? 'Supprimer' : 'Delete'}
-            </button>
-          </div>
-        ))}
       </div>
     </>
   );
