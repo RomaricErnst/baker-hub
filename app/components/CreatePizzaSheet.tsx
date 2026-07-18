@@ -34,7 +34,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated }: {
   // Unique catalogue across all pizzas, keyed by ingredient id
   const catalogue = useMemo(() => {
     const map = new Map<string, Ingredient>();
-    [...PIZZAS, ...DESSERT_PIZZAS].forEach(p => p.ingredients.forEach(ing => {
+    [...PIZZAS, ...DESSERT_PIZZAS].forEach(p => p.ingredients.filter(Boolean).forEach(ing => {
       if (!map.has(ing.id)) map.set(ing.id, ing);
     }));
     return [...map.values()];
@@ -82,7 +82,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated }: {
     const votes: Record<OvenTempTag, number> = { high: 0, mid: 0, low: 0 };
     const refIds = picked.filter(p => p.refId).map(p => p.refId as string);
     [...PIZZAS, ...DESSERT_PIZZAS].forEach(p => {
-      const hits = p.ingredients.filter(ing => refIds.includes(ing.id)).length;
+      const hits = p.ingredients.filter(ing => ing && refIds.includes(ing.id)).length;
       if (hits > 0) votes[p.ovenTemp] += hits;
     });
     const best = (Object.entries(votes) as Array<[OvenTempTag, number]>).sort((a, b) => b[1] - a[1])[0];
