@@ -8,6 +8,24 @@ import { uploadPhoto, ALLOWED_MIME_TYPES } from '@/app/lib/photoUpload';
 import type { User } from '@supabase/supabase-js';
 import { useRef } from 'react';
 
+// Word units need a space and a FR translation — raw join produced "5leaves".
+const UNIT_LABELS: Record<string, { en: string; fr: string }> = {
+  g: { en: 'g', fr: 'g' },
+  ml: { en: 'ml', fr: 'ml' },
+  leaves: { en: ' leaves', fr: ' feuilles' },
+  pcs: { en: ' pcs', fr: ' pcs' },
+  pinch: { en: ' pinch', fr: ' pincée' },
+  sprigs: { en: ' sprigs', fr: ' brins' },
+  tbsp: { en: ' tbsp', fr: ' c.à.s.' },
+  slices: { en: ' slices', fr: ' tranches' },
+  drizzle: { en: ' drizzle', fr: ' filet' },
+};
+function fmtQtyUnit(amount: number | string, unit: string, fr: boolean): string {
+  const u = UNIT_LABELS[unit] ? UNIT_LABELS[unit][fr ? 'fr' : 'en'] : ' ' + unit;
+  return `${amount}${u}`;
+}
+
+
 interface BakeTabProps {
   selectedPizzas: Record<string, number>;
   locale: string;
@@ -676,7 +694,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                             fontFamily: 'var(--font-dm-mono)',
                             fontSize: '12px', color: 'var(--smoke)',
                           }}>
-                            {ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}
+                            {fmtQtyUnit(ing.qtyPerPizza.amount, ing.qtyPerPizza.unit, l === 'fr')} {t('perPizza')}
                           </span>
                           {(l === 'fr'
                             ? ing.qtyPerPizza.noteFR
@@ -733,7 +751,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                             fontFamily: 'var(--font-dm-mono)',
                             fontSize: '12px', color: 'var(--smoke)',
                           }}>
-                            {ing.qtyPerPizza.amount}{ing.qtyPerPizza.unit} {t('perPizza')}
+                            {fmtQtyUnit(ing.qtyPerPizza.amount, ing.qtyPerPizza.unit, l === 'fr')} {t('perPizza')}
                           </span>
                           {(l === 'fr'
                             ? ing.qtyPerPizza.noteFR
