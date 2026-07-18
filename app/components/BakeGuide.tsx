@@ -1157,15 +1157,10 @@ export default function BakeGuide({
               ]} />
               <div style={{ marginTop: '.75rem' }}>
                 <img
-                  src="/Pumpkin-shape.png"
+                  src="/Pumpkin.jpeg"
                   alt="Pumpkin shape — dough gathered into a smooth ball around the spiral"
                   style={{ width: '100%', maxWidth: '340px', borderRadius: '10px', display: 'block', marginTop: '8px', border: '1px solid var(--border)' }}
-                  onError={e => {
-                    const img = e.target as HTMLImageElement;
-                    if (img.src.endsWith('.png')) { img.src = '/Pumpkin-shape.jpg'; return; }
-                    if (img.src.endsWith('.jpg')) { img.src = '/Pumpkin-shape.webp'; return; }
-                    img.style.display = 'none';
-                  }}
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
               </div>
             </>
