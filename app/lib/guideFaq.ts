@@ -30,6 +30,20 @@ export const GUIDE_FAQ: Record<string, FaqEntry[]> = {
         fr: "Oui — un poolish à son pic ou presque tient plusieurs heures au frigo (jusqu'à ~24h au total). Sortez-le ~30 min avant le pétrissage pour réveiller la levure.",
       },
     },
+    {
+      q: { en: "How do I know it's exactly at its peak?", fr: "Comment savoir qu'il est pile à son pic ?" },
+      a: {
+        en: "Domed surface, bubbles all through the mass, and the first faint wrinkles at the centre. The smell says it too: nutty and yogurt-like at peak, sharply alcoholic past it.",
+        fr: "Surface bombée, bulles dans toute la masse, et les premières rides discrètes au centre. L'odeur le dit aussi : noisette et yaourt au pic, franchement alcoolisée au-delà.",
+      },
+    },
+    {
+      q: { en: "Can I use cold water to slow it down?", fr: "Puis-je utiliser de l'eau froide pour le ralentir ?" },
+      a: {
+        en: "Yes \u2014 cooler water buys hours in a warm kitchen. The schedule assumed your kitchen temperature, so expect the peak a little later than shown.",
+        fr: "Oui — une eau plus fraîche fait gagner des heures dans une cuisine chaude. Le planning suppose la température de votre cuisine : attendez le pic un peu plus tard qu'affiché.",
+      },
+    },
   ],
   biga: [
     {
@@ -51,6 +65,20 @@ export const GUIDE_FAQ: Record<string, FaqEntry[]> = {
       a: {
         en: 'Break a piece open: you want visible bubbles inside, a slightly domed mass, and a sweet-alcoholic smell. Dense with no bubbles = give it more time somewhere slightly warmer.',
         fr: "Cassez un morceau : il faut des bulles visibles à l'intérieur, une masse légèrement bombée et une odeur douce-alcoolisée. Dense et sans bulles = laissez-lui plus de temps, un peu plus au chaud.",
+      },
+    },
+    {
+      q: { en: "There are chunks of biga in my final dough", fr: "Il reste des morceaux de biga dans ma pâte finale" },
+      a: {
+        en: "Harmless \u2014 they disappear during bulk. Next time, dissolve the biga in the recipe water for a minute before adding flour; it incorporates far more easily.",
+        fr: "Sans gravité — ils disparaissent pendant le pointage. La prochaine fois, délayez la biga une minute dans l'eau de la recette avant la farine ; elle s'incorpore bien plus facilement.",
+      },
+    },
+    {
+      q: { en: "My biga smells like alcohol", fr: "Ma biga sent l'alcool" },
+      a: {
+        en: "Slightly boozy is normal \u2014 a stiff biga ferments with little oxygen. A sharp nail-polish note means it went too far: usable, but shorten the time or find a cooler spot next round.",
+        fr: "Légèrement alcoolisée, c'est normal — une biga ferme fermente avec peu d'oxygène. Une note piquante de dissolvant signifie qu'elle est allée trop loin : utilisable, mais raccourcissez ou placez-la plus au frais la prochaine fois.",
       },
     },
   ],
@@ -76,6 +104,20 @@ export const GUIDE_FAQ: Record<string, FaqEntry[]> = {
         fr: "Nourrissez-le maintenant. Le pétrissage se décale d'environ le même retard. Si la fenêtre devient trop courte, repoussez la cuisson plutôt que de pétrir avec un levain faible.",
       },
     },
+    {
+      q: { en: "Is the float test reliable?", fr: "Le test de flottaison est-il fiable ?" },
+      a: {
+        en: "Indicative, not definitive. A mature starter that was stirred or is past peak can sink and still leaven perfectly. Volume rise and a domed, bubbled surface are better witnesses.",
+        fr: "Indicatif, pas définitif. Un levain mûr qui a été remué ou a dépassé son pic peut couler et lever parfaitement. La montée en volume et une surface bombée et bullée sont de meilleurs témoins.",
+      },
+    },
+    {
+      q: { en: "I missed the peak \u2014 feed again or use it?", fr: "J'ai raté le pic — nourrir à nouveau ou l'utiliser ?" },
+      a: {
+        en: "Within an hour or two past peak, use it \u2014 flavour is a touch tangier, power is fine. Much later, give it a quick 1:1 refresh and wait for the new rise.",
+        fr: "Une à deux heures après le pic, utilisez-le — un peu plus acidulé, la force est là. Bien plus tard, offrez-lui un rafraîchi rapide à 1:1 et attendez la nouvelle montée.",
+      },
+    },
   ],
   mix: [
     {
@@ -97,6 +139,20 @@ export const GUIDE_FAQ: Record<string, FaqEntry[]> = {
       a: {
         en: 'Above ~28°C, pop it in the fridge for 15–20 min before starting bulk. A warm dough ferments faster than the plan assumes — cooling it now keeps your schedule honest.',
         fr: "Au-dessus de ~28°C, mettez-la 15–20 min au frigo avant la pointe. Une pâte chaude fermente plus vite que prévu — la refroidir maintenant garde votre planning juste.",
+      },
+    },
+    {
+      q: { en: "The dough is sticky \u2014 should I add flour?", fr: "La pâte colle — dois-je ajouter de la farine ?" },
+      a: {
+        en: "Resist. Stickiness at this stage is hydration doing its job; extra flour trades open crumb for comfort. Wet hands, a plastic scraper and the scheduled rests do the real work.",
+        fr: "Résistez. Le collant à ce stade, c'est l'hydratation qui travaille ; la farine ajoutée échange une mie ouverte contre du confort. Mains mouillées, corne en plastique et les repos prévus font le vrai travail.",
+      },
+    },
+    {
+      q: { en: "The windowpane test fails after kneading", fr: "Le test de la membrane échoue après pétrissage" },
+      a: {
+        en: "Give it 20 minutes of rest and test again \u2014 gluten keeps developing between efforts. Most doughs pass on the second try without another minute of kneading.",
+        fr: "Accordez 20 minutes de repos et retestez — le gluten continue de se développer entre les efforts. La plupart des pâtes réussissent au second essai sans une minute de pétrissage de plus.",
       },
     },
   ],
@@ -122,6 +178,20 @@ export const GUIDE_FAQ: Record<string, FaqEntry[]> = {
         fr: "Pour les pâtes très hydratées, oui — ils donnent de la force sans pétrir. Pour les pâtes fermes (≤60%), moins. Sauter une série passe ; tout sauter donne un résultat plus plat.",
       },
     },
+    {
+      q: { en: "How much should it actually rise?", fr: "De combien doit-elle vraiment monter ?" },
+      a: {
+        en: "For pizza, think 50\u201370% \u2014 not doubled. A straight-sided container with a rubber band at the start level beats every guess.",
+        fr: "Pour la pizza, visez 50–70% — pas le double. Un récipient à bords droits avec un élastique au niveau de départ vaut mieux que toutes les estimations.",
+      },
+    },
+    {
+      q: { en: "My kitchen got warmer than planned", fr: "Ma cuisine est devenue plus chaude que prévu" },
+      a: {
+        en: "The biology follows the thermometer, not the plan \u2014 check the dough earlier. The visual cues (volume, surface bubbles) outrank the clock whenever they disagree.",
+        fr: "La biologie suit le thermomètre, pas le plan — surveillez la pâte plus tôt. Les repères visuels (volume, bulles en surface) priment sur l'horloge dès qu'ils divergent.",
+      },
+    },
   ],
   cold: [
     {
@@ -136,6 +206,20 @@ export const GUIDE_FAQ: Record<string, FaqEntry[]> = {
       a: {
         en: 'Some growth is normal in the first hours while the dough cools. If it doubled overnight, your fridge is likely above 6°C — use the dough a bit earlier and check the fridge setting.',
         fr: "Un peu de pousse est normal les premières heures, le temps que la pâte refroidisse. Si elle a doublé pendant la nuit, votre frigo est sans doute au-dessus de 6°C — utilisez la pâte un peu plus tôt et vérifiez le réglage.",
+      },
+    },
+    {
+      q: { en: "No room in the fridge \u2014 can I stay at room temperature?", fr: "Pas de place au frigo — puis-je rester à température ambiante ?" },
+      a: {
+        en: "Yes, with a shorter total time \u2014 the chart's room-temperature window shows how much. Cold is there for schedule and flavour depth, not correctness.",
+        fr: "Oui, avec un temps total raccourci — la fenêtre à température ambiante du graphique montre de combien. Le froid sert le planning et la profondeur de goût, pas la conformité.",
+      },
+    },
+    {
+      q: { en: "A skin formed on the dough in the fridge", fr: "Une croûte s'est formée sur la pâte au frigo" },
+      a: {
+        en: "A light skin folds back in during shaping. A thick, dry layer is better trimmed off. Next time: tighter cover or a film of oil on the surface.",
+        fr: "Une fine pellicule se réincorpore au façonnage. Une couche épaisse et sèche se retire plutôt. La prochaine fois : couverture plus hermétique ou un voile d'huile en surface.",
       },
     },
   ],
@@ -154,6 +238,20 @@ export const GUIDE_FAQ: Record<string, FaqEntry[]> = {
         fr: "À ±10g près, personne ne verra rien. Au-delà, la cuisson devient inégale — prélevez un peu des gros et soudez-le sous les petits.",
       },
     },
+    {
+      q: { en: "My balls come out different sizes", fr: "Mes pâtons sortent de tailles différentes" },
+      a: {
+        en: "The scale beats the eye \u2014 a few seconds per ball buys even bakes. That said, \u00b15 g is invisible once baked.",
+        fr: "La balance bat l'œil — quelques secondes par pâton garantissent des cuissons régulières. Cela dit, ±5 g est invisible une fois cuit.",
+      },
+    },
+    {
+      q: { en: "The surface tears when I shape the balls", fr: "La surface se déchire quand je boule" },
+      a: {
+        en: "You are tightening past what the gluten allows right now. Let the pieces relax 10 minutes and reshape with a lighter hand \u2014 tension should build, not tear.",
+        fr: "Vous serrez au-delà de ce que le gluten permet à cet instant. Laissez détendre 10 minutes et refaçonnez d'une main plus légère — la tension doit se construire, pas déchirer.",
+      },
+    },
   ],
   proof: [
     {
@@ -170,6 +268,20 @@ export const GUIDE_FAQ: Record<string, FaqEntry[]> = {
         fr: "Une pâte froide se déchire et reste dense au centre. Respectez le réchauffage complet — mieux vaut décaler le dîner de 20 min que lutter contre une pâte froide.",
       },
     },
+    {
+      q: { en: "How does the poke test read?", fr: "Comment lire le test du doigt ?" },
+      a: {
+        en: "Press a floured fingertip in: a slow spring-back that leaves a slight dimple means ready; an instant spring-back means wait; no spring-back at all means bake without delay.",
+        fr: "Enfoncez un doigt fariné : un retour lent qui laisse une légère empreinte = prête ; un retour immédiat = attendez ; aucun retour = enfournez sans tarder.",
+      },
+    },
+    {
+      q: { en: "My balls flattened and spread", fr: "Mes pâtons se sont aplatis et étalés" },
+      a: {
+        en: "Warmth or time went a little far. They still bake well \u2014 handle gently and stretch from the edge. A cooler spot or shorter proof next time restores the dome.",
+        fr: "Chaleur ou durée ont un peu dépassé. Ils cuisent encore très bien — manipulez doucement et étirez depuis le bord. Un endroit plus frais ou une pousse plus courte la prochaine fois redonnera le dôme.",
+      },
+    },
   ],
   preheat: [
     {
@@ -184,6 +296,20 @@ export const GUIDE_FAQ: Record<string, FaqEntry[]> = {
       a: {
         en: 'Bake anyway at max — just expect a longer bake and check the base colour before pulling. Position the rack closer to the top element for better top colour.',
         fr: "Cuisez quand même à fond — comptez juste plus long et vérifiez la couleur du dessous avant de sortir. Rapprochez la grille de la résistance du haut pour mieux colorer le dessus.",
+      },
+    },
+    {
+      q: { en: "How do I know the stone is truly hot?", fr: "Comment savoir si la pierre est vraiment chaude ?" },
+      a: {
+        en: "Trust time, not the oven beep \u2014 the thermostat reads air, the stone lags 45\u201360 minutes behind it. An infrared thermometer removes all doubt for a few euros.",
+        fr: "Fiez-vous au temps, pas au bip du four — le thermostat lit l'air, la pierre a 45–60 minutes de retard sur lui. Un thermomètre infrarouge lève tout doute pour quelques euros.",
+      },
+    },
+    {
+      q: { en: "Should I run the broiler during preheat?", fr: "Dois-je lancer le gril pendant le préchauffage ?" },
+      a: {
+        en: "The last 10 minutes, yes \u2014 it loads the top of the oven with heat so the first pizza gets colour instead of paying the warm-up cost.",
+        fr: "Les 10 dernières minutes, oui — cela charge le haut du four en chaleur et la première pizza prend de la couleur au lieu de payer la mise en route.",
       },
     },
   ],
@@ -207,6 +333,20 @@ export const GUIDE_FAQ: Record<string, FaqEntry[]> = {
       a: {
         en: 'Yes — the crumb finishes setting as steam escapes. Cutting hot gives a gummy texture. One hour minimum for boules; 20–30 min for baguettes.',
         fr: "Oui — la mie finit de se structurer pendant que la vapeur s'échappe. Couper chaud donne une mie gommeuse. Une heure minimum pour les boules ; 20–30 min pour les baguettes.",
+      },
+    },
+    {
+      q: { en: "Why is my first pizza always the worst?", fr: "Pourquoi ma première pizza est-elle toujours la moins réussie ?" },
+      a: {
+        en: "The open door and the cold dough both tax the stone. Give it 4\u20135 minutes between pizzas to recover, and let the first one be the sacrifice that tunes your timing.",
+        fr: "La porte ouverte et la pâte froide taxent toutes deux la pierre. Laissez-lui 4–5 minutes entre les pizzas pour récupérer, et laissez la première régler votre chronométrage.",
+      },
+    },
+    {
+      q: { en: "The base chars before the top colours", fr: "La base noircit avant que le dessus colore" },
+      a: {
+        en: "Floor running hotter than the air: turn more often, raise the pizza on a screen or higher rack, and finish under the dome or broiler for the top.",
+        fr: "La sole est plus chaude que l'air : tournez plus souvent, surélevez la pizza (grille ou écran) et finissez sous la voûte ou le gril pour le dessus.",
       },
     },
   ],

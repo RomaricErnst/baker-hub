@@ -429,6 +429,7 @@ export default function FermentChart({
   const hasMovedMixRef  = useRef(false);
   const hasMovedPrefRef = useRef(false);
   const [glowState, setGlowState] = useState<'mix' | 'pref' | 'both' | 'done'>('mix');
+  const [legendOpen, setLegendOpen] = useState(false); // B1 — first-use chart literacy
 
   useEffect(() => {
     const el = containerRef.current;
@@ -2020,6 +2021,53 @@ export default function FermentChart({
           </g>
         )}
       </svg>
+
+      {/* ── How to read this chart — permanent, collapsible, calm ── */}
+      <div style={{ marginTop: '6px' }}>
+        <button
+          onClick={() => setLegendOpen(o => !o)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0',
+            fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--smoke, #8A7F78)',
+            textDecoration: 'underline', textUnderlineOffset: '2px',
+          }}
+        >
+          {legendOpen
+            ? (isFr ? '− Comment lire ce graphique' : '− How to read this chart')
+            : (isFr ? '? Comment lire ce graphique' : '? How to read this chart')}
+        </button>
+        {legendOpen && (
+          <div style={{
+            marginTop: '6px', padding: '10px 12px',
+            background: 'rgba(26,22,18,0.03)', border: '1px solid var(--border, #E8E0D5)',
+            borderRadius: '10px', fontFamily: 'var(--font-dm-sans)', fontSize: '12px',
+            color: 'var(--ash, #3D3530)', lineHeight: 1.65,
+          }}>
+            {([
+              [isFr ? 'Les cloches' : 'The bells', isFr
+                ? "chaque courbe est une fermentation qui monte, culmine, puis retombe. La première est votre préferment ou levain, la seconde votre pâte."
+                : 'each curve is a fermentation rising, peaking, then falling. The first is your preferment or starter, the second your dough.'],
+              [isFr ? 'Les losanges' : 'The diamonds', isFr
+                ? 'vos moments d\'action, posés sur la ligne du temps. Faites-les glisser pour déplacer « Faire le poolish » ou « Pétrissage » — les courbes suivent.'
+                : 'your action moments, sitting on the timeline. Drag them to move "Make Poolish" or "Start Dough" — the curves follow.'],
+              [isFr ? 'Les zones colorées' : 'The coloured zones', isFr
+                ? 'les fenêtres recommandées pour chaque action. Au centre, le point idéal.'
+                : 'the recommended windows for each action. The centre is the sweet spot.'],
+              [isFr ? 'Les hachures' : 'The hatched columns', isFr
+                ? 'vos indisponibilités (sommeil, travail) — le plan les contourne.'
+                : 'your busy hours (sleep, work) — the plan works around them.'],
+              [isFr ? 'Les plateaux' : 'The flat stretches', isFr
+                ? 'du temps au frigo : la biologie ralentit presque à l\'arrêt. C\'est voulu.'
+                : 'fridge time: the biology slows almost to a pause. That\'s by design.'],
+            ] as const).map(([term, body]) => (
+              <div key={term} style={{ marginBottom: '5px' }}>
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--terra, #C4522A)', fontWeight: 700 }}>{term}</span>
+                <span> — {body}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
     </div>
   );

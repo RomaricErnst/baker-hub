@@ -1997,25 +1997,25 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
             <div>
 
-              {/* Custom pizzas + create card */}
+              {/* Mes pizzas — only once the baker has creations; the menu
+                  always comes before the invitation to leave it */}
+              {customPizzas.length > 0 && (
               <div style={{ padding: '8px 12px 0', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <button
-                  onClick={() => setCreateOpen(true)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    border: '1.5px dashed rgba(196,82,42,0.45)', borderRadius: '12px',
-                    background: 'rgba(196,82,42,0.04)', padding: '13px', cursor: 'pointer',
-                  }}
-                >
-                  <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '14px', fontWeight: 700, color: '#C4522A' }}>
-                    {l === 'fr' ? '+ Créer ma pizza' : '+ Create my pizza'}
-                  </span>
-                </button>
-                {customPizzas.length > 0 && (
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '1.5px', margin: '4px 2px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 2px 0' }}>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
                     {l === 'fr' ? 'Mes pizzas' : 'My pizzas'}
-                  </div>
-                )}
+                  </span>
+                  <button
+                    onClick={() => setCreateOpen(true)}
+                    style={{
+                      border: '1px dashed rgba(196,82,42,0.45)', borderRadius: '14px',
+                      background: 'rgba(196,82,42,0.04)', padding: '4px 11px', cursor: 'pointer',
+                      fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: '#C4522A',
+                    }}
+                  >
+                    {l === 'fr' ? '+ Nouvelle' : '+ New'}
+                  </button>
+                </div>
                 {customPizzas.map(pizza => (
                   <div key={pizza.id} style={{ position: 'relative' }}>
                     <PizzaCard
@@ -2039,6 +2039,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   </div>
                 ))}
               </div>
+              )}
 
               {/* Pizza cards */}
               <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -2054,12 +2055,29 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   />
                 ))}
                 {filtered.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '32px 16px', color: '#8A7F78', fontSize: '13px' }}>
+                  <div style={{ textAlign: 'center', padding: '24px 16px 8px', color: '#8A7F78', fontSize: '13px' }}>
                     {l === 'fr'
                       ? 'Aucune pizza ne correspond — essayez d\'effacer les filtres'
                       : 'No pizzas match — try clearing some filters'}
                   </div>
                 )}
+                {/* Escape hatch — after the menu has made its impression */}
+                <button
+                  onClick={() => setCreateOpen(true)}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                    border: '1.5px dashed rgba(196,82,42,0.45)', borderRadius: '12px',
+                    background: 'rgba(196,82,42,0.04)', padding: '13px', cursor: 'pointer',
+                    marginTop: '4px',
+                  }}
+                >
+                  <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '14px', fontWeight: 700, color: '#C4522A' }}>
+                    {l === 'fr' ? 'Vous ne la trouvez pas ?' : "Can't find yours?"}
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: '#8A7F78' }}>
+                    {l === 'fr' ? '+ Créez la vôtre — elle rejoindra votre profil' : '+ Create your own — it joins your profile'}
+                  </span>
+                </button>
               </div>
 
             </div>
