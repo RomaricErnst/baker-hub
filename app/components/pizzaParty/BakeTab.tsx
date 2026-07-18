@@ -643,7 +643,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 }}
               >
                 {sessionSaved
-                  ? (l === 'fr' ? '✦ Partager ce bake' : '✦ Share this bake')
+                  ? (l === 'fr' ? '✦ Partager cette fournée' : '✦ Share this bake')
                   : (l === 'fr' ? '✦ Sauvegarder & Partager' : '✦ Save & Share this bake')}
               </button>
             )}

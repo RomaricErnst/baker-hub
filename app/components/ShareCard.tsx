@@ -704,7 +704,7 @@ export default function ShareCard({
       {/* Header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <p style={{ fontFamily: 'var(--font-playfair)', fontSize: '18px', fontWeight: 700, color: 'var(--char)', margin: 0 }}>
-          {l === 'fr' ? 'Partager ce bake' : 'Share this bake'}
+          {l === 'fr' ? 'Partager cette fournée' : 'Share this bake'}
         </p>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '18px', padding: '4px' }}>✕</button>
       </div>

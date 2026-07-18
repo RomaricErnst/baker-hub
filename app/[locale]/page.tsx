@@ -4298,7 +4298,7 @@ function PostBakeLanding({
         fontWeight: 600, color: 'var(--char)',
         margin: '16px 0 8px',
       }}>
-        {l === 'fr' ? 'Ce bake a-t-il eu lieu ?' : 'Did this bake happen?'}
+        {l === 'fr' ? 'Cette fournée a-t-elle eu lieu ?' : 'Did this bake happen?'}
       </p>
 
       <button
