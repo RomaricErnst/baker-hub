@@ -3,20 +3,21 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import Header from '../components/Header';
-import ProfileSheet from '../components/ProfileSheet';
+import dynamic from 'next/dynamic';
+const ProfileSheet = dynamic(() => import('../components/ProfileSheet'), { ssr: false });
 import { loadProfile, setProfileListener } from '../lib/profile';
 import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import StylePicker from '../components/StylePicker';
 import OvenPicker from '../components/OvenPicker';
 import MixerPicker from '../components/MixerPicker';
-import SchedulePicker from '../components/SchedulePicker';
+const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
 import ClimatePicker from '../components/ClimatePicker';
-import RecipeOutput from '../components/RecipeOutput';
+const RecipeOutput = dynamic(() => import('../components/RecipeOutput'), { ssr: false });
 import Timeline from '../components/Timeline';
-import BakeGuide from '../components/BakeGuide';
+const BakeGuide = dynamic(() => import('../components/BakeGuide'), { ssr: false });
 import { getPrefPeakH_RT, getPrefRTWarmupH } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
-import PizzaParty from '../components/PizzaParty';
+const PizzaParty = dynamic(() => import('../components/PizzaParty'), { ssr: false });
 import FlourPicker from '../components/FlourPicker';
 import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
@@ -37,7 +38,7 @@ import {
   type AvailabilityBlock,
 } from '../utils';
 import { buildItems } from '@/app/components/Timeline';
-import { getPizzaById } from '../lib/toppingDatabase';
+
 
 // ── Constants ────────────────────────────────
 
@@ -650,11 +651,15 @@ export default function Home() {
       try { localStorage.setItem('bh_prep_ticks_v1', JSON.stringify(session.pizzaParty.prepTicks)); } catch {}
     }
     if (session.pizzaParty?.qtys) {
-      const validQtys: Record<string, number> = {};
-      Object.entries(session.pizzaParty.qtys).forEach(([id, qty]) => {
-        if (getPizzaById(id)) validQtys[id] = qty as number;
+      const rawQtys = session.pizzaParty.qtys;
+      // Lazy — keeps the 150-pizza database out of the first-load bundle
+      void import('../lib/toppingDatabase').then(({ getPizzaById }) => {
+        const validQtys: Record<string, number> = {};
+        Object.entries(rawQtys).forEach(([id, qty]) => {
+          if (getPizzaById(id)) validQtys[id] = qty as number;
+        });
+        setPizzaPartyQtys(validQtys);
       });
-      setPizzaPartyQtys(validQtys);
     }
     if (session.bakedDone) setBakedDone(true);
     if (session.starterState) setStarterState(session.starterState as 'rt_fed' | 'fridge_unfed' | 'fridge_fed');

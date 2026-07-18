@@ -682,6 +682,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   ) : (
                   <img
                     src={getImageSrc(pizza.id)}
+                    loading="lazy" decoding="async"
                     alt=""
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block',
                       filter: cardDone ? 'saturate(0.72) brightness(0.94)' : 'none',

@@ -409,6 +409,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
               return `/pizzas/${pizza.id}.webp`;
             })()}
             alt={name}
+            loading="lazy" decoding="async" width={80} height={80}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onError={e => {
               const img = e.target as HTMLImageElement;
@@ -537,7 +538,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           overflow: 'hidden',
         }}>
           <img
-            src={imgSrc}
+            src={imgSrc} loading="lazy" decoding="async"
             alt={pizza.name[l] ?? pizza.name.en}
             style={{
               width: '100%',
@@ -2287,7 +2288,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           >
                             <div style={{ position: 'relative', height: '100px', background: '#1A1612' }}>
                               <img
-                                src={imgSrc}
+                                src={imgSrc} loading="lazy" decoding="async"
                                 onError={e => { (e.target as HTMLImageElement).src = fallbackSrc; }}
                                 alt=""
                                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
