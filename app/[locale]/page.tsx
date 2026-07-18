@@ -24,7 +24,7 @@ import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { clearSession, loadSession, saveSession, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
-import type { BakeEvent } from '../lib/supabase/fetchBakeEvents';
+import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
 import { type UnitSystem } from '../utils/units';
 import {
@@ -516,6 +516,12 @@ export default function Home() {
   // Baker profile — ☰ Mon profil sheet + new-session prefill
   const [profileOpen, setProfileOpen] = useState(false);
   const [profilePrefilled, setProfilePrefilled] = useState(false);
+  // Bumped when a cloud profile pull settles — lets a late-arriving profile
+  // prefill a bake type the baker already tapped (fresh-device login race).
+  const [profilePullTick, setProfilePullTick] = useState(0);
+  // Latest cloud session offered as « Reprendre » on a device with no
+  // localStorage session (fresh device / cleared storage).
+  const [cloudResume, setCloudResume] = useState<BakeEvent | null>(null);
   const profileBlockersAppliedRef = useRef(false);
 
   // Custom mode — fermentation plan recommended
@@ -553,13 +559,13 @@ export default function Home() {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       uid = data.user?.id ?? null;
-      if (uid) void pullAndMergeProfile(uid);
+      if (uid) void pullAndMergeProfile(uid).then(() => setProfilePullTick(t => t + 1));
     });
     setProfileListener(armPush);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       const newUid = session?.user?.id ?? null;
-      if (newUid && newUid !== uid) void pullAndMergeProfile(newUid);
+      if (newUid && newUid !== uid) void pullAndMergeProfile(newUid).then(() => setProfilePullTick(t => t + 1));
       uid = newUid;
       setProtocolStale(false);
     });
@@ -570,6 +576,58 @@ export default function Home() {
       window.removeEventListener('pagehide', flush);
     };
   }, []);
+
+  // Late profile prefill — on a fresh device the cloud profile can land
+  // AFTER the baker already tapped a bake type (selectBakeType read an empty
+  // loadProfile() at tap time). Fill only still-missing fields; never
+  // overwrite something the baker has since chosen.
+  useEffect(() => {
+    if (profilePullTick === 0) return;
+    if (!modeChosen || !bakeType || profilePrefilled || sessionRestored) return;
+    const prof = loadProfile();
+    if (!prof) return;
+    let applied = false;
+    const ovenPool = bakeType === 'bread' ? BREAD_OVEN_TYPES : OVEN_TYPES;
+    const prefOven = (bakeType === 'bread' ? prof.ovenTypeBread : prof.ovenTypePizza) ?? prof.ovenType;
+    if (!ovenType && prefOven && prefOven in ovenPool) {
+      setOvenType(prefOven as AnyOvenType); applied = true;
+    }
+    const stylePool = bakeType === 'bread' ? BREAD_STYLES : PIZZA_STYLES;
+    const prefStyle = (bakeType === 'bread' ? prof.styleKeyBread : prof.styleKeyPizza) ?? prof.styleKey;
+    if (!styleKey && prefStyle && prefStyle in stylePool) {
+      setStyleKey(prefStyle as StyleKey); applied = true;
+    }
+    if (!mixerType && prof.mixerType && prof.mixerType in MIXER_TYPES) {
+      setMixerType(prof.mixerType as MixerType); applied = true;
+    }
+    if (!yeastType && prof.yeastType && prof.yeastType in YEAST_TYPES) {
+      setYeastType(prof.yeastType as YeastType); applied = true;
+    }
+    if (applied) setProfilePrefilled(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profilePullTick]);
+
+  // Cloud « Reprendre » — a fresh device has no localStorage session, but a
+  // signed-in baker may have one in the cloud. Offer the latest generated
+  // snapshot; hydrate only on tap (never surprise-restore mid-setup).
+  useEffect(() => {
+    if (!user) { setCloudResume(null); return; }
+    if (loadSession() || sessionRestored || modeChosen) return;
+    let wbDismissed = false;
+    try { wbDismissed = sessionStorage.getItem('bh_wb_answered') === '1'; } catch {}
+    if (wbDismissed) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { fetchBakeEvents } = await import('../lib/supabase/fetchBakeEvents');
+        const events = await fetchBakeEvents();
+        const latest = events.find(e => e.dough_snapshot?.recipeGenerated);
+        if (!cancelled && latest && !loadSession()) setCloudResume(latest);
+      } catch { /* offline — no banner, observation only */ }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Welcome back — hydrate full wizard state from localStorage on mount
   useEffect(() => {
@@ -1684,6 +1742,71 @@ export default function Home() {
           </div>
         )}
 
+        {/* Cloud « Reprendre » — same banner, but the session lives only in
+            the account (fresh device); hydrates on tap via restoreFromBakeEvent */}
+        {!showWelcomeBack && cloudResume && !modeChosen && !sessionRestored && activeTab === 'setup' && (
+          <div style={{
+            background: 'var(--warm)',
+            border: '1px solid var(--border)',
+            borderRadius: '14px',
+            padding: '12px 14px',
+            margin: '0 0 14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            flexWrap: 'wrap',
+            boxShadow: 'var(--card-shadow, 0 2px 12px rgba(26,22,18,0.06))',
+          }}>
+            <span style={{ flex: '1 1 auto', minWidth: 0 }}>
+              <span style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                color: 'var(--smoke)', textTransform: 'uppercase',
+                letterSpacing: '.08em', display: 'block',
+              }}>
+                {locale === 'fr' ? 'Session trouvée sur votre compte' : 'Session found in your account'}
+              </span>
+              <span style={{
+                fontFamily: 'var(--font-dm-sans)', fontSize: '12px',
+                color: 'var(--char)', display: 'block', marginTop: '2px',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {bakeEventTitle(cloudResume)}
+              </span>
+            </span>
+            <button
+              onClick={() => {
+                const ev = cloudResume;
+                setCloudResume(null);
+                try { sessionStorage.setItem('bh_wb_answered', '1'); } catch {}
+                if (ev) void restoreFromBakeEvent(ev);
+              }}
+              style={{
+                background: 'var(--terra)', border: 'none',
+                color: 'white', cursor: 'pointer', fontSize: '13px',
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+                padding: '8px 14px', borderRadius: '8px', whiteSpace: 'nowrap',
+              }}
+            >
+              {locale === 'fr' ? 'Reprendre →' : 'Resume →'}
+            </button>
+            <button
+              onClick={() => {
+                setCloudResume(null);
+                try { sessionStorage.setItem('bh_wb_answered', '1'); } catch {}
+              }}
+              style={{
+                background: 'none', border: 'none',
+                color: 'var(--smoke)', cursor: 'pointer',
+                fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
+                padding: '4px 0', whiteSpace: 'nowrap',
+                textDecoration: 'underline', textUnderlineOffset: '2px',
+              }}
+            >
+              {locale === 'fr' ? 'Recommencer' : 'Start fresh'}
+            </button>
+          </div>
+        )}
+
         {/* ── Hero + bake type picker ── */}
         {activeTab === 'setup' && (
         <div ref={modeSelectorRef} style={{ textAlign: 'center', marginBottom: '16px' }}>
@@ -1868,13 +1991,24 @@ export default function Home() {
                     {/* Mode signature visual — the instrument you'll meet inside */}
                     {m.key === 'simple' ? (
                       <div>
-                        <div style={{ display: 'flex', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
-                          <span style={{ flex: 2, background: '#8BA888' }} />
-                          <span style={{ flex: 3, background: '#A8B8D0' }} />
-                          <span style={{ flex: 1.4, background: '#D4A853' }} />
+                        {/* 7 guided steps — same dot rhythm as the journey bar */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', height: '34px' }}>
+                          {[0, 1, 2, 3, 4, 5, 6].map(i => (
+                            <span key={i} style={{
+                              width: i === 6 ? '10px' : '7px', height: i === 6 ? '10px' : '7px',
+                              borderRadius: '50%', flexShrink: 0,
+                              background: i < 3 ? '#8BA888' : i < 6 ? '#A8B8D0' : '#D4A853',
+                            }} />
+                          ))}
+                          <span style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
                         </div>
-                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8.5px', letterSpacing: '0.04em', color: 'var(--smoke)', marginTop: '6px', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-                          {t('modeCards.simple.microLabel')}
+                        {/* Value pills — same visual language as the Avancé card */}
+                        <div style={{ display: 'flex', gap: '3px', marginTop: '6px', flexWrap: 'nowrap', overflow: 'hidden' }}>
+                          {t('modeCards.simple.pills').split('|').map((c, i) => (
+                            <span key={i} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8.5px', color: 'var(--ash)', border: '1px solid var(--border)', borderRadius: '20px', padding: '2px 6px', background: 'rgba(26,22,18,0.03)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                              {c.trim()}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     ) : (

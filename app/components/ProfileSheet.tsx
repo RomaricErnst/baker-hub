@@ -27,7 +27,17 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
   const fr = locale === 'fr';
   const [profile, setProfile] = useState<BakerProfile>(() => ({ version: 1, ...(loadProfile() ?? {}) }));
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
-  useEffect(() => { createClient().auth.getUser().then(({ data }) => setSignedIn(!!data.user)); }, []);
+  useEffect(() => {
+    // getSession() reads local storage — instant and offline-safe, so the
+    // « Synchronisé ✓ » line can't flicker absent on a slow network the way
+    // the getUser() server round-trip sometimes did. The listener keeps it
+    // honest if auth changes while the sheet is open.
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
+    const { data: { subscription } } =
+      supabase.auth.onAuthStateChange((_e, session) => setSignedIn(!!session));
+    return () => subscription.unsubscribe();
+  }, []);
 
   function patch(p: Partial<BakerProfile>) {
     setProfile(updateProfile(p));
