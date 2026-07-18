@@ -46,6 +46,8 @@ export interface BakerProfile {
   styleKeyPizza?: StyleKey | null;
   styleKeyBread?: StyleKey | null;
   preferredMode?: 'simple' | 'custom' | null;
+  /** Custom-mode preferment preference — levain lives on the sourdough path */
+  prefermentType?: 'none' | 'poolish' | 'biga' | null;
   starter?: {
     mature: boolean;
     hasRye: boolean;

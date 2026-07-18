@@ -192,6 +192,17 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           profile.yeastType, key => patch({ yeastType: key }),
         )}
 
+        <span style={S.label}>{fr ? 'Préferment — mode Avancé' : 'Preferment — Custom mode'}</span>
+        {pillRow(
+          [
+            { key: 'none', label: 'Direct' },
+            { key: 'poolish', label: 'Poolish' },
+            { key: 'biga', label: 'Biga' },
+          ],
+          profile.prefermentType,
+          key => patch({ prefermentType: key as 'none' | 'poolish' | 'biga' | null }),
+        )}
+
         <span style={S.label}>{fr ? 'Frigo' : 'Fridge'}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px' }}>
           {[4, 5, 6, 7, 8].map(t => (

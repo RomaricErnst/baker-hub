@@ -1222,6 +1222,13 @@ export default function Home() {
       if (prof.yeastType && prof.yeastType in YEAST_TYPES) {
         setYeastType(prof.yeastType as YeastType); applied = true;
       }
+      // Preferment — Custom-mode preference only (Simple has no preferment
+      // step to change it in), and never on the sourdough path (levain).
+      if (prof.prefermentType && prof.preferredMode === 'custom'
+          && prof.yeastType !== 'sourdough'
+          && ['none', 'poolish', 'biga'].includes(prof.prefermentType)) {
+        setPrefermentType(prof.prefermentType as PrefermentType); applied = true;
+      }
       if (prof.fridgeTemp !== undefined) { setFridgeTemp(prof.fridgeTemp); applied = true; }
       if (prof.preferredMode) { setTab(prof.preferredMode); applied = true; }
       if (prof.starter) {
@@ -1286,7 +1293,9 @@ export default function Home() {
     while (
       (next === 3 && ovenType != null) ||
       (next === 5 && mixerType != null) ||
-      (next === 6 && yeastType != null)
+      // Sourdough never skips — its step carries session-specific starter
+      // questions (fed when, where) that no profile can answer.
+      (next === 6 && yeastType != null && yeastType !== 'sourdough')
     ) next++;
     const target = next > highestStep ? next : highestStep;
     setHighestStep(target);
@@ -1307,7 +1316,18 @@ export default function Home() {
   }
 
   function advanceAdv(from: number) {
-    const next = from + 1;
+    // Mirror of advance(): hop past steps already answered by the profile.
+    // Custom map — 3 oven, 5 mixer, 7 yeast; 8 preferment only when the
+    // profile carries a preference. Flour (6) and climate (4) always stop,
+    // and sourdough never skips its step (session-specific starter state).
+    let next = from + 1;
+    const profPref = loadProfile()?.prefermentType;
+    while (
+      (next === 3 && ovenType != null) ||
+      (next === 5 && mixerType != null) ||
+      (next === 7 && yeastType != null && yeastType !== 'sourdough') ||
+      (next === 8 && profPref != null && yeastType !== 'sourdough')
+    ) next++;
     const target = next > advancedHighestStep ? next : advancedHighestStep;
     setAdvancedHighestStep(target);
     setAdvancedStep(target);
@@ -2047,7 +2067,7 @@ export default function Home() {
                           <span style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
                         </div>
                         {/* Value pills — same visual language as the Avancé card */}
-                        <div style={{ display: 'flex', gap: '3px', marginTop: '6px', flexWrap: 'nowrap', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', gap: '3px', marginTop: '6px', flexWrap: 'wrap' }}>
                           {t('modeCards.simple.pills').split('|').map((c, i) => (
                             <span key={i} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8.5px', color: 'var(--ash)', border: '1px solid var(--border)', borderRadius: '20px', padding: '2px 6px', background: 'rgba(26,22,18,0.03)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                               {c.trim()}
@@ -2064,7 +2084,7 @@ export default function Home() {
                           {/* Diamond on the baseline — the draggable time marker, as in the real chart */}
                           <polygon points="52,29.5 56.5,34 52,38.5 47.5,34" fill="#D4A853" stroke="#FDFBF7" strokeWidth="1" />
                         </svg>
-                        <div style={{ display: 'flex', gap: '3px', marginTop: '6px', flexWrap: 'nowrap', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', gap: '3px', marginTop: '6px', flexWrap: 'wrap' }}>
                           {t('modeCards.custom.chips').split('|').map((c, i) => (
                             <span key={i} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8.5px', color: 'var(--ash)', border: '1px solid var(--border)', borderRadius: '20px', padding: '2px 6px', background: 'rgba(26,22,18,0.03)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                               {c.trim()}
