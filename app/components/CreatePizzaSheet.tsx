@@ -2,7 +2,7 @@
 // « Créer ma pizza » v2 — guided flow: base → fromage → viande/mer → légumes
 // → finitions. Each group offers catalogue chips or free text; bake order is
 // preset per ingredient and toggleable. Also edits an existing creation.
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { PIZZAS, DESSERT_PIZZAS } from '../lib/toppingDatabase';
 import { saveCustomPizza, type CustomPizzaDef, type CustomPizzaIngredient } from '../lib/profile';
 import type { Ingredient, IngredientCategory, IngredientUnit, OvenTempTag } from '../lib/toppingTypes';
@@ -26,6 +26,12 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
   const [name, setName] = useState(initial?.name ?? '');
   const [picked, setPicked] = useState<CustomPizzaIngredient[]>(initial?.ingredients ?? []);
   const [photo, setPhoto] = useState<string | undefined>(initial?.photo);
+  // Re-croppable source: full image + drag position (0..1), baked at save
+  const [photoSrc, setPhotoSrc] = useState<string | null>(null);
+  const [photoDims, setPhotoDims] = useState<{ w: number; h: number } | null>(null);
+  const [pos, setPos] = useState<{ fx: number; fy: number }>({ fx: 0.5, fy: 0.5 });
+  const dragRef = useRef<{ x: number; y: number; fx: number; fy: number } | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const [free, setFree] = useState<Record<string, { name: string; amount: string; unit: IngredientUnit }>>({});
   const [openGroup, setOpenGroup] = useState(0);
 
@@ -68,17 +74,54 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      // Centre-crop square 640 — light enough for the profile store
-      const side = Math.min(img.width, img.height);
-      const sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+      // Keep a working copy (≤1280) — the crop is baked at save time
+      const sc = Math.min(1, 1280 / Math.max(img.width, img.height));
       const c = document.createElement('canvas');
-      c.width = 640; c.height = 640;
+      c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
       const ctx = c.getContext('2d');
       if (!ctx) return;
-      ctx.drawImage(img, sx, sy, side, side, 0, 0, 640, 640);
-      setPhoto(c.toDataURL('image/jpeg', 0.8));
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      setPhotoSrc(c.toDataURL('image/jpeg', 0.85));
+      setPhotoDims({ w: c.width, h: c.height });
+      setPos({ fx: 0.5, fy: 0.5 });
+      setPhoto(undefined);
     };
     img.src = url;
+  }
+
+  function onDragStart(e: React.PointerEvent) {
+    dragRef.current = { x: e.clientX, y: e.clientY, fx: pos.fx, fy: pos.fy };
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  }
+  function onDragMove(e: React.PointerEvent) {
+    if (!dragRef.current || !photoDims || !previewRef.current) return;
+    const size = previewRef.current.clientWidth;
+    const { w, h } = photoDims;
+    const side = Math.min(w, h);
+    const overX = size * (w - side) / side;
+    const overY = size * (h - side) / side;
+    const dfx = overX > 0 ? (dragRef.current.x - e.clientX) / overX : 0;
+    const dfy = overY > 0 ? (dragRef.current.y - e.clientY) / overY : 0;
+    setPos({
+      fx: Math.min(1, Math.max(0, dragRef.current.fx + dfx)),
+      fy: Math.min(1, Math.max(0, dragRef.current.fy + dfy)),
+    });
+  }
+  function onDragEnd() { dragRef.current = null; }
+
+  async function bakeCrop(): Promise<string | undefined> {
+    if (!photoSrc || !photoDims) return photo;
+    const img = new Image();
+    img.src = photoSrc;
+    try { await img.decode(); } catch { return photo; }
+    const { w, h } = photoDims;
+    const side = Math.min(w, h);
+    const c = document.createElement('canvas');
+    c.width = 640; c.height = 640;
+    const ctx = c.getContext('2d');
+    if (!ctx) return photo;
+    ctx.drawImage(img, pos.fx * (w - side), pos.fy * (h - side), side, side, 0, 0, 640, 640);
+    return c.toDataURL('image/jpeg', 0.8);
   }
 
   function inferOvenTemp(): OvenTempTag {
@@ -92,7 +135,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
     return best[1] > 0 ? best[0] : 'high';
   }
 
-  function save() {
+  async function save() {
     if (!name.trim() || picked.length === 0) return;
     const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 24) || 'pizza';
     saveCustomPizza({
@@ -101,7 +144,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
       ovenTemp: inferOvenTemp(),
       ingredients: picked,
       createdAt: initial?.createdAt ?? Date.now(),
-      photo,
+      photo: await bakeCrop(),
     });
     onCreated(); onClose();
   }
@@ -134,7 +177,9 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <label style={{ width: 56, height: 56, borderRadius: '12px', overflow: 'hidden', flexShrink: 0, cursor: 'pointer', border: '1px dashed #C8C0B8', background: '#F5F0E8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={attachPhoto} />
-              {photo ? (
+              {photoSrc ? (
+                <img src={photoSrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${pos.fx * 100}% ${pos.fy * 100}%` }} />
+              ) : photo ? (
                 <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <svg viewBox="0 0 20 20" width={20} height={20} fill="none" stroke="#8A7F78" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -150,8 +195,32 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
               style={{ ...input, fontFamily: 'Playfair Display, serif', fontWeight: 600, fontSize: '16px' }}
             />
           </div>
-          {photo && (
-            <button onClick={() => setPhoto(undefined)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '10.5px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: '4px 0 0' }}>
+          {photoSrc && photoDims && (
+            <div style={{ marginTop: '10px' }}>
+              <div
+                ref={previewRef}
+                onPointerDown={onDragStart}
+                onPointerMove={onDragMove}
+                onPointerUp={onDragEnd}
+                onPointerCancel={onDragEnd}
+                style={{
+                  width: '180px', height: '180px', borderRadius: '12px', overflow: 'hidden',
+                  border: '1px solid #E0D8CF', touchAction: 'none', cursor: 'grab',
+                  position: 'relative', background: '#1A1612',
+                }}
+              >
+                <img
+                  src={photoSrc} alt="" draggable={false}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${pos.fx * 100}% ${pos.fy * 100}%`, pointerEvents: 'none', userSelect: 'none' }}
+                />
+              </div>
+              <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '10.5px', fontStyle: 'italic', color: '#8A7F78', marginTop: '4px' }}>
+                {fr ? 'Glissez pour recadrer' : 'Drag to reframe'}
+              </div>
+            </div>
+          )}
+          {(photo || photoSrc) && (
+            <button onClick={() => { setPhoto(undefined); setPhotoSrc(null); setPhotoDims(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '10.5px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: '4px 0 0' }}>
               {fr ? 'Retirer la photo' : 'Remove photo'}
             </button>
           )}

@@ -186,6 +186,34 @@ const ORDER_MAP: Record<IngredientCategory, number> = {
   finish: 6,
 };
 
+// ── Bake-stage FAQ — the six questions bakers actually ask mid-service ───────
+const BAKE_FAQ: Array<{ q: { en: string; fr: string }; a: { en: string; fr: string } }> = [
+  {
+    q: { en: 'The dough sticks to the peel', fr: 'La pâte colle à la pelle' },
+    a: { en: 'Flour the peel generously (semolina slides best), build the pizza on it, and give it a small shake test before launching — if it slides, it launches. Speed matters more than force: wet toppings soak through in about a minute.', fr: "Farinez généreusement la pelle (la semoule glisse le mieux), montez la pizza dessus et faites un petit test de glisse avant d'enfourner — si elle glisse, elle part. La vitesse compte plus que la force : les garnitures humides traversent en une minute environ." },
+  },
+  {
+    q: { en: 'The dough springs back when I stretch it', fr: "La pâte se rétracte quand je l'étire" },
+    a: { en: "That's cold, tight gluten — not a fault. Let the ball sit 15–20 min at room temperature and it will relax. Stretching straight from the fridge is the usual cause.", fr: "C'est un gluten froid et tendu — pas un défaut. Laissez le pâton 15–20 min à température ambiante et il se détendra. L'étirage direct sortie du frigo est la cause habituelle." },
+  },
+  {
+    q: { en: 'Cheese browns before the base is done', fr: 'Le fromage colore avant que la base soit cuite' },
+    a: { en: 'The heat balance is tilted to the top. Move one rack lower, slice the mozzarella thicker, or add the cheese halfway through the bake. A hotter stone (longer preheat) also lets the base catch up.', fr: "L'équilibre de chaleur penche vers le haut. Descendez d'une grille, tranchez la mozzarella plus épais, ou ajoutez le fromage à mi-cuisson. Une pierre plus chaude (préchauffage plus long) aide aussi la base à suivre." },
+  },
+  {
+    q: { en: 'The centre comes out soggy', fr: 'Le centre ressort détrempé' },
+    a: { en: 'Usually a moisture story: a thinner sauce layer, well-drained mozzarella, and wet toppings added after the bake all help. So does launching onto a fully preheated surface.', fr: "Souvent une histoire d'humidité : une couche de sauce plus fine, une mozzarella bien égouttée et les garnitures humides ajoutées après cuisson aident. Enfourner sur une surface bien préchauffée aussi." },
+  },
+  {
+    q: { en: 'The crust stays pale', fr: 'La croûte reste pâle' },
+    a: { en: 'More preheat, higher rack, or a 60-second broiler finish. Pale can also mean the dough used up its sugars — a slightly shorter fermentation next time gives more browning.', fr: "Plus de préchauffage, une grille plus haute, ou 60 s sous le gril en fin de cuisson. Une pâte pâle peut aussi avoir épuisé ses sucres — une fermentation un peu plus courte la prochaine fois redonnera de la couleur." },
+  },
+  {
+    q: { en: 'Giant bubbles puff up in the oven', fr: 'De grosses bulles gonflent au four' },
+    a: { en: "A sign of lively dough. Pop them with a knife tip mid-bake if they bother you, or press the centre a touch flatter before topping. Many pizzaioli leave them — they char beautifully.", fr: "Signe d'une pâte vivante. Percez-les d'une pointe de couteau en cours de cuisson si elles vous gênent, ou aplatissez un peu plus le centre avant de garnir. Beaucoup de pizzaïolos les laissent — elles grillent magnifiquement." },
+  },
+];
+
 // ── Inline CoachButton (self-contained, no external deps beyond React) ────────
 const COACH_STEPS_BT = new Set(['pizza_maestro']);
 
@@ -410,6 +438,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
   const [showTechSheet, setShowTechSheet] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const sheetScrollRef = useRef<HTMLDivElement>(null);
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [doneCounts, setDoneCounts] = useState<Record<string, number>>({});
@@ -1046,6 +1075,34 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                           </div>
                         </div>
                       ))}
+
+                      {/* FAQ — same logic as the Guide: tips above, FAQ, Maestro below */}
+                      <div style={{ padding: '20px 16px 0' }}>
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '8px' }}>
+                          FAQ
+                        </div>
+                        {BAKE_FAQ.map((f, i) => (
+                          <div key={i} style={{ borderBottom: i < BAKE_FAQ.length - 1 ? '1px solid var(--border)' : undefined }}>
+                            <button
+                              onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                              style={{
+                                width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px',
+                                background: 'none', border: 'none', cursor: 'pointer', padding: '9px 0', textAlign: 'left',
+                              }}
+                            >
+                              <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', fontWeight: 500, color: 'var(--char)' }}>
+                                {f.q[l]}
+                              </span>
+                              <span style={{ color: 'var(--smoke)', fontSize: '12px', flexShrink: 0 }}>{openFaq === i ? '−' : '+'}</span>
+                            </button>
+                            {openFaq === i && (
+                              <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: 'var(--ash)', lineHeight: 1.6, padding: '0 0 12px' }}>
+                                {f.a[l]}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
 
                       {/* Maestro in tech sheet — unified text + photo input */}
                       <div style={{ padding: '20px 16px 8px' }}>
