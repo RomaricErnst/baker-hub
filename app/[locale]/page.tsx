@@ -1054,12 +1054,14 @@ export default function Home() {
     if (prof) {
       let applied = false;
       const ovenPool = bt === 'bread' ? BREAD_OVEN_TYPES : OVEN_TYPES;
-      if (prof.ovenType && prof.ovenType in ovenPool) {
-        setOvenType(prof.ovenType as AnyOvenType); applied = true;
+      const prefOven = (bt === 'bread' ? prof.ovenTypeBread : prof.ovenTypePizza) ?? prof.ovenType;
+      if (prefOven && prefOven in ovenPool) {
+        setOvenType(prefOven as AnyOvenType); applied = true;
       }
       const stylePool = bt === 'bread' ? BREAD_STYLES : PIZZA_STYLES;
-      if (prof.styleKey && prof.styleKey in stylePool) {
-        setStyleKey(prof.styleKey as StyleKey); applied = true;
+      const prefStyle = (bt === 'bread' ? prof.styleKeyBread : prof.styleKeyPizza) ?? prof.styleKey;
+      if (prefStyle && prefStyle in stylePool) {
+        setStyleKey(prefStyle as StyleKey); applied = true;
       }
       if (prof.mixerType && prof.mixerType in MIXER_TYPES) {
         setMixerType(prof.mixerType as MixerType); applied = true;

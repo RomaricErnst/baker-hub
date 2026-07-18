@@ -36,11 +36,15 @@ export interface StandardBlocker {
 
 export interface BakerProfile {
   version: 1;
-  ovenType?: string | null;
+  ovenType?: string | null; // legacy single field — read as fallback
+  ovenTypePizza?: string | null;
+  ovenTypeBread?: string | null;
   mixerType?: string | null;
   yeastType?: string | null;
   fridgeTemp?: number;
-  styleKey?: StyleKey | null;
+  styleKey?: StyleKey | null; // legacy single field — read as fallback
+  styleKeyPizza?: StyleKey | null;
+  styleKeyBread?: StyleKey | null;
   starter?: {
     mature: boolean;
     hasRye: boolean;

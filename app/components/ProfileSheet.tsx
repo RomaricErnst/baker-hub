@@ -87,7 +87,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         background: 'var(--cream)', borderRadius: '16px 16px 0 0',
-        zIndex: 300, maxHeight: 'calc(100dvh - 60px)', overflowY: 'auto',
+        zIndex: 300, maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
         paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
       }}>
         <div style={{ width: 36, height: 4, background: 'rgba(0,0,0,0.15)', borderRadius: 2, margin: '14px auto 10px' }} />
@@ -97,10 +97,10 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         }}>
           <div>
             <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '18px', fontWeight: 700, color: 'var(--char)' }}>
-              {fr ? 'Mon profil' : 'My profile'}
+              {fr ? 'Mes préférences' : 'My preferences'}
             </span>
             <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)', marginTop: '2px' }}>
-              {fr ? 'Prérempli dans chaque nouvelle session — modifiable à tout moment.' : 'Prefilled into every new session — changeable any time.'}
+              {fr ? 'Enregistré automatiquement à chaque changement — prérempli dans chaque nouvelle session.' : 'Saved automatically on every change — prefilled into each new session.'}
             </div>
           </div>
           <button onClick={onClose} style={{
@@ -113,12 +113,12 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         <span style={S.label}>{fr ? 'Four — pizza' : 'Oven — pizza'}</span>
         {pillRow(
           Object.entries(OVEN_TYPES).map(([key, v]) => ({ key, label: fr ? v.nameFr : v.name })),
-          profile.ovenType, key => patch({ ovenType: key }),
+          profile.ovenTypePizza ?? profile.ovenType, key => patch({ ovenTypePizza: key }),
         )}
         <span style={S.label}>{fr ? 'Four — pain' : 'Oven — bread'}</span>
         {pillRow(
           Object.entries(BREAD_OVEN_TYPES).map(([key, v]) => ({ key, label: fr ? v.nameFr : v.name })),
-          profile.ovenType, key => patch({ ovenType: key }),
+          profile.ovenTypeBread ?? profile.ovenType, key => patch({ ovenTypeBread: key }),
         )}
 
         <span style={S.label}>{fr ? 'Pétrissage' : 'Mixing'}</span>
@@ -146,12 +146,12 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         <span style={S.label}>{fr ? 'Style favori — pizza' : 'Favourite style — pizza'}</span>
         {pillRow(
           Object.entries(PIZZA_STYLES).map(([key, v]) => ({ key, label: fr ? v.nameFr : v.name })),
-          profile.styleKey, key => patch({ styleKey: key as StyleKey | null }),
+          profile.styleKeyPizza ?? profile.styleKey, key => patch({ styleKeyPizza: key as StyleKey | null }),
         )}
         <span style={S.label}>{fr ? 'Style favori — pain' : 'Favourite style — bread'}</span>
         {pillRow(
           Object.entries(BREAD_STYLES).map(([key, v]) => ({ key, label: fr ? v.nameFr : v.name })),
-          profile.styleKey, key => patch({ styleKey: key as StyleKey | null }),
+          profile.styleKeyBread ?? profile.styleKey, key => patch({ styleKeyBread: key as StyleKey | null }),
         )}
 
         <span style={S.label}>{fr ? 'Mon levain' : 'My starter'}</span>

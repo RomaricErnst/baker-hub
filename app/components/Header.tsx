@@ -590,7 +590,7 @@ export default function Header({
               }}
             >
               <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '.82rem', fontWeight: 600, color: 'var(--cream)' }}>
-                {locale === 'fr' ? 'Mon profil' : 'My profile'}
+                {locale === 'fr' ? 'Mes préférences' : 'My preferences'}
               </span>
               <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'var(--smoke)' }}>→</span>
             </button>
