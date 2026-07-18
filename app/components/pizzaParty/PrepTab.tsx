@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { PIZZAS, DESSERT_PIZZAS } from '../../lib/toppingDatabase';
+import { PIZZAS, DESSERT_PIZZAS, getCustomPizzaList } from '../../lib/toppingDatabase';
 import type { Ingredient, IngredientUnit } from '../../lib/toppingTypes';
 
 function formatQty(amount: number, unit: IngredientUnit, locale: string): string {
@@ -104,7 +104,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
 
   // Collect tasks from selected pizzas — accumulate quantities across multiple pizzas
   const taskMap: Record<string, PrepTask> = {};
-  const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
+  const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS, ...getCustomPizzaList()];
 
   Object.entries(selectedPizzas).forEach(([pizzaId, qty]) => {
     if (!qty) return;

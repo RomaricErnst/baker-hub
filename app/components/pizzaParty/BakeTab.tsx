@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { PIZZAS, DESSERT_PIZZAS, type Pizza } from '../../lib/toppingDatabase';
+import { PIZZAS, DESSERT_PIZZAS, getCustomPizzaList, type Pizza } from '../../lib/toppingDatabase';
 import type { StyleKey, IngredientCategory, Ingredient } from '../../lib/toppingTypes';
 import { createClient } from '@/app/lib/supabase/client';
 import { uploadPhoto, ALLOWED_MIME_TYPES } from '@/app/lib/photoUpload';
@@ -172,7 +172,7 @@ interface BakeTabProps {
 }
 
 function getAllPizzas(): Pizza[] {
-  return [...PIZZAS, ...DESSERT_PIZZAS];
+  return [...PIZZAS, ...DESSERT_PIZZAS, ...getCustomPizzaList()];
 }
 
 const ORDER_MAP: Record<IngredientCategory, number> = {

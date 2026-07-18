@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import {
-  PIZZAS, DESSERT_PIZZAS, getPizzaById,
+  PIZZAS, DESSERT_PIZZAS, getPizzaById, getCustomPizzaList,
   BASE_LABELS, OCCASION_LABELS, SEASON_LABELS,
   WINE_CATEGORY_LABELS, WINE_EXAMPLES,
   BUDGET_LABELS, COMPLEXITY_LABELS,
@@ -11,6 +11,7 @@ import {
   type OccasionTag, type DietaryTag, type Season, type BudgetTier,
   type ComplexityTier, type RegionTag, type IngredientCategory,
 } from '../lib/toppingDatabase';
+import CreatePizzaSheet from './CreatePizzaSheet';
 import type { Locale, FlavorChip } from '../lib/toppingTypes';
 
 // ─── Ingredient chips ─────────────────────────────────────────
@@ -732,7 +733,7 @@ function buildShoppingList(
   styleKey?: string,
 ): { sections: Array<{ category: IngredientCategory; label: string; items: ShoppingItem[] }> } {
   const l = locale as 'en' | 'fr';
-  const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
+  const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS, ...getCustomPizzaList()];
   const ingredientMap: Record<string, ShoppingItem & { pizzaCount: Record<string, number> }> = {};
 
   Object.entries(qtys).forEach(([pizzaId, qty]) => {
@@ -883,7 +884,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
   }
 
   function buildShareText(): string {
-    const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS];
+    const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS, ...getCustomPizzaList()];
     const pizzaLines = Object.entries(qtys)
       .filter(([, q]) => q > 0)
       .map(([id, q]) => {
@@ -1238,6 +1239,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // Sheet
   const [sheetId, setSheetId] = useState<string | null>(null);
   const sheetPizza = sheetId ? (getPizzaById(sheetId) ?? null) : null;
+
+  // Custom pizzas — baker's own creations from the profile
+  const [customVersion, setCustomVersion] = useState(0);
+  const [createOpen, setCreateOpen] = useState(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const customPizzas = useMemo(() => getCustomPizzaList(), [customVersion]);
 
   // Dessert expanded
   const [dessertOpen, setDessertOpen] = useState(false);
@@ -1975,6 +1982,33 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
             <div>
 
+              {/* Custom pizzas + create card */}
+              <div style={{ padding: '8px 12px 0', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <button
+                  onClick={() => setCreateOpen(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    border: '1.5px dashed rgba(196,82,42,0.45)', borderRadius: '12px',
+                    background: 'rgba(196,82,42,0.04)', padding: '13px', cursor: 'pointer',
+                  }}
+                >
+                  <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '14px', fontWeight: 700, color: '#C4522A' }}>
+                    {l === 'fr' ? '+ Créer ma pizza' : '+ Create my pizza'}
+                  </span>
+                </button>
+                {customPizzas.map(pizza => (
+                  <PizzaCard
+                    key={pizza.id}
+                    pizza={pizza}
+                    qty={getQty(pizza.id)}
+                    locale={locale}
+                    styleKey={styleKey}
+                    onQtyChange={(delta, e) => { e.stopPropagation(); changeQty(pizza.id, delta); }}
+                    onTap={() => setSheetId(pizza.id)}
+                  />
+                ))}
+              </div>
+
               {/* Pizza cards */}
               <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 {filtered.map(pizza => (
@@ -1998,6 +2032,14 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               </div>
 
             </div>
+
+            {createOpen && (
+              <CreatePizzaSheet
+                locale={locale}
+                onClose={() => setCreateOpen(false)}
+                onCreated={() => setCustomVersion(v => v + 1)}
+              />
+            )}
 
             {/* ── Sheet overlay ── */}
             {sheetPizza && (
