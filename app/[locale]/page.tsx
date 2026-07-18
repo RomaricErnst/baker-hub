@@ -1400,6 +1400,13 @@ export default function Home() {
         setPizzaPartyQtys(qtys);
       }
     }
+    // Ticks travel in the snapshot (manual saves) — hydrate before tabs read
+    if (snap.pizzaParty?.shopTicks) {
+      try { localStorage.setItem('bh_shop_ticks_v1', JSON.stringify(snap.pizzaParty.shopTicks)); } catch {}
+    }
+    if (snap.pizzaParty?.prepTicks) {
+      try { localStorage.setItem('bh_prep_ticks_v1', JSON.stringify(snap.pizzaParty.prepTicks)); } catch {}
+    }
   }
 
   // ── Computed: Generate button / progress ──
