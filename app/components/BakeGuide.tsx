@@ -788,7 +788,17 @@ export default function BakeGuide({
 
   useEffect(() => {
     if (currentStep > 0) {
-      stepRefs.current[currentStep]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const el = stepRefs.current[currentStep];
+      if (el) {
+        const r = el.getBoundingClientRect();
+        const headerH = 120; // sticky header + journey bar
+        // Scroll only when the next step isn't comfortably visible —
+        // instant, landing just under the header (no smooth: targets
+        // must not move under fingers).
+        if (r.top < headerH || r.top > window.innerHeight * 0.6) {
+          window.scrollTo({ top: r.top + window.scrollY - headerH, behavior: 'auto' });
+        }
+      }
     }
   }, [currentStep]);
 
@@ -1146,7 +1156,17 @@ export default function BakeGuide({
                 ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
               ]} />
               <div style={{ marginTop: '.75rem' }}>
-                <ExtLink href="https://www.theperfectloaf.com/how-to-mix-bread-and-pizza-dough-with-a-ooni-halo-pro-spiral-mixer/" label="See pumpkin shape photos →" />
+                <img
+                  src="/Pumpkin-shape.png"
+                  alt="Pumpkin shape — dough gathered into a smooth ball around the spiral"
+                  style={{ width: '100%', maxWidth: '340px', borderRadius: '10px', display: 'block', marginTop: '8px', border: '1px solid var(--border)' }}
+                  onError={e => {
+                    const img = e.target as HTMLImageElement;
+                    if (img.src.endsWith('.png')) { img.src = '/Pumpkin-shape.jpg'; return; }
+                    if (img.src.endsWith('.jpg')) { img.src = '/Pumpkin-shape.webp'; return; }
+                    img.style.display = 'none';
+                  }}
+                />
               </div>
             </>
           )}

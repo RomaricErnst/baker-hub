@@ -2273,7 +2273,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         return (
                           <div
                             key={pizza.id}
-                            onClick={() => changeQty(pizza.id, qty > 0 ? -qty : 1)}
+                            onClick={() => setSheetId(pizza.id)}
                             style={{
                               flexShrink: 0,
                               width: '140px',
