@@ -408,66 +408,73 @@ export default function Header({
         </div>
       </div>
 
-      {/* Right: two-part Save / New bake button */}
-      {(recipeGenerated || sessionSaved || sessionRestored) && !hideActionBar ? (
+      {/* Right: Save / Restart pill. Restart is ALWAYS visible — it's also
+          how bakers switch Pizza ↔ Pain before anything is generated. The
+          Save side only joins once there's a session worth saving. */}
+      {(() => {
+        const hasWork = (recipeGenerated || sessionSaved || sessionRestored) && !hideActionBar;
+        return (
         <div style={{
           display: 'flex',
-          border: sessionSaved
-            ? '1px solid rgba(107,122,90,0.4)'
-            : '1px solid rgba(196,82,42,0.4)',
+          border: hasWork
+            ? (sessionSaved ? '1px solid rgba(107,122,90,0.4)' : '1px solid rgba(196,82,42,0.4)')
+            : '1px solid rgba(255,255,255,0.15)',
           borderRadius: '20px',
           overflow: 'hidden',
-          background: sessionSaved
-            ? 'rgba(107,122,90,0.08)'
-            : 'rgba(196,82,42,0.08)',
+          background: hasWork
+            ? (sessionSaved ? 'rgba(107,122,90,0.08)' : 'rgba(196,82,42,0.08)')
+            : 'transparent',
           flexShrink: 0,
         }}>
-          {/* Save side */}
-          <button
-            onClick={() => onSaveSession?.()}
-            style={{
-              background: 'none', border: 'none',
-              padding: '4px 10px',
-              fontFamily: 'var(--font-dm-mono)',
-              fontSize: '11px',
-              color: sessionSaved ? 'var(--sage)' : 'var(--terra)',
-              cursor: sessionSaved ? 'default' : 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {sessionSaved ? tS('saved') : tS('saveSession')}
-          </button>
+          {hasWork && (
+            <>
+              {/* Save side */}
+              <button
+                onClick={() => onSaveSession?.()}
+                style={{
+                  background: 'none', border: 'none',
+                  padding: '4px 10px',
+                  fontFamily: 'var(--font-dm-mono)',
+                  fontSize: '11px',
+                  color: sessionSaved ? 'var(--sage)' : 'var(--terra)',
+                  cursor: sessionSaved ? 'default' : 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {sessionSaved ? tS('saved') : tS('saveSession')}
+              </button>
 
-          {/* Divider */}
-          <div style={{
-            width: '1px',
-            background: sessionSaved
-              ? 'rgba(107,122,90,0.3)'
-              : 'rgba(196,82,42,0.3)',
-            margin: '6px 0',
-          }} />
+              {/* Divider */}
+              <div style={{
+                width: '1px',
+                background: sessionSaved
+                  ? 'rgba(107,122,90,0.3)'
+                  : 'rgba(196,82,42,0.3)',
+                margin: '6px 0',
+              }} />
+            </>
+          )}
 
-          {/* New bake side */}
+          {/* Restart side — confirm only when a plan could be lost */}
           <button
             onClick={() => {
-              if (window.confirm(tS('newSessionConfirm'))) onNewSession?.();
+              if (!hasWork || window.confirm(tS('newSessionConfirm'))) onNewSession?.();
             }}
             style={{
               background: 'none', border: 'none',
               padding: '4px 10px',
               fontFamily: 'var(--font-dm-mono)',
               fontSize: '11px',
-              color: 'var(--smoke)',
+              color: hasWork ? 'var(--smoke)' : 'var(--cream)',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
             }}
           >
-            {locale === 'fr' ? 'Nouveau' : 'New bake'}
+            {locale === 'fr' ? 'Recommencer' : 'Start over'}
           </button>
         </div>
-      ) : (
-        <div style={{ width: '42px', flexShrink: 0 }} />
-      )}
+        );
+      })()}
     </header>
 
     {/* Drawer rendered via portal — outside header stacking context */}
