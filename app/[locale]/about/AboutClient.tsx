@@ -196,6 +196,15 @@ const CONTENT: Record<string, LocaleContent> = {
           ),
         },
         {
+          title: 'Your preferences & your own pizzas',
+          body: (
+            <>
+              <P>Open ☰ → <strong style={{ color: CHAR }}>My preferences</strong> to set your defaults once: pizza oven and bread oven (independently), mixer, yeast, fridge temperature, favourite style per bake type, default mode, your sourdough starter's traits, and your usual busy hours. Everything saves automatically as you tap — no save button — and prefills every new session, always changeable per step. Signed in, preferences sync to your account and follow you across devices.</P>
+              <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Create your own pizza</strong> from the Pizza Party list: pick ingredients from the catalogue or add your own in free text, group by group (base, cheese, meat & sea, vegetables, finishing). Add a photo and reframe it by dragging. Your creations live in your preferences, reappear at every party, and flow into the shopping list, the prep timeline and the bake sheet — including oven guidance inferred from their ingredients.</p>
+            </>
+          ),
+        },
+        {
           title: 'How the engines connect',
           body: (
             <>
@@ -520,6 +529,15 @@ const CONTENT: Record<string, LocaleContent> = {
             <P>Les modes Simple et Avancé respectent tous deux vos heures bloquées. Marquez les créneaux où vous n’êtes pas disponible — heures de travail, nuit, ou toute période personnalisée — et le planificateur construit le plan autour.</P>
             <P>En mode Simple, le planning évite de placer des étapes pendant vos créneaux bloqués. En mode Avancé, le moteur de recherche exclut ces heures des candidats pour le départ du préferment comme pour le pétrissage.</P>
             <p style={{ margin: 0, ...bodyText }}>Une exception pratique : la <strong style={{ color: CHAR }}>fermentation en masse</strong> (le pointage initial après pétrissage) peut commencer jusqu’à 30 minutes avant un créneau bloqué. La pâte se retarde d’elle-même au frigo une fois que vous partez — inutile d’être là quand le pointage se termine.</p>
+          </>
+        ),
+      },
+      {
+        title: 'Vos préférences & vos propres pizzas',
+        body: (
+          <>
+            <P>Ouvrez ☰ → <strong style={{ color: CHAR }}>Mes préférences</strong> pour régler vos valeurs par défaut une fois pour toutes : four à pizza et four à pain (indépendamment), pétrin, levure, température du frigo, style favori par type de cuisson, mode par défaut, les traits de votre levain, et vos indisponibilités habituelles. Tout s'enregistre automatiquement au fil des touches — pas de bouton — et préremplit chaque nouvelle session, toujours modifiable à chaque étape. Connecté·e, vos préférences se synchronisent avec votre compte et vous suivent d'un appareil à l'autre.</P>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Créez votre propre pizza</strong> depuis la liste Soirée Pizza : ingrédients du catalogue ou en texte libre, groupe par groupe (base, fromages, viandes & mer, légumes, finitions). Ajoutez une photo et recadrez-la en la glissant. Vos créations vivent dans vos préférences, reviennent à chaque soirée, et alimentent la liste de courses, la préparation et la fiche de cuisson — avec des conseils de four déduits de leurs ingrédients.</p>
           </>
         ),
       },

@@ -723,6 +723,23 @@ export default function Home() {
     }
   }, [bakeType, styleKey, numItems, itemWeight, ovenType, mixerType, yeastType, kitchenTemp, humidity, fridgeTemp, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct]);
 
+  // Pain au levain: sourdough is the only sensible yeast — auto-confirm after
+  // a beat instead of demanding a tap; the step summary's Edit is the undo.
+  useEffect(() => {
+    if (reviewMode || isRestoringRef.current) return;
+    if (styleKey === 'pain_levain' && yeastType === 'sourdough' && advancedStep === 7 && prefermentType !== 'levain') {
+      const tmr = setTimeout(() => {
+        setPrefermentType('levain');
+        setAdvancedStep(9);
+        setAdvancedHighestStep(sv => Math.max(sv, 9));
+        const el = document.getElementById('adv-step-9');
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: 'auto' });
+      }, 400);
+      return () => clearTimeout(tmr);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [styleKey, yeastType, advancedStep, prefermentType, reviewMode]);
+
   // Baker profile — standard blockers (sleep / work) applied once per fresh
   // session as soon as a bake time exists. Restored sessions keep their own.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2970,7 +2987,7 @@ export default function Home() {
               {!reviewMode && yeastType && yeastType !== 'sourdough' && <ContinueBtn onClick={() => advanceAdv(7)} />}
               {styleKey === 'pain_levain' && yeastType === 'sourdough' && advancedStep === 7 && (
                 <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.5rem', textAlign: 'center' }}>
-                  {locale === 'fr' ? 'Levain présélectionné — appuyez pour confirmer' : 'Sourdough pre-selected — tap to confirm'}
+                  {locale === 'fr' ? 'Levain confirmé automatiquement…' : 'Sourdough confirmed automatically…'}
                 </div>
               )}
               {yeastType === 'sourdough' && advancedStep === 7 && styleKey === 'pain_levain' && !reviewMode && (
