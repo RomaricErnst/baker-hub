@@ -944,10 +944,15 @@ export default function Home() {
     };
   }
 
-  // Auto-save session to localStorage — placed after computed values to avoid TDZ
+  // Auto-save session to localStorage — placed after computed values to avoid TDZ.
+  // isRestoringRef passed as a guard: a save armed while hydration is still in
+  // flight must never persist a payload mixing defaults with restored state
+  // (observed symptom: tab flipped back to 'simple' on a generated custom session).
   useSessionSave(
     buildSessionPayload(),
     () => {},
+    1200,
+    isRestoringRef,
   );
 
   const bakeTimeIsPast = useMemo(() => {
