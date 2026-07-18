@@ -3017,6 +3017,26 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         || (_suggestedFridgeOut !== null && _suggestedFridgeOut !== undefined);
       const _fridgeSuggestionFinal = _winnerUsesFridge ? _fridgeSuggestion : null;
 
+      // B2 telemetry tap — classifies the winning candidate family per solve.
+      // Inert unless a sweep harness sets window.__bhTrace = [] first
+      // (established __audit pattern). Zero cost in normal use.
+      if (typeof window !== 'undefined' && Array.isArray((window as unknown as { __bhTrace?: unknown[] }).__bhTrace)) {
+        const family = _isFridgeHoldPath ? 'pathB_fridge_hold'
+          : _bridgeRefreshMs ? 'bridge_refresh'
+          : _usingPeak2 ? (_hasFutureFeedPath ? 'peak2b_refeed_now' : 'peak2a_trough')
+          : _hasFutureFeedPath ? 'future_feed'
+          : 'peak1';
+        (window as unknown as { __bhTrace: unknown[] }).__bhTrace.push({
+          family,
+          windowTooShort: _windowTooShort,
+          farHorizon: _farHorizonPlan,
+          starterLocation, planningMode, lastFedAge, tang,
+          lastFeedRatio, kitchenTemp,
+          eatTime: et.getTime(),
+          adjPeakH: _adjPeakH,
+        });
+      }
+
       setSolverResult({
         usingPeak2:             _usingPeak2,
         hasFutureFeedPath:      _hasFutureFeedPath,
