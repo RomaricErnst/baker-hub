@@ -8,6 +8,7 @@ import { uploadPhoto, ALLOWED_MIME_TYPES } from '@/app/lib/photoUpload';
 import type { User } from '@supabase/supabase-js';
 import { useRef } from 'react';
 import PizzaPlaceholder from '../PizzaPlaceholder';
+import { AskMaestro } from '../BakeGuide';
 
 // Word units need a space and a FR translation — raw join produced "5leaves".
 const UNIT_LABELS: Record<string, { en: string; fr: string }> = {
@@ -1042,16 +1043,22 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                         </div>
                       ))}
 
-                      {/* Maestro in tech sheet */}
+                      {/* Maestro in tech sheet — unified text + photo input */}
                       <div style={{ padding: '20px 16px 8px' }}>
-                        <CoachButton
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '2px' }}>
+                          Maestro ✦
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: 'var(--char)', fontWeight: 500 }}>
+                          {l === 'fr' ? 'Comment va ma pizza ?' : 'How is my pizza looking?'}
+                        </div>
+                        <AskMaestro
                           stepId="pizza_maestro"
+                          stepTitle={l === 'fr' ? 'Étirement & Cuisson' : 'Stretch & Bake'}
                           styleKey={styleKey ?? 'neapolitan'}
                           kitchenTemp={kitchenTemp ?? 22}
                           prefermentType={prefermentType}
                           locale={l}
                           ovenType={ovenType}
-                          pizzaName={pizza.name[l]}
                         />
                       </div>
                     </div>

@@ -486,58 +486,122 @@ function CoachButton({
   );
 }
 
-// ── Ask Maestro — free-text question about the current step ──────
-function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType }: {
+// ── Ask Maestro — unified: text question, photo, or both ─────────
+export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType }: {
   stepId: string; stepTitle: string; styleKey: string; kitchenTemp: number;
   prefermentType?: string; locale: string; ovenType?: string;
 }) {
   const [q, setQ] = useState('');
+  const [photoB64, setPhotoB64] = useState<string | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const l = locale === 'fr' ? 'fr' : 'en';
+
+  async function attach(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const b64 = await new Promise<string | null>((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const MAX = 1024;
+        const sc = Math.min(1, MAX / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+        const ctx = c.getContext('2d');
+        if (!ctx) { resolve(null); return; }
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+    if (b64) setPhotoB64(b64);
+  }
 
   async function ask() {
     const question = q.trim();
-    if (!question || loading) return;
+    if ((!question && !photoB64) || loading) return;
     setLoading(true); setError(false); setAnswer(null);
     try {
       const res = await fetch('/api/bake-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType }),
+        body: JSON.stringify({
+          question: question || undefined,
+          imageBase64: photoB64 ?? undefined,
+          mimeType: photoB64 ? 'image/jpeg' : undefined,
+          stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType,
+        }),
       });
       const data = await res.json();
       if (data.feedback) setAnswer(data.feedback); else setError(true);
     } catch { setError(true); } finally { setLoading(false); }
   }
 
+  const canAsk = !loading && (q.trim().length > 0 || photoB64 !== null);
+
   return (
     <div style={{ marginTop: '12px' }}>
+      {MAESTRO_CONTENT[stepId]?.question && !answer && (
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: D.char, fontWeight: 500, marginBottom: '6px' }}>
+          {MAESTRO_CONTENT[stepId].question[l]}
+        </div>
+      )}
+      <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} ref={fileRef} onChange={attach} />
+      {photoB64 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+          <img src={`data:image/jpeg;base64,${photoB64}`} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '8px', border: `1px solid ${D.border}` }} />
+          <button onClick={() => setPhotoB64(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: D.smoke, fontSize: '11px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: 0 }}>
+            {l === 'fr' ? 'Retirer la photo' : 'Remove photo'}
+          </button>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: '6px' }}>
+        <button
+          onClick={() => fileRef.current?.click()}
+          title={l === 'fr' ? 'Joindre une photo' : 'Attach a photo'}
+          style={{
+            width: '38px', flexShrink: 0, border: `1px solid ${photoB64 ? '#6B7A5A' : D.border}`,
+            borderRadius: '8px', background: photoB64 ? 'rgba(107,122,90,0.08)' : '#fff', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <svg viewBox="0 0 20 20" width={17} height={17} fill="none" stroke={photoB64 ? '#6B7A5A' : '#8A7F78'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 7.5A1.5 1.5 0 012.5 6h.879a2 2 0 001.664-.89l.812-1.22A2 2 0 017.519 3h4.962a2 2 0 011.664.89l.812 1.22A2 2 0 0016.62 6H17.5A1.5 1.5 0 0119 7.5v8A1.5 1.5 0 0117.5 17h-15A1.5 1.5 0 011 15.5v-8z"/>
+            <circle cx="10" cy="11" r="3"/>
+          </svg>
+        </button>
         <input
           value={q}
           onChange={e => setQ(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') ask(); }}
-          placeholder={l === 'fr' ? 'Posez une question sur cette étape…' : 'Ask a question about this step…'}
+          placeholder={l === 'fr' ? 'Question, photo, ou les deux…' : 'Question, photo, or both…'}
           style={{
             flex: 1, border: `1px solid ${D.border}`, borderRadius: '8px',
             padding: '8px 10px', fontSize: '13px', fontFamily: 'var(--font-dm-sans)',
-            color: D.char, background: '#fff', outline: 'none',
+            color: D.char, background: '#fff', outline: 'none', minWidth: 0,
           }}
         />
         <button
           onClick={ask}
-          disabled={loading || !q.trim()}
+          disabled={!canAsk}
           style={{
             background: '#1A1612', color: '#F5F0E8', border: 'none',
             borderRadius: '8px', padding: '8px 14px', fontSize: '12px',
-            fontFamily: 'var(--font-dm-mono)', cursor: loading || !q.trim() ? 'default' : 'pointer',
-            opacity: loading || !q.trim() ? 0.6 : 1, whiteSpace: 'nowrap',
+            fontFamily: 'var(--font-dm-mono)', cursor: canAsk ? 'pointer' : 'default',
+            opacity: canAsk ? 1 : 0.6, whiteSpace: 'nowrap',
           }}
         >
-          {loading ? (l === 'fr' ? '…' : '…') : (l === 'fr' ? 'Demander' : 'Ask')}
+          {loading ? '…' : (l === 'fr' ? 'Demander' : 'Ask')}
         </button>
+      </div>
+      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '10.5px', color: D.smoke, fontStyle: 'italic', marginTop: '4px' }}>
+        {l === 'fr' ? 'Le Maestro lit vos questions et regarde vos photos — joignez-en une pour un avis visuel.' : 'Maestro reads questions and looks at photos — attach one for a visual read.'}
       </div>
       {answer && (
         <div style={{
@@ -548,7 +612,7 @@ function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermentType, 
           {answer}
           <div>
             <button
-              onClick={() => { setAnswer(null); setQ(''); }}
+              onClick={() => { setAnswer(null); setQ(''); setPhotoB64(null); }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
@@ -646,16 +710,6 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
 
       {tab === 'coach' && (
         <div style={{ marginTop: '.25rem' }}>
-          {coachStepId && (
-            <CoachButton
-              stepId={coachStepId}
-              styleKey={styleKey}
-              kitchenTemp={kitchenTemp}
-              prefermentType={prefermentType}
-              locale={locale}
-              ovenType={ovenType}
-            />
-          )}
           <AskMaestro
             stepId={coachStepId ?? faqKey ?? 'mix'}
             stepTitle={coachTitle}
