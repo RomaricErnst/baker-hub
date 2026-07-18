@@ -247,6 +247,19 @@ export default function ShareCard({
 
   const maxPhotos = template === 'four' ? 4 : template === 'two' ? 2 : 1;
 
+  // Session-card photos flow into the card automatically — dark slots until
+  // manual taps was a trap. First 4 pre-select once photos arrive; every
+  // thumbnail stays tappable to change the picks.
+  useEffect(() => {
+    if (selectedPhotoUrls.length > 0) return;
+    const urls = [
+      ...sessionPhotos.map(p => p.photo_url),
+      ...cameraPhotoUrls,
+    ].filter(Boolean).slice(0, 4);
+    if (urls.length) setSelectedPhotoUrls(urls);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionPhotos.length, cameraPhotoUrls.length]);
+
   function togglePhoto(url: string) {
     setSelectedPhotoUrls(prev => {
       if (prev.includes(url)) return prev.filter(u => u !== url);

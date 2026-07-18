@@ -690,7 +690,7 @@ export default function FermentChart({
   const isFridgeHoldPath = fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null;
 
   // ── Label collision detection ────────────────────────────
-  const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 100;
+  const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 130;
   // Keep centred diamond labels fully inside the canvas (12px mono ≈ 7.2px/char)
   const clampLabelX = (x: number, text: string, fs = 12) => {
     const half = text.length * fs * 0.3 + 4;
