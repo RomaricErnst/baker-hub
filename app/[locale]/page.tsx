@@ -607,6 +607,12 @@ export default function Home() {
       }
     }
 
+    if (session.pizzaParty?.shopTicks) {
+      try { localStorage.setItem('bh_shop_ticks_v1', JSON.stringify(session.pizzaParty.shopTicks)); } catch {}
+    }
+    if (session.pizzaParty?.prepTicks) {
+      try { localStorage.setItem('bh_prep_ticks_v1', JSON.stringify(session.pizzaParty.prepTicks)); } catch {}
+    }
     if (session.pizzaParty?.qtys) {
       const validQtys: Record<string, number> = {};
       Object.entries(session.pizzaParty.qtys).forEach(([id, qty]) => {
@@ -967,7 +973,13 @@ export default function Home() {
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
       recipeGenerated, activeTab, modeChosen,
-      pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+      pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? {
+        qtys: pizzaPartyQtys,
+        // Bought / prepped ticks ride along in the snapshot — session-scoped
+        // like the party itself, synced to bake_events on save.
+        shopTicks: (() => { try { return JSON.parse(localStorage.getItem('bh_shop_ticks_v1') ?? '{}'); } catch { return {}; } })(),
+        prepTicks: (() => { try { return JSON.parse(localStorage.getItem('bh_prep_ticks_v1') ?? '[]'); } catch { return []; } })(),
+      } : null,
       bakedDone,
       computedRecipe: buildComputedRecipe(),
       starterState, starterLocation, planningMode,

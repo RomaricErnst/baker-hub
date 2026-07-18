@@ -34,7 +34,7 @@ export interface SessionData {
   recipeGenerated: boolean;
   activeTab: string;
   modeChosen: boolean;
-  pizzaParty?: { qtys: Record<string, number>; bakedQtys?: Record<string, number> } | null;
+  pizzaParty?: { qtys: Record<string, number>; bakedQtys?: Record<string, number>; shopTicks?: Record<string, boolean>; prepTicks?: string[] } | null;
   bakedDone?: boolean;
   prefGoesInFridge?: boolean;
   starterState?: string;
