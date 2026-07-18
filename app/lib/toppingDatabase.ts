@@ -4836,7 +4836,18 @@ export const DESSERT_PIZZAS: Pizza[] = [
 
 // ─── Helpers ─────────────────────────────────────────────────
 
+import { loadCustomPizzas, customPizzaToPizza } from './profile'
+
+// Custom pizzas the baker created — stored in the baker profile (localStorage),
+// converted to database shape so every surface (pick, shop, prep, bake) just works.
+export function getCustomPizzaList(): Pizza[] {
+  return loadCustomPizzas()
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .map(customPizzaToPizza)
+}
+
 export function getPizzaById(id: string): Pizza | undefined {
+  if (id.startsWith('custom_')) return getCustomPizzaList().find(p => p.id === id)
   return [...PIZZAS, ...DESSERT_PIZZAS].find(p => p.id === id)
 }
 

@@ -228,6 +228,7 @@ export default function Header({
   sessionDoughSpec,
   onSaveSession,
   onNewSession,
+  onOpenProfile,
   onLoadBakeEvent,
   onResumeBakeEvent,
   onRebakeBakeEvent,
@@ -245,6 +246,7 @@ export default function Header({
   sessionDoughSpec?: string;
   onSaveSession?: () => void;
   onNewSession?: () => void;
+  onOpenProfile?: () => void;
   onLoadBakeEvent?: (event: BakeEvent) => void;
   onResumeBakeEvent?: (event: BakeEvent) => void;
   onRebakeBakeEvent?: (event: BakeEvent) => void;
@@ -574,6 +576,24 @@ export default function Header({
                 </button>
               </div>
             </div>
+          )}
+
+          {/* ── Mon profil ── */}
+          {onOpenProfile && (
+            <button
+              onClick={() => { setMenuOpen(false); onOpenProfile(); }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 16px', background: 'transparent', border: 'none',
+                borderTop: '1px solid rgba(255,255,255,0.08)',
+                cursor: 'pointer', width: '100%', textAlign: 'left', flexShrink: 0,
+              }}
+            >
+              <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '.82rem', fontWeight: 600, color: 'var(--cream)' }}>
+                {locale === 'fr' ? 'Mon profil' : 'My profile'}
+              </span>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'var(--smoke)' }}>→</span>
+            </button>
           )}
 
           {/* ── Language · Units — always visible ── */}

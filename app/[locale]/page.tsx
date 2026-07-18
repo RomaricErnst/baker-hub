@@ -3,6 +3,8 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import Header from '../components/Header';
+import ProfileSheet from '../components/ProfileSheet';
+import { loadProfile } from '../lib/profile';
 import StylePicker from '../components/StylePicker';
 import OvenPicker from '../components/OvenPicker';
 import MixerPicker from '../components/MixerPicker';
@@ -25,6 +27,7 @@ import { useSessionSave } from '../hooks/useSessionSave';
 import { type UnitSystem } from '../utils/units';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
+  PIZZA_STYLES, BREAD_STYLES,
   computeBlendProfile,
   type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType, type FlourBlend, type PrefermentType,
 } from '../data';
@@ -506,6 +509,11 @@ export default function Home() {
   // Mode cards — per-card "+ details" expander (visual-first redesign)
   const [modeDetailsOpen, setModeDetailsOpen] = useState<{ simple: boolean; custom: boolean }>({ simple: false, custom: false });
 
+  // Baker profile — ☰ Mon profil sheet + new-session prefill
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profilePrefilled, setProfilePrefilled] = useState(false);
+  const profileBlockersAppliedRef = useRef(false);
+
   // Custom mode — fermentation plan recommended
   const [scheduleReady, setScheduleReady] = useState(false);
 
@@ -671,6 +679,41 @@ export default function Home() {
       setProtocolStale(true);
     }
   }, [bakeType, styleKey, numItems, itemWeight, ovenType, mixerType, yeastType, kitchenTemp, humidity, fridgeTemp, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct]);
+
+  // Baker profile — standard blockers (sleep / work) applied once per fresh
+  // session as soon as a bake time exists. Restored sessions keep their own.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (isRestoringRef.current || sessionRestored) return;
+    if (!eatTime || profileBlockersAppliedRef.current) return;
+    if (blocks.length > 0) { profileBlockersAppliedRef.current = true; return; }
+    const bl = loadProfile()?.blockers;
+    if (!bl || (!bl.sleep.enabled && !bl.work.enabled)) return;
+    profileBlockersAppliedRef.current = true;
+    const parse = (s: string) => { const [h, m] = s.split(':').map(Number); return { h: h || 0, m: m || 0 }; };
+    const out: AvailabilityBlock[] = [];
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const horizon = new Date(eatTime.getTime() + 24 * 3600 * 1000);
+    for (let d = new Date(start); d < horizon; d.setDate(d.getDate() + 1)) {
+      (['sleep', 'work'] as const).forEach(key => {
+        const b = bl[key];
+        if (!b.enabled) return;
+        if (key === 'work') { const dow = d.getDay(); if (dow === 0 || dow === 6) return; }
+        const f = parse(b.from), tt = parse(b.to);
+        const from = new Date(d); from.setHours(f.h, f.m, 0, 0);
+        const to = new Date(d); to.setHours(tt.h, tt.m, 0, 0);
+        if (to <= from) to.setDate(to.getDate() + 1); // overnight window (sleep)
+        if (to < new Date() || from > eatTime) return;
+        out.push({
+          label: key === 'sleep'
+            ? (locale === 'fr' ? 'Sommeil' : 'Sleep')
+            : (locale === 'fr' ? 'Travail' : 'Work'),
+          from, to,
+        });
+      });
+    }
+    if (out.length) setBlocks(out);
+  }, [eatTime]);
 
   // Nav #1 — after an upstream edit (single-tap choices) with a plan already
   // built, re-open + scroll to the baking-plan step so the chart never
@@ -992,6 +1035,33 @@ export default function Home() {
     setAdvancedStep(1);
     setAdvancedHighestStep(1);
     setModeChosen(true);
+
+    // ── Baker profile prefill — bakeType-compatible defaults, always overridable ──
+    const prof = loadProfile();
+    if (prof) {
+      let applied = false;
+      const ovenPool = bt === 'bread' ? BREAD_OVEN_TYPES : OVEN_TYPES;
+      if (prof.ovenType && prof.ovenType in ovenPool) {
+        setOvenType(prof.ovenType as AnyOvenType); applied = true;
+      }
+      const stylePool = bt === 'bread' ? BREAD_STYLES : PIZZA_STYLES;
+      if (prof.styleKey && prof.styleKey in stylePool) {
+        setStyleKey(prof.styleKey as StyleKey); applied = true;
+      }
+      if (prof.mixerType && prof.mixerType in MIXER_TYPES) {
+        setMixerType(prof.mixerType as MixerType); applied = true;
+      }
+      if (prof.yeastType && prof.yeastType in YEAST_TYPES) {
+        setYeastType(prof.yeastType as YeastType); applied = true;
+      }
+      if (prof.fridgeTemp !== undefined) { setFridgeTemp(prof.fridgeTemp); applied = true; }
+      if (prof.starter) {
+        setStarterMature(prof.starter.mature);
+        setStarterHasRye(prof.starter.hasRye);
+        setTang(prof.starter.tang);
+      }
+      if (applied) setProfilePrefilled(true);
+    }
   }
 
   // First step whose value is genuinely missing — used when switching
@@ -1398,7 +1468,12 @@ export default function Home() {
           onNewSession={startOver}
           onResumeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event); }}
           onRebakeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event, { rebake: true }); }}
+          onOpenProfile={() => setProfileOpen(true)}
         />
+
+        {profileOpen && (
+          <ProfileSheet locale={locale} onClose={() => setProfileOpen(false)} />
+        )}
 
 
         {bakeType && bakeType !== 'bread' && (
@@ -1740,6 +1815,18 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+
+              {/* Baker-profile prefill hint — observation, not an alarm */}
+              {profilePrefilled && !recipeGenerated && (
+                <div style={{
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                  color: 'var(--smoke)', letterSpacing: '.05em', margin: '10px 2px 0',
+                }}>
+                  {locale === 'fr'
+                    ? '✓ Préréglé depuis votre profil — modifiable à chaque étape'
+                    : '✓ Prefilled from your profile — adjustable at every step'}
+                </div>
+              )}
 
             </div>
           )}
