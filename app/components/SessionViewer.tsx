@@ -415,9 +415,11 @@ export default function SessionViewer({
                   {sessionTitle || title}
                 </p>
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-                  color: 'var(--smoke)', opacity: 0.4, marginTop: '4px',
-                  flexShrink: 0,
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+                  color: 'var(--terra)', marginTop: '2px', flexShrink: 0,
+                  border: '1px solid rgba(196,82,42,0.35)',
+                  background: 'rgba(196,82,42,0.06)',
+                  borderRadius: '12px', padding: '3px 9px', lineHeight: 1.2,
                 }}>✎</span>
               </div>
             )}
