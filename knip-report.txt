@@ -1,0 +1,104 @@
+npm warn exec The following package was not found and will be installed: knip@6.27.0
+Unused files (29)
+app/components/AuthButton.tsx             
+app/i18n/request.ts                       
+app/utils/yeastEngine.test.ts             
+public/sourdough-audit.js                 
+scripts/audit-compatible-styles.js        
+scripts/audit-pizza-images.js             
+scripts/convert-to-webp.js                
+scripts/fix-dietary-tags.js               
+scripts/fix-substitutions.ts              
+scripts/gen_dessert_romana.js             
+scripts/gen_logo_all_variations.js        
+scripts/gen_logo_text_styles.js           
+scripts/gen_logo_variations.js            
+scripts/gen_missing_romana.js             
+scripts/gen_neapolitan_roman.js           
+scripts/gen_new_pizzas.js                 
+scripts/gen_newyork_missing.js            
+scripts/gen_peking_duck.js                
+scripts/gen_roman_images.js               
+scripts/gen_roman_missing.js              
+scripts/gen_romana_missing5.js            
+scripts/gen_spiral.js                     
+scripts/generate-bread-images.js          
+scripts/generate-pizza-images.js          
+scripts/generate-ui-assets.js             
+scripts/regen-final-fixes.js              
+scripts/regen-pizza-images.js             
+scripts/regen-romana-targeted.js          
+scripts/scripts/generate-pizza-variants.js
+Unused dependencies (2)
+dotenv  package.json:14:6
+openai  package.json:17:6
+Unused devDependencies (1)
+sharp  package.json:29:6
+Unused exports (37)
+IconWater              function  app/components/StepIcons.tsx:126:17     
+IconYeast              function  app/components/StepIcons.tsx:135:17     
+IconSalt               function  app/components/StepIcons.tsx:149:17     
+IconOil                function  app/components/StepIcons.tsx:161:17     
+IconKnead              function  app/components/StepIcons.tsx:172:17     
+STEP_ICON_MAP                    app/components/StepIcons.tsx:184:14     
+FLOUR_BRANDS                     app/data.ts:583:14                      
+PREFERMENT_LABELS                app/data.ts:689:14                      
+PHOTO_BUCKET                     app/lib/photoUpload.ts:3:14             
+PHOTO_LIMIT                      app/lib/photoUpload.ts:4:14             
+PHOTO_SOFT_WARN                  app/lib/photoUpload.ts:5:14             
+countUserPhotos        function  app/lib/photoUpload.ts:52:23            
+hasSession             function  app/lib/session.ts:97:17                
+nameBakeEvent          function  app/lib/supabase/saveBakeEvent.ts:121:23
+saveRecipe             function  app/lib/supabase/saveRecipe.ts:36:23    
+CATEGORY_LABELS                  app/lib/toppingDatabase.ts:19:3         
+REGION_LABELS                    app/lib/toppingDatabase.ts:19:20        
+ING                              app/lib/toppingDatabase.ts:27:14        
+getAllPizzas           function  app/lib/toppingDatabase.ts:4850:17      
+getDessertPizzas       function  app/lib/toppingDatabase.ts:4854:17      
+CATEGORY_LABELS                  app/lib/toppingTypes.ts:303:14          
+REGION_LABELS                    app/lib/toppingTypes.ts:316:14          
+Link                             app/navigation.ts:4:16                  
+recommendYeast         function  app/utils.ts:92:17                      
+sourdoughGuidance      function  app/utils.ts:251:17                     
+prefermentLeadHours    function  app/utils.ts:1014:17                    
+ovenHydrationWarning   function  app/utils.ts:1024:17                    
+ovenOilWarning         function  app/utils.ts:1044:17                    
+mixerHydrationWarning  function  app/utils.ts:1054:17                    
+toDateTimeLocal        function  app/utils.ts:1083:17                    
+cToF                   function  app/utils/units.ts:4:17                 
+fToC                   function  app/utils/units.ts:7:17                 
+gToOz                  function  app/utils/units.ts:37:17                
+ozToG                  function  app/utils/units.ts:40:17                
+weightUnit             function  app/utils/units.ts:43:17                
+gToDisplay             function  app/utils/units.ts:64:17                
+inputWeightToG         function  app/utils/units.ts:68:17                
+Unused exported types (27)
+StarterEventKind        type       app/components/SchedulePicker.tsx:7:13
+BrandKey                type       app/data.ts:605:13                    
+PizzaStyleKey           type       app/data.ts:908:13                    
+BreadStyleKey           type       app/data.ts:909:13                    
+StandardBlocker         interface  app/lib/profile.ts:31:18              
+RecipeToSave            interface  app/lib/supabase/saveRecipe.ts:4:18   
+Ingredient              type       app/lib/toppingDatabase.ts:8:22       
+Locale                  type       app/lib/toppingDatabase.ts:10:3       
+Category                type       app/lib/toppingDatabase.ts:10:29      
+OvenTempTag             type       app/lib/toppingDatabase.ts:11:31      
+ShoppingContext         type       app/lib/toppingDatabase.ts:11:44      
+BakeOrder               type       app/lib/toppingDatabase.ts:12:23      
+IngredientSubstitution  type       app/lib/toppingDatabase.ts:12:34      
+PizzaSlot               type       app/lib/toppingDatabase.ts:13:3       
+PizzaPartySession       type       app/lib/toppingDatabase.ts:13:14      
+StyleKey                type       app/lib/toppingDatabase.ts:13:46      
+IngredientUnit          type       app/lib/toppingDatabase.ts:23:15      
+IngredientQty           type       app/lib/toppingDatabase.ts:23:31      
+Category                type       app/lib/toppingTypes.ts:28:13         
+ShoppingContext         type       app/lib/toppingTypes.ts:75:13         
+ShopEntry               type       app/lib/toppingTypes.ts:79:13         
+WhereToFind             type       app/lib/toppingTypes.ts:85:13         
+IngredientQty           type       app/lib/toppingTypes.ts:115:13        
+IngredientSubstitution  type       app/lib/toppingTypes.ts:122:13        
+PizzaSlot               type       app/lib/toppingTypes.ts:191:13        
+PizzaPartySession       type       app/lib/toppingTypes.ts:200:13        
+SourdoughResult         interface  app/utils.ts:242:18                   
+Configuration hints (1)
+. (root)    .  Create knip.json configuration file, and add entry and/or refine project files (29 unused files)
