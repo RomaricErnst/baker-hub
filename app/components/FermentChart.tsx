@@ -1711,8 +1711,13 @@ export default function FermentChart({
                                   ev.isActive ? 'white' : 'rgba(74,127,165,0.75)';
             const diamondSize = isIntermediate ? S * 0.7 : S;
             const points = `${x},${AXIS_Y - diamondSize} ${x + diamondSize},${AXIS_Y} ${x},${AXIS_Y + diamondSize} ${x - diamondSize},${AXIS_Y}`;
+            // A label whose diamond sits under a day tick drops just enough to
+            // clear the tick text (baseline AXIS_Y+20, ~12px tall) — a small
+            // +8 nudge, NOT a full extra row, so an isolated label (e.g. a
+            // far-left "Refresh Feed" with nothing beside it) stays tucked under
+            // the axis instead of floating ~2 rows down and reading as detached.
             const collidesWithTick = tickPositions.some(tx => Math.abs(x - tx) < 55);
-            const baseLabelY = collidesWithTick ? AXIS_Y + S + 42 : AXIS_Y + S + 22;
+            const baseLabelY = (AXIS_Y + S + 22) + (collidesWithTick ? 8 : 0);
             const finalLabelY = baseLabelY + rowFor(x, labelPxW(ev.label)) * ROW_H;
             const labelFill = isHistorical ? 'var(--smoke)' :
                               isIntermediate ? '#4A7FA5' :
