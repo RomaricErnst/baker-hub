@@ -627,21 +627,6 @@ export default function RecipeOutput({
           }}>
             {t('recipeOutput.recipeReady')}
           </div>
-          {/* Newcomers read this tab as the whole story and miss the Guide —
-              one quiet line up top; the bottom CTA still catches readers */}
-          {onOpenGuide && (
-            <button
-              onClick={onOpenGuide}
-              style={{
-                background: 'none', border: 'none', padding: '0 0 .2rem', cursor: 'pointer',
-                fontFamily: 'var(--font-dm-mono)', fontSize: '.68rem',
-                color: 'var(--smoke)', textAlign: 'left',
-                textDecoration: 'underline', textUnderlineOffset: '2px',
-              }}
-            >
-              {t('recipeOutput.guideHint')}
-            </button>
-          )}
           <div style={{
             fontSize: '.78rem', color: 'var(--smoke)',
             fontFamily: 'var(--font-dm-mono)',
@@ -1351,6 +1336,25 @@ export default function RecipeOutput({
             locale={locale}
           />
 
+        </div>
+      )}
+
+      {/* Guide hint — moved from the top of the recipe to here, just before the
+          protocol: the recipe should lead with the numbers, and this points to
+          the detailed step-by-step once the essentials have been read. */}
+      {onOpenGuide && (
+        <div style={{ textAlign: 'center', marginBottom: '.1rem' }}>
+          <button
+            onClick={onOpenGuide}
+            style={{
+              background: 'none', border: 'none', padding: '4px 0', cursor: 'pointer',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
+              color: 'var(--smoke)', textAlign: 'center',
+              textDecoration: 'underline', textUnderlineOffset: '3px',
+            }}
+          >
+            {t('recipeOutput.guideHint')}
+          </button>
         </div>
       )}
 
