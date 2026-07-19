@@ -2149,7 +2149,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           // Signal solver: this starter needs revival cycles. starterRefeedTime=now
           // makes Path B candidate (and intermediate refresh loop) eligible.
           const refeedNow = new Date();
-          const decliningPeak = new Date(refeedNow.getTime() + adjPeakH * 3600000);
+          // A refresh from a long-dormant starter peaks LATER than a healthy
+          // one — the same refresh stretch the chart bell applies. Scoring
+          // must use it too, or it thinks the starter peaks ~adjPeakH after
+          // feeding (near mix → false green) while the bell peaks 1.5×
+          // adjPeakH later. Mirror _refreshStretchFactor's late-decline value.
+          const _revivalStretch = (() => {
+            if (!lastFedTime) return 1.5;
+            const hSince = (refeedNow.getTime() - lastFedTime.getTime()) / 3600000;
+            if (hSince <= adjPeakH) return 1.0;
+            if (hSince <= adjPeakH * 1.5) return 1.05;
+            if (hSince <= troughH) return 1.15;
+            if (hSince <= troughH * 1.5) return 1.25;
+            if (hSince <= troughH * 2.5) return 1.35;
+            return 1.5;
+          })();
+          const decliningPeak = new Date(refeedNow.getTime() + adjPeakH * _revivalStretch * 3600000);
           onStarterPeakTimeChange?.(decliningPeak);
           return {
             peakTime: decliningPeak,
@@ -3096,18 +3111,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // _adjPeakH (line ~2985), so the two formulas are byte-identical.
         peakTime: (_isFridgeHoldPath && _feed2Time && _adjPeakH)
           ? new Date(_feed2Time.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
-          : (starterLocation === 'fridge' && _newFridgeOut && lastFedTime)
-          ? fridgePeakAfterRemoval(_newFridgeOut, lastFedTime, _adjPeakH ?? adjPeakH_derived ?? 14)
-          : (starterLocation === 'fridge' && _newFridgeOut)
-          ? new Date(_newFridgeOut.getTime() + getStarterFridgeWarmupH(kitchenTemp) * 3600000)
-          // Primary-refresh (peak1, no future/pre-mix feed): the reported peak
-          // must equal the refresh BELL's peak (refreshStretch), not the
-          // pre-mix stretch. They diverged — the card's PEAK row echoed the
-          // mix time (2:15pm) while the chart bell peaked ~45 min earlier
-          // (1:30pm), so card and chart disagreed and "refresh not at peak"
-          // was true. Same _adjPeakH × _refreshStretchFactor the bell uses.
+          // Refresh-driven peak FIRST: whenever the plan involves refreshing the
+          // starter (revival / declining), the reported peak is the refresh
+          // BELL's peak (refresh stretch), NOT a fridge-warmup fiction. This
+          // must win over the fridge branches below — otherwise peakTime got
+          // set to _newFridgeOut+warmup ≈ mix and the pill/card claimed "peak
+          // at mix" while the bell peaked hours later (false green at low temp).
           : (_starterRefeedTime && !_hasFutureFeedPath && !_usingPeak2 && _adjPeakH
               ? new Date(_starterRefeedTime.getTime() + _adjPeakH * _refreshStretchFactor * 3600000)
+          : (starterLocation === 'fridge' && _newFridgeOut && _renderFridgeOutMs != null && lastFedTime)
+          ? fridgePeakAfterRemoval(_newFridgeOut, lastFedTime, _adjPeakH ?? adjPeakH_derived ?? 14)
+          : (starterLocation === 'fridge' && _newFridgeOut && _renderFridgeOutMs != null)
+          ? new Date(_newFridgeOut.getTime() + getStarterFridgeWarmupH(kitchenTemp) * 3600000)
           : _starterFeedTime && _adjPeakH
               ? new Date(_starterFeedTime.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
               : null),
