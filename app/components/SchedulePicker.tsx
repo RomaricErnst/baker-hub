@@ -179,6 +179,25 @@ function computePreMixStretchFactor(preMixMs: number, refreshPeakMs: number | nu
   return 1.0 + 0.1 * hoursEarly;
 }
 
+// ── Unified starter-peak model ───────────────────────────────────────────────
+// SINGLE source of truth for "when does a starter peak after a feed at feedMs?"
+// A feed placed before its reference peak (yeast not fully matured) stretches its
+// own time-to-peak; a feed at/after the reference peak does not. Both the SCORING
+// peak (candidate generation) and the DISPLAY peak (chart bell `bellPeakTime` +
+// card "Peak around…"/PEAK row) call this with the SAME reference peak, so
+// scoring ≡ bell ≡ card by construction and the green pill can never fire while
+// the bell still peaks hours after mix (the "false green" class).
+//
+// refPeakMs is the reference peak the feed is measured against — canonically
+// `_starterRefeedTime ? refeed + adjPeakH : lastFed + adjPeakH` (bare adjPeakH),
+// matching the bell's `_preMixStretchFactor` reference. adjPeakHEff is the
+// temperature/ratio-adjusted peak hours for the ACTIVE ratio in this scope
+// (Stage-1 `adjPeakH`, or the per-ratio `adjPeakH_r` inside evaluatePlanForRatio),
+// so the same call is correct at every ratio.
+function computeStarterPeakMs(feedMs: number, refPeakMs: number | null, adjPeakHEff: number): number {
+  return feedMs + adjPeakHEff * computePreMixStretchFactor(feedMs, refPeakMs) * 3600000;
+}
+
 // ── Time formatter ────────────────────────────
 // "4pm" / "4:30pm" — minutes omitted when zero
 function formatTimeShort(d: Date, isFr = false): string {
@@ -2408,13 +2427,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _renderFridgeInMs:  number | null = null;
     let _renderFridgeOutMs: number | null = null;
     let _adjPeakH: number | null = null;
-    // TEMP dbg_* mirrors for the peak-model pass — REMOVE before final commit.
-    let _dbgBestPeakHBF: number | null = null;
-    let _dbgBestMixHBF: number | null = null;
-    let _dbgBestSscore: number | null = null;
-    let _dbgBestFeedMs: number | null = null;
-    let _dbgFoundValid: boolean | null = null;
-    let _dbgTOL: number | null = null;
     let _fridgeFeedTime: Date | null = null;
     // Bridge-candidate refresh chain (additional to primary @now refresh) —
     // set when a bridging candidate wins; consumed by buildAndSetResult to
@@ -3077,25 +3089,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           lastFeedRatio, kitchenTemp,
           eatTime: et.getTime(),
           adjPeakH: _adjPeakH,
-          // TEMP dbg_* diagnostics for the peak-model pass — REMOVE before final commit.
-          dbg_sscore: _dbgBestSscore,
-          dbg_foundValid: _dbgFoundValid,
-          dbg_peakHBF: _dbgBestPeakHBF,
-          dbg_mixHBF: _dbgBestMixHBF,
-          dbg_scoringPeakMs: _dbgBestPeakHBF != null ? et.getTime() - _dbgBestPeakHBF * 3600000 : null,
-          dbg_mixMs: _dbgBestMixHBF != null ? et.getTime() - _dbgBestMixHBF * 3600000 : null,
-          dbg_feedMs: _dbgBestFeedMs,
-          dbg_TOL: _dbgTOL,
-          dbg_refreshStretch: _refreshStretchFactor,
-          dbg_preMixStretch: _preMixStretchFactor,
-          dbg_nextFeedRatio: nextFeedRatio,
-          dbg_events: _starterEvents.map(e => ({
-            kind: e.kind,
-            t: e.time.getTime(),
-            bell: e.bellPeakTime ? e.bellPeakTime.getTime() : null,
-            sigma: e.bellSigmaScale ?? null,
-            active: e.isActive,
-          })),
         });
       }
 
@@ -3276,6 +3269,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       return 1.5;
     })();
     const _adjPeakH_refresh = adjPeakH * _refreshStretchFactor;
+    // Canonical reference peak for pre-mix/future feeds — the SAME reference the
+    // bell's `_preMixStretchFactor` uses (bare adjPeakH). Every candidate family
+    // that renders a pre_mix bell scores its peak via computeStarterPeakMs()
+    // against THIS reference, so scoring peak ≡ bell peak by construction.
+    const _refPeakForPreMix: number | null = _starterRefeedTime
+      ? _starterRefeedTime.getTime() + adjPeakH * 3600000
+      : (lastFedTime ? lastFedTime.getTime() + adjPeakH * 3600000 : null);
     const warmupH  = getStarterFridgeWarmupH(kitchenTemp);
     const ftm      = Math.max(0.7, Math.min(1.5, flourStrength ?? 1.0));
     // Peak hold window scales with peak time — faster biology = narrower window.
@@ -3283,7 +3283,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const rtTOL   = Math.max(1.0, Math.min(3.0, adjPeakH * 0.15));
     const baseTOL = starterLocation === 'fridge' ? 2.0 : rtTOL;
     const TOL     = baseTOL * ftm;
-    _dbgTOL = TOL; // TEMP dbg — REMOVE before final commit.
 
     const sweetFromHBF = localSweetFrom;
     const sweetToHBF   = localSweetTo;
@@ -3620,7 +3619,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (planningMode === 'last_fed' && lastFedTime) {
       // Option A: natural trough cycle (Feed 2 at trough)
       const troughMs  = lastFedTime.getTime() + troughH * 3600000;
-      const peak2AHBF = (bakeMs - (troughMs + adjPeakH * 3600000)) / 3600000;
+      // Unified peak: the trough feed renders as a pre_mix bell, so score its
+      // peak with the SAME helper + reference the bell uses (scoring ≡ bell).
+      // A trough is past the natural peak → stretch resolves to 1.0, so this is
+      // behaviour-identical to the old `troughMs + adjPeakH` for healthy troughs.
+      const peak2AHBF = (bakeMs - computeStarterPeakMs(troughMs, _refPeakForPreMix, adjPeakH)) / 3600000;
 
       if (troughMs >= nowMs) {
         for (let mixHBF = scanFrom; mixHBF >= scanTo; mixHBF -= STEP) {
@@ -3640,8 +3643,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // Option B: refeed now (declining state — _starterRefeedTime set from derived)
       if (_starterRefeedTime && !inBlockerMs(_starterRefeedTime.getTime())) {
         const refeedMs  = _starterRefeedTime.getTime();
-        // Refresh-stretched peak (matches the bell) — see Option A note.
-        const peak2BHBF = (bakeMs - (refeedMs + _adjPeakH_refresh * 3600000)) / 3600000;
+        // Unified peak: the refeed renders as a pre_mix bell. Score against the
+        // SAME helper + reference the bell uses so scoring ≡ bell (was
+        // `_adjPeakH_refresh`, i.e. refreshStretch, which the bell never applied
+        // here → the dominant false-green source; see FINDINGS.md).
+        const peak2BHBF = (bakeMs - computeStarterPeakMs(refeedMs, _refPeakForPreMix, adjPeakH)) / 3600000;
 
         for (let mixHBF = scanFrom; mixHBF >= scanTo; mixHBF -= STEP) {
           if (bakeMs - mixHBF * 3600000 <= nowMs) continue;
@@ -3757,16 +3763,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         ? new Date(baseFeed2.getTime() + 15 * 60000)
         : new Date(baseFeed2.getTime() + 2 * 3600000);
 
-      // refreshPeakMsForStretch: if starter is declining/depleted, refresh
-      // peak exists and stretch applies. Otherwise null (no stretch).
+      // refreshPeakMsForStretch: reference peak used ONLY by the biological
+      // eligibility gate below (unchanged, preserves which candidates exist).
       const refreshPeakMsForStretch = _starterRefeedTime
         ? _starterRefeedTime.getTime() + _adjPeakH_refresh * 3600000
         : null;
 
       for (let t2 = searchStart2.getTime(); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
         if (t2 <= nowMs2) continue;
-        const stretchFactor2 = computePreMixStretchFactor(t2, refreshPeakMsForStretch);
-        const peakT2 = new Date(t2 + adjPeakH * stretchFactor2 * 3600000);
+        // Unified peak: score against the SAME helper + reference the pre_mix
+        // bell uses (_refPeakForPreMix, bare adjPeakH) so scoring ≡ bell. Was
+        // stretched against refreshPeakMsForStretch (_adjPeakH_refresh) → the
+        // reference disagreed with the bell → future_feed drift (FINDINGS.md).
+        const peakT2 = new Date(computeStarterPeakMs(t2, _refPeakForPreMix, adjPeakH));
         const mHBF2  = (bakeMs - peakT2.getTime()) / 3600000;
         if (mHBF2 < sweetToHBF - 4 || mHBF2 > sweetFromHBF + 4) continue;
         if (bakeMs - mHBF2 * 3600000 <= nowMs2) continue;
@@ -3892,8 +3901,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           // candidates and the outer loop's smaller nBridge will (the
           // 2-feed plan spaces correctly at ~24h).
           if (t3 - finalRefreshMs < minFeedGapH * 3600000) continue;
-          const stretchFactor3 = computePreMixStretchFactor(t3, finalRefreshPeakMs);
-          const peakT3 = new Date(t3 + adjPeakH * stretchFactor3 * 3600000);
+          // Unified peak: score the pre-mix against the SAME helper + reference
+          // the bell uses (_refPeakForPreMix) so scoring ≡ bell. finalRefreshPeakMs
+          // still drives the biological eligibility gate below (unchanged).
+          const peakT3 = new Date(computeStarterPeakMs(t3, _refPeakForPreMix, adjPeakH));
           const mHBF3  = (bakeMs - peakT3.getTime()) / 3600000;
           if (mHBF3 < sweetToHBF - 4 || mHBF3 > sweetFromHBF + 4) continue;
           if (bakeMs - mHBF3 * 3600000 <= nowMs3) continue;
@@ -4237,12 +4248,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // clears blockers). A starter-perfect plan with a feed in a blocked
     // window is NOT green; the baker can't run it.
     _starterPillState = (best.sscore === 2 && foundValid) ? 'green' : 'yellow';
-    // TEMP dbg mirrors for the peak-model pass — REMOVE before final commit.
-    _dbgBestPeakHBF = best.peakHBF;
-    _dbgBestMixHBF  = best.mixHBF;
-    _dbgBestSscore  = best.sscore;
-    _dbgBestFeedMs  = best.feedMs;
-    _dbgFoundValid  = foundValid;
     setRefeedSuggestion(null);
 
     // If a future-feed candidate won, override flags accordingly.
@@ -4408,6 +4413,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           return 1.5;
         })();
         const _adjPeakH_refresh_r = adjPeakH_r * _refreshStretchFactor_r;
+        // Same canonical pre-mix reference as Stage 1, at THIS ratio's adjPeakH_r,
+        // so the ratio evaluator scores against the same peak the final Stage-1
+        // solve (and its bell) will produce at the chosen ratio (guardrail #3).
+        const _refPeakForPreMix_r: number | null = _starterRefeedTime
+          ? _starterRefeedTime.getTime() + adjPeakH_r * 3600000
+          : (lastFedTime ? lastFedTime.getTime() + adjPeakH_r * 3600000 : null);
         const rtTOL_r   = Math.max(1.0, Math.min(3.0, adjPeakH_r * 0.15));
         const baseTOL_r = starterLocation === 'fridge' ? 2.0 : rtTOL_r;
         const TOL_r     = baseTOL_r * ftm;
@@ -4486,7 +4497,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
         if (planningMode === 'last_fed' && lastFedTime) {
           const troughMs = lastFedTime.getTime() + troughH_r * 3600000;
-          const peak2AHBF = (bakeMs - (troughMs + adjPeakH_r * 3600000)) / 3600000;
+          const peak2AHBF = (bakeMs - computeStarterPeakMs(troughMs, _refPeakForPreMix_r, adjPeakH_r)) / 3600000;
           if (troughMs >= nowMs_r) {
             for (let mixHBF = scanFrom_r; mixHBF >= scanTo_r; mixHBF -= STEP_r) {
               if (bakeMs - mixHBF * 3600000 <= nowMs_r) continue;
@@ -4503,7 +4514,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           }
           if (_starterRefeedTime && !inBlockerMs(_starterRefeedTime.getTime())) {
             const refeedMs = _starterRefeedTime.getTime();
-            const peak2BHBF = (bakeMs - (refeedMs + adjPeakH_r * 3600000)) / 3600000;
+            const peak2BHBF = (bakeMs - computeStarterPeakMs(refeedMs, _refPeakForPreMix_r, adjPeakH_r)) / 3600000;
             for (let mixHBF = scanFrom_r; mixHBF >= scanTo_r; mixHBF -= STEP_r) {
               if (bakeMs - mixHBF * 3600000 <= nowMs_r) continue;
               if (inBlocker(mixHBF)) continue;
@@ -4533,8 +4544,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             : null;
           for (let t2 = searchStart2.getTime(); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
             if (t2 <= nowMs_r) continue;
-            const stretchFactor2 = computePreMixStretchFactor(t2, refreshPeakMsForStretch_r);
-            const peakT2 = new Date(t2 + adjPeakH_r * stretchFactor2 * 3600000);
+            const peakT2 = new Date(computeStarterPeakMs(t2, _refPeakForPreMix_r, adjPeakH_r));
             const mHBF2  = (bakeMs - peakT2.getTime()) / 3600000;
             if (mHBF2 < sweetToHBF - 4 || mHBF2 > sweetFromHBF + 4) continue;
             if (bakeMs - mHBF2 * 3600000 <= nowMs_r) continue;
@@ -4597,8 +4607,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               // Pre-mix must be ≥ minFeedGapH after the final bridge — mirrors
               // the main solver's spacing rule.
               if (t3 - finalRefreshMs_r < minFeedGapH_r * 3600000) continue;
-              const stretchFactor3 = computePreMixStretchFactor(t3, finalRefreshPeakMs_r);
-              const peakT3 = new Date(t3 + adjPeakH_r * stretchFactor3 * 3600000);
+              const peakT3 = new Date(computeStarterPeakMs(t3, _refPeakForPreMix_r, adjPeakH_r));
               const mHBF3  = (bakeMs - peakT3.getTime()) / 3600000;
               if (mHBF3 < sweetToHBF - 4 || mHBF3 > sweetFromHBF + 4) continue;
               if (bakeMs - mHBF3 * 3600000 <= nowMs_r) continue;
