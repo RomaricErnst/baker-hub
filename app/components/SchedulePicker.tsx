@@ -2321,7 +2321,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // RT starter — depleted (past trough)
       const troughTime = new Date(lastFedTime.getTime() + troughH * 3600000);
       const refeedNow = new Date();
-      const depletedPeak = new Date(refeedNow.getTime() + adjPeakH * 3600000);
+      // Honest peak: a refresh from a depleted starter peaks LATER than a
+      // healthy one — the same stretch the chart bell applies. Scoring must
+      // use it too, or it thinks the starter peaks ~adjPeakH after feeding
+      // (near mix -> false green) while the bell peaks up to 1.5x later.
+      const _depletedStretch = (() => {
+        const hSince = (refeedNow.getTime() - lastFedTime.getTime()) / 3600000;
+        if (hSince <= adjPeakH) return 1.0;
+        if (hSince <= adjPeakH * 1.5) return 1.05;
+        if (hSince <= troughH) return 1.15;
+        if (hSince <= troughH * 1.5) return 1.25;
+        if (hSince <= troughH * 2.5) return 1.35;
+        return 1.5;
+      })();
+      const depletedPeak = new Date(refeedNow.getTime() + adjPeakH * _depletedStretch * 3600000);
       onStarterPeakTimeChange?.(depletedPeak);
       return {
         peakTime: depletedPeak,
