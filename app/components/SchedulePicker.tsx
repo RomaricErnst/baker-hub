@@ -3444,6 +3444,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const fridgeInMs = refreshPeaks.length > 0
         ? Math.max(...refreshPeaks)
         : (lastFedTime?.getTime() ?? candMixMs);
+      // Degenerate-hold guard: a fridge park is only real if the starter sits
+      // cold for a meaningful stretch. When the refresh peak lands close to
+      // mix (peak≈mix), fridgeOut−fridgeIn collapses to minutes and the card
+      // showed a nonsensical 15-min excursion with a double-peak (peak, cold
+      // for 15 min, "peak" again). Below MIN_FRIDGE_HOLD_H the starter simply
+      // peaks near mix and is used straight — no fridge transition.
+      const MIN_FRIDGE_HOLD_H = 3;
+      if (fridgeOutMs - fridgeInMs < MIN_FRIDGE_HOLD_H * 3600000) return null;
       return { fridgeInMs, fridgeOutMs };
     }
 
@@ -4175,7 +4183,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // Align _newFridgeOut (chart prop + non-event card paths) to the stored
       // value so the chart and the card never see a different fridge_out than
       // the validator did. Path B is handled by the block below.
-      if (best.renderFridgeOutMs != null) _newFridgeOut = new Date(best.renderFridgeOutMs);
+      if (best.renderFridgeOutMs != null) {
+        _newFridgeOut = new Date(best.renderFridgeOutMs);
+      } else if (!best.isFridgePath && starterLocation === 'fridge') {
+        // No render fridge transition (degenerate <3h hold suppressed in
+        // computeNonPathBFridgeTimes): this plan has NO fridge excursion.
+        // Clear the fridge-out that line ~4142 derived as newMix−warmup so the
+        // chart marker, the peak computation, and the (now fridge-less) card
+        // all agree — the starter just peaks near mix and is used straight.
+        _newFridgeOut = null;
+      }
     }
 
     if (best.isFridgeHoldPath) {
