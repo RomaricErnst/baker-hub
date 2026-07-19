@@ -84,19 +84,27 @@ export function getPrefPeakH_RT(type: string, temp: number, styleKey = 'neapolit
   if (type === 'biga') return 0; // always fridge — no RT peak concept
 
   // Sourdough / levain: hours from a 1:1:1 feed to peak for a vigorous MATURE
-  // starter. Calibrated to real-world timing (Modernist Bread Vol.6 + practice):
-  // a healthy levain at ~22°C peaks in ~6h, not the ~12h the old shared curve
-  // returned. maturity (matF), rye (ryeF) and feed ratio (ratioMultiplier) are
-  // applied on top of this base by the caller. Slightly conservative at the
-  // cool end so a busy baker planning ahead does not undershoot the peak.
+  // starter. maturity (matF), rye (ryeF) and feed ratio (ratioMultiplier) are
+  // applied on top of this base by the caller.
+  //
+  // Continuous Q10 (temperature-coefficient) model, replacing the old bucket
+  // ladder that went FLAT at 7.5h for every temp ≤20°C — which under-predicted
+  // cold kitchens badly (16°C is ~13h in reality, not 7.5h → the app told cold
+  // bakers to feed hours too late). Anchored at the one well-established point
+  // (24°C → 5.5h) with Q10 = 2.8, fit to a wide consensus of published data
+  // (King Arthur feeding-ratio trials, Brod & Taylor, The Sourdough Journey,
+  // Tartine, The Clever Carrot). One smooth curve is more robust than buckets:
+  // no edge discontinuities, and it also corrects the tropical end (a 34°C
+  // starter peaks in ~2h, not the flat 2.5h the ladder returned → over-early
+  // feed). Clamped [1.75h, 24h]: yeast activity maxes out near ~35°C so peak
+  // time floors ~1.75h; the ceiling guards absurd values at cellar temps (the
+  // fridge path handles genuine cold storage separately).
+  // Fit vs consensus (1:1:1, mature): 16°C 12.5h(12–14) · 18°C 10.2h(10) ·
+  // 20°C 8.3h(8–9) · 22°C 6.8h(6–8) · 24°C 5.5h(5–6) · 28°C 3.6h(3–4) ·
+  // 32°C 2.4h(2–3) · 34°C 2.0h(~2).
   if (type === 'sourdough' || type === 'levain') {
-    if (temp >= 32) return 2.5;
-    if (temp >= 30) return 3;
-    if (temp >= 28) return 3.5;
-    if (temp >= 26) return 4.5;
-    if (temp >= 24) return 5.5;
-    if (temp >= 22) return 6;
-    return 7.5; // ≤ ~20°C
+    const raw = 5.5 * Math.pow(2.8, (24 - temp) / 10);
+    return Math.max(1.75, Math.min(24, raw));
   }
 
   const isBread = ['pain_campagne','pain_levain','baguette','pain_complet',

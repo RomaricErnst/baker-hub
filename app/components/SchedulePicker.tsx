@@ -315,18 +315,6 @@ function pushToReasonableHour(d: Date): Date {
   return d;
 }
 
-// ── Starter peak hours ────────────────────────
-function starterPeakHours(temp: number, mature: boolean): { min: number; max: number; mid: number } {
-  let base: { min: number; max: number };
-  if (temp >= 30)      base = { min: 3, max: 5 };
-  else if (temp >= 27) base = { min: 4, max: 6 };
-  else if (temp >= 24) base = { min: 5, max: 8 };
-  else if (temp >= 21) base = { min: 7, max: 10 };
-  else                 base = { min: 9, max: 14 };
-  const adj = mature ? 0 : 1.5;
-  return { min: base.min + adj, max: base.max + adj, mid: (base.min + base.max) / 2 + adj };
-}
-
 // ── Blocker overlap resolver ──────────────────
 // If start falls inside any active block, push it forward to the end of that block.
 // Repeats until no more overlaps (handles chained blocks).
@@ -3236,7 +3224,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const cycles = revivalCycles(lastFedAge, starterMature, tang);
       return adjPeakH * 1.25 * cycles;
     })();
-    const effectiveMinFermH = minFermH + _revivalOverheadH;
+    // Starter-peak lead: if the last feed is already PAST its peak, the starter
+    // must be refreshed and brought back to peak before it can leaven the dough,
+    // so the viable window must fit ~one more peak cycle on top of the dough
+    // ferment. Without this, a cold/slow kitchen (adjPeakH large) produced a
+    // green "ready at mix" plan whose starter peak actually landed hours AFTER
+    // mix — the plan should instead honestly report "not enough time." Only the
+    // past-peak case adds lead (a still-rising starter is usable as-is); take
+    // the max with revival overhead so the two don't double-count.
+    const _starterLeadH = (planningMode === 'last_fed' && lastFedTime
+      && (Date.now() - lastFedTime.getTime()) / 3600000 > adjPeakH)
+      ? adjPeakH : 0;
+    const effectiveMinFermH = minFermH + Math.max(_revivalOverheadH, _starterLeadH);
 
     if (windowHBF < effectiveMinFermH) {
       _windowTooShort = true;
@@ -7128,6 +7127,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)' }}>
                     {isFr ? 'Pas assez de temps pour ce créneau' : 'Not enough time for this bake'}
                   </div>
+                  {/* Cool kitchens slow the starter a lot — a cold bench is a
+                      common reason the window is tight. Offer the levers a baker
+                      actually has, framed as an observation (no alarm). */}
+                  {kitchenTemp < 20 && (
+                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>
+                      {isFr
+                        ? `Votre cuisine est fraîche (${kitchenTemp}°C), donc votre levain met plus de temps à piquer. Réchauffez-le (~24–26°C), rafraîchissez-le à plus petit ratio (1:1:1), ou cuisez un peu plus tard.`
+                        : `Your kitchen is cool (${kitchenTemp}°C), so your starter takes longer to peak. Warm it (~24–26°C), feed a smaller ratio (1:1:1), or bake a little later.`}
+                    </div>
+                  )}
                   {bakeType === 'bread' && solverResult?.suggestedBakeTime && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap' }}>
                       <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
