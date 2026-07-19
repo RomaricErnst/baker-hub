@@ -433,7 +433,7 @@ function getWorkdaysInWindow(
   start: Date,
   end: Date,
 ): Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> {
-  if (end <= start) return [];
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return [];
 
   const days: Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> = [];
   const cursor = new Date(start);
@@ -460,7 +460,7 @@ function getNightsInWindow(
   start: Date,
   end: Date,
 ): Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> {
-  if (end <= start) return [];
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return [];
 
   const nights: Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> = [];
   // Start one day before windowStart to catch nights that began before midnight
@@ -4701,6 +4701,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const { scenario } = suggestion;
   const startInvalid = startComputed && pendingStart >= pendingEatTime;
   const bulkConflict = schedule?.bulkConflict ?? null;
+  // A bake time already in the past can't be planned backwards from — show a
+  // calm message instead of letting the solver build an impossible schedule
+  // (which produced invalid dates and an error screen). 2-min grace so a
+  // just-now pick isn't rejected mid-interaction.
+  const bakeInPast = eatTimeSet
+    && !isNaN(pendingEatTime.getTime())
+    && pendingEatTime.getTime() < Date.now() - 2 * 60 * 1000;
 
   return (
     <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
@@ -4824,7 +4831,25 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       </div>
 
       {/* Phase 2 content — only once bake time is set */}
-      {eatTimeSet && (<div>
+      {/* Past bake time — calm guidance, no plan (never a crash) */}
+      {bakeInPast && (
+        <div style={{
+          background: 'var(--warm)', border: '1px solid var(--border)',
+          borderRadius: '14px', padding: '1rem 1.25rem', marginTop: '1rem',
+          fontFamily: 'var(--font-dm-sans)',
+        }}>
+          <div style={{ fontSize: '.85rem', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', marginBottom: '.35rem' }}>
+            {isFr ? 'Cet horaire est déjà passé' : "That bake time has already passed"}
+          </div>
+          <div style={{ fontSize: '.82rem', color: 'var(--smoke)', lineHeight: 1.55 }}>
+            {isFr
+              ? 'Choisissez une date et une heure à venir — Baker Hub planifie à rebours depuis la cuisson.'
+              : 'Pick a date and time in the future — Baker Hub plans backwards from your bake.'}
+          </div>
+        </div>
+      )}
+
+      {eatTimeSet && !bakeInPast && (<div>
 
       {/* Sourdough starter section */}
       {isSourdough && (
