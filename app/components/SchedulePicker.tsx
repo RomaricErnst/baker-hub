@@ -2203,12 +2203,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           };
         }
 
-        // Not in revival territory — original behavior
-        if (fridgeOutTime) {
-          const peakTime = fridgePeakAfterRemoval(fridgeOutTime, lastFedTime, adjPeakH);
-          onStarterPeakTimeChange?.(peakTime);
-          return { ...NULL_RESULT, peakTime, feedTime: lastFedTime, fridgeOut: fridgeOutTime, adjPeakH };
-        }
+        // Not in revival territory. Do NOT seed a peak1 candidate from
+        // `fridgeOutTime` here: that value is engine-computed and fed back via
+        // setFridgeOutTime after each solve, so seeding from it made the solver
+        // non-idempotent — solve 1 (fridgeOutTime null) let the fridge-scan win
+        // a self-consistent plan, then the fed-back fridgeOutTime disabled the
+        // scan on solve 2 and a different, inconsistent candidate took over
+        // (scoring peak ≠ cold bell → false green). The fridge-scan below owns
+        // the "use straight from removal" path and searches the removal time
+        // itself, keeping scoring ≡ bell ≡ card by construction.
         onStarterPeakTimeChange?.(null);
         return { ...NULL_RESULT, peakTime: null, feedTime: lastFedTime, adjPeakH };
       }
@@ -2427,6 +2430,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _renderFridgeInMs:  number | null = null;
     let _renderFridgeOutMs: number | null = null;
     let _adjPeakH: number | null = null;
+    let _adjPeakH_last: number | null = null;
     let _fridgeFeedTime: Date | null = null;
     // Bridge-candidate refresh chain (additional to primary @now refresh) —
     // set when a bridging candidate wins; consumed by buildAndSetResult to
@@ -3153,7 +3157,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           : (_starterRefeedTime && !_hasFutureFeedPath && !_usingPeak2 && _adjPeakH
               ? new Date(_starterRefeedTime.getTime() + _adjPeakH * _refreshStretchFactor * 3600000)
           : (starterLocation === 'fridge' && _newFridgeOut && _renderFridgeOutMs != null && lastFedTime)
-          ? fridgePeakAfterRemoval(_newFridgeOut, lastFedTime, _adjPeakH ?? adjPeakH_derived ?? 14)
+          ? fridgePeakAfterRemoval(_newFridgeOut, lastFedTime, _adjPeakH_last ?? _adjPeakH ?? adjPeakH_derived ?? 14)
           : (starterLocation === 'fridge' && _newFridgeOut && _renderFridgeOutMs != null)
           ? new Date(_newFridgeOut.getTime() + getStarterFridgeWarmupH(kitchenTemp) * 3600000)
           : _starterFeedTime && _adjPeakH
@@ -3214,6 +3218,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const ratioMultiplier = 1 + 0.5 * Math.log(nextFeedRatio);
     const adjPeakH = peakH * ryeF * matF * ratioMultiplier;
     _adjPeakH = adjPeakH;
+    // Peak hours from the LAST feed's ratio. A fridge starter used straight from
+    // removal has NO future feed, so its rise is governed by lastFeedRatio, not
+    // the recommended nextFeedRatio. The cold last_fed bell already uses this
+    // (adjPeakH_last_eff in the event builder); the fridge-scan scoring and the
+    // card fridge peak anchor to it too so card ≡ graph ≡ pill and the ratio
+    // search can't shift a feed-less plan's peak.
+    const adjPeakH_last = peakH * ryeF * matF * (1 + 0.5 * Math.log(lastFeedRatio));
+    _adjPeakH_last = adjPeakH_last;
 
     // For severely depleted starters (week+ or fridge revival territory),
     // baker needs 1-2 full peak cycles to revive before normal dough cycle.
@@ -3703,10 +3715,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // optimistic peak ≈ mix (false green) that disagreed with the refresh
     // bell the card actually renders. Refresh-based candidates handle revival.
     const _needsRevivalScan = revivalCycles(lastFedAge, starterMature, tang) >= 1;
-    if (starterLocation === 'fridge' && !fridgeOutTime && !_needsRevivalScan) {
+    if (starterLocation === 'fridge' && !_needsRevivalScan) {
       const _warmupH = getStarterFridgeWarmupH(kitchenTemp);
       const _cf = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
-      const _fpH = adjPeakH * _cf;
+      // Cold-rise peak from the LAST feed's ratio (no future feed on this path),
+      // matching the cold bell (adjPeakH_last_eff) so scoring ≡ bell ≡ card.
+      const _fpH = adjPeakH_last * _cf;
       const lastFedMs = lastFedTime?.getTime() ?? Date.now() - 24 * 3600000;
       const nowMsLocal = Date.now();
       const mixHBFMin = Math.max(minTotalRT + 0.5, sweetToHBF - 2);
@@ -3732,8 +3746,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         if (inBlockerMs(foMs)) continue;
         const ds = doughScore(mixHBF);
         if (ds === 0) continue;
-        // Honest peak HBF: clamp unfloored to at least 0.25h (can't peak before warmup starts)
-        const peakMs = foMs + Math.max(0.25, peakUnflooredH) * 3600000;
+        // Scoring peak = the SAME value fridgePeakAfterRemoval renders for the
+        // cold bell and the card (removal + max(warmup, unflooredRise)), so
+        // scoring ≡ bell ≡ card exactly. (Was floored at 0.25h, which reported
+        // the biological peak a little before the warmup-limited mix and left a
+        // sub-warmup gap between the pill and the graph.)
+        const peakMs = foMs + rtToPeakH * 3600000;
         const peakHBF_honest = (bakeMs - peakMs) / 3600000;
         const ss = starterScore(mixHBF, peakHBF_honest);
         if (ss === 0 && ds < 2) continue;
