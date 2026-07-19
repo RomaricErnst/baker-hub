@@ -2483,6 +2483,7 @@ export default function Home() {
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 sessionRestored={sessionRestored}
+                recipeGenerated={recipeGenerated}
                 flourStrength={1.0}
                 startTimeInPast={startTimeInPast}
                 tang={tang}
@@ -3339,6 +3340,7 @@ export default function Home() {
                 onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onReady={() => {}}
                 sessionRestored={sessionRestored}
+                recipeGenerated={recipeGenerated}
                 flourStrength={flourBlend ? (computeBlendProfile(flourBlend).fermToleranceMultiplier ?? 1.0) : 1.0}
                 startTimeInPast={startTimeInPast}
                 tang={tang}
