@@ -3631,7 +3631,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Iterate candidate fridge-removal times in 15min steps.
     // Uses honest rtToPeakH = max(warmupH, (fpH − dwellH) / coldFactor) so the
     // scan accounts for short-dwell starters that need extra RT time after removal.
-    if (starterLocation === 'fridge' && !fridgeOutTime) {
+    //
+    // Revival guard: this scan models "take out of fridge, warm up, peak
+    // shortly after" — valid only for a RECENTLY-fed fridge starter that
+    // accumulated most of its rise while cold. A starter fed days ago is
+    // dormant: it needs a real refresh cycle (peaks ~adjPeakH after feeding),
+    // NOT a quick warm-up. Using the warm-up model there produced an
+    // optimistic peak ≈ mix (false green) that disagreed with the refresh
+    // bell the card actually renders. Refresh-based candidates handle revival.
+    const _needsRevivalScan = revivalCycles(lastFedAge, starterMature, tang) >= 1;
+    if (starterLocation === 'fridge' && !fridgeOutTime && !_needsRevivalScan) {
       const _warmupH = getStarterFridgeWarmupH(kitchenTemp);
       const _cf = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
       const _fpH = adjPeakH * _cf;
