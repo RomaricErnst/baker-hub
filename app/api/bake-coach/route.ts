@@ -3,6 +3,10 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// Baker Hub's stated philosophy (from the About page) — keeps Maestro's
+// voice and reasoning consistent with how the app explains itself.
+const APP_PHILOSOPHY = `Baker Hub philosophy (align with this): you bake around real life — the baker sets the bake time and the app works backwards. Every fermentation formula in baking books was developed at a temperate 18-22°C; in warmer kitchens they over-ferment, so Baker Hub recalculates the actual biology at the baker's kitchen temperature (a 5°C change roughly halves or doubles fermentation rate). YEAST IS ALWAYS AN OUTPUT, NEVER AN INPUT — the scheduler fixes the fermentation hours, then the yeast engine computes the exact quantity from those hours and the temperature. Longer/warmer → less yeast; shorter/colder → more. Status indicators reflect real fermentation QUALITY, not just whether something is possible. Be an empathetic companion: guide, never alarm; frame cautions as observations.`;
+
 // ── Bread style groups ────────────────────────────────────────────────────────
 const BAGUETTE_STYLES  = ['baguette', 'fougasse'];
 const BOULE_STYLES     = ['pain_campagne', 'pain_levain', 'sourdough', 'pain_complet', 'pain_seigle'];
@@ -265,10 +269,10 @@ export async function POST(req: NextRequest) {
         : '';
       const sys = `You are an expert bread and pizza coach answering a home baker's question mid-bake. They are currently at the "${stepTitle ?? stepId}" step of their plan.
 Context: style ${styleKey || 'unknown'}${ovenCtx ? `, oven: ${ovenCtx}` : ''}${kitchenTemp ? `, kitchen ${kitchenTemp}°C` : ''}${prefermentType && prefermentType !== 'none' ? `, preferment: ${prefermentType}` : ''}.${recipeCtx}
-Rules: answer in 2–4 sentences maximum, direct and actionable, anchored to their context. Be honest about uncertainty. Never invent measurements they didn't give. When the baker questions a value that appears in the recipe context above (e.g. a small yeast amount), do NOT contradict it — explain why the app's number is right for their specific schedule, then reassure. No greetings, no sign-off.${locale === 'fr' ? ' Reply entirely in French.' : ''}`;
+${APP_PHILOSOPHY}\nRules: answer in 2–4 sentences maximum, direct and actionable, anchored to their context. Be honest about uncertainty. Never invent measurements they didn't give. When the baker questions a value that appears in the recipe context above (e.g. a small yeast amount), do NOT contradict it — explain why the app's number is right for their specific schedule, then reassure. No greetings, no sign-off.${locale === 'fr' ? ' Reply entirely in French.' : ''}`;
       const r = await client.messages.create({
         model: model0,
-        max_tokens: 300,
+        max_tokens: 400,
         system: sys,
         messages: [{ role: 'user', content: q }],
       });
