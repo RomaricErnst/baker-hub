@@ -1235,7 +1235,9 @@ export default function Home() {
       }
       // Preferment — Custom-mode preference only (Simple has no preferment
       // step to change it in), and never on the sourdough path (levain).
-      if (prof.prefermentType && prof.preferredMode === 'custom'
+      // Pizza only — biga/poolish preferences are pizza-centric; bread has its
+      // own preferment conventions and shouldn't inherit the pizza pick.
+      if (bt !== 'bread' && prof.prefermentType && prof.preferredMode === 'custom'
           && prof.yeastType !== 'sourdough' && !(styleWantsSourdough && appliedStyle)
           && ['none', 'poolish', 'biga'].includes(prof.prefermentType)) {
         setPrefermentType(prof.prefermentType as PrefermentType); applied = true;

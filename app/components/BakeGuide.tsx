@@ -850,28 +850,53 @@ export default function BakeGuide({
   // and contradicting the app. Only real, computed values.
   const maestroRecipeContext = (() => {
     if (!recipe) return undefined;
-    const parts: string[] = [];
     const totalFlour = Math.round(recipe.flour + (recipe.preferment?.prefFlour ?? 0));
-    parts.push(`total flour ${totalFlour}g`);
-    parts.push(`hydration ${Math.round(hydration)}%`);
     const coldH = Math.round(schedule.totalColdHours ?? 0);
     const rtH = Math.round((schedule.totalRTHours ?? 0));
-    if (coldH > 0) parts.push(`${coldH}h cold (fridge) ferment`);
-    if (rtH > 0) parts.push(`${rtH}h room-temp ferment`);
+
+    // ── The dough ──
+    const dough: string[] = [];
+    dough.push(`style ${styleKey}`);
+    dough.push(`${numItems} × ${Math.round((recipe.totalDough ?? 0) / Math.max(1, numItems))}g pieces`);
+    dough.push(`total flour ${totalFlour}g`);
+    dough.push(`hydration ${Math.round(hydration)}%`);
+    if (recipe.salt != null) dough.push(`salt ${Math.round(recipe.salt)}g (${(recipe.salt / totalFlour * 100).toFixed(1)}%)`);
+    if (recipe.oil && recipe.oil > 0) dough.push(`oil ${Math.round(recipe.oil)}g`);
+    if (recipe.sugar && recipe.sugar > 0) dough.push(`sugar ${Math.round(recipe.sugar)}g`);
+    if (recipe.blendProfile?.displayName) dough.push(`flour: ${recipe.blendProfile.displayName}`);
+
+    // ── The schedule ──
+    const sched: string[] = [];
+    if (coldH > 0) sched.push(`${coldH}h cold (fridge${recipe.preferment?.cold ? '' : ''}) ferment`);
+    if (rtH > 0) sched.push(`${rtH}h room-temp ferment`);
+    sched.push(`kitchen ${Math.round(kitchenTemp)}°C`);
+    if (recipe.waterTemp != null) sched.push(`target water temp ${Math.round(recipe.waterTemp)}°C`);
+
+    // ── Leavening ──
+    const leaven: string[] = [];
     if (recipe.sourdough) {
-      parts.push('leavened with sourdough starter (no commercial yeast)');
+      leaven.push('leavened with a sourdough starter (levain), no commercial yeast');
     } else if (recipe.yeast) {
       const yg = parseFloat(recipe.yeast.convertedGrams.toFixed(2));
       const yp = (recipe.yeast.convertedGrams / totalFlour * 100).toFixed(3);
       const yt = recipe.yeast.yeastType ?? 'IDY';
-      parts.push(`final-dough yeast ${yg}g ${yt} (${yp}% of total flour) - deliberately low for the long ${coldH > 0 ? 'cold' : ''} ferment`);
+      leaven.push(`final-dough yeast ${yg}g ${yt} (${yp}% of total flour)`);
     }
     if (recipe.preferment && prefermentType && prefermentType !== 'none') {
       const p = recipe.preferment;
       const pf = Math.round((p.prefFlour / totalFlour) * 100);
-      parts.push(`${prefermentType} preferment: ${pf}% of flour, ${p.prefYeastGrams}g yeast in the preferment`);
+      leaven.push(`${prefermentType}: ${pf}% of the flour (${Math.round(p.prefFlour)}g flour + ${Math.round(p.prefWater)}g water), ${p.prefYeastGrams}g yeast, ferments ${p.fermentHoursMin}-${p.fermentHoursMax}h${p.cold ? ' in the fridge' : ' at room temp'}`);
     }
-    return `This baker's ACTUAL computed recipe (trust these numbers - they come from a validated fermentation model, do not call them wrong): ${parts.join('; ')}. Small yeast amounts are correct and intended for long/cold ferments; explain WHY the number fits their schedule rather than suggesting it's too low.`;
+
+    // ── The yeast guiding principle (so Maestro can explain, not just assert) ──
+    const principle = `YEAST GUIDING PRINCIPLE (the model behind these numbers): yeast dose is set by fermentation time and temperature, not by habit. Longer time or warmer temperature → LESS yeast; shorter or colder → more. A long cold retard (e.g. 24-48h at ~6°C) deliberately uses a very small dose (often 0.1-0.3% of flour, sometimes well under 0.5g) so the dough matures slowly and develops flavour without over-proofing. In a preferment (poolish/biga) the seed yeast is tiny because it multiplies as the preferment ripens; the grown population then leavens the whole dough, so the total flour — not just the preferment flour — determines the dose. Small numbers here are correct and intentional.`;
+
+    return `This baker's ACTUAL computed recipe and settings — trust every number, they come from a validated fermentation model (Modernist Pizza/Bread); never tell the baker a value is wrong.
+DOUGH: ${dough.join('; ')}.
+SCHEDULE: ${sched.join('; ')}.
+LEAVENING: ${leaven.join('; ')}.
+${principle}
+When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the number and explain WHY it fits THEIR specific time/temperature, then reassure.`;
   })();
 
   const bgFlour90Label = bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%)` : 'Flour + 90% of your water';
