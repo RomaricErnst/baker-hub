@@ -1349,6 +1349,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [showRatioModeInfo, setShowRatioModeInfo] = useState(false);
   const [showTasteInfo, setShowTasteInfo]       = useState(false);
   const [showStarterTips, setShowStarterTips] = useState(false);
+  const [showDoughTips, setShowDoughTips] = useState(false);
 
   // Sync sourdough state from props when they change (session restore case).
   // Without this, props restored asynchronously after mount don't reach the
@@ -7160,6 +7161,30 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 </div>
               )}
               {/* scheduleNote removed — info available in timeline */}
+
+              {/* Reading your dough — cues to trust over the clock (mirrors the
+                  starter card's "Signs your starter is ready"). Universal:
+                  bread and pizza, sourdough and yeasted. */}
+              <div style={{ marginTop: '8px' }}>
+                <button onClick={() => setShowDoughTips(v => !v)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                    display: 'inline-flex', alignItems: 'center', gap: '4px',
+                    fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+                  <span style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid var(--smoke)',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '9px', flexShrink: 0 }}>i</span>
+                  {isFr ? 'Lire votre pâte' : 'Reading your dough'}
+                </button>
+                {showDoughTips && (
+                  <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--smoke)',
+                    fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
+                    borderLeft: '2px solid var(--border)', paddingLeft: '8px' }}>
+                    {isFr
+                      ? 'Le temps donne le cap ; votre pâte donne le feu vert. Prête quand elle a gonflé d’environ moitié, qu’elle est bombée et gonflée de bulles, et qu’une pression légère se retend lentement. Encore dense et sans vie ? Laissez-la un peu. Bulleuse et retombée ? Enfournez sans tarder.'
+                      : 'The clock sets the pace; your dough gives the green light. Ready when it’s risen about half, looks domed and puffy with bubbles, and springs back slowly to a gentle press. Still dense and lifeless? Give it a little longer. Blistered and slack? Bake soon.'}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );

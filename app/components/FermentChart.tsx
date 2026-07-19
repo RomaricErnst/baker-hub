@@ -2088,6 +2088,16 @@ export default function FermentChart({
         )}
       </div>
 
+      {/* ── Gentle reminder: the schedule is a guide, not a stopwatch ── */}
+      <div style={{
+        marginTop: '8px', fontFamily: 'var(--font-dm-sans)', fontSize: '11px',
+        color: 'var(--smoke, #8A7F78)', lineHeight: 1.5, fontStyle: 'italic',
+      }}>
+        {isFr
+          ? 'Les horaires sont indicatifs — la chaleur, la farine et la vigueur de votre levain décalent le pic de quelques heures. Fiez-vous à votre levain et à votre pâte autant qu’à l’horloge.'
+          : 'Times are a guide — warmth, flour and starter vigour can shift the real peak by a couple of hours. Trust your starter and dough as much as the clock.'}
+      </div>
+
     </div>
   );
 }
