@@ -191,6 +191,19 @@ function snap15(h: number): number {
   return Math.round(h * 4) / 4;
 }
 
+// Closed bell paths end with two baseline anchor points + Z so they can be
+// FILLED. When the same closed path is also STROKED, that closing run draws a
+// stray horizontal line along the axis ("a small return to close the graph").
+// openBell() strips the two trailing baseline anchors + Z so strokes follow
+// only the curve itself. Render bells as fill(closed) + stroke(open) pairs.
+function openBell(d: string): string {
+  const zi = d.lastIndexOf(' Z');
+  const base = zi > 0 ? d.slice(0, zi) : d;
+  const i = base.lastIndexOf(' L ');
+  const j = i > 0 ? base.lastIndexOf(' L ', i - 1) : -1;
+  return j > 0 ? base.slice(0, j) : base;
+}
+
 // Sample bell curve into a closed SVG path
 function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_DEFAULT, startHBF?: number): string {
   const N = 260;
@@ -360,7 +373,14 @@ function makeFridgePhaseBellPath(
       } else {
         const declineDist = dist - PLATEAU_W;
         const declineGauss = Math.exp(-0.5 * (declineDist / DECLINE_SIGMA) ** 2);
-        h = Math.max(FRIDGE_FLOOR, declineGauss);
+        // Sagging floor: a fed-then-chilled starter declines slowly but it
+        // does DECLINE — a constant 0.6 floor drew a flat, still-high plateau
+        // for days ("rises, drops partway, then holds high"), which reads as
+        // wrong biology. Let the floor itself decay on a gentle cold time
+        // constant (~48h to fall to ~0.22×), clamped so the curve never
+        // collapses to the axis.
+        const saggingFloor = Math.max(0.15, FRIDGE_FLOOR * Math.exp(-declineDist / 48));
+        h = Math.max(saggingFloor, declineGauss);
       }
     }
     h = Math.max(0, Math.min(1, h));
@@ -1116,14 +1136,16 @@ export default function FermentChart({
                       <rect x={refreshX} y={0} width={Math.max(0, fridgeInX - refreshX)} height={CHART_H} />
                     </clipPath>
                   </defs>
-                  <path
-                    d={makeBellPath(refreshPeakHBF, starterSigmaH_refresh, W, WH, fridgeHoldRefreshHBF)}
-                    fill="rgba(74,127,165,0.08)"
-                    stroke="rgba(74,127,165,0.35)"
-                    strokeWidth={1}
-                    strokeDasharray="2 3"
-                    clipPath={`url(#pathb-refresh-clip-${chartId})`}
-                  />
+                  {(() => {
+                    const rbD = makeBellPath(refreshPeakHBF, starterSigmaH_refresh, W, WH, fridgeHoldRefreshHBF);
+                    return (
+                      <g clipPath={`url(#pathb-refresh-clip-${chartId})`}>
+                        <path d={rbD} fill="rgba(74,127,165,0.08)" stroke="none" />
+                        <path d={openBell(rbD)} fill="none" stroke="rgba(74,127,165,0.35)"
+                          strokeWidth={1} strokeDasharray="2 3" />
+                      </g>
+                    );
+                  })()}
                   {/* Cold storage flat region from fridge-in to fridge-out */}
                   <rect
                     x={fridgeInX}
@@ -1320,15 +1342,29 @@ export default function FermentChart({
                               <rect x={Math.max(0, mixX)} y={0} width={Math.max(0, W - mixX)} height={CHART_H} />
                             </clipPath>
                           </defs>
+                          {/* fill (closed path) and stroke (open path) are
+                              separated so the baseline closing run is never
+                              stroked — it drew a stray horizontal line at the
+                              axis. */}
                           <path
                             d={bellD}
-                            fill={fillStyle} stroke={strokeStyle}
+                            fill={fillStyle} stroke="none"
+                            clipPath={`url(#premix-clip-${chartId}-${idx})`}
+                          />
+                          <path
+                            d={openBell(bellD)}
+                            fill="none" stroke={strokeStyle}
                             strokeWidth={strokeWidth} strokeDasharray={dashArray}
                             clipPath={`url(#premix-clip-${chartId}-${idx})`}
                           />
                           <path
                             d={bellD}
-                            fill={`${prefColor}10`} stroke={`${prefColor}45`}
+                            fill={`${prefColor}10`} stroke="none"
+                            clipPath={`url(#postmix-clip-${chartId}-${idx})`}
+                          />
+                          <path
+                            d={openBell(bellD)}
+                            fill="none" stroke={`${prefColor}45`}
                             strokeWidth={1} strokeDasharray="3 3"
                             clipPath={`url(#postmix-clip-${chartId}-${idx})`}
                           />
@@ -1336,15 +1372,16 @@ export default function FermentChart({
                       );
                     }
                     return (
-                      <path
-                        key={`ev-bell-${idx}`}
-                        d={bellD}
-                        fill={fillStyle}
-                        stroke={strokeStyle}
-                        strokeWidth={strokeWidth}
-                        strokeDasharray={dashArray}
-                        clipPath={`url(#chart-area-clip-${chartId})`}
-                      />
+                      <g key={`ev-bell-${idx}`} clipPath={`url(#chart-area-clip-${chartId})`}>
+                        <path d={bellD} fill={fillStyle} stroke="none" />
+                        <path
+                          d={openBell(bellD)}
+                          fill="none"
+                          stroke={strokeStyle}
+                          strokeWidth={strokeWidth}
+                          strokeDasharray={dashArray}
+                        />
+                      </g>
                     );
                   })}
                 </>
@@ -1589,19 +1626,22 @@ export default function FermentChart({
         )}
 
 
-        {/* ── Dough bell (drawn on top) ── */}
-        <path
-          d={(() => {
-            const doughPlateauHalfW = hasColdRetard
-              ? Math.min(8, Math.max(2, (sweetFromH ?? 26) * 0.14))
-              : 0;
-            return doughPlateauHalfW > 0
-              ? makePlateauBellPath(doughPeakHBF, DOUGH_SIG, doughPlateauHalfW, W, WH, effectiveMixHBF)
-              : makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF);
-          })()}
-          fill={`${SAGE}2E`} stroke={`${SAGE}A5`} strokeWidth={1.5}
-          clipPath={`url(#chart-area-clip-${chartId})`}
-        />
+        {/* ── Dough bell (drawn on top) — fill(closed) + stroke(open) so the
+               baseline closing run is never stroked ── */}
+        {(() => {
+          const doughPlateauHalfW = hasColdRetard
+            ? Math.min(8, Math.max(2, (sweetFromH ?? 26) * 0.14))
+            : 0;
+          const doughD = doughPlateauHalfW > 0
+            ? makePlateauBellPath(doughPeakHBF, DOUGH_SIG, doughPlateauHalfW, W, WH, effectiveMixHBF)
+            : makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF);
+          return (
+            <g clipPath={`url(#chart-area-clip-${chartId})`}>
+              <path d={doughD} fill={`${SAGE}2E`} stroke="none" />
+              <path d={openBell(doughD)} fill="none" stroke={`${SAGE}A5`} strokeWidth={1.5} />
+            </g>
+          );
+        })()}
         <line
           x1={hToX(effectiveMixHBF, W, WH)}
           y1={BL - (() => {

@@ -2442,6 +2442,21 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     // Helper: build and commit solverResult atomically at any exit point
     function buildAndSetResult() {
+      // Safety clamp: _newPendingStart defaults to the stale `pendingStart`
+      // state and the windowTooShort early-returns above call buildAndSetResult
+      // WITHOUT recomputing it — a saved session whose old mix is now in the
+      // past then rendered a Start Dough before "now". Never emit a past mix:
+      // clamp to the first future 15-min slot (bounded by bake). This only
+      // moves an already-stale/degenerate value; real solved plans overwrite
+      // _newPendingStart before their own buildAndSetResult call.
+      if (_newPendingStart.getTime() <= Date.now()) {
+        const _clampMs = Math.min(
+          Math.ceil((Date.now() + 15 * 60000) / (15 * 60000)) * (15 * 60000),
+          et.getTime(),
+        );
+        _newPendingStart = new Date(_clampMs);
+      }
+
       const _starterFeedTime = (() => {
         if (planningMode === 'know_peak') return null;
         if (starterLocation === 'fridge' && _fridgeFeedTime) return _fridgeFeedTime;
@@ -2587,6 +2602,24 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             : 'Refresh, peak, then fridge holds your starter until pre-mix — best for 2+ day plans.';
         }
         if (_usingPeak2 && !_hasFutureFeedPath) {
+          // Only claim "peaks right at mix" when it actually does — otherwise
+          // name the real peak time and let the baker mix when it's ready.
+          // NOTE: compute the reference peak locally (same formula as
+          // _refPeakForPreMix) — that const lives AFTER buildAndSetResult's
+          // earliest invocation, so referencing it here would be a TDZ crash.
+          const _p2AdjEff = _adjPeakH ?? adjPeakH_derived;
+          const _p2RefPeak = _starterRefeedTime
+            ? _starterRefeedTime.getTime() + (_p2AdjEff ?? 0) * 3600000
+            : (lastFedTime ? lastFedTime.getTime() + (_p2AdjEff ?? 0) * 3600000 : null);
+          const _p2Peak = _feed2Time && _p2AdjEff
+            ? new Date(computeStarterPeakMs(_feed2Time.getTime(), _p2RefPeak, _p2AdjEff))
+            : null;
+          const _p2GapH = _p2Peak ? Math.abs(_newPendingStart.getTime() - _p2Peak.getTime()) / 3600000 : 0;
+          if (_p2Peak && _p2GapH > 1.5) {
+            return isFr
+              ? `Un seul rafraîchi suffit — pic vers ${fmtCardHM(_p2Peak, true)}. Fiez-vous à votre levain autant qu'à l'heure.`
+              : `One refresh is enough — it peaks around ${fmtCardHM(_p2Peak, false)}. Trust your starter as much as the clock.`;
+          }
           return isFr
             ? 'Un seul rafraîchi suffit — votre levain pique pile au pétrissage.'
             : "One refresh is enough — your starter peaks right when you'll mix.";
@@ -3068,6 +3101,48 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // B2 telemetry tap — classifies the winning candidate family per solve.
       // Inert unless a sweep harness sets window.__bhTrace = [] first
       // (established __audit pattern). Zero cost in normal use.
+      // Committed peak — single computation shared by setSolverResult and the
+      // telemetry trace so the trace always reports the value the card renders.
+      //
+      // Preferred source: the ACTIVE starter event's bellPeakTime. The card's
+      // "Peak around HH" note is rendered from that SAME bellPeakTime, so
+      // reading it here makes PEAK-row ≡ card-note ≡ chart-bell by construction
+      // (they can't diverge by a rounding minute the way two parallel
+      // adjPeakH×stretch formulas could — the 24°C "7am vs 7:15am" straddle).
+      // Pick the active event nearest bake (the pre-mix / final refresh), whose
+      // peak is the one the plan mixes at. Falls back to the explicit formula
+      // below only when no active event carries a bellPeakTime.
+      const _activeBellPeak: Date | null = (() => {
+        // Only forward peaks: a spent last-fed cycle can be marked active with a
+        // bellPeak in the past — that's not the peak the plan mixes at, so let
+        // the explicit formula below (fridge-removal / refresh) own those.
+        const act = _starterEvents.filter(
+          e => e.isActive && e.bellPeakTime && e.bellPeakTime.getTime() > Date.now(),
+        );
+        if (!act.length) return null;
+        return act.reduce((a, b) => (b.time.getTime() > a.time.getTime() ? b : a)).bellPeakTime ?? null;
+      })();
+      const _committedPeakTime: Date | null = _activeBellPeak ??
+        ((_isFridgeHoldPath && _feed2Time && _adjPeakH)
+          ? new Date(_feed2Time.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
+          // Feed2-driven peak SECOND: future-feed / peak2 winners peak off the
+          // pre-mix feed — the SAME value the pre_mix event's bellPeakTime
+          // uses. Without this branch a fridge-located future-feed winner fell
+          // into the fridge branches below and the PEAK row showed
+          // removal+warmup ≈ mix (the 31°C "PEAK 10:45pm vs note 1:45am"
+          // card contradiction).
+          : ((_hasFutureFeedPath || _usingPeak2) && _feed2Time && _adjPeakH)
+          ? new Date(_feed2Time.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
+          : (_starterRefeedTime && !_hasFutureFeedPath && !_usingPeak2 && _adjPeakH
+              ? new Date(_starterRefeedTime.getTime() + _adjPeakH * _refreshStretchFactor * 3600000)
+          : (starterLocation === 'fridge' && _newFridgeOut && _renderFridgeOutMs != null && lastFedTime)
+          ? fridgePeakAfterRemoval(_newFridgeOut, lastFedTime, _adjPeakH_last ?? _adjPeakH ?? adjPeakH_derived ?? 14)
+          : (starterLocation === 'fridge' && _newFridgeOut && _renderFridgeOutMs != null)
+          ? new Date(_newFridgeOut.getTime() + getStarterFridgeWarmupH(kitchenTemp) * 3600000)
+          : _starterFeedTime && _adjPeakH
+              ? new Date(_starterFeedTime.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
+              : null));
+
       if (typeof window !== 'undefined' && Array.isArray((window as unknown as { __bhTrace?: unknown[] }).__bhTrace)) {
         const family = _isFridgeHoldPath ? 'pathB_fridge_hold'
           : _bridgeRefreshMs ? 'bridge_refresh'
@@ -3082,6 +3157,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           lastFeedRatio, kitchenTemp,
           eatTime: et.getTime(),
           adjPeakH: _adjPeakH,
+          // Committed-plan surface values (mix / peak / feeds / fridge / pill)
+          // so sweeps can gate card ≡ note ≡ pill ≡ bell without fiber reads.
+          mixMs: _newPendingStart.getTime(),
+          peakMs: _committedPeakTime?.getTime() ?? null,
+          refeedMs: _starterRefeedTime?.getTime() ?? null,
+          feed2Ms: _feed2Time?.getTime() ?? null,
+          fridgeOutMs: _newFridgeOut?.getTime() ?? null,
+          pill: _starterPillState,
+          usingPeak2: _usingPeak2,
+          hasFutureFeedPath: _hasFutureFeedPath,
+          refreshStretch: _refreshStretchFactor,
+          preMixStretch: _preMixStretchFactor,
+          events: _starterEvents.map(e => ({
+            kind: e.kind, t: e.time.getTime(), active: e.isActive,
+            bellPeak: e.bellPeakTime?.getTime() ?? null, note: e.cardNote ?? null,
+          })),
         });
       }
 
@@ -3135,23 +3226,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // adjPeakH_next_eff in the event builder is computed from the same
         // (peakH × ryeF × matF × ratioMultiplier) inputs as the outer
         // _adjPeakH (line ~2985), so the two formulas are byte-identical.
-        peakTime: (_isFridgeHoldPath && _feed2Time && _adjPeakH)
-          ? new Date(_feed2Time.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
-          // Refresh-driven peak FIRST: whenever the plan involves refreshing the
-          // starter (revival / declining), the reported peak is the refresh
-          // BELL's peak (refresh stretch), NOT a fridge-warmup fiction. This
-          // must win over the fridge branches below — otherwise peakTime got
-          // set to _newFridgeOut+warmup ≈ mix and the pill/card claimed "peak
-          // at mix" while the bell peaked hours later (false green at low temp).
-          : (_starterRefeedTime && !_hasFutureFeedPath && !_usingPeak2 && _adjPeakH
-              ? new Date(_starterRefeedTime.getTime() + _adjPeakH * _refreshStretchFactor * 3600000)
-          : (starterLocation === 'fridge' && _newFridgeOut && _renderFridgeOutMs != null && lastFedTime)
-          ? fridgePeakAfterRemoval(_newFridgeOut, lastFedTime, _adjPeakH_last ?? _adjPeakH ?? adjPeakH_derived ?? 14)
-          : (starterLocation === 'fridge' && _newFridgeOut && _renderFridgeOutMs != null)
-          ? new Date(_newFridgeOut.getTime() + getStarterFridgeWarmupH(kitchenTemp) * 3600000)
-          : _starterFeedTime && _adjPeakH
-              ? new Date(_starterFeedTime.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
-              : null),
+        peakTime: _committedPeakTime,
         starterIntermediateFeeds: _intermediateRefreshFeeds,
         isFridgeHoldPath:      _isFridgeHoldPath,
         fridgeHoldRefreshTime: _fridgeHoldRefreshTime,
@@ -3311,6 +3386,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       if (gap <= tol2)       return 2;
       if (gap <= tol2 + 1.5) return 1;
       return 0;
+    }
+
+    // Rise-completion guard: a candidate that mixes long before its own feed's
+    // rise has completed is biologically nonsense — the freshly-fed starter has
+    // barely begun rising and the pre-feed culture is spent (the 31°C live bug:
+    // "REFRESH FEED Now · 10:30pm → START DOUGH 10:45pm"). starterScore's gap
+    // tolerance is absolute hours, so at tropical temps (short rises) it lets
+    // "just fed" read as "nearly at peak". Only guards the rising side; the
+    // declining side is already handled by the gap tolerance. Requires ≥60% of
+    // the feed→peak rise to be complete at mix.
+    function riseCompleteEnough(mixHBF: number, peakHBF: number, feedAnchorMs: number | null): boolean {
+      if (feedAnchorMs == null) return true;
+      const mixMs2  = bakeMs - mixHBF  * 3600000;
+      const peakMs2 = bakeMs - peakHBF * 3600000;
+      if (mixMs2 >= peakMs2) return true;         // at/after peak — not this guard's job
+      if (peakMs2 <= feedAnchorMs) return true;   // no rise modelled for this anchor
+      return (mixMs2 - feedAnchorMs) / (peakMs2 - feedAnchorMs) >= 0.6;
     }
 
     function doughScore(mixHBF: number): 0 | 1 | 2 {
@@ -3493,15 +3585,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // intermediate refreshes (the renderer's reduce-max considered all three).
     // Returns null when the plan does not involve a fridge transition.
     function computeNonPathBFridgeTimes(
-      c: Pick<Candidate, 'mixHBF' | 'fridgeOutMs' | 'bridgeRefreshMs' | 'isFridgeHoldPath' | 'usingPeak2'>,
+      c: Pick<Candidate, 'mixHBF' | 'fridgeOutMs' | 'feed2Ms' | 'bridgeRefreshMs' | 'isFridgeHoldPath' | 'usingPeak2'>,
       adjPeakH_for:  number,
       ratioMult_for: number,
     ): { fridgeInMs: number; fridgeOutMs: number } | null {
       if (c.isFridgeHoldPath) return null;
       if (starterLocation !== 'fridge') return null;
       const candMixMs = bakeMs - c.mixHBF * 3600000;
-      const fridgeOutMs = c.fridgeOutMs
-        ?? (candMixMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000);
       const refreshPeaks: number[] = [];
       if (_starterRefeedTime && !c.usingPeak2) {
         refreshPeaks.push(_starterRefeedTime.getTime() + adjPeakH_for * _refreshStretchFactor * 3600000);
@@ -3519,6 +3609,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const fridgeInMs = refreshPeaks.length > 0
         ? Math.max(...refreshPeaks)
         : (lastFedTime?.getTime() ?? candMixMs);
+      // The starter must be OUT (and warmed) before its next warm-side action.
+      // With a future pre-mix feed that action is the FEED, not the mix —
+      // anchoring removal on mix placed fridge_out AFTER the pre-mix feed on
+      // the card (chronologically incoherent: feed at 8am, "remove" at 9:18am).
+      const _nextWarmMs = (c.feed2Ms != null && c.feed2Ms > fridgeInMs)
+        ? Math.min(c.feed2Ms, candMixMs)
+        : candMixMs;
+      const fridgeOutMs = c.fridgeOutMs
+        ?? (_nextWarmMs - getStarterFridgeWarmupH(kitchenTemp) * 3600000);
       // Degenerate-hold guard: a fridge park is only real if the starter sits
       // cold for a meaningful stretch. When the refresh peak lands close to
       // mix (peak≈mix), fridgeOut−fridgeIn collapses to minutes and the card
@@ -3619,6 +3718,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         if (inBlocker(mixHBF)) continue;
         const ss = starterScore(mixHBF, peak1HBF);
         if (ss === 0) continue;
+        // Peak1's rise anchor: the refeed when in revival/declining (the peak
+        // is refeed-based there), else the last feed.
+        if (!riseCompleteEnough(mixHBF, peak1HBF, _starterRefeedTime?.getTime() ?? feed1Ms)) continue;
         pushCand({
           mixHBF, peakHBF: peak1HBF, feedMs: feed1Ms,
           usingPeak2: false, feed2Ms: null,
@@ -3644,6 +3746,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           if (inBlockerMs(troughMs)) continue;
           const ss = starterScore(mixHBF, peak2AHBF);
           if (ss === 0) continue;
+          if (!riseCompleteEnough(mixHBF, peak2AHBF, troughMs)) continue;
           pushCand({
             mixHBF, peakHBF: peak2AHBF, feedMs: troughMs,
             usingPeak2: true, feed2Ms: troughMs,
@@ -3666,6 +3769,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           if (inBlocker(mixHBF)) continue;
           const ss = starterScore(mixHBF, peak2BHBF);
           if (ss === 0) continue;
+          if (!riseCompleteEnough(mixHBF, peak2BHBF, refeedMs)) continue;
           pushCand({
             mixHBF, peakHBF: peak2BHBF, feedMs: refeedMs,
             usingPeak2: true, feed2Ms: refeedMs,
@@ -3796,8 +3900,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const peakT2 = new Date(computeStarterPeakMs(t2, _refPeakForPreMix, adjPeakH));
         const mHBF2  = (bakeMs - peakT2.getTime()) / 3600000;
         if (mHBF2 < sweetToHBF - 4 || mHBF2 > sweetFromHBF + 4) continue;
-        if (bakeMs - mHBF2 * 3600000 <= nowMs2) continue;
-        if (inBlocker(mHBF2)) continue;
         if (inBlockerMs(t2)) continue;
         // Same biological gap rule for plain future-feed (when refresh exists)
         if (refreshPeakMsForStretch != null) {
@@ -3805,9 +3907,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const _maxEarly2 = adjPeakH * 0.5;
           if (_gapPreCheck2 < -_maxEarly2 || _gapPreCheck2 > 6) continue;
         }
-        const sc2 = combinedScore(mHBF2, mHBF2, t2, true);
-        const ss2 = starterScore(mHBF2, mHBF2);
-        if (ss2 === 0) continue;
+        // Near-peak mix offsets: mixing exactly at the pre-mix peak is ideal,
+        // but when that slot is blocked or already past, a mix slightly
+        // off-peak within starterScore tolerance is still a good, EXECUTABLE
+        // plan (e.g. feed after the night blocker ends, mix just before work
+        // starts). Offsets are explored only when the peak slot is unusable so
+        // the pool stays lean; −2/h keeps true at-peak plans preferred.
+        const _peakSlotBad2 = inBlocker(mHBF2) || bakeMs - mHBF2 * 3600000 <= nowMs2;
+        const _mixOffsets2 = _peakSlotBad2 ? [-1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5, 3] : [0];
         const _depletionPenalty = (() => {
           if (!lastFedTime) return 0;
           const gapH = (t2 - lastFedTime.getTime()) / 3600000;
@@ -3833,12 +3940,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           if (gapFromPeakH >= -2) return -5;
           return -10 - Math.min(20, (Math.abs(gapFromPeakH) - 2) * 3);
         })();
-        pushCand({
-          mixHBF: mHBF2, peakHBF: mHBF2, feedMs: t2,
-          usingPeak2: false, feed2Ms: t2,
-          score: sc2 + _depletionPenalty + _subPeakPenalty, sscore: ss2,
-          isFutureFeedPath: true,
-        });
+        for (const _offH2 of _mixOffsets2) {
+          const _mixMsC2  = peakT2.getTime() + _offH2 * 3600000;
+          const _mixHBFC2 = (bakeMs - _mixMsC2) / 3600000;
+          if (_mixMsC2 <= nowMs2) continue;
+          if (inBlocker(_mixHBFC2)) continue;
+          const ss2 = starterScore(_mixHBFC2, mHBF2);
+          if (ss2 === 0) continue;
+          if (!riseCompleteEnough(_mixHBFC2, mHBF2, t2)) continue;
+          const sc2 = combinedScore(_mixHBFC2, mHBF2, t2, true);
+          pushCand({
+            mixHBF: _mixHBFC2, peakHBF: mHBF2, feedMs: t2,
+            usingPeak2: false, feed2Ms: t2,
+            score: sc2 + _depletionPenalty + _subPeakPenalty - Math.abs(_offH2) * 2, sscore: ss2,
+            isFutureFeedPath: true,
+          });
+        }
       }
     }
 
@@ -3854,9 +3971,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     //     pre-mix feed to allow the refresh cycle to complete
     // Include declining starters (past peak, before trough), not just depleted.
     // Biology: any past-peak starter benefits from a refresh before pre-mix.
+    // Fridge-revival extension: a fridge starter in revival territory
+    // (refeed-now set, ≥1 revival cycle) IS an RT process from the moment it
+    // comes out for its refresh — the same two-feed chain (refresh @now →
+    // bridge/pre-mix → mix) is its correct biology. Without this, a
+    // fridge starter with a tight blocker layout had NO family able to place
+    // a second feed tomorrow morning (peak1/2B anchor everything at now;
+    // Path B needs a ≥6h fridge hold that rarely fits a <24h horizon), so the
+    // engine fell into nonsense or fallback plans (31°C live bug).
+    const _fridgeRevivalBridgeEligible =
+      starterLocation === 'fridge' && _starterRefeedTime !== null;
     if (
       planningMode === 'last_fed' && lastFedTime &&
-      starterLocation === 'rt' &&
+      (starterLocation === 'rt' || _fridgeRevivalBridgeEligible) &&
       (Date.now() - lastFedTime.getTime()) / 3600000 > adjPeakH
     ) {
       const nowMs3 = Date.now();
@@ -3925,17 +4052,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const peakT3 = new Date(computeStarterPeakMs(t3, _refPeakForPreMix, adjPeakH));
           const mHBF3  = (bakeMs - peakT3.getTime()) / 3600000;
           if (mHBF3 < sweetToHBF - 4 || mHBF3 > sweetFromHBF + 4) continue;
-          if (bakeMs - mHBF3 * 3600000 <= nowMs3) continue;
-          if (inBlocker(mHBF3)) continue;
           if (inBlockerMs(t3)) continue;
           // Biological gap window — anchored to the FINAL refresh's peak.
           // Pre-mix between adjPeakH × 0.5 before final-peak and 6h after.
           const _gapPreCheck3 = (t3 - finalRefreshPeakMs) / 3600000;
           const _maxEarly = adjPeakH * 0.5;
           if (_gapPreCheck3 < -_maxEarly || _gapPreCheck3 > 6) continue;
-          const sc3 = combinedScore(mHBF3, mHBF3, t3, true);
-          const ss3 = starterScore(mHBF3, mHBF3);
-          if (ss3 === 0) continue;
+          // Near-peak mix offsets — same rationale as the t2 scan above: when
+          // the exact pre-mix peak lands in a blocker (or the past), a mix
+          // slightly off-peak is still executable and honest. This is the
+          // family that expresses "refresh tonight, second feed after the
+          // night blocker, mix just before work" for tight tropical windows.
+          const _peakSlotBad3 = inBlocker(mHBF3) || bakeMs - mHBF3 * 3600000 <= nowMs3;
+          const _mixOffsets3 = _peakSlotBad3 ? [-1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5, 3] : [0];
           const gapFromRefreshPeakH = (t3 - finalRefreshPeakMs) / 3600000;
           const biologyPenalty = (() => {
             if (gapFromRefreshPeakH >= 0 && gapFromRefreshPeakH <= 3) return 0;
@@ -3951,13 +4080,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           // fridge-hold plan on marginal biology — stacking room-temp refreshes
           // is not how bakers work for multi-day builds.
           const bridgeCost = nBridge * 8;
-          pushCand({
-            mixHBF: mHBF3, peakHBF: mHBF3, feedMs: t3,
-            usingPeak2: false, feed2Ms: t3,
-            score: sc3 + 12 + biologyPenalty - bridgeCost, sscore: ss3,
-            isFutureFeedPath: true,
-            bridgeRefreshMs: bridges.length > 0 ? [...bridges] : undefined,
-          });
+          for (const _offH3 of _mixOffsets3) {
+            const _mixMsC3  = peakT3.getTime() + _offH3 * 3600000;
+            const _mixHBFC3 = (bakeMs - _mixMsC3) / 3600000;
+            if (_mixMsC3 <= nowMs3) continue;
+            if (inBlocker(_mixHBFC3)) continue;
+            const ss3 = starterScore(_mixHBFC3, mHBF3);
+            if (ss3 === 0) continue;
+            if (!riseCompleteEnough(_mixHBFC3, mHBF3, t3)) continue;
+            const sc3 = combinedScore(_mixHBFC3, mHBF3, t3, true);
+            pushCand({
+              mixHBF: _mixHBFC3, peakHBF: mHBF3, feedMs: t3,
+              usingPeak2: false, feed2Ms: t3,
+              score: sc3 + 12 + biologyPenalty - bridgeCost - Math.abs(_offH3) * 2, sscore: ss3,
+              isFutureFeedPath: true,
+              bridgeRefreshMs: bridges.length > 0 ? [...bridges] : undefined,
+            });
+          }
         }
       }
     }
@@ -4141,12 +4280,41 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const buildPeak = new Date(buildFeed.getTime() + adjPeakH * 3600000);
         const mix = new Date(buildPeak.getTime());
         _newPendingStart = mix.getTime() > Date.now() ? mix : idealMix;
+        // Never commit a past, blocked, or biologically-void mix. This fallback
+        // can also fire for NEAR bakes (tight blockers + the rise-completion
+        // guard can empty the candidate pool), where idealMix may already be in
+        // the past — committing it rendered a Start Dough before "now" (31°C
+        // live bug). Advance to the first executable 15-min slot that is in the
+        // future, outside blockers, and past ~60% of the refresh rise.
+        {
+          const _revivalReadyMs = _starterRefeedTime
+            ? _starterRefeedTime.getTime() + adjPeakH * _refreshStretchFactor * 0.6 * 3600000
+            : null;
+          let _mfbMs = Math.max(
+            _newPendingStart.getTime(),
+            Date.now() + 15 * 60000,
+            _revivalReadyMs ?? 0,
+          );
+          _mfbMs = Math.ceil(_mfbMs / (15 * 60000)) * (15 * 60000);
+          let _g2 = 0;
+          while (inBlockerMs(_mfbMs) && _g2++ < 96) _mfbMs += 15 * 60000;
+          if (_mfbMs < bakeMs - 0.5 * 3600000) _newPendingStart = new Date(_mfbMs);
+        }
         _feed2Time = buildFeed.getTime() > Date.now() ? buildFeed : null;
         _hasFutureFeedPath = _feed2Time !== null;
         const mixHBF_fb = (bakeMs - _newPendingStart.getTime()) / 3600000;
         const inZone = mixHBF_fb >= localSweetTo && mixHBF_fb <= localSweetFrom;
         _starterPillState = inZone && _feed2Time && !inBlockerMs(_feed2Time.getTime()) ? 'green' : 'yellow';
-        _farHorizonPlan = true;
+        // "Bake is far out" is only an honest explanation when the bake IS far
+        // out. When this fallback fires for a near bake, keep _farHorizonPlan
+        // false so the card falls back to the revival/drift notes and flag the
+        // window as constrained instead.
+        if ((bakeMs - Date.now()) / 3600000 >= 30) {
+          _farHorizonPlan = true;
+        } else {
+          _farHorizonPlan = false;
+          _windowTooShort = true;
+        }
         if (_feed2Time) setRefeedSuggestion(_feed2Time);
         notifyFromSolver(_newPendingStart, et, blocks);
       }
@@ -4505,6 +4673,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             if (inBlocker(mixHBF)) continue;
             const ss = starterScore_r(mixHBF, peak1HBF);
             if (ss === 0) continue;
+            if (!riseCompleteEnough(mixHBF, peak1HBF, _starterRefeedTime?.getTime() ?? feed1Ms_r)) continue;
             pushCand_r({
               mixHBF, peakHBF: peak1HBF, feedMs: feed1Ms_r,
               usingPeak2: false, feed2Ms: null,
@@ -4523,6 +4692,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               if (inBlockerMs(troughMs)) continue;
               const ss = starterScore_r(mixHBF, peak2AHBF);
               if (ss === 0) continue;
+              if (!riseCompleteEnough(mixHBF, peak2AHBF, troughMs)) continue;
               pushCand_r({
                 mixHBF, peakHBF: peak2AHBF, feedMs: troughMs,
                 usingPeak2: true, feed2Ms: troughMs,
@@ -4538,6 +4708,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               if (inBlocker(mixHBF)) continue;
               const ss = starterScore_r(mixHBF, peak2BHBF);
               if (ss === 0) continue;
+              if (!riseCompleteEnough(mixHBF, peak2BHBF, refeedMs)) continue;
               pushCand_r({
                 mixHBF, peakHBF: peak2BHBF, feedMs: refeedMs,
                 usingPeak2: true, feed2Ms: refeedMs,
@@ -4565,23 +4736,31 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             const peakT2 = new Date(computeStarterPeakMs(t2, _refPeakForPreMix_r, adjPeakH_r));
             const mHBF2  = (bakeMs - peakT2.getTime()) / 3600000;
             if (mHBF2 < sweetToHBF - 4 || mHBF2 > sweetFromHBF + 4) continue;
-            if (bakeMs - mHBF2 * 3600000 <= nowMs_r) continue;
-            if (inBlocker(mHBF2)) continue;
             if (inBlockerMs(t2)) continue;
             if (refreshPeakMsForStretch_r != null) {
               const _gp = (t2 - refreshPeakMsForStretch_r) / 3600000;
               const _me = adjPeakH_r * 0.5;
               if (_gp < -_me || _gp > 6) continue;
             }
-            const sc2 = combinedScore_r(mHBF2, mHBF2, t2, true);
-            const ss2 = starterScore_r(mHBF2, mHBF2);
-            if (ss2 === 0) continue;
-            pushCand_r({
-              mixHBF: mHBF2, peakHBF: mHBF2, feedMs: t2,
-              usingPeak2: false, feed2Ms: t2,
-              score: sc2, sscore: ss2,
-              isFutureFeedPath: true,
-            });
+            // Near-peak mix offsets — mirrors the Stage-1 t2 scan.
+            const _peakSlotBad2r = inBlocker(mHBF2) || bakeMs - mHBF2 * 3600000 <= nowMs_r;
+            const _mixOffsets2r = _peakSlotBad2r ? [-1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5, 3] : [0];
+            for (const _offH2r of _mixOffsets2r) {
+              const _mixMsC2r  = peakT2.getTime() + _offH2r * 3600000;
+              const _mixHBFC2r = (bakeMs - _mixMsC2r) / 3600000;
+              if (_mixMsC2r <= nowMs_r) continue;
+              if (inBlocker(_mixHBFC2r)) continue;
+              const ss2 = starterScore_r(_mixHBFC2r, mHBF2);
+              if (ss2 === 0) continue;
+              if (!riseCompleteEnough(_mixHBFC2r, mHBF2, t2)) continue;
+              const sc2 = combinedScore_r(_mixHBFC2r, mHBF2, t2, true);
+              pushCand_r({
+                mixHBF: _mixHBFC2r, peakHBF: mHBF2, feedMs: t2,
+                usingPeak2: false, feed2Ms: t2,
+                score: sc2 - Math.abs(_offH2r) * 2, sscore: ss2,
+                isFutureFeedPath: true,
+              });
+            }
           }
         }
 
@@ -4590,7 +4769,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // between a single refresh peak and pre-mix.
         if (
           planningMode === 'last_fed' && lastFedTime &&
-          starterLocation === 'rt' &&
+          (starterLocation === 'rt'
+            || (starterLocation === 'fridge' && _starterRefeedTime !== null)) &&
           (Date.now() - lastFedTime.getTime()) / 3600000 > adjPeakH_r
         ) {
           const nowMs3 = Date.now();
@@ -4628,23 +4808,31 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               const peakT3 = new Date(computeStarterPeakMs(t3, _refPeakForPreMix_r, adjPeakH_r));
               const mHBF3  = (bakeMs - peakT3.getTime()) / 3600000;
               if (mHBF3 < sweetToHBF - 4 || mHBF3 > sweetFromHBF + 4) continue;
-              if (bakeMs - mHBF3 * 3600000 <= nowMs_r) continue;
-              if (inBlocker(mHBF3)) continue;
               if (inBlockerMs(t3)) continue;
               const _gp3 = (t3 - finalRefreshPeakMs_r) / 3600000;
               const _me3 = adjPeakH_r * 0.5;
               if (_gp3 < -_me3 || _gp3 > 6) continue;
-              const sc3 = combinedScore_r(mHBF3, mHBF3, t3, true);
-              const ss3 = starterScore_r(mHBF3, mHBF3);
-              if (ss3 === 0) continue;
+              // Near-peak mix offsets — mirrors the Stage-1 t3 scan.
+              const _peakSlotBad3r = inBlocker(mHBF3) || bakeMs - mHBF3 * 3600000 <= nowMs_r;
+              const _mixOffsets3r = _peakSlotBad3r ? [-1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5, 3] : [0];
               const bridgeCost = nBridge * 8;
-              pushCand_r({
-                mixHBF: mHBF3, peakHBF: mHBF3, feedMs: t3,
-                usingPeak2: false, feed2Ms: t3,
-                score: sc3 + 12 - bridgeCost, sscore: ss3,
-                isFutureFeedPath: true,
-                bridgeRefreshMs: bridges_r.length > 0 ? [...bridges_r] : undefined,
-              });
+              for (const _offH3r of _mixOffsets3r) {
+                const _mixMsC3r  = peakT3.getTime() + _offH3r * 3600000;
+                const _mixHBFC3r = (bakeMs - _mixMsC3r) / 3600000;
+                if (_mixMsC3r <= nowMs_r) continue;
+                if (inBlocker(_mixHBFC3r)) continue;
+                const ss3 = starterScore_r(_mixHBFC3r, mHBF3);
+                if (ss3 === 0) continue;
+                if (!riseCompleteEnough(_mixHBFC3r, mHBF3, t3)) continue;
+                const sc3 = combinedScore_r(_mixHBFC3r, mHBF3, t3, true);
+                pushCand_r({
+                  mixHBF: _mixHBFC3r, peakHBF: mHBF3, feedMs: t3,
+                  usingPeak2: false, feed2Ms: t3,
+                  score: sc3 + 12 - bridgeCost - Math.abs(_offH3r) * 2, sscore: ss3,
+                  isFutureFeedPath: true,
+                  bridgeRefreshMs: bridges_r.length > 0 ? [...bridges_r] : undefined,
+                });
+              }
             }
           }
         }
@@ -6821,12 +7009,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                                   if (planningMode === 'know_peak' && knownPeakTime) return knownPeakTime.getTime() - adjPeakH2 * 3600000;
                                   if (_hasFutureFeedPath && _feed2Time) return _feed2Time.getTime();
                                   if (_usingPeak2 && _feed2Time) return _feed2Time.getTime();
+                                  if (_starterRefeedTime) return _starterRefeedTime.getTime();
                                   return lastFedTime?.getTime() ?? _feedTime?.getTime() ?? null;
                                 })();
-                                if (!baseFeedMs) return isFr ? 'En cours de montée' : 'Still rising';
-                                const peakMs = planningMode === 'know_peak' && knownPeakTime
+                                // Committed peak FIRST — solverResult.peakTime is the unified
+                                // scoring ≡ bell ≡ card value. The local recompute below is a
+                                // last-resort fallback only; it ignored _starterRefeedTime and
+                                // produced "Past peak — watch closely" from the stale last-fed
+                                // cycle while the plan's refresh was still rising (31°C live bug).
+                                const peakMs = solverResult?.peakTime
+                                  ? solverResult.peakTime.getTime()
+                                  : planningMode === 'know_peak' && knownPeakTime
                                   ? knownPeakTime.getTime()
-                                  : baseFeedMs + adjPeakH2 * 3600000;
+                                  : baseFeedMs != null ? baseFeedMs + adjPeakH2 * 3600000 : null;
+                                if (peakMs == null) return isFr ? 'En cours de montée' : 'Still rising';
                                 const gapH = (pendingStart.getTime() - peakMs) / 3600000;
                                 if (gapH < -0.5)  return isFr ? 'En cours de montée' : 'Still rising';
                                 if (gapH <= 1.5)  return isFr ? 'Au pic au mélange' : 'At peak at mix';
@@ -6883,8 +7079,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)',
                       lineHeight: 1.5, marginTop: '6px' }}>
                       {_starterRefeedTime && !_hasFutureFeedPath
-                        ? (isFr ? 'Rafraîchir maintenant — votre levain atteindra son pic au moment du pétrissage.'
-                                : 'Feed now — your starter will peak around mix time.')
+                        ? (() => {
+                            // Honest phrasing: only promise "peak around mix time"
+                            // when the committed peak is actually near mix.
+                            const _p = solverResult?.peakTime;
+                            const _far = _p ? Math.abs(pendingStart.getTime() - _p.getTime()) / 3600000 > 1.5 : false;
+                            return _far && _p
+                              ? (isFr ? `Rafraîchir maintenant — pic vers ${fmtCardHM(_p, true)}. Pétrissez quand il est prêt.`
+                                      : `Feed now — it peaks around ${fmtCardHM(_p, false)}. Mix when it's ready.`)
+                              : (isFr ? 'Rafraîchir maintenant — votre levain atteindra son pic au moment du pétrissage.'
+                                      : 'Feed now — your starter will peak around mix time.');
+                          })()
                         : _usingPeak2 && _feed2Time
                           ? (isFr ? `Rafraîchir le ${fmtCardDT(_feed2Time, true)} pour un pic au moment du pétrissage.`
                                   : `Feed ${fmtCardDT(_feed2Time, false)} — timed to peak at mix.`)
