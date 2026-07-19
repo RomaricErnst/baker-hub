@@ -3100,7 +3100,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           ? fridgePeakAfterRemoval(_newFridgeOut, lastFedTime, _adjPeakH ?? adjPeakH_derived ?? 14)
           : (starterLocation === 'fridge' && _newFridgeOut)
           ? new Date(_newFridgeOut.getTime() + getStarterFridgeWarmupH(kitchenTemp) * 3600000)
-          : (_starterFeedTime && _adjPeakH
+          // Primary-refresh (peak1, no future/pre-mix feed): the reported peak
+          // must equal the refresh BELL's peak (refreshStretch), not the
+          // pre-mix stretch. They diverged — the card's PEAK row echoed the
+          // mix time (2:15pm) while the chart bell peaked ~45 min earlier
+          // (1:30pm), so card and chart disagreed and "refresh not at peak"
+          // was true. Same _adjPeakH × _refreshStretchFactor the bell uses.
+          : (_starterRefeedTime && !_hasFutureFeedPath && !_usingPeak2 && _adjPeakH
+              ? new Date(_starterRefeedTime.getTime() + _adjPeakH * _refreshStretchFactor * 3600000)
+          : _starterFeedTime && _adjPeakH
               ? new Date(_starterFeedTime.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
               : null),
         starterIntermediateFeeds: _intermediateRefreshFeeds,
