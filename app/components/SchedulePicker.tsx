@@ -3613,7 +3613,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // Option B: refeed now (declining state — _starterRefeedTime set from derived)
       if (_starterRefeedTime && !inBlockerMs(_starterRefeedTime.getTime())) {
         const refeedMs  = _starterRefeedTime.getTime();
-        const peak2BHBF = (bakeMs - (refeedMs + adjPeakH * 3600000)) / 3600000;
+        // Refresh-stretched peak (matches the bell) — see Option A note.
+        const peak2BHBF = (bakeMs - (refeedMs + _adjPeakH_refresh * 3600000)) / 3600000;
 
         for (let mixHBF = scanFrom; mixHBF >= scanTo; mixHBF -= STEP) {
           if (bakeMs - mixHBF * 3600000 <= nowMs) continue;
