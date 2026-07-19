@@ -70,6 +70,26 @@ Isolated from non-sourdough engine (early return). Candidate pools Peak1/2A/2B/f
 fridge revival biology, event-driven chart, traffic-light pills (no red in starter card).
 Compute style defaults LOCALLY inside the solver (stale `_sfDef` closures caused real bugs).
 
+**Peak-model invariant (learned July 2026):** every candidate family must derive ONE peak.
+Each family produces a *scoring* peak (drives the green/yellow pill, in candidate generation)
+and a *display* peak (chart bell `bellPeakTime` + card "Peak around…"/PEAK row). They MUST be
+equal. They drifted because paths applied different stretch to `adjPeakH` (bare vs
+`× _refreshStretchFactor` vs `× _preMixStretchFactor`) → scoring more optimistic than the bell
+→ FALSE GREEN (starter "ready at mix" while still rising). peak1 / fridge-revival / RT-depleted /
+peak2B are aligned; **peak2A (trough-feed) is the last un-unified one.**
+Next planned engine task → **`SOURDOUGH_PEAK_MODEL_HANDOFF.md`** (repo root): one
+`computeStarterPeak(feedMs, state)` helper, used by every candidate family AND the bell AND
+`deriveStarterPeakTime`, so scoring peak ≡ bell peak ≡ card peak by construction. Read that file first.
+
+**How to work it (methodology that connects to everything here):** this is engine code — obey the
+Multi-engine rule below, never sed, un-export only, gather sweep evidence per branch. Validate on the
+LIVE site via the matrix sweep (see Testing): drive Pain→Levain→scheduler with `window.__bhTrace = []`,
+sweep temp {16,24,32} × location {fridge,RT} × fed {today…week} × horizon, and for each compare the
+card "Peak around…" vs "Start Dough…" (the gap) AND the chart bell x-position vs the Start-Dough
+diamond — card ≡ bell ≡ scoring, gap within TOL, no family regresses, warm cases stay green. A temp
+`__bhTrace` diagnostic (extra dbg_* on the trace push, ~L3036) gives exact runtime peak/mix/stretch —
+add for the pass, REMOVE before the final commit.
+
 ### Multi-engine rule (CRITICAL)
 Any change to coldH/rtH/preferredColdH/minColdH for a style updates ALL THREE together:
 utils.ts STYLE_FERM_DEFAULTS · SchedulePicker.tsx STYLE_FERM_DEFAULTS · FermentChart.tsx sweet-center/sigma constants.
