@@ -2615,7 +2615,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             ? new Date(computeStarterPeakMs(_feed2Time.getTime(), _p2RefPeak, _p2AdjEff))
             : null;
           const _p2GapH = _p2Peak ? Math.abs(_newPendingStart.getTime() - _p2Peak.getTime()) / 3600000 : 0;
-          if (_p2Peak && _p2GapH > 1.5) {
+          // Adaptive "right at mix" threshold — matches the pill's green
+          // past-peak ceiling (40% of a peak cycle, 1.0–1.5h) so the copy
+          // can't claim "peaks right when you'll mix" while the pill is
+          // yellow for a tropical past-peak gap.
+          const _p2RightAtMixH = Math.max(1.0, Math.min(1.5, (_p2AdjEff ?? 14) * 0.4));
+          if (_p2Peak && _p2GapH > _p2RightAtMixH) {
             return isFr
               ? `Un seul rafraîchi suffit — pic vers ${fmtCardHM(_p2Peak, true)}. Fiez-vous à votre levain autant qu'à l'heure.`
               : `One refresh is enough — it peaks around ${fmtCardHM(_p2Peak, false)}. Trust your starter as much as the clock.`;
@@ -2816,7 +2821,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               // Cold rise is ~coldFactor slower — widen the bell to match,
               // otherwise the spike contradicts the fridge narrative.
               bellSigmaScale: _lastFedInFridge ? Math.max(1, _coldFactor_evt) : 1.0,
-              hasFridgePhase: isLastFedActiveInFridge,
+              // Historical FACT, not plan state: the starter sat in the fridge
+              // since this feed (starterLocation), so the chart must draw the
+              // fridge-phase shape (cold rise → plateau → sagging decline)
+              // REGARDLESS of whether the winning plan emits fridge_in/out
+              // events. Previously this was isLastFedActiveInFridge, so the
+              // PAST bell changed shape when a blocker toggled the winner
+              // between plans with and without a fridge_out — the past must be
+              // blocker- and future-choice-independent.
+              hasFridgePhase: _lastFedInFridge,
             });
           }
         }
@@ -3462,6 +3475,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         timeMs > b.from.getTime() && timeMs < b.to.getTime()
       );
     }
+    // An action at (or within ~15 min of) "now" is by definition executable —
+    // the baker is present and planning right now. Blockers describe FUTURE
+    // unavailability (sleep, work); they restrict actions the baker can't be
+    // there for, never the present moment (and never passive fermentation).
+    // Without this exemption, a night-time planning session invalidated every
+    // plan whose revival refresh is pinned to "now" (refresh @ 12:15am inside
+    // a 10pm–7am Night blocker → candidateValid rejected ALL candidates →
+    // false "window too tight" even though refresh-now + morning mix is
+    // perfectly executable).
+    const NOW_ACTION_GRACE_MS = 15 * 60000;
+    function isBlockedActionMs(timeMs: number): boolean {
+      if (timeMs <= Date.now() + NOW_ACTION_GRACE_MS) return false;
+      return inBlockerMs(timeMs);
+    }
     // candidateValid READS the candidate's stored action-time list and rejects
     // any candidate whose actions touch a blocker. The list was populated by
     // pushCand → computeActionTimes at gen time using the SAME outer state the
@@ -3472,7 +3499,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
     function candidateValid(cand: Candidate): boolean {
       for (const ms of candidateActionTimes(cand)) {
-        if (ms != null && inBlockerMs(ms)) return false;
+        // isBlockedActionMs (not inBlockerMs): an action at "now" is
+        // executable regardless of blockers — the baker is present.
+        if (ms != null && isBlockedActionMs(ms)) return false;
       }
       if (inBlocker(cand.mixHBF)) return false;
       return true;
@@ -3497,10 +3526,24 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // Weight 2 (max ±16) breaks ties between biologically-equal candidates
       // without ever overriding a starter/dough score tier (100 pts each).
       const mixComfort = feedComfort(bakeMs - mixHBF * 3600000);
+      // Declining-gap shaping: starterScore's TOL band is flat, so within the
+      // same ss tier a mix 1.5h past peak scored identically to a mix AT peak
+      // — comfort points then picked the past-peak plan (30°C live bug: the
+      // refresh-now family beat the backward-timed refresh whose peak lands
+      // exactly at mix). Penalise the declining side proportionally to the
+      // FRACTION of a peak cycle elapsed past peak: ~13 pts at 1.3h past peak
+      // in a 3h-cycle tropical kitchen, ~3 pts at 2h past peak in a 22h-cycle
+      // cold kitchen — never enough to jump a 100-pt scoring tier, so it only
+      // breaks ties between biologically-unequal but same-tier candidates.
+      const pastPeakH = peakHBF - mixHBF; // HBF: >0 → mix after peak
+      const decliningPenalty = pastPeakH > 0
+        ? Math.min(30, (pastPeakH / Math.max(1, adjPeakH)) * 30)
+        : 0;
       return (ss + ds) * 100
         + retardBonus(mixHBF) * (retardW + tangW)
         + mixComfort * 2
-        + feedComfort(comfortMs) * 3;
+        + feedComfort(comfortMs) * 3
+        - decliningPenalty;
     }
 
     // ── Candidate generation ──────────────────────────
@@ -3756,7 +3799,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       }
 
       // Option B: refeed now (declining state — _starterRefeedTime set from derived)
-      if (_starterRefeedTime && !inBlockerMs(_starterRefeedTime.getTime())) {
+      if (_starterRefeedTime && !isBlockedActionMs(_starterRefeedTime.getTime())) {
         const refeedMs  = _starterRefeedTime.getTime();
         // Unified peak: the refeed renders as a pre_mix bell. Score against the
         // SAME helper + reference the bell uses so scoring ≡ bell (was
@@ -3774,6 +3817,47 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             mixHBF, peakHBF: peak2BHBF, feedMs: refeedMs,
             usingPeak2: true, feed2Ms: refeedMs,
             score: combinedScore(mixHBF, peak2BHBF, refeedMs, true) + 6, sscore: ss,
+          });
+        }
+      }
+
+      // Option C: DELAYED single refresh (declining/depleted/revival state).
+      // Option B pins the revival refresh to "now", which lets the starter
+      // peak hours BEFORE a humane mix slot (30°C live bug: refresh 12:15am →
+      // peak ~3:45am → Start Dough 6am = mix 2¼h past peak). The correct plan
+      // when nothing blocks it is to time the ONE refresh BACKWARD from the
+      // mix so peak ≈ mix. For each mix slot on the scan grid, invert the
+      // unified peak model (computeStarterPeakMs — the SAME helper + reference
+      // the pre_mix bell and card note use, so scoring ≡ bell ≡ card by
+      // construction) to find the refresh time whose peak lands at the mix.
+      // Only pushed when that instant is genuinely in the future and
+      // unblocked — otherwise Option B (refresh now) remains the fallback.
+      if (_starterRefeedTime) {
+        const GRID_MS = 15 * 60000;
+        for (let mixHBF = scanFrom; mixHBF >= scanTo; mixHBF -= STEP) {
+          const mixMs = bakeMs - mixHBF * 3600000;
+          if (mixMs <= nowMs) continue;
+          if (inBlocker(mixHBF)) continue;
+          // Invert peak(tR) = mixMs. computeStarterPeakMs is piecewise-linear
+          // and monotone in tR, so a couple of fixed-point steps converge.
+          let tR = mixMs - adjPeakH * 3600000;
+          for (let it = 0; it < 4; it++) {
+            tR += mixMs - computeStarterPeakMs(tR, _refPeakForPreMix, adjPeakH);
+          }
+          tR = Math.round(tR / GRID_MS) * GRID_MS;
+          // Strictly-future refresh only (refresh-at-now is Option B's job),
+          // and it must clear blockers like any other future action.
+          if (tR <= nowMs + 15 * 60000) continue;
+          if (inBlockerMs(tR)) continue;
+          const peakCMs  = computeStarterPeakMs(tR, _refPeakForPreMix, adjPeakH);
+          const peakCHBF = (bakeMs - peakCMs) / 3600000;
+          const ss = starterScore(mixHBF, peakCHBF);
+          if (ss === 0) continue;
+          if (!riseCompleteEnough(mixHBF, peakCHBF, tR)) continue;
+          pushCand({
+            mixHBF, peakHBF: peakCHBF, feedMs: tR,
+            usingPeak2: true, feed2Ms: tR,
+            score: combinedScore(mixHBF, peakCHBF, tR, true) + 6, sscore: ss,
           });
         }
       }
@@ -4002,7 +4086,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // Cap at 2 → total feeds incl. pre-mix ≤ 3 (matches MAX_INTERMEDIATES).
       for (let nBridge = 0; nBridge <= 2; nBridge++) {
         const refreshMs = nowMs3;
-        if (inBlockerMs(refreshMs)) break;  // primary @now blocked → no chain possible
+        if (isBlockedActionMs(refreshMs)) break;  // primary @now blocked → no chain possible
 
         const finalRefreshMs     = nowMs3 + nBridge * refreshSpacingH_bridge * 3600000;
         const finalRefreshPeakMs = finalRefreshMs + _adjPeakH_refresh * 3600000;
@@ -4433,7 +4517,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // action — mix, feed/refresh, pre-mix, intermediates, fridge in/out —
     // clears blockers). A starter-perfect plan with a feed in a blocked
     // window is NOT green; the baker can't run it.
-    _starterPillState = (best.sscore === 2 && foundValid) ? 'green' : 'yellow';
+    // Green also requires the mix to sit close to the peak on the DECLINING
+    // side. starterScore's TOL (2.0h for fridge) is an absolute-hours band, so
+    // at tropical temps (short rises, fast post-peak decline) a mix 2h past
+    // peak still scored ss=2 and showed "Ready at mix" while the starter was
+    // visibly deflating. Ceiling scales with biology: 40% of adjPeakH, floored
+    // at 1h, capped by TOL — ~1.4h at 30°C, unchanged (= TOL) in cool/cold
+    // kitchens where adjPeakH is long. Mix-before-peak is unaffected.
+    const _mixPastPeakH_best = best.peakHBF - best.mixHBF; // HBF: >0 → mix after peak
+    const _greenPastPeakCeilH = Math.min(TOL, Math.max(1.0, adjPeakH * 0.4));
+    _starterPillState = (best.sscore === 2 && foundValid
+      && _mixPastPeakH_best <= _greenPastPeakCeilH) ? 'green' : 'yellow';
     setRefeedSuggestion(null);
 
     // If a future-feed candidate won, override flags accordingly.
@@ -4627,10 +4721,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const tangW = tang === 'balanced' ? 0 : 12;
           // Mirror main combinedScore: mix-hour comfort ×2 on every path
           const mixComfort = feedComfort(bakeMs - mixHBF * 3600000);
+          // Mirror main combinedScore: declining-gap shaping (see Stage 1).
+          const pastPeakH_r = peakHBF - mixHBF;
+          const decliningPenalty_r = pastPeakH_r > 0
+            ? Math.min(30, (pastPeakH_r / Math.max(1, adjPeakH_r)) * 30)
+            : 0;
           return (ss + ds) * 100
             + retardBonus(mixHBF) * (retardW + tangW)
             + mixComfort * 2
-            + feedComfort(comfortMs) * 3;
+            + feedComfort(comfortMs) * 3
+            - decliningPenalty_r;
         };
 
         // Candidate generation (Peak1, Peak2, Future-feed, Refresh+PreMix —
@@ -4700,7 +4800,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               });
             }
           }
-          if (_starterRefeedTime && !inBlockerMs(_starterRefeedTime.getTime())) {
+          if (_starterRefeedTime && !isBlockedActionMs(_starterRefeedTime.getTime())) {
             const refeedMs = _starterRefeedTime.getTime();
             const peak2BHBF = (bakeMs - computeStarterPeakMs(refeedMs, _refPeakForPreMix_r, adjPeakH_r)) / 3600000;
             for (let mixHBF = scanFrom_r; mixHBF >= scanTo_r; mixHBF -= STEP_r) {
@@ -4713,6 +4813,35 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 mixHBF, peakHBF: peak2BHBF, feedMs: refeedMs,
                 usingPeak2: true, feed2Ms: refeedMs,
                 score: combinedScore_r(mixHBF, peak2BHBF, refeedMs, true) + 6, sscore: ss,
+              });
+            }
+          }
+
+          // Option C mirror: delayed single refresh timed backward from the
+          // mix (see Stage-1 family) — evaluated per-ratio so allClear /
+          // bestScore reflect the same plan space Stage 1 will solve.
+          if (_starterRefeedTime) {
+            const GRID_MS_r = 15 * 60000;
+            for (let mixHBF = scanFrom_r; mixHBF >= scanTo_r; mixHBF -= STEP_r) {
+              const mixMs = bakeMs - mixHBF * 3600000;
+              if (mixMs <= nowMs_r) continue;
+              if (inBlocker(mixHBF)) continue;
+              let tR = mixMs - adjPeakH_r * 3600000;
+              for (let it = 0; it < 4; it++) {
+                tR += mixMs - computeStarterPeakMs(tR, _refPeakForPreMix_r, adjPeakH_r);
+              }
+              tR = Math.round(tR / GRID_MS_r) * GRID_MS_r;
+              if (tR <= nowMs_r + 15 * 60000) continue;
+              if (inBlockerMs(tR)) continue;
+              const peakCMs  = computeStarterPeakMs(tR, _refPeakForPreMix_r, adjPeakH_r);
+              const peakCHBF = (bakeMs - peakCMs) / 3600000;
+              const ss = starterScore_r(mixHBF, peakCHBF);
+              if (ss === 0) continue;
+              if (!riseCompleteEnough(mixHBF, peakCHBF, tR)) continue;
+              pushCand_r({
+                mixHBF, peakHBF: peakCHBF, feedMs: tR,
+                usingPeak2: true, feed2Ms: tR,
+                score: combinedScore_r(mixHBF, peakCHBF, tR, true) + 6, sscore: ss,
               });
             }
           }
@@ -4777,7 +4906,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const refreshSpacingH_bridge_r = Math.max(6, adjPeakH_r * 1.25);
           for (let nBridge = 0; nBridge <= 2; nBridge++) {
             const refreshMs = nowMs3;
-            if (inBlockerMs(refreshMs)) break;
+            if (isBlockedActionMs(refreshMs)) break;
             const finalRefreshMs_r     = nowMs3 + nBridge * refreshSpacingH_bridge_r * 3600000;
             const finalRefreshPeakMs_r = finalRefreshMs_r + _adjPeakH_refresh_r * 3600000;
             const bridges_r: number[] = [];
@@ -6518,10 +6647,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           : mixLateOk   ? tRoot('schedulePicker.doughLateOk')
           : tRoot('schedulePicker.doughPeaksAfter');
         const bakeMs = pendingEatTime.getTime();
+        // Blocker edges are EXCLUSIVE everywhere in the engine (> and <, never
+        // >= <=). With inclusive edges here, a mix at exactly a blocker
+        // boundary (e.g. 7:00am mix when Night ends at 7am — the solver's
+        // legal first slot) was flagged "Within a blocked window".
         const mixInBlocker = !mixInZone && mixOffsetH > 0 && blocks.some(b => {
           const s2 = (bakeMs - b.from.getTime()) / 3600000;
           const e2 = (bakeMs - b.to.getTime())   / 3600000;
-          return mixOffsetH >= Math.min(s2, e2) && mixOffsetH <= Math.max(s2, e2);
+          return mixOffsetH > Math.min(s2, e2) && mixOffsetH < Math.max(s2, e2);
         });
         return (
           <div style={{ display: 'flex', gap: '6px', marginTop: '1rem', flexWrap: 'wrap', justifyContent: (cardPrefTime || isSourdough) ? 'flex-start' : 'center' }}>

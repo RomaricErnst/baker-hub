@@ -1190,16 +1190,18 @@ export default function FermentChart({
             {!useEventDrivenStarter && isLevain && starterIntermediateFeeds.length > 0 && starterIntermediateFeeds.map((ft, idx) => {
               const hbf = (bakeMs - ft.getTime()) / 3600000;
               if (hbf <= 0 || hbf > WH) return null;
+              const rbD = makeBellPath(hbf - effectivePeakH_refresh, starterSigmaH_refresh, W, WH, hbf);
               return (
-                <path
-                  key={`rb-${idx}`}
-                  d={makeBellPath(hbf - effectivePeakH_refresh, starterSigmaH_refresh, W, WH, hbf)}
-                  fill="rgba(74,127,165,0.06)"
-                  stroke="rgba(74,127,165,0.25)"
-                  strokeWidth={1}
-                  strokeDasharray="2 3"
-                  clipPath={`url(#refresh-bell-clip-${chartId}-${idx})`}
-                />
+                <g key={`rb-${idx}`} clipPath={`url(#refresh-bell-clip-${chartId}-${idx})`}>
+                  <path d={rbD} fill="rgba(74,127,165,0.06)" stroke="none" />
+                  <path
+                    d={openBell(rbD)}
+                    fill="none"
+                    stroke="rgba(74,127,165,0.25)"
+                    strokeWidth={1}
+                    strokeDasharray="2 3"
+                  />
+                </g>
               );
             })}
 
@@ -1322,10 +1324,19 @@ export default function FermentChart({
                     // optimized ratio — the bell peaked ~10h later than the
                     // card said for a fed-straight-into-fridge starter.
                     const feedToPeakH_ev = Math.max(1, feedHBF - peakHBF);
+                    // Fridge-history last_fed: the engine flags hasFridgePhase
+                    // when the starter sat in the fridge since this feed — a
+                    // historical fact. Draw the fridge-phase shape even when
+                    // the winning plan emits no fridge_in/out events (e.g. a
+                    // blocker flipped the winner to a refresh-only plan), so
+                    // the PAST bell is identical across plan/blocker changes.
+                    // Same call and args as the ownsHold branch → same shape.
+                    const fridgeHistoryBell =
+                      ev.kind === 'last_fed' && !!ev.hasFridgePhase;
                     const bellD =
                       ownsHold && fridgeOutHBF_ev !== null && fridgeInHBF_ev !== null && chilledAtPeak
                         ? makeBellWithFridgePlateau(peakHBF, sigma, fridgeInHBF_ev, fridgeOutHBF_ev, W, WH, feedHBF)
-                        : ownsHold && fridgeOutHBF_ev !== null
+                        : (ownsHold && fridgeOutHBF_ev !== null) || fridgeHistoryBell
                           ? makeFridgePhaseBellPath(feedHBF, peakHBF, feedToPeakH_ev, feedToPeakH_ev * 0.4, W, WH)
                           : makeBellPath(peakHBF, sigma, W, WH, feedHBF);
                     // Solid (active) bell: the starter is consumed at Start
@@ -1389,18 +1400,21 @@ export default function FermentChart({
             })()}
 
             {/* ── Muted historical bell — shows the spent cycle from Last Fed ── */}
-            {!useEventDrivenStarter && isLevain && histPeakHBF !== null && histFeedHBF !== null && (
-              <>
-                <path
-                  d={makeBellPath(histPeakHBF, starterSigmaH, W, WH, histFeedHBF)}
-                  fill="rgba(74,127,165,0.08)"
-                  stroke="rgba(74,127,165,0.30)"
-                  strokeWidth={1}
-                  strokeDasharray="3 3"
-                  clipPath={`url(#chart-area-clip-${chartId})`}
-                />
-              </>
-            )}
+            {!useEventDrivenStarter && isLevain && histPeakHBF !== null && histFeedHBF !== null && (() => {
+              const histD = makeBellPath(histPeakHBF, starterSigmaH, W, WH, histFeedHBF);
+              return (
+                <g clipPath={`url(#chart-area-clip-${chartId})`}>
+                  <path d={histD} fill="rgba(74,127,165,0.08)" stroke="none" />
+                  <path
+                    d={openBell(histD)}
+                    fill="none"
+                    stroke="rgba(74,127,165,0.30)"
+                    strokeWidth={1}
+                    strokeDasharray="3 3"
+                  />
+                </g>
+              );
+            })()}
 
             {/* ── Depleted: flat dormant baseline + refresh bell + pre-mix bell ── */}
             {!useEventDrivenStarter && isLevain && depletedAtHBF !== null && activeFeedHBF !== null && (
@@ -1421,31 +1435,43 @@ export default function FermentChart({
                 {/* Refresh bell — dotted, only when refresh is a distinct earlier
                     feed from the active (pre-mix) feed. Uses refresh stretch
                     (wider sigma, slightly later peak) per depleted-starter biology. */}
-                {refeedHBF !== null && Math.abs(refeedHBF - activeFeedHBF) > 0.5 && (
-                  <path
-                    d={makeBellPath(
-                      refeedHBF - effectivePeakH_refresh,
-                      starterSigmaH_refresh, W, WH, refeedHBF
-                    )}
-                    fill={`${prefColor}1A`}
-                    stroke={`${prefColor}80`}
-                    strokeWidth={1}
-                    strokeDasharray="3 3"
-                    clipPath={`url(#chart-area-clip-${chartId})`}
-                  />
-                )}
+                {refeedHBF !== null && Math.abs(refeedHBF - activeFeedHBF) > 0.5 && (() => {
+                  const refD = makeBellPath(
+                    refeedHBF - effectivePeakH_refresh,
+                    starterSigmaH_refresh, W, WH, refeedHBF
+                  );
+                  return (
+                    <g clipPath={`url(#chart-area-clip-${chartId})`}>
+                      <path d={refD} fill={`${prefColor}1A`} stroke="none" />
+                      <path
+                        d={openBell(refD)}
+                        fill="none"
+                        stroke={`${prefColor}80`}
+                        strokeWidth={1}
+                        strokeDasharray="3 3"
+                      />
+                    </g>
+                  );
+                })()}
                 {/* Active pre-mix bell — solid, always rendered at active feed
                     position. This is the cycle that feeds the dough. */}
-                <path
-                  d={makeBellPath(
+                {(() => {
+                  const actD = makeBellPath(
                     activeFeedHBF - effectivePeakHStretched,
                     starterSigmaH * starterPreMixStretchFactor, W, WH, activeFeedHBF
-                  )}
-                  fill={`${prefColor}2E`}
-                  stroke={`${prefColor}A5`}
-                  strokeWidth={1.5}
-                  clipPath={`url(#chart-area-clip-${chartId})`}
-                />
+                  );
+                  return (
+                    <g clipPath={`url(#chart-area-clip-${chartId})`}>
+                      <path d={actD} fill={`${prefColor}2E`} stroke="none" />
+                      <path
+                        d={openBell(actD)}
+                        fill="none"
+                        stroke={`${prefColor}A5`}
+                        strokeWidth={1.5}
+                      />
+                    </g>
+                  );
+                })()}
               </>
             )}
 
@@ -1530,16 +1556,23 @@ export default function FermentChart({
                             <rect x={Math.max(0, mixX)} y={0} width={Math.max(0, W - mixX)} height={CHART_H} />
                           </clipPath>
                         </defs>
-                        <path d={legacyBellD} fill={`${prefColor}2E`} stroke={`${prefColor}A5`}
+                        <path d={legacyBellD} fill={`${prefColor}2E`} stroke="none"
+                          clipPath={`url(#legacy-premix-clip-${chartId})`} />
+                        <path d={openBell(legacyBellD)} fill="none" stroke={`${prefColor}A5`}
                           strokeWidth={1.5} clipPath={`url(#legacy-premix-clip-${chartId})`} />
-                        <path d={legacyBellD} fill={`${prefColor}10`} stroke={`${prefColor}45`}
+                        <path d={legacyBellD} fill={`${prefColor}10`} stroke="none"
+                          clipPath={`url(#legacy-postmix-clip-${chartId})`} />
+                        <path d={openBell(legacyBellD)} fill="none" stroke={`${prefColor}45`}
                           strokeWidth={1} strokeDasharray="3 3" clipPath={`url(#legacy-postmix-clip-${chartId})`} />
                       </g>
                     );
                   }
                   return (
-                    <path d={legacyBellD} fill={`${prefColor}2E`} stroke={`${prefColor}A5`}
-                      strokeWidth={1.5} clipPath={`url(#chart-area-clip-${chartId})`} />
+                    <g clipPath={`url(#chart-area-clip-${chartId})`}>
+                      <path d={legacyBellD} fill={`${prefColor}2E`} stroke="none" />
+                      <path d={openBell(legacyBellD)} fill="none" stroke={`${prefColor}A5`}
+                        strokeWidth={1.5} />
+                    </g>
                   );
                 })()}
               </>
