@@ -244,7 +244,7 @@ STRICT RULES:
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64, mimeType, stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName, beforeBake, afterBake, question, stepTitle } =
+    const { imageBase64, mimeType, stepId, styleKey, kitchenTemp, prefermentType, locale, ovenType, pizzaName, beforeBake, afterBake, question, stepTitle, recipeContext } =
       await req.json();
 
     if (!stepId || (!imageBase64 && !question)) {
@@ -260,9 +260,12 @@ export async function POST(req: NextRequest) {
         : ovenType === 'electric_pizza' ? 'electric pizza oven 350–420°C'
         : ovenType === 'home_oven_steel' ? 'home oven with steel/stone 250–280°C'
         : ovenType ? 'standard home oven 220–260°C' : '';
+      const recipeCtx = typeof recipeContext === 'string' && recipeContext.trim()
+        ? `\n${String(recipeContext).slice(0, 800)}`
+        : '';
       const sys = `You are an expert bread and pizza coach answering a home baker's question mid-bake. They are currently at the "${stepTitle ?? stepId}" step of their plan.
-Context: style ${styleKey || 'unknown'}${ovenCtx ? `, oven: ${ovenCtx}` : ''}${kitchenTemp ? `, kitchen ${kitchenTemp}°C` : ''}${prefermentType && prefermentType !== 'none' ? `, preferment: ${prefermentType}` : ''}.
-Rules: answer in 2–4 sentences maximum, direct and actionable, anchored to their context. Be honest about uncertainty. Never invent measurements they didn't give. No greetings, no sign-off.${locale === 'fr' ? ' Reply entirely in French.' : ''}`;
+Context: style ${styleKey || 'unknown'}${ovenCtx ? `, oven: ${ovenCtx}` : ''}${kitchenTemp ? `, kitchen ${kitchenTemp}°C` : ''}${prefermentType && prefermentType !== 'none' ? `, preferment: ${prefermentType}` : ''}.${recipeCtx}
+Rules: answer in 2–4 sentences maximum, direct and actionable, anchored to their context. Be honest about uncertainty. Never invent measurements they didn't give. When the baker questions a value that appears in the recipe context above (e.g. a small yeast amount), do NOT contradict it — explain why the app's number is right for their specific schedule, then reassure. No greetings, no sign-off.${locale === 'fr' ? ' Reply entirely in French.' : ''}`;
       const r = await client.messages.create({
         model: model0,
         max_tokens: 300,

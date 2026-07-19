@@ -487,9 +487,9 @@ function CoachButton({
 }
 
 // ── Ask Maestro — unified: text question, photo, or both ─────────
-export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType }: {
+export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }: {
   stepId: string; stepTitle: string; styleKey: string; kitchenTemp: number;
-  prefermentType?: string; locale: string; ovenType?: string;
+  prefermentType?: string; locale: string; ovenType?: string; recipeContext?: string;
 }) {
   const [q, setQ] = useState('');
   const [photoB64, setPhotoB64] = useState<string | null>(null);
@@ -535,7 +535,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           question: question || undefined,
           imageBase64: photoB64 ?? undefined,
           mimeType: photoB64 ? 'image/jpeg' : undefined,
-          stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType,
+          stepId, stepTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext,
         }),
       });
       const data = await res.json();
@@ -636,7 +636,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
 // ── Step extras — Tips & tricks / FAQ / Maestro tabs ─────────────
 // Keeps the timeline clean: the step card shows only "what to do";
 // everything secondary lives behind these three pills, closed by default.
-function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType }: {
+function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }: {
   tips: React.ReactNode;
   faqKey?: string;
   coachStepId?: string;
@@ -646,6 +646,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
   prefermentType?: string;
   locale: string;
   ovenType?: string;
+  recipeContext?: string;
 }) {
   const [tab, setTab] = useState<'tips' | 'faq' | 'coach' | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -718,6 +719,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
             prefermentType={prefermentType}
             locale={locale}
             ovenType={ovenType}
+            recipeContext={recipeContext}
           />
         </div>
       )}
@@ -843,6 +845,35 @@ export default function BakeGuide({
   const bgPoolishG  = recipe?.preferment
     ? Math.round((recipe.preferment.prefFlour ?? 0) + (recipe.preferment.prefWater ?? 0) + (recipe.preferment.prefYeastGrams ?? 0))
     : null;
+  // Compact recipe facts for Maestro — so it explains the plan's own numbers
+  // (e.g. "0.3g IDY is correct for a 31h cold ferment") instead of guessing
+  // and contradicting the app. Only real, computed values.
+  const maestroRecipeContext = (() => {
+    if (!recipe) return undefined;
+    const parts: string[] = [];
+    const totalFlour = Math.round(recipe.flour + (recipe.preferment?.prefFlour ?? 0));
+    parts.push(`total flour ${totalFlour}g`);
+    parts.push(`hydration ${Math.round(hydration)}%`);
+    const coldH = Math.round(schedule.totalColdHours ?? 0);
+    const rtH = Math.round((schedule.totalRTHours ?? 0));
+    if (coldH > 0) parts.push(`${coldH}h cold (fridge) ferment`);
+    if (rtH > 0) parts.push(`${rtH}h room-temp ferment`);
+    if (recipe.sourdough) {
+      parts.push('leavened with sourdough starter (no commercial yeast)');
+    } else if (recipe.yeast) {
+      const yg = parseFloat(recipe.yeast.convertedGrams.toFixed(2));
+      const yp = (recipe.yeast.convertedGrams / totalFlour * 100).toFixed(3);
+      const yt = recipe.yeast.yeastType ?? 'IDY';
+      parts.push(`final-dough yeast ${yg}g ${yt} (${yp}% of total flour) - deliberately low for the long ${coldH > 0 ? 'cold' : ''} ferment`);
+    }
+    if (recipe.preferment && prefermentType && prefermentType !== 'none') {
+      const p = recipe.preferment;
+      const pf = Math.round((p.prefFlour / totalFlour) * 100);
+      parts.push(`${prefermentType} preferment: ${pf}% of flour, ${p.prefYeastGrams}g yeast in the preferment`);
+    }
+    return `This baker's ACTUAL computed recipe (trust these numbers - they come from a validated fermentation model, do not call them wrong): ${parts.join('; ')}. Small yeast amounts are correct and intended for long/cold ferments; explain WHY the number fits their schedule rather than suggesting it's too low.`;
+  })();
+
   const bgFlour90Label = bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%)` : 'Flour + 90% of your water';
   const bgSaltLabel    = bgSaltG ? `Add salt (${bgSaltG}g)` : 'Add salt';
   const bgYeastLabel   = bgYeastG ? `Add yeast (${bgYeastG}g)` : 'Add yeast';
@@ -935,6 +966,7 @@ export default function BakeGuide({
             faqKey={isPoolish ? 'poolish' : 'biga'}
             coachStepId={isPoolish ? 'poolish' : 'biga'}
             coachTitle={isPoolish ? t('stepTitles.makePoolish') : t('stepTitles.makeBiga')}
+            recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
           />
         </StepCard>
@@ -998,6 +1030,7 @@ export default function BakeGuide({
               faqKey="starter"
               coachStepId="starter"
               coachTitle={usingPeak2 ? 'Feed your starter — first feed' : 'Feed your starter'}
+              recipeContext={maestroRecipeContext}
               styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
             />
           </StepCard>
@@ -1078,6 +1111,7 @@ export default function BakeGuide({
                 faqKey="starter"
                 coachStepId="starter"
                 coachTitle="Feed your starter — second feed"
+                recipeContext={maestroRecipeContext}
                 styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
               />
             </StepCard>
@@ -1248,6 +1282,7 @@ export default function BakeGuide({
           faqKey="mix"
           coachStepId="mix"
           coachTitle={t('stepTitles.mixDough')}
+          recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />
       </StepCard>
@@ -1299,6 +1334,7 @@ export default function BakeGuide({
           faqKey="bulk"
           coachStepId="bulk"
           coachTitle={t('stepTitles.bulkFerm')}
+          recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />
       </StepCard>
@@ -1334,6 +1370,7 @@ export default function BakeGuide({
             </>}
             faqKey="cold"
             coachTitle={isTwoPhase ? t('stepTitles.coldRetardWhole') : t('stepTitles.coldRetard')}
+            recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
           />
         </StepCard>
@@ -1430,6 +1467,7 @@ export default function BakeGuide({
             faqKey="divide"
             coachStepId="shape"
             coachTitle={isBread ? t('stepTitles.divideShape') : t('stepTitles.divideBall')}
+            recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
           />
         </StepCard>
@@ -1462,6 +1500,7 @@ export default function BakeGuide({
             </>}
             faqKey="cold"
             coachTitle={isBread ? t('stepTitles.coldProof') : t('stepTitles.coldRetardBalls')}
+            recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
           />
         </StepCard>
@@ -1515,6 +1554,7 @@ export default function BakeGuide({
             faqKey="proof"
             coachStepId="proof"
             coachTitle={t('stepTitles.finalProof')}
+            recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
           />
         </StepCard>
@@ -1571,6 +1611,7 @@ export default function BakeGuide({
           }
           faqKey="preheat"
           coachTitle={t('stepTitles.preheatOven')}
+          recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />
       </StepCard>
@@ -1664,6 +1705,7 @@ export default function BakeGuide({
           faqKey="bake"
           coachStepId={isBread ? 'bake' : 'pizza_maestro'}
           coachTitle={t('stepTitles.bakeEat')}
+          recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />
         {!isBread && onNavigateToPizzaParty && (
