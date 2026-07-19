@@ -3041,13 +3041,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           lastFeedRatio, kitchenTemp,
           eatTime: et.getTime(),
           adjPeakH: _adjPeakH,
-          // TEMP DIAG (#28): expose peak/mix internals (all fn-level lets)
-          dbg_newFridgeOutMs: _newFridgeOut ? _newFridgeOut.getTime() : null,
-          dbg_refeedMs: _starterRefeedTime ? _starterRefeedTime.getTime() : null,
-          dbg_mixMs: _newPendingStart ? _newPendingStart.getTime() : null,
-          dbg_pill: _starterPillState,
-          dbg_renderFridgeOutMs: _renderFridgeOutMs,
-          dbg_feedTimeMs: _starterFeedTime ? _starterFeedTime.getTime() : null,
         });
       }
 
