@@ -2408,6 +2408,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _renderFridgeInMs:  number | null = null;
     let _renderFridgeOutMs: number | null = null;
     let _adjPeakH: number | null = null;
+    // TEMP dbg_* mirrors for the peak-model pass — REMOVE before final commit.
+    let _dbgBestPeakHBF: number | null = null;
+    let _dbgBestMixHBF: number | null = null;
+    let _dbgBestSscore: number | null = null;
+    let _dbgBestFeedMs: number | null = null;
+    let _dbgFoundValid: boolean | null = null;
+    let _dbgTOL: number | null = null;
     let _fridgeFeedTime: Date | null = null;
     // Bridge-candidate refresh chain (additional to primary @now refresh) —
     // set when a bridging candidate wins; consumed by buildAndSetResult to
@@ -3070,6 +3077,25 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           lastFeedRatio, kitchenTemp,
           eatTime: et.getTime(),
           adjPeakH: _adjPeakH,
+          // TEMP dbg_* diagnostics for the peak-model pass — REMOVE before final commit.
+          dbg_sscore: _dbgBestSscore,
+          dbg_foundValid: _dbgFoundValid,
+          dbg_peakHBF: _dbgBestPeakHBF,
+          dbg_mixHBF: _dbgBestMixHBF,
+          dbg_scoringPeakMs: _dbgBestPeakHBF != null ? et.getTime() - _dbgBestPeakHBF * 3600000 : null,
+          dbg_mixMs: _dbgBestMixHBF != null ? et.getTime() - _dbgBestMixHBF * 3600000 : null,
+          dbg_feedMs: _dbgBestFeedMs,
+          dbg_TOL: _dbgTOL,
+          dbg_refreshStretch: _refreshStretchFactor,
+          dbg_preMixStretch: _preMixStretchFactor,
+          dbg_nextFeedRatio: nextFeedRatio,
+          dbg_events: _starterEvents.map(e => ({
+            kind: e.kind,
+            t: e.time.getTime(),
+            bell: e.bellPeakTime ? e.bellPeakTime.getTime() : null,
+            sigma: e.bellSigmaScale ?? null,
+            active: e.isActive,
+          })),
         });
       }
 
@@ -3257,6 +3283,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const rtTOL   = Math.max(1.0, Math.min(3.0, adjPeakH * 0.15));
     const baseTOL = starterLocation === 'fridge' ? 2.0 : rtTOL;
     const TOL     = baseTOL * ftm;
+    _dbgTOL = TOL; // TEMP dbg — REMOVE before final commit.
 
     const sweetFromHBF = localSweetFrom;
     const sweetToHBF   = localSweetTo;
@@ -4210,6 +4237,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // clears blockers). A starter-perfect plan with a feed in a blocked
     // window is NOT green; the baker can't run it.
     _starterPillState = (best.sscore === 2 && foundValid) ? 'green' : 'yellow';
+    // TEMP dbg mirrors for the peak-model pass — REMOVE before final commit.
+    _dbgBestPeakHBF = best.peakHBF;
+    _dbgBestMixHBF  = best.mixHBF;
+    _dbgBestSscore  = best.sscore;
+    _dbgBestFeedMs  = best.feedMs;
+    _dbgFoundValid  = foundValid;
     setRefeedSuggestion(null);
 
     // If a future-feed candidate won, override flags accordingly.
