@@ -5321,7 +5321,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           {planningMode === 'last_fed' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
               <div style={STARTER_LABEL_STYLE}>
-                {isFr ? 'QUAND A-T-IL ÉTÉ NOURRI ?' : 'WHEN WAS IT LAST FED?'}
+                {/* For a fridge starter, time-since-feed and time-in-fridge are
+                    the same clock (fed, then chilled) — and fridge time is what
+                    bakers actually remember. Label only; `lastFedAge` is
+                    unchanged, so the engine reads exactly the same value. */}
+                {starterLocation === 'fridge'
+                  ? (isFr ? 'DEPUIS QUAND EST-IL AU FRIGO ?' : 'HOW LONG HAS IT BEEN IN THE FRIDGE?')
+                  : (isFr ? 'QUAND A-T-IL ÉTÉ NOURRI ?' : 'WHEN WAS IT LAST FED?')}
               </div>
 
               {/* Age chips — always visible */}
@@ -6891,6 +6897,27 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                                   {ev.cardNote}
                                 </div>
                               )}
+                              {/* Blocked-hours disclosure. NOW_ACTION_GRACE_MS lets
+                                  an action within 15 min of now ignore blockers —
+                                  "the baker is present" — which is fair but was
+                                  silent: a plan built at 12:48 put a refresh at 1pm
+                                  inside a 9am-6pm work block with no mention.
+                                  State the assumption and point at the remedy.
+                                  Observation, not a warning (no red, no glyph). */}
+                              {(() => {
+                                const _t = ev.time.getTime();
+                                // Exclusive edges, per the engine's blocker convention.
+                                const _inBlock = blocks.some(b =>
+                                  _t > b.from.getTime() && _t < b.to.getTime());
+                                if (!_inBlock) return null;
+                                return (
+                                  <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px', fontStyle: 'italic' }}>
+                                    {isFr
+                                      ? 'Cela tombe dans vos heures bloquées — comme c’est maintenant, nous avons supposé que vous êtes disponible. Ajustez vos heures si besoin.'
+                                      : 'This falls in your blocked hours — it’s happening now, so we assumed you’re around. Adjust your blocked times if not.'}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         })}
