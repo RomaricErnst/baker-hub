@@ -855,9 +855,13 @@ export default function Home() {
         if (to <= from) to.setDate(to.getDate() + 1); // overnight window (sleep)
         if (to < new Date() || from > eatTime) return;
         out.push({
+          // Preset-compatible labels — SchedulePicker identifies preset blocks
+          // by convention (`Work · <date>` prefix / `<Weekday> night` suffix).
+          // Matching them lights the Weekdays/Nights pills and keeps these
+          // blocks out of the custom-chip list (was: one chip row per day).
           label: key === 'sleep'
-            ? (locale === 'fr' ? 'Nuit' : 'Night')
-            : (locale === 'fr' ? 'Travail' : 'Work'),
+            ? `${from.toLocaleDateString('en-US', { weekday: 'long' })} night`
+            : `Work · ${from.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`,
           from, to,
         });
       });

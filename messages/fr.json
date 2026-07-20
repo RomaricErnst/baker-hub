@@ -177,7 +177,7 @@
       "weekdays": "💼 Jours ouvrés",
       "weekdayHours": "· 9h → 18h",
       "noOvernights": "Pas de nuit dans ce planning.",
-      "nightHours": "· 22h → 7h",
+      "nightHours": "· 23h → 7h",
       "cancel": "✕ Annuler",
       "addCustom": "＋ Personnalisé",
       "customTitle": "Indisponibilité personnalisée",
@@ -186,7 +186,7 @@
       "to": "À",
       "addBlock": "Ajouter",
       "nights": "🌙 Nuits",
-      "nightHoursLabel": "· 22h → 7h"
+      "nightHoursLabel": "· 23h → 7h"
     },
     "adjustLabel": "Fenêtres de fermentation · ajuster le timing",
     "adjustDoughLabel": "Pâte :",

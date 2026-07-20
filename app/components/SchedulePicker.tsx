@@ -472,12 +472,13 @@ function getNightsInWindow(
 
   const nights: Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> = [];
   // Start one day before windowStart to catch nights that began before midnight
-  // e.g. at 1am, tonight's 10pm start was yesterday — cursor must go back one day
+  // e.g. at 1am, tonight's 11pm start was yesterday — cursor must go back one day
   const cursor = new Date(start); cursor.setHours(0, 0, 0, 0);
   cursor.setDate(cursor.getDate() - 1);
 
   for (let i = 0; i < 14 && nights.length < 7; i++) {
-    const nightStart = new Date(cursor); nightStart.setHours(22, 0, 0, 0);
+    // 23:00 — aligned with the profile's sleep blocker default (23:00–07:00)
+    const nightStart = new Date(cursor); nightStart.setHours(23, 0, 0, 0);
     const nightEnd   = new Date(cursor); nightEnd.setDate(nightEnd.getDate() + 1); nightEnd.setHours(7, 0, 0, 0);
 
     if (nightStart < end && nightEnd > start) {
@@ -1837,7 +1838,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   useEffect(() => {
     if (!eatTimeSet) return;
     const wasWorkActive = blocks.some(b => b.label.startsWith('Work · '));
-    const wasNightActive = blocks.some(b => b.label.startsWith('Night · '));
+    // Night preset labels are `<Weekday> night` (suffix), not `Night · ` —
+    // the old prefix check never matched, so nights were both (a) never
+    // regenerated on date change and (b) kept as stale "custom" blocks below.
+    const wasNightActive = blocks.some(b => b.label.endsWith(' night'));
     if (!wasWorkActive && !wasNightActive) return;
 
     const freshWorkdays = getWorkdaysInWindow(windowStart, pendingEatTime);
@@ -1845,7 +1849,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     // Keep any custom blocks (non-preset), then re-add active presets
     const customBlocks = blocks.filter(
-      b => !b.label.startsWith('Work · ') && !b.label.startsWith('Night · ')
+      b => !b.label.startsWith('Work · ') && !b.label.endsWith(' night')
     );
     const newBlocks = [
       ...customBlocks,
@@ -4278,8 +4282,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           // through to RT because no usable hold window fits there.
           const gapFromNowToPreMixH = (t - nowMs_pathB) / 3600000;
           const rtRefreshesAvoided = Math.max(0, Math.floor(gapFromNowToPreMixH / troughH) - 1);
+          // hotBias / multiDayBias exist to stop an RT starter over-fermenting
+          // while it waits warm. A FRIDGE-located starter is already cold —
+          // nothing to protect, and Path B's refresh is one more feed than the
+          // baker needs when a single revival feed reaches green (30°C live
+          // case: removing the work blocker jumped the plan from "one refresh
+          // is enough" to refresh-now + fridge + pre-mix, two feeds for the
+          // same mix time). Gate both biases on RT and charge the extra feed
+          // so an equal-quality single-feed plan outranks Path B; Path B still
+          // wins where single-feed genuinely can't (deep revival, blockers).
+          const _pathBFridgeStarter = starterLocation === 'fridge';
           const hotBias =
-            kitchenTemp >= 33 ? 14
+            _pathBFridgeStarter ? 0
+            : kitchenTemp >= 33 ? 14
             : kitchenTemp >= 30 ? 10
             : kitchenTemp >= 28 ? 6
             : 0;
@@ -4290,8 +4305,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           // chain over the cleaner 2-feed fridge hold. Applies regardless of
           // temperature; hot kitchens still get the extra hotBias on top.
           const bakeHorizonH_pathB = (bakeMs - nowMs_pathB) / 3600000;
-          const multiDayBias = bakeHorizonH_pathB >= 30 ? 12 : 0;
-          const pathBBonus = 8 + rtRefreshesAvoided * 3 + hotBias + multiDayBias;
+          const multiDayBias = !_pathBFridgeStarter && bakeHorizonH_pathB >= 30 ? 12 : 0;
+          const extraFeedCost = _pathBFridgeStarter ? 10 : 0;
+          const pathBBonus = 8 + rtRefreshesAvoided * 3 + hotBias + multiDayBias - extraFeedCost;
 
           // Coherence guard at the source: chronological ordering must hold —
           // refresh < fridge_in < fridge_out < pre-mix. Any malformed Path B

@@ -177,7 +177,7 @@
       "weekdays": "💼 Weekdays",
       "weekdayHours": "· 9am → 6pm",
       "noOvernights": "No overnight periods in this schedule.",
-      "nightHours": "· 10pm → 7am",
+      "nightHours": "· 11pm → 7am",
       "cancel": "✕ Cancel",
       "addCustom": "＋ Custom",
       "customTitle": "Custom unavailability block",
@@ -186,7 +186,7 @@
       "to": "To",
       "addBlock": "Add block",
       "nights": "🌙 Nights",
-      "nightHoursLabel": "· 10pm → 7am"
+      "nightHoursLabel": "· 11pm → 7am"
     },
     "adjustLabel": "Fermentation windows · adjust timing",
     "adjustDoughLabel": "Dough:",
