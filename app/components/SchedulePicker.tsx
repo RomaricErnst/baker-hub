@@ -3205,7 +3205,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         starterPillState:       _starterPillState,
         driftNote:              _driftNote,
         starterRefeedTime:      _starterRefeedTime,
-        starterStateNote:       _starterStateNote,
+        // Derive-time notes for RT declining/depleted starters say "feed it
+        // now" — but the winning plan may delay the primary feed (now inside
+        // a blocker → Option C / delayed families). Say what the plan
+        // actually does. Fridge-revival notes don't claim "now" and pass
+        // through untouched (starterLocation gate).
+        starterStateNote:       (() => {
+          if (_starterStateNote && starterLocation === 'rt' && _starterRefeedTime) {
+            const _pf = (_usingPeak2 && _feed2Time) ? _feed2Time.getTime() : _starterRefeedTime.getTime();
+            if (Math.abs(_pf - Date.now()) > 30 * 60000) {
+              return locale === 'fr'
+                ? 'Votre levain a besoin d’un rafraîchi — le plan le place quand vous êtes disponible.'
+                : 'Your starter needs a refresh — the plan schedules it when you’re free.';
+            }
+          }
+          return _starterStateNote;
+        })(),
         fridgeSuggestion:       _fridgeSuggestionFinal,
         suggestedFridgeOutTime: _suggestedFridgeOut,
         suggestedFridgePeakTime: _suggestedFridgePeak,
