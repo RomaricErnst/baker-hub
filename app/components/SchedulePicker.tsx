@@ -3479,18 +3479,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         timeMs > b.from.getTime() && timeMs < b.to.getTime()
       );
     }
-    // An action at (or within ~15 min of) "now" is by definition executable —
-    // the baker is present and planning right now. Blockers describe FUTURE
-    // unavailability (sleep, work); they restrict actions the baker can't be
-    // there for, never the present moment (and never passive fermentation).
-    // Without this exemption, a night-time planning session invalidated every
-    // plan whose revival refresh is pinned to "now" (refresh @ 12:15am inside
-    // a 10pm–7am Night blocker → candidateValid rejected ALL candidates →
-    // false "window too tight" even though refresh-now + morning mix is
-    // perfectly executable).
-    const NOW_ACTION_GRACE_MS = 15 * 60000;
+    // POLICY (Jul 2026): blockers bind the present too. Planning from inside
+    // a blocked window (e.g. lunch break at the office) does not mean the
+    // baker can act right now, so a refresh pinned to "now" during a blocker
+    // is NOT executable — Option C (delayed refresh) and post-blocker
+    // families take over instead. Only firmly PAST times are exempt (last
+    // fed, completed feeds): history can't be validated against blockers.
+    // The 1h cutoff mirrors the refresh event's isPast convention
+    // (nowMs − 60min).
+    const HISTORY_CUTOFF_MS = 60 * 60000;
     function isBlockedActionMs(timeMs: number): boolean {
-      if (timeMs <= Date.now() + NOW_ACTION_GRACE_MS) return false;
+      if (timeMs < Date.now() - HISTORY_CUTOFF_MS) return false; // history — exempt
       return inBlockerMs(timeMs);
     }
     // candidateValid READS the candidate's stored action-time list and rejects
@@ -3503,8 +3502,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
     function candidateValid(cand: Candidate): boolean {
       for (const ms of candidateActionTimes(cand)) {
-        // isBlockedActionMs (not inBlockerMs): an action at "now" is
-        // executable regardless of blockers — the baker is present.
+        // isBlockedActionMs (not inBlockerMs): firmly-past times are history
+        // and exempt; present and future actions must clear blockers.
         if (ms != null && isBlockedActionMs(ms)) return false;
       }
       if (inBlocker(cand.mixHBF)) return false;
@@ -4689,13 +4688,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         allClear: boolean;
         bestScore: number;
         windowTooShort: boolean;
+        green: boolean;
       } => {
         const ratioMult_r = 1 + 0.5 * Math.log(r);
         const adjPeakH_r  = peakH * ryeF * matF * ratioMult_r;
         const _revivalOverheadH_r = adjPeakH_r * 1.25 * revivalCycles(lastFedAge, starterMature, tang);
         const effectiveMinFermH_r = minFermH + _revivalOverheadH_r;
         if ((bakeMs - Date.now()) / 3600000 < effectiveMinFermH_r) {
-          return { allClear: false, bestScore: 0, windowTooShort: true };
+          return { allClear: false, bestScore: 0, windowTooShort: true, green: false };
         }
         const troughH_r = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * ratioMult_r;
         const _refreshStretchFactor_r = (() => {
@@ -4983,7 +4983,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         }
 
         if (candidates_r.length === 0) {
-          return { allClear: false, bestScore: 0, windowTooShort: false };
+          return { allClear: false, bestScore: 0, windowTooShort: false, green: false };
         }
         candidates_r.sort((a, b) => b.score - a.score);
 
@@ -4999,7 +4999,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             break;
           }
         }
-        return { allClear: foundValidR, bestScore: bestR.score, windowTooShort: false };
+        // Green mirrors Stage 1's _starterPillState: starter at peak at mix,
+        // plan executable, and mix not too far down the declining side.
+        const _pastPeakH_r = bestR.peakHBF - bestR.mixHBF;
+        const _greenCeil_r = Math.min(TOL_r, Math.max(1.0, adjPeakH_r * 0.4));
+        return { allClear: foundValidR, bestScore: bestR.score, windowTooShort: false,
+                 green: foundValidR && bestR.sscore === 2 && _pastPeakH_r <= _greenCeil_r };
       };
 
       // Search: try every ratio, pick by priority:
@@ -5019,14 +5024,25 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const tie = sameClearState && Math.abs(cand.bestScore - chosenEval.bestScore) <= RATIO_IMPROVE_THRESHOLD;
         const closerToUsual = Math.abs(Math.log(rr) - Math.log(lastFeedRatio))
                            < Math.abs(Math.log(chosenRatio) - Math.log(lastFeedRatio));
-        if (clearsWhenBaseDoesnt || betterScore || (tie && closerToUsual)) {
+        // Green tier sits between clear-state and raw score: a ratio whose
+        // plan puts the starter at peak at mix beats one that doesn't,
+        // regardless of the 18-pt threshold — and never regress from green.
+        const greenRegression   = chosenEval.green && !cand.green;
+        const greenWhenBaseIsnt = sameClearState && cand.green && !chosenEval.green;
+        if (!greenRegression && (clearsWhenBaseDoesnt || greenWhenBaseIsnt || betterScore
+            || (tie && closerToUsual && cand.green === chosenEval.green))) {
           chosenEval = cand;
           chosenRatio = rr;
         }
       }
-      if (chosenRatio !== lastFeedRatio) {
-        _recommendedNextFeedRatio = chosenRatio;
-      }
+      // ALWAYS emit the chosen ratio — even when it equals lastFeedRatio.
+      // Emitting only on a delta made the applied ratio a one-way ratchet:
+      // once auto-apply set nextFeedRatio to a recommendation, a later solve
+      // whose best ratio was back at baseline emitted null, the effect did
+      // nothing, and the stale ratio silently kept steering every plan
+      // (live hysteresis: blocker off → ratio 2 applied → blocker back on →
+      // single-feed plan persisted at ratio 2).
+      _recommendedNextFeedRatio = chosenRatio;
     }
 
     buildAndSetResult();
@@ -5041,6 +5057,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
+    // Blocker set changed — stale oscillation history must not veto fresh
+    // ratio recommendations (it froze the ratchet across blocker toggles).
+    ratioApplyHistoryRef.current.length = 0;
     const { resolvedStart, moved, resolvedDate: _resolvedDate } = applyBlockerOverlap(pendingStart, newBlocks);
     if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
     setBlockerNote(null);
@@ -6305,7 +6324,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 if (isSourdough) {
                   const bakeMs = pendingEatTime.getTime();
                   const feedAbsHBF = mixOffsetH + offsetH;
-                  const newFeedTime = new Date(bakeMs - feedAbsHBF * 3600000);
+                  let newFeedTime = new Date(bakeMs - feedAbsHBF * 3600000);
+                  // Clamp dragged feeds to the future — a now-pinned feed can
+                  // be dragged forward, never into the past.
+                  const _nowFloor = Math.ceil(Date.now() / (15 * 60000)) * (15 * 60000);
+                  if (newFeedTime.getTime() < _nowFloor) newFeedTime = new Date(_nowFloor);
                   if (solverResult?.usingPeak2 && solverResult?.adjPeakHValue) {
                     // Feed 2 drag cascades: peak is adjPeakH after feed → mix aligns with peak
                     const newMixHBF = Math.max(_minTotalRT, feedAbsHBF - solverResult.adjPeakHValue);
@@ -6897,12 +6920,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                                   {ev.cardNote}
                                 </div>
                               )}
-                              {/* Blocked-hours disclosure. NOW_ACTION_GRACE_MS lets
-                                  an action within 15 min of now ignore blockers —
-                                  "the baker is present" — which is fair but was
-                                  silent: a plan built at 12:48 put a refresh at 1pm
-                                  inside a 9am-6pm work block with no mention.
-                                  State the assumption and point at the remedy.
+                              {/* Blocked-hours disclosure. Blockers bind the
+                                  present too (see isBlockedActionMs), so an
+                                  in-blocker event only survives on fallback
+                                  plans with no clear slot. Name it honestly:
+                                  near-now events get "do it now if you can",
+                                  future ones point at the remedy.
                                   Observation, not a warning (no red, no glyph). */}
                               {(() => {
                                 const _t = ev.time.getTime();
@@ -6912,9 +6935,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                                 if (!_inBlock) return null;
                                 return (
                                   <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px', fontStyle: 'italic' }}>
-                                    {isFr
-                                      ? 'Cela tombe dans vos heures bloquées — comme c’est maintenant, nous avons supposé que vous êtes disponible. Ajustez vos heures si besoin.'
-                                      : 'This falls in your blocked hours — it’s happening now, so we assumed you’re around. Adjust your blocked times if not.'}
+                                    {(Math.abs(_t - Date.now()) <= 15 * 60000)
+                                      ? (isFr
+                                        ? 'Cela tombe dans vos heures bloquées — faites-le maintenant si vous le pouvez, ou ajustez vos heures bloquées pour que le plan le déplace.'
+                                        : 'This falls in your blocked hours — do it now if you can, or adjust your blocked times so the plan can move it.')
+                                      : (isFr
+                                        ? 'Cela tombe dans vos heures bloquées — aucun créneau libre n’était disponible. Si vous n’êtes pas disponible, ajustez vos heures bloquées ou décalez votre fournée.'
+                                        : 'This falls in your blocked hours — no clear slot was available. If you can’t be around then, adjust your blocked times or shift your bake.')}
                                   </div>
                                 );
                               })()}

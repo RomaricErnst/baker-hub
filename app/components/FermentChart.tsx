@@ -794,7 +794,11 @@ export default function FermentChart({
 
   function onPointerDown(e: React.PointerEvent, which: 'mix' | 'pref') {
     if (startTimeInPast) return;
-    if (which === 'pref' && prefStartAbsHBF > nowHBF) return;
+    // Allow dragging a feed pinned at/near "now" forward — only refuse
+    // genuinely historical positions (>1h before now). A Peak-2B feed is
+    // stamped at solve time; seconds later it sat "in the past" and every
+    // drag was silently swallowed while the hint promised draggability.
+    if (which === 'pref' && prefStartAbsHBF > nowHBF + 1) return;
     e.preventDefault();
     e.stopPropagation();
     setDragging(which);
