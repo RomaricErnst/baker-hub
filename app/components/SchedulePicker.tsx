@@ -1409,6 +1409,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // Convergence: once applied, solver re-runs and finds same recommendation
   // (stable plan). No further changes.
   const ratioApplyHistoryRef = useRef<number[]>([]);
+  // Blocks the solver actually validated against (effectiveBlocks at the
+  // last solve). The blocked-hours disclosure must read THIS, not the parent
+  // blocks prop — the prop can lag pill toggles (observed live: a feed at
+  // 11am flagged as blocked by a Work block the baker had just switched off).
+  const lastSolvedBlocksRef = useRef<AvailabilityBlock[] | null>(null);
   useEffect(() => {
     if (ratioMode === 'keep') return;
     if (nextFeedRatioOverride !== null) return;
@@ -2384,6 +2389,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // → TDZ crash ("Cannot access before initialization") for week+ starters
     // with short windows. Keep this at the very top of the solver.
     const effectiveBlocks = blocksOverride ?? (isSourdough ? localBlocks : blocks);
+    lastSolvedBlocksRef.current = effectiveBlocks;
 
     // Reset drag state — any solver run means inputs changed, drag position is stale.
     // When triggered by a drag, preserve hasDragged so the label stays "Your plan".
@@ -6930,7 +6936,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                               {(() => {
                                 const _t = ev.time.getTime();
                                 // Exclusive edges, per the engine's blocker convention.
-                                const _inBlock = blocks.some(b =>
+                                const _inBlock = (lastSolvedBlocksRef.current ?? blocks).some(b =>
                                   _t > b.from.getTime() && _t < b.to.getTime());
                                 if (!_inBlock) return null;
                                 return (
