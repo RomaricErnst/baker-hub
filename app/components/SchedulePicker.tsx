@@ -1413,6 +1413,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // state: the solver must read the just-committed value synchronously.
   // Cleared on any input change / blocker change / bake-time change.
   const manualRefreshRef = useRef<number | null>(null);
+  // Baker-pinned pre-mix/future-feed time (dragged Pre-mix diamond in a
+  // non-Peak-2 plan). Same lifecycle as manualRefreshRef.
+  const manualFeed2Ref = useRef<number | null>(null);
   // Blocks the solver actually validated against (effectiveBlocks at the
   // last solve). The blocked-hours disclosure must read THIS, not the parent
   // blocks prop — the prop can lag pill toggles (observed live: a feed at
@@ -1835,6 +1838,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setHasDragged(false);
     hasManuallyDragged.current = false;
     manualRefreshRef.current = null;
+    manualFeed2Ref.current = null;
     if (isSourdough) {
       const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
       const sweetCenter = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0)
@@ -1877,6 +1881,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setHasDragged(false);
     hasManuallyDragged.current = false;
     manualRefreshRef.current = null;
+    manualFeed2Ref.current = null;
     // findOptimalPositionSourdough now calls deriveStarterPeakTime internally
     // and commits a single atomic setSolverResult at every exit point.
     // Pass the parent's blocks prop as blocksOverride so the solver NEVER
@@ -2083,6 +2088,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     hasManuallyDragged.current = false;
     setHasDragged(false);
     manualRefreshRef.current = null;
+    manualFeed2Ref.current = null;
     setDismissedConflict(false);
     setShowFallbackPopup(false);
     setPhase('start_confirm');
@@ -2252,7 +2258,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const coldFactor = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10);
           const fridgePeakH = adjPeakH * coldFactor;
           const nowMs2 = Date.now();
-          const fridgeOutTime2 = new Date(pendingStart.getTime() - warmupH2 * 3600000);
+          // referenceMixTime, NOT pendingStart: pendingStart is the PREVIOUS
+          // solve's mix fed back through state, which made derive depend on
+          // the last answer — toggles then round-tripped to different plans
+          // (sweep run 1: maturity/rye/location/ratioMode/Nights DIVERGED).
+          const fridgeOutTime2 = new Date(referenceMixTime.getTime() - warmupH2 * 3600000);
           const timeInFridgeH = (fridgeOutTime2.getTime() - nowMs2) / 3600000;
           // fridgeViable: there is enough window to feed now, put in fridge,
           // and have it still rising (or near peak) at removal.
@@ -2273,7 +2283,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             && timeInFridgeH < fridgePeakH * 0.95;
           if (fridgeViable) {
             const computedFridgeOut = new Date(
-              pendingStart.getTime() - warmupH2 * 3600000
+              referenceMixTime.getTime() - warmupH2 * 3600000
             );
             const computedFridgePeak = new Date(
               computedFridgeOut.getTime() + warmupH2 * 3600000
@@ -3825,6 +3835,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // at gen time — the same coherence guard the Path B generator already
     // enforces, applied to non-Path-B too.
     function pushCand(c: Omit<Candidate, 'actionTimesMs'>): void {
+      // Baker-pinned pre-mix: only candidates whose future feed sits on the
+      // pin survive (22.5 min = 1.5 grid steps). Peak-2 candidates are
+      // governed by manualRefreshRef, not this pin.
+      if (manualFeed2Ref.current != null && !c.usingPeak2) {
+        if (c.feed2Ms == null || Math.abs(c.feed2Ms - manualFeed2Ref.current) > 22.5 * 60000) return;
+      }
       const fridgeTimes = computeNonPathBFridgeTimes(c, adjPeakH, ratioMultiplier);
       if (fridgeTimes && !(fridgeTimes.fridgeInMs < fridgeTimes.fridgeOutMs)) return;
       const enriched: Omit<Candidate, 'actionTimesMs'> = {
@@ -4594,8 +4610,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // renders chronological nonsense (live: pre-mix BEFORE the dragged
     // refresh + window-too-tight). Better a workable plan than an impossible
     // one — drop the pin and re-solve once, honestly.
-    if (!foundValid && manualRefreshRef.current != null) {
+    if (!foundValid && (manualRefreshRef.current != null || manualFeed2Ref.current != null)) {
       manualRefreshRef.current = null;
+    manualFeed2Ref.current = null;
+      manualFeed2Ref.current = null;
       return findOptimalPositionSourdough(et, manualMixOverride, blocksOverride);
     }
     // If no candidate cleared all blockers, the highest-scoring fallback still
@@ -4875,6 +4893,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // search's allClear silently passed plans whose fridge actions land in
         // blockers — and rec stayed null because every ratio looked clear.
         function pushCand_r(c: Omit<Candidate, 'actionTimesMs'>): void {
+          // Mirror pushCand's pre-mix pin (evaluator ≡ solver).
+          if (manualFeed2Ref.current != null && !c.usingPeak2) {
+            if (c.feed2Ms == null || Math.abs(c.feed2Ms - manualFeed2Ref.current) > 22.5 * 60000) return;
+          }
           const fridgeTimes = computeNonPathBFridgeTimes(c, adjPeakH_r, ratioMult_r);
           if (fridgeTimes && !(fridgeTimes.fridgeInMs < fridgeTimes.fridgeOutMs)) return;
           const enriched: Omit<Candidate, 'actionTimesMs'> = {
@@ -5181,6 +5203,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setHasDragged(false);
       hasManuallyDragged.current = false;
       manualRefreshRef.current = null;
+    manualFeed2Ref.current = null;
       // Pass newBlocks directly — blocks prop hasn't updated yet (parent re-renders async).
       // No manualMixOverride — let solver freely find best position avoiding blockers.
       findOptimalPositionSourdough(pendingEatTime, undefined, newBlocks);
@@ -6453,9 +6476,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     setPendingStart(newMixTime);
                     onChange(newMixTime, pendingEatTime, blocks);
                   } else {
-                    // Single cycle: update feed, trigger solver re-run via lastFedTime
+                    // PIN the dragged pre-mix — never rewrite the lastFedTime
+                    // input. That mutation survived Reset, so “Reset to
+                    // recommendation” returned a different plan than the
+                    // original (sweep run 1: reset:Next Feed DIVERGED).
                     onFeedTimeChange?.(newFeedTime);
-                    onLastFedTimeChange?.(newFeedTime);
+                    manualFeed2Ref.current = newFeedTime.getTime();
+                    findOptimalPositionSourdough(pendingEatTime, undefined, blocks);
                   }
                 } else {
                   setPrefOffsetH(offsetH);
@@ -6540,6 +6567,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 // Reset must clear EVERY baker override, or it re-solves into
                 // the overridden plan instead of the original recommendation.
                 manualRefreshRef.current = null;
+    manualFeed2Ref.current = null;
                 const blocksToUse = isSourdough ? localBlocks : blocks;
                 computeAndApplyRecommendation(blocksToUse, pendingEatTime);
                 if (isSourdough) {

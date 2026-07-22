@@ -223,6 +223,10 @@ function makeBellPath(peakHBF: number, sigma: number, W: number, wh = WINDOW_H_D
   // rendered as a phantom dotted line across the chart.
   let s = 0;
   while (s < raw.length - 2 && raw[s].h < 0.006) s++;
+  // Degenerate bell: the peak sits so far outside the window that the whole
+  // visible curve hugs the baseline — stroked, that renders as a short stray
+  // line parallel to the axis ("a line closing the graph"). Draw nothing.
+  if (!raw.some(pt => pt.h > 0.02)) return '';
   const pts: string[] = [`M ${raw[s].x.toFixed(1)} ${BL}`];
   for (let i = s; i < raw.length; i++) {
     pts.push(`L ${raw[i].x.toFixed(1)} ${raw[i].y.toFixed(1)}`);
@@ -314,12 +318,18 @@ function makePlateauBellPath(
   const floor = startHBF !== undefined ? pbell(startHBF) : 0;
   const range = Math.max(0.01, 1 - floor);
   const pts: string[] = [];
+  let _maxH = 0;
   for (let i = 0; i <= N; i++) {
     const hbf = (i / N) * left;
     const x = hToX(hbf, W, wh);
-    const y = BL - ((pbell(hbf) - floor) / range) * MAXH;
+    const hNorm = (pbell(hbf) - floor) / range;
+    if (hNorm > _maxH) _maxH = hNorm;
+    const y = BL - hNorm * MAXH;
     pts.push(i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : `L ${x.toFixed(1)} ${y.toFixed(1)}`);
   }
+  // Degenerate: whole visible curve hugs the baseline — draw nothing (see
+  // makeBellPath; stroked, this rendered as a stray axis-parallel line).
+  if (_maxH < 0.02) return '';
   pts.push(`L ${hToX(left, W, wh).toFixed(1)} ${BL}`);
   pts.push(`L ${hToX(0,   W, wh).toFixed(1)} ${BL}`);
   pts.push('Z');
