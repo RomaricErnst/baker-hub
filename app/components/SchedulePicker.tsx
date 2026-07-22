@@ -2996,10 +2996,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             time: _starterRefeedTime,
             isPast: _starterRefeedTime.getTime() < nowMs - 60 * 60 * 1000,
             isActive: isPrimary,
-            // The active primary refresh is draggable (pin + re-solve).
-            // Bridge-chain refreshes stay fixed — one link of a chain can't
-            // move alone.
-            isDraggable: isPrimary && !_bridgeRefreshMs,
+            // The refresh is draggable (pin + re-solve) whether or not a
+            // pre-mix follows — the multi-feed refresh-now is exactly the
+            // diamond bakers want to move. Bridge-chain refreshes stay fixed
+            // (one link of a chain can't move alone); intermediates recompute
+            // from the pinned refresh at the next solve.
+            isDraggable: !_bridgeRefreshMs,
             label: isFr ? 'Rafraîchi' : 'Refresh Feed',
             // "Now · ..." only when it truly is now — a clamped/delayed
             // refresh (fridge warmup) shows its absolute time.
