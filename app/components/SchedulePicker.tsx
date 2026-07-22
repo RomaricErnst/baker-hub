@@ -6426,6 +6426,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 hasManuallyDragged.current = true;
                 setHasDragged(true);
                 setRecommendedHBF(null);
+                // Fresh user action = fresh ratio-convergence chain.
+                ratioApplyHistoryRef.current.length = 0;
                 const newStart = new Date(pendingEatTime.getTime() - h * 3600000);
                 if (isSourdough) setMixOverride(true);
                 setPendingStart(newStart);
@@ -6457,6 +6459,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               onPrefChange={(offsetH) => {
                 hasManuallyDragged.current = true;
                 setHasDragged(true);
+                ratioApplyHistoryRef.current.length = 0;
                 setPrefAlgoRed(false);
                 if (isSourdough) {
                   const bakeMs = pendingEatTime.getTime();
@@ -6492,6 +6495,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               onRefreshChange={(absHBF) => {
                 hasManuallyDragged.current = true;
                 setHasDragged(true);
+                ratioApplyHistoryRef.current.length = 0;
                 const _step = 15 * 60000;
                 let _t = Math.round((pendingEatTime.getTime() - absHBF * 3600000) / _step) * _step;
                 // Floors: the future (+ fridge warmup — a cold starter can't
@@ -6567,7 +6571,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 // Reset must clear EVERY baker override, or it re-solves into
                 // the overridden plan instead of the original recommendation.
                 manualRefreshRef.current = null;
-    manualFeed2Ref.current = null;
+                manualFeed2Ref.current = null;
+                // ...including the ratio oscillation history: the drag-solve
+                // pushed the original ratio into it, so the reset-solve's
+                // recommendation (that same ratio) was vetoed by the guard and
+                // the plan stayed at the drag-influenced ratio (live repro:
+                // mix drag → Reset landed on a different plan than A).
+                ratioApplyHistoryRef.current.length = 0;
                 const blocksToUse = isSourdough ? localBlocks : blocks;
                 computeAndApplyRecommendation(blocksToUse, pendingEatTime);
                 if (isSourdough) {
