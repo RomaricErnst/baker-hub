@@ -4,6 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { type RecipeResult, type YeastResult } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
 import { type UnitSystem, displayWeight, displayTemp } from '../utils/units';
+import PlanNav from './PlanNav';
 
 interface RecipeOutputProps {
   result: RecipeResult;
@@ -1339,42 +1340,9 @@ export default function RecipeOutput({
         </div>
       )}
 
-      {/* Guide hint — moved from the top of the recipe to here, just before the
-          protocol: the recipe should lead with the numbers, and this points to
-          the detailed step-by-step once the essentials have been read. */}
-      {onOpenGuide && (
-        <div style={{ textAlign: 'center', marginBottom: '.1rem' }}>
-          <button
-            onClick={onOpenGuide}
-            style={{
-              background: 'none', border: 'none', padding: '4px 0', cursor: 'pointer',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
-              color: 'var(--smoke)', textAlign: 'center',
-              textDecoration: 'underline', textUnderlineOffset: '3px',
-            }}
-          >
-            {t('recipeOutput.guideHint')}
-          </button>
-        </div>
-      )}
-
-      {/* Edit setup — third entry point: below the recipe cards, above the protocol */}
-      {onEditSetup && (
-        <div style={{ textAlign: 'center' }}>
-          <button
-            onClick={onEditSetup}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '4px 0',
-              fontSize: '.78rem', color: 'var(--smoke)',
-              fontFamily: 'var(--font-dm-mono)',
-              textDecoration: 'underline', textUnderlineOffset: '3px',
-            }}
-          >
-            {t('generate.editSetup')}
-          </button>
-        </div>
-      )}
+      {/* PlanNav — same two pills as below the protocol (quiet variant):
+          one visual language for the tab's three destinations */}
+      <PlanNav variant="quiet" onEditSetup={onEditSetup} onOpenGuide={onOpenGuide} />
 
     </div>
   );

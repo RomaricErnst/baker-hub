@@ -6410,6 +6410,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               blocks={isSourdough ? localBlocks : blocks}
               recommendedMixHBF={recommendedHBF}
               showZoneLabels={zonesOpen}
+              onToggleZones={setZonesOpen}
               hasDragged={hasDragged}
               onDragStart={() => setIsDragging(true)}
               onDragEnd={() => setIsDragging(false)}
@@ -6549,40 +6550,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
       {eatTimeSet && (
         <div style={{ marginTop: '6px', marginBottom: '.75rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-
-          {/* Drag hint moved into FermentChart — it now sits directly under
-              the graph, above “How to read this chart”, as an invitation */}
-
-          {/* Show timing guide checkbox — Custom mode only */}
-          {mode !== 'simple' && <label style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            cursor: 'pointer', fontSize: '12px',
-            color: '#8A7F78', fontFamily: 'DM Sans, sans-serif',
-          }}>
-            <input
-              type="checkbox"
-              checked={zonesOpen}
-              onChange={e => setZonesOpen(e.target.checked)}
-              style={{ width: '14px', height: '14px', accentColor: 'var(--terra)', cursor: 'pointer' }}
-            />
-            {locale === 'fr' ? 'Afficher le guide' : 'Show timing guide'}
-          </label>}
-
-          {/* Instructions — only shown when zonesOpen */}
-          {zonesOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '22px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
-                <span style={{ color: '#3D5A30', fontWeight: 600 }}>◆ {t('adjustDoughLabel')}</span>{' '}
-                {t('adjustDoughVerb')}
-              </div>
-              {hasPrefActive && (
-                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.5 }}>
-                  <span style={{ color: '#C4A030', fontWeight: 600 }}>◇ {prefLabel}:</span>{' '}
-                  {t('adjustPrefVerb')}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Reset link — only when dragged and not a past session */}
           {hasDragged && !startTimeInPast && (

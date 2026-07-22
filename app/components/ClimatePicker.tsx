@@ -304,25 +304,39 @@ export default function ClimatePicker({
           >
             {loading ? (isFr ? 'Recherche…' : 'Fetching…') : (isFr ? 'Météo' : 'Get Climate')}
           </button>
-          <button
-            onClick={fetchByLocation}
-            disabled={loading}
-            title={isFr ? 'Utiliser ma position' : 'Use my location'}
-            aria-label={isFr ? 'Utiliser ma position' : 'Use my location'}
-            style={{
-              padding: '.65rem .8rem',
-              border: '1.5px solid var(--border)',
-              borderRadius: '12px',
-              background: 'var(--warm)',
-              fontSize: '.95rem',
-              cursor: loading ? 'default' : 'pointer',
-              transition: 'all .15s',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            📍
-          </button>
         </div>
+
+        {/* Location chip — lives on its own line so it can never overflow the
+            card, and says what it does instead of being a mystery pin */}
+        <button
+          onClick={fetchByLocation}
+          disabled={loading}
+          style={{
+            marginTop: '.6rem',
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            padding: '.45rem .8rem',
+            border: '1.5px solid var(--border)',
+            borderRadius: '20px',
+            background: 'var(--cream)',
+            color: 'var(--ash)',
+            fontSize: '.8rem',
+            fontFamily: 'var(--font-dm-sans)',
+            cursor: loading ? 'default' : 'pointer',
+            transition: 'all .15s',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="7" />
+            <circle cx="12" cy="12" r="2.5" fill="var(--terra)" stroke="none" />
+            <line x1="12" y1="2" x2="12" y2="5" />
+            <line x1="12" y1="19" x2="12" y2="22" />
+            <line x1="2" y1="12" x2="5" y2="12" />
+            <line x1="19" y1="12" x2="22" y2="12" />
+          </svg>
+          {loading
+            ? (isFr ? 'Recherche…' : 'Locating…')
+            : (isFr ? 'Utiliser ma position' : 'Use my location')}
+        </button>
 
         {/* Error */}
         {fetchError && (
@@ -405,8 +419,8 @@ export default function ClimatePicker({
             lineHeight: 1.4,
           }}>
             {isFr
-              ? 'Cuisine estimée depuis la météo extérieure — ajustez ci-dessous si besoin (clim ou chauffage, par exemple).'
-              : 'Kitchen estimated from outdoor weather — adjust below if it feels off (AC or heating, for example).'}
+              ? 'Cuisine estimée depuis l’extérieur — ajustez ci-dessous si besoin.'
+              : 'Kitchen estimated from outdoor — adjust below if it feels off.'}
           </div>
         )}
       </div>

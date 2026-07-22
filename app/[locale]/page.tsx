@@ -14,6 +14,7 @@ const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { s
 import ClimatePicker from '../components/ClimatePicker';
 const RecipeOutput = dynamic(() => import('../components/RecipeOutput'), { ssr: false });
 import Timeline from '../components/Timeline';
+import PlanNav from '../components/PlanNav';
 const BakeGuide = dynamic(() => import('../components/BakeGuide'), { ssr: false });
 import { getPrefPeakH_RT, getPrefRTWarmupH } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
@@ -2722,48 +2723,13 @@ export default function Home() {
               )}
 
               {!bakeTimeIsPast && (
-                <>
-                  {/* Start Bake Guide CTA */}
-                  <button
-                    onClick={() => setActiveTab('guide')}
-                    style={{
-                      background: 'var(--terra)',
-                      border: 'none',
-                      color: 'var(--cream)',
-                      borderRadius: '12px',
-                      padding: '10px 0',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      width: '100%',
-                      marginTop: '12px',
-                      cursor: 'pointer',
-                      fontFamily: 'var(--font-dm-sans)',
-                      letterSpacing: '.01em',
-                    }}
-                  >
-                    {t('tabs.guide')} →
-                  </button>
-
-                  {/* Edit setup button */}
-                  <button
-                    onClick={() => { setActiveTab('setup'); setReviewMode(true); }}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--smoke)',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      width: '100%',
-                      marginTop: '10px',
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                      padding: '4px 0',
-                      fontFamily: 'var(--font-dm-sans)',
-                    }}
-                  >
-                    {t('generate.editSetup')}
-                  </button>
-                </>
+                <div style={{ marginTop: '12px' }}>
+                  <PlanNav
+                    variant="cta"
+                    onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
+                    onOpenGuide={() => setActiveTab('guide')}
+                  />
+                </div>
               )}
 
             </div>{/* end plan tab */}
@@ -4022,48 +3988,13 @@ export default function Home() {
               )}
 
               {!bakeTimeIsPast && (
-                <>
-                  {/* Start Bake Guide CTA */}
-                  <button
-                    onClick={() => setActiveTab('guide')}
-                    style={{
-                      background: 'var(--terra)',
-                      border: 'none',
-                      color: 'var(--cream)',
-                      borderRadius: '12px',
-                      padding: '10px 0',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      width: '100%',
-                      marginTop: '12px',
-                      cursor: 'pointer',
-                      fontFamily: 'var(--font-dm-sans)',
-                      letterSpacing: '.01em',
-                    }}
-                  >
-                    {t('tabs.guide')} →
-                  </button>
-
-                  {/* Edit setup button */}
-                  <button
-                    onClick={() => { setActiveTab('setup'); setReviewMode(true); }}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--smoke)',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      width: '100%',
-                      marginTop: '10px',
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                      padding: '4px 0',
-                      fontFamily: 'var(--font-dm-sans)',
-                    }}
-                  >
-                    {t('generate.editSetup')}
-                  </button>
-                </>
+                <div style={{ marginTop: '12px' }}>
+                  <PlanNav
+                    variant="cta"
+                    onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
+                    onOpenGuide={() => setActiveTab('guide')}
+                  />
+                </div>
               )}
 
             </div>{/* end plan tab */}

@@ -34,6 +34,7 @@ export interface FermentChartProps {
   scheduleNote?: string | null;
   recommendedMixHBF?: number | null;
   showZoneLabels?: boolean;
+  onToggleZones?: (v: boolean) => void;
   hasDragged?: boolean;
   starterFeedTime?: Date | null;
   starterFeed2Time?: Date | null;
@@ -434,7 +435,7 @@ export default function FermentChart({
   blocks, onMixChange, onPrefChange, onRefreshChange, onDragStart, onDragEnd,
   windowH, prefInFridge, hasColdRetard, sweetCenterH, sweetFromH, sweetToH,
   nowHBF = 999, phases, scheduleNote,
-  recommendedMixHBF, showZoneLabels, hasDragged,
+  recommendedMixHBF, showZoneLabels, onToggleZones, hasDragged,
   starterFeedTime, starterFeed2Time, starterFridgeOutTime,
   starterKnownPeakTime = null, starterIsDepletedAt = null, starterRefeedTime = null,
   starterIntermediateFeeds = [],
@@ -2152,7 +2153,8 @@ export default function FermentChart({
         </div>
       )}
 
-      {/* ── How to read this chart — permanent, collapsible, calm ── */}
+      {/* ── How to read this chart — one panel: legend, windows toggle,
+          and the "times are a guide" reminder. Nothing else under the chart. ── */}
       <div style={{ marginTop: '6px' }}>
         <button
           onClick={() => setLegendOpen(o => !o)}
@@ -2175,38 +2177,64 @@ export default function FermentChart({
           }}>
             {([
               [isFr ? 'Les cloches' : 'The bells', isFr
-                ? "chaque courbe est une fermentation qui monte, culmine, puis retombe. La première est votre préferment ou levain, la seconde votre pâte."
-                : 'each curve is a fermentation rising, peaking, then falling. The first is your preferment or starter, the second your dough.'],
-              [isFr ? 'Les losanges' : 'The diamonds', isFr
-                ? 'vos moments d\'action, posés sur la ligne du temps. Faites-les glisser pour déplacer « Faire le poolish » ou « Pétrissage » — les courbes suivent.'
-                : 'your action moments, sitting on the timeline. Drag them to move "Make Poolish" or "Start Dough" — the curves follow.'],
-              [isFr ? 'Les zones colorées' : 'The coloured zones', isFr
-                ? 'les fenêtres recommandées pour chaque action. Au centre, le point idéal.'
-                : 'the recommended windows for each action. The centre is the sweet spot.'],
+                ? (isLevain
+                  ? 'chaque courbe monte, culmine, retombe — d’abord votre levain, puis votre pâte.'
+                  : 'chaque courbe monte, culmine, retombe — d’abord votre préferment, puis votre pâte.')
+                : (isLevain
+                  ? 'each curve rises, peaks, falls — first your starter, then your dough.'
+                  : 'each curve rises, peaks, falls — first your preferment, then your dough.')],
+              [isFr ? 'Les losanges ◆' : 'The diamonds ◆', isFr
+                ? 'vos actions — faites-les glisser, les courbes suivent.'
+                : 'your actions — drag them, the curves follow.'],
               [isFr ? 'Les hachures' : 'The hatched columns', isFr
-                ? 'vos indisponibilités (sommeil, travail) — le plan les contourne.'
-                : 'your busy hours (sleep, work) — the plan works around them.'],
+                ? 'vos indisponibilités — le plan les contourne.'
+                : 'your busy hours — the plan works around them.'],
               [isFr ? 'Les plateaux' : 'The flat stretches', isFr
-                ? 'du temps au frigo : la biologie ralentit presque à l\'arrêt. C\'est voulu.'
-                : 'fridge time: the biology slows almost to a pause. That\'s by design.'],
+                ? 'du temps au frigo — la biologie en pause. C’est voulu.'
+                : 'fridge time — biology on pause. That’s by design.'],
             ] as const).map(([term, body]) => (
               <div key={term} style={{ marginBottom: '5px' }}>
                 <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--terra, #C4522A)', fontWeight: 700 }}>{term}</span>
                 <span> — {body}</span>
               </div>
             ))}
+
+            {/* Windows toggle — lives with the legend: turning zones on is
+                chart literacy, not a separate setting */}
+            {onToggleZones && (
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                borderTop: '1px solid var(--border, #E8E0D5)',
+                marginTop: '8px', paddingTop: '8px', cursor: 'pointer',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={!!showZoneLabels}
+                  onChange={e => onToggleZones(e.target.checked)}
+                  style={{ width: '14px', height: '14px', accentColor: 'var(--terra, #C4522A)', cursor: 'pointer', flexShrink: 0 }}
+                />
+                <span>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--terra, #C4522A)', fontWeight: 700 }}>
+                    {isFr ? 'Fenêtres' : 'Timing windows'}
+                  </span>
+                  <span> — {isFr
+                    ? (isLevain ? 'fenêtre de pâte + pic du levain.' : 'la meilleure plage pour chaque action.')
+                    : (isLevain ? 'dough window + starter peak.' : 'best range for each action.')}
+                  </span>
+                </span>
+              </label>
+            )}
+
+            <div style={{
+              fontSize: '11px', color: 'var(--smoke, #8A7F78)', fontStyle: 'italic',
+              borderTop: '1px solid var(--border, #E8E0D5)', marginTop: '8px', paddingTop: '8px',
+            }}>
+              {isFr
+                ? 'Les horaires sont indicatifs — fiez-vous à votre pâte autant qu’à l’horloge.'
+                : 'Times are a guide — trust your dough as much as the clock.'}
+            </div>
           </div>
         )}
-      </div>
-
-      {/* ── Gentle reminder: the schedule is a guide, not a stopwatch ── */}
-      <div style={{
-        marginTop: '8px', fontFamily: 'var(--font-dm-sans)', fontSize: '11px',
-        color: 'var(--smoke, #8A7F78)', lineHeight: 1.5, fontStyle: 'italic',
-      }}>
-        {isFr
-          ? 'Les horaires sont indicatifs — la chaleur, la farine et la vigueur de votre levain décalent le pic de quelques heures. Fiez-vous à votre levain et à votre pâte autant qu’à l’horloge.'
-          : 'Times are a guide — warmth, flour and starter vigour can shift the real peak by a couple of hours. Trust your starter and dough as much as the clock.'}
       </div>
 
     </div>
