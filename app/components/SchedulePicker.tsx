@@ -6537,6 +6537,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               onClick={() => {
                 hasManuallyDragged.current = false;
                 setHasDragged(false);
+                // Reset must clear EVERY baker override, or it re-solves into
+                // the overridden plan instead of the original recommendation.
+                manualRefreshRef.current = null;
                 const blocksToUse = isSourdough ? localBlocks : blocks;
                 computeAndApplyRecommendation(blocksToUse, pendingEatTime);
                 if (isSourdough) {
