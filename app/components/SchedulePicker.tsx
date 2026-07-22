@@ -568,6 +568,29 @@ function snapToBlockerEdgeIfBlocked(
 }
 
 // ── Joint mix+pref optimiser ──────────────────
+// ── Preferment zone constants — SINGLE SOURCE for solver scoring
+// (findOptimalPosition) and the poolish/biga card colour zones, which were
+// duplicated copies at risk of drifting apart. Behaviour-preserving hoist:
+// the two originals differed only in the unreachable RT-biga case (biga
+// always forces prefGoesInFridge via localPrefGoesInFridge), where the
+// solver form (biga → 10) is kept.
+function prefZoneConstants(prefermentType: string, prefGoesInFridge: boolean, kitchenTemp: number): {
+  plateauH: number; plateauLowH: number; rtTol: number; rtTolUpper: number;
+} {
+  // Plateau half-widths: poolish fridge +3h upper / 5h lower (asymmetric),
+  // biga +10h upper / 24h lower (green 24–58h — Modernist Pizza 24–48h
+  // standard, 72h max), RT ±0 (tolerances below apply instead).
+  const plateauH = prefermentType === 'biga' ? 10 : prefGoesInFridge ? 3 : 0;
+  const plateauLowH = prefermentType === 'biga' ? 24
+    : prefGoesInFridge && prefermentType === 'poolish' ? 5
+    : plateauH;
+  // Climate-aware RT tolerances — RT poolish curve is steeper at high temp →
+  // narrower safe window. Lower bound symmetric-ish, upper slightly wider.
+  const rtTol      = kitchenTemp >= 30 ? 0.5  : kitchenTemp >= 28 ? 0.75 : kitchenTemp >= 24 ? 1.0 : 1.5;
+  const rtTolUpper = kitchenTemp >= 30 ? 0.75 : kitchenTemp >= 28 ? 1.0  : kitchenTemp >= 24 ? 1.5 : 2.0;
+  return { plateauH, plateauLowH, rtTol, rtTolUpper };
+}
+
 function findOptimalPosition(
   sweetCenter: number,
   sweetFrom: number,
@@ -672,7 +695,12 @@ function findOptimalPosition(
       }
 
       // ── Preferment placement for this mix candidate ──────────────────
-      const prefZoneMax = prefermentType === 'biga' ? 72 : prefGoesInFridge ? 24 : prefOffsetH * 1.5;
+      // RT poolish ceiling is BIOLOGY (RT poolish window is 6–14h; 16 gives
+      // scan headroom), never prefOffsetH — that is UI drag state, and using
+      // it made the search zone depend on the previous answer (same feedback
+      // class as the sourdough pendingStart bug: drag → Reset landed on a
+      // different plan than the original).
+      const prefZoneMax = prefermentType === 'biga' ? 72 : prefGoesInFridge ? 24 : 16;
       const prefZoneMin = prefermentType === 'biga' ? 12 : prefGoesInFridge ? 3 : 1;
       // Use scientific optimum, not current drag position.
       // prefOffsetH is UI state — using it as search target causes
@@ -713,24 +741,11 @@ function findOptimalPosition(
 
       // Score plateau constants — declared here so they're in scope for both
       // the comfort window guard and the scoring block below.
-      const fridgePlateauH  = prefermentType === 'biga' ? 10 : prefGoesInFridge ? 3 : 0;
+      // SINGLE SOURCE with the card zones — see prefZoneConstants.
+      const { plateauH: fridgePlateauH, plateauLowH: scorePlateauH_LOW,
+              rtTol: scoreRTPeakTol, rtTolUpper: scoreRTPeakTolUpper } =
+        prefZoneConstants(prefermentType, prefGoesInFridge, kitchenTemp);
       const scorePlateauH   = fridgePlateauH; // upper bound (over-fermented side)
-      // Lower bound (underdeveloped side) — wider, because under-fermented is safer.
-      // Biga: 24h — fridge biga at 4–6°C is scientifically solid from ~24h
-      // (Modernist Pizza: 24–48h standard practice, 48h optimal, 72h max).
-      // Green zone becomes 24h→58h so day/night-blocked bakers can still reach
-      // double green instead of a false "window too short".
-      const scorePlateauH_LOW = prefermentType === 'biga' ? 24
-        : prefGoesInFridge && prefermentType === 'poolish' ? 5
-        : fridgePlateauH; // lower bound (wider — underdeveloped is safer)
-      const scoreRTPeakTol  = kitchenTemp >= 30 ? 0.5
-                            : kitchenTemp >= 28 ? 0.75
-                            : kitchenTemp >= 24 ? 1.0
-                            : 1.5;
-      const scoreRTPeakTolUpper = kitchenTemp >= 30 ? 0.75
-                                : kitchenTemp >= 28 ? 1.0
-                                : kitchenTemp >= 24 ? 1.5
-                                : 2.0;
 
       // Comfort window: if fridge poolish start lands outside 18:00–21:00,
       // scan for the EARLIEST slot whose clock time falls in 18:00–21:00.
@@ -812,7 +827,11 @@ function findOptimalPosition(
 
   // Return best partial result found (if any)
   if (bestResult) return bestResult;
-  const fallbackPrefOffset = Math.min(prefOffsetH, nowHBF - sweetCenter - 0.25);
+  // Scientific optimum, not prefOffsetH (UI drag state) — same feedback
+  // class as P1 above, fallback flavour.
+  const fallbackPrefOffset = Math.min(
+    getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridge, styleKey, fridgeTemp),
+    nowHBF - sweetCenter - 0.25);
   return {
     mixHBF:        sweetCenter,
     prefHBF:       sweetCenter + Math.max(0, fallbackPrefOffset),
@@ -6794,29 +6813,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // RT: ~25% of peak time — climate-sensitive minimum for meaningful fermentation.
         // e.g. 30°C peak=4h → min=1h, 22°C peak=9h → min=2h, 18°C peak=13h → min=3h
         const prefMinHCard = prefGoesInFridge ? 3 : Math.max(1, Math.round(prefRTPeakH * 0.25));
-        // Plateau half-width: poolish fridge ±3h upper / +5h lower (asymmetric),
-        // biga +10h upper / 24h lower (green 24–58h, mirrors solver), RT ±0
-        const fridgePlateauH    = prefGoesInFridge ? (prefermentType === 'biga' ? 10 : 3) : 0;
-        const cardPrefPlateauH_LOW = prefermentType === 'biga' ? 24
-          : prefGoesInFridge && prefermentType === 'poolish' ? 5
-          : fridgePlateauH;
-        // Climate-aware RT zones — absolute hour offsets, not percentages.
-        // rtPeakH is already climate-sensitive (4h at 30°C, 11h at 18°C).
-        // Green: at or just past peak (±1.5h window)
-        // Developing: 3h → peak (still rising — valid but not optimal)
-        // EarlyOk: peak+1.5h → maxH (just past peak — still usable)
-        // Climate-sensitive: RT poolish curve is steeper at high temp → narrower
-        // safe window. Symmetric: a poolish 1h before peak is as usable as 1h after.
-        const RT_PEAK_TOLERANCE = kitchenTemp >= 30 ? 0.5
-                                : kitchenTemp >= 28 ? 0.75
-                                : kitchenTemp >= 24 ? 1.0
-                                : 1.5;
-        // Green zone = plateau only: optH-plateauH_LOW → optH+plateauH (fridge, asymmetric) or optH-tol → optH+tolUpper (RT)
-        // Developing zone = viable but not yet at peak: 3h → plateau start
-        const RT_PEAK_TOLERANCE_UPPER = kitchenTemp >= 30 ? 0.75
-                                      : kitchenTemp >= 28 ? 1.0
-                                      : kitchenTemp >= 24 ? 1.5
-                                      : 2.0;
+        // SINGLE SOURCE with solver scoring — see prefZoneConstants.
+        // Green zone = plateau: optH-plateauLowH → optH+plateauH (fridge,
+        // asymmetric) or optH-tol → optH+tolUpper (RT, climate-aware).
+        const { plateauH: fridgePlateauH, plateauLowH: cardPrefPlateauH_LOW,
+                rtTol: RT_PEAK_TOLERANCE, rtTolUpper: RT_PEAK_TOLERANCE_UPPER } =
+          prefZoneConstants(prefermentType, prefGoesInFridge, kitchenTemp);
         const cardPrefInZone = prefGoesInFridge
           ? hasPrefActive && prefOffsetH >= prefOptHCard - cardPrefPlateauH_LOW && prefOffsetH <= prefOptHCard + fridgePlateauH
           : hasPrefActive && prefOffsetH >= prefOptHCard - RT_PEAK_TOLERANCE && prefOffsetH <= prefOptHCard + RT_PEAK_TOLERANCE_UPPER;
