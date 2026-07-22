@@ -1436,6 +1436,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // Baker-pinned pre-mix/future-feed time (dragged Pre-mix diamond in a
   // non-Peak-2 plan). Same lifecycle as manualRefreshRef.
   const manualFeed2Ref = useRef<number | null>(null);
+  // Baker-pinned MIX time (dragged Start Dough diamond). Unlike refresh /
+  // pre-mix pins, the dragged mix previously lived only in pendingStart, so
+  // any effect-triggered re-solve (e.g. a solver-applied ratio change)
+  // recomputed the ideal mix and the dragged diamond snapped back. Same
+  // lifecycle as manualRefreshRef: cleared on any input / bake-time /
+  // blocker change and on Reset.
+  const manualMixRef = useRef<number | null>(null);
   // Blocks the solver actually validated against (effectiveBlocks at the
   // last solve). The blocked-hours disclosure must read THIS, not the parent
   // blocks prop — the prop can lag pill toggles (observed live: a feed at
@@ -1859,6 +1866,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     hasManuallyDragged.current = false;
     manualRefreshRef.current = null;
     manualFeed2Ref.current = null;
+    manualMixRef.current = null;
     ratioApplyHistoryRef.current.length = 0;
     if (isSourdough) {
       const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
@@ -1903,6 +1911,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     hasManuallyDragged.current = false;
     manualRefreshRef.current = null;
     manualFeed2Ref.current = null;
+    manualMixRef.current = null;
     // A real input change also restarts the ratio-oscillation history: the
     // guard otherwise vetoes recommendations based on ratios cycled under
     // OLD settings (live: toggle churn left the plan stuck at 1:1:1 with a
@@ -2129,6 +2138,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setHasDragged(false);
     manualRefreshRef.current = null;
     manualFeed2Ref.current = null;
+    manualMixRef.current = null;
     setDismissedConflict(false);
     setShowFallbackPopup(false);
     setPhase('start_confirm');
@@ -2452,6 +2462,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const effectiveBlocks = blocksOverride ?? (isSourdough ? localBlocks : blocks);
     lastSolvedBlocksRef.current = effectiveBlocks;
 
+    // Fold the baker's pinned mix into the override so effect-triggered
+    // re-solves (ratio apply, refresh drags) honor a dragged Start Dough
+    // exactly like the drag-time call did. Explicit override wins.
+    if (manualMixOverride == null && manualMixRef.current != null) {
+      manualMixOverride = new Date(manualMixRef.current);
+    }
     // Reset drag state — any solver run means inputs changed, drag position is stale.
     // When triggered by a drag, preserve hasDragged so the label stays "Your plan".
     hasManuallyDragged.current = false;
@@ -4664,7 +4680,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (!foundValid && (manualRefreshRef.current != null || manualFeed2Ref.current != null)) {
       manualRefreshRef.current = null;
       manualFeed2Ref.current = null;
-      return findOptimalPositionSourdough(et, manualMixOverride, blocksOverride);
+      manualMixRef.current = null;
+      return findOptimalPositionSourdough(et, undefined, blocksOverride);
     }
     // If no candidate cleared all blockers, the highest-scoring fallback still
     // violates blocker rules. Surface this honestly via windowTooShort so the
@@ -5257,7 +5274,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       setHasDragged(false);
       hasManuallyDragged.current = false;
       manualRefreshRef.current = null;
-    manualFeed2Ref.current = null;
+      manualFeed2Ref.current = null;
+      manualMixRef.current = null;
       // Pass newBlocks directly — blocks prop hasn't updated yet (parent re-renders async).
       // No manualMixOverride — let solver freely find best position avoiding blockers.
       findOptimalPositionSourdough(pendingEatTime, undefined, newBlocks);
@@ -6396,6 +6414,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 );
                 onChange(newStart, pendingEatTime, blocks);
                 if (isSourdough) {
+                  // Pin the dragged mix so effect-triggered re-solves (ratio
+                  // apply, refresh drags) keep honoring it — pendingStart
+                  // alone was recomputed away on the next solve.
+                  manualMixRef.current = newStart.getTime();
                   findOptimalPositionSourdough(pendingEatTime, newStart);
                 }
               }}
@@ -6508,6 +6530,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 );
                 onChange(newStart, pendingEatTime, blocks);
                 if (isSourdough) {
+                  // Pin the dragged mix so effect-triggered re-solves (ratio
+                  // apply, refresh drags) keep honoring it — pendingStart
+                  // alone was recomputed away on the next solve.
+                  manualMixRef.current = newStart.getTime();
                   findOptimalPositionSourdough(pendingEatTime, newStart);
                 }
               }}
@@ -6594,6 +6620,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 // the overridden plan instead of the original recommendation.
                 manualRefreshRef.current = null;
                 manualFeed2Ref.current = null;
+                manualMixRef.current = null;
                 setNextFeedRatioOverride(null);
                 onNextFeedRatioOverrideChange?.(null);
                 // ...including the ratio oscillation history: the drag-solve
