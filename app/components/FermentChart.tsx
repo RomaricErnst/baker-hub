@@ -1180,9 +1180,6 @@ export default function FermentChart({
                     width={Math.max(0, fridgeOutX - fridgeInX)}
                     height={12}
                     fill="rgba(150,180,210,0.20)"
-                    stroke="rgba(150,180,210,0.5)"
-                    strokeWidth={0.5}
-                    strokeDasharray="4 2"
                   />
                   {/* Label the region — unlabeled it reads as a rendering
                       glitch hugging the axis */}

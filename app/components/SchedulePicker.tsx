@@ -48,6 +48,7 @@ interface SourdoughSolverResult {
   sourdoughSweetTo:     number | null;
   starterIsDepletedAt:  Date | null;
   windowTooShort:       boolean;
+  planConstrained:      boolean;
   suggestedBakeTime:    Date | null;
   feed2Time:            Date | null;
   feedTime:             Date | null;
@@ -1858,6 +1859,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     hasManuallyDragged.current = false;
     manualRefreshRef.current = null;
     manualFeed2Ref.current = null;
+    ratioApplyHistoryRef.current.length = 0;
     if (isSourdough) {
       const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
       const sweetCenter = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0)
@@ -1901,6 +1903,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     hasManuallyDragged.current = false;
     manualRefreshRef.current = null;
     manualFeed2Ref.current = null;
+    // A real input change also restarts the ratio-oscillation history: the
+    // guard otherwise vetoes recommendations based on ratios cycled under
+    // OLD settings (live: toggle churn left the plan stuck at 1:1:1 with a
+    // narrow bell and no refresh recommendation).
+    ratioApplyHistoryRef.current.length = 0;
     // findOptimalPositionSourdough now calls deriveStarterPeakTime internally
     // and commits a single atomic setSolverResult at every exit point.
     // Pass the parent's blocks prop as blocksOverride so the solver NEVER
@@ -1914,8 +1921,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastFedTime, knownPeakTime, starterLocation, planningMode,
-      starterMature, starterHasRye, lastFeedRatio, nextFeedRatio, tang, eatTimeSet, pendingEatTime,
+      starterMature, starterHasRye, lastFeedRatio, tang, eatTimeSet, pendingEatTime,
       styleKey, kitchenTemp]);
+
+  // Solver-applied ratio change → re-solve WITHOUT clearing baker state.
+  // nextFeedRatio is written by the ratio-apply effect (solver output), so
+  // treating it as a baker input wiped pins + hasDragged right after any
+  // drag or toggle whose re-solve recommended a new ratio — the ↺ Reset
+  // link vanished and dragged diamonds silently snapped back. Baker-driven
+  // ratio inputs (lastFeedRatio, ratioMode, override) still flow through
+  // the destructive effect above; this one only rebuilds the plan.
+  useEffect(() => {
+    if (!isSourdough || !eatTimeSet) return;
+    const mixOverride = hasManuallyDragged.current ? pendingStart : undefined;
+    findOptimalPositionSourdough(pendingEatTime, mixOverride, blocks);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nextFeedRatio]);
 
 
   const suggestion = useMemo(
@@ -2458,6 +2479,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     let _sourdoughSweetFrom: number | null = null;
     let _sourdoughSweetTo: number | null = null;
     let _windowTooShort = false;
+    let _planConstrained = false;
     let _suggestedBakeTime: Date | null = null;
     let _farHorizonPlan = false;
     let _newPendingStart: Date = pendingStart;
@@ -2648,6 +2670,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           return isFr
             ? 'Pas assez de temps avant la cuisson. Essayez une cuisson plus tardive.'
             : 'Not enough time before bake. Try a later bake time.';
+        }
+        if (_planConstrained) {
+          return isFr
+            ? 'Créneau serré autour de vos disponibilités — le plan s’écarte un peu des fenêtres idéales.'
+            : 'A tight fit around your hours — the plan bends the ideal windows a little.';
         }
         if (_farHorizonPlan) {
           return isFr
@@ -3236,6 +3263,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         (window as unknown as { __bhTrace: unknown[] }).__bhTrace.push({
           family,
           windowTooShort: _windowTooShort,
+          planConstrained: _planConstrained,
           farHorizon: _farHorizonPlan,
           starterLocation, planningMode, lastFedAge, tang,
           lastFeedRatio, kitchenTemp,
@@ -3291,6 +3319,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         sourdoughSweetTo:       _sourdoughSweetTo,
         starterIsDepletedAt:    _starterIsDepletedAt,
         windowTooShort:         _windowTooShort,
+        planConstrained:        _planConstrained,
         suggestedBakeTime:      _suggestedBakeTime,
         feed2Time:              _feed2Time,
         feedTime:               _feedTime,
@@ -4634,7 +4663,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // one — drop the pin and re-solve once, honestly.
     if (!foundValid && (manualRefreshRef.current != null || manualFeed2Ref.current != null)) {
       manualRefreshRef.current = null;
-    manualFeed2Ref.current = null;
       manualFeed2Ref.current = null;
       return findOptimalPositionSourdough(et, manualMixOverride, blocksOverride);
     }
@@ -4643,7 +4671,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // baker can adjust bake time or blockers instead of seeing a misleading
     // green-pill plan with diamonds in red zones.
     if (!foundValid || best.score < 250) {
-      _windowTooShort = true;
+      // A full plan IS committed below — it just bends the ideal windows.
+      // windowTooShort stays reserved for true dead-ends; flagging it here
+      // rendered a complete Path-B plan alongside "Not enough time — try a
+      // later bake time" with 2 days of lead (live repro 23 Jul).
+      _planConstrained = true;
     }
 
     // If baker manually dragged, always use their chosen mix time.
@@ -6551,8 +6583,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {eatTimeSet && (
         <div style={{ marginTop: '6px', marginBottom: '.75rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
-          {/* Reset link — only when dragged and not a past session */}
-          {hasDragged && !startTimeInPast && (
+          {/* Reset pill — whenever the plan deviates from the solver's
+              recommendation (drag, pin, or ratio override); both engines */}
+          {(hasDragged || nextFeedRatioOverride !== null) && !startTimeInPast && (
             <button
               onClick={() => {
                 hasManuallyDragged.current = false;
@@ -6561,6 +6594,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 // the overridden plan instead of the original recommendation.
                 manualRefreshRef.current = null;
                 manualFeed2Ref.current = null;
+                setNextFeedRatioOverride(null);
+                onNextFeedRatioOverrideChange?.(null);
                 // ...including the ratio oscillation history: the drag-solve
                 // pushed the original ratio into it, so the reset-solve's
                 // recommendation (that same ratio) was vetoed by the guard and
@@ -6574,14 +6609,20 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 }
               }}
               style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--smoke)', fontSize: '.72rem',
-                fontFamily: 'var(--font-dm-mono)',
-                textDecoration: 'underline', textUnderlineOffset: '2px',
-                padding: 0, textAlign: 'left',
+                alignSelf: 'flex-start',
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '.4rem .8rem',
+                border: '1.5px solid var(--border)',
+                borderRadius: '20px',
+                background: 'var(--cream)',
+                color: 'var(--ash)',
+                fontSize: '.78rem',
+                fontFamily: 'var(--font-dm-sans)',
+                cursor: 'pointer',
               }}
             >
-              {locale === 'fr' ? '↺ Revenir à la recommandation' : '↺ Reset to recommendation'}
+              <span style={{ color: 'var(--terra)' }}>↺</span>
+              {locale === 'fr' ? 'Revenir à la recommandation' : 'Reset to recommendation'}
             </button>
           )}
 
@@ -6817,6 +6858,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const doughZoneTo   = isSourdough && solverResult?.sourdoughSweetTo !== null && solverResult?.sourdoughSweetTo !== undefined
           ? solverResult.sourdoughSweetTo : renderSweetTo;
         const _windowTooShortRender = solverResult?.windowTooShort ?? false;
+        const _planConstrainedRender = solverResult?.planConstrained ?? false;
         const mixInZone    = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
         const sourdoughDoughGreen  = isSourdough && !_windowTooShortRender
           && mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
@@ -6872,6 +6914,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               const _fridgeSuggestion  = solverResult?.fridgeSuggestion ?? null;
               const _adjPeakHState     = solverResult?.adjPeakHValue ?? null;
               const _windowTooShortCard = solverResult?.windowTooShort ?? false;
+              const _planConstrainedCard = solverResult?.planConstrained ?? false;
               const _suggestedBakeTimeCard = solverResult?.suggestedBakeTime ?? null;
               const _activeFridgeOutTime = solverResult?.fridgeOutTime ?? fridgeOutTime;
               const _isFridgeHoldPath        = solverResult?.isFridgeHoldPath ?? false;
@@ -7336,11 +7379,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         })()
                       : null;
                     const rtTOLDrag = _adjPeakHState ? Math.max(1.0, Math.min(3.0, _adjPeakHState * 0.15)) : 2.0;
-                    const pillGreen = !_windowTooShortCard
+                    const pillGreen = !_windowTooShortCard && !_planConstrainedCard
                       && (dragGapH !== null ? dragGapH <= rtTOLDrag : _starterPillState === 'green');
                     const pillText = pillGreen
                       ? (isFr ? 'Prêt au mélange' : 'Ready at mix')
-                      : _windowTooShortCard
+                      : (_windowTooShortCard || _planConstrainedCard)
                         ? (isFr ? 'Fenêtre courte — voir le plan' : 'Window tight — see plan')
                         : _hasFutureFeedPath && _feed2Time
                           ? (isFr
@@ -7614,7 +7657,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               )}
               {(() => {
                 const pillGreen  = isSourdough ? sourdoughDoughGreen  : mixInZone;
-                const pillYellow = isSourdough ? sourdoughDoughYellow : (mixEarlyOk || mixLateOk);
+                const pillYellow = isSourdough
+                  ? (sourdoughDoughYellow || (_planConstrainedRender && !sourdoughDoughGreen))
+                  : (mixEarlyOk || mixLateOk);
                 // Dough peak position relative to bake. HBF = hours before bake:
                 //   _doughPeakHBF > 0 → mix earlier than optimal → dough peaks BEFORE bake → slightly over-fermented at bake
                 //   _doughPeakHBF < 0 → mix later than optimal → dough peaks AFTER bake → still rising at bake
@@ -7638,6 +7683,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         // must say that — not "under-fermentation risk", which
                         // read as alarming (and wrong) for a mix sitting at
                         // the LONG edge of the zone.
+                        : _planConstrainedRender
+                        ? (isFr ? 'Créneau serré — voir le plan'
+                                : 'Tight fit — see plan')
                         : _windowTooShortRender
                         ? (isFr ? 'Créneau trop court — voir la suggestion'
                                 : 'Window too tight — see the suggestion')
