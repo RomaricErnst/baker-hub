@@ -15,6 +15,7 @@ export interface FermentChartProps {
   blocks: AvailabilityBlock[];
   onMixChange: (h: number) => void;
   onPrefChange: (h: number) => void;
+  onRefreshChange?: (absHBF: number) => void; // commit a dragged refresh feed (absolute HBF)
   onDragStart?: () => void;
   onDragEnd?: () => void;
   windowH?: number;         // total window to display (default 96h)
@@ -420,7 +421,7 @@ function fmtDT(d: Date, isFr = false): string {
 export default function FermentChart({
   eatTime, prefermentType, kitchenTemp, fridgeTemp = 6, styleKey = 'neapolitan',
   mixOffsetH, prefOffsetH,
-  blocks, onMixChange, onPrefChange, onDragStart, onDragEnd,
+  blocks, onMixChange, onPrefChange, onRefreshChange, onDragStart, onDragEnd,
   windowH, prefInFridge, hasColdRetard, sweetCenterH, sweetFromH, sweetToH,
   nowHBF = 999, phases, scheduleNote,
   recommendedMixHBF, showZoneLabels, hasDragged,
@@ -450,9 +451,13 @@ export default function FermentChart({
   const t = useTranslations('fermentChart');
   const locale = useLocale();
   const isFr = locale === 'fr';
-  const [dragging, setDragging] = useState<'mix' | 'pref' | null>(null);
+  const [dragging, setDragging] = useState<'mix' | 'pref' | 'refresh' | null>(null);
   // Local drag HBF for free visual movement during mix drag — no onMixChange until pointer up
   const [localMixHBF, setLocalMixHBF] = useState<number | null>(null);
+  // Refresh diamond mirrors the mix pattern: free local movement while
+  // dragging, one solver commit on release (the solver sweep is too heavy
+  // to run per pointermove).
+  const [localRefreshHBF, setLocalRefreshHBF] = useState<number | null>(null);
   // Glow guidance state
   const hasMovedMixRef  = useRef(false);
   const hasMovedPrefRef = useRef(false);
@@ -792,8 +797,9 @@ export default function FermentChart({
     return e.clientX - rect.left;
   }
 
-  function onPointerDown(e: React.PointerEvent, which: 'mix' | 'pref') {
+  function onPointerDown(e: React.PointerEvent, which: 'mix' | 'pref' | 'refresh') {
     if (startTimeInPast) return;
+    if (which === 'refresh' && !onRefreshChange) return;
     // Allow dragging a feed pinned at/near "now" forward — only refuse
     // genuinely historical positions (>1h before now). A Peak-2B feed is
     // stamped at solve time; seconds later it sat "in the past" and every
@@ -813,6 +819,9 @@ export default function FermentChart({
     if (dragging === 'mix') {
       const h = Math.max(1, Math.min(nowHBF - 0.25, snap15(xToHBF(x, W, WH))));
       setLocalMixHBF(h);
+    } else if (dragging === 'refresh') {
+      const h = Math.max(0.25, Math.min(nowHBF, snap15(xToHBF(x, W, WH))));
+      setLocalRefreshHBF(h);
     } else {
       const abs = Math.min(WH - 0.05, snap15(xToHBF(x, W, WH)));
       onPrefChange(abs - effectiveMixHBF);
@@ -836,6 +845,9 @@ export default function FermentChart({
         if (prev === 'pref' || prev === 'mix') return 'done';
         return prev;
       });
+    } else if (dragging === 'refresh') {
+      if (localRefreshHBF !== null) onRefreshChange?.(localRefreshHBF);
+      setLocalRefreshHBF(null);
     }
     setDragging(null);
   }
@@ -1785,7 +1797,11 @@ export default function FermentChart({
             placed.push({ x, row, w });
             return row;
           };
-          return visible.map(({ ev, idx, x }) => {
+          return visible.map(({ ev, idx, x: xRaw }) => {
+            // Live drag: the refresh diamond follows the pointer; the bells
+            // and card re-render after the solver commit on release.
+            const x = (ev.kind === 'refresh' && dragging === 'refresh' && localRefreshHBF !== null)
+              ? hToX(localRefreshHBF, W, WH) : xRaw;
             const isHistorical = ev.kind === 'last_fed' && ev.isPast;
             const isIntermediate = ev.kind === 'intermediate_refresh';
             const diamondFill = isHistorical ? 'rgba(74,127,165,0.20)' :
@@ -1815,7 +1831,7 @@ export default function FermentChart({
                   stroke={diamondStroke}
                   strokeWidth={1.5}
                   style={{ cursor: ev.isDraggable ? 'pointer' : 'default' }}
-                  onPointerDown={ev.isDraggable ? (e) => onPointerDown(e, 'pref') : undefined}
+                  onPointerDown={ev.isDraggable ? (e) => onPointerDown(e, ev.kind === 'refresh' ? 'refresh' : 'pref') : undefined}
                 />
                 <text
                   x={x}

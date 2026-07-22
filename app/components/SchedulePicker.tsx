@@ -1409,6 +1409,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // Convergence: once applied, solver re-runs and finds same recommendation
   // (stable plan). No further changes.
   const ratioApplyHistoryRef = useRef<number[]>([]);
+  // Baker-pinned refresh time (dragged refresh diamond), ms epoch. A ref, not
+  // state: the solver must read the just-committed value synchronously.
+  // Cleared on any input change / blocker change / bake-time change.
+  const manualRefreshRef = useRef<number | null>(null);
   // Blocks the solver actually validated against (effectiveBlocks at the
   // last solve). The blocked-hours disclosure must read THIS, not the parent
   // blocks prop — the prop can lag pill toggles (observed live: a feed at
@@ -1830,6 +1834,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setGuardNote(null);
     setHasDragged(false);
     hasManuallyDragged.current = false;
+    manualRefreshRef.current = null;
     if (isSourdough) {
       const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
       const sweetCenter = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0)
@@ -1871,6 +1876,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Reset drag state so solver picks ideal mix time, not a stale dragged position
     setHasDragged(false);
     hasManuallyDragged.current = false;
+    manualRefreshRef.current = null;
     // findOptimalPositionSourdough now calls deriveStarterPeakTime internally
     // and commits a single atomic setSolverResult at every exit point.
     // Pass the parent's blocks prop as blocksOverride so the solver NEVER
@@ -2076,6 +2082,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setEatTimeSet(true);
     hasManuallyDragged.current = false;
     setHasDragged(false);
+    manualRefreshRef.current = null;
     setDismissedConflict(false);
     setShowFallbackPopup(false);
     setPhase('start_confirm');
@@ -2444,7 +2451,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Get derived starter state (no setState calls inside)
     const derived = deriveStarterPeakTime(et, targetMixTime);
     const _feedTime = derived.feedTime;
-    const _starterRefeedTime = derived.starterRefeedTime;
+    let _starterRefeedTime = derived.starterRefeedTime;
+    // Baker-pinned refresh (dragged diamond): honored across all families —
+    // Peak 2B, refresh+pre-mix, chains and the ratio evaluator all read this.
+    if (manualRefreshRef.current != null && _starterRefeedTime) {
+      _starterRefeedTime = new Date(manualRefreshRef.current);
+    }
     const _starterIsDepletedAt = derived.starterIsDepletedAt;
     const _starterStateNote = derived.starterStateNote;
     const _suggestedFridgeOut = derived.suggestedFridgeOut;
@@ -2984,7 +2996,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             time: _starterRefeedTime,
             isPast: _starterRefeedTime.getTime() < nowMs - 60 * 60 * 1000,
             isActive: isPrimary,
-            isDraggable: false,
+            // The active primary refresh is draggable (pin + re-solve).
+            // Bridge-chain refreshes stay fixed — one link of a chain can't
+            // move alone.
+            isDraggable: isPrimary && !_bridgeRefreshMs,
             label: isFr ? 'Rafraîchi' : 'Refresh Feed',
             // "Now · ..." only when it truly is now — a clamped/delayed
             // refresh (fridge warmup) shows its absolute time.
@@ -3908,7 +3923,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // construction) to find the refresh time whose peak lands at the mix.
       // Only pushed when that instant is genuinely in the future and
       // unblocked — otherwise Option B (refresh now) remains the fallback.
-      if (_starterRefeedTime) {
+      // Skipped entirely when the baker pinned the refresh by dragging —
+      // the pin IS the refresh time; Option B/Peak-2B honor it.
+      if (_starterRefeedTime && manualRefreshRef.current == null) {
         const GRID_MS = 15 * 60000;
         for (let mixHBF = scanFrom; mixHBF >= scanTo; mixHBF -= STEP) {
           const mixMs = bakeMs - mixHBF * 3600000;
@@ -4919,7 +4936,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           // Option C mirror: delayed single refresh timed backward from the
           // mix (see Stage-1 family) — evaluated per-ratio so allClear /
           // bestScore reflect the same plan space Stage 1 will solve.
-          if (_starterRefeedTime) {
+          // Skipped when the baker pinned the refresh (mirror of Stage 1).
+          if (_starterRefeedTime && manualRefreshRef.current == null) {
             const GRID_MS_r = 15 * 60000;
             for (let mixHBF = scanFrom_r; mixHBF >= scanTo_r; mixHBF -= STEP_r) {
               const mixMs = bakeMs - mixHBF * 3600000;
@@ -5150,6 +5168,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (isSourdough && eatTimeSet) {
       setHasDragged(false);
       hasManuallyDragged.current = false;
+      manualRefreshRef.current = null;
       // Pass newBlocks directly — blocks prop hasn't updated yet (parent re-renders async).
       // No manualMixOverride — let solver freely find best position avoiding blockers.
       findOptimalPositionSourdough(pendingEatTime, undefined, newBlocks);
@@ -6430,6 +6449,21 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   setPrefOffsetH(offsetH);
                   onPrefOffsetChange?.(offsetH);
                 }
+              }}
+              onRefreshChange={(absHBF) => {
+                hasManuallyDragged.current = true;
+                setHasDragged(true);
+                const _step = 15 * 60000;
+                let _t = Math.round((pendingEatTime.getTime() - absHBF * 3600000) / _step) * _step;
+                // Floors: the future (+ fridge warmup — a cold starter can't
+                // take a warm feed earlier). Ceiling: 30 min before mix.
+                const _minT = Math.ceil(Date.now() / _step) * _step
+                  + (starterLocation === 'fridge' ? getStarterFridgeWarmupH(kitchenTemp) * 3600000 : 0);
+                const _maxT = pendingStart.getTime() - 30 * 60000;
+                if (_t < _minT) _t = _minT;
+                if (_t > _maxT) _t = _maxT;
+                manualRefreshRef.current = _t;
+                findOptimalPositionSourdough(pendingEatTime, undefined, blocks);
               }}
             />
           )
