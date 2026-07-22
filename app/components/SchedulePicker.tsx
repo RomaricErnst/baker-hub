@@ -2166,7 +2166,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         if (needsRevival) {
           // Signal solver: this starter needs revival cycles. starterRefeedTime=now
           // makes Path B candidate (and intermediate refresh loop) eligible.
-          const refeedNow = new Date();
+          // A fridge-located starter physically can't take a warm feed before
+          // it warms up — the planned revival feed starts at now + warmup, so
+          // "remove from fridge" lands at NOW instead of warmup-minutes in the
+          // past (live bug: feed "Now · 8:45am" with removal 7:30am at 8:32).
+          const refeedNow = new Date(Date.now() + warmupH * 3600000);
           // A refresh from a long-dormant starter peaks LATER than a healthy
           // one — the same refresh stretch the chart bell applies. Scoring
           // must use it too, or it thinks the starter peaks ~adjPeakH after
@@ -2896,7 +2900,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               isActive: _refreshUpcoming,
               isDraggable: false,
               label: isFr ? 'Rafraîchi' : 'Refresh Feed',
-              cardTimeFormat: 'relative',
+              cardTimeFormat: Math.abs(_fridgeHoldRefreshTime.getTime() - nowMs) < 30 * 60000 ? 'relative' : 'absolute',
               cardNote: _meaningfulHold
                 ? (isFr
                     ? `Pic vers ${fmtCardHM(refreshPeakAt, isFr)} — puis au frigo`
@@ -2982,7 +2986,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             isActive: isPrimary,
             isDraggable: false,
             label: isFr ? 'Rafraîchi' : 'Refresh Feed',
-            cardTimeFormat: 'relative',
+            // "Now · ..." only when it truly is now — a clamped/delayed
+            // refresh (fridge warmup) shows its absolute time.
+            cardTimeFormat: Math.abs(_starterRefeedTime.getTime() - nowMs) < 30 * 60000 ? 'relative' : 'absolute',
             cardNote: isFr ? `Pic vers ${fmtCardHM(refreshPeakAt, isFr)}` : `Peak around ${fmtCardHM(refreshPeakAt, isFr)}`,
             bellStyle: isPrimary ? 'solid' : 'dotted',
             bellPeakTime: refreshPeakAt,
@@ -3053,7 +3059,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             && _fridgeHoldRefreshTime == null
             && starterLocation === 'fridge'
             && _renderFridgeOutMs != null) {
-          const fridgeOutDate = new Date(_renderFridgeOutMs);
+          // Display floor: an already-elapsed removal reads as "now" (the
+          // biology math below still uses the raw computed value).
+          const _foDisplayMs = Math.max(_renderFridgeOutMs, nowMs);
+          const fridgeOutDate = new Date(_foDisplayMs);
           if (_renderFridgeInMs != null && _renderFridgeInMs < _renderFridgeOutMs) {
             // "At peak" is only true when the starter was chilled at its peak.
             // Fed-straight-into-fridge (fridge_in ≈ last feed) needs honest copy.
@@ -3067,6 +3076,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               isDraggable: false,
               label: isFr ? 'Au frigo' : 'Into Fridge',
               cardTimeFormat: 'absolute',
+              // Age-chip times are estimates — never fabricate minute
+              // precision for "2–3 days ago".
+              timeIsEstimate: !!_straightIn && (lastFedAge === 'days23' || lastFedAge === 'days45' || lastFedAge === 'week'),
               cardNote: _straightIn
                 ? (isFr ? 'Directement au frigo — montée lente au froid' : 'Straight to the fridge — slow cold rise')
                 : (isFr ? 'Au pic — ralentit la fermentation' : 'At peak — slows fermentation'),
@@ -3086,7 +3098,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           events.push({
             kind: 'fridge_out',
             time: fridgeOutDate,
-            isPast: _renderFridgeOutMs < nowMs,
+            isPast: _foDisplayMs < nowMs,
             isActive: false,
             isDraggable: false,
             label: isFr ? 'Sortie du frigo' : 'Remove from Fridge',
@@ -3334,7 +3346,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Minimum revival overhead: 1 cycle ~ adjPeakH; deep revival ~ 2 cycles.
     const _revivalOverheadH = (() => {
       // ~1.25 peak-cycles overhead per revival cycle (feed + rise time).
-      const cycles = revivalCycles(lastFedAge, starterMature, tang);
+      // Feasibility must use the BALANCED cycle count: taste is a scheduling
+      // preference, never a gate. Milder's +1 revival cycle inflated this hard
+      // floor by ~adjPeakH*1.25 (+10h at 22°C) and flipped a comfortably
+      // feasible 24h bake into "window too tight" (live repro 22 Jul). Mild
+      // still gets its extra refresh via MIN_INTERMEDIATES when the window
+      // actually fits it.
+      const cycles = revivalCycles(lastFedAge, starterMature, 'balanced');
       return adjPeakH * 1.25 * cycles;
     })();
     // Starter-peak lead: if the last feed is already PAST its peak, the starter
@@ -3748,6 +3766,38 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       return out;
     }
 
+    // Planned FUTURE feeds for a candidate (history excluded, 1h grace like
+    // isBlockedActionMs). Used for the universal feed-count cost: at equal
+    // quality, fewer feeds win — for every family, not just Path B. 10 pts
+    // per extra feed can never jump a 100-pt quality tier, so multi-feed
+    // plans still win whenever a single feed genuinely can't reach green.
+    function plannedFutureFeedCount(
+      c: Omit<Candidate, 'actionTimesMs'>,
+      adjPeakH_for: number,
+      ratioMult_for: number,
+    ): number {
+      const nowRef = Date.now() - 60 * 60000;
+      const feeds = new Set<number>();
+      const fh = fridgeHoldActionTimes(c);
+      if (fh) {
+        if (fh.refreshMs > nowRef) feeds.add(fh.refreshMs);
+        if (fh.preMixMs > nowRef) feeds.add(fh.preMixMs);
+        return feeds.size;
+      }
+      if (c.feedMs != null && c.feedMs > nowRef) feeds.add(c.feedMs);
+      if (c.feed2Ms != null && c.feed2Ms > nowRef) feeds.add(c.feed2Ms);
+      if (c.bridgeRefreshMs) for (const b of c.bridgeRefreshMs) { if (b > nowRef) feeds.add(b); }
+      if (!c.isFridgeHoldPath && _starterRefeedTime && !c.usingPeak2
+          && _starterRefeedTime.getTime() > nowRef) feeds.add(_starterRefeedTime.getTime());
+      if (!c.isFridgeHoldPath && !c.bridgeRefreshMs) {
+        for (const t of computeIntermediatesForCandidate(c as Candidate, adjPeakH_for, ratioMult_for)) {
+          if (t > nowRef) feeds.add(t);
+        }
+      }
+      return feeds.size;
+    }
+    const FEED_COUNT_COST = 10;
+
     const candidates: Candidate[] = [];
     // pushCand wraps candidate creation so actionTimesMs is ALWAYS populated.
     // Bypassing this would reintroduce the validator-vs-render divergence.
@@ -3765,8 +3815,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         renderFridgeInMs:  fridgeTimes?.fridgeInMs,
         renderFridgeOutMs: fridgeTimes?.fridgeOutMs,
       };
+      const _extraFeeds = Math.max(0, plannedFutureFeedCount(enriched, adjPeakH, ratioMultiplier) - 1);
       candidates.push({
         ...enriched,
+        score: enriched.score - _extraFeeds * FEED_COUNT_COST,
         actionTimesMs: computeActionTimes(enriched, adjPeakH, ratioMultiplier),
       });
     }
@@ -3871,7 +3923,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           tR = Math.round(tR / GRID_MS) * GRID_MS;
           // Strictly-future refresh only (refresh-at-now is Option B's job),
           // and it must clear blockers like any other future action.
-          if (tR <= nowMs + 15 * 60000) continue;
+          const _minTrMs = starterLocation === 'fridge'
+            ? nowMs + getStarterFridgeWarmupH(kitchenTemp) * 3600000
+            : nowMs + 15 * 60000;
+          if (tR <= _minTrMs) continue;
           if (inBlockerMs(tR)) continue;
           const peakCMs  = computeStarterPeakMs(tR, _refPeakForPreMix, adjPeakH);
           const peakCHBF = (bakeMs - peakCMs) / 3600000;
@@ -4326,7 +4381,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           // temperature; hot kitchens still get the extra hotBias on top.
           const bakeHorizonH_pathB = (bakeMs - nowMs_pathB) / 3600000;
           const multiDayBias = !_pathBFridgeStarter && bakeHorizonH_pathB >= 30 ? 12 : 0;
-          const extraFeedCost = _pathBFridgeStarter ? 10 : 0;
+          // Superseded by the universal feed-count cost in pushCand — Path B's
+          // two feeds are charged there like every other family (no double
+          // charge here).
+          const extraFeedCost = 0;
           const pathBBonus = 8 + rtRefreshesAvoided * 3 + hotBias + multiDayBias - extraFeedCost;
 
           // Coherence guard at the source: chronological ordering must hold —
@@ -4713,7 +4771,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       } => {
         const ratioMult_r = 1 + 0.5 * Math.log(r);
         const adjPeakH_r  = peakH * ryeF * matF * ratioMult_r;
-        const _revivalOverheadH_r = adjPeakH_r * 1.25 * revivalCycles(lastFedAge, starterMature, tang);
+        // Balanced cycle count — mirrors Stage 1's feasibility floor (taste
+        // is never a gate; see _revivalOverheadH).
+        const _revivalOverheadH_r = adjPeakH_r * 1.25 * revivalCycles(lastFedAge, starterMature, 'balanced');
         const effectiveMinFermH_r = minFermH + _revivalOverheadH_r;
         if ((bakeMs - Date.now()) / 3600000 < effectiveMinFermH_r) {
           return { allClear: false, bestScore: 0, windowTooShort: true, green: false };
@@ -4793,8 +4853,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             renderFridgeInMs:  fridgeTimes?.fridgeInMs,
             renderFridgeOutMs: fridgeTimes?.fridgeOutMs,
           };
+          const _extraFeeds_r = Math.max(0, plannedFutureFeedCount(enriched, adjPeakH_r, ratioMult_r) - 1);
           candidates_r.push({
             ...enriched,
+            score: enriched.score - _extraFeeds_r * FEED_COUNT_COST,
             actionTimesMs: computeActionTimes(enriched, adjPeakH_r, ratioMult_r),
           });
         }
@@ -6926,7 +6988,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                             // "≈" — times derived from an age chip ("2–3 days
                             // ago") are estimates, not something we know to
                             // the minute
-                            : `${ev.timeIsEstimate ? '≈ ' : ''}${fmtCardDT(ev.time, isFr)}`;
+                            : ev.timeIsEstimate && ev.isPast
+                              // Estimated history: day only — the minute is fiction.
+                              ? `≈ ${ev.time.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' })} ${ev.time.getDate()} ${ev.time.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { month: 'short' })}`
+                              : `${ev.timeIsEstimate ? '≈ ' : ''}${fmtCardDT(ev.time, isFr)}`;
                           const labelUpper = ev.label.toUpperCase();
                           return (
                             <div key={`ev-card-${i}`}>
