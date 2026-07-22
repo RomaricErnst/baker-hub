@@ -598,7 +598,9 @@ export default function Home() {
     }
     const stylePool = bakeType === 'bread' ? BREAD_STYLES : PIZZA_STYLES;
     const prefStyle = (bakeType === 'bread' ? prof.styleKeyBread : prof.styleKeyPizza) ?? prof.styleKey;
-    if (!styleKey && prefStyle && prefStyle in stylePool) {
+    const sdAllowed = tab === 'custom';
+    if (!styleKey && prefStyle && prefStyle in stylePool
+        && (sdAllowed || !['pain_levain', 'sourdough'].includes(prefStyle))) {
       setStyleKey(prefStyle as StyleKey); applied = true;
     }
     if (!mixerType && prof.mixerType && prof.mixerType in MIXER_TYPES) {
@@ -608,9 +610,10 @@ export default function Home() {
     // the tap-time prefill in selectBakeType).
     const effStyle = styleKey ?? ((prefStyle && prefStyle in stylePool) ? prefStyle : null);
     const lateWantsSourdough = ['pain_levain', 'sourdough'].includes(effStyle as string);
-    if (!yeastType && lateWantsSourdough) {
+    if (!yeastType && lateWantsSourdough && sdAllowed) {
       setYeastType('sourdough'); applied = true;
-    } else if (!yeastType && prof.yeastType && prof.yeastType in YEAST_TYPES) {
+    } else if (!yeastType && prof.yeastType && prof.yeastType in YEAST_TYPES
+        && (sdAllowed || prof.yeastType !== 'sourdough')) {
       setYeastType(prof.yeastType as YeastType); applied = true;
     }
     if (applied) setProfilePrefilled(true);
@@ -2033,10 +2036,19 @@ export default function Home() {
                           setManualHydration(s.hydration); setManualOil(s.oil); setManualSugar(s.sugar);
                         }
                       }
+                      // Simple has no sourdough path — a profile-seeded levain
+                      // (yeast pref, pain au levain or sourdough pizza style)
+                      // re-asks its step instead of carrying a choice the mode
+                      // can't plan. The picker's greyed option explains why.
+                      let _clearedStyle = false, _clearedYeast = false;
+                      if (m.key === 'simple') {
+                        if (styleKey === 'pain_levain' || styleKey === 'sourdough') { setStyleKey(null); _clearedStyle = true; }
+                        if (yeastType === 'sourdough') { setYeastType(null); _clearedYeast = true; }
+                      }
                       setTab(m.key); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
                       // Land on the first step that actually needs input —
                       // completed choices carry over, no re-clicking required.
-                      const _target = firstIncompleteStep(m.key === 'custom');
+                      const _target = _clearedStyle ? 1 : _clearedYeast ? 6 : firstIncompleteStep(m.key === 'custom');
                       if (m.key === 'custom') {
                         setAdvancedStep(_target);
                         setAdvancedHighestStep(prev => Math.max(prev, _target));
@@ -2221,10 +2233,14 @@ export default function Home() {
                   bakeType={bakeType}
                   selected={styleKey}
                   onSelect={selectStyle}
-                  disabledIds={bakeType === 'bread' ? ['pain_levain'] : []}
-                  disabledNote={locale === 'fr'
-                    ? 'Le Pain au Levain nécessite le mode Avancé — essayez le Pain de Campagne pour un style similaire'
-                    : 'Pain au Levain requires Custom mode — try Pain de Campagne for a similar style'}
+                  disabledIds={bakeType === 'bread' ? ['pain_levain'] : ['sourdough']}
+                  disabledNote={bakeType === 'bread'
+                    ? (locale === 'fr'
+                      ? 'Le Pain au Levain nécessite le mode Avancé — essayez le Pain de Campagne pour un style similaire'
+                      : 'Pain au Levain requires Custom mode — try Pain de Campagne for a similar style')
+                    : (locale === 'fr'
+                      ? 'La Pizza au levain nécessite le mode Avancé'
+                      : 'Sourdough Pizza requires Custom mode')}
                 />
               )}
             </StepCard>
@@ -2517,9 +2533,6 @@ export default function Home() {
                 >
                   {t('generate.generateBtn')}
                 </button>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--smoke)', textAlign: 'center', marginTop: '8px', letterSpacing: '.03em' }}>
-                  {t('generate.nextHint')}
-                </div>
               </div>
             )}
 
