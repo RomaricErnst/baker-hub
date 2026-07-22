@@ -82,6 +82,17 @@ function humidityCategory(pct: number): string {
 }
 
 // ── Temp badge colour ────────────────────────
+// Outdoor → kitchen estimate. Simple, climate-agnostic heuristic (validated
+// against: heated homes in cold climates sit ≈18-21°C regardless of outdoor;
+// mild climates track outdoor; hot climates run ~2°C cooler indoors from
+// shade/thermal mass — Singapore outdoor 31 → kitchen ≈29). Always a
+// PREFILL: the baker can override below, and AC kitchens will.
+function outdoorToKitchen(outdoorC: number): number {
+  if (outdoorC < 18) return 18;
+  if (outdoorC > 28) return Math.min(38, outdoorC - 2);
+  return outdoorC;
+}
+
 function tempColor(t: number): string {
   if (t >= 30) return 'var(--terra)';
   if (t >= 25) return 'var(--gold)';
@@ -121,6 +132,25 @@ export default function ClimatePicker({
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  async function fetchWeatherAt(latitude: number, longitude: number, name: string, country: string) {
+    const wxRes = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
+      `&current=temperature_2m,relative_humidity_2m,weather_code&timezone=auto`
+    );
+    if (!wxRes.ok) throw new Error('Weather request failed');
+    const wxData = await wxRes.json();
+
+    const temp        = Math.round(wxData.current.temperature_2m);
+    const humidityPct = Math.round(wxData.current.relative_humidity_2m);
+    const weatherCode = wxData.current.weather_code;
+
+    setWeather({ city: name, country, temp, humidityPct, weatherCode });
+
+    // Prefill the manual controls — kitchen ESTIMATED from outdoor (see
+    // outdoorToKitchen), baker can always override below.
+    onChange(outdoorToKitchen(temp), humidityCategory(humidityPct), fridgeTemp);
+  }
+
   async function fetchClimate() {
     const q = city.trim();
     if (!q) return;
@@ -143,30 +173,42 @@ export default function ClimatePicker({
       }
 
       const { latitude, longitude, name, country } = geoData.results[0];
-
-      // 2 — Current weather
-      const wxRes = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
-        `&current=temperature_2m,relative_humidity_2m,weather_code&timezone=auto`
-      );
-      if (!wxRes.ok) throw new Error('Weather request failed');
-      const wxData = await wxRes.json();
-
-      const temp        = Math.round(wxData.current.temperature_2m);
-      const humidityPct = Math.round(wxData.current.relative_humidity_2m);
-      const weatherCode = wxData.current.weather_code;
-
-      setWeather({ city: name, country, temp, humidityPct, weatherCode });
-
-      // Auto-populate the manual controls
-      const clampedTemp = Math.max(18, Math.min(38, temp));
-      onChange(clampedTemp, humidityCategory(humidityPct), fridgeTemp);
+      await fetchWeatherAt(latitude, longitude, name, country);
 
     } catch (e) {
       setFetchError(isFr ? 'Impossible de récupérer la météo.' : (e instanceof Error ? e.message : 'Failed to fetch weather data.'));
     } finally {
       setLoading(false);
     }
+  }
+
+  function fetchByLocation() {
+    if (!('geolocation' in navigator)) {
+      setFetchError(isFr ? 'Localisation indisponible — entrez votre ville.' : 'Location unavailable — type your city instead.');
+      return;
+    }
+    setLoading(true);
+    setFetchError(null);
+    setWeather(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await fetchWeatherAt(
+            pos.coords.latitude, pos.coords.longitude,
+            isFr ? 'Votre position' : 'Your location', '',
+          );
+        } catch {
+          setFetchError(isFr ? 'Impossible de récupérer la météo.' : 'Failed to fetch weather data.');
+        } finally {
+          setLoading(false);
+        }
+      },
+      () => {
+        setLoading(false);
+        setFetchError(isFr ? 'Localisation refusée — entrez votre ville.' : 'Location declined — type your city instead.');
+      },
+      { timeout: 10000, maximumAge: 600000 },
+    );
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -262,6 +304,24 @@ export default function ClimatePicker({
           >
             {loading ? (isFr ? 'Recherche…' : 'Fetching…') : (isFr ? 'Météo' : 'Get Climate')}
           </button>
+          <button
+            onClick={fetchByLocation}
+            disabled={loading}
+            title={isFr ? 'Utiliser ma position' : 'Use my location'}
+            aria-label={isFr ? 'Utiliser ma position' : 'Use my location'}
+            style={{
+              padding: '.65rem .8rem',
+              border: '1.5px solid var(--border)',
+              borderRadius: '12px',
+              background: 'var(--warm)',
+              fontSize: '.95rem',
+              cursor: loading ? 'default' : 'pointer',
+              transition: 'all .15s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            📍
+          </button>
         </div>
 
         {/* Error */}
@@ -309,7 +369,7 @@ export default function ClimatePicker({
               <span style={{ fontSize: '2.2rem', lineHeight: 1 }}>{wxEmoji}</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: '.95rem', color: 'var(--char)' }}>
-                  {weather.city}, {weather.country}
+                  {weather.country ? `${weather.city}, ${weather.country}` : weather.city}
                 </div>
                 <div style={{
                   fontSize: '.75rem', color: 'var(--smoke)',
@@ -337,6 +397,18 @@ export default function ClimatePicker({
             </div>
           );
         })()}
+        {weather && !loading && (
+          <div style={{
+            marginTop: '.45rem',
+            fontSize: '.72rem', color: 'var(--smoke)',
+            fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic',
+            lineHeight: 1.4,
+          }}>
+            {isFr
+              ? 'Cuisine estimée depuis la météo extérieure — ajustez ci-dessous si besoin (clim ou chauffage, par exemple).'
+              : 'Kitchen estimated from outdoor weather — adjust below if it feels off (AC or heating, for example).'}
+          </div>
+        )}
       </div>
 
       {/* ── Kitchen temperature ──────────────────── */}
