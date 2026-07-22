@@ -2415,7 +2415,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Reset drag state — any solver run means inputs changed, drag position is stale.
     // When triggered by a drag, preserve hasDragged so the label stays "Your plan".
     hasManuallyDragged.current = false;
-    if (!manualMixOverride) {
+    // Keep hasDragged when a baker pin is active — the pin IS a drag, and
+    // clearing the flag here hid the “↺ Reset to recommendation” button
+    // after every refresh/pre-mix diamond drag (live repro).
+    if (!manualMixOverride && manualRefreshRef.current == null && manualFeed2Ref.current == null) {
       setHasDragged(false);
     }
 
