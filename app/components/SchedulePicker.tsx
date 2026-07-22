@@ -4588,6 +4588,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         break;
       }
     }
+    // A pinned refresh that can't produce ANY executable plan must not
+    // commit a fallback: the best-invalid candidate's other events (pre-mix,
+    // fridge moves) come from a family that ignored the pin, so the card
+    // renders chronological nonsense (live: pre-mix BEFORE the dragged
+    // refresh + window-too-tight). Better a workable plan than an impossible
+    // one — drop the pin and re-solve once, honestly.
+    if (!foundValid && manualRefreshRef.current != null) {
+      manualRefreshRef.current = null;
+      return findOptimalPositionSourdough(et, manualMixOverride, blocksOverride);
+    }
     // If no candidate cleared all blockers, the highest-scoring fallback still
     // violates blocker rules. Surface this honestly via windowTooShort so the
     // baker can adjust bake time or blockers instead of seeing a misleading
@@ -6461,7 +6471,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 // take a warm feed earlier). Ceiling: 30 min before mix.
                 const _minT = Math.ceil(Date.now() / _step) * _step
                   + (starterLocation === 'fridge' ? getStarterFridgeWarmupH(kitchenTemp) * 3600000 : 0);
-                const _maxT = pendingStart.getTime() - 30 * 60000;
+                // Ceiling: the refresh peak (~adjPeakH after the feed) must
+                // still be reachable before mix — not just "30 min before".
+                const _halfPeakH = Math.max(1, (solverResult?.adjPeakHValue ?? 4) * 0.5);
+                const _maxT = pendingStart.getTime() - _halfPeakH * 3600000;
                 if (_t < _minT) _t = _minT;
                 if (_t > _maxT) _t = _maxT;
                 manualRefreshRef.current = _t;
