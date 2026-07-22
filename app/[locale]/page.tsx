@@ -516,6 +516,8 @@ export default function Home() {
 
   // Baker profile — ☰ Mon profil sheet + new-session prefill
   const [profileOpen, setProfileOpen] = useState(false);
+  // Sourdough-vs-Simple nudge — shown when a levain profile taps Simple
+  const [sdNudgeOpen, setSdNudgeOpen] = useState(false);
   const [profilePrefilled, setProfilePrefilled] = useState(false);
   // Bumped when a cloud profile pull settles — lets a late-arriving profile
   // prefill a bake type the baker already tapped (fresh-device login race).
@@ -1283,6 +1285,54 @@ export default function Home() {
     return 7;                         // scheduler
   }
 
+  // ── Mode choice — shared by the mode cards and the sourdough nudge ──
+  // A profile-seeded sourdough (yeast pref, pain au levain or sourdough
+  // pizza style) has no Simple path. First tap on Simple asks instead of
+  // deciding: continue in Custom (keeps the levain) or stay in Simple
+  // (the cleared step re-asks, its greyed option explains why).
+  function chooseMode(key: 'simple' | 'custom', force = false) {
+    const sdSeeded = yeastType === 'sourdough' || styleKey === 'pain_levain' || styleKey === 'sourdough';
+    if (key === 'simple' && sdSeeded && !force) {
+      setSdNudgeOpen(true);
+      return;
+    }
+    setSdNudgeOpen(false);
+    if (key === 'simple' && tab === 'custom') {
+      customOnlyStateRef.current = { flourBlend, hydration: manualHydration, oil: manualOil, sugar: manualSugar, prefermentType, prefermentFlourPct };
+      setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
+    }
+    if (key === 'custom' && tab !== 'custom') {
+      if (customOnlyStateRef.current) {
+        setFlourBlend(customOnlyStateRef.current.flourBlend);
+        setManualHydration(customOnlyStateRef.current.hydration);
+        setManualOil(customOnlyStateRef.current.oil);
+        setManualSugar(customOnlyStateRef.current.sugar);
+        setPrefermentType(customOnlyStateRef.current.prefermentType);
+        setPrefermentFlourPct(customOnlyStateRef.current.prefermentFlourPct);
+      } else if (styleKey) {
+        const s = ALL_STYLES[styleKey];
+        setManualHydration(s.hydration); setManualOil(s.oil); setManualSugar(s.sugar);
+      }
+    }
+    let clearedStyle = false, clearedYeast = false;
+    if (key === 'simple') {
+      if (styleKey === 'pain_levain' || styleKey === 'sourdough') { setStyleKey(null); clearedStyle = true; }
+      if (yeastType === 'sourdough') { setYeastType(null); clearedYeast = true; }
+    }
+    setTab(key); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
+    // Land on the first step that actually needs input — completed
+    // choices carry over, no re-clicking required.
+    const target = clearedStyle ? 1 : clearedYeast ? 6 : firstIncompleteStep(key === 'custom');
+    if (key === 'custom') {
+      setAdvancedStep(target);
+      setAdvancedHighestStep(prev => Math.max(prev, target));
+    } else {
+      setActiveStep(target);
+      setHighestStep(prev => Math.max(prev, target));
+    }
+    suppressNextScrollRef.current = true;
+  }
+
   function selectStyle(sk: StyleKey) {
     setStyleKey(sk);
     setManualHydration(undefined);
@@ -2018,46 +2068,7 @@ export default function Home() {
                     onKeyDown={e => {
                       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLDivElement).click(); }
                     }}
-                    onClick={() => {
-                      if (m.key === 'simple' && tab === 'custom') {
-                        customOnlyStateRef.current = { flourBlend, hydration: manualHydration, oil: manualOil, sugar: manualSugar, prefermentType, prefermentFlourPct };
-                        setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
-                      }
-                      if (m.key === 'custom' && tab !== 'custom') {
-                        if (customOnlyStateRef.current) {
-                          setFlourBlend(customOnlyStateRef.current.flourBlend);
-                          setManualHydration(customOnlyStateRef.current.hydration);
-                          setManualOil(customOnlyStateRef.current.oil);
-                          setManualSugar(customOnlyStateRef.current.sugar);
-                          setPrefermentType(customOnlyStateRef.current.prefermentType);
-                          setPrefermentFlourPct(customOnlyStateRef.current.prefermentFlourPct);
-                        } else if (styleKey) {
-                          const s = ALL_STYLES[styleKey];
-                          setManualHydration(s.hydration); setManualOil(s.oil); setManualSugar(s.sugar);
-                        }
-                      }
-                      // Simple has no sourdough path — a profile-seeded levain
-                      // (yeast pref, pain au levain or sourdough pizza style)
-                      // re-asks its step instead of carrying a choice the mode
-                      // can't plan. The picker's greyed option explains why.
-                      let _clearedStyle = false, _clearedYeast = false;
-                      if (m.key === 'simple') {
-                        if (styleKey === 'pain_levain' || styleKey === 'sourdough') { setStyleKey(null); _clearedStyle = true; }
-                        if (yeastType === 'sourdough') { setYeastType(null); _clearedYeast = true; }
-                      }
-                      setTab(m.key); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
-                      // Land on the first step that actually needs input —
-                      // completed choices carry over, no re-clicking required.
-                      const _target = _clearedStyle ? 1 : _clearedYeast ? 6 : firstIncompleteStep(m.key === 'custom');
-                      if (m.key === 'custom') {
-                        setAdvancedStep(_target);
-                        setAdvancedHighestStep(prev => Math.max(prev, _target));
-                      } else {
-                        setActiveStep(_target);
-                        setHighestStep(prev => Math.max(prev, _target));
-                      }
-                      suppressNextScrollRef.current = true;
-                    }}
+                    onClick={() => chooseMode(m.key)}
                     style={{
                       flex: 1,
                       // Cards must be allowed to shrink below their
@@ -2147,6 +2158,46 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+
+              {/* Sourdough-vs-Simple nudge — observation with a choice, not an alarm */}
+              {sdNudgeOpen && (
+                <div style={{
+                  background: 'var(--cream)',
+                  borderLeft: '4px solid var(--gold)',
+                  borderRadius: '10px',
+                  padding: '.75rem 1rem',
+                  marginTop: '10px',
+                  fontFamily: 'var(--font-dm-sans)',
+                }}>
+                  <div style={{ fontSize: '.85rem', color: 'var(--ash)', lineHeight: 1.5, marginBottom: '.6rem' }}>
+                    {locale === 'fr'
+                      ? 'Votre profil est au levain — le levain vit en mode Avancé.'
+                      : 'Your profile bakes sourdough — sourdough lives in Custom mode.'}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => chooseMode('custom')}
+                      style={{
+                        border: 'none', borderRadius: '12px', background: 'var(--terra)',
+                        color: '#fff', padding: '.5rem .9rem', fontSize: '.82rem', fontWeight: 500,
+                        cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                      }}
+                    >
+                      {locale === 'fr' ? 'Continuer en Avancé →' : 'Continue in Custom →'}
+                    </button>
+                    <button
+                      onClick={() => chooseMode('simple', true)}
+                      style={{
+                        border: '1.5px solid var(--border)', borderRadius: '12px', background: 'var(--warm)',
+                        color: 'var(--ash)', padding: '.5rem .9rem', fontSize: '.82rem', fontWeight: 500,
+                        cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                      }}
+                    >
+                      {locale === 'fr' ? 'Rester en Simple · levure classique' : 'Stay in Simple · regular yeast'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Gentle discovery — profile-less bakers learn preferences exist */}
               {!profilePrefilled && !recipeGenerated && !loadProfile() && (
