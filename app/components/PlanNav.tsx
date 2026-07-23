@@ -29,6 +29,7 @@ const PILL_BASE: React.CSSProperties = {
 const LABEL_ROW: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: '6px',
   fontSize: '.85rem', fontWeight: 500,
+  whiteSpace: 'nowrap',
 };
 
 export default function PlanNav({ variant, onEditSetup, onOpenGuide, onShare }: PlanNavProps) {
