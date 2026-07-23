@@ -4261,7 +4261,7 @@ export default function Home() {
       </div>
 
       {/* ── Bottom nav ── */}
-      {!!bakeType && <div style={{
+      {!!bakeType && <div id="bh-bottom-nav" style={{
         position: 'fixed',
         bottom: 0,
         left: 0,

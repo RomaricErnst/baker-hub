@@ -1178,6 +1178,27 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // ingredient search), leaving the summary bar "stuck" mid-screen. Hide it
   // while the keyboard is up; the resize event on close restores it.
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  // Height of the app's fixed bottom nav — measured, not assumed. The nav's
+  // real height varies by environment (safe-area inset, browser vs
+  // standalone): a hardcoded 69px offset left the summary bar hidden
+  // behind the taller nav in browser-mode Safari.
+  const [bottomNavH, setBottomNavH] = useState(69);
+  useEffect(() => {
+    const measure = () => {
+      const nav = document.getElementById('bh-bottom-nav');
+      if (nav) setBottomNavH(nav.offsetHeight);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    vv?.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
+      vv?.removeEventListener('resize', measure);
+    };
+  }, []);
   useEffect(() => {
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
     if (!vv) return;
@@ -2508,7 +2529,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
            visual viewport and would float mid-screen above the keyboard. */}
       {activePill === 'pizzas' && !keyboardOpen && (
         <div style={{
-          position: 'fixed', bottom: '69px', left: 0, right: 0,
+          position: 'fixed', bottom: `${bottomNavH}px`, left: 0, right: 0,
           background: '#1A1612',
           borderTop: '1px solid #C4522A',
           padding: '10px 14px',
