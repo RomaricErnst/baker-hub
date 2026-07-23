@@ -5363,7 +5363,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
         <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center', position: 'relative' }}>
           {/* Date — native picker styled as "Sat 4 Apr" */}
-          <div style={{ flex: 2, position: 'relative' }}>
+          <div style={{ flex: 2, minWidth: 0, position: 'relative' }}>
             <div style={{
               ...INPUT_STYLE, width: '100%',
               display: 'flex', alignItems: 'center',
@@ -5454,7 +5454,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               if (pickerDate) applyTimePick(pickerDate, h, m);
             }}
             disabled={!pickerDate}
-            style={{ ...INPUT_STYLE, flex: 1, width: undefined, appearance: 'none' as React.CSSProperties['appearance'], opacity: pickerDate ? 1 : 0.45, cursor: pickerDate ? 'pointer' : 'not-allowed' }}
+            style={{ ...INPUT_STYLE, flex: 1, width: undefined, minWidth: 0, appearance: 'none' as React.CSSProperties['appearance'], opacity: pickerDate ? 1 : 0.45, cursor: pickerDate ? 'pointer' : 'not-allowed' }}
           >
             {!pickerDate && <option value="" disabled>{tRoot('schedulePicker.selectDateFirst')}</option>}
             {Array.from({ length: 96 }, (_, i) => {
