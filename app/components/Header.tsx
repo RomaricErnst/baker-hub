@@ -266,11 +266,19 @@ export default function Header({
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   // Share (and future actions) can request the sign-in home: anonymous
-  // bakers tapping "Save & Share" get the drawer instead of a dead tap.
+  // bakers tapping "Save & Share" get the drawer with the auth block
+  // spotlighted and a contextual line — no hunting for where to sign in.
+  const [authSpotlight, setAuthSpotlight] = useState(false);
   useEffect(() => {
-    const open = () => setMenuOpen(true);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const open = () => {
+      setMenuOpen(true);
+      setAuthSpotlight(true);
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setAuthSpotlight(false), 4000);
+    };
     window.addEventListener('bh-open-auth', open);
-    return () => window.removeEventListener('bh-open-auth', open);
+    return () => { window.removeEventListener('bh-open-auth', open); if (timer) clearTimeout(timer); };
   }, []);
   const [recipes, setRecipes] = useState<SavedRecipe[]>([]);
   const [bakeEvents, setBakeEvents] = useState<BakeEvent[]>([]);
@@ -884,7 +892,24 @@ export default function Header({
             padding: '12px 16px',
             borderTop: '1px solid rgba(255,255,255,0.08)',
             flexShrink: 0,
+            ...(authSpotlight && !user ? {
+              boxShadow: 'inset 0 0 0 1.5px var(--gold)',
+              borderRadius: '12px',
+              background: 'rgba(212,168,83,0.08)',
+              transition: 'box-shadow .3s, background .3s',
+            } : { transition: 'box-shadow .3s, background .3s' }),
           }}>
+            {authSpotlight && !user && (
+              <div style={{
+                fontSize: '.75rem', color: 'var(--gold)',
+                fontFamily: 'var(--font-dm-sans)', marginBottom: '8px',
+                lineHeight: 1.45,
+              }}>
+                {locale === 'fr'
+                  ? 'Connectez-vous pour sauvegarder et partager vos fournées'
+                  : 'Sign in to save and share your bakes'}
+              </div>
+            )}
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.5rem' }}>
                 <span style={{
