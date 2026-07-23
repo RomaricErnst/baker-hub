@@ -212,7 +212,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   useEffect(() => {
     if (openSection === 'blend' && blendRef.current) {
       const rect = blendRef.current.getBoundingClientRect();
-      if (rect.bottom > window.innerHeight) {
+      // Visible height, not innerHeight — with the search keyboard open the
+      // visual viewport is much shorter and the dropdown stayed off-screen.
+      const _visibleH = window.visualViewport?.height ?? window.innerHeight;
+      if (rect.bottom > _visibleH) {
         setTimeout(() => blendRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
       }
     }

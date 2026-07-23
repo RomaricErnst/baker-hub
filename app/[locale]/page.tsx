@@ -6,6 +6,7 @@ import Header from '../components/Header';
 import dynamic from 'next/dynamic';
 const ProfileSheet = dynamic(() => import('../components/ProfileSheet'), { ssr: false });
 import { loadProfile, setProfileListener } from '../lib/profile';
+import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import StylePicker from '../components/StylePicker';
 import OvenPicker from '../components/OvenPicker';
@@ -515,6 +516,7 @@ export default function Home() {
   const [modeDetailsOpen, setModeDetailsOpen] = useState<{ simple: boolean; custom: boolean }>({ simple: false, custom: false });
 
   // Baker profile — ☰ Mon profil sheet + new-session prefill
+  const bottomNavH = useBottomNavHeight();
   const [profileOpen, setProfileOpen] = useState(false);
   // Sourdough-vs-Simple nudge — shown when a levain profile taps Simple
   const [sdNudgeOpen, setSdNudgeOpen] = useState(false);
@@ -4495,7 +4497,7 @@ export default function Home() {
         <div
           onClick={() => setShowSignInForSave(false)}
           style={{
-            position: 'fixed', bottom: '24px', right: '16px',
+            position: 'fixed', bottom: `${bottomNavH + 12}px`, right: '16px',
             zIndex: 999, background: '#1A1612', color: 'var(--cream)',
             fontFamily: 'var(--font-dm-sans)', fontSize: '14px',
             borderRadius: '12px', padding: '12px 16px', maxWidth: '280px',
@@ -4523,7 +4525,7 @@ export default function Home() {
             position: 'fixed',
             left: '50%',
             transform: 'translateX(-50%)',
-            bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))',
+            bottom: `${bottomNavH + 24}px`,
             zIndex: 9999,
             background: 'var(--terra)',
             color: 'white',

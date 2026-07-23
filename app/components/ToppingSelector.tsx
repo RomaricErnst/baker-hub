@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
+import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import {
   PIZZAS, DESSERT_PIZZAS, getPizzaById, getCustomPizzaList,
   BASE_LABELS, OCCASION_LABELS, SEASON_LABELS,
@@ -1178,27 +1179,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // ingredient search), leaving the summary bar "stuck" mid-screen. Hide it
   // while the keyboard is up; the resize event on close restores it.
   const [keyboardOpen, setKeyboardOpen] = useState(false);
-  // Height of the app's fixed bottom nav — measured, not assumed. The nav's
-  // real height varies by environment (safe-area inset, browser vs
-  // standalone): a hardcoded 69px offset left the summary bar hidden
-  // behind the taller nav in browser-mode Safari.
-  const [bottomNavH, setBottomNavH] = useState(69);
-  useEffect(() => {
-    const measure = () => {
-      const nav = document.getElementById('bh-bottom-nav');
-      if (nav) setBottomNavH(nav.offsetHeight);
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    window.addEventListener('orientationchange', measure);
-    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
-    vv?.addEventListener('resize', measure);
-    return () => {
-      window.removeEventListener('resize', measure);
-      window.removeEventListener('orientationchange', measure);
-      vv?.removeEventListener('resize', measure);
-    };
-  }, []);
+  const bottomNavH = useBottomNavHeight();
   useEffect(() => {
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
     if (!vv) return;
@@ -1647,7 +1628,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   position: 'fixed', bottom: 0, left: 0, right: 0,
                   background: '#FDFBF7',
                   borderRadius: '20px 20px 0 0',
-                  maxHeight: filterSheetKey === 'more' ? '80vh' : '65vh',
+                  maxHeight: filterSheetKey === 'more' ? '80dvh' : '65dvh',
                   zIndex: 151,
                   display: 'flex',
                   flexDirection: 'column',
@@ -2188,7 +2169,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             style={{
               position: 'fixed', bottom: 0, left: 0, right: 0,
               background: '#FDFBF7', borderRadius: '20px 20px 0 0',
-              maxHeight: '75vh', zIndex: 161, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+              maxHeight: '75dvh', zIndex: 161, display: 'flex', flexDirection: 'column', overflow: 'hidden',
             }}
           >
             <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
@@ -2416,7 +2397,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               position: 'fixed', bottom: 0, left: 0, right: 0,
               background: '#FDFBF7',
               borderRadius: '20px 20px 0 0',
-              maxHeight: '70vh',
+              maxHeight: '70dvh',
               zIndex: 201,
               overflow: 'hidden',
               display: 'flex',
