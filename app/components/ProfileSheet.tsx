@@ -143,7 +143,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         <span style={S.label}>{fr ? 'Mes pizzas' : 'My pizzas'}</span>
         {customs.length === 0 ? (
           <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', padding: '0 16px' }}>
-            {fr ? 'Créez vos pizzas depuis Ma Soirée Pizza — elles vivront ici.' : 'Create pizzas from My Pizza Party — they will live here.'}
+            {fr ? 'Créez vos pizzas depuis Ma Pizza Party — elles vivront ici.' : 'Create pizzas from My Pizza Party — they will live here.'}
           </div>
         ) : customs.map(cp => (
           <div key={cp.id} style={{

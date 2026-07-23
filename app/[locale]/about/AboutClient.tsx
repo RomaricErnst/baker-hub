@@ -537,7 +537,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Ouvrez ☰ → <strong style={{ color: CHAR }}>Mes préférences</strong> pour régler vos valeurs par défaut une fois pour toutes : four à pizza et four à pain (indépendamment), pétrin, levure, préferment préféré, température du frigo, style favori par type de cuisson, mode par défaut, les traits de votre levain, et vos indisponibilités habituelles. Tout s'enregistre automatiquement au fil des touches — pas de bouton — et préremplit chaque nouvelle session, toujours modifiable à chaque étape. Connecté·e, vos préférences se synchronisent avec votre compte et vous suivent d'un appareil à l'autre.</P>
-            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Créez votre propre pizza</strong> depuis la liste Soirée Pizza : ingrédients du catalogue ou en texte libre, groupe par groupe (base, fromages, viandes & mer, légumes, finitions). Ajoutez une photo et recadrez-la en la glissant. Vos créations vivent dans vos préférences, reviennent à chaque soirée, et alimentent la liste de courses, la préparation et la fiche de cuisson — avec des conseils de four déduits de leurs ingrédients.</p>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Créez votre propre pizza</strong> depuis la liste Pizza Party : ingrédients du catalogue ou en texte libre, groupe par groupe (base, fromages, viandes & mer, légumes, finitions). Ajoutez une photo et recadrez-la en la glissant. Vos créations vivent dans vos préférences, reviennent à chaque soirée, et alimentent la liste de courses, la préparation et la fiche de cuisson — avec des conseils de four déduits de leurs ingrédients.</p>
           </>
         ),
       },

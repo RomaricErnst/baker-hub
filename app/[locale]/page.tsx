@@ -823,7 +823,7 @@ export default function Home() {
 
   // Perceived-speed: once a pizza session is underway, warm the party chunk
   // (and its 150-pizza database) during browser idle time — downloaded in the
-  // background, instant when the baker opens Ma Soirée Pizza. Not on boot
+  // background, instant when the baker opens Ma Pizza Party. Not on boot
   // (too early), not on tab tap (too late).
   useEffect(() => {
     if (bakeType !== 'pizza' || !modeChosen) return;
@@ -2865,7 +2865,7 @@ export default function Home() {
                     baking, gold celebration once marked baked. Anonymous
                     tap opens the sign-in drawer. */}
                 {(
-                  <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {pizzaPartyEnabled && (
                       <button
                         onClick={() => setActiveTab('pizzaparty')}
@@ -2878,7 +2878,7 @@ export default function Home() {
                           fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                         }}
                       >
-                        🍕 {locale === 'fr' ? 'Ma Soirée Pizza →' : 'My Pizza Party →'}
+                        {locale === 'fr' ? 'Planifier ma Pizza Party →' : 'Plan my Pizza Party →'}
                       </button>
                     )}
                     <button
@@ -4161,7 +4161,7 @@ export default function Home() {
                     baking, gold celebration once marked baked. Anonymous
                     tap opens the sign-in drawer. */}
                 {(
-                  <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {pizzaPartyEnabled && (
                       <button
                         onClick={() => setActiveTab('pizzaparty')}
@@ -4174,7 +4174,7 @@ export default function Home() {
                           fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                         }}
                       >
-                        🍕 {locale === 'fr' ? 'Ma Soirée Pizza →' : 'My Pizza Party →'}
+                        {locale === 'fr' ? 'Planifier ma Pizza Party →' : 'Plan my Pizza Party →'}
                       </button>
                     )}
                     <button
