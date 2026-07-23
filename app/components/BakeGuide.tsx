@@ -1375,7 +1375,10 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
               ...(t.raw('coldRetard.steps') as { bold: string; note: string }[]).slice(0, 2),
-              { bold: _isFr ? 'Réglez une alarme pour la division & le boulage' : 'Set your alarm for Divide & Ball time', note: formatTime(schedule.divideBallTime ?? schedule.coldRetard1End, _fmtLocale) },
+              { bold: isBread
+                  ? (_isFr ? 'Réglez une alarme pour la division & le façonnage' : 'Set your alarm for Divide & Shape time')
+                  : (_isFr ? 'Réglez une alarme pour la division & le boulage' : 'Set your alarm for Divide & Ball time'),
+                note: formatTime(schedule.divideBallTime ?? schedule.coldRetard1End, _fmtLocale) },
               (t.raw('coldRetard.steps') as { bold: string; note: string }[])[2],
             ]} />
           </Section>

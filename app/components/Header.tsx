@@ -455,8 +455,10 @@ export default function Header({
             </>
           )}
 
-          {/* Restart side — confirm only when a plan could be lost */}
-          <button
+          {/* Restart side — confirm only when a plan could be lost.
+              Hidden when no handler is wired (e.g. the About page) — a
+              visible button that does nothing reads as a bug. */}
+          {onNewSession && <button
             onClick={() => {
               if (!hasWork || window.confirm(tS('newSessionConfirm'))) onNewSession?.();
             }}
@@ -471,7 +473,7 @@ export default function Header({
             }}
           >
             {locale === 'fr' ? 'Recommencer' : 'Start over'}
-          </button>
+          </button>}
         </div>
         );
       })()}
@@ -569,8 +571,8 @@ export default function Header({
                     {locale === 'fr' ? 'Enregistrer' : 'Save session'}
                   </button>
                 )}
-                <button
-                  onClick={() => { onNewSession?.(); setMenuOpen(false); }}
+                {onNewSession && <button
+                  onClick={() => { onNewSession(); setMenuOpen(false); }}
                   style={{
                     fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
                     color: 'var(--smoke)',
@@ -580,7 +582,7 @@ export default function Header({
                   }}
                 >
                   {locale === 'fr' ? 'Nouvelle session' : 'New session'}
-                </button>
+                </button>}
               </div>
             </div>
           )}

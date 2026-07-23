@@ -5370,6 +5370,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               color: pickerDate ? 'var(--char)' : 'var(--smoke)',
               position: 'relative', zIndex: 1, cursor: 'pointer',
               pointerEvents: 'none',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              minWidth: 0,
             }}>
               {pickerDate ? (() => {
                 const [y, m, d] = pickerDate.split('-').map(Number);

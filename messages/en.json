@@ -361,7 +361,9 @@
       "rtWarmup": "Rest at room temperature",
       "finalProof": "Final Proof",
       "preheat": "Preheat Oven",
-      "eat": "Bake & Eat!"
+      "eat": "Bake & Eat!",
+      "divideShape": "Divide & Shape",
+      "coldShaped": "Cold Proof — Shaped"
     },
     "prefSteps": {
       "makePoolish": "Make your Poolish",
@@ -394,7 +396,8 @@
     "coldTips": {
       "bulk": "Whole dough mass goes into the fridge. Cold bulk fermentation slows yeast activity and develops flavour. No action needed.",
       "balls": "Individual dough balls rest in the fridge. This firms them up and makes final proofing more controlled.",
-      "single": "Dough rests in the fridge. Cold fermentation builds flavour slowly — no action needed, time works for you."
+      "single": "Dough rests in the fridge. Cold fermentation builds flavour slowly — no action needed, time works for you.",
+      "shaped": "The shaped dough proofs in the fridge. Cold proofing firms it up, deepens flavour, and makes scoring easier."
     },
     "divideTip": "Weigh and divide dough into {n} ball{plural}. Pinch the bottom tight for surface tension.",
     "divideTipCold": " Cold dough is easier to ball — work quickly before it warms up.",
@@ -424,7 +427,16 @@
     },
     "restRtTip": "Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch — wait until slightly soft.",
     "finalProofCovered": "Balls are already shaped — cover and leave at room temperature until the poke test.",
-    "finalProofShape": "Shape your balls if not done. Cover and leave at room temperature until the poke test."
+    "finalProofShape": "Shape your balls if not done. Cover and leave at room temperature until the poke test.",
+    "divideTipBread": "Weigh and divide the dough into {n} piece{plural}. Shape with a taut surface — seam pinched tight underneath.",
+    "divideTipColdBread": " Cold dough is easier to shape — work quickly before it warms up.",
+    "restRtTipBread": "Take the dough out of the fridge and leave it covered at room temperature until slightly soft.",
+    "finalProofTipsBread": {
+      "withCold": "Remove the dough from the fridge and rest until slightly soft, then proof covered at room temperature. Start preheating your oven during this time.",
+      "withoutCold": "Shape the dough and proof covered at room temperature. Start preheating your oven during this time."
+    },
+    "finalProofCoveredBread": "The dough is already shaped — cover and leave at room temperature until the poke test.",
+    "finalProofShapeBread": "Shape your dough if not done. Cover and leave at room temperature until the poke test."
   },
   "recipeOutput": {
     "totalIngredients": "Total ingredients",

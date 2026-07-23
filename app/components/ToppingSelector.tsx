@@ -1182,7 +1182,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
     if (!vv) return;
     const onResize = () => {
-      setKeyboardOpen(vv.height < window.innerHeight * 0.8);
+      // Keyboard = viewport shrank AND a text field is focused. The ratio
+      // alone also fires while mobile-browser chrome (URL bar) collapses on
+      // scroll, which hid the bar in browser mode (never in standalone).
+      const typing = !!document.activeElement
+        && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
+      setKeyboardOpen(typing && vv.height < window.innerHeight * 0.8);
     };
     vv.addEventListener('resize', onResize);
     vv.addEventListener('scroll', onResize);

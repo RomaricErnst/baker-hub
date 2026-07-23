@@ -361,7 +361,9 @@
       "rtWarmup": "Détente à température ambiante",
       "finalProof": "Apprêt",
       "preheat": "Préchauffage du four",
-      "eat": "Cuisson & Dégustation !"
+      "eat": "Cuisson & Dégustation !",
+      "divideShape": "Division & Façonnage",
+      "coldShaped": "Pousse au froid — façonné"
     },
     "prefSteps": {
       "makePoolish": "Préparer le Poolish",
@@ -394,7 +396,8 @@
     "coldTips": {
       "bulk": "La masse de pâte entière va au frigo. La fermentation froide ralentit la levure et développe les arômes. Aucune action nécessaire.",
       "balls": "Les pâtons reposent au frigo. Cela les raffermit et rend l'apprêt final plus maîtrisé.",
-      "single": "La pâte repose au frigo. La fermentation froide développe les arômes lentement — aucune action, le temps travaille pour vous."
+      "single": "La pâte repose au frigo. La fermentation froide développe les arômes lentement — aucune action, le temps travaille pour vous.",
+      "shaped": "La pâte façonnée pousse au frigo. Le froid la raffermit, approfondit les arômes et facilite la grigne."
     },
     "divideTip": "Pesez et divisez la pâte en {n} pâton{plural}. Pincez le dessous pour créer une tension de surface.",
     "divideTipCold": " La pâte froide est plus facile à bouler — travaillez vite avant qu'elle se réchauffe.",
@@ -424,7 +427,16 @@
     },
     "restRtTip": "Sortez les pâtons du frigo et laissez-les couverts à température ambiante. La pâte froide est trop rigide pour être étirée — attendez qu'elle soit légèrement souple.",
     "finalProofCovered": "Les pâtons sont déjà façonnés — couvrez et laissez à température ambiante jusqu'au test du creux.",
-    "finalProofShape": "Façonnez vos pâtons si ce n'est pas fait. Couvrez et laissez à température ambiante jusqu'au test du creux."
+    "finalProofShape": "Façonnez vos pâtons si ce n'est pas fait. Couvrez et laissez à température ambiante jusqu'au test du creux.",
+    "divideTipBread": "Pesez et divisez la pâte en {n} pâton{plural}. Façonnez en gardant une surface tendue — soudure bien pincée dessous.",
+    "divideTipColdBread": " La pâte froide est plus facile à façonner — travaillez vite avant qu'elle se réchauffe.",
+    "restRtTipBread": "Sortez la pâte du frigo et laissez-la couverte à température ambiante jusqu'à ce qu'elle soit légèrement souple.",
+    "finalProofTipsBread": {
+      "withCold": "Sortez la pâte du frigo et laissez-la se détendre, puis faites l'apprêt couverte à température ambiante. Préchauffez votre four pendant l'apprêt.",
+      "withoutCold": "Façonnez la pâte et faites l'apprêt couverte à température ambiante. Préchauffez votre four pendant l'apprêt."
+    },
+    "finalProofCoveredBread": "La pâte est déjà façonnée — couvrez et laissez à température ambiante jusqu'au test du creux.",
+    "finalProofShapeBread": "Façonnez votre pâte si ce n'est pas fait. Couvrez et laissez à température ambiante jusqu'au test du creux."
   },
   "recipeOutput": {
     "totalIngredients": "Total des ingrédients",

@@ -181,9 +181,10 @@ export function buildItems(
 
   // Divide & ball tip
   function divideBallTip(): string {
-    let tip = t('timeline.divideTip', { n: numItems, plural: numItems !== 1 ? 's' : '' });
+    const _bread = bakeType === 'bread';
+    let tip = t(_bread ? 'timeline.divideTipBread' : 'timeline.divideTip', { n: numItems, plural: numItems !== 1 ? 's' : '' });
     if (schedule.coldRetard1Start) {
-      tip += t('timeline.divideTipCold');
+      tip += t(_bread ? 'timeline.divideTipColdBread' : 'timeline.divideTipCold');
     }
     if (schedule.kitchenTemp >= 30 && schedule.coldRetard1Start) {
       tip += t('timeline.divideTipWarm');
@@ -261,7 +262,7 @@ export function buildItems(
     items.push({
       kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
       time: schedule.divideBallTime,
-      label: t('timeline.steps.divideBall'),
+      label: t(bakeType === 'bread' ? 'timeline.steps.divideShape' : 'timeline.steps.divideBall'),
       icon: '⚖️',
       iconKey: 'divide',
       tip: divideBallTip(),
@@ -279,10 +280,10 @@ export function buildItems(
       items.push({
         kind: 'step', id: 'cold_2', stepKind: 'cold',
         time: schedule.coldRetard2Start,
-        label: t('timeline.steps.coldBalls'),
+        label: t(bakeType === 'bread' ? 'timeline.steps.coldShaped' : 'timeline.steps.coldBalls'),
         icon: '❄️',
         iconKey: 'cold',
-        tip: t('timeline.coldTips.balls'),
+        tip: t(bakeType === 'bread' ? 'timeline.coldTips.shaped' : 'timeline.coldTips.balls'),
         durationH: cold2DurationH,
         coldBlocks: coldBlocks2,
       });
@@ -319,7 +320,7 @@ export function buildItems(
     items.push({
       kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
       time: schedule.divideBallTime,
-      label: t('timeline.steps.divideBall'),
+      label: t(bakeType === 'bread' ? 'timeline.steps.divideShape' : 'timeline.steps.divideBall'),
       icon: '⚖️',
       iconKey: 'divide',
       tip: divideBallTip(),
@@ -355,8 +356,8 @@ export function buildItems(
       icon: '⏰',
       iconKey: 'proof',
       tip: schedule.coldRetardStart
-        ? t('timeline.finalProofTips.withCold')
-        : t('timeline.finalProofTips.withoutCold'),
+        ? t(bakeType === 'bread' ? 'timeline.finalProofTipsBread.withCold' : 'timeline.finalProofTips.withCold')
+        : t(bakeType === 'bread' ? 'timeline.finalProofTipsBread.withoutCold' : 'timeline.finalProofTips.withoutCold'),
       durationH: finalProofStepDuration,
     });
   }
@@ -669,11 +670,11 @@ export default function Timeline({
                   {item.id === 'remove_pref_fridge'
                     ? item.tip
                     : item.stepKind === 'rest_rt'
-                    ? <>{t('timeline.restRtTip')}</>
+                    ? <>{t(bakeType === 'bread' ? 'timeline.restRtTipBread' : 'timeline.restRtTip')}</>
                     : item.stepKind === 'final_proof'
                     ? schedule.coldRetard2Start !== null
-                      ? <>{t('timeline.finalProofCovered')}<InfoBadge term="poke_test" onOpen={setLearnTerm} /></>
-                      : <>{t('timeline.finalProofShape')}<InfoBadge term="poke_test" onOpen={setLearnTerm} /></>
+                      ? <>{t(bakeType === 'bread' ? 'timeline.finalProofCoveredBread' : 'timeline.finalProofCovered')}<InfoBadge term="poke_test" onOpen={setLearnTerm} /></>
+                      : <>{t(bakeType === 'bread' ? 'timeline.finalProofShapeBread' : 'timeline.finalProofShape')}<InfoBadge term="poke_test" onOpen={setLearnTerm} /></>
                     : item.stepKind === 'divide_ball'
                     ? <>{item.tip}</>
                     : item.tip}

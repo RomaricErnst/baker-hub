@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Safari (browser mode) inflates text on some blocks via font boosting —
+   standalone/home-screen mode does not, so layouts diverged (live: date
+   button wrapped to 3 lines in-browser). Pin text size to the CSS value. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 :root {
   --cream: #F5F0E8;
   --warm: #FDFBF7;
