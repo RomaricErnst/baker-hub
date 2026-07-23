@@ -13,6 +13,7 @@ interface PlanNavProps {
   variant: 'quiet' | 'cta';
   onEditSetup?: () => void;
   onOpenGuide?: () => void;
+  onShare?: () => void;
 }
 
 const PILL_BASE: React.CSSProperties = {
@@ -30,7 +31,7 @@ const LABEL_ROW: React.CSSProperties = {
   fontSize: '.85rem', fontWeight: 500,
 };
 
-export default function PlanNav({ variant, onEditSetup, onOpenGuide }: PlanNavProps) {
+export default function PlanNav({ variant, onEditSetup, onOpenGuide, onShare }: PlanNavProps) {
   const t = useTranslations('planNav');
   const cta = variant === 'cta';
 
@@ -80,6 +81,27 @@ export default function PlanNav({ variant, onEditSetup, onOpenGuide }: PlanNavPr
           }}>
             {t('guideSub')}
           </span>
+        </button>
+      )}
+      {onShare && (
+        <button
+          onClick={onShare}
+          aria-label={t('share')}
+          title={t('share')}
+          style={{
+            width: '46px', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1.5px solid var(--border)',
+            borderRadius: '12px',
+            background: 'var(--warm)',
+            color: 'var(--smoke)',
+            cursor: 'pointer',
+          }}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="6" cy="12" r="3" /><circle cx="18" cy="6" r="3" /><circle cx="18" cy="18" r="3" />
+            <line x1="8.7" y1="10.7" x2="15.3" y2="7.3" /><line x1="8.7" y1="13.3" x2="15.3" y2="16.7" />
+          </svg>
         </button>
       )}
     </div>

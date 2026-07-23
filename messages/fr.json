@@ -1760,6 +1760,8 @@
   "planNav": {
     "editSetup": "Modifier les paramètres",
     "guide": "Guide",
-    "guideSub": "pas à pas"
+    "guideSub": "pas à pas",
+    "share": "Partager cette fournée",
+    "shareBaked": "Partager cette fournée"
   }
 }

@@ -1273,6 +1273,30 @@ export default function Home() {
   // First step whose value is genuinely missing — used when switching
   // Simple ↔ Custom so the baker lands exactly where input is needed,
   // with everything already answered marked complete (no re-clicking).
+  // ── Share the CURRENT session — saves (signed-in) then opens the share
+  // sheet via Header's openSessionId plumbing. Single source for the party
+  // Bake tab, the Recipe-tab PlanNav pill and the Guide-end chip. ──
+  async function shareCurrentSession() {
+    let id = bakeEventId;
+    if (!id && user) {
+      const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
+      id = await saveNamedSession({
+        tab, bakeType: bakeType ?? '', styleKey, numItems, itemWeight,
+        pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+        fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+        manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
+        flourInFridge, wastePct, priorityOverride,
+        eatTime: eatTime?.getTime() ?? null,
+        blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
+        pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys, bakedQtys: Object.keys(bakedPartyQtys).length > 0 ? bakedPartyQtys : undefined } : null,
+        bakedDone,
+        computedRecipe: buildComputedRecipe(),
+      } as SessionData);
+      if (id) { setBakeEventId(id); setSessionSaved(true); }
+    }
+    if (id) setShareSessionId(id);
+  }
+
   function firstIncompleteStep(isCustom: boolean): number {
     if (!styleKey) return 1;
     if (!ovenType) return 3;          // qty (2) + climate (4) have sane defaults
@@ -2673,6 +2697,7 @@ export default function Home() {
                             ovenType={ovenType}
                             onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
                             onOpenGuide={() => setActiveTab('guide')}
+                            onShare={(user || bakeEventId) ? shareCurrentSession : undefined}
                             result={displayRecipe ?? recipe}
                             numItems={numItems}
                             itemWeight={itemWeight}
@@ -2792,6 +2817,7 @@ export default function Home() {
                     variant="cta"
                     onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
                     onOpenGuide={() => setActiveTab('guide')}
+                    onShare={(user || bakeEventId) ? shareCurrentSession : undefined}
                   />
                 </div>
               )}
@@ -2805,7 +2831,7 @@ export default function Home() {
                   <div style={{ fontSize: '24px', marginBottom: '12px' }}>⏳</div>
                   <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>{t('common.generateFirst')}</div>
                 </div>
-              ) : schedule && recipe && mixerType && (
+              ) : schedule && recipe && mixerType && (<>
                 <BakeGuide
                   schedule={schedule}
                   mixerType={mixerType}
@@ -2832,6 +2858,38 @@ export default function Home() {
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
                   recipe={recipe ?? null}
                 />
+                {/* Share — end of the journey. Quiet chip while baking,
+                    gold celebration once marked baked. Hidden when share
+                    can't work (anonymous, unsaved) — no dead buttons. */}
+                {(user || bakeEventId) && (
+                  <div style={{ marginTop: '16px' }}>
+                    <button
+                      onClick={shareCurrentSession}
+                      style={bakedDone ? {
+                        width: '100%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        padding: '12px 0', border: 'none', borderRadius: '12px',
+                        background: 'var(--gold)', color: 'var(--char)',
+                        fontSize: '13.5px', fontWeight: 600,
+                        fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                      } : {
+                        display: 'inline-flex', alignItems: 'center', gap: '7px',
+                        padding: '8px 14px', border: '1.5px solid var(--border)',
+                        borderRadius: '20px', background: 'var(--warm)',
+                        color: 'var(--ash)', fontSize: '12.5px',
+                        fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                      }}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={bakedDone ? 'var(--char)' : 'var(--terra)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <circle cx="6" cy="12" r="3" /><circle cx="18" cy="6" r="3" /><circle cx="18" cy="18" r="3" />
+                        <line x1="8.7" y1="10.7" x2="15.3" y2="7.3" /><line x1="8.7" y1="13.3" x2="15.3" y2="16.7" />
+                      </svg>
+                      {t('planNav.share')}
+                    </button>
+                  </div>
+                )}
+                </>
+
               )}
             </div>{/* end guide tab */}
 
@@ -2877,26 +2935,7 @@ export default function Home() {
                   }}
                   sessionSaved={sessionSaved}
                   onBakedQtysChange={setBakedPartyQtys}
-                  onShare={async () => {
-                    let id = bakeEventId;
-                    if (!id && user) {
-                      const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
-                      id = await saveNamedSession({
-                        tab, bakeType: bakeType ?? '', styleKey, numItems, itemWeight,
-                        pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
-                        fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
-                        manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                        flourInFridge, wastePct, priorityOverride,
-                        eatTime: eatTime?.getTime() ?? null,
-                        blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-                        pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys, bakedQtys: Object.keys(bakedPartyQtys).length > 0 ? bakedPartyQtys : undefined } : null,
-                        bakedDone,
-                        computedRecipe: buildComputedRecipe(),
-                      } as SessionData);
-                      if (id) { setBakeEventId(id); setSessionSaved(true); }
-                    }
-                    if (id) setShareSessionId(id);
-                  }}
+                  onShare={shareCurrentSession}
                 />
               </div>
             )}
@@ -3935,6 +3974,7 @@ export default function Home() {
                             ovenType={ovenType}
                             onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
                             onOpenGuide={() => setActiveTab('guide')}
+                            onShare={(user || bakeEventId) ? shareCurrentSession : undefined}
                             result={advancedDisplayRecipe ?? advancedRecipe}
                             numItems={numItems}
                             itemWeight={itemWeight}
@@ -4057,6 +4097,7 @@ export default function Home() {
                     variant="cta"
                     onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
                     onOpenGuide={() => setActiveTab('guide')}
+                    onShare={(user || bakeEventId) ? shareCurrentSession : undefined}
                   />
                 </div>
               )}
@@ -4070,7 +4111,7 @@ export default function Home() {
                   <div style={{ fontSize: '24px', marginBottom: '12px' }}>⏳</div>
                   <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>{t('common.generateFirst')}</div>
                 </div>
-              ) : schedule && advancedRecipe && mixerType && (
+              ) : schedule && advancedRecipe && mixerType && (<>
                 <BakeGuide
                   schedule={schedule}
                   mixerType={mixerType}
@@ -4097,6 +4138,38 @@ export default function Home() {
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
                   recipe={advancedRecipe ?? null}
                 />
+                {/* Share — end of the journey. Quiet chip while baking,
+                    gold celebration once marked baked. Hidden when share
+                    can't work (anonymous, unsaved) — no dead buttons. */}
+                {(user || bakeEventId) && (
+                  <div style={{ marginTop: '16px' }}>
+                    <button
+                      onClick={shareCurrentSession}
+                      style={bakedDone ? {
+                        width: '100%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        padding: '12px 0', border: 'none', borderRadius: '12px',
+                        background: 'var(--gold)', color: 'var(--char)',
+                        fontSize: '13.5px', fontWeight: 600,
+                        fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                      } : {
+                        display: 'inline-flex', alignItems: 'center', gap: '7px',
+                        padding: '8px 14px', border: '1.5px solid var(--border)',
+                        borderRadius: '20px', background: 'var(--warm)',
+                        color: 'var(--ash)', fontSize: '12.5px',
+                        fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                      }}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={bakedDone ? 'var(--char)' : 'var(--terra)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <circle cx="6" cy="12" r="3" /><circle cx="18" cy="6" r="3" /><circle cx="18" cy="18" r="3" />
+                        <line x1="8.7" y1="10.7" x2="15.3" y2="7.3" /><line x1="8.7" y1="13.3" x2="15.3" y2="16.7" />
+                      </svg>
+                      {t('planNav.share')}
+                    </button>
+                  </div>
+                )}
+                </>
+
               )}
             </div>{/* end guide tab */}
 
@@ -4142,26 +4215,7 @@ export default function Home() {
                   }}
                   sessionSaved={sessionSaved}
                   onBakedQtysChange={setBakedPartyQtys}
-                  onShare={async () => {
-                    let id = bakeEventId;
-                    if (!id && user) {
-                      const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
-                      id = await saveNamedSession({
-                        tab, bakeType: bakeType ?? '', styleKey, numItems, itemWeight,
-                        pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
-                        fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
-                        manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                        flourInFridge, wastePct, priorityOverride,
-                        eatTime: eatTime?.getTime() ?? null,
-                        blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-                        pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys, bakedQtys: Object.keys(bakedPartyQtys).length > 0 ? bakedPartyQtys : undefined } : null,
-                        bakedDone,
-                        computedRecipe: buildComputedRecipe(),
-                      } as SessionData);
-                      if (id) { setBakeEventId(id); setSessionSaved(true); }
-                    }
-                    if (id) setShareSessionId(id);
-                  }}
+                  onShare={shareCurrentSession}
                 />
               </div>
             )}

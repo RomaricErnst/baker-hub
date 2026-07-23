@@ -1760,6 +1760,8 @@
   "planNav": {
     "editSetup": "Edit setup",
     "guide": "Guide",
-    "guideSub": "step-by-step"
+    "guideSub": "step-by-step",
+    "share": "Share this bake",
+    "shareBaked": "Share this bake"
   }
 }

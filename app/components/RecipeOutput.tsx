@@ -37,6 +37,7 @@ interface RecipeOutputProps {
   starterLocation?: 'rt' | 'fridge';
   onEditSetup?: () => void;
   onOpenGuide?: () => void;
+  onShare?: () => void;
 }
 
 // ── Helpers ──────────────────────────────────
@@ -468,7 +469,7 @@ export default function RecipeOutput({
   result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
   feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
-  onEditSetup, onOpenGuide,
+  onEditSetup, onOpenGuide, onShare,
 }: RecipeOutputProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -1342,7 +1343,7 @@ export default function RecipeOutput({
 
       {/* PlanNav — same two pills as below the protocol (quiet variant):
           one visual language for the tab's three destinations */}
-      <PlanNav variant="quiet" onEditSetup={onEditSetup} onOpenGuide={onOpenGuide} />
+      <PlanNav variant="quiet" onEditSetup={onEditSetup} onOpenGuide={onOpenGuide} onShare={onShare} />
 
     </div>
   );

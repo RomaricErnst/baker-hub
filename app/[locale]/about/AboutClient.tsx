@@ -879,7 +879,7 @@ export default function AboutClient() {
 
   return (
     <div style={{ background: 'var(--cream)', minHeight: '100vh', paddingBottom: '48px' }}>
-      <Header hideActionBar />
+      <Header hideActionBar backHref={locale === 'fr' ? '/fr' : '/'} />
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '24px 16px' }}>
 
         <h1 style={{
@@ -903,6 +903,21 @@ export default function AboutClient() {
             {s.body}
           </Accordion>
         ))}
+
+        {/* Way home at the end of the read — the header chip covers mid-scroll */}
+        <Link
+          href={locale === 'fr' ? '/fr' : '/'}
+          style={{
+            marginTop: '20px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            padding: '13px 0', borderRadius: '12px',
+            background: TERRA, color: '#fff',
+            fontSize: '13.5px', fontWeight: 500,
+            fontFamily: 'DM Sans, sans-serif', textDecoration: 'none',
+          }}
+        >
+          ← {locale === 'fr' ? 'Retour à Baker Hub' : 'Back to Baker Hub'}
+        </Link>
 
         <div style={{ borderTop: `1px solid ${BORDER}` }} />
         <p style={{ ...monoSm, textAlign: 'center', marginTop: '24px', marginBottom: 0 }}>

@@ -224,6 +224,7 @@ export default function Header({
   sessionSaved,
   sessionRestored,
   hideActionBar,
+  backHref,
   sessionSummary,
   sessionDoughSpec,
   onSaveSession,
@@ -242,6 +243,8 @@ export default function Header({
   sessionSaved?: boolean;
   sessionRestored?: boolean;
   hideActionBar?: boolean;
+  // Renders a persistent back chip instead of the action pill (About page)
+  backHref?: string;
   sessionSummary?: string;
   sessionDoughSpec?: string;
   onSaveSession?: () => void;
@@ -408,10 +411,35 @@ export default function Header({
         </div>
       </div>
 
+      {/* Back chip — pages outside the session flow (About) get a
+          persistent way home in the sticky header instead of session
+          actions that can't work there. */}
+      {backHref && (
+        <a
+          href={backHref}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '7px',
+            padding: '7px 13px',
+            border: '1px solid rgba(245,240,232,0.25)',
+            borderRadius: '20px',
+            color: 'var(--cream)',
+            fontSize: '12.5px',
+            fontFamily: 'var(--font-dm-sans)',
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="20" y1="12" x2="4" y2="12" /><polyline points="11 5 4 12 11 19" />
+          </svg>
+          Baker Hub
+        </a>
+      )}
+
       {/* Right: Save / Restart pill. Restart is ALWAYS visible — it's also
           how bakers switch Pizza ↔ Pain before anything is generated. The
           Save side only joins once there's a session worth saving. */}
-      {(() => {
+      {!backHref && (() => {
         const hasWork = (recipeGenerated || sessionSaved || sessionRestored) && !hideActionBar;
         return (
         <div style={{
