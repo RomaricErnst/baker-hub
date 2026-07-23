@@ -161,6 +161,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [filterOrigin, setFilterOrigin] = useState<string | null>(null);
   const [filterManufacturer, setFilterManufacturer] = useState<string | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<'type' | 'origin' | 'manufacturer' | null>(null);
+  // Rendering-only: fold the three filter chips behind a funnel toggle.
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // APAC + Europe sub-filter + blend state
   const [apacCountry, setApacCountry] = useState<string | null>(null);
@@ -341,23 +343,32 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
         </div>
       )}
 
-      {/* ── Selected flour confirmation pill ───────── */}
+      {/* ── Selected flour — hero card (rendering only; same state) ── */}
       {blend.brandProduct && (
-        <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 12px',
-          background:'rgba(196,82,42,0.06)', borderRadius:'10px', marginBottom:'12px',
-          border:'1px solid rgba(196,82,42,0.2)' }}>
-          <span style={{ fontSize:'13px', color:'#C4522A', fontFamily:'DM Sans, sans-serif', fontWeight:600 }}>
-            ✓ {blend.brandProduct}
-          </span>
-          <span style={{ fontSize:'12px', color:'#8A7F78', fontFamily:'var(--font-dm-mono)' }}>
-            · W{blend.wOverride ?? '—'}
-          </span>
-          <button onClick={() => onBlendChange({ ...blend, brandProduct: undefined, brandKey: undefined })}
-            style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer',
-              color:'#8A7F78', fontSize:'12px', fontFamily:'DM Sans, sans-serif',
-              textDecoration:'underline', padding:0 }}>
-            clear
-          </button>
+        <div style={{ background:'#FDFBF7', border:'1.5px solid var(--bread)',
+          borderRadius:'14px', padding:'12px 14px', marginBottom:'12px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'8px' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontFamily:'var(--font-dm-mono)', fontSize:'9.5px', letterSpacing:'.1em', color:'var(--bread)', marginBottom:'3px' }}>
+                {locale === 'fr' ? 'VOTRE FARINE' : 'YOUR FLOUR'}
+              </div>
+              <div style={{ fontFamily:'var(--font-playfair)', fontSize:'15px', fontWeight:700, color:'#1A1612', lineHeight:1.25 }}>
+                {blend.brandProduct}
+              </div>
+            </div>
+            <button onClick={() => onBlendChange({ ...blend, brandProduct: undefined, brandKey: undefined })}
+              style={{ background:'none', border:'none', cursor:'pointer', flexShrink:0,
+                color:'#8A7F78', fontSize:'12px', fontFamily:'DM Sans, sans-serif',
+                textDecoration:'underline', textUnderlineOffset:'2px', padding:'2px 0' }}>
+              {locale === 'fr' ? 'Changer' : 'Change'}
+            </button>
+          </div>
+          <div style={{ display:'flex', gap:'6px', marginTop:'8px', flexWrap:'wrap' }}>
+            <span style={{ fontFamily:'var(--font-dm-mono)', fontSize:'10.5px', padding:'3px 9px',
+              borderRadius:'20px', background:'rgba(139,105,20,0.1)', color:'var(--bread)' }}>
+              W{blend.wOverride ?? '—'}
+            </span>
+          </div>
         </div>
       )}
 
@@ -391,6 +402,28 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   }}
                 />
 
+                {/* Funnel toggle — filters fold away until wanted; auto-open
+                    while any filter is active so clearing stays reachable */}
+                <button
+                  onClick={() => setFiltersOpen(o => !o)}
+                  aria-label="Filters"
+                  style={{
+                    padding: '7px 10px', borderRadius: '20px',
+                    border: 'none', cursor: 'pointer', flexShrink: 0,
+                    fontSize: '12px', fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+                    background: (filtersOpen || filterType || filterOrigin || filterManufacturer) ? '#1A1612' : '#F5F0E8',
+                    color: (filtersOpen || filterType || filterOrigin || filterManufacturer) ? 'white' : '#3D3530',
+                    display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap',
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 5 h16 l-6.5 8 v6 l-3 -2 v-4 Z" />
+                  </svg>
+                  {[filterType, filterOrigin, filterManufacturer].filter(Boolean).length > 0
+                    && [filterType, filterOrigin, filterManufacturer].filter(Boolean).length}
+                </button>
+
+                {(filtersOpen || !!filterType || !!filterOrigin || !!filterManufacturer) && (<>
                 {/* Type chip */}
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   <button
@@ -504,6 +537,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     </div>
                   )}
                 </div>
+                </>)}
 
               </div>
             </div>
@@ -629,29 +663,27 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em' }}>
                       {sectionLabel}
                     </div>
-                    <div style={{ marginTop: '4px' }}>
+                    <div style={{ marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       {breadRecs.map(t => {
                         const isSelected = blend.brandProduct === t.label;
                         return (
-                          <div
+                          <button
                             key={t.label}
                             onClick={() => applyQuickType(t.label, t.w)}
                             style={{
-                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                              padding: '10px 0', borderBottom: '0.5px solid #E8E0D5',
-                              cursor: 'pointer',
-                              background: isSelected ? 'rgba(196,82,42,0.04)' : 'transparent',
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px',
+                              padding: '8px 16px', borderRadius: '14px', cursor: 'pointer',
+                              border: isSelected ? '1.5px solid var(--bread)' : '1.5px solid #E8E0D5',
+                              background: isSelected ? 'rgba(139,105,20,0.08)' : '#FDFBF7',
                             }}
-                            onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(196,82,42,0.04)' : 'transparent'; }}
                           >
-                            <span style={{ fontSize: '13px', fontWeight: isSelected ? 600 : 500, color: isSelected ? '#C4522A' : '#1A1612', fontFamily: 'DM Sans, sans-serif' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: isSelected ? 'var(--bread)' : '#1A1612', fontFamily: 'DM Sans, sans-serif' }}>
                               {t.label}
                             </span>
-                            <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>
+                            <span style={{ fontSize: '10.5px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>
                               W~{t.w} · ~{t.protein}%
                             </span>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
