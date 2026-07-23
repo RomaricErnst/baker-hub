@@ -344,7 +344,11 @@ export default function SessionViewer({
       {/* Sheet */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        maxHeight: '92vh', overflowY: 'hidden',
+        // dvh, not vh: in browser-mode Safari, vh includes the area behind
+        // the collapsed toolbar, so a bottom-anchored 92vh sheet pushed its
+        // header (and the ✕) above the visible viewport — the baker could
+        // not scroll up to close. dvh tracks the real visible height.
+        maxHeight: '92dvh', overflowY: 'hidden',
         display: 'flex', flexDirection: 'column',
         background: 'var(--warm)', borderRadius: '20px 20px 0 0',
         zIndex: 300, animation: 'slideUpSheet 0.3s ease',

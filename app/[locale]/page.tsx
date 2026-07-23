@@ -1294,7 +1294,10 @@ export default function Home() {
       } as SessionData);
       if (id) { setBakeEventId(id); setSessionSaved(true); }
     }
-    if (id) setShareSessionId(id);
+    if (id) { setShareSessionId(id); return; }
+    // Anonymous and unsaved — invite sign-in (the drawer hosts it) instead
+    // of a tap that silently does nothing.
+    if (!user) window.dispatchEvent(new Event('bh-open-auth'));
   }
 
   function firstIncompleteStep(isCustom: boolean): number {
@@ -2697,7 +2700,7 @@ export default function Home() {
                             ovenType={ovenType}
                             onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
                             onOpenGuide={() => setActiveTab('guide')}
-                            onShare={(user || bakeEventId) ? shareCurrentSession : undefined}
+                            onShare={shareCurrentSession}
                             result={displayRecipe ?? recipe}
                             numItems={numItems}
                             itemWeight={itemWeight}
@@ -2817,7 +2820,7 @@ export default function Home() {
                     variant="cta"
                     onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
                     onOpenGuide={() => setActiveTab('guide')}
-                    onShare={(user || bakeEventId) ? shareCurrentSession : undefined}
+                    onShare={shareCurrentSession}
                   />
                 </div>
               )}
@@ -2858,11 +2861,26 @@ export default function Home() {
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
                   recipe={recipe ?? null}
                 />
-                {/* Share — end of the journey. Quiet chip while baking,
-                    gold celebration once marked baked. Hidden when share
-                    can't work (anonymous, unsaved) — no dead buttons. */}
-                {(user || bakeEventId) && (
-                  <div style={{ marginTop: '16px' }}>
+                {/* Share + party — end of the journey. Quiet chips while
+                    baking, gold celebration once marked baked. Anonymous
+                    tap opens the sign-in drawer. */}
+                {(
+                  <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {pizzaPartyEnabled && (
+                      <button
+                        onClick={() => setActiveTab('pizzaparty')}
+                        style={{
+                          alignSelf: 'flex-start',
+                          display: 'inline-flex', alignItems: 'center', gap: '7px',
+                          padding: '8px 14px', border: '1.5px solid var(--border)',
+                          borderRadius: '20px', background: 'var(--warm)',
+                          color: 'var(--ash)', fontSize: '12.5px',
+                          fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                        }}
+                      >
+                        🍕 {locale === 'fr' ? 'Ma Soirée Pizza →' : 'My Pizza Party →'}
+                      </button>
+                    )}
                     <button
                       onClick={shareCurrentSession}
                       style={bakedDone ? {
@@ -2873,6 +2891,7 @@ export default function Home() {
                         fontSize: '13.5px', fontWeight: 600,
                         fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                       } : {
+                        alignSelf: 'flex-start',
                         display: 'inline-flex', alignItems: 'center', gap: '7px',
                         padding: '8px 14px', border: '1.5px solid var(--border)',
                         borderRadius: '20px', background: 'var(--warm)',
@@ -3974,7 +3993,7 @@ export default function Home() {
                             ovenType={ovenType}
                             onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
                             onOpenGuide={() => setActiveTab('guide')}
-                            onShare={(user || bakeEventId) ? shareCurrentSession : undefined}
+                            onShare={shareCurrentSession}
                             result={advancedDisplayRecipe ?? advancedRecipe}
                             numItems={numItems}
                             itemWeight={itemWeight}
@@ -4097,7 +4116,7 @@ export default function Home() {
                     variant="cta"
                     onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
                     onOpenGuide={() => setActiveTab('guide')}
-                    onShare={(user || bakeEventId) ? shareCurrentSession : undefined}
+                    onShare={shareCurrentSession}
                   />
                 </div>
               )}
@@ -4138,11 +4157,26 @@ export default function Home() {
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
                   recipe={advancedRecipe ?? null}
                 />
-                {/* Share — end of the journey. Quiet chip while baking,
-                    gold celebration once marked baked. Hidden when share
-                    can't work (anonymous, unsaved) — no dead buttons. */}
-                {(user || bakeEventId) && (
-                  <div style={{ marginTop: '16px' }}>
+                {/* Share + party — end of the journey. Quiet chips while
+                    baking, gold celebration once marked baked. Anonymous
+                    tap opens the sign-in drawer. */}
+                {(
+                  <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {pizzaPartyEnabled && (
+                      <button
+                        onClick={() => setActiveTab('pizzaparty')}
+                        style={{
+                          alignSelf: 'flex-start',
+                          display: 'inline-flex', alignItems: 'center', gap: '7px',
+                          padding: '8px 14px', border: '1.5px solid var(--border)',
+                          borderRadius: '20px', background: 'var(--warm)',
+                          color: 'var(--ash)', fontSize: '12.5px',
+                          fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                        }}
+                      >
+                        🍕 {locale === 'fr' ? 'Ma Soirée Pizza →' : 'My Pizza Party →'}
+                      </button>
+                    )}
                     <button
                       onClick={shareCurrentSession}
                       style={bakedDone ? {
@@ -4153,6 +4187,7 @@ export default function Home() {
                         fontSize: '13.5px', fontWeight: 600,
                         fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                       } : {
+                        alignSelf: 'flex-start',
                         display: 'inline-flex', alignItems: 'center', gap: '7px',
                         padding: '8px 14px', border: '1.5px solid var(--border)',
                         borderRadius: '20px', background: 'var(--warm)',

@@ -887,16 +887,6 @@ export default function AboutClient() {
           color: CHAR, marginBottom: '4px', marginTop: '0',
         }}>{c.pageTitle}</h1>
         <p style={{ ...monoSm, marginBottom: '12px' }}>{c.pageSubtitle}</p>
-        <Link
-          href={locale === 'fr' ? '/fr' : '/'}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-            color: SMOKE, textDecoration: 'none', marginBottom: '24px',
-          }}
-        >
-          ← {locale === 'fr' ? 'Retour' : 'Back to Baker Hub'}
-        </Link>
 
         {c.sections.map((s, i) => (
           <Accordion key={i} title={s.title} defaultOpen={s.defaultOpen}>

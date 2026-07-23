@@ -265,6 +265,13 @@ export default function Header({
 
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  // Share (and future actions) can request the sign-in home: anonymous
+  // bakers tapping "Save & Share" get the drawer instead of a dead tap.
+  useEffect(() => {
+    const open = () => setMenuOpen(true);
+    window.addEventListener('bh-open-auth', open);
+    return () => window.removeEventListener('bh-open-auth', open);
+  }, []);
   const [recipes, setRecipes] = useState<SavedRecipe[]>([]);
   const [bakeEvents, setBakeEvents] = useState<BakeEvent[]>([]);
   const [eventPhotos, setEventPhotos] = useState<Record<string, BakePhoto[]>>({});

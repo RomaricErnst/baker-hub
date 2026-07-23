@@ -798,7 +798,7 @@ export default function ShareCard({
               // before the first draw lands. Protocol cards have a dynamic
               // height, so they use the canvas's intrinsic ratio instead.
               width: 'auto', height: 'auto',
-              maxWidth: '100%', maxHeight: '62vh',
+              maxWidth: '100%', maxHeight: '58dvh',
               ...(template !== 'protocol'
                 ? { aspectRatio: `1080 / ${EXPORT_H}` }
                 : {}),

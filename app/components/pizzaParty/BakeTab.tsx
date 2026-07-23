@@ -629,7 +629,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 transition: 'width 0.3s ease',
               }} />
             </div>
-            {totalDone >= totalOrdered && onShare && (
+            {/* Share is always offered — real parties change plans, and a
+                half-baked evening is still worth sharing. */}
+            {onShare && (
               <button
                 onClick={onShare}
                 style={{
