@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import { useLocale } from 'next-intl';
 
 interface FlourScanProps {
   onResult: (result: { w: number; protein: number; name: string }) => void;
@@ -9,6 +10,7 @@ interface FlourScanProps {
 type ScanState = 'upload' | 'analyzing' | 'result' | 'error';
 
 export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
+  const isFr = useLocale() === 'fr';
   const [scanState, setScanState] = useState<ScanState>('upload');
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [scanError, setScanError] = useState<'image' | 'service'>('image');
@@ -142,12 +144,17 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
             gap: '.75rem',
           }}
         >
-          <span style={{ fontSize: '2rem' }}>📷</span>
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="var(--terra)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 10 V6 a2 2 0 0 1 2-2 h4" /><path d="M22 4 h4 a2 2 0 0 1 2 2 v4" />
+            <path d="M28 22 v4 a2 2 0 0 1-2 2 h-4" /><path d="M10 28 H6 a2 2 0 0 1-2-2 v-4" />
+            <path d="M11 21 c0-4 1.5-5 2-7 h6 c.5 2 2 3 2 7 a2 2 0 0 1-2 2 h-6 a2 2 0 0 1-2-2 Z" fill="rgba(196,82,42,0.12)" />
+            <line x1="12" y1="12" x2="20" y2="12" />
+          </svg>
           <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1rem', color: 'var(--char)', fontWeight: 700 }}>
-            Take a photo of your flour bag
+            {isFr ? 'Photographiez votre sachet de farine' : 'Take a photo of your flour bag'}
           </div>
           <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '.78rem', color: 'var(--smoke)' }}>
-            or drag and drop an image
+            {isFr ? 'ou glissez-déposez une image' : 'or drag and drop an image'}
           </div>
         </div>
         <input
@@ -187,7 +194,7 @@ style={{ display: 'none' }}
         )}
         <div style={{ marginTop: '.75rem', textAlign: 'center' }}>
           <div style={{ fontSize: '.82rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '.5rem' }}>
-            Analysing your flour bag...
+            {isFr ? 'Analyse de votre farine…' : 'Analysing your flour bag...'}
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '.3rem' }}>
             {[0, 1, 2].map(i => (
@@ -244,7 +251,9 @@ style={{ display: 'none' }}
                 background: '#FDFBF2', border: '1px solid #E8D890',
                 borderRadius: '8px', fontSize: '.72rem', color: '#6A5A10', lineHeight: 1.4,
               }}>
-                🔍 Values estimated from bag type — looks right for most {extractedResult.name.includes('pizza') ? 'pizza' : ''} flours. Adjust below if your bag shows different numbers.
+                🔍 {isFr
+                  ? 'Valeurs estimées d’après le type de sachet — correct pour la plupart des farines. Ajustez ci-dessous si votre sachet indique d’autres chiffres.'
+                  : `Values estimated from bag type — looks right for most ${extractedResult.name.includes('pizza') ? 'pizza ' : ''}flours. Adjust below if your bag shows different numbers.`}
               </div>
             )}
 
@@ -277,7 +286,7 @@ style={{ display: 'none' }}
                       textDecoration: 'underline', textUnderlineOffset: '2px',
                     }}
                   >
-                    Adjust
+                    {isFr ? 'Ajuster' : 'Adjust'}
                   </button>
                 )}
               </div>
@@ -329,7 +338,7 @@ style={{ display: 'none' }}
                     fontFamily: 'var(--font-dm-sans)',
                   }}
                 >
-                  Done
+                  {isFr ? 'Terminé' : 'Done'}
                 </button>
               </div>
             )}
@@ -346,7 +355,7 @@ style={{ display: 'none' }}
               cursor: 'pointer',
             }}
           >
-            Use this flour →
+            {isFr ? 'Utiliser cette farine →' : 'Use this flour →'}
           </button>
           <button
             onClick={reset}
@@ -358,7 +367,7 @@ style={{ display: 'none' }}
               fontFamily: 'var(--font-dm-sans)',
             }}
           >
-            Try again
+            {isFr ? 'Réessayer' : 'Try again'}
           </button>
         </div>
       </div>
@@ -374,11 +383,11 @@ style={{ display: 'none' }}
     }}>
       <div style={{ fontSize: '.88rem', fontWeight: 600, color: 'var(--terra)', marginBottom: '.4rem' }}>
         {scanError === 'service'
-          ? 'Scan temporarily unavailable — enter your flour manually.'
-          : 'Couldn\'t read the bag clearly'}
+          ? (isFr ? 'Scan temporairement indisponible — entrez votre farine manuellement.' : 'Scan temporarily unavailable — enter your flour manually.')
+          : (isFr ? 'Lecture du sachet difficile' : 'Couldn\'t read the bag clearly')}
       </div>
       <div style={{ fontSize: '.8rem', color: 'var(--smoke)', marginBottom: '1rem', lineHeight: 1.5 }}>
-        Try a clearer photo with good lighting, showing the front of the bag.
+        {isFr ? 'Réessayez avec une photo plus nette, bien éclairée, montrant l’avant du sachet.' : 'Try a clearer photo with good lighting, showing the front of the bag.'}
       </div>
       <button
         onClick={reset}
@@ -389,7 +398,7 @@ style={{ display: 'none' }}
           fontFamily: 'var(--font-dm-sans)',
         }}
       >
-        Try again
+        {isFr ? 'Réessayer' : 'Try again'}
       </button>
     </div>
   );

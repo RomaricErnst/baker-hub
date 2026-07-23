@@ -131,6 +131,9 @@ export default function ClimatePicker({
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  // Outdoor fetch is an optional helper — collapsed by default so the
+  // kitchen slider reads as the primary input (hierarchy, not wording).
+  const [outdoorOpen, setOutdoorOpen] = useState(false);
 
   async function fetchWeatherAt(latitude: number, longitude: number, name: string, country: string) {
     const wxRes = await fetch(
@@ -203,9 +206,13 @@ export default function ClimatePicker({
           setLoading(false);
         }
       },
-      () => {
+      (err) => {
         setLoading(false);
-        setFetchError(isFr ? 'Localisation refusée — entrez votre ville.' : 'Location declined — type your city instead.');
+        // Only a real denial says "refused" — timeouts and missing fixes
+        // (common on desktop or with location services off) say so honestly.
+        setFetchError(err.code === 1
+          ? (isFr ? 'Localisation refusée — entrez votre ville.' : 'Location declined — type your city instead.')
+          : (isFr ? 'Position introuvable — entrez votre ville.' : "Couldn't get your position — type your city instead."));
       },
       { timeout: 10000, maximumAge: 600000 },
     );
@@ -264,9 +271,88 @@ export default function ClimatePicker({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem' }}>
 
+      {/* ── Kitchen temperature ──────────────────── */}
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
+          <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Température de la cuisine' : 'Kitchen temperature'}</label>
+          <span style={{
+            fontFamily: 'var(--font-dm-mono)',
+            fontSize: '1.1rem',
+            fontWeight: 700,
+            color: tempColor(kitchenTemp),
+          }}>
+            {cToDisplay(kitchenTemp, u)}{tempUnit(u)}
+          </span>
+        </div>
+
+        <input
+          type="range"
+          min={u === 'imperial' ? 59 : 15}
+          max={u === 'imperial' ? 100 : 38}
+          step={1}
+          value={cToDisplay(kitchenTemp, u)}
+          onChange={e => onChange(inputTempToC(Number(e.target.value), u), humidity, fridgeTemp)}
+          style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer', height: '4px' }}
+        />
+
+        {/* Axis labels */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between',
+          fontSize: '.65rem', color: 'var(--smoke)',
+          fontFamily: 'var(--font-dm-mono)', marginTop: '.25rem',
+        }}>
+          <span>{tempC(15, u)} {isFr ? 'froid' : 'cool'}</span>
+          <span>{tempC(22, u)} {isFr ? 'idéal' : 'ideal'}</span>
+          <span>{tempC(30, u)} {isFr ? 'chaud' : 'hot'}</span>
+          <span>{tempC(38, u)}</span>
+        </div>
+
+        {/* Warm climate nudge */}
+        {kitchenTemp >= 25 && kitchenTemp <= 27 && (
+          <div style={{
+            background: '#FFF8E8',
+            border: '1.5px solid #E8D080',
+            borderRadius: '10px',
+            padding: '.6rem .9rem',
+            fontSize: '.76rem',
+            color: '#7A5A10',
+            marginTop: '.75rem',
+            lineHeight: 1.5,
+          }}>
+            🌡️ {isFr ? <>Sous un climat chaud, les après-midis peuvent dépasser {tempC(28, u)}. Si votre cuisine chauffe en journée, indiquez plutôt la température maximale attendue.</> : <>In a warm climate, afternoon temps can push above {tempC(28, u)}. If your kitchen heats up during the day, consider entering your expected peak temperature instead.</>}
+          </div>
+        )}
+      </div>
+
       {/* ── City search ─────────────────────────── */}
       <div>
-        <label style={SECTION_LABEL}>{isFr ? 'Conditions extérieures' : 'Get outdoor conditions'}</label>
+        <button
+          onClick={() => setOutdoorOpen(o => !o)}
+          style={{
+            width: '100%', padding: '11px 12px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            border: '1.5px solid var(--border)',
+            borderRadius: outdoorOpen ? '12px 12px 0 0' : '12px',
+            borderBottom: outdoorOpen ? 'none' : '1.5px solid var(--border)',
+            background: 'var(--cream)', cursor: 'pointer',
+          }}
+        >
+          <span style={{ ...SECTION_LABEL, marginBottom: 0, display: 'inline-flex', alignItems: 'center', gap: '7px' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M6.5 19 a4.5 4.5 0 1 1 .36-8.986 A6 6 0 1 1 18.5 12 a4 4 0 0 1-.5 7 Z" />
+            </svg>
+            {isFr ? 'Conditions extérieures' : 'Get outdoor conditions'}
+          </span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--smoke)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+            style={{ transform: outdoorOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        {outdoorOpen && (
+        <div style={{
+          border: '1.5px solid var(--border)', borderTop: 'none',
+          borderRadius: '0 0 12px 12px', padding: '12px',
+        }}>
         <div style={{ display: 'flex', gap: '.5rem' }}>
           <input
             type="text"
@@ -423,58 +509,7 @@ export default function ClimatePicker({
               : 'Kitchen estimated from outdoor — adjust below if it feels off.'}
           </div>
         )}
-      </div>
-
-      {/* ── Kitchen temperature ──────────────────── */}
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
-          <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Température de la cuisine' : 'Kitchen temperature'}</label>
-          <span style={{
-            fontFamily: 'var(--font-dm-mono)',
-            fontSize: '1.1rem',
-            fontWeight: 700,
-            color: tempColor(kitchenTemp),
-          }}>
-            {cToDisplay(kitchenTemp, u)}{tempUnit(u)}
-          </span>
         </div>
-
-        <input
-          type="range"
-          min={u === 'imperial' ? 59 : 15}
-          max={u === 'imperial' ? 100 : 38}
-          step={1}
-          value={cToDisplay(kitchenTemp, u)}
-          onChange={e => onChange(inputTempToC(Number(e.target.value), u), humidity, fridgeTemp)}
-          style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer', height: '4px' }}
-        />
-
-        {/* Axis labels */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between',
-          fontSize: '.65rem', color: 'var(--smoke)',
-          fontFamily: 'var(--font-dm-mono)', marginTop: '.25rem',
-        }}>
-          <span>{tempC(15, u)} {isFr ? 'froid' : 'cool'}</span>
-          <span>{tempC(22, u)} {isFr ? 'idéal' : 'ideal'}</span>
-          <span>{tempC(30, u)} {isFr ? 'chaud' : 'hot'}</span>
-          <span>{tempC(38, u)}</span>
-        </div>
-
-        {/* Warm climate nudge */}
-        {kitchenTemp >= 25 && kitchenTemp <= 27 && (
-          <div style={{
-            background: '#FFF8E8',
-            border: '1.5px solid #E8D080',
-            borderRadius: '10px',
-            padding: '.6rem .9rem',
-            fontSize: '.76rem',
-            color: '#7A5A10',
-            marginTop: '.75rem',
-            lineHeight: 1.5,
-          }}>
-            🌡️ {isFr ? <>Sous un climat chaud, les après-midis peuvent dépasser {tempC(28, u)}. Si votre cuisine chauffe en journée, indiquez plutôt la température maximale attendue.</> : <>In a warm climate, afternoon temps can push above {tempC(28, u)}. If your kitchen heats up during the day, consider entering your expected peak temperature instead.</>}
-          </div>
         )}
       </div>
 
