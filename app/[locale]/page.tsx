@@ -919,6 +919,14 @@ export default function Home() {
   }, [styleKey, tab]);
 
   useEffect(() => {
+    // Only correct the untouched DEFAULT flour when the baker switches bake
+    // type — never overwrite a deliberate selection. Every real pick (quick
+    // type, database product, scan, custom W) sets brandProduct, so its
+    // presence is a reliable "user has chosen" signal. Without this guard,
+    // any remount that restores a bread session where the user had picked
+    // T80 (whose internal base key is 'pizza00', same as the pizza default)
+    // looked identical to the untouched default and got reset to T65.
+    if (flourBlend.brandProduct) return;
     if (bakeType === 'bread' && flourBlend.flour1 === 'pizza00') {
       setFlourBlend({ flour1: 'bread', flour2: null, ratio1: 100 });
     }
