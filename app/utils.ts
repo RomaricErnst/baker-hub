@@ -267,7 +267,13 @@ function sourdoughGuidance(
   if (feedToMixH && feedToMixH > 0) {
     const basePeakH = kitchenTemp >= 28 ? 5 : kitchenTemp >= 24 ? 7 : 9;
     const mid = (min + max) / 2;
-    const adjMid = Math.max(5, Math.min(30, Math.round(mid * (basePeakH / feedToMixH))));
+    // Clamp the ratio before applying it — an unclamped short feed-to-mix
+    // window (common on hot-kitchen "refresh now" plans) was scaling mid by
+    // up to 2.5x+ and pinning the result at the 30% ceiling for any window
+    // under ~2h. [0.7, 1.3] lets real timing differences nudge the % gently
+    // without letting a short window dominate the whole range.
+    const ratio = Math.max(0.7, Math.min(1.3, basePeakH / feedToMixH));
+    const adjMid = Math.max(5, Math.min(30, Math.round(mid * ratio)));
     min = Math.max(5,  adjMid - 3);
     max = Math.min(30, adjMid + 3);
   }

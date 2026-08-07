@@ -1009,7 +1009,12 @@ export default function Home() {
         mixerType as MixerType,
         manualHydration, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride,
         prefermentFlourPct ?? (
-          prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20
+          prefermentType === 'levain'
+            // Levain/sourdough has its own sane range (15-30%, data.ts) —
+            // the poolish/biga timing-based schedule below doesn't apply to
+            // it and was pushing short-window plans up to 45% starter.
+            ? undefined
+            : prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20
         ),
         manualSalt,
         targetDoughTemp,
