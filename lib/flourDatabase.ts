@@ -52,7 +52,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'caputo_nuvola',
     brand: 'Caputo', name: 'Nuvola',
-    type: '00', country: 'it',
+    type: '0', country: 'it',
     w: 270, wPublished: true, protein: 12.5, hydration: [62, 68],
     bestFor: [], crowdFavourite: ['neapolitan'],
     note: 'Tipo 0. Designed for light airy cornicione. High extensibility.',
@@ -61,8 +61,8 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'caputo_nuvola_super',
     brand: 'Caputo', name: 'Nuvola Super',
-    type: '00', country: 'it',
-    w: 320, wPublished: true, protein: 13.0, hydration: [64, 70],
+    type: '0', country: 'it',
+    w: 330, wPublished: true, protein: 13.5, hydration: [64, 70],
     bestFor: [], crowdFavourite: [],
     note: 'Stronger version of Nuvola. Pre-fermented wheat. For biga/poolish.',
     bagImage: '', logo: null,
@@ -1171,6 +1171,15 @@ export const FLOUR_DB: FlourEntry[] = [
     w: 270, wPublished: true, protein: 12.1, hydration: [58, 65],
     bestFor: [], crowdFavourite: [],
     note: 'Tipo 0 for Neapolitan and classic/modern round pizza. Direct dough, short-to-medium ferments up to ~24h.',
+    bagImage: '', logo: null,
+  },
+  {
+    id: '5stagioni_tipozero_superiore',
+    brand: '5 Stagioni', name: 'Tipozero Superiore',
+    type: '0', country: 'it',
+    w: 330, wPublished: true, protein: 12.0, hydration: [58, 65],
+    bestFor: [], crowdFavourite: [],
+    note: '100% Italian wheat. For round pizza (pizza tonda) and pala romana, direct or indirect (biga).',
     bagImage: '', logo: null,
   },
   {
