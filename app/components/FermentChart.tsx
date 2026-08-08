@@ -1107,8 +1107,8 @@ export default function FermentChart({
         {showZoneLabels && (() => {
           const prefWindowLabel =
             prefermentType === 'biga'      ? t('zoneLabels.makeBigaWindow')    :
-            prefermentType === 'levain'    ? 'Starter peak' :
-            prefermentType === 'sourdough' ? 'Starter peak' :
+            prefermentType === 'levain'    ? t('zoneLabels.feedStarterWindow') :
+            prefermentType === 'sourdough' ? t('zoneLabels.feedStarterWindow') :
             t('zoneLabels.makePoolishWindow');
           return (
             <>
@@ -1895,7 +1895,7 @@ export default function FermentChart({
               textAnchor="middle"
               fontWeight="600"
             >
-              Feed
+              {isFr ? 'Rafraîchi' : 'Feed'}
             </text>
           </g>
         )}

@@ -7747,7 +7747,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               })()}
               {mixInBlocker && (
                 <div style={{ fontSize: '11px', color: '#7A5A10', marginTop: '4px', lineHeight: 1.4 }}>
-                  Within a blocked window — intentional?
+                  {isFr ? 'Dans une plage indisponible — voulu ?' : 'Within a blocked window — intentional?'}
                 </div>
               )}
               {blockerNote && !mixInBlocker && (
