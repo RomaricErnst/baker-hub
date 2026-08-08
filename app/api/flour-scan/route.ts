@@ -89,5 +89,32 @@ RESPONSE FORMAT — always return this exact JSON, no other text:
     );
   }
 
+  // Don't trust the model's self-reported source: 'database' claim — it was
+  // labeling anything from a recognized brand as "matched" even when the
+  // specific product isn't in FLOUR_DB (e.g. brand-only recognition of
+  // Molino Pasini falsely matched "Ideale per Pizza", which wasn't
+  // catalogued). Re-derive it here against the real list: only count as a
+  // database match if BOTH the brand and product name are actually present.
+  try {
+    const text = data.content[0].text as string;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      const claimedName = String(parsed.name ?? '').toLowerCase();
+      const isRealMatch = FLOUR_DB.some(f => {
+        const brand = f.brand.toLowerCase();
+        const name = f.name.toLowerCase();
+        return brand.length > 0 && claimedName.includes(brand) && claimedName.includes(name);
+      });
+      if (parsed.source === 'database' && !isRealMatch) {
+        parsed.source = 'estimated';
+        data.content[0].text = JSON.stringify(parsed);
+      }
+    }
+  } catch {
+    // If re-parsing fails here, leave the original response — the client
+    // does its own parsing/validation next and will surface any real issue.
+  }
+
   return NextResponse.json(data);
 }

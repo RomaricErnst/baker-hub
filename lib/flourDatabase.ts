@@ -1165,6 +1165,15 @@ export const FLOUR_DB: FlourEntry[] = [
     bagImage: '', logo: null,
   },
   {
+    id: 'pasini_ideale_pizza',
+    brand: 'Molino Pasini', name: 'Ideale per Pizza',
+    type: '0', country: 'it',
+    w: 270, wPublished: true, protein: 12.1, hydration: [58, 65],
+    bestFor: [], crowdFavourite: [],
+    note: 'Tipo 0 for Neapolitan and classic/modern round pizza. Direct dough, short-to-medium ferments up to ~24h.',
+    bagImage: '', logo: null,
+  },
+  {
     id: 'pasini_vivace',
     brand: 'Molino Pasini', name: 'Vivace',
     type: '00', country: 'it',
