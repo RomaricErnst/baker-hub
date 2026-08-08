@@ -11,7 +11,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
 
   return (
     <div style={{
-      minHeight: '100vh', background: 'var(--cream, #F5F0E8)',
+      minHeight: '100vh', background: 'var(--cream, #F0EBE0)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '24px', textAlign: 'center',
     }}>
@@ -19,7 +19,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🍞</div>
         <h1 style={{
           fontFamily: 'var(--font-playfair, Georgia), serif',
-          fontSize: '1.5rem', fontWeight: 700, color: 'var(--char, #1A1612)',
+          fontSize: '1.5rem', fontWeight: 700, color: 'var(--char, #2B2420)',
           margin: '0 0 0.5rem',
         }}>
           Something didn&rsquo;t rise as planned
@@ -35,10 +35,10 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
           onClick={reset}
           style={{
             padding: '0.8rem 1.5rem', border: 'none', borderRadius: '12px',
-            background: 'var(--terra, #C4522A)', color: '#fff',
+            background: 'var(--terra, #6B4423)', color: '#fff',
             fontFamily: 'var(--font-dm-sans, system-ui), sans-serif',
             fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(196,82,42,0.25)',
+            boxShadow: '0 2px 8px rgba(107, 68, 35,0.25)',
           }}
         >
           Try again

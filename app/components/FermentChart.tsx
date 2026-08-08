@@ -491,9 +491,9 @@ export default function FermentChart({
     s.id = id;
     s.textContent = `
       @keyframes fc-glow-pulse {
-        0%   { filter: drop-shadow(0 0 0px rgba(196,82,42,0)); }
-        50%  { filter: drop-shadow(0 0 6px rgba(196,82,42,0.8)); }
-        100% { filter: drop-shadow(0 0 0px rgba(196,82,42,0)); }
+        0%   { filter: drop-shadow(0 0 0px rgba(107, 68, 35,0)); }
+        50%  { filter: drop-shadow(0 0 6px rgba(107, 68, 35,0.8)); }
+        100% { filter: drop-shadow(0 0 0px rgba(107, 68, 35,0)); }
       }
       .fc-diamond-glow { animation: fc-glow-pulse 1.6s ease-in-out infinite; }
     `;
@@ -514,8 +514,8 @@ export default function FermentChart({
   const prefColor  = isLevain ? '#4A7FA5' : '#C4A030';
   const prefStroke = isLevain ? '#2A5F85' : '#7A6010';
   const SAGE            = '#6B7A5A';
-  const TERRA           = '#C4522A';
-  const CHAR            = '#1A1612';
+  const TERRA           = '#6B4423';
+  const CHAR            = '#2B2420';
   const DARK_SAGE       = '#3D5A30';
   const DARK_SAGE_STR   = '#4A6B3A';
 
@@ -976,7 +976,7 @@ export default function FermentChart({
         />
         {warn && (
           <>
-            <circle cx={cx + S + 3} cy={BL - S} r={5} fill="rgba(196,82,42,0.9)" />
+            <circle cx={cx + S + 3} cy={BL - S} r={5} fill="rgba(107, 68, 35,0.9)" />
             <text x={cx + S + 3} y={BL - S + 4} fontSize={10} fill="white"
               textAnchor="middle" fontFamily="DM Mono, monospace">!</text>
           </>
@@ -1128,20 +1128,20 @@ export default function FermentChart({
           const n = Math.ceil((x2 - x1 + AXIS_Y) / 7) + 2;
           return (
             <g key={i}>
-              <rect x={x1} y={BLOCKER_TOP} width={x2 - x1} height={AXIS_Y - BLOCKER_TOP} fill="rgba(196,82,42,0.09)" />
+              <rect x={x1} y={BLOCKER_TOP} width={x2 - x1} height={AXIS_Y - BLOCKER_TOP} fill="rgba(107, 68, 35,0.09)" />
               <g clipPath={`url(#bc-${chartId}-${i})`}>
                 {Array.from({ length: n }, (_, j) => {
                   const ox = x1 + j * 7 - AXIS_Y;
                   return (
                     <line key={j}
                       x1={ox} y1={BLOCKER_TOP} x2={ox + AXIS_Y} y2={AXIS_Y}
-                      stroke="rgba(196,82,42,0.16)" strokeWidth={1}
+                      stroke="rgba(107, 68, 35,0.16)" strokeWidth={1}
                     />
                   );
                 })}
               </g>
               <line x1={x1} y1={BLOCKER_TOP} x2={x2} y2={BLOCKER_TOP}
-                stroke="rgba(196,82,42,0.5)" strokeWidth={2.5} />
+                stroke="rgba(107, 68, 35,0.5)" strokeWidth={2.5} />
             </g>
           );
         })}
@@ -2168,7 +2168,7 @@ export default function FermentChart({
         {legendOpen && (
           <div style={{
             marginTop: '6px', padding: '10px 12px',
-            background: 'rgba(26,22,18,0.03)', border: '1px solid var(--border, #E8E0D5)',
+            background: 'rgba(43, 36, 32,0.03)', border: '1px solid var(--border, #E8E0D5)',
             borderRadius: '10px', fontFamily: 'var(--font-dm-sans)', fontSize: '12px',
             color: 'var(--ash, #3D3530)', lineHeight: 1.65,
           }}>
@@ -2191,7 +2191,7 @@ export default function FermentChart({
                 : 'fridge time — biology on pause. That’s by design.'],
             ] as const).map(([term, body]) => (
               <div key={term} style={{ marginBottom: '5px' }}>
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--terra, #C4522A)', fontWeight: 700 }}>{term}</span>
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>{term}</span>
                 <span> — {body}</span>
               </div>
             ))}
@@ -2208,10 +2208,10 @@ export default function FermentChart({
                   type="checkbox"
                   checked={!!showZoneLabels}
                   onChange={e => onToggleZones(e.target.checked)}
-                  style={{ width: '14px', height: '14px', accentColor: 'var(--terra, #C4522A)', cursor: 'pointer', flexShrink: 0 }}
+                  style={{ width: '14px', height: '14px', accentColor: 'var(--terra, #6B4423)', cursor: 'pointer', flexShrink: 0 }}
                 />
                 <span>
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--terra, #C4522A)', fontWeight: 700 }}>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>
                     {isFr ? 'Fenêtres' : 'Timing windows'}
                   </span>
                   <span> — {isFr

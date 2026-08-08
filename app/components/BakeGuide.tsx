@@ -38,8 +38,8 @@ interface BakeGuideProps {
 
 // ── Design tokens ────────────────────────────────────
 const D = {
-  char: '#1A1612', ash: '#3D3530', cream: '#F5F0E8',
-  terra: '#C4522A', gold: '#D4A853', sage: '#6B7A5A',
+  char: '#2B2420', ash: '#3D3530', cream: '#F0EBE0',
+  terra: '#6B4423', gold: '#9C8248', sage: '#6B7A5A',
   smoke: '#8A7F78', border: '#E8E0D5', warm: '#FDFBF7',
 };
 
@@ -120,7 +120,7 @@ function Pill({ label, color }: { label: string; color?: string }) {
   return (
     <span style={{
       display: 'inline-block',
-      background: color ? `${color}18` : '#F5F0E820',
+      background: color ? `${color}18` : '#F0EBE020',
       border: `1px solid ${color ?? D.border}40`,
       borderRadius: '20px',
       padding: '.15rem .6rem',
@@ -151,7 +151,7 @@ function StepCard({
       background: D.warm, borderRadius: '18px',
       border: `1px solid ${done ? D.sage + '60' : D.border}`,
       overflow: 'hidden',
-      boxShadow: '0 2px 12px rgba(26,22,18,0.06)',
+      boxShadow: '0 2px 12px rgba(43, 36, 32,0.06)',
     }}>
       {/* Card header */}
       <div
@@ -410,14 +410,14 @@ function CoachButton({
 
       {feedback && (
         <div style={{
-          background: '#1A1612',
-          borderLeft: '3px solid #C4522A',
+          background: '#2B2420',
+          borderLeft: '3px solid #6B4423',
           borderRadius: '10px',
           padding: '12px 14px',
           marginBottom: '10px',
           position: 'relative',
         }}>
-          <div style={{ color: '#F5F0E8', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+          <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
             {feedback}
           </div>
           <button
@@ -448,8 +448,8 @@ function CoachButton({
             disabled={loading}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px',
-              background: '#1A1612',
-              border: isGate ? '1px solid rgba(212,168,83,0.5)' : '1px solid rgba(245,240,232,0.15)',
+              background: '#2B2420',
+              border: isGate ? '1px solid rgba(156, 130, 72,0.5)' : '1px solid rgba(240, 235, 224,0.15)',
               borderRadius: '20px', padding: '4px 12px', cursor: loading ? 'default' : 'pointer',
               height: '28px', opacity: loading ? 0.7 : 1, transition: 'opacity .15s',
             }}
@@ -457,22 +457,22 @@ function CoachButton({
             {loading ? (
               <span style={{
                 display: 'inline-block', width: '12px', height: '12px',
-                border: '1.5px solid rgba(245,240,232,0.3)',
-                borderTop: '1.5px solid #F5F0E8',
+                border: '1.5px solid rgba(240, 235, 224,0.3)',
+                borderTop: '1.5px solid #F0EBE0',
                 borderRadius: '50%',
                 animation: 'bh-spin 0.7s linear infinite',
                 flexShrink: 0,
               }} />
             ) : (
               <svg viewBox="0 0 16 16" width={14} height={14} fill="none"
-                stroke="#F5F0E8" strokeWidth="1.4"
+                stroke="#F0EBE0" strokeWidth="1.4"
                 strokeLinecap="round" strokeLinejoin="round">
                 <path d="M8 1v3M8 12v3M1 8h3M12 8h3M3.05 3.05l2.12 2.12M10.83 10.83l2.12 2.12M3.05 12.95l2.12-2.12M10.83 5.17l2.12-2.12"/>
               </svg>
             )}
             <span style={{
               fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-              color: loading ? 'rgba(245,240,232,0.6)' : '#F5F0E8',
+              color: loading ? 'rgba(240, 235, 224,0.6)' : '#F0EBE0',
               whiteSpace: 'nowrap',
             }}>
               {loading
@@ -591,7 +591,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           onClick={ask}
           disabled={!canAsk}
           style={{
-            background: '#1A1612', color: '#F5F0E8', border: 'none',
+            background: '#2B2420', color: '#F0EBE0', border: 'none',
             borderRadius: '8px', padding: '8px 14px', fontSize: '12px',
             fontFamily: 'var(--font-dm-mono)', cursor: canAsk ? 'pointer' : 'default',
             opacity: canAsk ? 1 : 0.6, whiteSpace: 'nowrap',
@@ -605,9 +605,9 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
       </div>
       {answer && (
         <div style={{
-          background: '#1A1612', borderLeft: '3px solid #C4522A', borderRadius: '10px',
+          background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '10px',
           padding: '12px 14px', marginTop: '8px',
-          color: '#F5F0E8', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, whiteSpace: 'pre-line',
+          color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, whiteSpace: 'pre-line',
         }}>
           {answer}
           <div>
@@ -1650,7 +1650,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
           {isPan && (
             <div style={{
-              background: 'rgba(212,168,83,0.08)', border: '1px solid rgba(212,168,83,0.2)',
+              background: 'rgba(156, 130, 72,0.08)', border: '1px solid rgba(156, 130, 72,0.2)',
               borderRadius: '10px', padding: '10px 12px', marginBottom: '12px',
               fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)', color: 'var(--char)',
               lineHeight: 1.5,

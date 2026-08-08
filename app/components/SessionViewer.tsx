@@ -421,8 +421,8 @@ export default function SessionViewer({
                 <span style={{
                   fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
                   color: 'var(--terra)', marginTop: '2px', flexShrink: 0,
-                  border: '1px solid rgba(196,82,42,0.35)',
-                  background: 'rgba(196,82,42,0.06)',
+                  border: '1px solid rgba(107, 68, 35,0.35)',
+                  background: 'rgba(107, 68, 35,0.06)',
                   borderRadius: '12px', padding: '3px 9px', lineHeight: 1.2,
                 }}>✎</span>
               </div>
@@ -437,14 +437,14 @@ export default function SessionViewer({
                 <span style={{
                   fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
                   padding: '3px 10px', borderRadius: '20px',
-                  background: 'rgba(212,168,83,0.15)', color: 'var(--gold)',
+                  background: 'rgba(156, 130, 72,0.15)', color: 'var(--gold)',
                 }}>Pizza</span>
               )}
               {event.status === 'baked' && (
                 <span style={{
                   fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
                   padding: '3px 10px', borderRadius: '20px',
-                  background: 'rgba(196,82,42,0.15)', color: 'var(--terra)',
+                  background: 'rgba(107, 68, 35,0.15)', color: 'var(--terra)',
                 }}>Baked</span>
               )}
             </div>
@@ -699,7 +699,7 @@ export default function SessionViewer({
               background: 'var(--terra)', color: 'white',
               fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
               borderRadius: '12px', border: 'none', cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(196,82,42,0.25)',
+              boxShadow: '0 2px 8px rgba(107, 68, 35,0.25)',
               letterSpacing: '.01em',
             }}
           >
@@ -712,7 +712,7 @@ export default function SessionViewer({
             style={{
               width: '100%', padding: '12px',
               background: 'transparent',
-              border: '1px solid rgba(212,168,83,0.5)',
+              border: '1px solid rgba(156, 130, 72,0.5)',
               color: 'var(--gold)',
               fontFamily: 'var(--font-dm-mono)', fontSize: '13px',
               borderRadius: '10px', cursor: 'pointer',

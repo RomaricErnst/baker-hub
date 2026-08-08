@@ -253,10 +253,10 @@ const S = {
   pill: (active: boolean, variant: 'terra' | 'sage' | 'default' = 'default'): React.CSSProperties => ({
     fontSize: '13px', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer',
     border: active
-      ? (variant === 'terra' ? '1px solid #C4522A' : variant === 'sage' ? '1px solid #6B7A5A' : '1px solid #1A1612')
+      ? (variant === 'terra' ? '1px solid #6B4423' : variant === 'sage' ? '1px solid #6B7A5A' : '1px solid #2B2420')
       : '1px solid #E0D8CF',
     background: active
-      ? (variant === 'terra' ? '#C4522A' : variant === 'sage' ? '#6B7A5A' : '#1A1612')
+      ? (variant === 'terra' ? '#6B4423' : variant === 'sage' ? '#6B7A5A' : '#2B2420')
       : '#FDFBF7',
     color: active ? 'white' : '#3D3530',
     whiteSpace: 'nowrap' as const,
@@ -279,8 +279,8 @@ const S = {
     flex: 1, textAlign: 'center' as const, padding: '7px 4px',
     borderRadius: '10px', fontSize: '11px', cursor: 'pointer',
     border: '1px solid #E0D8CF',
-    background: active ? '#1A1612' : 'transparent',
-    color: active ? '#F5F0E8' : '#8A7F78',
+    background: active ? '#2B2420' : 'transparent',
+    color: active ? '#F0EBE0' : '#8A7F78',
     fontWeight: active ? 500 : 400,
     transition: 'all 0.12s',
   }),
@@ -294,7 +294,7 @@ const S = {
     display: 'flex', alignItems: 'center', gap: '5px',
   } as React.CSSProperties,
   secBadge: (show: boolean): React.CSSProperties => ({
-    fontSize: '9px', background: '#C4522A', color: 'white',
+    fontSize: '9px', background: '#6B4423', color: 'white',
     borderRadius: '10px', padding: '1px 5px', display: show ? 'inline' : 'none',
   }),
   secBody: (open: boolean): React.CSSProperties => ({
@@ -302,7 +302,7 @@ const S = {
     padding: '0 12px 8px',
   }),
   subSec: {
-    background: '#F5F0E8', borderRadius: '8px', padding: '7px 9px',
+    background: '#F0EBE0', borderRadius: '8px', padding: '7px 9px',
   } as React.CSSProperties,
   subLbl: {
     fontSize: '9px', color: '#8A7F78', textTransform: 'uppercase' as const,
@@ -314,7 +314,7 @@ const S = {
   card: (selected: boolean): React.CSSProperties => ({
     background: selected ? '#FFF8F5' : '#FDFBF7',
     borderRadius: '12px',
-    border: selected ? '1.5px solid #C4522A' : '1.5px solid #E0D8CF',
+    border: selected ? '1.5px solid #6B4423' : '1.5px solid #E0D8CF',
     overflow: 'hidden', cursor: 'pointer', transition: 'all 0.12s',
   }),
   cardEmoji: {
@@ -324,21 +324,21 @@ const S = {
   } as React.CSSProperties,
   tag: (type: 'default' | 'spicy' | 'season' | 'special'): React.CSSProperties => ({
     fontSize: '9px', padding: '2px 6px', borderRadius: '10px',
-    ...(type === 'spicy'   ? { background: '#FFF0EC', color: '#C4522A', border: '0.5px solid #F5C4B3' }
+    ...(type === 'spicy'   ? { background: '#FFF0EC', color: '#6B4423', border: '0.5px solid #F5C4B3' }
       : type === 'season'  ? { background: '#EFF5E8', color: '#3B6D11', border: '0.5px solid #C0DD97' }
       : type === 'special' ? { background: '#FEF9EC', color: '#9A7020', border: '0.5px solid #FAC775' }
       :                      { background: '#F0EBE3', color: '#6B7A5A', border: '0.5px solid #E0D8CF' }),
   }),
   qtyBtn: {
     width: '26px', height: '26px', borderRadius: '7px',
-    border: '1.5px solid #C8C0B8', background: '#F5F0E8',
+    border: '1.5px solid #C8C0B8', background: '#F0EBE0',
     fontSize: '15px', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: '#1A1612', fontWeight: 500, flexShrink: 0,
+    color: '#2B2420', fontWeight: 500, flexShrink: 0,
   } as React.CSSProperties,
   addBtn: {
     height: '26px', padding: '0 12px', borderRadius: '13px',
-    border: 'none', background: '#C4522A',
+    border: 'none', background: '#6B4423',
     fontSize: '11px', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     color: 'white', fontWeight: 500, flexShrink: 0, whiteSpace: 'nowrap' as const,
@@ -391,7 +391,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
     <div style={S.card(qty > 0)} onClick={onTap}>
       <div style={{ display: 'flex', gap: '8px', padding: '6px 10px 6px' }}>
         {/* Left: image spanning all rows */}
-        <div style={{ width: '80px', height: '80px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, background: '#1A1612' }}>
+        <div style={{ width: '80px', height: '80px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, background: '#2B2420' }}>
           {pizza.id.startsWith('custom_') ? (
             pizza.photoUrl
               ? <img src={pizza.photoUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -425,7 +425,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
           {/* Row 1: name · budget */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 500, color: '#1A1612', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#2B2420', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {name}
             </span>
             <span style={{ fontSize: '11px', color: '#8A7F78', flexShrink: 0 }}>{budget}</span>
@@ -467,7 +467,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
             <div style={{ flex: 1 }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
               <button style={{ ...S.qtyBtn, visibility: qty > 0 ? 'visible' : 'hidden' }} onClick={e => onQtyChange(-1, e)}>−</button>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: '#C4522A', minWidth: '14px', textAlign: 'center', visibility: qty > 0 ? 'visible' : 'hidden' }}>{qty}</span>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#6B4423', minWidth: '14px', textAlign: 'center', visibility: qty > 0 ? 'visible' : 'hidden' }}>{qty}</span>
               <button style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
             </div>
           </div>
@@ -506,7 +506,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
     <div
       style={{
         position: 'fixed', inset: 0,
-        background: 'rgba(26,22,18,0.5)',
+        background: 'rgba(43, 36, 32,0.5)',
         zIndex: 200,
         display: 'flex',
         alignItems: 'flex-end',
@@ -534,7 +534,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           aspectRatio: '1 / 1',
           maxHeight: 'calc(100dvh - 69px - 69px - 230px)',
           flexShrink: 0,
-          background: '#1A1612',
+          background: '#2B2420',
           borderRadius: '20px 20px 0 0',
           overflow: 'hidden',
         }}>
@@ -562,7 +562,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
             style={{
               position: 'absolute', top: '10px', right: '10px',
               width: '28px', height: '28px',
-              background: 'rgba(26,22,18,0.6)',
+              background: 'rgba(43, 36, 32,0.6)',
               border: 'none', borderRadius: '50%',
               color: 'white', fontSize: '13px',
               cursor: 'pointer',
@@ -580,7 +580,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           <div style={{
             fontSize: '18px', fontWeight: 700,
             fontFamily: 'Playfair Display, serif',
-            color: '#1A1612', marginBottom: '6px',
+            color: '#2B2420', marginBottom: '6px',
           }}>
             {pizza.name[l] ?? pizza.name.en}
           </div>
@@ -593,7 +593,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
               {pizza.ingredients.map(ing => (
                 <span key={ing.id} style={{
                   fontSize: '11px', color: '#3D3530',
-                  background: '#F5F0E8', borderRadius: '20px',
+                  background: '#F0EBE0', borderRadius: '20px',
                   padding: '2px 8px', border: '1px solid #E0D8CF',
                 }}>
                   {ing.name[l] ?? ing.name.en}
@@ -651,13 +651,13 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
                 style={{
                   width: '36px', height: '36px', borderRadius: '50%',
                   border: '1.5px solid #E0D8CF', background: '#FDFBF7',
-                  cursor: 'pointer', fontSize: '20px', color: '#1A1612',
+                  cursor: 'pointer', fontSize: '20px', color: '#2B2420',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   lineHeight: 1,
                 }}
               >&#x2212;</button>
               <span style={{
-                fontSize: '20px', fontWeight: 700, color: '#1A1612',
+                fontSize: '20px', fontWeight: 700, color: '#2B2420',
                 fontFamily: 'DM Mono, monospace',
                 minWidth: '28px', textAlign: 'center',
               }}>
@@ -667,7 +667,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
                 onClick={e => { e.stopPropagation(); onQtyChange(1); }}
                 style={{
                   width: '36px', height: '36px', borderRadius: '50%',
-                  border: 'none', background: '#C4522A',
+                  border: 'none', background: '#6B4423',
                   cursor: 'pointer', fontSize: '20px', color: 'white',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   lineHeight: 1,
@@ -982,8 +982,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
                 onClick={() => setLocation(loc.key)}
                 style={{
                   fontSize: '11px', padding: '3px 10px', borderRadius: '12px', cursor: 'pointer',
-                  border: shoppingLocation === loc.key ? '1px solid #C4522A' : '1px solid #E0D8CF',
-                  background: shoppingLocation === loc.key ? '#C4522A' : '#FDFBF7',
+                  border: shoppingLocation === loc.key ? '1px solid #6B4423' : '1px solid #E0D8CF',
+                  background: shoppingLocation === loc.key ? '#6B4423' : '#FDFBF7',
                   color: shoppingLocation === loc.key ? 'white' : '#3D3530',
                 }}
               >
@@ -998,7 +998,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
         {sections.map(section => (
           <div key={section.label}>
-            <div style={{ padding: '7px 12px 4px 11px', background: '#F5F0E8', borderLeft: '3px solid #C4522A' }}>
+            <div style={{ padding: '7px 12px 4px 11px', background: '#F0EBE0', borderLeft: '3px solid #6B4423' }}>
               <span style={{ fontSize: '10px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'DM Mono, monospace' }}>
                 {section.label}
               </span>
@@ -1038,7 +1038,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
                           onClick={() => hasSubInfo && toggleSub(item.id)}
                           style={{
                             fontSize: '13px',
-                            color: isTicked ? '#B0A89E' : '#1A1612',
+                            color: isTicked ? '#B0A89E' : '#2B2420',
                             textDecoration: 'none',
                             cursor: hasSubInfo ? 'pointer' : 'default',
                             fontFamily: 'DM Sans, sans-serif',
@@ -1085,7 +1085,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
                       )}
 
                       {!showSubProactively && isExpanded && hasSubInfo && (
-                        <div style={{ marginTop: '3px', padding: '6px 8px', background: '#F5F0E8', borderRadius: '6px' }}>
+                        <div style={{ marginTop: '3px', padding: '6px 8px', background: '#F0EBE0', borderRadius: '6px' }}>
                           {item.goodEnough && (
                             <div style={{ fontSize: '11px', color: '#6B7A5A', marginBottom: '2px' }}>
                               <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'Très proche :' : 'Also great:'}</span>
@@ -1116,7 +1116,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 
         {recipeIngredients && recipeIngredients.length > 0 && (
           <div>
-            <div style={{ padding: '7px 12px 4px 11px', background: '#F5F0E8', borderLeft: '3px solid #C4522A' }}>
+            <div style={{ padding: '7px 12px 4px 11px', background: '#F0EBE0', borderLeft: '3px solid #6B4423' }}>
               <span style={{ fontSize: '10px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'DM Mono, monospace' }}>
                 {l === 'fr' ? 'Pour votre pâte' : 'For your dough'}
               </span>
@@ -1138,7 +1138,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
                     </svg>
                   )}
                 </button>
-                <span style={{ fontSize: '13px', color: ticked['dough_' + i] ? '#B0A89E' : '#1A1612', flex: 1, textDecoration: 'none' }}>
+                <span style={{ fontSize: '13px', color: ticked['dough_' + i] ? '#B0A89E' : '#2B2420', flex: 1, textDecoration: 'none' }}>
                   {ing.name}
                 </span>
                 <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Mono, monospace' }}>{ing.amount}</span>
@@ -1153,12 +1153,12 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
         <button
           onClick={handleShare}
           style={{
-            width: '100%', padding: '11px', background: '#1A1612', color: '#F5F0E8',
+            width: '100%', padding: '11px', background: '#2B2420', color: '#F0EBE0',
             border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 500,
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
           }}
         >
-          <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#F5F0E8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#F0EBE0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10 3v10M6 7l4-4 4 4"/>
             <path d="M4 14v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
           </svg>
@@ -1431,7 +1431,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             {Object.values(filter).some(v => Array.isArray(v) ? v.length > 0 : v !== null && v !== 'all') && (
               <span
                 onClick={clearAll}
-                style={{ fontSize: '11px', color: '#C4522A', cursor: 'pointer', marginLeft: '6px' }}
+                style={{ fontSize: '11px', color: '#6B4423', cursor: 'pointer', marginLeft: '6px' }}
               >
                 {l === 'fr' ? '· Effacer' : '· Clear'}
               </span>
@@ -1440,7 +1440,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           <span
             onClick={() => setShowStylePicker(true)}
             style={{
-              fontSize: '12px', color: '#C4522A',
+              fontSize: '12px', color: '#6B4423',
               fontFamily: 'DM Mono, monospace',
               cursor: 'pointer', textDecoration: 'underline',
               textUnderlineOffset: '2px',
@@ -1485,7 +1485,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   gap: '4px',
                   padding: '5px 10px',
                   borderRadius: '20px',
-                  border: chip.count > 0 ? '1px solid #C4522A' : '1px solid #E0D8CF',
+                  border: chip.count > 0 ? '1px solid #6B4423' : '1px solid #E0D8CF',
                   background: chip.count > 0 ? '#FBF0EB' : '#FDFBF7',
                   color: chip.count > 0 ? '#993C1D' : '#3D3530',
                   fontSize: '12px',
@@ -1499,7 +1499,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 {chip.label}
                 {chip.count > 0 && (
                   <span style={{
-                    background: '#C4522A', color: '#fff',
+                    background: '#6B4423', color: '#fff',
                     borderRadius: '50%', width: '15px', height: '15px',
                     fontSize: '9px', display: 'inline-flex',
                     alignItems: 'center', justifyContent: 'center',
@@ -1602,13 +1602,13 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: '4px',
                       padding: '4px 8px', borderRadius: '20px',
-                      border: '1px solid #C4522A', background: '#FBF0EB',
+                      border: '1px solid #6B4423', background: '#FBF0EB',
                       fontSize: '11px', color: '#993C1D', cursor: 'pointer',
                       whiteSpace: 'nowrap' as const,
                     }}
                   >
                     {chip.label}
-                    <span style={{ fontSize: '13px', lineHeight: 1, color: '#C4522A' }}>×</span>
+                    <span style={{ fontSize: '13px', lineHeight: 1, color: '#6B4423' }}>×</span>
                   </span>
                 ))}
               </div>
@@ -1620,7 +1620,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             <>
               <div
                 onClick={() => setFilterSheetKey(null)}
-                style={{ position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.5)', zIndex: 150 }}
+                style={{ position: 'fixed', inset: 0, background: 'rgba(43, 36, 32,0.5)', zIndex: 150 }}
               />
               <div
                 onClick={e => e.stopPropagation()}
@@ -1637,7 +1637,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               >
                 <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px 10px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#1A1612', fontFamily: 'Playfair Display, serif' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'Playfair Display, serif' }}>
                     {filterSheetKey === 'occasion'   ? (l === 'fr' ? 'Occasion' : 'Occasion')
                     : filterSheetKey === 'diet'       ? (l === 'fr' ? 'Régime alimentaire' : 'Diet')
                     : filterSheetKey === 'complexity' ? (l === 'fr' ? 'Complexité' : 'Complexity')
@@ -1646,7 +1646,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   </span>
                   <button
                     onClick={() => setFilterSheetKey(null)}
-                    style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F5F0E8', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >✕</button>
                 </div>
                 <div style={{ overflowY: 'auto', flex: 1, paddingBottom: '8px' }}>
@@ -1699,7 +1699,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                               onClick={() => setComplexity(v)}
                               style={{
                                 flex: 1, padding: '9px 4px', textAlign: 'center', fontSize: '11px',
-                                background: active ? '#C4522A' : '#FDFBF7',
+                                background: active ? '#6B4423' : '#FDFBF7',
                                 color: active ? '#fff' : '#8A7F78',
                                 fontWeight: active ? 600 : 400,
                                 cursor: 'pointer', transition: 'all 0.1s',
@@ -1726,7 +1726,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           style={{
                             width: '100%', padding: '8px 10px',
                             border: '1px solid #E0D8CF', borderRadius: '8px',
-                            fontSize: '13px', color: '#1A1612',
+                            fontSize: '13px', color: '#2B2420',
                             background: '#FDFBF7', fontFamily: 'DM Sans, sans-serif',
                             boxSizing: 'border-box',
                           }}
@@ -1744,8 +1744,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                                 style={{
                                   flex: 1, padding: '8px 4px', textAlign: 'center',
                                   fontSize: '11px', cursor: 'pointer',
-                                  color: isActive ? '#C4522A' : '#8A7F78',
-                                  borderBottom: isActive ? '2px solid #C4522A' : '2px solid transparent',
+                                  color: isActive ? '#6B4423' : '#8A7F78',
+                                  borderBottom: isActive ? '2px solid #6B4423' : '2px solid transparent',
                                   fontWeight: isActive ? 700 : 400,
                                   fontFamily: 'DM Sans, sans-serif',
                                   whiteSpace: 'nowrap' as const, overflow: 'hidden',
@@ -1785,8 +1785,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                               })}
                               style={{
                                 padding: '7px 12px', borderRadius: '20px',
-                                border: active ? '1px solid #C4522A' : '1px solid #E0D8CF',
-                                background: active ? '#C4522A' : '#FDFBF7',
+                                border: active ? '1px solid #6B4423' : '1px solid #E0D8CF',
+                                background: active ? '#6B4423' : '#FDFBF7',
                                 color: active ? '#fff' : '#3D3530',
                                 fontSize: '12px', cursor: 'pointer',
                                 transition: 'all 0.12s', fontFamily: 'DM Sans, sans-serif',
@@ -1955,7 +1955,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                                       padding: '5px 14px',
                                       borderRadius: '20px',
                                       border: active ? '1.5px solid var(--terra)' : '1px solid var(--border)',
-                                      background: active ? 'rgba(196,82,42,0.1)' : 'var(--cream)',
+                                      background: active ? 'rgba(107, 68, 35,0.1)' : 'var(--cream)',
                                       color: active ? 'var(--terra)' : 'var(--ash)',
                                       fontFamily: 'var(--font-dm-sans)',
                                       fontSize: '13px',
@@ -1993,7 +1993,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       onClick={() => setFilterSheetKey(null)}
                       style={{
                         flex: 2, padding: '10px', border: 'none',
-                        borderRadius: '10px', background: '#C4522A',
+                        borderRadius: '10px', background: '#6B4423',
                         fontSize: '13px', fontWeight: 600, color: '#fff',
                         cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
                       }}
@@ -2009,14 +2009,14 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           )}
 
           {/* ── Results strip ── */}
-          <div style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F5F0E8', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
+          <div style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0EBE0', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
             <span style={{ fontSize: '11px', color: '#8A7F78' }}>
               {l === 'fr'
                 ? `${filtered.length} pizza${filtered.length !== 1 ? 's' : ''}`
                 : `Showing ${filtered.length} pizza${filtered.length !== 1 ? 's' : ''}`}
               {filter.season !== 'all' ? ` · ${SEASON_LABELS[filter.season][l]}` : ''}
             </span>
-            <button onClick={clearAll} style={{ fontSize: '11px', color: '#C4522A', background: 'none', border: 'none', cursor: 'pointer' }}>
+            <button onClick={clearAll} style={{ fontSize: '11px', color: '#6B4423', background: 'none', border: 'none', cursor: 'pointer' }}>
               {l === 'fr' ? 'Tout effacer' : 'Clear all'}
             </button>
           </div>
@@ -2037,9 +2037,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   <button
                     onClick={() => setCreateOpen(true)}
                     style={{
-                      border: '1px dashed rgba(196,82,42,0.45)', borderRadius: '14px',
-                      background: 'rgba(196,82,42,0.04)', padding: '4px 11px', cursor: 'pointer',
-                      fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: '#C4522A',
+                      border: '1px dashed rgba(107, 68, 35,0.45)', borderRadius: '14px',
+                      background: 'rgba(107, 68, 35,0.04)', padding: '4px 11px', cursor: 'pointer',
+                      fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: '#6B4423',
                     }}
                   >
                     {l === 'fr' ? '+ Nouvelle' : '+ New'}
@@ -2062,7 +2062,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         position: 'absolute', top: '6px', right: '6px',
                         border: '1px solid #E8E0D5', borderRadius: '14px', padding: '3px 9px',
                         background: 'rgba(253,251,247,0.92)', cursor: 'pointer',
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#C4522A',
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#6B4423',
                       }}
                     >✎</button>
                   </div>
@@ -2095,12 +2095,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   onClick={() => setCreateOpen(true)}
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-                    border: '1.5px dashed rgba(196,82,42,0.45)', borderRadius: '12px',
-                    background: 'rgba(196,82,42,0.04)', padding: '13px', cursor: 'pointer',
+                    border: '1.5px dashed rgba(107, 68, 35,0.45)', borderRadius: '12px',
+                    background: 'rgba(107, 68, 35,0.04)', padding: '13px', cursor: 'pointer',
                     marginTop: '4px',
                   }}
                 >
-                  <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '14px', fontWeight: 700, color: '#C4522A' }}>
+                  <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '14px', fontWeight: 700, color: '#6B4423' }}>
                     {l === 'fr' ? 'Vous ne la trouvez pas ?' : "Can't find yours?"}
                   </span>
                   <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: '#8A7F78' }}>
@@ -2162,7 +2162,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         <>
           <div
             onClick={() => { setSummarySheetOpen(false); setDessertSheetOpen(false); }}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.52)', zIndex: 160 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(43, 36, 32,0.52)', zIndex: 160 }}
           />
           <div
             onClick={e => e.stopPropagation()}
@@ -2174,13 +2174,13 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           >
             <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px 10px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#1A1612', fontFamily: 'Playfair Display, serif' }}>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'Playfair Display, serif' }}>
                 {!dessertSheetOpen
                   ? (l === 'fr' ? 'Votre pizza party' : 'Your Pizza Party')
                   : (l === 'fr' ? 'Desserts' : 'Dessert pizzas')}
               </span>
               <button onClick={() => { setSummarySheetOpen(false); setDessertSheetOpen(false); }}
-                style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F5F0E8', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
             </div>
             <div style={{ overflowY: 'auto', flex: 1 }}>
               {!dessertSheetOpen ? (
@@ -2190,13 +2190,13 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     if (!pizza) return null;
                     return (
                       <div key={pizzaId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '0.5px solid #F0EAE3' }}>
-                        <span style={{ fontSize: '13px', color: '#1A1612', fontFamily: 'Georgia, serif', flex: 1 }}>
+                        <span style={{ fontSize: '13px', color: '#2B2420', fontFamily: 'Georgia, serif', flex: 1 }}>
                           {pizza.name[l] ?? pizza.name.en}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <button onClick={() => changeQty(pizzaId, -1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #E0D8CF', background: '#FDFBF7', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
                           <span style={{ fontSize: '13px', fontWeight: 600, minWidth: '16px', textAlign: 'center', fontFamily: 'DM Mono, monospace' }}>{qty as number}</span>
-                          <button onClick={() => changeQty(pizzaId, 1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #C4522A', background: '#C4522A', cursor: 'pointer', fontSize: '16px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                          <button onClick={() => changeQty(pizzaId, 1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #6B4423', background: '#6B4423', cursor: 'pointer', fontSize: '16px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
                         </div>
                       </div>
                     );
@@ -2210,7 +2210,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     }}
                   >
                     <div>
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#1A1612', marginBottom: '2px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#2B2420', marginBottom: '2px' }}>
                         {l === 'fr' ? 'Ajouter quelque chose de sucré ?' : 'Add something sweet?'}
                       </div>
                       <div style={{ fontSize: '11px', color: '#8A7F78' }}>
@@ -2228,8 +2228,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         style={{
                           margin: '8px 14px 0',
                           padding: '10px 12px',
-                          background: 'rgba(196,82,42,0.06)',
-                          border: '1px solid rgba(196,82,42,0.15)',
+                          background: 'rgba(107, 68, 35,0.06)',
+                          border: '1px solid rgba(107, 68, 35,0.15)',
                           borderRadius: '10px',
                           cursor: onGoToMyDough ? 'pointer' : 'default',
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -2240,7 +2240,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                             ? 'Définissez vos quantités dans Ma Pâte'
                             : 'Set your dough quantities in My Dough'}
                         </span>
-                        <span style={{ fontSize: '12px', color: '#C4522A', fontFamily: 'DM Mono, monospace' }}>→</span>
+                        <span style={{ fontSize: '12px', color: '#6B4423', fontFamily: 'DM Mono, monospace' }}>→</span>
                       </div>
                     );
                     return (
@@ -2249,8 +2249,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         style={{
                           margin: '8px 14px 0',
                           padding: '10px 12px',
-                          background: 'rgba(212,168,83,0.08)',
-                          border: '1px solid rgba(212,168,83,0.3)',
+                          background: 'rgba(156, 130, 72,0.08)',
+                          border: '1px solid rgba(156, 130, 72,0.3)',
                           borderRadius: '10px',
                           cursor: onGoToMyDough ? 'pointer' : 'default',
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -2261,7 +2261,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                             ? 'Vous aurez peut-être besoin de plus de pâte — ajustez dans Ma Pâte'
                             : 'You may need more dough — adjust in My Dough'}
                         </span>
-                        <span style={{ fontSize: '12px', color: '#D4A853', fontFamily: 'DM Mono, monospace' }}>→</span>
+                        <span style={{ fontSize: '12px', color: '#9C8248', fontFamily: 'DM Mono, monospace' }}>→</span>
                       </div>
                     );
                   })()}
@@ -2314,7 +2314,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                               transition: 'border 0.15s ease',
                             }}
                           >
-                            <div style={{ position: 'relative', height: '100px', background: '#1A1612' }}>
+                            <div style={{ position: 'relative', height: '100px', background: '#2B2420' }}>
                               <img
                                 src={imgSrc} loading="lazy" decoding="async"
                                 onError={e => { (e.target as HTMLImageElement).src = fallbackSrc; }}
@@ -2323,7 +2323,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                               />
                               <div style={{
                                 position: 'absolute', bottom: 0, left: 0, right: 0,
-                                background: 'linear-gradient(transparent, rgba(26,22,18,0.82))',
+                                background: 'linear-gradient(transparent, rgba(43, 36, 32,0.82))',
                                 padding: '16px 8px 6px',
                               }}>
                                 <div style={{
@@ -2369,7 +2369,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   </div>
                   <button
                     onClick={() => setDessertSheetOpen(false)}
-                    style={{ margin: '8px 14px', padding: '10px', border: 'none', borderRadius: '10px', background: '#C4522A', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', width: 'calc(100% - 28px)', fontFamily: 'DM Sans, sans-serif' }}
+                    style={{ margin: '8px 14px', padding: '10px', border: 'none', borderRadius: '10px', background: '#6B4423', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', width: 'calc(100% - 28px)', fontFamily: 'DM Sans, sans-serif' }}
                   >
                     {l === 'fr' ? 'Retour à la sélection' : 'Back to party'}
                   </button>
@@ -2387,7 +2387,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             onClick={() => setShowStylePicker(false)}
             style={{
               position: 'fixed', inset: 0,
-              background: 'rgba(26,22,18,0.5)',
+              background: 'rgba(43, 36, 32,0.5)',
               zIndex: 200,
             }}
           />
@@ -2448,7 +2448,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         ? '1px solid var(--border)' : 'none',
                       cursor: 'pointer',
                       background: isSelected
-                        ? 'rgba(196,82,42,0.06)' : 'transparent',
+                        ? 'rgba(107, 68, 35,0.06)' : 'transparent',
                     }}
                   >
                     <div style={{ flex: 1 }}>
@@ -2465,7 +2465,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         fontFamily: 'DM Mono, monospace',
                         fontSize: '9px',
                         color: 'var(--gold)',
-                        background: 'rgba(212,168,83,0.15)',
+                        background: 'rgba(156, 130, 72,0.15)',
                         borderRadius: '10px',
                         padding: '2px 6px',
                         marginRight: '8px',
@@ -2511,8 +2511,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {activePill === 'pizzas' && !keyboardOpen && (
         <div style={{
           position: 'fixed', bottom: `${bottomNavH}px`, left: 0, right: 0,
-          background: '#1A1612',
-          borderTop: '1px solid #C4522A',
+          background: '#2B2420',
+          borderTop: '1px solid #6B4423',
           padding: '10px 14px',
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between',
@@ -2528,7 +2528,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 <div key={i} style={{
                   width: '7px', height: '7px', borderRadius: '50%',
                   background: i < totalQty
-                    ? (doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#C4522A')
+                    ? (doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#6B4423')
                     : '#3D3530',
                   transition: 'background 0.2s ease',
                 }} />
@@ -2537,7 +2537,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             <span style={{
               fontFamily: 'DM Mono, monospace', fontSize: '12px', fontWeight: 600,
               color: totalQty === 0 ? '#8A7F78'
-                : (doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#C4522A'),
+                : (doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#6B4423'),
             }}>
               {totalQty === 0
                 ? (l === 'fr'
@@ -2545,7 +2545,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   : `Select ${doughConfigured ? numItems : 'your'} pizzas`)
                 : (doughConfigured
                   ? (totalQty > numItems
-                    ? <>{numItems}/{numItems} <span style={{ color: '#D4A853', fontWeight: 700 }}>+{totalQty - numItems}</span></>
+                    ? <>{numItems}/{numItems} <span style={{ color: '#9C8248', fontWeight: 700 }}>+{totalQty - numItems}</span></>
                     : `${totalQty}/${numItems}`)
                   : `${totalQty}`)}
             </span>

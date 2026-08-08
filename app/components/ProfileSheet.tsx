@@ -16,7 +16,7 @@ const S = {
   },
   pill: (active: boolean) => ({
     border: active ? '1.5px solid var(--terra)' : '1px solid var(--border)',
-    background: active ? 'rgba(196,82,42,0.07)' : 'var(--warm)',
+    background: active ? 'rgba(107, 68, 35,0.07)' : 'var(--warm)',
     color: 'var(--char)', borderRadius: '20px', padding: '7px 13px',
     fontFamily: 'var(--font-dm-sans)', fontSize: '12.5px', cursor: 'pointer',
     lineHeight: 1.2,

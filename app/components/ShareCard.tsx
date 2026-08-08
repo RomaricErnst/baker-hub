@@ -411,7 +411,7 @@ export default function ShareCard({
       canvas.width  = W;
       canvas.height = totalH;
 
-      ctx.fillStyle = '#1A1612';
+      ctx.fillStyle = '#2B2420';
       ctx.fillRect(0, 0, W, totalH);
 
       let y = 52;
@@ -419,7 +419,7 @@ export default function ShareCard({
       // Bake date
       if (bakeDate) {
         ctx.font      = `400 22px ${FONT}`;
-        ctx.fillStyle = 'rgba(212,168,83,0.55)';
+        ctx.fillStyle = 'rgba(156, 130, 72,0.55)';
         ctx.textAlign = 'left';
         ctx.fillText(`Bake: ${bakeDate}`, MARGIN, y);
         y += 34;
@@ -503,7 +503,7 @@ export default function ShareCard({
     canvas.width = 1080;
     canvas.height = EXPORT_H;
 
-    ctx.fillStyle = '#1A1612';
+    ctx.fillStyle = '#2B2420';
     ctx.fillRect(0, 0, 1080, EXPORT_H);
 
     const imgCache = imgCacheRef.current;
@@ -601,7 +601,7 @@ export default function ShareCard({
     }
 
     // Dark panel
-    ctx.fillStyle = '#1A1612';
+    ctx.fillStyle = '#2B2420';
     ctx.fillRect(0, photoZoneHeight, 1080, panelHeight);
 
     // ── Panel content ───────────────────────────────────
@@ -614,7 +614,7 @@ export default function ShareCard({
     // Bake date — gold, subtle
     if (bakeDate) {
       ctx.font      = '400 26px "DM Mono", monospace';
-      ctx.fillStyle = 'rgba(212,168,83,0.70)';
+      ctx.fillStyle = 'rgba(156, 130, 72,0.70)';
       ctx.textAlign = 'left';
       ctx.fillText(bakeDate, 72, y);
       y += 34;
@@ -641,7 +641,7 @@ export default function ShareCard({
     }
 
     // Gold divider
-    ctx.strokeStyle = 'rgba(212,168,83,0.25)';
+    ctx.strokeStyle = 'rgba(156, 130, 72,0.25)';
     ctx.lineWidth   = 1;
     ctx.beginPath();
     ctx.moveTo(72, y);
@@ -787,7 +787,7 @@ export default function ShareCard({
           <div style={{
             position: 'relative', width: 'fit-content', maxWidth: '100%',
             margin: '0 auto', minWidth: '140px', minHeight: '140px',
-            borderRadius: '12px', overflow: 'hidden', background: '#1A1612',
+            borderRadius: '12px', overflow: 'hidden', background: '#2B2420',
           }}>
           <canvas
             ref={previewCanvasRef}
@@ -808,7 +808,7 @@ export default function ShareCard({
             <div style={{
               position: 'absolute', inset: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(26,22,18,0.55)',
+              background: 'rgba(43, 36, 32,0.55)',
               fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
               color: 'rgba(255,255,255,0.6)', letterSpacing: '.06em',
             }}>
@@ -861,7 +861,7 @@ export default function ShareCard({
             {(['protocol', 'full', 'two', 'four'] as const).map(t => (
               <div key={t} onClick={() => setTemplate(t)} style={{ flex: 1, cursor: 'pointer' }}>
                 <div style={{
-                  aspectRatio: '1', background: '#1A1612', borderRadius: '8px',
+                  aspectRatio: '1', background: '#2B2420', borderRadius: '8px',
                   border: template === t ? '2px solid var(--gold)' : '1.5px solid rgba(255,255,255,0.1)',
                   overflow: 'hidden', position: 'relative',
                 }}>
@@ -932,7 +932,7 @@ export default function ShareCard({
                   style={{
                     flex: 1, padding: '8px 6px', borderRadius: '20px',
                     border: format === key ? '1.5px solid var(--gold)' : '1px solid var(--border)',
-                    background: format === key ? 'rgba(212,168,83,0.10)' : 'transparent',
+                    background: format === key ? 'rgba(156, 130, 72,0.10)' : 'transparent',
                     color: format === key ? 'var(--char)' : 'var(--smoke)',
                     fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                     cursor: 'pointer', transition: 'all 0.15s ease',
@@ -976,7 +976,7 @@ export default function ShareCard({
                 const miniBtn: React.CSSProperties = {
                   position: 'absolute', width: '20px', height: '20px',
                   borderRadius: '6px', border: 'none', cursor: 'pointer',
-                  background: 'rgba(26,22,18,0.72)', color: '#fff',
+                  background: 'rgba(43, 36, 32,0.72)', color: '#fff',
                   fontSize: '11px', lineHeight: '20px', textAlign: 'center', padding: 0,
                 };
                 return (
@@ -996,7 +996,7 @@ export default function ShareCard({
                       <span style={{
                         position: 'absolute', top: '3px', left: '3px',
                         minWidth: '18px', height: '18px', borderRadius: '9px',
-                        background: 'var(--gold)', color: '#1A1612',
+                        background: 'var(--gold)', color: '#2B2420',
                         fontSize: '11px', fontWeight: 700, lineHeight: '18px',
                         textAlign: 'center', padding: '0 4px',
                         fontFamily: 'var(--font-dm-mono)',
@@ -1136,7 +1136,7 @@ export default function ShareCard({
             color: 'white', border: 'none', borderRadius: '12px',
             fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
             cursor: generating ? 'default' : 'pointer',
-            boxShadow: '0 2px 8px rgba(196,82,42,0.25)',
+            boxShadow: '0 2px 8px rgba(107, 68, 35,0.25)',
           }}
         >
           {generating

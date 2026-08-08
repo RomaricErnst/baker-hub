@@ -39,8 +39,8 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
     return (
       <div style={{
         padding: '9px 12px', borderRadius: '10px',
-        background: 'rgba(196,82,42,0.15)',
-        border: '1px solid rgba(196,82,42,0.4)',
+        background: 'rgba(107, 68, 35,0.15)',
+        border: '1px solid rgba(107, 68, 35,0.4)',
       }}>
         <div style={{
           fontSize: '.72rem', color: '#E8785A',
@@ -435,7 +435,7 @@ export default function Header({
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '7px',
             padding: '7px 13px',
-            border: '1px solid rgba(245,240,232,0.25)',
+            border: '1px solid rgba(240, 235, 224,0.25)',
             borderRadius: '20px',
             color: 'var(--cream)',
             fontSize: '12.5px',
@@ -460,12 +460,12 @@ export default function Header({
         <div style={{
           display: 'flex',
           border: hasWork
-            ? (sessionSaved ? '1px solid rgba(107,122,90,0.4)' : '1px solid rgba(196,82,42,0.4)')
+            ? (sessionSaved ? '1px solid rgba(107,122,90,0.4)' : '1px solid rgba(107, 68, 35,0.4)')
             : '1px solid rgba(255,255,255,0.15)',
           borderRadius: '20px',
           overflow: 'hidden',
           background: hasWork
-            ? (sessionSaved ? 'rgba(107,122,90,0.08)' : 'rgba(196,82,42,0.08)')
+            ? (sessionSaved ? 'rgba(107,122,90,0.08)' : 'rgba(107, 68, 35,0.08)')
             : 'transparent',
           flexShrink: 0,
         }}>
@@ -492,7 +492,7 @@ export default function Header({
                 width: '1px',
                 background: sessionSaved
                   ? 'rgba(107,122,90,0.3)'
-                  : 'rgba(196,82,42,0.3)',
+                  : 'rgba(107, 68, 35,0.3)',
                 margin: '6px 0',
               }} />
             </>
@@ -533,7 +533,7 @@ export default function Header({
         {/* Drawer panel */}
         <div style={{
           position: 'fixed', top: 0, left: 0, height: '100dvh', width: '300px',
-          background: '#1A1612', borderRight: '1px solid rgba(255,255,255,0.12)',
+          background: '#2B2420', borderRight: '1px solid rgba(255,255,255,0.12)',
           boxShadow: '4px 0 24px rgba(0,0,0,0.5)', zIndex: 200,
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
           animation: 'slideInLeft 0.25s ease',
@@ -604,9 +604,9 @@ export default function Header({
                     style={{
                       fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
                       color: 'var(--terra)',
-                      border: '1px solid rgba(196,82,42,0.4)',
+                      border: '1px solid rgba(107, 68, 35,0.4)',
                       borderRadius: '6px',
-                      background: 'rgba(196,82,42,0.1)',
+                      background: 'rgba(107, 68, 35,0.1)',
                       padding: '3px 10px',
                       cursor: 'pointer',
                     }}
@@ -788,14 +788,14 @@ export default function Header({
                             <span style={{
                               fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
                               padding: '2px 8px', borderRadius: '20px',
-                              background: 'rgba(212,168,83,0.15)', color: 'var(--gold)',
+                              background: 'rgba(156, 130, 72,0.15)', color: 'var(--gold)',
                             }}>Pizza</span>
                           )}
                           {event.status === 'baked' && (
                             <span style={{
                               fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
                               padding: '2px 8px', borderRadius: '20px',
-                              background: 'rgba(196,82,42,0.15)', color: 'var(--terra)',
+                              background: 'rgba(107, 68, 35,0.15)', color: 'var(--terra)',
                             }}>Baked</span>
                           )}
                           {/* Nav #5 — clone this session onto the next matching weekday/time */}
@@ -895,7 +895,7 @@ export default function Header({
             ...(authSpotlight && !user ? {
               boxShadow: 'inset 0 0 0 1.5px var(--gold)',
               borderRadius: '12px',
-              background: 'rgba(212,168,83,0.08)',
+              background: 'rgba(156, 130, 72,0.08)',
               transition: 'box-shadow .3s, background .3s',
             } : { transition: 'box-shadow .3s, background .3s' }),
           }}>

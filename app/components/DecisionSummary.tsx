@@ -23,7 +23,7 @@ export default function DecisionSummary({ thumbnail, thumbnailBg, title, tagline
         border: '1px solid var(--border)',
         borderRadius: '14px',
         background: 'white',
-        boxShadow: '0 2px 8px rgba(26,22,18,0.06)',
+        boxShadow: '0 2px 8px rgba(43, 36, 32,0.06)',
         cursor: 'pointer',
       }}
     >
@@ -31,7 +31,7 @@ export default function DecisionSummary({ thumbnail, thumbnailBg, title, tagline
         width: '44px', height: '44px',
         borderRadius: thumbnailBg ? '50%' : '8px',
         overflow: 'hidden', flexShrink: 0,
-        background: thumbnailBg ?? '#1A1612',
+        background: thumbnailBg ?? '#2B2420',
       }}>
         {thumbnail && !thumbnailBg && (
           <img src={thumbnail} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

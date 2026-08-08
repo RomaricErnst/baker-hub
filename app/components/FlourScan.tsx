@@ -147,7 +147,7 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="var(--terra)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M4 10 V6 a2 2 0 0 1 2-2 h4" /><path d="M22 4 h4 a2 2 0 0 1 2 2 v4" />
             <path d="M28 22 v4 a2 2 0 0 1-2 2 h-4" /><path d="M10 28 H6 a2 2 0 0 1-2-2 v-4" />
-            <path d="M11 21 c0-4 1.5-5 2-7 h6 c.5 2 2 3 2 7 a2 2 0 0 1-2 2 h-6 a2 2 0 0 1-2-2 Z" fill="rgba(196,82,42,0.12)" />
+            <path d="M11 21 c0-4 1.5-5 2-7 h6 c.5 2 2 3 2 7 a2 2 0 0 1-2 2 h-6 a2 2 0 0 1-2-2 Z" fill="rgba(107, 68, 35,0.12)" />
             <line x1="12" y1="12" x2="20" y2="12" />
           </svg>
           <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1rem', color: 'var(--char)', fontWeight: 700 }}>
@@ -264,7 +264,7 @@ style={{ display: 'none' }}
                   fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
                   color: 'var(--terra)', background: '#FEF4EF',
                   borderRadius: '20px', padding: '.2rem .6rem',
-                  border: '1px solid rgba(196,82,42,0.2)',
+                  border: '1px solid rgba(107, 68, 35,0.2)',
                 }}>
                   W {displayW}
                 </span>

@@ -5,11 +5,11 @@ import Link from 'next/link';
 import Header from '../../components/Header';
 
 // ── Shared style tokens ──────────────────────────
-const CHAR   = '#1A1612';
+const CHAR   = '#2B2420';
 const ASH    = '#3D3530';
 const SMOKE  = '#8A7F78';
-const TERRA  = '#C4522A';
-const GOLD   = '#D4A853';
+const TERRA  = '#6B4423';
+const GOLD   = '#9C8248';
 const SAGE   = '#6B7A5A';
 const BORDER = '#E8E0D5';
 
@@ -31,7 +31,7 @@ function Code({ children }: { children: React.ReactNode }) {
   return (
     <code style={{
       fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
-      background: 'rgba(26,22,18,0.06)', padding: '2px 6px',
+      background: 'rgba(43, 36, 32,0.06)', padding: '2px 6px',
       borderRadius: '4px', color: CHAR,
     }}>{children}</code>
   );
@@ -90,7 +90,7 @@ function DataTable({ rows }: { rows: [string, string, string][] }) {
       </thead>
       <tbody>
         {rows.map(([a, b, c], i) => (
-          <tr key={i} style={{ background: i % 2 === 0 ? 'rgba(26,22,18,0.025)' : 'transparent' }}>
+          <tr key={i} style={{ background: i % 2 === 0 ? 'rgba(43, 36, 32,0.025)' : 'transparent' }}>
             <td style={{ padding: '6px 12px', fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: ASH }}>{a}</td>
             <td style={{ padding: '6px 12px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: CHAR }}>{b}</td>
             <td style={{ padding: '6px 12px', fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: SMOKE }}>{c}</td>
@@ -277,31 +277,31 @@ const CONTENT: Record<string, LocaleContent> = {
               <P>The Custom mode fermentation chart is a live visualisation of quality — not a schedule, but a picture of how close each stage is to its biological optimum.</P>
 
               {/* Inline illustration */}
-              <div style={{ margin: '16px 0', borderRadius: '10px', background: 'rgba(26,22,18,0.03)', padding: '16px' }}>
+              <div style={{ margin: '16px 0', borderRadius: '10px', background: 'rgba(43, 36, 32,0.03)', padding: '16px' }}>
                 <svg viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto' }}>
                   {/* RT poolish bell - narrow */}
-                  <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(212,168,83,0.25)" stroke="#D4A853" strokeWidth="1.5" />
+                  <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
                   <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">RT poolish</text>
                   <text x="85" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">narrow peak</text>
                   {/* Fridge poolish bell - wide plateau */}
-                  <path d="M 155 120 Q 175 120 185 114 Q 195 105 198 90 Q 200 70 202 55 L 218 55 Q 220 70 222 90 Q 225 105 235 114 Q 245 120 265 120 Z" fill="rgba(212,168,83,0.25)" stroke="#D4A853" strokeWidth="1.5" />
-                  <line x1="202" y1="55" x2="218" y2="55" stroke="#D4A853" strokeWidth="1.5" />
+                  <path d="M 155 120 Q 175 120 185 114 Q 195 105 198 90 Q 200 70 202 55 L 218 55 Q 220 70 222 90 Q 225 105 235 114 Q 245 120 265 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
+                  <line x1="202" y1="55" x2="218" y2="55" stroke="#9C8248" strokeWidth="1.5" />
                   <text x="210" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Fridge poolish</text>
                   <text x="210" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">wide plateau</text>
                   {/* Plateau annotation */}
-                  <line x1="202" y1="48" x2="218" y2="48" stroke="#D4A853" strokeWidth="1" strokeDasharray="2,2" />
-                  <text x="210" y="46" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="7" fill="#D4A853">plateau</text>
+                  <line x1="202" y1="48" x2="218" y2="48" stroke="#9C8248" strokeWidth="1" strokeDasharray="2,2" />
+                  <text x="210" y="46" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="7" fill="#9C8248">plateau</text>
                   {/* Dough bell - wide plateau, right side */}
                   <path d="M 285 120 Q 295 120 300 115 Q 305 108 308 95 Q 310 80 312 65 L 330 65 Q 332 80 334 95 Q 337 108 342 115 Q 350 120 390 120 Z" fill="rgba(107,122,90,0.2)" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
                   <line x1="312" y1="65" x2="330" y2="65" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
                   <text x="335" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Dough</text>
                   <text x="335" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">peaks at bake</text>
                   {/* Mix diamond */}
-                  <rect x="279" y="113" width="8" height="8" transform="rotate(45 283 117)" fill="#D4A853" />
-                  <text x="283" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#D4A853">mix ◆</text>
+                  <rect x="279" y="113" width="8" height="8" transform="rotate(45 283 117)" fill="#9C8248" />
+                  <text x="283" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#9C8248">mix ◆</text>
                   {/* Bake triangle */}
-                  <polygon points="390,120 386,108 394,108" fill="#C4522A" />
-                  <text x="390" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#C4522A">bake ▲</text>
+                  <polygon points="390,120 386,108 394,108" fill="#6B4423" />
+                  <text x="390" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#6B4423">bake ▲</text>
                   {/* Time axis */}
                   <line x1="30" y1="120" x2="400" y2="120" stroke="#E8E0D5" strokeWidth="1" />
                   <text x="215" y="138" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#8A7F78">← earlier ——————————— time ——————————— bake →</text>
@@ -413,7 +413,7 @@ const CONTENT: Record<string, LocaleContent> = {
               <p style={{ marginBottom: '10px' }}><Code>Water temp = (Target FDT × 3) − flour temp − kitchen temp − friction</Code></p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
                 {['Spiral +8°C', 'Stand +5°C', 'By hand +1°C', 'No-knead 0°C'].map(l => (
-                  <span key={l} style={{ ...monoSm, padding: '3px 10px', borderRadius: '20px', background: 'rgba(26,22,18,0.06)' }}>{l}</span>
+                  <span key={l} style={{ ...monoSm, padding: '3px 10px', borderRadius: '20px', background: 'rgba(43, 36, 32,0.06)' }}>{l}</span>
                 ))}
               </div>
               <P>FDT (Final Dough Temperature) is the temperature of your dough immediately after mixing — it directly controls how fast fermentation begins. Target FDT varies by style (Neapolitan 23°C, enriched doughs 22°C). In hot kitchens the formula often calls for water below 10°C — which is why Baker Hub sometimes recommends ice.</P>
@@ -481,7 +481,7 @@ const CONTENT: Record<string, LocaleContent> = {
           body: (
             <>
               <P>Baker Hub is actively developed. Things will occasionally break. If a yeast quantity seems wrong, the schedule doesn't fit, or something is confusing — please tell us. Every piece of feedback makes the engine better.</P>
-              <div style={{ background: 'rgba(26,22,18,0.04)', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
+              <div style={{ background: 'rgba(43, 36, 32,0.04)', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
                 <p style={{ margin: '0 0 4px', fontFamily: 'DM Sans, sans-serif', fontSize: '14px', fontWeight: 600, color: CHAR }}>Built by Rom</p>
                 <p style={{ margin: '0 0 12px' }}>
                   <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'DM Sans, sans-serif', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
@@ -583,7 +583,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <P>La fonction Pizza Party est construite autour d'une idée simple : une fois que vous avez planifié votre pâte, le reste de la soirée devrait s'organiser tout seul.</P>
             <P><strong style={{ color: CHAR }}>156 recettes sélectionnées.</strong> La base de données pizzas de Baker Hub couvre 144 pizzas salées et 12 desserts — chacun choisi à la main, pas généré. Organisés par tradition, occasion, goût et régime alimentaire pour trouver la bonne pizza au bon moment.</P>
             <div style={{
-              background: 'rgba(212,168,83,0.06)', borderLeft: `2px solid ${GOLD}`,
+              background: 'rgba(156, 130, 72,0.06)', borderLeft: `2px solid ${GOLD}`,
               borderRadius: '8px', padding: '12px', marginBottom: '12px',
               fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: SMOKE,
             }}>
@@ -604,12 +604,12 @@ const CONTENT: Record<string, LocaleContent> = {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
               {[
-                { label: 'Impressionner (109)',      bg: 'rgba(26,22,18,0.06)', color: CHAR },
-                { label: 'Soirée (50)',              bg: 'rgba(26,22,18,0.06)', color: CHAR },
-                { label: 'Classique (75)',           bg: 'rgba(26,22,18,0.06)', color: CHAR },
-                { label: 'Préparation rapide (33)', bg: 'rgba(26,22,18,0.06)', color: CHAR },
-                { label: 'Enfants (28)',             bg: 'rgba(26,22,18,0.06)', color: CHAR },
-                { label: 'Épicé (11)',               bg: 'rgba(26,22,18,0.06)', color: CHAR },
+                { label: 'Impressionner (109)',      bg: 'rgba(43, 36, 32,0.06)', color: CHAR },
+                { label: 'Soirée (50)',              bg: 'rgba(43, 36, 32,0.06)', color: CHAR },
+                { label: 'Classique (75)',           bg: 'rgba(43, 36, 32,0.06)', color: CHAR },
+                { label: 'Préparation rapide (33)', bg: 'rgba(43, 36, 32,0.06)', color: CHAR },
+                { label: 'Enfants (28)',             bg: 'rgba(43, 36, 32,0.06)', color: CHAR },
+                { label: 'Épicé (11)',               bg: 'rgba(43, 36, 32,0.06)', color: CHAR },
               ].map(p => <Pill key={p.label} bg={p.bg} color={p.color}>{p.label}</Pill>)}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
@@ -726,7 +726,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <p style={{ marginBottom: '10px' }}><Code>Water temp = (Target FDT × 3) − flour temp − kitchen temp − friction</Code></p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
               {['Spirale +8 °C', 'Robot +5 °C', 'À la main +1 °C', 'Sans pétrissage 0 °C'].map(l => (
-                <span key={l} style={{ ...monoSm, padding: '3px 10px', borderRadius: '20px', background: 'rgba(26,22,18,0.06)' }}>{l}</span>
+                <span key={l} style={{ ...monoSm, padding: '3px 10px', borderRadius: '20px', background: 'rgba(43, 36, 32,0.06)' }}>{l}</span>
               ))}
             </div>
             <P>La FDT cible varie selon le style (napolitaine 23 °C, pâtes enrichies 22 °C). Dans les cuisines chaudes, la formule nécessite souvent de l'eau en dessous de 10 °C — c'est pourquoi Baker Hub recommande parfois de la glace.</P>
@@ -766,25 +766,25 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Le graphique du mode Avancé est une visualisation en direct de la qualité — pas un planning, mais une image de la proximité de chaque étape avec son optimum biologique.</P>
-            <div style={{ margin: '16px 0', borderRadius: '10px', background: 'rgba(26,22,18,0.03)', padding: '16px' }}>
+            <div style={{ margin: '16px 0', borderRadius: '10px', background: 'rgba(43, 36, 32,0.03)', padding: '16px' }}>
               <svg viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto' }}>
-                <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(212,168,83,0.25)" stroke="#D4A853" strokeWidth="1.5" />
+                <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
                 <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Poolish TA</text>
                 <text x="85" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">pic étroit</text>
-                <path d="M 155 120 Q 175 120 185 114 Q 195 105 198 90 Q 200 70 202 55 L 218 55 Q 220 70 222 90 Q 225 105 235 114 Q 245 120 265 120 Z" fill="rgba(212,168,83,0.25)" stroke="#D4A853" strokeWidth="1.5" />
-                <line x1="202" y1="55" x2="218" y2="55" stroke="#D4A853" strokeWidth="1.5" />
+                <path d="M 155 120 Q 175 120 185 114 Q 195 105 198 90 Q 200 70 202 55 L 218 55 Q 220 70 222 90 Q 225 105 235 114 Q 245 120 265 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
+                <line x1="202" y1="55" x2="218" y2="55" stroke="#9C8248" strokeWidth="1.5" />
                 <text x="210" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Poolish frigo</text>
                 <text x="210" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">large plateau</text>
-                <line x1="202" y1="48" x2="218" y2="48" stroke="#D4A853" strokeWidth="1" strokeDasharray="2,2" />
-                <text x="210" y="46" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="7" fill="#D4A853">plateau</text>
+                <line x1="202" y1="48" x2="218" y2="48" stroke="#9C8248" strokeWidth="1" strokeDasharray="2,2" />
+                <text x="210" y="46" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="7" fill="#9C8248">plateau</text>
                 <path d="M 285 120 Q 295 120 300 115 Q 305 108 308 95 Q 310 80 312 65 L 330 65 Q 332 80 334 95 Q 337 108 342 115 Q 350 120 390 120 Z" fill="rgba(107,122,90,0.2)" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
                 <line x1="312" y1="65" x2="330" y2="65" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
                 <text x="335" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Pâte</text>
                 <text x="335" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">pic à la cuisson</text>
-                <rect x="279" y="113" width="8" height="8" transform="rotate(45 283 117)" fill="#D4A853" />
-                <text x="283" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#D4A853">pétrissage ◆</text>
-                <polygon points="390,120 386,108 394,108" fill="#C4522A" />
-                <text x="388" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#C4522A">cuisson ▲</text>
+                <rect x="279" y="113" width="8" height="8" transform="rotate(45 283 117)" fill="#9C8248" />
+                <text x="283" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#9C8248">pétrissage ◆</text>
+                <polygon points="390,120 386,108 394,108" fill="#6B4423" />
+                <text x="388" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#6B4423">cuisson ▲</text>
                 <line x1="30" y1="120" x2="400" y2="120" stroke="#E8E0D5" strokeWidth="1" />
                 <text x="215" y="138" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#8A7F78">← plus tôt ——————— temps ——————— cuisson →</text>
               </svg>
@@ -855,7 +855,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Baker Hub est activement développé comme projet personnel. Des problèmes surviennent parfois. Si une quantité de levure semble incorrecte, si le planning ne convient pas, ou si quelque chose est simplement confus — dites-le nous. Chaque retour améliore le moteur.</P>
-            <div style={{ background: 'rgba(26,22,18,0.04)', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
+            <div style={{ background: 'rgba(43, 36, 32,0.04)', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
               <p style={{ margin: '0 0 4px', fontFamily: 'DM Sans, sans-serif', fontSize: '14px', fontWeight: 600, color: CHAR }}>Construit par Rom</p>
               <p style={{ margin: '0 0 12px' }}>
                 <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'DM Sans, sans-serif', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>

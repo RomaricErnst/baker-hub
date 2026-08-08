@@ -6,69 +6,101 @@ interface DecisionHeroProps {
   tagline: string;
   isSelected: boolean;
   onSelect: () => void;
+  size?: 'large' | 'small';
+  badge?: string;
 }
 
-export default function DecisionHero({ image, title, tagline, isSelected, onSelect }: DecisionHeroProps) {
+export default function DecisionHero({
+  image, title, tagline, isSelected, onSelect, size = 'large', badge,
+}: DecisionHeroProps) {
+  const isLarge = size === 'large';
   return (
     <div
       onClick={onSelect}
+      role="button"
+      tabIndex={0}
+      aria-pressed={isSelected}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); }
+      }}
       style={{
         position: 'relative',
         border: isSelected ? '2px solid var(--gold)' : '1px solid var(--border)',
-        borderRadius: '14px',
+        borderRadius: isLarge ? '16px' : '14px',
         overflow: 'hidden',
         cursor: 'pointer',
-        boxShadow: '0 2px 12px rgba(26,22,18,0.08)',
+        boxShadow: '0 2px 14px rgba(26,22,18,0.12)',
       }}
     >
       <img
         src={image}
         alt={title}
-        style={{ width: '100%', height: '200px', objectFit: 'cover', display: 'block' }}
+        style={{ width: '100%', height: isLarge ? '230px' : '150px', objectFit: 'cover', display: 'block' }}
       />
       <div style={{
         position: 'absolute',
         inset: 0,
-        background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 60%)',
+        background: 'linear-gradient(to top, rgba(10,8,6,0.92) 0%, rgba(10,8,6,0.15) 55%, transparent 75%)',
       }} />
+      {badge && (
+        <div style={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          fontFamily: 'var(--font-dm-mono)',
+          fontSize: '9.5px',
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          background: 'rgba(255,255,255,0.92)',
+          color: 'var(--char)',
+          padding: '4px 9px',
+          borderRadius: '20px',
+        }}>
+          {badge}
+        </div>
+      )}
       <div style={{
         position: 'absolute',
-        bottom: '40px',
-        left: '16px',
-        fontFamily: 'Playfair Display, serif',
-        fontSize: '24px',
-        fontWeight: 700,
-        color: 'white',
+        left: isLarge ? '16px' : '12px',
+        right: isLarge ? '16px' : '12px',
+        bottom: isLarge ? '14px' : '10px',
       }}>
-        {title}
+        <div style={{
+          fontFamily: 'Playfair Display, serif',
+          fontWeight: 800,
+          fontSize: isLarge ? '30px' : '20px',
+          lineHeight: 1.05,
+          color: 'white',
+        }}>
+          {title}
+        </div>
+        <div style={{
+          fontFamily: 'DM Sans, sans-serif',
+          fontSize: isLarge ? '13.5px' : '11.5px',
+          color: 'rgba(255,255,255,0.82)',
+          marginTop: '4px',
+        }}>
+          {tagline}
+        </div>
       </div>
-      <div style={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '16px',
-        fontFamily: 'DM Sans, sans-serif',
-        fontSize: '13px',
-        fontStyle: 'italic',
-        color: 'rgba(255,255,255,0.9)',
-      }}>
-        {tagline}
-      </div>
-      <div style={{
-        position: 'absolute',
-        bottom: '16px',
-        right: '16px',
-        width: '32px',
-        height: '32px',
-        background: 'var(--gold)',
-        borderRadius: '50%',
-        color: '#1A1612',
-        fontSize: '18px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        ›
-      </div>
+      {isLarge && (
+        <div style={{
+          position: 'absolute',
+          bottom: '16px',
+          right: '16px',
+          width: '32px',
+          height: '32px',
+          background: 'var(--gold)',
+          borderRadius: '50%',
+          color: '#2B2420',
+          fontSize: '18px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          ›
+        </div>
+      )}
     </div>
   );
 }

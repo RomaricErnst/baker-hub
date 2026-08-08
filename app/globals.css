@@ -9,20 +9,20 @@ html {
 }
 
 :root {
-  --cream: #F5F0E8;
+  --cream: #F0EBE0;
   --warm: #FDFBF7;
-  --char: #1A1612;
+  --char: #2B2420;
   --ash: #3D3530;
-  --terra: #C4522A;
-  --terra-l: #E8714A;
-  --gold: #D4A853;
+  --terra: #6B4423;
+  --terra-l: #8B5A32;
+  --gold: #9C8248;
   --sage: #6B7A5A;
   --smoke: #8C8580;
   --border: #E0D8CC;
   --card: #FFFFFF;
   --bread: #8B6914;
   --bread-l: #F5EDD8;
-  --card-shadow: 0 2px 12px rgba(26,22,18,0.06);
+  --card-shadow: 0 2px 12px rgba(43, 36, 32,0.06);
   --card-shadow-hover: 0 8px 24px rgba(0,0,0,0.10);
 }
 
@@ -50,8 +50,8 @@ body {
 }
 
 @keyframes stepPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(196,82,42,0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(196,82,42,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(107, 68, 35,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(107, 68, 35,0); }
 }
 .step-pulse {
   animation: stepPulse 2s ease-in-out infinite;
@@ -62,7 +62,7 @@ body {
 }
 .step-card-active:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(26,22,18,0.10) !important;
+  box-shadow: 0 4px 16px rgba(43, 36, 32,0.10) !important;
 }
 
 @keyframes flourScanPulse {

@@ -86,8 +86,8 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
     <div>
       {slotNote && (
         <div style={{
-          background: 'rgba(212,168,83,0.12)',
-          border: '1px solid rgba(212,168,83,0.25)',
+          background: 'rgba(156, 130, 72,0.12)',
+          border: '1px solid rgba(156, 130, 72,0.25)',
           borderRadius: '10px',
           padding: '9px 13px',
           marginBottom: '10px',

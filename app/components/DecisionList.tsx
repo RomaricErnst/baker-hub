@@ -35,7 +35,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               cursor: isDisabled ? 'default' : 'pointer',
               borderBottom: idx < options.length - 1 ? '1px solid var(--border)' : 'none',
               borderLeft: isSelected ? '3px solid var(--gold)' : 'none',
-              background: isSelected ? 'rgba(212,168,83,0.08)' : 'white',
+              background: isSelected ? 'rgba(156, 130, 72,0.08)' : 'white',
               opacity: isDisabled ? 0.5 : 1,
               pointerEvents: isDisabled ? 'none' : undefined,
             }}
@@ -44,7 +44,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               width: '56px', height: '56px',
               borderRadius: option.thumbnailBg ? '50%' : '8px',
               overflow: 'hidden', flexShrink: 0,
-              background: option.thumbnailBg ?? '#1A1612',
+              background: option.thumbnailBg ?? '#2B2420',
             }}>
               {!option.thumbnailBg && option.image && (
                 <img src={option.image} alt={option.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

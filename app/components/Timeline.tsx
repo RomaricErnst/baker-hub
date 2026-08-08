@@ -58,7 +58,7 @@ const THEME: Record<StepKind, {
   feed_starter:    { dot: '#6A7FA8', ring: 'rgba(106,127,168,0.1)', line: '#C4CDE0', pill: '#EEF2FA', pillText: '#3A5A8A', cardBg: '#EEF2FA', cardBorder: '#C4CDE0' },
   make_preferment: { dot: '#C4A030', ring: 'rgba(196,160,48,0.12)', line: '#E8D890', pill: '#FDFBF2', pillText: '#7A5A10', cardBg: '#FDFBF2', cardBorder: '#E8D890' },
   mixing:      { dot: 'var(--ash)',    ring: 'rgba(61,53,48,.1)',    line: 'var(--border)', pill: 'var(--cream)',  pillText: 'var(--ash)' },
-  bulk_ferm:   { dot: 'var(--terra)',  ring: 'rgba(196,82,42,.1)',   line: '#F5C4B0',       pill: '#FEF4EF',      pillText: 'var(--terra)', cardBg: '#FEF8F5', cardBorder: '#F5C4B0' },
+  bulk_ferm:   { dot: 'var(--terra)',  ring: 'rgba(107, 68, 35,.1)',   line: '#F5C4B0',       pill: '#FEF4EF',      pillText: 'var(--terra)', cardBg: '#FEF8F5', cardBorder: '#F5C4B0' },
   divide_ball: { dot: '#8A6A4A',       ring: 'rgba(138,106,74,.1)',  line: '#D4B898',       pill: '#FDF4EA',      pillText: '#6A3A10' },
   final_proof: { dot: '#7A8C6E',       ring: 'rgba(122,140,110,.1)', line: '#C8D4BA',       pill: '#F2F5EF',      pillText: '#4A5A44', cardBg: '#F5F7F2', cardBorder: '#C8D4BA' },
   cold:        { dot: '#6A7FA8',       ring: 'rgba(106,127,168,.1)', line: '#C4CDE0',       pill: '#EEF2FA',      pillText: '#3A5A8A', cardBg: '#EEF2FA', cardBorder: '#C4CDE0' },

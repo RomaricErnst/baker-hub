@@ -176,10 +176,10 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
           width: '22px', height: '22px', borderRadius: '5px', flexShrink: 0,
           marginTop: '1px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: done ? '1.5px solid #D4A853' : '1.5px solid #E0D8CF',
-          background: done ? '#D4A853' : '#FDFBF7',
+          border: done ? '1.5px solid #9C8248' : '1.5px solid #E0D8CF',
+          background: done ? '#9C8248' : '#FDFBF7',
         }}>
-          {done && <span style={{ fontSize: '11px', color: '#1A1612' }}>&#10003;</span>}
+          {done && <span style={{ fontSize: '11px', color: '#2B2420' }}>&#10003;</span>}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
@@ -189,7 +189,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
             <span style={{ display: 'flex', alignItems: 'baseline', gap: '6px', minWidth: 0 }}>
               <span style={{
                 fontFamily: 'Playfair Display, serif', fontSize: '14px', fontWeight: 600,
-                color: done ? '#8A7F78' : '#1A1612',
+                color: done ? '#8A7F78' : '#2B2420',
                 textDecoration: done ? 'line-through' : undefined,
               }}>
                 {task.ingredientName}
@@ -197,7 +197,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
               {task.totalAmount != null && task.unit && (
                 <span style={{
                   fontFamily: 'DM Mono, monospace', fontSize: '11px',
-                  color: done ? '#B8A9A0' : '#C4522A', flexShrink: 0,
+                  color: done ? '#B8A9A0' : '#6B4423', flexShrink: 0,
                 }}>
                   {formatQty(task.totalAmount, task.unit, l)}
                 </span>
@@ -236,7 +236,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
           textTransform: 'uppercase', color: '#8A7F78',
           fontFamily: 'DM Mono, monospace',
           padding: '6px 14px 4px',
-          background: '#F5F0E8',
+          background: '#F0EBE0',
           borderRadius: '10px 10px 0 0',
           border: '1px solid #E8E0D5',
           borderBottom: 'none',
@@ -263,7 +263,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
         marginTop: '16px', marginBottom: '20px',
         background: '#FDFBF7',
       }}>
-        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '18px', fontWeight: 700, color: '#1A1612' }}>
+        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '18px', fontWeight: 700, color: '#2B2420' }}>
           {l === 'fr' ? 'Préparer les garnitures' : 'Prep your toppings'}
         </div>
         <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: '#8A7F78', marginTop: '4px' }}>
@@ -276,7 +276,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
       {/* Style-specific notes */}
       {styleKey && STYLE_PREP_NOTES[styleKey] && (
         <div style={{ margin: '0 0 16px', border: '1px solid #E8E0D5', borderRadius: '12px', overflow: 'hidden' }}>
-          <div style={{ background: '#1A1612', color: 'white', padding: '8px 14px', fontSize: '10px', fontFamily: 'DM Mono, monospace', letterSpacing: '1px', textTransform: 'uppercase' }}>
+          <div style={{ background: '#2B2420', color: 'white', padding: '8px 14px', fontSize: '10px', fontFamily: 'DM Mono, monospace', letterSpacing: '1px', textTransform: 'uppercase' }}>
             {styleKey === 'pan' ? (l === 'fr' ? 'Style Detroit' : 'Detroit Style') : (l === 'fr' ? 'Style Teglia' : 'Teglia Style')}
           </div>
           {STYLE_PREP_NOTES[styleKey]!.map((note, i) => (
@@ -296,7 +296,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
           {/* Phase 1 — Get ahead */}
           {hasEarly && (
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '15px', fontWeight: 600, color: '#1A1612', marginBottom: '2px' }}>
+              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '15px', fontWeight: 600, color: '#2B2420', marginBottom: '2px' }}>
                 {l === 'fr' ? 'Commencez par là' : 'Get ahead'}
               </div>
               <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: '#8A7F78', marginBottom: '10px' }}>
@@ -338,7 +338,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
         onClick={onGoToBake}
         style={{
           width: '100%', height: '52px',
-          background: '#C4522A', color: 'white',
+          background: '#6B4423', color: 'white',
           fontFamily: 'DM Sans, sans-serif', fontSize: '15px', fontWeight: 600,
           borderRadius: '14px', marginTop: '24px',
           cursor: 'pointer', border: 'none',

@@ -110,7 +110,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0,
-        background: 'rgba(26,22,18,0.55)',
+        background: 'rgba(43, 36, 32,0.55)',
         zIndex: 1000,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '1rem',

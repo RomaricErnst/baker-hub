@@ -157,13 +157,13 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
   const canSave = name.trim().length > 0 && picked.length > 0;
   const input = {
     border: '1px solid #E0D8CF', borderRadius: '8px', padding: '9px 11px',
-    fontFamily: 'var(--font-dm-sans)', fontSize: '14px', color: '#1A1612',
+    fontFamily: 'var(--font-dm-sans)', fontSize: '14px', color: '#2B2420',
     background: '#FDFBF7', width: '100%',
   } as const;
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.52)', zIndex: 250 }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(43, 36, 32,0.52)', zIndex: 250 }} />
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         background: '#FDFBF7', borderRadius: '20px 20px 0 0', zIndex: 251,
@@ -171,16 +171,16 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
       }}>
         <div style={{ width: 32, height: 3, background: '#E0D8CF', borderRadius: 2, margin: '12px auto 0', flexShrink: 0 }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px 10px', borderBottom: '1px solid #F0EAE3', flexShrink: 0 }}>
-          <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '16px', fontWeight: 700, color: '#1A1612' }}>
+          <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '16px', fontWeight: 700, color: '#2B2420' }}>
             {initial ? (fr ? 'Modifier ma pizza' : 'Edit my pizza') : (fr ? 'Créer ma pizza' : 'Create my pizza')}
           </span>
-          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: '50%', background: '#F5F0E8', border: 'none', fontSize: 14, color: '#8A7F78', cursor: 'pointer' }}>✕</button>
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: 14, color: '#8A7F78', cursor: 'pointer' }}>✕</button>
         </div>
 
         <div style={{ overflowY: 'auto', flex: 1, padding: '12px 14px' }}>
           {/* Name + photo */}
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: 56, height: 56, borderRadius: '12px', overflow: 'hidden', flexShrink: 0, cursor: 'pointer', border: '1px dashed #C8C0B8', background: '#F5F0E8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <label style={{ width: 56, height: 56, borderRadius: '12px', overflow: 'hidden', flexShrink: 0, cursor: 'pointer', border: '1px dashed #C8C0B8', background: '#F0EBE0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={attachPhoto} />
               {photoSrc ? (
                 <img src={photoSrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${pos.fx * 100}% ${pos.fy * 100}%` }} />
@@ -211,7 +211,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                 style={{
                   width: '180px', height: '180px', borderRadius: '12px', overflow: 'hidden',
                   border: '1px solid #E0D8CF', touchAction: 'none', cursor: 'grab',
-                  position: 'relative', background: '#1A1612',
+                  position: 'relative', background: '#2B2420',
                 }}
               >
                 <img
@@ -234,8 +234,8 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
           {picked.length > 0 && (
             <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {picked.map((p, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', background: '#F5F0E8', border: '1px solid #E8E0D5', borderRadius: '10px', padding: '7px 10px' }}>
-                  <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: '#1A1612', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', background: '#F0EBE0', border: '1px solid #E8E0D5', borderRadius: '10px', padding: '7px 10px' }}>
+                  <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: '#2B2420', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {fr ? p.nameFr : p.nameEn}{p.free ? ' ✎' : ''}
                   </span>
                   <input
@@ -251,9 +251,9 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                     onClick={() => setPicked(prev => prev.map((x, j) => j === i ? { ...x, bakeOrder: x.bakeOrder === 'before' ? 'after' : 'before' } : x))}
                     style={{
                       fontFamily: 'var(--font-dm-mono)', fontSize: '10px', padding: '4px 8px', borderRadius: '12px', cursor: 'pointer',
-                      border: p.bakeOrder === 'before' ? '1px solid rgba(196,82,42,0.45)' : '1px solid rgba(212,168,83,0.55)',
-                      background: p.bakeOrder === 'before' ? 'rgba(196,82,42,0.08)' : 'rgba(212,168,83,0.12)',
-                      color: p.bakeOrder === 'before' ? '#C4522A' : '#B8903A', whiteSpace: 'nowrap',
+                      border: p.bakeOrder === 'before' ? '1px solid rgba(107, 68, 35,0.45)' : '1px solid rgba(156, 130, 72,0.55)',
+                      background: p.bakeOrder === 'before' ? 'rgba(107, 68, 35,0.08)' : 'rgba(156, 130, 72,0.12)',
+                      color: p.bakeOrder === 'before' ? '#6B4423' : '#B8903A', whiteSpace: 'nowrap',
                     }}
                   >
                     {p.bakeOrder === 'before' ? (fr ? 'avant' : 'before') : (fr ? 'après' : 'after')}
@@ -275,9 +275,9 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
               <div key={gi} style={{ marginTop: '12px', border: '1px solid #F0EAE3', borderRadius: '12px', overflow: 'hidden' }}>
                 <button
                   onClick={() => setOpenGroup(isOpen ? -1 : gi)}
-                  style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 12px', background: '#F5F0E8', border: 'none', cursor: 'pointer' }}
+                  style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 12px', background: '#F0EBE0', border: 'none', cursor: 'pointer' }}
                 >
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#C4522A', textTransform: 'uppercase', letterSpacing: '1.2px', fontWeight: 700 }}>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#6B4423', textTransform: 'uppercase', letterSpacing: '1.2px', fontWeight: 700 }}>
                     {fr ? g.fr : g.en}{nPicked > 0 ? ` · ${nPicked} ✓` : ''}
                   </span>
                   <span style={{ color: '#8A7F78', fontSize: '12px' }}>{isOpen ? '−' : '+'}</span>
@@ -292,7 +292,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                           borderRadius: '16px', padding: '6px 11px',
                           background: on ? 'rgba(107,122,90,0.10)' : '#FDFBF7', cursor: 'pointer',
                           fontFamily: 'var(--font-dm-sans)', fontSize: '12.5px',
-                          color: on ? '#4E5B42' : '#1A1612',
+                          color: on ? '#4E5B42' : '#2B2420',
                         };
                         const label = on ? '\u2713 ' + ing.name[l] : ing.name[l] + ' +';
                         return (
@@ -334,7 +334,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
         <div style={{ borderTop: '1px solid #F0EAE3', padding: '12px 14px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))', flexShrink: 0 }}>
           <button onClick={save} disabled={!canSave} style={{
             width: '100%', border: 'none', borderRadius: '12px', padding: '13px',
-            background: canSave ? '#C4522A' : '#E0D8CF', color: 'white', cursor: canSave ? 'pointer' : 'default',
+            background: canSave ? '#6B4423' : '#E0D8CF', color: 'white', cursor: canSave ? 'pointer' : 'default',
             fontFamily: 'var(--font-dm-sans)', fontSize: '15px', fontWeight: 700,
           }}>
             {initial ? (fr ? 'Enregistrer les modifications' : 'Save changes') : (fr ? 'Enregistrer ma pizza' : 'Save my pizza')}

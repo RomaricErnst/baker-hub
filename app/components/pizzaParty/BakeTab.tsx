@@ -340,22 +340,22 @@ function CoachButton({
               disabled={loading}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '6px',
-                background: 'rgba(26,22,18,0.82)',
+                background: 'rgba(43, 36, 32,0.82)',
                 backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(245,240,232,0.22)',
+                border: '1px solid rgba(240, 235, 224,0.22)',
                 borderRadius: '20px', padding: '8px 18px',
                 cursor: loading ? 'default' : 'pointer',
                 opacity: loading ? 0.7 : 1,
               }}
             >
               {loading ? (
-                <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '1.5px solid rgba(245,240,232,0.3)', borderTop: '1.5px solid #F5F0E8', borderRadius: '50%', animation: 'bh-spin 0.7s linear infinite' }} />
+                <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '1.5px solid rgba(240, 235, 224,0.3)', borderTop: '1.5px solid #F0EBE0', borderRadius: '50%', animation: 'bh-spin 0.7s linear infinite' }} />
               ) : (
-                <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="#F5F0E8" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="#F0EBE0" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M8 1v3M8 12v3M1 8h3M12 8h3M3.05 3.05l2.12 2.12M10.83 10.83l2.12 2.12M3.05 12.95l2.12-2.12M10.83 5.17l2.12-2.12"/>
                 </svg>
               )}
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: loading ? 'rgba(245,240,232,0.6)' : '#F5F0E8', whiteSpace: 'nowrap' }}>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: loading ? 'rgba(240, 235, 224,0.6)' : '#F0EBE0', whiteSpace: 'nowrap' }}>
                 {loading
                   ? (l === 'fr' ? 'Le Maestro regarde...' : 'Maestro is looking...')
                   : (l === 'fr' ? 'Demander au Maestro ✦' : 'Ask Maestro ✦')}
@@ -364,8 +364,8 @@ function CoachButton({
           </div>
         )}
         {feedback && (
-          <div style={{ background: '#1A1612', borderLeft: '3px solid #C4522A', borderRadius: '10px', padding: '12px 14px', margin: '0 16px 10px', position: 'relative' }}>
-            <div style={{ color: '#F5F0E8', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>{feedback}</div>
+          <div style={{ background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '10px', padding: '12px 14px', margin: '0 16px 10px', position: 'relative' }}>
+            <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>{feedback}</div>
             <button onClick={() => { setFeedback(null); setError(false); }}
               style={{ position: 'absolute', bottom: '8px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: 0 }}>
               {l === 'fr' ? 'Reprendre' : 'Retake'}
@@ -399,8 +399,8 @@ function CoachButton({
       )}
 
       {feedback && (
-        <div style={{ background: '#1A1612', borderLeft: '3px solid #C4522A', borderRadius: '10px', padding: '12px 14px', marginBottom: '10px', position: 'relative' }}>
-          <div style={{ color: '#F5F0E8', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>{feedback}</div>
+        <div style={{ background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '10px', padding: '12px 14px', marginBottom: '10px', position: 'relative' }}>
+          <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>{feedback}</div>
           <button onClick={() => { setFeedback(null); setError(false); }}
             style={{ position: 'absolute', bottom: '8px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: 0 }}>
             {l === 'fr' ? 'Reprendre' : 'Retake'}
@@ -415,15 +415,15 @@ function CoachButton({
       {!feedback && (
         <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
           <button onClick={() => { if (imageBase64) { handleImageBase64(imageBase64); } else { fileInputRef.current?.click(); } }} disabled={loading}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#1A1612', border: '1px solid rgba(245,240,232,0.15)', borderRadius: '20px', padding: '4px 12px', cursor: loading ? 'default' : 'pointer', height: '28px', opacity: loading ? 0.7 : 1 }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#2B2420', border: '1px solid rgba(240, 235, 224,0.15)', borderRadius: '20px', padding: '4px 12px', cursor: loading ? 'default' : 'pointer', height: '28px', opacity: loading ? 0.7 : 1 }}>
             {loading ? (
-              <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '1.5px solid rgba(245,240,232,0.3)', borderTop: '1.5px solid #F5F0E8', borderRadius: '50%', animation: 'bh-spin 0.7s linear infinite', flexShrink: 0 }} />
+              <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '1.5px solid rgba(240, 235, 224,0.3)', borderTop: '1.5px solid #F0EBE0', borderRadius: '50%', animation: 'bh-spin 0.7s linear infinite', flexShrink: 0 }} />
             ) : (
-              <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="#F5F0E8" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="#F0EBE0" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M8 1v3M8 12v3M1 8h3M12 8h3M3.05 3.05l2.12 2.12M10.83 10.83l2.12 2.12M3.05 12.95l2.12-2.12M10.83 5.17l2.12-2.12"/>
               </svg>
             )}
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: loading ? 'rgba(245,240,232,0.6)' : '#F5F0E8', whiteSpace: 'nowrap' }}>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: loading ? 'rgba(240, 235, 224,0.6)' : '#F0EBE0', whiteSpace: 'nowrap' }}>
               {loading ? (l === 'fr' ? 'Le Maestro regarde...' : 'Maestro is looking...') : (l === 'fr' ? 'Demander au Maestro' : 'Ask Maestro')}
             </span>
           </button>
@@ -637,8 +637,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 style={{
                   marginTop: '10px', padding: '8px 16px',
                   background: 'transparent',
-                  border: '1px solid rgba(212,168,83,0.5)',
-                  color: '#D4A853',
+                  border: '1px solid rgba(156, 130, 72,0.5)',
+                  color: '#9C8248',
                   fontFamily: 'DM Mono, monospace', fontSize: '11px',
                   borderRadius: '8px', cursor: 'pointer',
                   letterSpacing: '.06em',
@@ -673,10 +673,10 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   borderRadius: '14px',
                   overflow: 'hidden',
                   cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(26,22,18,0.06)',
+                  boxShadow: '0 2px 8px rgba(43, 36, 32,0.06)',
                 }}
               >
-                <div style={{ height: '160px', background: '#1A1612', overflow: 'hidden', position: 'relative' }}>
+                <div style={{ height: '160px', background: '#2B2420', overflow: 'hidden', position: 'relative' }}>
                   {pizza.id.startsWith('custom_') ? (
                     pizza.photoUrl
                       ? <img src={pizza.photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -700,7 +700,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     return (
                       <div style={{
                         position: 'absolute', top: '8px', right: '8px',
-                        background: baked > qty ? '#D4A853' : '#6B7A5A', borderRadius: '12px',
+                        background: baked > qty ? '#9C8248' : '#6B7A5A', borderRadius: '12px',
                         padding: '3px 8px',
                         display: 'flex', alignItems: 'center', gap: '4px',
                       }}>
@@ -821,7 +821,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
               </div>
 
               {/* Hero image */}
-              <div style={{ width: '100%', height: '180px', background: '#1A1612', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '180px', background: '#2B2420', overflow: 'hidden' }}>
                 {pizza.id.startsWith('custom_') ? (
                   pizza.photoUrl
                     ? <img src={pizza.photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -841,8 +841,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 <div style={{
                   margin: '12px 16px',
                   padding: '10px 12px',
-                  background: 'rgba(196,82,42,0.06)',
-                  border: '1px solid rgba(196,82,42,0.2)',
+                  background: 'rgba(107, 68, 35,0.06)',
+                  border: '1px solid rgba(107, 68, 35,0.2)',
                   borderRadius: '10px',
                   fontSize: '12px', color: 'var(--ash)',
                   fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5,
@@ -1054,7 +1054,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                             style={{
                               border: techTab === key ? '1.5px solid var(--terra)' : '1px solid var(--border)',
                               borderRadius: '20px',
-                              background: techTab === key ? 'rgba(196,82,42,0.07)' : 'transparent',
+                              background: techTab === key ? 'rgba(107, 68, 35,0.07)' : 'transparent',
                               cursor: 'pointer', padding: '7px 13px',
                               fontFamily: 'var(--font-dm-mono)', fontSize: '11.5px',
                               color: techTab === key ? 'var(--terra)' : 'var(--ash)',
@@ -1181,8 +1181,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 <div style={{
                   margin: '8px 16px',
                   padding: '8px 12px',
-                  background: 'rgba(212,168,83,0.1)',
-                  border: '1px solid rgba(212,168,83,0.3)',
+                  background: 'rgba(156, 130, 72,0.1)',
+                  border: '1px solid rgba(156, 130, 72,0.3)',
                   borderRadius: '8px', fontSize: '12px', color: 'var(--ash)',
                   fontFamily: 'DM Sans, sans-serif',
                   display: 'flex', alignItems: 'flex-start',
@@ -1317,7 +1317,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 <div style={{
                   flex: 1, height: '44px',
                   display: 'flex', alignItems: 'center',
-                  background: '#F5F0E8',
+                  background: '#F0EBE0',
                   borderRadius: '10px',
                   border: '1px solid var(--border)',
                   overflow: 'hidden',
@@ -1337,7 +1337,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   <div style={{ flex: 1, textAlign: 'center', fontFamily: 'DM Mono, monospace', lineHeight: 1.2 }}>
                     <div style={{
                       fontWeight: 700, fontSize: '15px',
-                      color: baked > qty ? '#D4A853' : isComplete ? '#6B7A5A' : 'var(--char)',
+                      color: baked > qty ? '#9C8248' : isComplete ? '#6B7A5A' : 'var(--char)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
                       transition: 'color 0.2s ease',
                     }}>
@@ -1359,7 +1359,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     onClick={() => changeDoneCount(sheetPizzaId, 1)}
                     style={{
                       width: '48px', height: '44px', flexShrink: 0,
-                      background: baked >= qty ? '#D4A853' : '#6B7A5A',
+                      background: baked >= qty ? '#9C8248' : '#6B7A5A',
                       border: 'none', fontSize: '22px', lineHeight: 1,
                       color: 'white', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1382,7 +1382,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   />
                   <div style={{
                     position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%',
-                    background: 'linear-gradient(to bottom, transparent, rgba(26,22,18,0.75))',
+                    background: 'linear-gradient(to bottom, transparent, rgba(43, 36, 32,0.75))',
                     pointerEvents: 'none',
                   }} />
                   <CoachButton
@@ -1406,7 +1406,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 <div style={{
                   margin: '4px 16px 12px',
                   padding: '10px 14px',
-                  background: 'rgba(26,22,18,0.04)',
+                  background: 'rgba(43, 36, 32,0.04)',
                   border: '1px solid var(--border)',
                   borderRadius: '10px',
                   fontSize: '12px',

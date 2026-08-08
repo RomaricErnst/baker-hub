@@ -935,11 +935,11 @@ function SimpleColourBar({
   // LEFT: past(grey) · too early(terra) · early ok(gold) | GREEN | late ok(gold) · too late(terra) :RIGHT
   const zones = [
     { from: barWin,      to: goldL_HBF,   fill: 'rgba(120,115,110,0.45)', label: '' },
-    { from: goldL_HBF,   to: tooEarlyHBF, fill: 'rgba(196,82,42,0.25)',   label: tRoot('schedulePicker.zoneLabels.tooEarly') },
-    { from: tooEarlyHBF, to: sweetL_HBF,  fill: 'rgba(212,168,83,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
+    { from: goldL_HBF,   to: tooEarlyHBF, fill: 'rgba(107, 68, 35,0.25)',   label: tRoot('schedulePicker.zoneLabels.tooEarly') },
+    { from: tooEarlyHBF, to: sweetL_HBF,  fill: 'rgba(156, 130, 72,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
     { from: sweetL_HBF,  to: sweetR_HBF,  fill: 'rgba(107,122,90,0.5)',  label: '' },
-    { from: sweetR_HBF,  to: goldR2_HBF,  fill: 'rgba(212,168,83,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
-    { from: goldR2_HBF,  to: 0,           fill: 'rgba(196,82,42,0.25)',  label: tRoot('schedulePicker.zoneLabels.tooLate')  },
+    { from: sweetR_HBF,  to: goldR2_HBF,  fill: 'rgba(156, 130, 72,0.35)', label: tRoot('schedulePicker.zoneLabels.stillOk')  },
+    { from: goldR2_HBF,  to: 0,           fill: 'rgba(107, 68, 35,0.25)',  label: tRoot('schedulePicker.zoneLabels.tooLate')  },
   ];
 
   // Adaptive ticks: 3h for short windows, 12h for medium, 24h for long
@@ -1027,7 +1027,7 @@ function SimpleColourBar({
     const bToHBF   = (bakeMs - b.from.getTime()) / 3600000;
     return bulkEndHBF > bFromHBF && bulkEndHBF < bToHBF;
   });
-  const dFill   = inBlocker ? '#aaaaaa' : bulkEndInBlocker ? '#C4A030' : '#1A1612';
+  const dFill   = inBlocker ? '#aaaaaa' : bulkEndInBlocker ? '#C4A030' : '#2B2420';
   const dStroke = inBlocker ? '#999999' : bulkEndInBlocker ? '#7A6010' : 'white';
 
   return (
@@ -1094,7 +1094,7 @@ function SimpleColourBar({
           }
           return visible.map(item => (
             <text key={item.i} x={item.cx} y={BAR_Y - 6}
-              fontSize={9.5} fill="#1A1612" fillOpacity={0.45}
+              fontSize={9.5} fill="#2B2420" fillOpacity={0.45}
               textAnchor="middle" fontFamily="DM Mono, monospace">
               {item.label}
             </text>
@@ -1103,7 +1103,7 @@ function SimpleColourBar({
 
         {/* Bake reference line */}
         <line x1={barHToX(0, W, barWin)} y1={0} x2={barHToX(0, W, barWin)} y2={BAR_AXIS_Y}
-          stroke="#C4522A" strokeWidth={1} strokeDasharray="3 3" strokeOpacity={0.25} />
+          stroke="#6B4423" strokeWidth={1} strokeDasharray="3 3" strokeOpacity={0.25} />
 
         {/* Blocker columns */}
         {blocks.map((b, i) => {
@@ -1116,18 +1116,18 @@ function SimpleColourBar({
           const n = Math.ceil((bx2 - bx1 + BAR_SVG_H) / 7) + 2;
           return (
             <g key={i}>
-              <rect x={bx1} y={0} width={bx2 - bx1} height={BAR_AXIS_Y} fill="rgba(196,82,42,0.09)" />
+              <rect x={bx1} y={0} width={bx2 - bx1} height={BAR_AXIS_Y} fill="rgba(107, 68, 35,0.09)" />
               <g clipPath={`url(#sbc-${barId}-${i})`}>
                 {Array.from({ length: n }, (_, j) => {
                   const ox = bx1 + j * 7 - BAR_AXIS_Y;
                   return (
                     <line key={j} x1={ox} y1={0} x2={ox + BAR_AXIS_Y} y2={BAR_AXIS_Y}
-                      stroke="rgba(196,82,42,0.16)" strokeWidth={1} />
+                      stroke="rgba(107, 68, 35,0.16)" strokeWidth={1} />
                   );
                 })}
               </g>
               <line x1={bx1} y1={0} x2={bx2} y2={0}
-                stroke="rgba(196,82,42,0.5)" strokeWidth={2.5} />
+                stroke="rgba(107, 68, 35,0.5)" strokeWidth={2.5} />
             </g>
           );
         })}
@@ -1166,8 +1166,8 @@ function SimpleColourBar({
           return (
             <>
               <polygon points={`${bx - 8},${BAR_AXIS_Y} ${bx},${BAR_AXIS_Y - 14} ${bx + 8},${BAR_AXIS_Y}`}
-                fill="#C4522A" />
-              <text x={bx} y={BAR_AXIS_Y + 12} fontSize={9} fill="#C4522A"
+                fill="#6B4423" />
+              <text x={bx} y={BAR_AXIS_Y + 12} fontSize={9} fill="#6B4423"
                 fontFamily="DM Mono, monospace" textAnchor="middle">
                 {tRoot('schedulePicker.bakeLabel')}
               </text>
@@ -1190,7 +1190,7 @@ function SimpleColourBar({
           />
           {inBlocker && (
             <>
-              <circle cx={diamondX + BAR_DS + 3} cy={barCY - BAR_DS} r={5} fill="rgba(196,82,42,0.9)" />
+              <circle cx={diamondX + BAR_DS + 3} cy={barCY - BAR_DS} r={5} fill="rgba(107, 68, 35,0.9)" />
               <text x={diamondX + BAR_DS + 3} y={barCY - BAR_DS + 4}
                 fontSize={7} fill="white" textAnchor="middle" fontFamily="DM Mono, monospace">!</text>
             </>
@@ -1207,8 +1207,8 @@ function SimpleColourBar({
       }}>
         {([
           ['rgba(107,122,90,0.7)', locale === 'fr' ? 'idéal' : 'sweet spot'],
-          ['rgba(212,168,83,0.7)', locale === 'fr' ? 'correct' : 'still ok'],
-          ['rgba(196,82,42,0.45)', locale === 'fr' ? 'risqué' : 'pushing it'],
+          ['rgba(156, 130, 72,0.7)', locale === 'fr' ? 'correct' : 'still ok'],
+          ['rgba(107, 68, 35,0.45)', locale === 'fr' ? 'risqué' : 'pushing it'],
         ] as const).map(([c, lbl]) => (
           <span key={lbl} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             <span style={{ width: 10, height: 6, borderRadius: 3, background: c, display: 'inline-block' }} />
@@ -1225,7 +1225,7 @@ function SimpleColourBar({
           textAlign: 'center',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
-            <div style={{ width: 8, height: 8, background: '#1A1612', transform: 'rotate(45deg)', flexShrink: 0 }} />
+            <div style={{ width: 8, height: 8, background: '#2B2420', transform: 'rotate(45deg)', flexShrink: 0 }} />
             <div style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
               {tRoot('schedulePicker.startDough')}
             </div>
@@ -1233,7 +1233,7 @@ function SimpleColourBar({
           <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
             {fmtDT(pendingStart)}
           </div>
-          <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: inZone ? '#4A7A3A' : (earlyOk || nearLate) ? '#C49A28' : '#C4522A' }}>
+          <div style={{ fontSize: '.65rem', marginTop: '.1rem', color: inZone ? '#4A7A3A' : (earlyOk || nearLate) ? '#C49A28' : '#6B4423' }}>
             {status}
           </div>
         </div>
@@ -5329,7 +5329,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     background: 'var(--terra)', color: '#fff',
     fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700,
     cursor: 'pointer',
-    boxShadow: '0 3px 10px rgba(196,82,42,0.25)',
+    boxShadow: '0 3px 10px rgba(107, 68, 35,0.25)',
     letterSpacing: '.01em',
   };
 
@@ -7456,8 +7456,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       <div style={{
                         display: 'inline-flex', alignItems: 'center',
                         gap: '.3rem', marginTop: '.3rem',
-                        background: pillGreen ? 'rgba(74,122,58,0.1)' : 'rgba(212,168,83,0.15)',
-                        border: `1px solid ${pillGreen ? 'rgba(74,122,58,0.3)' : 'rgba(212,168,83,0.4)'}`,
+                        background: pillGreen ? 'rgba(74,122,58,0.1)' : 'rgba(156, 130, 72,0.15)',
+                        border: `1px solid ${pillGreen ? 'rgba(74,122,58,0.3)' : 'rgba(156, 130, 72,0.4)'}`,
                         borderRadius: '20px',
                         padding: '.2rem .65rem',
                         fontSize: '12px',
@@ -7603,9 +7603,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   const isGreen  = cardPrefInZone;
                   const isGold   = cardPrefEarlyOk || cardPrefLateOk;
                   const isRed    = cardPrefTooEarly || cardPrefTooShort;
-                  const bg     = isGreen ? 'rgba(74,122,58,0.1)'   : isGold ? 'rgba(212,168,83,0.15)' : 'rgba(196,82,42,0.1)';
-                  const border = isGreen ? 'rgba(74,122,58,0.3)'   : isGold ? 'rgba(212,168,83,0.4)'  : 'rgba(196,82,42,0.3)';
-                  const color  = isGreen ? '#4A7A3A'               : isGold ? '#9A7010'               : '#C4522A';
+                  const bg     = isGreen ? 'rgba(74,122,58,0.1)'   : isGold ? 'rgba(156, 130, 72,0.15)' : 'rgba(107, 68, 35,0.1)';
+                  const border = isGreen ? 'rgba(74,122,58,0.3)'   : isGold ? 'rgba(156, 130, 72,0.4)'  : 'rgba(107, 68, 35,0.3)';
+                  const color  = isGreen ? '#4A7A3A'               : isGold ? '#9A7010'               : '#6B4423';
                   return (
                     <div style={{
                       display: 'inline-flex', alignItems: 'center', gap: '.3rem',
@@ -7728,17 +7728,17 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   <div style={{
                     display: 'inline-flex', alignItems: 'center', gap: '.3rem',
                     marginTop: '.3rem',
-                    background: pillGreen ? 'rgba(74,122,58,0.1)' : pillYellow ? 'rgba(212,168,83,0.15)' : 'rgba(196,82,42,0.1)',
-                    border: `1px solid ${pillGreen ? 'rgba(74,122,58,0.3)' : pillYellow ? 'rgba(212,168,83,0.4)' : 'rgba(196,82,42,0.3)'}`,
+                    background: pillGreen ? 'rgba(74,122,58,0.1)' : pillYellow ? 'rgba(156, 130, 72,0.15)' : 'rgba(107, 68, 35,0.1)',
+                    border: `1px solid ${pillGreen ? 'rgba(74,122,58,0.3)' : pillYellow ? 'rgba(156, 130, 72,0.4)' : 'rgba(107, 68, 35,0.3)'}`,
                     borderRadius: '20px',
                     padding: '.2rem .65rem',
                     fontSize: '12px',
-                    color: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#C4522A',
+                    color: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#6B4423',
                     fontFamily: 'var(--font-dm-mono)',
                   }}>
                     <div style={{
                       width: 8, height: 8, borderRadius: '50%',
-                      background: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#C4522A',
+                      background: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#6B4423',
                       flexShrink: 0,
                     }} />
                     {pillText}

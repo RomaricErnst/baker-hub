@@ -211,8 +211,8 @@ function StepCard({
       opacity: isLocked ? 0.4 : 1,
       transition: 'all .25s',
       boxShadow: isActive
-        ? '0 0 0 3px rgba(196,82,42,0.08), 0 2px 16px rgba(26,22,18,0.08)'
-        : '0 2px 12px rgba(26,22,18,0.06)',
+        ? '0 0 0 3px rgba(107, 68, 35,0.08), 0 2px 16px rgba(43, 36, 32,0.08)'
+        : '0 2px 12px rgba(43, 36, 32,0.06)',
     }}>
       {/* Header */}
       <div
@@ -270,7 +270,7 @@ function ContinueBtn({ onClick, label }: { onClick: () => void; label?: string }
         background: 'var(--terra)', color: '#fff',
         fontFamily: 'var(--font-playfair)', fontSize: '1.05rem', fontWeight: 700,
         cursor: 'pointer', transition: 'opacity .15s',
-        boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
+        boxShadow: '0 2px 8px rgba(107, 68, 35,0.22)',
       }}
     >
       {lbl}
@@ -513,7 +513,7 @@ export default function Home() {
   const [modeChosen, setModeChosen] = useState(false);
 
   // Mode cards — per-card "+ details" expander (visual-first redesign)
-  const [modeDetailsOpen, setModeDetailsOpen] = useState<{ simple: boolean; custom: boolean }>({ simple: false, custom: false });
+  const [modeInfoOpen, setModeInfoOpen] = useState(false);
 
   // Baker profile — ☰ Mon profil sheet + new-session prefill
   const bottomNavH = useBottomNavHeight();
@@ -1817,7 +1817,7 @@ export default function Home() {
 
         {bakeType && bakeType !== 'bread' && (
           <div style={{
-            background: '#1A1612',
+            background: '#2B2420',
             borderBottom: '1px solid #2D2824',
           }}>
             {/* ── Journey bar ── */}
@@ -1830,10 +1830,10 @@ export default function Home() {
                   padding: '10px 8px',
                   fontSize: '13px',
                   fontWeight: activeTab !== 'pizzaparty' ? 600 : 400,
-                  color: activeTab !== 'pizzaparty' ? '#C4522A' : '#8A7F78',
+                  color: activeTab !== 'pizzaparty' ? '#6B4423' : '#8A7F78',
                   background: 'transparent',
                   border: 'none',
-                  borderBottom: activeTab !== 'pizzaparty' ? '2px solid #C4522A' : '2px solid transparent',
+                  borderBottom: activeTab !== 'pizzaparty' ? '2px solid #6B4423' : '2px solid transparent',
                   cursor: 'pointer',
                   fontFamily: 'DM Sans, sans-serif',
                 }}
@@ -1882,7 +1882,7 @@ export default function Home() {
             alignItems: 'center',
             gap: '10px',
             flexWrap: 'wrap',
-            boxShadow: 'var(--card-shadow, 0 2px 12px rgba(26,22,18,0.06))',
+            boxShadow: 'var(--card-shadow, 0 2px 12px rgba(43, 36, 32,0.06))',
           }}>
             <span style={{
               fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
@@ -1930,7 +1930,7 @@ export default function Home() {
             alignItems: 'center',
             gap: '10px',
             flexWrap: 'wrap',
-            boxShadow: 'var(--card-shadow, 0 2px 12px rgba(26,22,18,0.06))',
+            boxShadow: 'var(--card-shadow, 0 2px 12px rgba(43, 36, 32,0.06))',
           }}>
             <span style={{ flex: '1 1 auto', minWidth: 0 }}>
               <span style={{
@@ -2050,7 +2050,7 @@ export default function Home() {
                   boxShadow: hoveredBakeType === opt.type
                     ? 'var(--card-shadow-hover)'
                     : bakeType === opt.type
-                      ? `0 0 0 4px ${opt.type === 'bread' ? 'rgba(139,105,20,.1)' : 'rgba(196,82,42,.1)'}`
+                      ? `0 0 0 4px ${opt.type === 'bread' ? 'rgba(139,105,20,.1)' : 'rgba(107, 68, 35,.1)'}`
                       : 'var(--card-shadow)',
                   transform: hoveredBakeType === opt.type ? 'translateY(-3px)' : 'none',
                   transition: 'all .2s',
@@ -2067,7 +2067,7 @@ export default function Home() {
                 <div style={{
                   position: 'absolute', bottom: 0, left: 0, right: 0,
                   padding: '2rem 1.25rem 1.25rem',
-                  background: 'linear-gradient(to top, rgba(26,22,18,0.82) 0%, rgba(26,22,18,0.0) 100%)',
+                  background: 'linear-gradient(to top, rgba(43, 36, 32,0.82) 0%, rgba(43, 36, 32,0.0) 100%)',
                 }}>
                   <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'white', marginBottom: '.3rem', fontFamily: 'var(--font-playfair)' }}>
                     {opt.label}
@@ -2095,110 +2095,70 @@ export default function Home() {
           {bakeType && (
             <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '14px', padding: '12px' }}>
 
-              {/* Simple / Custom toggle */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch', marginBottom: bakeType === 'pizza' ? '12px' : '0' }}>
-                {([
-                  { key: 'simple' as const, title: t('modeCards.simple.title'), subtitle: t('modeCards.simple.subtitle'), collapsed: t('modeCards.simple.collapsed') },
-                  { key: 'custom' as const, title: t('modeCards.custom.title'), subtitle: t('modeCards.custom.subtitle'), collapsed: t('modeCards.custom.collapsed') },
-                ]).map(m => (
-                  <div
-                    key={m.key}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={m.title}
-                    aria-pressed={tab === m.key}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLDivElement).click(); }
-                    }}
-                    onClick={() => chooseMode(m.key)}
-                    style={{
-                      flex: 1,
-                      // Cards must be allowed to shrink below their
-                      // content's min width — nowrap pill/subtitle rows
-                      // otherwise push the whole page wider than the
-                      // viewport on phones (their rows clip instead).
-                      minWidth: 0,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      border: tab === m.key ? '2px solid var(--terra)' : '0.5px solid var(--border)',
-                      borderRadius: '10px',
-                      padding: '10px 12px',
-                      background: tab === m.key ? 'white' : 'transparent',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 700, color: 'var(--char)' }}>
+              {/* Simple / Custom toggle — segmented control, always switchable */}
+              <div style={{ marginBottom: bakeType === 'pizza' ? '12px' : '0' }}>
+                <div style={{ display: 'flex', background: 'var(--cream)', borderRadius: '12px', padding: '4px', gap: '4px' }}>
+                  {([
+                    { key: 'simple' as const, title: t('modeCards.simple.title') },
+                    { key: 'custom' as const, title: t('modeCards.custom.title') },
+                  ]).map(m => {
+                    const isActive = tab === m.key;
+                    return (
+                      <button
+                        key={m.key}
+                        aria-pressed={isActive}
+                        onClick={() => chooseMode(m.key)}
+                        style={{
+                          flex: 1, textAlign: 'center', padding: '10px 8px', borderRadius: '9px',
+                          border: 'none', cursor: 'pointer',
+                          fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: '14px',
+                          background: isActive ? '#FFFFFF' : 'transparent',
+                          boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+                          color: isActive ? 'var(--char)' : 'var(--smoke)',
+                          transition: 'all 0.15s',
+                        }}
+                      >
                         {m.title}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => setModeInfoOpen(o => !o)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                    margin: '10px auto 0', background: 'none', border: 'none', cursor: 'pointer',
+                    fontFamily: 'var(--font-dm-sans)', fontSize: '11.5px', color: 'var(--smoke)',
+                  }}
+                >
+                  <span style={{
+                    width: '15px', height: '15px', borderRadius: '50%', border: '1.4px solid var(--smoke)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: '9px', flexShrink: 0,
+                  }}>i</span>
+                  {locale === 'fr' ? 'Quelle est la différence\u00A0?' : "What's the difference?"}
+                </button>
+                {modeInfoOpen && (
+                  <div style={{
+                    marginTop: '10px', padding: '12px 14px', background: 'var(--cream)', borderRadius: '10px',
+                    fontFamily: 'var(--font-dm-sans)', fontSize: '12.5px', lineHeight: 1.6, color: 'var(--ash)',
+                  }}>
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, color: 'var(--char)' }}>
+                        {t('modeCards.simple.title')}
                       </span>
-                      </div>
-                    {/* Personality subtitle */}
-                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '9.5px', fontStyle: 'italic', color: 'var(--smoke)', margin: '1px 0 8px', whiteSpace: 'nowrap', overflow: 'hidden', letterSpacing: '-0.01em' }}>
-                      {m.subtitle}
+                      {' — '}
+                      {t('modeCards.simple.collapsed').split('|').map(s => s.trim().replace(/^·\s*/, '')).join(', ')}.
                     </div>
-                    {/* Mode signature visual — the instrument you'll meet inside */}
-                    {m.key === 'simple' ? (
-                      <div>
-                        {/* 7 guided steps — same dot rhythm as the journey bar */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', height: '34px' }}>
-                          {[0, 1, 2, 3, 4, 5, 6].map(i => (
-                            <span key={i} style={{
-                              width: i === 6 ? '10px' : '7px', height: i === 6 ? '10px' : '7px',
-                              borderRadius: '50%', flexShrink: 0,
-                              background: i < 3 ? '#8BA888' : i < 6 ? '#A8B8D0' : '#D4A853',
-                            }} />
-                          ))}
-                          <span style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-                        </div>
-                        {/* Value pills — same visual language as the Avancé card */}
-                        <div style={{ display: 'flex', gap: '3px', marginTop: '6px', flexWrap: 'wrap' }}>
-                          {t('modeCards.simple.pills').split('|').map((c, i) => (
-                            <span key={i} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8.5px', color: 'var(--ash)', border: '1px solid var(--border)', borderRadius: '20px', padding: '2px 6px', background: 'rgba(26,22,18,0.03)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                              {c.trim()}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <svg viewBox="0 0 130 42" style={{ width: '100%', height: '34px', display: 'block' }} preserveAspectRatio="none" aria-hidden="true">
-                          <line x1="4" y1="34" x2="126" y2="34" stroke="#E8E0D5" strokeWidth="1.5" />
-                          <path d="M6 34 C24 34 28 8 40 8 C52 8 56 34 74 34" fill="none" stroke="#A8B8D0" strokeWidth="2" strokeLinecap="round" />
-                          <path d="M52 34 C72 34 76 12 88 12 C100 12 104 34 122 34" fill="none" stroke="#8BA888" strokeWidth="2" strokeLinecap="round" />
-                          {/* Diamond on the baseline — the draggable time marker, as in the real chart */}
-                          <polygon points="52,29.5 56.5,34 52,38.5 47.5,34" fill="#D4A853" stroke="#FDFBF7" strokeWidth="1" />
-                        </svg>
-                        <div style={{ display: 'flex', gap: '3px', marginTop: '6px', flexWrap: 'wrap' }}>
-                          {t('modeCards.custom.chips').split('|').map((c, i) => (
-                            <span key={i} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8.5px', color: 'var(--ash)', border: '1px solid var(--border)', borderRadius: '20px', padding: '2px 6px', background: 'rgba(26,22,18,0.03)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                              {c.trim()}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {/* Expandable details — the previous bullets */}
-                    {modeDetailsOpen[m.key] && (
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', lineHeight: 1.7, marginTop: '8px', borderTop: '1px dashed var(--border)', paddingTop: '7px' }}>
-                        {m.collapsed.split('|').map((line, i) => (
-                          <div key={i}>{line.trim()}</div>
-                        ))}
-                      </div>
-                    )}
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        setModeDetailsOpen(prev => ({ ...prev, [m.key]: !prev[m.key] }));
-                      }}
-                      onKeyDown={e => e.stopPropagation()}
-                      style={{ marginTop: 'auto', paddingTop: '7px', alignSelf: 'flex-start', background: 'none', border: 'none', paddingBottom: 0, paddingLeft: 0, paddingRight: 0, cursor: 'pointer', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)', textDecoration: 'underline', textUnderlineOffset: '2px' }}
-                    >
-                      {modeDetailsOpen[m.key] ? t('modeCards.hide') : t('modeCards.details')}
-                    </button>
+                    <div>
+                      <span style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, color: 'var(--char)' }}>
+                        {t('modeCards.custom.title')}
+                      </span>
+                      {' — '}
+                      {t('modeCards.custom.collapsed').split('|').map(s => s.trim().replace(/^·\s*/, '')).join(', ')}.
+                    </div>
                   </div>
-                ))}
+                )}
               </div>
 
               {/* Sourdough-vs-Simple nudge — observation with a choice, not an alarm */}
@@ -2280,8 +2240,8 @@ export default function Home() {
             {/* ── Review mode banner ── */}
             {reviewMode && (
               <div style={{
-                background: 'rgba(212,168,83,0.1)',
-                border: '1px solid rgba(212,168,83,0.2)',
+                background: 'rgba(156, 130, 72,0.1)',
+                border: '1px solid rgba(156, 130, 72,0.2)',
                 borderRadius: '10px',
                 padding: '10px 14px',
                 fontFamily: 'var(--font-dm-mono)',
@@ -2385,9 +2345,9 @@ export default function Home() {
                               onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
                               style={{
                                 flex: 1, padding: '5px 0', borderRadius: '8px',
-                                border: pizzaCorn === opt.value ? '2px solid #C4522A' : '1px solid #E8E0D5',
+                                border: pizzaCorn === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
                                 background: pizzaCorn === opt.value ? 'white' : 'transparent',
-                                color: pizzaCorn === opt.value ? '#1A1612' : '#8A7F78',
+                                color: pizzaCorn === opt.value ? '#2B2420' : '#8A7F78',
                                 fontSize: '12px', fontWeight: pizzaCorn === opt.value ? 600 : 400,
                                 fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
                               }}
@@ -2613,7 +2573,7 @@ export default function Home() {
                   style={{
                     width: '100%',
                     padding: '14px 0',
-                    background: '#C4522A',
+                    background: '#6B4423',
                     color: 'white',
                     borderRadius: '12px',
                     border: 'none',
@@ -2621,7 +2581,7 @@ export default function Home() {
                     fontWeight: 500,
                     fontFamily: 'var(--font-dm-sans)',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 16px rgba(196,82,42,0.3)',
+                    boxShadow: '0 4px 16px rgba(107, 68, 35,0.3)',
                   }}
                 >
                   {t('generate.generateBtn')}
@@ -2637,7 +2597,7 @@ export default function Home() {
               {/* Stale banner */}
               {protocolStale && recipeGenerated && (
                 <div style={{
-                  background: '#F5F0E8',
+                  background: '#F0EBE0',
                   borderRadius: '10px',
                   padding: '10px 14px',
                   marginBottom: '12px',
@@ -2652,7 +2612,7 @@ export default function Home() {
                   <button
                     onClick={handleGenerate}
                     style={{
-                      background: '#C4522A',
+                      background: '#6B4423',
                       color: 'white',
                       fontSize: '11px',
                       padding: '4px 10px',
@@ -2987,8 +2947,8 @@ export default function Home() {
             {/* ── Review mode banner ── */}
             {reviewMode && (
               <div style={{
-                background: 'rgba(212,168,83,0.1)',
-                border: '1px solid rgba(212,168,83,0.2)',
+                background: 'rgba(156, 130, 72,0.1)',
+                border: '1px solid rgba(156, 130, 72,0.2)',
                 borderRadius: '10px',
                 padding: '10px 14px',
                 fontFamily: 'var(--font-dm-mono)',
@@ -3105,9 +3065,9 @@ export default function Home() {
                               onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
                               style={{
                                 flex: 1, padding: '5px 0', borderRadius: '8px',
-                                border: pizzaCorn === opt.value ? '2px solid #C4522A' : '1px solid #E8E0D5',
+                                border: pizzaCorn === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
                                 background: pizzaCorn === opt.value ? 'white' : 'transparent',
-                                color: pizzaCorn === opt.value ? '#1A1612' : '#8A7F78',
+                                color: pizzaCorn === opt.value ? '#2B2420' : '#8A7F78',
                                 fontSize: '12px', fontWeight: pizzaCorn === opt.value ? 600 : 400,
                                 fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
                               }}
@@ -3284,7 +3244,7 @@ export default function Home() {
                     border: 'none', borderRadius: '12px',
                     background: 'var(--terra)', color: '#fff',
                     fontFamily: 'var(--font-playfair)', fontSize: '1.05rem', fontWeight: 700,
-                    cursor: 'pointer', boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
+                    cursor: 'pointer', boxShadow: '0 2px 8px rgba(107, 68, 35,0.22)',
                   }}
                 >
                   {t('common.continueBtn')}
@@ -3357,7 +3317,7 @@ export default function Home() {
                       fontFamily: 'var(--font-playfair)',
                       fontSize: '1.05rem', fontWeight: 700,
                       cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(196,82,42,0.22)',
+                      boxShadow: '0 2px 8px rgba(107, 68, 35,0.22)',
                     }}
                   >
                     {locale === 'fr' ? 'Continuer →' : 'Continue →'}
@@ -3499,7 +3459,7 @@ export default function Home() {
                       <div style={{ position: 'relative', height: '36px', display: 'flex', alignItems: 'center' }}>
                         <div style={{
                           position: 'absolute', left: 0, right: 0, height: '8px', borderRadius: '4px',
-                          background: 'linear-gradient(to right, #A8B8D0 0%, #A8B8D0 20%, #8BA888 20%, #8BA888 55%, #D4A853 55%, #D4A853 100%)',
+                          background: 'linear-gradient(to right, #A8B8D0 0%, #A8B8D0 20%, #8BA888 20%, #8BA888 55%, #9C8248 55%, #9C8248 100%)',
                         }} />
                         <input
                           type="range"
@@ -3615,7 +3575,7 @@ export default function Home() {
                       <div style={{ position: 'relative', height: '36px', display: 'flex', alignItems: 'center' }}>
                         <div style={{
                           position: 'absolute', left: 0, right: 0, height: '8px', borderRadius: '4px',
-                          background: `linear-gradient(to right, #A8B8D0 0%, #A8B8D0 ${lowPct}%, #8BA888 ${lowPct}%, #8BA888 ${classicMaxPct}%, #D4A853 ${classicMaxPct}%, #D4A853 ${advancedMaxPct}%, #E8A898 ${advancedMaxPct}%, #E8A898 100%)`,
+                          background: `linear-gradient(to right, #A8B8D0 0%, #A8B8D0 ${lowPct}%, #8BA888 ${lowPct}%, #8BA888 ${classicMaxPct}%, #9C8248 ${classicMaxPct}%, #9C8248 ${advancedMaxPct}%, #E8A898 ${advancedMaxPct}%, #E8A898 100%)`,
                         }} />
                         <input
                           type="range"
@@ -3665,7 +3625,7 @@ export default function Home() {
                           fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)', fontWeight: 600,
                           color: hZone.color, flexShrink: 0,
                           background: hZone.color === 'var(--sage)' ? 'rgba(139,168,136,0.12)' :
-                                      hZone.color === 'var(--gold)' ? 'rgba(212,168,83,0.12)' :
+                                      hZone.color === 'var(--gold)' ? 'rgba(156, 130, 72,0.12)' :
                                       hZone.color === '#C4624A' ? 'rgba(196,98,74,0.1)' : 'rgba(90,122,152,0.1)',
                           borderRadius: '20px', padding: '.2rem .6rem',
                         }}>
@@ -3737,7 +3697,7 @@ export default function Home() {
                             style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '9px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
                           >i</button>
                           {oilTip && (
-                            <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: v > 0 && isHighTemp ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(26,22,18,0.08)' }}>
+                            <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: v > 0 && isHighTemp ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
                               {oilGuideText}
                             </div>
                           )}
@@ -3773,7 +3733,7 @@ export default function Home() {
                             style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '9px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
                           >i</button>
                           {sugarTip && (
-                            <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: sg.warn ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(26,22,18,0.08)' }}>
+                            <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: sg.warn ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
                               {sg.note}
                             </div>
                           )}
@@ -3819,7 +3779,7 @@ export default function Home() {
                                 style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '9px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
                               >i</button>
                               {ddtTip && (
-                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(26,22,18,0.08)' }}>
+                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
                                   +{mixerFriction}°C friction from {mixerType === 'spiral' ? 'spiral' : mixerType === 'stand' ? 'stand' : 'hand'} mixer. Flour from fridge removes ~8°C.
                                 </div>
                               )}
@@ -3849,7 +3809,7 @@ export default function Home() {
                                 style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '9px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
                               >i</button>
                               {flourFridgeTip && (
-                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(26,22,18,0.08)', whiteSpace: 'normal' }}>
+                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)', whiteSpace: 'normal' }}>
                                   Cold flour lowers FDT. Removes ~8°C, offset automatically in the water temp calculation.
                                 </div>
                               )}
@@ -3873,7 +3833,7 @@ export default function Home() {
                                 style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '9px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
                               >i</button>
                               {mixLossTip && (
-                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(26,22,18,0.08)' }}>
+                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
                                   Buffer for bowl residue and transfer losses. Schedule is unchanged — only ingredient quantities scale up.
                                 </div>
                               )}
@@ -3912,7 +3872,7 @@ export default function Home() {
                   style={{
                     width: '100%',
                     padding: '14px 0',
-                    background: '#C4522A',
+                    background: '#6B4423',
                     color: 'white',
                     borderRadius: '12px',
                     border: 'none',
@@ -3920,7 +3880,7 @@ export default function Home() {
                     fontWeight: 500,
                     fontFamily: 'var(--font-dm-sans)',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 16px rgba(196,82,42,0.3)',
+                    boxShadow: '0 4px 16px rgba(107, 68, 35,0.3)',
                   }}
                 >
                   {t('generate.generateBtn')}
@@ -3936,7 +3896,7 @@ export default function Home() {
               {/* Stale banner */}
               {protocolStale && recipeGenerated && (
                 <div style={{
-                  background: '#F5F0E8',
+                  background: '#F0EBE0',
                   borderRadius: '10px',
                   padding: '10px 14px',
                   marginBottom: '12px',
@@ -3951,7 +3911,7 @@ export default function Home() {
                   <button
                     onClick={handleGenerate}
                     style={{
-                      background: '#C4522A',
+                      background: '#6B4423',
                       color: 'white',
                       fontSize: '11px',
                       padding: '4px 10px',
@@ -4334,7 +4294,7 @@ export default function Home() {
             },
           ] as const).map(({ key: tabKey, label, icon, locked, done }) => {
             const isActive = activeTab === tabKey;
-            const activeColor = '#C4522A';
+            const activeColor = '#6B4423';
             const doneColor = '#6B7A5A';
             const lockedColor = '#C8C0B8';
             const color = locked ? lockedColor : isActive ? activeColor : done ? doneColor : '#8A7F78';
@@ -4362,7 +4322,7 @@ export default function Home() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   position: 'relative',
-                  background: isActive ? '#C4522A1A' : done ? '#6B7A5A14' : 'transparent',
+                  background: isActive ? '#6B44231A' : done ? '#6B7A5A14' : 'transparent',
                 }}>
                   {icon(color)}
                   {done && (
@@ -4511,7 +4471,7 @@ export default function Home() {
           onClick={() => setShowSignInForSave(false)}
           style={{
             position: 'fixed', bottom: `${bottomNavH + 12}px`, right: '16px',
-            zIndex: 999, background: '#1A1612', color: 'var(--cream)',
+            zIndex: 999, background: '#2B2420', color: 'var(--cream)',
             fontFamily: 'var(--font-dm-sans)', fontSize: '14px',
             borderRadius: '12px', padding: '12px 16px', maxWidth: '280px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
@@ -4548,7 +4508,7 @@ export default function Home() {
             fontSize: '13px',
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 600,
-            boxShadow: '0 4px 16px rgba(196,82,42,0.35)',
+            boxShadow: '0 4px 16px rgba(107, 68, 35,0.35)',
             cursor: 'pointer',
             animation: 'fadeInUp 0.3s ease',
             whiteSpace: 'nowrap',
@@ -4631,7 +4591,7 @@ function PostBakeLanding({
           color: 'white', border: 'none', borderRadius: '12px',
           fontFamily: 'var(--font-dm-sans)', fontSize: '16px',
           fontWeight: 600, cursor: saving ? 'default' : 'pointer',
-          boxShadow: '0 2px 8px rgba(196,82,42,0.2)',
+          boxShadow: '0 2px 8px rgba(107, 68, 35,0.2)',
         }}
       >
         {saving ? '...' : (l === 'fr' ? 'Oui, je l\'ai fait ✓' : 'Yes, I baked it ✓')}
