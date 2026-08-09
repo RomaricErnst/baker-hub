@@ -1821,46 +1821,92 @@ export default function Home() {
             borderBottom: '1px solid #2D2824',
           }}>
             {/* ── Journey bar ── */}
-            <div style={{ display: 'flex' }}>
+            <div style={{ display: 'flex', gap: '8px', padding: '8px 12px 0' }}>
               <button
                 onClick={() => { setActiveTab(recipeGenerated ? 'plan' : 'setup'); setNavHidden(false); }}
                 style={{
                   flex: 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                   textAlign: 'center',
-                  padding: '10px 8px',
+                  padding: '9px 10px',
                   fontSize: '13px',
                   fontWeight: activeTab !== 'pizzaparty' ? 600 : 400,
-                  color: activeTab !== 'pizzaparty' ? '#6B4423' : '#8A7F78',
-                  background: 'transparent',
+                  color: activeTab !== 'pizzaparty' ? '#2B2420' : '#B5AC9E',
+                  background: activeTab !== 'pizzaparty' ? '#F0EBE0' : 'transparent',
                   border: 'none',
-                  borderBottom: activeTab !== 'pizzaparty' ? '2px solid #6B4423' : '2px solid transparent',
+                  borderRadius: '10px 10px 0 0',
                   cursor: 'pointer',
                   fontFamily: 'DM Sans, sans-serif',
+                  position: 'relative',
                 }}
               >
+                {/* Echoes Setup's own icon — the first step inside this tab */}
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                  <line x1="2" y1="5" x2="18" y2="5" stroke={activeTab !== 'pizzaparty' ? '#6B4423' : '#B5AC9E'} strokeWidth="1.4" strokeLinecap="round"/>
+                  <circle cx="7" cy="5" r="2" fill={activeTab !== 'pizzaparty' ? '#F0EBE0' : '#2B2420'} stroke={activeTab !== 'pizzaparty' ? '#6B4423' : '#B5AC9E'} strokeWidth="1.4"/>
+                  <line x1="2" y1="10" x2="18" y2="10" stroke={activeTab !== 'pizzaparty' ? '#6B4423' : '#B5AC9E'} strokeWidth="1.4" strokeLinecap="round"/>
+                  <circle cx="13" cy="10" r="2" fill={activeTab !== 'pizzaparty' ? '#F0EBE0' : '#2B2420'} stroke={activeTab !== 'pizzaparty' ? '#6B4423' : '#B5AC9E'} strokeWidth="1.4"/>
+                  <line x1="2" y1="15" x2="18" y2="15" stroke={activeTab !== 'pizzaparty' ? '#6B4423' : '#B5AC9E'} strokeWidth="1.4" strokeLinecap="round"/>
+                  <circle cx="9" cy="15" r="2" fill={activeTab !== 'pizzaparty' ? '#F0EBE0' : '#2B2420'} stroke={activeTab !== 'pizzaparty' ? '#6B4423' : '#B5AC9E'} strokeWidth="1.4"/>
+                </svg>
                 {t('tabs.myDough')}
+                {activeTab === 'pizzaparty' && recipeGenerated && (
+                  <span style={{
+                    position: 'absolute', top: '3px', right: '8px',
+                    width: '11px', height: '11px', borderRadius: '50%',
+                    background: '#8BA888', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+                      <path d="M1.5 3.5l1.5 1.5 2.5-2.5" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </span>
+                )}
               </button>
 
-              {pizzaPartyEnabled && (
-                <button
-                  onClick={() => { setActiveTab('pizzaparty'); setNavHidden(false); }}
-                  style={{
-                    flex: 1,
-                    textAlign: 'center',
-                    padding: '10px 8px',
-                    fontSize: '13px',
-                    fontWeight: activeTab === 'pizzaparty' ? 600 : 400,
-                    color: activeTab === 'pizzaparty' ? '#B8903A' : '#8A7F78',
-                    background: 'transparent',
-                    border: 'none',
-                    borderBottom: activeTab === 'pizzaparty' ? '2px solid #B8903A' : '2px solid transparent',
-                    cursor: 'pointer',
-                    fontFamily: 'DM Sans, sans-serif',
-                  }}
-                >
-                  {t('tabs.myPizzaParty')}
-                </button>
-              )}
+              {pizzaPartyEnabled && (() => {
+                const totalPizzaCount = Object.values(pizzaPartyQtys).reduce((a, b) => a + b, 0);
+                return (
+                  <button
+                    onClick={() => { setActiveTab('pizzaparty'); setNavHidden(false); }}
+                    style={{
+                      flex: 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      textAlign: 'center',
+                      padding: '9px 10px',
+                      fontSize: '13px',
+                      fontWeight: activeTab === 'pizzaparty' ? 600 : 400,
+                      color: activeTab === 'pizzaparty' ? '#2B2420' : '#B5AC9E',
+                      background: activeTab === 'pizzaparty' ? '#F0EBE0' : 'transparent',
+                      border: 'none',
+                      borderRadius: '10px 10px 0 0',
+                      cursor: 'pointer',
+                      fontFamily: 'DM Sans, sans-serif',
+                      position: 'relative',
+                    }}
+                  >
+                    {/* Echoes Pick's own icon — the first step inside this tab */}
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                      <path d="M10 2.5L3 17.5h14L10 2.5z" stroke={activeTab === 'pizzaparty' ? '#C88A52' : '#B5AC9E'} strokeWidth="1.4" strokeLinejoin="round"/>
+                      <path d="M4.5 17Q10 13.5 15.5 17" stroke={activeTab === 'pizzaparty' ? '#C88A52' : '#B5AC9E'} strokeWidth="1.2" strokeLinecap="round"/>
+                      <circle cx="10" cy="11" r="1" fill={activeTab === 'pizzaparty' ? '#C88A52' : '#B5AC9E'}/>
+                      <circle cx="7.5" cy="14" r="0.8" fill={activeTab === 'pizzaparty' ? '#C88A52' : '#B5AC9E'}/>
+                      <circle cx="12.5" cy="14" r="0.8" fill={activeTab === 'pizzaparty' ? '#C88A52' : '#B5AC9E'}/>
+                    </svg>
+                    {t('tabs.myPizzaParty')}
+                    {activeTab !== 'pizzaparty' && totalPizzaCount > 0 && (
+                      <span style={{
+                        position: 'absolute', top: '3px', right: '8px',
+                        background: '#C88A52', color: '#2B2420',
+                        fontFamily: 'DM Mono, monospace', fontSize: '9px', fontWeight: 700,
+                        width: '15px', height: '15px', borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {totalPizzaCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -4243,17 +4289,16 @@ export default function Home() {
         right: 0,
         background: '#FDFBF7',
         borderTop: '1px solid #E0D8CF',
-        display: 'flex',
         zIndex: 100,
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
-        {activeTab !== 'pizzaparty' ? (
-          ([
+        {activeTab !== 'pizzaparty' ? (() => {
+          const steps = [
             {
               key: 'setup' as const,
               label: t('tabs.setup'),
               icon: (color: string) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
                   <line x1="2" y1="5" x2="18" y2="5" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
                   <circle cx="7" cy="5" r="2" fill="#FDFBF7" stroke={color} strokeWidth="1.4"/>
                   <line x1="2" y1="10" x2="18" y2="10" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
@@ -4269,7 +4314,7 @@ export default function Home() {
               key: 'plan' as const,
               label: t('tabs.plan'),
               icon: (color: string) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
                   <rect x="4" y="2" width="12" height="16" rx="2" stroke={color} strokeWidth="1.4"/>
                   <line x1="7" y1="7" x2="13" y2="7" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
                   <line x1="7" y1="10" x2="13" y2="10" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
@@ -4283,7 +4328,7 @@ export default function Home() {
               key: 'guide' as const,
               label: t('tabs.guide'),
               icon: (color: string) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
                   <path d="M10 17V7" stroke={color} strokeWidth="1.4"/>
                   <path d="M4 5.5c2-.7 4-.7 6 1 2-1.7 4-1.7 6-1v11c-2-.7-4-.7-6 1-2-1.7-4-1.7-6-1V5.5z"
                     stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
@@ -4292,80 +4337,76 @@ export default function Home() {
               locked: !recipeGenerated,
               done: false,
             },
-          ] as const).map(({ key: tabKey, label, icon, locked, done }) => {
-            const isActive = activeTab === tabKey;
-            const activeColor = '#6B4423';
-            const doneColor = '#6B7A5A';
-            const lockedColor = '#C8C0B8';
-            const color = locked ? lockedColor : isActive ? activeColor : done ? doneColor : '#8A7F78';
-            return (
-              <button
-                key={tabKey}
-                onClick={() => !locked && setActiveTab(tabKey)}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '10px 4px 12px',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: locked ? 'default' : 'pointer',
-                }}
-              >
-                <div style={{
-                  width: '40px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
-                  background: isActive ? '#6B44231A' : done ? '#6B7A5A14' : 'transparent',
-                }}>
-                  {icon(color)}
-                  {done && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '1px',
-                      right: '1px',
-                      width: '11px',
-                      height: '11px',
-                      borderRadius: '50%',
-                      background: '#6B7A5A',
-                      border: '1.5px solid #FDFBF7',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                      <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
-                        <path d="M1.5 3.5l1.5 1.5 2.5-2.5" stroke="white" strokeWidth="1.2"
-                          strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <span style={{
-                  fontSize: '10px',
-                  lineHeight: 1,
-                  color,
-                  fontWeight: isActive ? 600 : 400,
-                  fontFamily: 'DM Sans, sans-serif',
-                }}>
-                  {label}
-                </span>
-              </button>
-            );
-          })
-        ) : (
-          ([
+          ];
+          const doneCount = steps.filter(s => s.done).length;
+          const fillPct = (doneCount / (steps.length - 1)) * 100;
+          return (
+            <div style={{ position: 'relative', padding: '14px 24px 10px' }}>
+              <div style={{ position: 'absolute', top: '34px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
+                {steps.map(s => {
+                  const isActive = activeTab === s.key;
+                  const nodeBg = s.done ? '#8BA888' : isActive ? '#6B4423' : '#FDFBF7';
+                  const nodeBorder = s.done ? '#8BA888' : isActive ? '#6B4423' : s.locked ? '#E0D8CC' : '#C9BEA9';
+                  const iconColor = (s.done || isActive) ? '#fff' : s.locked ? '#C9BEA9' : '#8C8580';
+                  const labelColor = s.done ? '#6B7A5A' : isActive ? '#6B4423' : s.locked ? '#B5AC9E' : '#8C8580';
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => !s.locked && setActiveTab(s.key)}
+                      style={{
+                        background: 'none', border: 'none', cursor: s.locked ? 'default' : 'pointer',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '56px',
+                      }}
+                    >
+                      <div style={{
+                        width: '32px', height: '32px', borderRadius: '50%',
+                        border: `2px solid ${nodeBorder}`, background: nodeBg,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
+                      }}>
+                        {s.done ? (
+                          <svg width="9" height="9" viewBox="0 0 7 7" fill="none">
+                            <path d="M1.5 3.5l1.5 1.5 2.5-2.5" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        ) : s.icon(iconColor)}
+                        {s.locked && (
+                          <span style={{
+                            position: 'absolute', bottom: '-2px', right: '-2px',
+                            width: '13px', height: '13px', borderRadius: '50%',
+                            background: '#B5AC9E', border: '1.5px solid #FDFBF7',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+                              <rect x="2" y="4.5" width="6" height="4.5" rx="1" stroke="#fff" strokeWidth="1.1"/>
+                              <path d="M3.2 4.5V3a1.8 1.8 0 013.6 0v1.5" stroke="#fff" strokeWidth="1.1" fill="none"/>
+                            </svg>
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '10px', lineHeight: 1, color: labelColor, fontWeight: isActive ? 600 : 400, fontFamily: 'DM Sans, sans-serif' }}>
+                        {s.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })() : (() => {
+          // Shop/Prep/Bake all share ONE gate (pizzasConfirmed) — none of them
+          // individually require the others to be visited or "done". A baker
+          // who's picked their pizzas can jump straight to Bake without ever
+          // opening Shop or Prep. Only lock what's actually not usable yet.
+          const steps = [
             {
               key: 'pick' as const,
               label: t('tabs.pizzas'),
-              unlocked: true,
+              locked: false,
+              done: pizzasConfirmed && pizzaPartyTab !== 'pick',
               icon: (color: string) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
                   <path d="M10 2.5L3 17.5h14L10 2.5z" stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
                   <path d="M4.5 17Q10 13.5 15.5 17" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
                   <circle cx="10" cy="11" r="1" fill={color}/>
@@ -4377,9 +4418,10 @@ export default function Home() {
             {
               key: 'shop' as const,
               label: t('tabs.shopping'),
-              unlocked: pizzasConfirmed,
+              locked: !pizzasConfirmed,
+              done: false,
               icon: (color: string) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
                   <path d="M4 7h12l-1 9H5L4 7z" stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
                   <path d="M7 7V5.5a3 3 0 0 1 6 0V7" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
                   <line x1="8" y1="11" x2="8" y2="13" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
@@ -4390,9 +4432,10 @@ export default function Home() {
             {
               key: 'prep' as const,
               label: t('tabs.prep'),
-              unlocked: pizzasConfirmed,
+              locked: !pizzasConfirmed,
+              done: false,
               icon: (color: string) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
                   <line x1="0" y1="16" x2="20" y2="16" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
                   <path d="M2 10h6c0 3.5-1.3 6-3 6S2 13.5 2 10z"
                     stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
@@ -4406,9 +4449,10 @@ export default function Home() {
             {
               key: 'bake' as const,
               label: t('tabs.bake'),
-              unlocked: pizzasConfirmed,
+              locked: !pizzasConfirmed,
+              done: false,
               icon: (color: string) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none"
                   stroke={color} strokeLinecap="round" strokeLinejoin="round">
                   <rect x="8.5" y="2" width="3" height="4" rx=".5" fill={color} stroke="none"/>
                   <path d="M2 17V11a8 4.5 0 0116 0v6" strokeWidth="1.4"/>
@@ -4417,52 +4461,64 @@ export default function Home() {
                 </svg>
               ),
             },
-          ] as const).map(({ key: tabKey, label, icon, unlocked }) => {
-            const isActive = pizzaPartyTab === tabKey;
-            const activeColor = '#B8903A';
-            const color = isActive ? activeColor : unlocked ? '#8A7F78' : '#C8C0B8';
-            const opacity = isActive ? 1 : unlocked ? 1 : 0.4;
-            return (
-              <button
-                key={tabKey}
-                onClick={() => unlocked && setPizzaPartyTab(tabKey)}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '10px 4px 12px',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: unlocked ? 'pointer' : 'default',
-                  opacity,
-                }}
-              >
-                <div style={{
-                  width: '40px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: isActive ? '#B8903A1A' : 'transparent',
-                }}>
-                  {icon(color)}
-                </div>
-                <span style={{
-                  fontSize: '10px',
-                  lineHeight: 1,
-                  color,
-                  fontWeight: isActive ? 600 : 400,
-                  fontFamily: 'DM Sans, sans-serif',
-                }}>
-                  {label}
-                </span>
-              </button>
-            );
-          })
-        )}
+          ];
+          const doneCount = steps.filter(s => s.done).length;
+          const fillPct = (doneCount / (steps.length - 1)) * 100;
+          return (
+            <div style={{ position: 'relative', padding: '14px 24px 10px' }}>
+              <div style={{ position: 'absolute', top: '34px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
+                {steps.map(s => {
+                  const isActive = pizzaPartyTab === s.key;
+                  const nodeBg = s.done ? '#8BA888' : isActive ? '#C88A52' : '#FDFBF7';
+                  const nodeBorder = s.done ? '#8BA888' : isActive ? '#C88A52' : s.locked ? '#E0D8CC' : '#C9BEA9';
+                  const iconColor = (s.done || isActive) ? '#fff' : s.locked ? '#C9BEA9' : '#8C8580';
+                  const labelColor = s.done ? '#6B7A5A' : isActive ? '#C88A52' : s.locked ? '#B5AC9E' : '#8C8580';
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => !s.locked && setPizzaPartyTab(s.key)}
+                      style={{
+                        background: 'none', border: 'none', cursor: s.locked ? 'default' : 'pointer',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '52px',
+                      }}
+                    >
+                      <div style={{
+                        width: '32px', height: '32px', borderRadius: '50%',
+                        border: `2px solid ${nodeBorder}`, background: nodeBg,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
+                      }}>
+                        {s.done ? (
+                          <svg width="9" height="9" viewBox="0 0 7 7" fill="none">
+                            <path d="M1.5 3.5l1.5 1.5 2.5-2.5" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        ) : s.icon(iconColor)}
+                        {s.locked && (
+                          <span style={{
+                            position: 'absolute', bottom: '-2px', right: '-2px',
+                            width: '13px', height: '13px', borderRadius: '50%',
+                            background: '#B5AC9E', border: '1.5px solid #FDFBF7',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+                              <rect x="2" y="4.5" width="6" height="4.5" rx="1" stroke="#fff" strokeWidth="1.1"/>
+                              <path d="M3.2 4.5V3a1.8 1.8 0 013.6 0v1.5" stroke="#fff" strokeWidth="1.1" fill="none"/>
+                            </svg>
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '10px', lineHeight: 1, color: labelColor, fontWeight: isActive ? 600 : 400, fontFamily: 'DM Sans, sans-serif' }}>
+                        {s.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
       </div>}
 
       {/* ── Sign-in nudge toast ── */}
