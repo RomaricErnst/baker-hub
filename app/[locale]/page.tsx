@@ -1913,7 +1913,7 @@ export default function Home() {
       </div>
 
       {/* ── Main content ───────────────────── */}
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) calc(80px + env(safe-area-inset-bottom, 0px))' }}>
+      <div style={{ maxWidth: '680px', margin: '0 auto', padding: `clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) ${bakeType ? 'calc(80px + env(safe-area-inset-bottom, 0px))' : 'clamp(1rem, 3vw, 1.5rem)'}` }}>
 
         {/* ── Nav #6: welcome-back inline banner (was a fixed toast that
              covered tap targets above the bottom nav) ── */}
@@ -2032,6 +2032,7 @@ export default function Home() {
         {activeTab === 'setup' && (
         <div ref={modeSelectorRef} style={{ textAlign: 'center', marginBottom: '16px' }}>
           {!bakeType && (
+          <div style={{ minHeight: 'calc(100dvh - 260px)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <h1 style={{
             fontFamily: 'var(--font-playfair)',
             fontSize: 'clamp(1.4rem, 5vw, 2rem)',
@@ -2045,8 +2046,7 @@ export default function Home() {
               {t('hero.headlineEm')}
             </em>
           </h1>
-          )}
-          {!bakeType && !profilePrefilled && !recipeGenerated && !loadProfile() && (
+          {!profilePrefilled && !recipeGenerated && !loadProfile() && (
             <p style={{
               fontFamily: 'var(--font-dm-sans)',
               fontSize: 'clamp(0.85rem, 3vw, 0.95rem)',
@@ -2060,7 +2060,6 @@ export default function Home() {
           )}
 
           {/* Pizza / Bread picker — full cards before selection, compact toggle after */}
-          {!bakeType && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', margin: '0 0 16px' }}>
             {([
               { type: 'pizza' as BakeType, image: '/pizzas/margherita.webp', label: t('bakeType.pizza.label'), desc: t('bakeType.pizza.desc'), activeBorder: 'var(--terra)', activeBg: '#FFF8F3' },
@@ -2127,6 +2126,7 @@ export default function Home() {
                 )}
               </div>
             ))}
+          </div>
           </div>
           )}
 
