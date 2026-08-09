@@ -479,7 +479,7 @@ export default function Header({
                   padding: '4px 10px',
                   fontFamily: 'var(--font-dm-mono)',
                   fontSize: '11px',
-                  color: sessionSaved ? 'var(--sage)' : 'var(--terra)',
+                  color: sessionSaved ? 'var(--sage)' : 'var(--terra-on-dark)',
                   cursor: sessionSaved ? 'default' : 'pointer',
                   whiteSpace: 'nowrap',
                 }}
@@ -603,10 +603,10 @@ export default function Header({
                     onClick={() => { onSaveSession?.(); setMenuOpen(false); }}
                     style={{
                       fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
-                      color: 'var(--terra)',
-                      border: '1px solid rgba(107, 68, 35,0.4)',
+                      color: 'var(--terra-on-dark)',
+                      border: '1px solid rgba(200, 138, 82,0.4)',
                       borderRadius: '6px',
-                      background: 'rgba(107, 68, 35,0.1)',
+                      background: 'rgba(200, 138, 82,0.1)',
                       padding: '3px 10px',
                       cursor: 'pointer',
                     }}
@@ -795,7 +795,7 @@ export default function Header({
                             <span style={{
                               fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
                               padding: '2px 8px', borderRadius: '20px',
-                              background: 'rgba(107, 68, 35,0.15)', color: 'var(--terra)',
+                              background: 'rgba(200, 138, 82,0.10)', color: 'var(--terra-on-dark)',
                             }}>Baked</span>
                           )}
                           {/* Nav #5 — clone this session onto the next matching weekday/time */}
