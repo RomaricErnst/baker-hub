@@ -2512,7 +2512,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         <div style={{
           position: 'fixed', bottom: `${bottomNavH}px`, left: 0, right: 0,
           background: '#2B2420',
-          borderTop: '1px solid #6B4423',
+          borderTop: '1px solid #C88A52',
           padding: '10px 14px',
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between',
@@ -2528,7 +2528,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 <div key={i} style={{
                   width: '7px', height: '7px', borderRadius: '50%',
                   background: i < totalQty
-                    ? (doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#6B4423')
+                    ? (doughConfigured && totalQty >= numItems ? '#8BA888' : '#C88A52')
                     : '#3D3530',
                   transition: 'background 0.2s ease',
                 }} />
@@ -2536,8 +2536,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             </div>
             <span style={{
               fontFamily: 'DM Mono, monospace', fontSize: '12px', fontWeight: 600,
-              color: totalQty === 0 ? '#8A7F78'
-                : (doughConfigured && totalQty >= numItems ? '#6B7A5A' : '#6B4423'),
+              color: totalQty === 0 ? '#B5AC9E'
+                : (doughConfigured && totalQty >= numItems ? '#8BA888' : '#C88A52'),
             }}>
               {totalQty === 0
                 ? (l === 'fr'
@@ -2545,10 +2545,11 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   : `Select ${doughConfigured ? numItems : 'your'} pizzas`)
                 : (doughConfigured
                   ? (totalQty > numItems
-                    ? <>{numItems}/{numItems} <span style={{ color: '#9C8248', fontWeight: 700 }}>+{totalQty - numItems}</span></>
+                    ? <>{numItems}/{numItems} <span style={{ color: '#C88A52', fontWeight: 700 }}>+{totalQty - numItems}</span></>
                     : `${totalQty}/${numItems}`)
                   : `${totalQty}`)}
             </span>
+
             {totalQty > 0 && (
               <span style={{
                 fontFamily: 'DM Sans, sans-serif', fontSize: '11px',

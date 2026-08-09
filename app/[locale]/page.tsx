@@ -2046,7 +2046,7 @@ export default function Home() {
             </em>
           </h1>
           )}
-          {!bakeType && (
+          {!bakeType && !profilePrefilled && !recipeGenerated && !loadProfile() && (
             <p style={{
               fontFamily: 'var(--font-dm-sans)',
               fontSize: 'clamp(0.85rem, 3vw, 0.95rem)',
@@ -2056,13 +2056,6 @@ export default function Home() {
               maxWidth: '30rem',
             }}>
               {t('hero.subtitle')}
-              <span style={{
-                display: 'block', marginTop: '6px',
-                fontSize: '.72rem', fontFamily: 'var(--font-dm-mono)',
-                color: 'var(--gold)', letterSpacing: '.03em',
-              }}>
-                {locale === 'fr' ? '≈ 2 minutes jusqu’à votre plan complet' : '≈ 2 minutes to your full plan'}
-              </span>
             </p>
           )}
 
@@ -2256,18 +2249,6 @@ export default function Home() {
                   {locale === 'fr'
                     ? 'Astuce : ☰ Mes préférences préremplit four, pétrin & style à chaque session'
                     : 'Tip: ☰ My preferences prefills oven, mixer & style every session'}
-                </div>
-              )}
-
-              {/* Baker-profile prefill hint — observation, not an alarm */}
-              {profilePrefilled && !recipeGenerated && (
-                <div style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
-                  color: 'var(--smoke)', letterSpacing: '.05em', margin: '10px 2px 0',
-                }}>
-                  {locale === 'fr'
-                    ? '✓ Préréglé depuis votre profil — modifiable à chaque étape'
-                    : '✓ Prefilled from your profile — adjustable at every step'}
                 </div>
               )}
 
