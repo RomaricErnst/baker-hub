@@ -1491,6 +1491,7 @@ export default function Home() {
     setSessionRestored(false);
     setReviewMode(false);
     setShowWelcomeBack(false);
+    setCloudResume(null);
     setBakeEventId(null);
     setPizzaPartyQtys({});
     setBakePhotoUrl(null);
@@ -1948,18 +1949,6 @@ export default function Home() {
             >
               {locale === 'fr' ? 'Reprendre →' : 'Resume →'}
             </button>
-            <button
-              onClick={() => { startOver(); answerWelcomeBack(); }}
-              style={{
-                background: 'none', border: 'none',
-                color: 'var(--smoke)', cursor: 'pointer',
-                fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
-                padding: '4px 0', whiteSpace: 'nowrap',
-                textDecoration: 'underline', textUnderlineOffset: '2px',
-              }}
-            >
-              {locale === 'fr' ? 'Recommencer' : 'Start fresh'}
-            </button>
           </div>
         )}
 
@@ -2009,21 +1998,6 @@ export default function Home() {
               }}
             >
               {locale === 'fr' ? 'Reprendre →' : 'Resume →'}
-            </button>
-            <button
-              onClick={() => {
-                setCloudResume(null);
-                try { sessionStorage.setItem('bh_wb_answered', '1'); } catch {}
-              }}
-              style={{
-                background: 'none', border: 'none',
-                color: 'var(--smoke)', cursor: 'pointer',
-                fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
-                padding: '4px 0', whiteSpace: 'nowrap',
-                textDecoration: 'underline', textUnderlineOffset: '2px',
-              }}
-            >
-              {locale === 'fr' ? 'Recommencer' : 'Start fresh'}
             </button>
           </div>
         )}
