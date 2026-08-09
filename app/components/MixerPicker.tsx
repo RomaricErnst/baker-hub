@@ -24,7 +24,7 @@ const NO_KNEAD_WARNING: Partial<Record<string, string>> = {
 
 export default function MixerPicker({ selected, onSelect, styleKey, bakeType, kitchenTemp, totalDoughG, locale }: MixerPickerProps) {
   const t = useTranslations('mixer');
-  const [expanded, setExpanded] = useState(!selected);
+  const [expanded, setExpanded] = useState(true);
 
   const options = [
     { id: 'stand',    image: '/mixer_stand.webp',   title: t('stand.title'),    tagline: t('stand.tagline') },

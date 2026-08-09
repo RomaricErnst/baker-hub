@@ -119,7 +119,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
   const t = useTranslations('style');
   const locale = useLocale();
   const styleKey = selected;
-  const [expanded, setExpanded] = useState(!styleKey);
+  const [expanded, setExpanded] = useState(true);
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   const isBread = bakeType === 'bread';

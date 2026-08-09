@@ -27,7 +27,7 @@ interface YeastHelperProps {
 export default function YeastHelper({ onSelect, onClose, selected, calcData, disabledIds, disabledNote, styleKey }: YeastHelperProps) {
   const t = useTranslations('yeast');
   const locale = useLocale();
-  const [expanded, setExpanded] = useState(!selected);
+  const [expanded, setExpanded] = useState(true);
   const [showCalc, setShowCalc] = useState(false);
 
   // Option IDs use YEAST_TYPES keys; i18n keys use simplified aliases (idy/ady)

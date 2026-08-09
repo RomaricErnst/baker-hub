@@ -21,7 +21,7 @@ export default function PrefermentPicker({
   styleKey, hideTypes = [], kitchenTemp, yeastType,
 }: PrefermentPickerProps) {
   const t = useTranslations('preferment');
-  const [expanded, setExpanded] = useState(selected === 'none');
+  const [expanded, setExpanded] = useState(true);
 
   const ALL_OPTIONS = [
     { id: 'none',    image: '/preferment-direct.webp',  title: t('none.title'),    tagline: t('none.tagline') },
