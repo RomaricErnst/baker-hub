@@ -2032,7 +2032,8 @@ export default function Home() {
         {activeTab === 'setup' && (
         <div ref={modeSelectorRef} style={{ textAlign: 'center', marginBottom: '16px' }}>
           {!bakeType && (
-          <div style={{ minHeight: 'calc(100dvh - 260px)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ minHeight: 'calc(100dvh - 260px)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <h1 style={{
             fontFamily: 'var(--font-playfair)',
             fontSize: 'clamp(1.4rem, 5vw, 2rem)',
@@ -2127,6 +2128,18 @@ export default function Home() {
               </div>
             ))}
           </div>
+          </div>
+
+          <p style={{
+            fontFamily: 'var(--font-dm-sans)',
+            fontSize: '.8rem',
+            fontStyle: 'italic',
+            color: 'var(--smoke)',
+            textAlign: 'center',
+            margin: '28px 0 8px',
+          }}>
+            {t('hero.footerTagline')}
+          </p>
           </div>
           )}
 
