@@ -1,6 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
+import { createClient } from '@/app/lib/supabase/client';
 import {
   PIZZAS, DESSERT_PIZZAS, getPizzaById, getCustomPizzaList,
   BASE_LABELS, OCCASION_LABELS, SEASON_LABELS,
@@ -940,6 +941,65 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
     }
   }
 
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [linkBusy, setLinkBusy] = useState(false);
+
+  async function handleShareLink() {
+    if (linkBusy) return;
+    setLinkBusy(true);
+    try {
+      const supabase = createClient();
+      const items = sections.flatMap(section => section.items.map(item => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        totalAmount: item.totalAmount,
+        unit: item.unit,
+      })));
+      const doughItems = recipeIngredients ?? [];
+      const title = Object.entries(qtys)
+        .filter(([, q]) => q > 0)
+        .map(([id, q]) => {
+          const allPizzas = [...PIZZAS, ...DESSERT_PIZZAS, ...getCustomPizzaList()];
+          const p = allPizzas.find(x => x.id === id);
+          return p ? (p.name[l] ?? p.name.en) + (q > 1 ? ` ×${q}` : '') : null;
+        }).filter(Boolean).join(', ');
+
+      let shareId: string | null = null;
+      try { shareId = localStorage.getItem('bh_shopping_share_id'); } catch {}
+
+      if (shareId) {
+        const { error } = await supabase
+          .from('shopping_list_shares')
+          .update({ title, items, dough_items: doughItems })
+          .eq('id', shareId);
+        if (error) shareId = null; // row may have been removed — fall through to create
+      }
+
+      if (!shareId) {
+        const { data, error } = await supabase
+          .from('shopping_list_shares')
+          .insert({ title, items, dough_items: doughItems, checked: ticked })
+          .select('id')
+          .single();
+        if (error || !data) { setLinkBusy(false); return; }
+        shareId = data.id;
+        if (shareId) { try { localStorage.setItem('bh_shopping_share_id', shareId); } catch {} }
+      }
+
+      const url = `${window.location.origin}/${locale}/list/${shareId}`;
+      if (navigator.share) {
+        await navigator.share({ url, title: l === 'fr' ? 'Liste de courses Pizza Party' : 'Pizza Party Shopping List' }).catch(() => {});
+      } else {
+        await navigator.clipboard?.writeText(url);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2000);
+      }
+    } finally {
+      setLinkBusy(false);
+    }
+  }
+
 
   if (totalSelected === 0) {
     return (
@@ -1163,6 +1223,28 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
             <path d="M4 14v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
           </svg>
           {l === 'fr' ? 'Partager la liste' : 'Share list'}
+        </button>
+        <button
+          onClick={handleShareLink}
+          disabled={linkBusy}
+          style={{
+            width: '100%', padding: '11px', marginTop: '8px',
+            background: 'transparent', color: linkCopied ? '#6B7A5A' : '#3D3530',
+            border: `1px solid ${linkCopied ? '#6B7A5A' : '#E0D8CF'}`, borderRadius: '10px',
+            fontSize: '13px', fontWeight: 500, cursor: linkBusy ? 'default' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+            opacity: linkBusy ? 0.6 : 1,
+          }}
+        >
+          {!linkCopied && (
+            <svg viewBox="0 0 20 20" width={14} height={14} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 12a3 3 0 004.24 0l2.5-2.5a3 3 0 00-4.24-4.24l-1 1"/>
+              <path d="M12 8a3 3 0 00-4.24 0l-2.5 2.5a3 3 0 004.24 4.24l1-1"/>
+            </svg>
+          )}
+          {linkCopied
+            ? (l === 'fr' ? 'Lien copié ✓' : 'Link copied ✓')
+            : (l === 'fr' ? 'Partager un lien cochable' : 'Share checkable link')}
         </button>
       </div>
     </div>
