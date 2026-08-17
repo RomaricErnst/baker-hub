@@ -943,10 +943,12 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 
   const [linkCopied, setLinkCopied] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   async function handleShareLink() {
     if (linkBusy) return;
     setLinkBusy(true);
+    setLinkError(null);
     try {
       const supabase = createClient();
       const items = sections.flatMap(section => section.items.map(item => ({
@@ -982,7 +984,12 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
           .insert({ title, items, dough_items: doughItems, checked: ticked })
           .select('id')
           .single();
-        if (error || !data) { setLinkBusy(false); return; }
+        if (error || !data) {
+          console.error('shopping_list_shares insert error:', error);
+          setLinkError(error?.message ?? (l === 'fr' ? 'Erreur inconnue' : 'Unknown error'));
+          setLinkBusy(false);
+          return;
+        }
         shareId = data.id;
         if (shareId) { try { localStorage.setItem('bh_shopping_share_id', shareId); } catch {} }
       }
@@ -995,6 +1002,9 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
         setLinkCopied(true);
         setTimeout(() => setLinkCopied(false), 2000);
       }
+    } catch (e) {
+      console.error('handleShareLink exception:', e);
+      setLinkError(e instanceof Error ? e.message : (l === 'fr' ? 'Erreur inconnue' : 'Unknown error'));
     } finally {
       setLinkBusy(false);
     }
@@ -1246,6 +1256,11 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
             ? (l === 'fr' ? 'Lien copié ✓' : 'Link copied ✓')
             : (l === 'fr' ? 'Partager un lien cochable' : 'Share checkable link')}
         </button>
+        {linkError && (
+          <div style={{ fontSize: '11px', color: '#B5654A', marginTop: '6px', textAlign: 'center' }}>
+            {l === 'fr' ? 'Échec de la création du lien : ' : "Couldn't create the link: "}{linkError}
+          </div>
+        )}
       </div>
     </div>
   );
