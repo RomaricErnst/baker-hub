@@ -1036,11 +1036,11 @@
       },
       "alreadyShaped": {
         "bold": "Les boules sont déjà façonnées",
-        "note": "surveillez juste l'apprêt"
+        "note": "gardez couvert et surveillez juste l'apprêt"
       },
       "shapeBalls": {
         "bold": "Façonnez les boules",
-        "note": "serrez et glissez — peau tendue"
+        "note": "serrez et glissez — peau tendue, puis gardez couvert (pas besoin de source de chaleur)"
       },
       "keepCovered": {
         "bold": "Gardez couvert à température ambiante",

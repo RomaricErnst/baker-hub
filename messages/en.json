@@ -1036,11 +1036,11 @@
       },
       "alreadyShaped": {
         "bold": "Balls are already shaped",
-        "note": "just monitor proofing"
+        "note": "keep covered and just monitor proofing"
       },
       "shapeBalls": {
         "bold": "Shape dough balls",
-        "note": "tuck and drag — taut skin"
+        "note": "tuck and drag — taut skin, then keep covered (no heat source needed)"
       },
       "keepCovered": {
         "bold": "Keep covered at room temperature",

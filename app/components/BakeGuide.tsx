@@ -85,9 +85,9 @@ function Steps({ items }: { items: { bold: string; note: string }[] }) {
       {items.map((item, i) => (
         <li key={i} style={{ display: 'flex', gap: '.55rem', alignItems: 'flex-start' }}>
           <span style={{
-            fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
-            color: D.smoke, flexShrink: 0, minWidth: '16px', marginTop: '.15rem',
-          }}>{i + 1}.</span>
+            width: '5px', height: '5px', borderRadius: '50%',
+            background: D.smoke, flexShrink: 0, marginTop: '.5rem',
+          }} />
           <span>
             <strong style={{ color: D.char }}>{item.bold}</strong>
             {item.note && <em style={{ color: D.smoke }}>{' — '}{item.note}</em>}
@@ -1556,7 +1556,6 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                   t.raw('finalProof.alreadyShaped') as { bold: string; note: string },
                 ]),
               ]),
-              t.raw('finalProof.keepCovered') as { bold: string; note: string },
               t.raw('finalProof.pokeTest') as { bold: string; note: string },
               { bold: l === 'fr' ? `Lancez le préchauffage du four ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} avant la cuisson` : `Start preheating your oven ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} before bake time`, note: (l === 'fr' ? 'le four chauffe pendant que la pâte finit son apprêt — les deux sont prêts en même temps' : 'oven heats while dough finishes proofing — they finish together') },
             ]} />
