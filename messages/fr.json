@@ -426,7 +426,7 @@
       "warmup": "Réchauffage · {dur}",
       "rtWarmup": "Réchauffage ambiant · {dur}"
     },
-    "restRtTip": "Sortez les pâtons du frigo et laissez-les couverts à température ambiante. La pâte froide est trop rigide pour être étirée — attendez qu'elle soit légèrement souple.",
+    "restRtTip": "Sortez les pâtons du frigo et laissez-les couverts à température ambiante. Le repos rend l'étirage plus facile — cela dit, une pâte longuement fermentée au froid (48h+) et bien hydratée peut s'étirer encore fraîche si elle est souple sous le doigt.",
     "finalProofCovered": "Les pâtons sont déjà façonnés — couvrez et laissez à température ambiante jusqu'au test du creux.",
     "finalProofShape": "Façonnez vos pâtons si ce n'est pas fait. Couvrez et laissez à température ambiante jusqu'au test du creux.",
     "divideTipBread": "Pesez et divisez la pâte en {n} pâton{plural}. Façonnez en gardant une surface tendue — soudure bien pincée dessous.",
@@ -1032,7 +1032,7 @@
     "finalProof": {
       "removeFridge": {
         "bold": "Sortez les boules du frigo",
-        "note": "gardez couvert — ne pas étirer, le gluten est froid et rigide"
+        "note": "gardez couvert — le repos détend le gluten ; une pâte longuement fermentée et souple peut toutefois s'étirer encore fraîche"
       },
       "alreadyShaped": {
         "bold": "Les boules sont déjà façonnées",

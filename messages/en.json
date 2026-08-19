@@ -426,7 +426,7 @@
       "warmup": "Warmup · {dur}",
       "rtWarmup": "Room temperature warmup · {dur}"
     },
-    "restRtTip": "Take dough balls out of the fridge and leave covered at room temperature. Cold dough is too stiff to stretch — wait until slightly soft.",
+    "restRtTip": "Take the balls out of the fridge and keep them covered at room temperature. Resting makes stretching easier — that said, a long cold-fermented (48h+), well-hydrated dough can be stretched while still cool if it feels supple.",
     "finalProofCovered": "Balls are already shaped — cover and leave at room temperature until the poke test.",
     "finalProofShape": "Shape your balls if not done. Cover and leave at room temperature until the poke test.",
     "divideTipBread": "Weigh and divide the dough into {n} piece{plural}. Shape with a taut surface — seam pinched tight underneath.",
@@ -1032,7 +1032,7 @@
     "finalProof": {
       "removeFridge": {
         "bold": "Remove balls from fridge",
-        "note": "keep covered — do not stretch yet, gluten is cold and tight"
+        "note": "keep covered — resting relaxes the gluten; a long-fermented, supple dough can still be stretched while cool"
       },
       "alreadyShaped": {
         "bold": "Balls are already shaped",
