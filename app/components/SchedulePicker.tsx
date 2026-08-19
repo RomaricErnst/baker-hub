@@ -289,7 +289,6 @@ const STYLE_FERM_DEFAULTS: Record<string, {
   pain_levain:   { coldH: 16, rtH: 4, preferredColdH: 24, minColdH: 8,  minTotalFermH: 12 },
   baguette:      { coldH: 12, rtH: 2, preferredColdH: 16, minColdH: 6,  minTotalFermH: 8  },
   pain_complet:  { coldH: 12, rtH: 3, preferredColdH: 18, minColdH: 6,  minTotalFermH: 8  },
-  pain_graines:  { coldH: 18, rtH: 3, preferredColdH: 24, minColdH: 8,  minTotalFermH: 10 },
   pain_seigle:   { coldH: 0,  rtH: 5, minColdH: 0,        minTotalFermH: 4  },
   fougasse:      { coldH: 8,  rtH: 2, preferredColdH: 12, minColdH: 4,  minTotalFermH: 6  },
   brioche:       { coldH: 8,  rtH: 2, preferredColdH: 12, minColdH: 4,  minTotalFermH: 4,  coldHRequired: true },
@@ -2439,7 +2438,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         starterIsDepletedAt: troughTime,
         starterRefeedTime: refeedNow,
         starterStateNote: locale === 'fr'
-          ? 'Épuisé — à nourrir. Le plan ci-dessous suppose un rafraîchi maintenant.'
+          ? 'Épuisé — à rafraîchir. Le plan ci-dessous suppose un rafraîchi maintenant.'
           : 'Depleted — needs feeding. Schedule below assumes you feed it now.',
         adjPeakH,
       };

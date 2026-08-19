@@ -103,17 +103,6 @@ const STYLE_ART: Record<string, { bg: string; svg: string }> = {
       <ellipse cx="220" cy="58" rx="14" ry="11" fill="#F0E0B0" transform="rotate(-3 220 58)"/>
       <text x="112" y="103" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#9C8248" font-style="italic">Baguette</text>`,
   },
-  pain_graines: {
-    bg: 'linear-gradient(180deg,#16100A,#0E0A06)',
-    svg: `<ellipse cx="120" cy="62" rx="72" ry="30" fill="#A06828"/>
-      <ellipse cx="120" cy="56" rx="68" ry="26" fill="#C08838"/>
-      <path d="M70 48 Q120 28 170 48" stroke="#7A4010" stroke-width="2.5" fill="none" opacity=".6"/>
-      <circle cx="95" cy="50" r="2.2" fill="#3D2810"/><circle cx="112" cy="44" r="2.2" fill="#F0E0B0"/>
-      <circle cx="130" cy="48" r="2.2" fill="#3D2810"/><circle cx="146" cy="52" r="2.2" fill="#F0E0B0"/>
-      <circle cx="104" cy="58" r="2.2" fill="#F0E0B0"/><circle cx="138" cy="58" r="2.2" fill="#3D2810"/>
-      <circle cx="121" cy="53" r="2.2" fill="#8B5A20"/>
-      <text x="120" y="104" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#9C8248" font-style="italic">Pain aux graines</text>`,
-  },
   brioche: {
     bg: 'linear-gradient(180deg,#16100A,#0E0A06)',
     svg: `<ellipse cx="120" cy="79" rx="82" ry="12" fill="#8B4A10"/>

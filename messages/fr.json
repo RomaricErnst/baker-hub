@@ -261,7 +261,7 @@
     "direct": "Direct",
     "makePoolish": "Préparer le Poolish",
     "makeBiga": "Préparer la Biga",
-    "feedStarter": "Nourrir le levain",
+    "feedStarter": "Rafraîchir le levain",
     "makePreferment": "Préparer le pré-ferment",
     "hydration": "hydratation",
     "coldFerment": "❄ Fermentation froide",
@@ -353,7 +353,7 @@
     "startBaking": "Démarrer le mode cuisson",
     "autoAdjusted": "Planning ajusté automatiquement — une fenêtre à température ambiante était trop longue. Une phase de pousse au froid a été ajoutée pour éviter la surfermentation.",
     "steps": {
-      "mixing": "Frasage & Pétrissage",
+      "mixing": "Frasage & pétrissage",
       "bulkFerm": "Pointage",
       "coldBulk": "Pousse au froid — pâton",
       "divideBall": "Divisage & Boulage",
@@ -371,7 +371,7 @@
       "makeBiga": "Préparer la Biga",
       "removePoolish": "Sortir le Poolish du frigo",
       "removeBiga": "Sortir la Biga du frigo",
-      "feedStarter": "Nourrir le levain",
+      "feedStarter": "Rafraîchir le levain",
       "tipPoolishFridge": "Mélangez farine et eau à parts égales (100% hydratation) avec une pincée de levure. Mélangez jusqu'à homogénéité. Couvrez bien et placez au frigo.",
       "tipPoolishRT": "Mélangez farine et eau à parts égales (100% hydratation) avec une pincée de levure. Mélangez jusqu'à ce qu'il n'y ait plus de farine sèche. Laissez à température ambiante.",
       "tipBiga": "Mélangez farine, eau et une infime quantité de levure (0,1–0,2%). Mélangez grossièrement — la biga est volontairement grumeleuse. Couvrez et réfrigérez.",
@@ -517,7 +517,7 @@
     "starterPrepAdd": "Ajoutez <b>{flour}g</b> farine + <b>{water}g</b> eau",
     "starterPrepReady": "Vous aurez ~<b>{total}g</b> prêt à utiliser",
     "discardQuestion": "Que faire du surplus ?",
-    "discardNote1": "Jetez le reste avant de nourrir — ou utilisez-le pour des pancakes ou crackers 🥞",
+    "discardNote1": "Jetez le reste avant de rafraîchir — ou utilisez-le pour des pancakes ou crackers",
     "discardNote2": "Ne jetez jamais tout votre levain — gardez toujours au moins 20–30g.",
     "starterReadyWhen": "Votre levain est prêt quand :"
   },
@@ -601,20 +601,20 @@
   },
   "bakeGuide": {
     "stepTitles": {
-      "makePoolish": "Préparer le Poolish",
-      "makeBiga": "Préparer la Biga",
-      "feedStarter": "Nourrir le levain",
+      "makePoolish": "Préparer le poolish",
+      "makeBiga": "Préparer la biga",
+      "feedStarter": "Rafraîchir le levain",
       "mixDough": "Pétrir la pâte",
       "bulkFerm": "Pointage",
       "coldRetardWhole": "Pousse au froid — pâton entier",
       "coldRetard": "Pousse au froid",
-      "divideShape": "Divisage & Façonnage",
-      "divideBall": "Divisage & Boulage",
+      "divideShape": "Divisage & façonnage",
+      "divideBall": "Divisage & boulage",
       "coldProof": "Apprêt froid",
       "coldRetardBalls": "Pousse au froid — boules",
       "finalProof": "Apprêt",
       "preheatOven": "Préchauffage du four",
-      "bakeEat": "Cuisson & Dégustation !"
+      "bakeEat": "Cuisson & dégustation"
     },
     "sectionTitles": {
       "whatToDo": "Que faire",
@@ -1594,7 +1594,7 @@
     "cardLabels": {
       "makePoolish": "Préparer le Poolish",
       "makeBiga": "Préparer la Biga",
-      "feedStarter": "Nourrir le levain"
+      "feedStarter": "Rafraîchir le levain"
     },
     "bakeLabel": "Cuisson",
     "chart": {

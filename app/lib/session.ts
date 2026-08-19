@@ -26,6 +26,7 @@ export interface SessionData {
   manualSalt: number | undefined;
   targetDoughTemp: number | undefined;
   flourInFridge: boolean;
+  addSeeds?: boolean;
   wastePct: number | undefined;
   priorityOverride: string | null | undefined;
   startTime?: number | null;

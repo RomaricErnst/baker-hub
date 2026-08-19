@@ -373,7 +373,7 @@ function StarterPrepCard({
               <div style={labelStyle}>
                 {usingPeak2
                   ? (isFr ? 'Repas 1' : 'Feed 1')
-                  : (isFr ? 'Nourrir' : 'Feed')}
+                  : (isFr ? 'Rafraîchir' : 'Feed')}
               </div>
               <div style={valueStyle}>{fmtFull(feedTime)}</div>
               <div style={noteStyle}>

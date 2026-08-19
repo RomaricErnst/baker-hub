@@ -34,6 +34,7 @@ interface BakeGuideProps {
   locale?: string;
   onNavigateToPizzaParty?: () => void;
   simpleMode?: boolean;
+  addSeeds?: boolean;
   recipe?: import('../utils').RecipeResult | null;
 }
 
@@ -811,7 +812,7 @@ export default function BakeGuide({
   usingPeak2 = false, planningMode = 'last_fed',
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
-  onNavigateToPizzaParty, recipe, simpleMode,
+  onNavigateToPizzaParty, recipe, simpleMode, addSeeds,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
   const l = locale === 'fr' ? 'fr' : 'en';
@@ -864,7 +865,7 @@ export default function BakeGuide({
   }, [currentStep]);
 
   const isSourdough   = styleKey === 'sourdough' || styleKey === 'pain_levain';
-  const isBread       = ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois','pain_graines','sourdough'].includes(styleKey);
+  const isBread       = ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois','sourdough'].includes(styleKey);
   const isNeapolitan  = styleKey === 'neapolitan';
   const isFougasse    = styleKey === 'fougasse';
   const isBaguette    = styleKey === 'baguette';
@@ -1210,10 +1211,10 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
       )}
 
       {/* ── STEP: Soak the seeds (pain aux graines only) ── */}
-      {styleKey === 'pain_graines' && (
+      {addSeeds && (
       <StepCard number={n()} {...sc()} icon={<IconPreferment />}
         title={l === 'fr' ? 'Tremper les graines' : 'Soak the seeds'}
-        time={new Date(bgMixStart.getTime() - 2 * 3600000)} duration={2} accent={D.gold}>
+        time={new Date(bgMixStart.getTime() - 8 * 3600000)} duration={null} accent={D.gold}>
         <Section icon="🌾" title={t('sectionTitles.whatToDo')}>
           <Steps items={[
             { bold: l === 'fr'

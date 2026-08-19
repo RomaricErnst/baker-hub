@@ -71,7 +71,7 @@ const STYLE_HAS_DIAMETER = ['neapolitan', 'newyork', 'sourdough', 'pizza_romana'
 const STYLE_DEFAULT_DIAMETER: Record<string, number> = { neapolitan: 30, newyork: 35, sourdough: 30, pizza_romana: 30 };
 const STYLE_BALL_DEFAULTS: Record<string, number> = {
   neapolitan: 4, newyork: 4, pizza_romana: 4, roman: 2, pan: 2, sourdough: 4,
-  pain_campagne: 1, pain_levain: 1, baguette: 4, pain_complet: 1, pain_graines: 1,
+  pain_campagne: 1, pain_levain: 1, baguette: 4, pain_complet: 1,
   pain_seigle: 1, fougasse: 2, brioche: 6, pain_mie: 1, pain_viennois: 8,
 };
 const CORN_LABELS = ['Thin', 'Classic', 'Generous'];
@@ -111,7 +111,6 @@ function getWeightBounds(sk: string | null, bt: string | null): { min: number; m
     case 'pain_mie':      return { min: 300, max: 1200, step: 25 };
     case 'pain_levain':
     case 'pain_campagne':
-    case 'pain_graines':
     case 'pain_complet':
     case 'pain_seigle':   return { min: 300, max: 1500, step: 25 };
     default:              return { min: 200, max: 1200, step: 25 };
@@ -130,7 +129,6 @@ const STYLE_HYDRATION_ZONES: Record<string, {
   pain_levain:   { min: 62, classicMin: 70, classicMax: 78, advancedMax: 84, max: 90, name: 'Pain au Levain' },
   baguette:      { min: 58, classicMin: 65, classicMax: 70, advancedMax: 75, max: 80, name: 'Baguette' },
   pain_complet:  { min: 62, classicMin: 68, classicMax: 75, advancedMax: 80, max: 85, name: 'Pain Complet' },
-  pain_graines:  { min: 62, classicMin: 68, classicMax: 76, advancedMax: 82, max: 85, name: 'Pain aux graines' },
   pain_seigle:   { min: 65, classicMin: 72, classicMax: 80, advancedMax: 85, max: 90, name: 'Pain de Seigle' },
   fougasse:      { min: 65, classicMin: 70, classicMax: 78, advancedMax: 83, max: 88, name: 'Fougasse' },
   brioche:       { min: 45, classicMin: 50, classicMax: 58, advancedMax: 65, max: 72, name: 'Brioche' },
@@ -446,6 +444,8 @@ export default function Home() {
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
   const [pizzaPartyQtys, setPizzaPartyQtys] = useState<Record<string, number>>({});
+  // Pain au levain option: seeds with a soaker step (adds a Trempage step to the protocole)
+  const [addSeeds, setAddSeeds] = useState(false);
   const [bakedPartyQtys, setBakedPartyQtys] = useState<Record<string, number>>({});
   useEffect(() => {
     if (isRestoringRef.current) return;
@@ -693,6 +693,7 @@ export default function Home() {
     setManualSalt(session.manualSalt);
     setTargetDoughTemp(session.targetDoughTemp);
     setFlourInFridge(session.flourInFridge);
+    setAddSeeds(session.addSeeds ?? false);
     setWastePct(session.wastePct);
     setPriorityOverride(session.priorityOverride);
     if (session.eatTime) setEatTime(new Date(session.eatTime));
@@ -1036,7 +1037,7 @@ export default function Home() {
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, wastePct, prefGoesInFridge, feedToMixH]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, wastePct, addSeeds, prefGoesInFridge, feedToMixH]);
 
   const advancedDisplayRecipe = advancedRecipe;
 
@@ -1136,7 +1137,7 @@ export default function Home() {
       kitchenTemp, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
       manualHydration, manualOil, manualSugar, manualSalt,
-      targetDoughTemp, flourInFridge, wastePct, priorityOverride,
+      targetDoughTemp, flourInFridge, wastePct, addSeeds, priorityOverride,
       prefGoesInFridge,
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
@@ -1301,7 +1302,7 @@ export default function Home() {
         pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
         fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
         manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-        flourInFridge, wastePct, priorityOverride,
+        flourInFridge, wastePct, addSeeds, priorityOverride,
         eatTime: eatTime?.getTime() ?? null,
         blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
         pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys, bakedQtys: Object.keys(bakedPartyQtys).length > 0 ? bakedPartyQtys : undefined } : null,
@@ -1493,6 +1494,7 @@ export default function Home() {
     setReviewMode(false);
     setShowWelcomeBack(false);
     setCloudResume(null);
+    setAddSeeds(false);
     setBakeEventId(null);
     setPizzaPartyQtys({});
     setBakePhotoUrl(null);
@@ -2746,7 +2748,7 @@ export default function Home() {
                                 pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
                                 fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                                 manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                                flourInFridge, wastePct, priorityOverride,
+                                flourInFridge, wastePct, addSeeds, priorityOverride,
                                 eatTime: eatTime?.getTime() ?? null,
                                 blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                                 recipeGenerated, activeTab, modeChosen,
@@ -2828,6 +2830,7 @@ export default function Home() {
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
                   recipe={recipe ?? null}
                   simpleMode={tab === 'simple'}
+                  addSeeds={addSeeds && styleKey === 'pain_levain'}
                 />
                 {/* Share + party — end of the journey. Quiet chips while
                     baking, gold celebration once marked baked. Anonymous
@@ -2909,7 +2912,7 @@ export default function Home() {
                       pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
                       fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                       manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                      flourInFridge, wastePct, priorityOverride,
+                      flourInFridge, wastePct, addSeeds, priorityOverride,
                       eatTime: eatTime?.getTime() ?? null,
                       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                       recipeGenerated, activeTab, modeChosen,
@@ -2985,7 +2988,7 @@ export default function Home() {
               summary={styleKey ? (locale === 'fr' && (ALL_STYLES[styleKey] as { nameFr?: string }).nameFr ? (ALL_STYLES[styleKey] as { nameFr: string }).nameFr : ALL_STYLES[styleKey].name) : undefined}
               onEdit={() => setAdvancedStep(1)}
             >
-              {bakeType && (
+              {bakeType && (<>
                 <StylePicker
                   bakeType={bakeType}
                   selected={styleKey}
@@ -3007,7 +3010,41 @@ export default function Home() {
                     setAdvancedStep(2);
                   }}
                 />
-              )}
+
+                {styleKey === 'pain_levain' && (
+                  <div style={{
+                    marginTop: '12px', padding: '12px 14px',
+                    background: 'var(--warm)', border: '1.5px solid var(--border)',
+                    borderRadius: '12px',
+                  }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                      <div
+                        onClick={() => setAddSeeds(v => !v)}
+                        style={{
+                          width: '38px', height: '22px', borderRadius: '11px', flexShrink: 0,
+                          background: addSeeds ? 'var(--sage)' : '#D8D0C5',
+                          position: 'relative', transition: 'background .15s',
+                        }}
+                      >
+                        <div style={{
+                          position: 'absolute', top: '2px', left: addSeeds ? '18px' : '2px',
+                          width: '18px', height: '18px', borderRadius: '50%',
+                          background: '#fff', transition: 'left .15s',
+                          boxShadow: '0 1px 3px rgba(43,36,32,.2)',
+                        }} />
+                      </div>
+                      <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>
+                        {locale === 'fr' ? 'Ajouter des graines' : 'Add seeds'}
+                      </span>
+                    </label>
+                    <p style={{ margin: '8px 0 0', fontSize: '12px', lineHeight: 1.5, color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+                      {locale === 'fr'
+                        ? 'Une étape Trempage s’ajoute à votre protocole — les graines trempent à l’avance (2h minimum, idéalement la veille) pour ne pas voler l’eau de la pâte.'
+                        : 'A Soaker step joins your protocole — the seeds soak ahead (2h minimum, ideally overnight) so they never steal water from the dough.'}
+                    </p>
+                  </div>
+                )}
+              </>)}
             </StepCard>
 
             {/* ─── ADV STEP 3: Quantity ────────────── */}
@@ -3743,7 +3780,7 @@ export default function Home() {
                   <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                     {/* DDT stepper */}
                     {(() => {
-                      const styleFDT = styleKey ? ({ neapolitan:23, newyork:24, roman:25, pan:25, sourdough:24, pain_campagne:24, pain_levain:24, baguette:24, pain_complet:24, pain_seigle:24, fougasse:25, brioche:22, pain_mie:24, pain_viennois:23, pain_graines:24 } as Record<string,number>)[styleKey] ?? 24 : 24;
+                      const styleFDT = styleKey ? ({ neapolitan:23, newyork:24, roman:25, pan:25, sourdough:24, pain_campagne:24, pain_levain:24, baguette:24, pain_complet:24, pain_seigle:24, fougasse:25, brioche:22, pain_mie:24, pain_viennois:23 } as Record<string,number>)[styleKey] ?? 24 : 24;
                       const v = targetDoughTemp ?? styleFDT;
                       const mixerFriction = mixerType ? ({ stand:5, hand:1, no_knead:0, spiral:8 } as Record<string,number>)[mixerType] ?? 3 : 3;
                       const isDefaultDDT = targetDoughTemp === undefined || targetDoughTemp === styleFDT;
@@ -4006,7 +4043,7 @@ export default function Home() {
                                 pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
                                 fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                                 manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                                flourInFridge, wastePct, priorityOverride,
+                                flourInFridge, wastePct, addSeeds, priorityOverride,
                                 eatTime: eatTime?.getTime() ?? null,
                                 blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                                 recipeGenerated, activeTab, modeChosen,
@@ -4088,6 +4125,7 @@ export default function Home() {
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
                   recipe={advancedRecipe ?? null}
                   simpleMode={false}
+                  addSeeds={addSeeds && styleKey === 'pain_levain'}
                 />
                 {/* Share + party — end of the journey. Quiet chips while
                     baking, gold celebration once marked baked. Anonymous
@@ -4169,7 +4207,7 @@ export default function Home() {
                       pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
                       fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                       manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                      flourInFridge, wastePct, priorityOverride,
+                      flourInFridge, wastePct, addSeeds, priorityOverride,
                       eatTime: eatTime?.getTime() ?? null,
                       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                       recipeGenerated, activeTab, modeChosen,
