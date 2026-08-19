@@ -1578,10 +1578,21 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             flexShrink: 0,
             alignItems: 'center',
           }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: '4px',
+              padding: '5px 2px 5px 12px', color: '#8A7F78', fontSize: '11px',
+              fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase',
+              letterSpacing: '.05em', flexShrink: 0, whiteSpace: 'nowrap',
+            }}>
+              <svg viewBox="0 0 16 16" width={12} height={12} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                <path d="M2 3h12M4.5 8h7M7 13h2"/>
+              </svg>
+              {l === 'fr' ? 'Filtres' : 'Filters'}
+            </span>
             {([
               { key: 'occasion',   label: l === 'fr' ? 'Occasion' : 'Occasion',    count: filter.occasion.length },
               { key: 'diet',       label: l === 'fr' ? 'Régime'   : 'Diet',         count: filter.dietary.length },
-              { key: 'complexity', label: l === 'fr' ? 'Complexité': 'Complexity',  count: filter.complexity !== null ? 1 : 0 },
+              { key: 'base',       label: 'Base',                                    count: filter.base !== null ? 1 : 0 },
               { key: 'ingredient', label: l === 'fr' ? 'Ingrédient': 'Ingredient',  count: (filter.ingredientChips ?? []).length + (filter.ingredientSearch ? 1 : 0) },
             ] as const).map(chip => (
               <button
@@ -1624,7 +1635,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 display: 'inline-flex', alignItems: 'center', gap: '4px',
                 padding: '6px 11px', borderRadius: '20px',
                 border: (() => {
-                  const moreCnt = (filter.base !== null ? 1 : 0)
+                  const moreCnt = (filter.complexity !== null ? 1 : 0)
                     + (filter.region !== null || (filter.regions ?? []).length > 0 ? 1 : 0)
                     + (filter.season !== 'all' ? 1 : 0)
                     + filter.wine.length
@@ -1639,7 +1650,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             >
               {l === 'fr' ? 'Plus ▾' : 'More ▾'}
               {(() => {
-                const moreCnt = (filter.base !== null ? 1 : 0)
+                const moreCnt = (filter.complexity !== null ? 1 : 0)
                   + (filter.region !== null || (filter.regions ?? []).length > 0 ? 1 : 0)
                   + (filter.season !== 'all' ? 1 : 0)
                   + filter.wine.length
@@ -1748,6 +1759,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'Playfair Display, serif' }}>
                     {filterSheetKey === 'occasion'   ? (l === 'fr' ? 'Occasion' : 'Occasion')
                     : filterSheetKey === 'diet'       ? (l === 'fr' ? 'Régime alimentaire' : 'Diet')
+                    : filterSheetKey === 'base'       ? 'Base'
                     : filterSheetKey === 'complexity' ? (l === 'fr' ? 'Complexité' : 'Complexity')
                     : filterSheetKey === 'ingredient' ? (l === 'fr' ? 'Par ingrédient' : 'By Ingredient')
                     : (l === 'fr' ? 'Plus de filtres' : 'More filters')}
@@ -1791,6 +1803,25 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     </div>
                   )}
 
+                  {filterSheetKey === 'base' && (
+                    <div style={{ margin: '12px 14px' }}>
+                      <div style={S.pillRow}>
+                        <span style={S.pill(filter.base === null, 'terra')} onClick={() => setBase(null)}>
+                          {l === 'fr' ? 'Toutes' : 'All'}
+                        </span>
+                        {(['tomato_raw','tomato_cooked','bianca_cream','bianca_oil','bianca_ricotta','pesto','nduja','bbq'] as BaseType[]).map(b => {
+                          if (filterCounts.base[b] === 0 && filter.base !== b) return null;
+                          return (
+                            <span key={b} style={S.pill(filter.base === b, 'terra')}
+                              onClick={() => setBase(filter.base === b ? null : b)}>
+                              {BASE_LABELS[b][l]}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {filterSheetKey === 'complexity' && (
                     <div style={{ margin: '12px 14px' }}>
                       <div style={{ display: 'flex', border: '1px solid #E0D8CF', borderRadius: '8px', overflow: 'hidden' }}>
@@ -1798,7 +1829,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           [null,  l === 'fr' ? 'Tous' : 'All'],
                           [1,     l === 'fr' ? 'Sans prépa' : 'No cook'],
                           [2,     l === 'fr' ? 'Prépa rapide' : 'Light prep'],
-                          [3,     l === 'fr' ? 'Cuisiné' : 'Cooked'],
+                          [3,     l === 'fr' ? 'À cuisiner' : 'Cooked'],
                         ] as [ComplexityTier | null, string][]).map(([v, label]) => {
                           const active = filter.complexity === v;
                           return (
@@ -1911,24 +1942,23 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   {filterSheetKey === 'more' && (
                     <>
                       <FilterSection
-                        title={l === 'fr' ? 'Base' : 'Base'}
-                        badge={filter.base !== null ? '1' : undefined}
+                        title={l === 'fr' ? 'Complexité' : 'Complexity'}
+                        badge={filter.complexity !== null ? '1' : undefined}
                         open={open.base}
                         onToggle={() => togOpen('base')}
                       >
                         <div style={S.pillRow}>
-                          <span style={S.pill(filter.base === null, 'terra')} onClick={() => setBase(null)}>
-                            {l === 'fr' ? 'Toutes' : 'All'}
-                          </span>
-                          {(['tomato_raw','tomato_cooked','bianca_cream','bianca_oil','bianca_ricotta','pesto','nduja','bbq'] as BaseType[]).map(b => {
-                            if (filterCounts.base[b] === 0 && filter.base !== b) return null;
-                            return (
-                              <span key={b} style={S.pill(filter.base === b, 'terra')}
-                                onClick={() => setBase(filter.base === b ? null : b)}>
-                                {BASE_LABELS[b][l]}
-                              </span>
-                            );
-                          })}
+                          {([
+                            [null,  l === 'fr' ? 'Tous' : 'All'],
+                            [1,     l === 'fr' ? 'Sans prépa' : 'No cook'],
+                            [2,     l === 'fr' ? 'Prépa rapide' : 'Light prep'],
+                            [3,     l === 'fr' ? 'À cuisiner' : 'Cooked'],
+                          ] as [ComplexityTier | null, string][]).map(([v, label]) => (
+                            <span key={String(v)} style={S.pill(filter.complexity === v, 'terra')}
+                              onClick={() => setComplexity(v)}>
+                              {label}
+                            </span>
+                          ))}
                         </div>
                       </FilterSection>
 
