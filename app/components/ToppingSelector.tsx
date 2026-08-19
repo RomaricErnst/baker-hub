@@ -48,7 +48,7 @@ const INGREDIENT_CHIPS: {
     ],
   },
   {
-    category: { en: 'Meat, Fish & Deli', fr: 'Viande, Poisson & Charcuterie' },
+    category: { en: 'Meat & Deli', fr: 'Viande & Charcuterie' },
     items: [
       { en: 'Parma ham',      fr: 'Jambon de Parme',   search: 'prosciutto' },
       { en: 'Pepperoni',      fr: 'Pepperoni',         search: 'pepperoni' },
@@ -68,6 +68,11 @@ const INGREDIENT_CHIPS: {
       { en: 'Char siu',       fr: 'Char siu',          search: 'char siu' },
       { en: 'Foie gras',      fr: 'Foie gras',         search: 'foie gras' },
       { en: 'Andouille',      fr: 'Andouille',         search: 'andouille' },
+    ],
+  },
+  {
+    category: { en: 'Fish & Seafood', fr: 'Poisson & mer' },
+    items: [
       { en: 'Salmon',         fr: 'Saumon',            search: 'salmon' },
       { en: 'Anchovy',        fr: 'Anchois',           search: 'anchovy' },
       { en: 'Tuna',           fr: 'Thon',              search: 'tuna' },
