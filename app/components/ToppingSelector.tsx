@@ -1390,17 +1390,28 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // Name search across the pizza list
   const [nameSearch, setNameSearch] = useState('');
 
+  // Name-search predicate — shared by the curated list and Mes pizzas
+  const matchesSearch = useMemo(() => {
+    const q = nameSearch.trim().toLowerCase();
+    if (!q) return null;
+    return (p: Pizza) =>
+      (p.name.en ?? '').toLowerCase().includes(q) ||
+      (p.name.fr ?? '').toLowerCase().includes(q) ||
+      p.ingredients.some(ing => (ing.name.en ?? '').toLowerCase().includes(q) || (ing.name.fr ?? '').toLowerCase().includes(q));
+  }, [nameSearch]);
+
   // Filtered pizzas
   const filtered = useMemo(() => {
     const base = filterPizzas(PIZZAS, { ...filter, styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined });
-    const q = nameSearch.trim().toLowerCase();
-    if (!q) return base;
-    return base.filter(p =>
-      (p.name.en ?? '').toLowerCase().includes(q) ||
-      (p.name.fr ?? '').toLowerCase().includes(q) ||
-      p.ingredients.some(ing => (ing.name.en ?? '').toLowerCase().includes(q) || (ing.name.fr ?? '').toLowerCase().includes(q))
-    );
-  }, [filter, styleKey, nameSearch]);
+    return matchesSearch ? base.filter(matchesSearch) : base;
+  }, [filter, styleKey, matchesSearch]);
+
+  // Mes pizzas go through the exact same pipeline — a base or ingredient
+  // filter (or the search) applies to the baker's creations too.
+  const filteredCustom = useMemo(() => {
+    const base = filterPizzas(customPizzas, { ...filter, styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined });
+    return matchesSearch ? base.filter(matchesSearch) : base;
+  }, [customPizzas, filter, styleKey, matchesSearch]);
 
   // Perceived-speed: pre-warm the first screenful-and-a-half of card images
   // during idle time so scrolling meets a full cache, re-armed per filter.
@@ -2214,7 +2225,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     {l === 'fr' ? '+ Nouvelle' : '+ New'}
                   </button>
                 </div>
-                {customPizzas.map(pizza => (
+                {filteredCustom.length === 0 && (
+                  <div style={{ fontSize: '11.5px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', padding: '2px 2px 4px' }}>
+                    {l === 'fr' ? 'Aucune de vos pizzas ne correspond aux filtres actifs.' : 'None of your pizzas match the active filters.'}
+                  </div>
+                )}
+                {filteredCustom.map(pizza => (
                   <div key={pizza.id} style={{ position: 'relative' }}>
                     <PizzaCard
                       pizza={pizza}
