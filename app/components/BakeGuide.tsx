@@ -852,9 +852,13 @@ export default function BakeGuide({
   const extraBalls    = Math.max(0, numItems - 4);
   const divideMin     = 15 + 2 * extraBalls;
 
-  // Recipe quantity helpers — used in mixing order steps
-  const bgMainFlour = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalFlour : recipe.flour) : null;
-  const bgMainWater = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalWater : recipe.water) : null;
+  // Recipe quantity helpers — used in mixing order steps.
+  // Sourdough (no preferment object): half the starter is flour, half water —
+  // subtract so mixing amounts match the Recipe card's tallying totals.
+  const bgSdMid  = recipe?.sourdough ? Math.round((recipe.sourdough.starterGramsMin + recipe.sourdough.starterGramsMax) / 2 / 5) * 5 : 0;
+  const bgSdHalf = recipe?.sourdough && !recipe?.preferment ? Math.round(bgSdMid / 2) : 0;
+  const bgMainFlour = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalFlour : recipe.flour) - bgSdHalf : null;
+  const bgMainWater = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalWater : recipe.water) - bgSdHalf : null;
   const bgWater90   = bgMainWater ? Math.round(bgMainWater * 0.9) : null;
   const bgWater10   = bgMainWater ? bgMainWater - (bgWater90 ?? 0) : null;
   const bgSaltG     = recipe ? Math.round(recipe.salt) : null;

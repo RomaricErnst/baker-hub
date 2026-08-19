@@ -489,6 +489,15 @@ export default function RecipeOutput({
   const effectiveBatches = numBatches >= 1 ? numBatches : minBatches;
 
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
+  // Sourdough starter accounting: half the starter is flour, half water
+  // (100% hydration). Subtract from the main-dough amounts so the card's
+  // total actually tallies. Preferment mode has its own accounting already.
+  const sdMid  = sourdough ? Math.round((sourdough.starterGramsMin + sourdough.starterGramsMax) / 2 / 5) * 5 : 0;
+  const sdHalf = sourdough ? Math.round(sdMid / 2) : 0;
+  const sdActive = !!sourdough && result.preferment == null;
+  const flourMain = sdActive ? flour - sdHalf : flour;
+  const waterMain = sdActive ? water - sdHalf : water;
+
 
   // Per-batch: final dough ingredients only.
   // When preferment active: poolish/biga added whole, yeast excluded (already in preferment).
@@ -884,7 +893,7 @@ export default function RecipeOutput({
               ? <span style={{ display: 'inline-flex', alignItems: 'center' }}>{t('recipeOutput.ingredientFlour')}<FlourTooltip bakeType={bakeType} /></span>
               : t('recipeOutput.ingredientFlour')
             }
-            grams={wStr(flour)}
+            grams={wStr(flourMain)}
             pct="100%"
             highlight
             advancedPct={mode === 'custom' ? '100%' : undefined}
@@ -904,9 +913,17 @@ export default function RecipeOutput({
                   {100 - flourBlend.ratio1}% {flourBlend.customFlour2Name ?? f2.name} ({f2Weight.toLocaleString('en')}g)
                 </span>
               );
-            })() : undefined}
+            })() : sdActive ? (
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>
+                {locale === 'fr' ? `+ ${sdHalf}g via le levain = ${flour}g au total` : `+ ${sdHalf}g via the starter = ${flour}g total`}
+              </span>
+            ) : undefined}
           />
-          <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} pct={pctStr(waterPct)} sub={waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
+          <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(waterMain)} pct={pctStr(waterPct)} sub={sdActive ? (
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>
+                {locale === 'fr' ? `+ ${sdHalf}g via le levain = ${water}g au total` : `+ ${sdHalf}g via the starter = ${water}g total`}
+              </span>
+            ) : waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
           <IngRow label={t('recipeOutput.ingredientSalt')}  grams={wStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
 
           {yeastInfo && (
