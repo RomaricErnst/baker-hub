@@ -42,7 +42,7 @@ interface TimelineStep {
   stepKind: StepKind;
   time: Date;
   label: string;
-  tip: string;
+  tip?: string;
   icon?: string;
   iconKey: string;
   durationH: number | null;
@@ -661,7 +661,8 @@ export default function Timeline({
                   );
                 })()}
 
-                {/* Tip */}
+                {/* Tip — hidden entirely for steps that carry none */}
+                {(item.tip || item.stepKind === 'rest_rt' || item.stepKind === 'final_proof') && (
                 <div style={{
                   fontSize: '.77rem', color: 'var(--smoke)',
                   lineHeight: 1.6,
@@ -678,186 +679,8 @@ export default function Timeline({
                     ? <>{item.tip}</>
                     : item.tip}
                 </div>
+                )}
 
-                {/* Mixing sequence — shown on Mix & Knead step only, not Remove Poolish */}
-                {item.id === 'mixing' && (() => {
-                  const showOil = oil > 0;
-                  const showBassinage = hydration > 70;
-
-                  const mainFlour = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalFlour : recipe.flour) : null;
-                  const mainWater = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalWater : recipe.water) : null;
-                  const water90 = mainWater ? Math.round(mainWater * 0.9) : null;
-                  const water10 = mainWater ? mainWater - (water90 ?? 0) : null;
-                  const saltG = recipe ? Math.round(recipe.salt) : null;
-                  // convertedGrams, NOT grams — grams is the IDY-equivalent; showing
-                  // it here made fresh-yeast bakers add ~1/3 of the needed yeast
-                  const yeastG = recipe?.yeast?.convertedGrams ? String(parseFloat(recipe.yeast.convertedGrams.toFixed(1))) : null;
-
-                  const flour90Label = mainFlour && water90 && water10
-                    ? `${mainFlour}g flour + ${water90}g water — hold back ${water10}g for later`
-                    : 'Flour + most of the water — hold back ~10% for later';
-                  const saltLabel = saltG ? `Add salt (${saltG}g)` : 'Add salt';
-                  const yeastLabel = yeastG ? `Add yeast (${yeastG}g)` : 'Add yeast';
-                  const water10Label = water10 ? `Add remaining water (${water10}g)` : 'Add remaining 10% water';
-
-                  const poolishG = recipe?.preferment
-                    ? Math.round(
-                        (recipe.preferment.prefFlour ?? 0) +
-                        (recipe.preferment.prefWater ?? 0) +
-                        (recipe.preferment.prefYeastGrams ?? 0)
-                      )
-                    : null;
-                  const poolishLabel = poolishG
-                    ? `Add ${prefermentType ?? 'poolish'} (${poolishG}g total)`
-                    : `Add ${prefermentType ?? 'poolish'} (all of it)`;
-                  const hasPref = !!recipe?.preferment;
-
-                  type SeqItem =
-                    | { kind: 'step'; iconKey: string; bold: string; note: string; noteNode?: React.ReactNode; term?: string }
-                    | { kind: 'rest'; label: string; note: string; noteNode?: React.ReactNode; term?: string };
-
-                  let sequence: SeqItem[] = [];
-
-                  if (isSourdough) {
-                    sequence = [
-                      { kind: 'step', iconKey: 'water', bold: flour90Label, note: 'mix 2 min until no dry flour remains' },
-                      { kind: 'step', iconKey: 'starter', bold: 'Add starter', note: 'mix to combine' },
-                      { kind: 'step', iconKey: 'salt', bold: saltG && water10 ? `Add salt (${saltG}g) + remaining water (${water10}g)` : 'Add salt + remaining 10% water', note: 'mix until fully absorbed' },
-                      ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'oil added late preserves gluten structure' }] : []),
-                    ];
-                  } else if (mixerType === 'hand') {
-                    sequence = [
-                      { kind: 'step', iconKey: 'water', bold: flour90Label, note: 'mix until no dry flour remains, ~2 min' },
-                      { kind: 'rest', label: 'Cover and rest 20 min', note: 'flour absorbs water naturally, reduces kneading time', term: 'autolyse' },
-                      ...(!hasPref ? [{ kind: 'step' as const, iconKey: 'yeast', bold: yeastLabel, note: 'mix to combine, 2 min' }] : []),
-                      { kind: 'step', iconKey: 'salt', bold: saltLabel, note: 'mix until absorbed, 2 min' },
-                      ...(hasPref ? [{ kind: 'step' as const, iconKey: 'starter', bold: poolishLabel, note: 'mix until fully incorporated' }] : []),
-                      ...(showBassinage
-                        ? [{ kind: 'step' as const, iconKey: 'water', bold: water10 ? `Add remaining water (${water10}g) gradually` : 'Add remaining 10% water gradually', note: 'bassinage — small additions, wait for absorption between each', term: 'bassinage' }]
-                        : [{ kind: 'step' as const, iconKey: 'water', bold: water10Label, note: 'mix until absorbed, ~1 min' }]
-                      ),
-                      ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'mix 1 min' }] : []),
-                      { kind: 'step', iconKey: 'knead', bold: 'Knead 8–12 min until smooth and elastic', note: 'windowpane test', term: 'windowpane' },
-                    ];
-                  } else if (mixerType === 'stand') {
-                    sequence = showBassinage ? [
-                      // >70% hydration: build structure first, then bassinage at Speed 2
-                      { kind: 'step', iconKey: 'water', bold: flour90Label, note: 'Speed 1, 2 min to combine' },
-                      ...(!hasPref ? [{ kind: 'step' as const, iconKey: 'yeast', bold: yeastLabel, note: 'Speed 1, 2 min' }] : []),
-                      { kind: 'step', iconKey: 'salt', bold: saltLabel, note: 'Speed 1, 2 min until absorbed' },
-                      ...(hasPref ? [{ kind: 'step' as const, iconKey: 'starter', bold: poolishLabel, note: 'mix until fully incorporated' }] : []),
-                      { kind: 'step', iconKey: 'mix', bold: 'Speed 2 — 4–5 min', note: 'build gluten structure before adding remaining water' },
-                      { kind: 'step', iconKey: 'water', bold: water10 ? `Add remaining water (${water10}g) gradually at Speed 2` : 'Add remaining 10% water gradually at Speed 2', note: 'bassinage — small additions, wait for absorption between each', term: 'bassinage' },
-                      { kind: 'step', iconKey: 'mix', bold: 'Continue Speed 2', note: 'until dough clears the bowl and passes windowpane test', term: 'windowpane' },
-                      ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
-                    ] : [
-                      // ≤70% hydration: remaining water before Speed 2
-                      { kind: 'step', iconKey: 'water', bold: flour90Label, note: 'Speed 1, 2 min to combine' },
-                      ...(!hasPref ? [{ kind: 'step' as const, iconKey: 'yeast', bold: yeastLabel, note: 'Speed 1, 2 min' }] : []),
-                      { kind: 'step', iconKey: 'salt', bold: saltLabel, note: 'Speed 1, 2 min until absorbed' },
-                      ...(hasPref ? [{ kind: 'step' as const, iconKey: 'starter', bold: poolishLabel, note: 'mix until fully incorporated' }] : []),
-                      { kind: 'step', iconKey: 'water', bold: water10Label, note: 'Speed 1, mix until absorbed, ~1 min' },
-                      { kind: 'step', iconKey: 'mix', bold: 'Speed 2 — 6–10 min', note: 'until dough clears the bowl and passes windowpane test', term: 'windowpane' },
-                      ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
-                    ];
-                  } else if (mixerType === 'spiral') {
-                    sequence = showBassinage ? [
-                      // >70% hydration: pumpkin first, then bassinage
-                      { kind: 'step', iconKey: 'water', bold: mainFlour && water90 && water10 ? `${mainFlour}g flour + ${water90}g water${!isSourdough && !hasPref ? ' + yeast' : ''} — hold back ${water10}g for later` : 'Flour + most of the water — hold back ~10% for later', note: 'Speed 1, 3 min to combine' },
-                      { kind: 'step', iconKey: 'salt', bold: saltLabel, note: 'Speed 1, 2 min until absorbed' },
-                      ...(!hasPref ? [] : [{ kind: 'step' as const, iconKey: 'starter', bold: poolishLabel, note: 'add whole — mix until fully incorporated' }]),
-                      { kind: 'step', iconKey: 'mix', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if FDT exceeds 28°C', noteNode: <>typically 10–15 min, stop if final dough temperature (FDT)<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</> },
-                      { kind: 'step', iconKey: 'water', bold: water10 ? `Once pumpkin is stable — add remaining water (${water10}g) gradually` : 'Once pumpkin is stable — add remaining 10% water gradually', note: 'bassinage — small additions, wait for pumpkin to reform each time', term: 'bassinage' },
-                      ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
-                    ] : [
-                      // ≤70% hydration: remaining water before Speed 2
-                      { kind: 'step', iconKey: 'water', bold: mainFlour && water90 && water10 ? `${mainFlour}g flour + ${water90}g water${!isSourdough && !hasPref ? ' + yeast' : ''} — hold back ${water10}g for later` : 'Flour + most of the water — hold back ~10% for later', note: 'Speed 1, 3 min to combine' },
-                      { kind: 'step', iconKey: 'salt', bold: saltLabel, note: 'Speed 1, 2 min until absorbed' },
-                      ...(!hasPref ? [] : [{ kind: 'step' as const, iconKey: 'starter', bold: poolishLabel, note: 'add whole — mix until fully incorporated' }]),
-                      { kind: 'step', iconKey: 'water', bold: water10Label, note: 'Speed 1, mix until absorbed, ~1 min' },
-                      { kind: 'step', iconKey: 'mix', bold: 'Speed 2 until pumpkin shape forms', note: 'typically 10–15 min, stop if FDT exceeds 28°C', noteNode: <>typically 10–15 min, stop if final dough temperature (FDT)<InfoBadge term="fdt" onOpen={setLearnTerm} /> exceeds 28°C</> },
-                      ...(showOil ? [{ kind: 'step' as const, iconKey: 'oil', bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
-                    ];
-                  } else {
-                    // no_knead
-                    sequence = [
-                      { kind: 'step', iconKey: 'water', bold: 'Combine all ingredients including salt', note: 'mix just until no dry flour remains, ~2 min' },
-                      { kind: 'step', iconKey: 'proof', bold: 'Cover and rest', note: 'stretch & folds every 30 min for first 2 hours' },
-                      { kind: 'step', iconKey: 'bulk', bold: 'Time does the work', note: 'no kneading needed' },
-                    ];
-                  }
-
-                  let stepCount = 0;
-
-                  return (
-                    <div style={{
-                      marginTop: '.65rem',
-                      border: '1.5px solid var(--border)',
-                      borderRadius: '10px',
-                      padding: '.7rem .9rem',
-                      background: 'var(--warm)',
-                    }}>
-                      <div style={{
-                        fontSize: '.68rem', fontWeight: 600, color: 'var(--smoke)',
-                        textTransform: 'uppercase', letterSpacing: '.07em',
-                        fontFamily: 'var(--font-dm-mono)', marginBottom: '.55rem',
-                      }}>
-                        Mixing order
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
-                        {sequence.map((s, i) => {
-                          if (s.kind === 'rest') {
-                            return (
-                              <div key={i} style={{
-                                marginLeft: '1.5rem',
-                                background: 'var(--cream)',
-                                border: '1px solid var(--border)',
-                                borderRadius: '8px',
-                                padding: '.45rem .7rem',
-                                display: 'flex', gap: '.5rem', alignItems: 'baseline',
-                              }}>
-                                <span style={{ width: '16px', height: '16px', flexShrink: 0,
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  color: 'var(--smoke)' }}>
-                                  <IconProof size={14} />
-                                </span>
-                                <span style={{ fontSize: '.76rem', lineHeight: 1.5 }}>
-                                  <strong style={{ color: 'var(--char)' }}>{s.label}</strong>
-                                  {s.term && <InfoBadge term={s.term} onOpen={setLearnTerm} />}
-                                  {' '}
-                                  <em style={{ color: 'var(--smoke)', fontStyle: 'italic' }}>— {s.noteNode ?? s.note}</em>
-                                </span>
-                              </div>
-                            );
-                          }
-                          stepCount += 1;
-                          const n = stepCount;
-                          return (
-                            <div key={i} style={{ display: 'flex', gap: '.55rem', alignItems: 'baseline' }}>
-                              <span style={{
-                                fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
-                                color: 'var(--smoke)', flexShrink: 0, minWidth: '14px',
-                              }}>
-                                {n}.
-                              </span>
-                              <span style={{ width: '16px', height: '16px', flexShrink: 0,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: 'var(--terra)' }}>
-                                <StepIcon iconKey={(s as { iconKey: string }).iconKey} size={14} />
-                              </span>
-                              <span style={{ fontSize: '.76rem', lineHeight: 1.5 }}>
-                                <strong style={{ color: 'var(--char)' }}>{s.bold}</strong>
-                                {s.term && <InfoBadge term={s.term} onOpen={setLearnTerm} />}
-                                {' '}
-                                <em style={{ color: 'var(--smoke)', fontStyle: 'italic' }}>— {s.noteNode ?? s.note}</em>
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
 
                 {/* Step sub-label */}
                 {(item.stepKind === 'cold' || item.stepKind === 'bulk_ferm' || item.stepKind === 'final_proof' || item.stepKind === 'rest_rt' || item.stepKind === 'rt_warmup') && th.cardBg && (
