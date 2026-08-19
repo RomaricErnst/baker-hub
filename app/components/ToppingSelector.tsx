@@ -1550,15 +1550,10 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   : (STYLE_NAMES[styleKey] ?? styleKey))
               : (l === 'fr' ? 'Tous les styles' : 'All styles')}
             {/* Count lives in the "Showing N" filter row below — next to the
-                style name it briefly read as "you're making 112 pizzas" */}
-            {Object.values(filter).some(v => Array.isArray(v) ? v.length > 0 : v !== null && v !== 'all') && (
-              <span
-                onClick={clearAll}
-                style={{ fontSize: '11px', color: '#6B4423', cursor: 'pointer', marginLeft: '6px' }}
-              >
-                {l === 'fr' ? '· Effacer' : '· Clear'}
-              </span>
-            )}
+                style name it briefly read as "you're making 112 pizzas".
+                (A '· Clear' link lived here too — removed: redundant with
+                'Clear all' below, and next to the style name it read as
+                clearing the style.) */}
           </span>
           <span
             onClick={() => setShowStylePicker(true)}
@@ -2162,6 +2157,22 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           )}
 
           {/* ── Results strip ── */}
+          <div style={{ padding: '8px 12px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
+            <input
+              type="search"
+              value={nameSearch}
+              onChange={e => setNameSearch(e.target.value)}
+              placeholder={l === 'fr' ? 'Rechercher une pizza ou un ingrédient…' : 'Search a pizza or ingredient…'}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                padding: '9px 12px',
+                border: '1px solid #E0D8CF', borderRadius: '10px',
+                background: 'var(--cream)', color: '#2B2420',
+                fontSize: '13px', fontFamily: 'DM Sans, sans-serif',
+                outline: 'none',
+              }}
+            />
+          </div>
           <div style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0EBE0', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
             <span style={{ fontSize: '11px', color: '#8A7F78' }}>
               {l === 'fr'
@@ -2224,22 +2235,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               )}
 
               {/* Pizza cards */}
-              <div style={{ padding: '8px 12px 0' }}>
-                <input
-                  type="search"
-                  value={nameSearch}
-                  onChange={e => setNameSearch(e.target.value)}
-                  placeholder={l === 'fr' ? 'Rechercher une pizza ou un ingrédient…' : 'Search a pizza or ingredient…'}
-                  style={{
-                    width: '100%', boxSizing: 'border-box',
-                    padding: '9px 12px',
-                    border: '1px solid #E0D8CF', borderRadius: '10px',
-                    background: '#FDFBF7', color: '#2B2420',
-                    fontSize: '13px', fontFamily: 'DM Sans, sans-serif',
-                    outline: 'none',
-                  }}
-                />
-              </div>
               <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 {filtered.map(pizza => (
                   <PizzaCard
