@@ -210,15 +210,8 @@ export function buildItems(
     label: t('timeline.steps.mixing'),
     icon: '🤌',
     iconKey: 'mix',
-    tip: isSourdough
-      ? t('timeline.mixTips.sourdough')
-      : mixerType === 'hand'
-      ? t('timeline.mixTips.hand')
-      : mixerType === 'spiral'
-      ? t('timeline.mixTips.spiral')
-      : mixerType === 'no_knead'
-      ? t('timeline.mixTips.noKnead')
-      : t('timeline.mixTips.stand'),
+    // No tip here: the full mixing walkthrough renders right below on the
+    // Protocole tab — repeating a one-liner above it was redundant (tester).
     durationH: kneadMin > 0 ? kneadMin / 60 : null,
   });
 
@@ -343,11 +336,17 @@ export function buildItems(
   const finalProofStepStart = finalProofStepStartRaw && divideEndMs && finalProofStepStartRaw.getTime() < divideEndMs
     ? new Date(divideEndMs)
     : finalProofStepStartRaw;
-  // Show warmup + actual proof window only — preheat is parallel/independent.
+  // Duration must match the Guide's Final Proof card: wall-clock from the
+  // moment the dough is out (or shaped) to bakeStart. warmup+proofHours
+  // understates whenever the schedule carries slack (blockers, rounding) —
+  // the dough keeps proofing until it's baked, so the window is the truth.
   const warmupStepH = schedule.rtWarmupStart && schedule.rtWarmupEnd
     ? Math.max(0, (schedule.rtWarmupEnd.getTime() - schedule.rtWarmupStart.getTime()) / 3600000)
     : (schedule.restRtHours ?? 0);
-  const finalProofStepDuration = warmupStepH + schedule.finalProofHours;
+  const proofWindowStart = finalProofStepStart ?? schedule.finalProofStart;
+  const finalProofStepDuration = proofWindowStart && schedule.bakeStart
+    ? Math.max(0, (schedule.bakeStart.getTime() - proofWindowStart.getTime()) / 3600000)
+    : warmupStepH + schedule.finalProofHours;
   if (finalProofStepDuration > 0 || schedule.finalProofHours > 0) {
     items.push({
       kind: 'step', id: 'final_proof', stepKind: 'final_proof',
