@@ -1145,26 +1145,6 @@ export default function RecipeOutput({
         </div>
       )}
 
-      {/* ── Oven-capacity reality check for big pizza batches ──
-          Most home setups bake one pizza at a time; a 12-pizza party is
-          ~an hour of oven time nobody warned the host about. */}
-      {bakeType === 'pizza' && numItems >= 6 && (() => {
-        const minsPerPizza: Record<string, number> = {
-          pizza_oven: 2, home_oven_steel: 7, home_oven_standard: 9, electric_pizza: 5,
-        };
-        const per = minsPerPizza[ovenType ?? ''] ?? 7;
-        const totalMin = Math.round(numItems * per / 5) * 5;
-        return (
-          <div style={{
-            background: 'var(--warm)', border: '1px solid var(--border)',
-            borderRadius: '12px', padding: '.85rem 1.1rem',
-            fontSize: '.78rem', color: 'var(--smoke)', lineHeight: 1.55,
-            fontFamily: 'var(--font-dm-sans)',
-          }}>
-            {t('recipeOutput.ovenCapacityNote', { n: numItems, mins: totalMin })}
-          </div>
-        );
-      })()}
 
 
       {/* ── Yeast details ───────────────────────────

@@ -40,7 +40,7 @@
     "bake": "Bake"
   },
   "generate": {
-    "generateBtn": "Generate my bake plan →",
+    "generateBtn": "Generate my recipe →",
     "generateBtnPizzaParty": "Plan my pizza party →",
     "editSetup": "← Edit dough setup",
     "staleBanner": "⚠️ Settings changed — regenerate to update your bake plan",
@@ -1125,6 +1125,10 @@
       "woodBread": {
         "steps": [
           {
+            "bold": "Plan your fire around the oven's mass",
+            "note": "light oven: ~45 min · masonry oven (brick/Panyol): 2–3 h of firing before the floor holds steady heat"
+          },
+          {
             "bold": "Build fire and let it burn to embers",
             "note": "aim for 280–320°C floor temperature"
           },
@@ -1177,8 +1181,8 @@
             "note": "never guess — launch only when floor is at temp"
           },
           {
-            "bold": "Allow full 45 min — flame active throughout",
-            "note": "stone must be saturated, not just surface-hot"
+            "bold": "Allow the full preheat — flame active throughout",
+            "note": "light portable oven (Ooni-class): 30–45 min · masonry oven (brick/Panyol): 2–3 h — the mass must saturate, not just the surface"
           }
         ],
         "pitfalls": [

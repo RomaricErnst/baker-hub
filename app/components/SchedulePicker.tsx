@@ -6122,8 +6122,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 fontSize: '.82rem', fontFamily: 'var(--font-dm-sans)', outline: 'none',
               }}
             />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem' }}>
-              <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: '.5rem' }}>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
                   {t('blockers.from')}
                 </div>
@@ -6133,14 +6133,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   value={customFrom}
                   onChange={e => setCustomFrom(e.target.value)}
                   style={{
-                    width: '100%', padding: '.55rem .75rem',
+                    width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box',
+                    padding: '.55rem .5rem',
                     border: '1.5px solid var(--border)', borderRadius: '8px',
                     background: 'var(--card)', color: 'var(--char)',
                     fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
                   }}
                 />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: '.67rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.25rem' }}>
                   {t('blockers.to')}
                 </div>
@@ -6150,7 +6151,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   value={customTo}
                   onChange={e => setCustomTo(e.target.value)}
                   style={{
-                    width: '100%', padding: '.55rem .75rem',
+                    width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box',
+                    padding: '.55rem .5rem',
                     border: '1.5px solid var(--border)', borderRadius: '8px',
                     background: 'var(--card)', color: 'var(--char)',
                     fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
@@ -6186,7 +6188,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             return !isNightBlock && !isWorkBlock;
           }).map((block, i) => {
             const durationH = (block.to.getTime() - block.from.getTime()) / 3600000;
-            const emoji = '🚫';
             return (
               <div
                 key={i}
@@ -6197,7 +6198,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   borderRadius: '10px',
                 }}
               >
-                <span style={{ fontSize: '.95rem', flexShrink: 0 }}>{emoji}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--terra)' }}>
                     {block.label}

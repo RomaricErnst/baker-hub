@@ -30,13 +30,6 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, onP
   const locale = useLocale();
   const [expanded, setExpanded] = useState(true);
 
-  useEffect(() => {
-    if (selected === null && bakeType === 'pizza' && onPreselect) {
-      onPreselect('home_oven_steel' as AnyOvenType);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const recommendedOven = null;
 
   const pizzaOptions = [

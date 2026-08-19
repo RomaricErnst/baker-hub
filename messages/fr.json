@@ -40,7 +40,7 @@
     "bake": "Cuisson"
   },
   "generate": {
-    "generateBtn": "Générer mon planning →",
+    "generateBtn": "Générer ma recette →",
     "generateBtnPizzaParty": "Planifier ma pizza party →",
     "editSetup": "← Modifier les paramètres",
     "staleBanner": "⚠️ Réglages modifiés — régénérez pour mettre à jour",
@@ -1125,6 +1125,10 @@
       "woodBread": {
         "steps": [
           {
+            "bold": "Prévoyez le feu selon la masse du four",
+            "note": "four léger : ~45 min · four maçonné (brique/Panyol) : 2–3 h de chauffe avant que la sole tienne une chaleur stable"
+          },
+          {
             "bold": "Allumez le feu et laissez brûler jusqu'aux braises",
             "note": "visez une température de sole de 280–320°C"
           },
@@ -1177,8 +1181,8 @@
             "note": "ne jamais deviner — enfournez seulement quand la température est atteinte"
           },
           {
-            "bold": "Préchauffage complet 45 min — flamme active tout au long",
-            "note": "la pierre doit être saturée, pas seulement chaude en surface"
+            "bold": "Respectez le préchauffage complet — flamme active tout au long",
+            "note": "four léger type Ooni : 30–45 min · four maçonné (brique/Panyol) : 2–3 h — la masse doit être saturée, pas seulement la surface"
           }
         ],
         "pitfalls": [

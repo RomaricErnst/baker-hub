@@ -211,8 +211,8 @@ export const GUIDE_FAQ: Record<string, FaqEntry[]> = {
     {
       q: { en: "No room in the fridge \u2014 can I stay at room temperature?", fr: "Pas de place au frigo — puis-je rester à température ambiante ?" },
       a: {
-        en: "Yes, with a shorter total time \u2014 the chart's room-temperature window shows how much. Cold is there for schedule and flavour depth, not correctness.",
-        fr: "Oui, avec un temps total raccourci — la fenêtre à température ambiante du graphique montre de combien. Le froid sert le planning et la profondeur de goût, pas la conformité.",
+        en: "Yes \u2014 room temperature just ferments much faster, so the total time shrinks to a few hours instead of a day or more. As a rule of thumb, every 10\u00b0C warmer roughly halves the time. Cold is there for schedule and flavour depth, not correctness.",
+        fr: "Oui — à température ambiante la fermentation va simplement beaucoup plus vite : quelques heures au lieu d'un jour ou plus. En pratique, chaque tranche de 10\u00b0C en plus divise à peu près le temps par deux. Le froid sert le planning et la profondeur du goût, ce n'est pas une obligation.",
       },
     },
     {

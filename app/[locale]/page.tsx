@@ -2183,6 +2183,17 @@ export default function Home() {
                       {' — '}
                       {t('modeCards.custom.collapsed').split('|').map(s => s.trim().replace(/^·\s*/, '')).join(', ')}.
                     </div>
+                    <button
+                      onClick={() => setModeInfoOpen(false)}
+                      style={{
+                        display: 'block', margin: '10px auto 0', padding: '7px 22px',
+                        background: 'none', border: '1px solid var(--border)', borderRadius: '16px',
+                        fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: 'var(--smoke)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {locale === 'fr' ? 'Fermer' : 'Close'}
+                    </button>
                   </div>
                 )}
               </div>
