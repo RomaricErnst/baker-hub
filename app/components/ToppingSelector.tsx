@@ -439,6 +439,8 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
           )}
           {/* Row 3: occasion tags · wine pairing · time · qty controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            {/* left group shrinks + clips so the qty stepper always stays fully visible */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
             {pizza.occasion.slice(0, 2).map(tag => {
               const OCCASION_LABELS: Record<string, { en: string; fr: string }> = {
                 classic: { en: 'Classic', fr: 'Classique' },
@@ -465,8 +467,8 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
             <span style={{ fontSize: '10px', color: '#8A7F78', flexShrink: 0 }}>
               {pizza.prepMinutes} min
             </span>
-            <div style={{ flex: 1 }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0, marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
               <button style={{ ...S.qtyBtn, visibility: qty > 0 ? 'visible' : 'hidden' }} onClick={e => onQtyChange(-1, e)}>−</button>
               <span style={{ fontSize: '12px', fontWeight: 600, color: '#6B4423', minWidth: '14px', textAlign: 'center', visibility: qty > 0 ? 'visible' : 'hidden' }}>{qty}</span>
               <button style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
@@ -1664,7 +1666,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               onRemove: () => toggleDietary(d),
             }));
             if (filter.complexity !== null) {
-              const cLabels: Record<number, string> = { 1: l === 'fr' ? 'Sans cuisson' : 'No cook', 2: l === 'fr' ? 'Léger' : 'Light prep', 3: l === 'fr' ? 'Cuisiné' : 'Cooked' };
+              const cLabels: Record<number, string> = { 1: l === 'fr' ? 'Sans prépa' : 'No cook', 2: l === 'fr' ? 'Prépa rapide' : 'Light prep', 3: l === 'fr' ? 'À cuisiner' : 'Cooked' };
               activeChips.push({ label: cLabels[filter.complexity] ?? String(filter.complexity), onRemove: () => setComplexity(null) });
             }
             (filter.ingredientChips ?? []).forEach(ic => activeChips.push({
@@ -1785,8 +1787,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       <div style={{ display: 'flex', border: '1px solid #E0D8CF', borderRadius: '8px', overflow: 'hidden' }}>
                         {([
                           [null,  l === 'fr' ? 'Tous' : 'All'],
-                          [1,     l === 'fr' ? 'Sans cuisson' : 'No cook'],
-                          [2,     l === 'fr' ? 'Léger' : 'Light prep'],
+                          [1,     l === 'fr' ? 'Sans prépa' : 'No cook'],
+                          [2,     l === 'fr' ? 'Prépa rapide' : 'Light prep'],
                           [3,     l === 'fr' ? 'Cuisiné' : 'Cooked'],
                         ] as [ComplexityTier | null, string][]).map(([v, label]) => {
                           const active = filter.complexity === v;

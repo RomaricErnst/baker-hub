@@ -899,11 +899,11 @@ ${principle}
 When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the number and explain WHY it fits THEIR specific time/temperature, then reassure.`;
   })();
 
-  const bgFlour90Label = bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%)` : 'Flour + 90% of your water';
-  const bgSaltLabel    = bgSaltG ? `Add salt (${bgSaltG}g)` : 'Add salt';
-  const bgYeastLabel   = bgYeastG ? `Add yeast (${bgYeastG}g)` : 'Add yeast';
-  const bgWater10Label = bgWater10 ? `Add remaining water (${bgWater10}g)` : 'Add remaining 10% water';
-  const bgPoolishLabel = bgPoolishG ? `Add your ${prefermentType} (${bgPoolishG}g total)` : `Add your ${prefermentType} (all of it)`;
+  const bgFlour90Label = bgMainFlour && bgWater90 ? (l === 'fr' ? `${bgMainFlour}g de farine + ${bgWater90}g d’eau (90%)` : `${bgMainFlour}g flour + ${bgWater90}g water (90%)`) : (l === 'fr' ? 'Farine + 90% de votre eau' : 'Flour + 90% of your water');
+  const bgSaltLabel    = bgSaltG ? (l === 'fr' ? `Ajoutez le sel (${bgSaltG}g)` : `Add salt (${bgSaltG}g)`) : (l === 'fr' ? 'Ajoutez le sel' : 'Add salt');
+  const bgYeastLabel   = bgYeastG ? (l === 'fr' ? `Ajoutez la levure (${bgYeastG}g)` : `Add yeast (${bgYeastG}g)`) : (l === 'fr' ? 'Ajoutez la levure' : 'Add yeast');
+  const bgWater10Label = bgWater10 ? (l === 'fr' ? `Ajoutez l’eau restante (${bgWater10}g)` : `Add remaining water (${bgWater10}g)`) : (l === 'fr' ? 'Ajoutez les 10% d’eau restants' : 'Add remaining 10% water');
+  const bgPoolishLabel = bgPoolishG ? (l === 'fr' ? `Ajoutez votre ${prefermentType} (${bgPoolishG}g au total)` : `Add your ${prefermentType} (${bgPoolishG}g total)`) : (l === 'fr' ? `Ajoutez votre ${prefermentType} (en entier)` : `Add your ${prefermentType} (all of it)`);
 
   let stepNum = 0;
   let lastStep = 0;
@@ -1009,13 +1009,13 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           >
             <Section icon={null} title={t('sectionTitles.whatToDo')}>
               <Steps items={[
-                { bold: 'Equal parts starter, flour, water by weight',
-                  note: '1:1:1 ratio — e.g. 50g starter + 50g flour + 50g water' },
-                { bold: 'Mix until no dry flour remains',
-                  note: 'cover loosely — starter needs airflow' },
+                { bold: (l === 'fr' ? 'Levain, farine et eau à parts égales (au poids)' : 'Equal parts starter, flour, water by weight'),
+                  note: (l === 'fr' ? 'ratio 1:1:1 — ex. 50g de levain + 50g de farine + 50g d’eau' : '1:1:1 ratio — e.g. 50g starter + 50g flour + 50g water') },
+                { bold: (l === 'fr' ? 'Mélangez jusqu’à ce qu’il ne reste plus de farine sèche' : 'Mix until no dry flour remains'),
+                  note: (l === 'fr' ? 'couvrez sans fermer — le levain a besoin d’air' : 'cover loosely — starter needs airflow') },
                 ...(starterState === 'fridge_fed'
-                  ? [{ bold: 'Return to fridge once mixed',
-                       note: 'slows the peak — gives you control over when it is ready' }]
+                  ? [{ bold: (l === 'fr' ? 'Remettez au frigo une fois mélangé' : 'Return to fridge once mixed'),
+                       note: (l === 'fr' ? 'ralentit le pic — vous contrôlez le moment où il sera prêt' : 'slows the peak — gives you control over when it is ready') }]
                   : []),
               ]} />
             </Section>
@@ -1070,15 +1070,15 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             >
               <Section icon={null} title={t('sectionTitles.whatToDo')}>
                 <Steps items={[
-                  { bold: 'Place fed starter in fridge straight away',
-                    note: 'cold slows fermentation and holds the peak for longer' },
+                  { bold: (l === 'fr' ? 'Placez le levain rafraîchi au frigo immédiatement' : 'Place fed starter in fridge straight away'),
+                    note: (l === 'fr' ? 'le froid ralentit la fermentation et prolonge le pic' : 'cold slows fermentation and holds the peak for longer') },
                   { bold: fridgeOutTime
                       ? `Take out at ${fridgeOutTime.toLocaleTimeString(
                           l === 'fr' ? 'fr-FR' : 'en-US',
                           { hour: 'numeric', minute: '2-digit', hour12: l !== 'fr' }
                         )}`
                       : 'Take out when ready to mix',
-                    note: 'allow time to come to room temperature before mixing' },
+                    note: (l === 'fr' ? 'laissez-le revenir à température ambiante avant le pétrissage' : 'allow time to come to room temperature before mixing') },
                 ]} />
               </Section>
             </StepCard>
@@ -1094,12 +1094,12 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             >
               <Section icon={null} title={t('sectionTitles.whatToDo')}>
                 <Steps items={[
-                  { bold: 'Take out of fridge and leave at room temperature',
+                  { bold: (l === 'fr' ? 'Sortez du frigo et laissez à température ambiante' : 'Take out of fridge and leave at room temperature'),
                     note: `at ${displayTemp(kitchenTemp, u)} allow around ${
                       Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60)
                     } min to reach peak activity` },
-                  { bold: 'Look for dome and active bubbles at the sides',
-                    note: 'mix when the starter is at its highest point' },
+                  { bold: (l === 'fr' ? 'Cherchez le dôme et des bulles actives sur les côtés' : 'Look for dome and active bubbles at the sides'),
+                    note: (l === 'fr' ? 'pétrissez quand le levain est à son point le plus haut' : 'mix when the starter is at its highest point') },
                 ]} />
               </Section>
             </StepCard>
@@ -1115,12 +1115,12 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             >
               <Section icon={null} title={t('sectionTitles.whatToDo')}>
                 <Steps items={[
-                  { bold: 'Starter will look deflated and smell quite sour',
-                    note: 'this is exactly right — it is depleted and ready for its second feed' },
-                  { bold: 'Equal parts starter, flour, water by weight',
-                    note: 'same 1:1:1 ratio as the first feed' },
-                  { bold: 'Mix thoroughly and cover loosely',
-                    note: 'the second peak builds more acidity — expect a stronger, more complex flavour' },
+                  { bold: (l === 'fr' ? 'Le levain semblera retombé et sentira assez acide' : 'Starter will look deflated and smell quite sour'),
+                    note: (l === 'fr' ? 'c’est exactement ça — il est épuisé et prêt pour son second rafraîchi' : 'this is exactly right — it is depleted and ready for its second feed') },
+                  { bold: (l === 'fr' ? 'Levain, farine et eau à parts égales (au poids)' : 'Equal parts starter, flour, water by weight'),
+                    note: (l === 'fr' ? 'même ratio 1:1:1 que le premier rafraîchi' : 'same 1:1:1 ratio as the first feed') },
+                  { bold: (l === 'fr' ? 'Mélangez bien et couvrez sans fermer' : 'Mix thoroughly and cover loosely'),
+                    note: (l === 'fr' ? 'le second pic développe plus d’acidité — goût plus marqué et complexe' : 'the second peak builds more acidity — expect a stronger, more complex flavour') },
                 ]} />
               </Section>
               <StepExtras
@@ -1152,67 +1152,67 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           {mixerType === 'hand' && !isSourdough && (
             <Steps items={hydration > 70 ? [
               // >70%: autolyse, then yeast+salt, brief knead, then bassinage, then full knead
-              { bold: bgFlour90Label, note: 'mix until no dry flour — ~2 min' },
-              { bold: 'Cover and rest 20 min', note: 'autolyse — gluten forms without kneading' },
-              ...(!hasPref ? [{ bold: bgYeastLabel, note: 'mix to combine — 2 min' }] : []),
-              { bold: bgSaltLabel, note: 'mix until absorbed — 2 min' },
-              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'mix until fully incorporated' }] : []),
-              { bold: 'Knead 5 min to build base structure', note: 'dough should feel cohesive before adding remaining water' },
-              { bold: bgWater10 ? `Add remaining water (${bgWater10}g) gradually` : 'Add remaining 10% water gradually', note: 'bassinage — small splash at a time, knead until absorbed, repeat' },
-              ...(oil > 0 ? [{ bold: 'Add oil last', note: 'mix 1 min — oil added late preserves gluten' }] : []),
-              { bold: 'Continue kneading until smooth and elastic', note: 'windowpane test — typically 5–8 min more' },
+              { bold: bgFlour90Label, note: (l === 'fr' ? 'mélangez jusqu’à absorption de la farine — ~2 min' : 'mix until no dry flour — ~2 min') },
+              { bold: (l === 'fr' ? 'Couvrez et laissez reposer 20 min' : 'Cover and rest 20 min'), note: (l === 'fr' ? 'autolyse — le gluten se forme sans pétrir' : 'autolyse — gluten forms without kneading') },
+              ...(!hasPref ? [{ bold: bgYeastLabel, note: (l === 'fr' ? 'mélangez pour incorporer — 2 min' : 'mix to combine — 2 min') }] : []),
+              { bold: bgSaltLabel, note: (l === 'fr' ? 'mélangez jusqu’à absorption — 2 min' : 'mix until absorbed — 2 min') },
+              ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'mélangez jusqu’à incorporation complète' : 'mix until fully incorporated') }] : []),
+              { bold: (l === 'fr' ? 'Pétrissez 5 min pour bâtir la structure de base' : 'Knead 5 min to build base structure'), note: (l === 'fr' ? 'la pâte doit être cohésive avant d’ajouter le reste de l’eau' : 'dough should feel cohesive before adding remaining water') },
+              { bold: bgWater10 ? (l === 'fr' ? `Ajoutez l’eau restante (${bgWater10}g) progressivement` : `Add remaining water (${bgWater10}g) gradually`) : (l === 'fr' ? 'Ajoutez les 10% d’eau restants progressivement' : 'Add remaining 10% water gradually'), note: (l === 'fr' ? 'bassinage — petit filet à la fois, pétrissez jusqu’à absorption, répétez' : 'bassinage — small splash at a time, knead until absorbed, repeat') },
+              ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'mélangez 1 min — l’huile ajoutée tard préserve le gluten' : 'mix 1 min — oil added late preserves gluten') }] : []),
+              { bold: (l === 'fr' ? 'Continuez à pétrir jusqu’à une pâte lisse et élastique' : 'Continue kneading until smooth and elastic'), note: (l === 'fr' ? 'test de la membrane — en général 5–8 min de plus' : 'windowpane test — typically 5–8 min more') },
             ] : [
               // ≤70%: autolyse, yeast, salt, remaining water, then full knead
-              { bold: bgFlour90Label, note: 'mix until no dry flour — ~2 min' },
-              { bold: 'Cover and rest 20 min', note: 'autolyse — gluten forms without kneading' },
-              ...(!hasPref ? [{ bold: bgYeastLabel, note: 'mix to combine — 2 min' }] : []),
-              { bold: bgSaltLabel, note: 'mix until absorbed — 2 min' },
-              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'mix until fully incorporated' }] : []),
-              { bold: bgWater10Label, note: 'mix until absorbed — ~1 min' },
-              ...(oil > 0 ? [{ bold: 'Add oil last', note: 'mix 1 min — oil added late preserves gluten' }] : []),
-              { bold: 'Knead 8–12 min until smooth and elastic', note: 'windowpane test' },
+              { bold: bgFlour90Label, note: (l === 'fr' ? 'mélangez jusqu’à absorption de la farine — ~2 min' : 'mix until no dry flour — ~2 min') },
+              { bold: (l === 'fr' ? 'Couvrez et laissez reposer 20 min' : 'Cover and rest 20 min'), note: (l === 'fr' ? 'autolyse — le gluten se forme sans pétrir' : 'autolyse — gluten forms without kneading') },
+              ...(!hasPref ? [{ bold: bgYeastLabel, note: (l === 'fr' ? 'mélangez pour incorporer — 2 min' : 'mix to combine — 2 min') }] : []),
+              { bold: bgSaltLabel, note: (l === 'fr' ? 'mélangez jusqu’à absorption — 2 min' : 'mix until absorbed — 2 min') },
+              ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'mélangez jusqu’à incorporation complète' : 'mix until fully incorporated') }] : []),
+              { bold: bgWater10Label, note: (l === 'fr' ? 'mélangez jusqu’à absorption — ~1 min' : 'mix until absorbed — ~1 min') },
+              ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'mélangez 1 min — l’huile ajoutée tard préserve le gluten' : 'mix 1 min — oil added late preserves gluten') }] : []),
+              { bold: (l === 'fr' ? 'Pétrissez 8–12 min jusqu’à une pâte lisse et élastique' : 'Knead 8–12 min until smooth and elastic'), note: (l === 'fr' ? 'test de la membrane' : 'windowpane test') },
             ]} />
           )}
           {mixerType === 'stand' && !isSourdough && (
             <Steps items={hydration > 70 ? [
               // >70%: build structure first, then bassinage, then final Speed 2
-              { bold: bgFlour90Label, note: 'Speed 1, 2 min to combine' },
-              ...(!hasPref ? [{ bold: bgYeastLabel, note: 'Speed 1, 2 min' }] : []),
-              { bold: bgSaltLabel, note: 'Speed 1, 2 min until absorbed' },
-              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
-              { bold: 'Speed 2 — 4–5 min', note: 'build gluten structure before adding remaining water' },
-              { bold: bgWater10 ? `Add remaining water (${bgWater10}g) gradually at Speed 2` : 'Add remaining 10% water gradually at Speed 2', note: 'bassinage — small additions, wait for absorption between each' },
-              { bold: 'Continue Speed 2', note: 'until dough clears the bowl — windowpane test' },
-              ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
+              { bold: bgFlour90Label, note: (l === 'fr' ? 'Vitesse 1, 2 min pour incorporer' : 'Speed 1, 2 min to combine') },
+              ...(!hasPref ? [{ bold: bgYeastLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min' : 'Speed 1, 2 min') }] : []),
+              { bold: bgSaltLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min jusqu’à absorption' : 'Speed 1, 2 min until absorbed') },
+              ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'Vitesse 1, mélangez jusqu’à incorporation' : 'Speed 1, mix until incorporated') }] : []),
+              { bold: (l === 'fr' ? 'Vitesse 2 — 4–5 min' : 'Speed 2 — 4–5 min'), note: (l === 'fr' ? 'bâtit le gluten avant l’ajout du reste de l’eau' : 'build gluten structure before adding remaining water') },
+              { bold: bgWater10 ? (l === 'fr' ? `Ajoutez l’eau restante (${bgWater10}g) progressivement à Vitesse 2` : `Add remaining water (${bgWater10}g) gradually at Speed 2`) : (l === 'fr' ? 'Ajoutez les 10% d’eau restants progressivement à Vitesse 2' : 'Add remaining 10% water gradually at Speed 2'), note: (l === 'fr' ? 'bassinage — petits ajouts, attendez l’absorption entre chaque' : 'bassinage — small additions, wait for absorption between each') },
+              { bold: (l === 'fr' ? 'Continuez à Vitesse 2' : 'Continue Speed 2'), note: (l === 'fr' ? 'jusqu’à ce que la pâte se décolle du bol — test de la membrane' : 'until dough clears the bowl — windowpane test') },
+              ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'Vitesse 1, 1 min' : 'Speed 1, 1 min') }] : []),
             ] : [
               // ≤70%: remaining water before Speed 2
-              { bold: bgFlour90Label, note: 'Speed 1, 2 min to combine' },
-              ...(!hasPref ? [{ bold: bgYeastLabel, note: 'Speed 1, 2 min' }] : []),
-              { bold: bgSaltLabel, note: 'Speed 1, 2 min until absorbed' },
-              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
+              { bold: bgFlour90Label, note: (l === 'fr' ? 'Vitesse 1, 2 min pour incorporer' : 'Speed 1, 2 min to combine') },
+              ...(!hasPref ? [{ bold: bgYeastLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min' : 'Speed 1, 2 min') }] : []),
+              { bold: bgSaltLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min jusqu’à absorption' : 'Speed 1, 2 min until absorbed') },
+              ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'Vitesse 1, mélangez jusqu’à incorporation' : 'Speed 1, mix until incorporated') }] : []),
               { bold: bgWater10Label, note: 'Speed 1, mix until absorbed — ~1 min' },
-              { bold: 'Speed 2 — 6–10 min', note: 'until dough clears the bowl — windowpane test' },
-              ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
+              { bold: 'Speed 2 — 6–10 min', note: (l === 'fr' ? 'jusqu’à ce que la pâte se décolle du bol — test de la membrane' : 'until dough clears the bowl — windowpane test') },
+              ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'Vitesse 1, 1 min' : 'Speed 1, 1 min') }] : []),
             ]} />
           )}
           {mixerType === 'spiral' && !isSourdough && (
             <>
               <Steps items={hydration > 70 ? [
                 // >70%: pumpkin first, bassinage after
-                { bold: bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%)${!isSourdough && !hasPref ? ' + yeast' : ''}` : 'Flour + 90% of your water', note: 'Speed 1, 3 min to combine' },
-                ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
-                { bold: bgSaltLabel, note: 'Speed 1, 2 min' },
-                { bold: 'Speed 2 until pumpkin shape forms', note: `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
-                { bold: bgWater10 ? `Once pumpkin is stable — add remaining water (${bgWater10}g) gradually` : 'Once pumpkin is stable — add remaining 10% water gradually', note: 'bassinage — small additions, wait for pumpkin to reform each time' },
-                ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
+                { bold: bgMainFlour && bgWater90 ? (l === 'fr' ? `${bgMainFlour}g de farine + ${bgWater90}g d’eau (90%)${!isSourdough && !hasPref ? ' + levure' : ''}` : `${bgMainFlour}g flour + ${bgWater90}g water (90%)${!isSourdough && !hasPref ? ' + yeast' : ''}`) : (l === 'fr' ? 'Farine + 90% de votre eau' : 'Flour + 90% of your water'), note: (l === 'fr' ? 'Vitesse 1, 3 min pour incorporer' : 'Speed 1, 3 min to combine') },
+                ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'Vitesse 1, mélangez jusqu’à incorporation' : 'Speed 1, mix until incorporated') }] : []),
+                { bold: bgSaltLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min' : 'Speed 1, 2 min') },
+                { bold: (l === 'fr' ? 'Vitesse 2 jusqu’à la forme de citrouille' : 'Speed 2 until pumpkin shape forms'), note: l === 'fr' ? `en général 10–15 min — arrêtez si la FDT dépasse ${tempC(28, u)}` : `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
+                { bold: bgWater10 ? (l === 'fr' ? `Citrouille stable — ajoutez l’eau restante (${bgWater10}g) progressivement` : `Once pumpkin is stable — add remaining water (${bgWater10}g) gradually`) : (l === 'fr' ? 'Citrouille stable — ajoutez les 10% d’eau restants progressivement' : 'Once pumpkin is stable — add remaining 10% water gradually'), note: (l === 'fr' ? 'bassinage — petits ajouts, attendez que la citrouille se reforme à chaque fois' : 'bassinage — small additions, wait for pumpkin to reform each time') },
+                ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'Vitesse 1, 1 min' : 'Speed 1, 1 min') }] : []),
               ] : [
                 // ≤70%: remaining water before Speed 2
-                { bold: bgMainFlour && bgWater90 ? `${bgMainFlour}g flour + ${bgWater90}g water (90%)${!isSourdough && !hasPref ? ' + yeast' : ''}` : 'Flour + 90% of your water', note: 'Speed 1, 3 min to combine' },
-                ...(hasPref ? [{ bold: bgPoolishLabel, note: 'Speed 1, mix until incorporated' }] : []),
-                { bold: bgSaltLabel, note: 'Speed 1, 2 min' },
+                { bold: bgMainFlour && bgWater90 ? (l === 'fr' ? `${bgMainFlour}g de farine + ${bgWater90}g d’eau (90%)${!isSourdough && !hasPref ? ' + levure' : ''}` : `${bgMainFlour}g flour + ${bgWater90}g water (90%)${!isSourdough && !hasPref ? ' + yeast' : ''}`) : (l === 'fr' ? 'Farine + 90% de votre eau' : 'Flour + 90% of your water'), note: (l === 'fr' ? 'Vitesse 1, 3 min pour incorporer' : 'Speed 1, 3 min to combine') },
+                ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'Vitesse 1, mélangez jusqu’à incorporation' : 'Speed 1, mix until incorporated') }] : []),
+                { bold: bgSaltLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min' : 'Speed 1, 2 min') },
                 { bold: bgWater10Label, note: 'Speed 1, mix until absorbed — ~1 min' },
-                { bold: 'Speed 2 until pumpkin shape forms', note: `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
-                ...(oil > 0 ? [{ bold: 'Add oil last', note: 'Speed 1, 1 min' }] : []),
+                { bold: (l === 'fr' ? 'Vitesse 2 jusqu’à la forme de citrouille' : 'Speed 2 until pumpkin shape forms'), note: l === 'fr' ? `en général 10–15 min — arrêtez si la FDT dépasse ${tempC(28, u)}` : `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
+                ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'Vitesse 1, 1 min' : 'Speed 1, 1 min') }] : []),
               ]} />
               <div style={{ marginTop: '.75rem' }}>
                 <img
@@ -1226,25 +1226,25 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           )}
           {mixerType === 'no_knead' && (
             <Steps items={[
-              { bold: 'Combine all ingredients including salt', note: 'mix just until no dry flour remains — ~2 min' },
-              ...(hasPref ? [{ bold: bgPoolishLabel, note: 'mix until incorporated' }] : []),
-              { bold: 'Cover and rest', note: 'stretch & folds every 30 min for the first 2 hours' },
+              { bold: (l === 'fr' ? 'Mélangez tous les ingrédients, sel compris' : 'Combine all ingredients including salt'), note: (l === 'fr' ? 'mélangez juste jusqu’à absorption de la farine — ~2 min' : 'mix just until no dry flour remains — ~2 min') },
+              ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'mélangez jusqu’à incorporation' : 'mix until incorporated') }] : []),
+              { bold: (l === 'fr' ? 'Couvrez et laissez reposer' : 'Cover and rest'), note: (l === 'fr' ? 'rabats toutes les 30 min pendant les 2 premières heures' : 'stretch & folds every 30 min for the first 2 hours') },
             ]} />
           )}
           {isSourdough && (
             <>
               <Steps items={[
-                { bold: bgFlour90Label, note: 'mix 2 min until no dry flour' },
-                { bold: 'Add your starter at peak',
+                { bold: bgFlour90Label, note: (l === 'fr' ? 'mélangez 2 min jusqu’à absorption' : 'mix 2 min until no dry flour') },
+                { bold: (l === 'fr' ? 'Ajoutez votre levain au pic' : 'Add your starter at peak'),
                   note: usingPeak2
-                    ? 'second peak — the dough will have a slightly more complex flavour'
-                    : 'use at the dome, do not wait for collapse' },
-                { bold: bgSaltG && bgWater10 ? `Add salt (${bgSaltG}g) + remaining water (${bgWater10}g)` : 'Add salt + remaining 10% water', note: 'mix until fully absorbed' },
-                ...(oil > 0 ? [{ bold: 'Add oil last', note: 'preserves gluten structure' }] : []),
+                    ? (l === 'fr' ? 'second pic — la pâte aura un goût un peu plus complexe' : 'second peak — the dough will have a slightly more complex flavour')
+                    : (l === 'fr' ? 'utilisez au dôme, n’attendez pas la retombée' : 'use at the dome, do not wait for collapse') },
+                { bold: bgSaltG && bgWater10 ? (l === 'fr' ? `Ajoutez le sel (${bgSaltG}g) + l’eau restante (${bgWater10}g)` : `Add salt (${bgSaltG}g) + remaining water (${bgWater10}g)`) : (l === 'fr' ? 'Ajoutez le sel + les 10% d’eau restants' : 'Add salt + remaining 10% water'), note: (l === 'fr' ? 'mélangez jusqu’à absorption complète' : 'mix until fully absorbed') },
+                ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'préserve la structure du gluten' : 'preserves gluten structure') }] : []),
               ]} />
               {planningMode === 'know_peak' && (
                 <div style={{ marginTop: '.6rem', fontSize: '.75rem', color: D.smoke, fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
-                  Mix time is set to your stated peak — adjust if your starter peaks earlier or later than expected.
+                  {l === 'fr' ? 'L’heure de pétrissage est calée sur le pic indiqué — ajustez si votre levain pique plus tôt ou plus tard que prévu.' : 'Mix time is set to your stated peak — adjust if your starter peaks earlier or later than expected.'}
                 </div>
               )}
               <div style={{
@@ -1257,7 +1257,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 borderTop: `1px solid ${D.border}`,
               }}>
                 {l === 'fr'
-                  ? 'Après avoir prélevé votre levain, nourrissez le reste et remettez-le au frigo.'
+                  ? 'Après avoir prélevé votre levain, rafraîchissez le reste et remettez-le au frigo.'
                   : 'After taking your starter for this bake, feed what remains and return it to the fridge.'}
               </div>
             </>
@@ -1266,8 +1266,8 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
         <Section icon="🌡️" title={t('sectionTitles.waterTemp')}>
           <Bullets items={[
-            ...(recipe?.waterTemp != null ? [`Water temperature: ${Math.round(recipe.waterTemp)}°C`] : []),
-            `Target Final Dough Temperature (FDT): ${isNeapolitan ? tempC(23, u) : tempC(24, u)}`,
+            ...(recipe?.waterTemp != null ? [(l === 'fr' ? `Température de l’eau : ${Math.round(recipe.waterTemp)}°C` : `Water temperature: ${Math.round(recipe.waterTemp)}°C`)] : []),
+            (l === 'fr' ? `Température finale de pâte (FDT) visée : ${isNeapolitan ? tempC(23, u) : tempC(24, u)}` : `Target Final Dough Temperature (FDT): ${isNeapolitan ? tempC(23, u) : tempC(24, u)}`),
           ]} />
         </Section>
 
@@ -1276,10 +1276,10 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             <Section icon="🌡️" title={t('sectionTitles.waterTemp')}>
               <Bullets items={[
                 ...(t.raw('mix.waterTempBullets') as string[]),
-                `FDT above ${tempC(28, u)}: refrigerate dough for 15 min before bulk fermentation`,
+                (l === 'fr' ? `FDT au-dessus de ${tempC(28, u)} : placez la pâte 15 min au frigo avant le pointage` : `FDT above ${tempC(28, u)}: refrigerate dough for 15 min before bulk fermentation`),
               ]} />
               <div style={{ marginTop: '.5rem' }}>
-                <LearnLink term="fdt" label="What is FDT?" onOpen={setLearnTerm} />
+                <LearnLink term="fdt" label={l === 'fr' ? 'Qu’est-ce que la FDT ?' : 'What is FDT?'} onOpen={setLearnTerm} />
               </div>
             </Section>
             <Section icon="👁️" title={t('sectionTitles.watchFor')}>
@@ -1290,16 +1290,16 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 ...(t.raw('mix.watchForAll') as string[]),
               ]} />
               <div style={{ marginTop: '.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <LearnLink term="windowpane" label="Windowpane test" onOpen={setLearnTerm} showSparkle={true} />
+                <LearnLink term="windowpane" label={l === 'fr' ? 'Test de la membrane' : 'Windowpane test'} onOpen={setLearnTerm} showSparkle={true} />
                 {mixerType === 'hand' && !isSourdough && <LearnLink term="autolyse" label="Autolyse" onOpen={setLearnTerm} />}
-                {isSpiral && <LearnLink term="pumpkin" label="Pumpkin shape" onOpen={setLearnTerm} />}
+                {isSpiral && <LearnLink term="pumpkin" label={l === 'fr' ? 'Forme citrouille' : 'Pumpkin shape'} onOpen={setLearnTerm} />}
                 {hydration > 70 && <LearnLink term="bassinage" label="Bassinage" onOpen={setLearnTerm} />}
               </div>
             </Section>
             <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
               <Bullets items={[
                 ...(t.raw('mix.pitfalls') as string[]).slice(0, 2),
-                isSpiral ? `Ignoring FDT — spiral mixers generate heat, dough can exceed ${tempC(28, u)} without noticing` : '',
+                isSpiral ? (l === 'fr' ? `FDT ignorée — les pétrins à spirale chauffent, la pâte peut dépasser ${tempC(28, u)} sans qu’on s’en aperçoive` : `Ignoring FDT — spiral mixers generate heat, dough can exceed ${tempC(28, u)} without noticing`) : '',
                 (t.raw('mix.pitfalls') as string[])[2],
               ].filter(Boolean)} />
             </Section>
@@ -1339,7 +1339,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             <Section icon="👁️" title="Watch for — bulk is done when">
               <Bullets items={t.raw('bulk.watchFor') as string[]} />
               <div style={{ marginTop: '.5rem' }}>
-                <LearnLink term="bulk_fermentation" label="Bulk fermentation guide" onOpen={setLearnTerm} showSparkle={true} />
+                <LearnLink term="bulk_fermentation" label={l === 'fr' ? 'Guide du pointage' : 'Bulk fermentation guide'} onOpen={setLearnTerm} showSparkle={true} />
               </div>
             </Section>
             <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
@@ -1550,7 +1550,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             <Steps items={[
               ...(hasCold ? [
                 t.raw('finalProof.removeFridge') as { bold: string; note: string },
-                { bold: `Rest ${kitchenTemp >= 30 ? '20–30' : kitchenTemp >= 26 ? '30–45' : '45–60'} min at room temperature`, note: 'warmup only — proofing begins naturally as dough relaxes' },
+                { bold: l === 'fr' ? `Repos ${kitchenTemp >= 30 ? '20–30' : kitchenTemp >= 26 ? '30–45' : '45–60'} min à température ambiante` : `Rest ${kitchenTemp >= 30 ? '20–30' : kitchenTemp >= 26 ? '30–45' : '45–60'} min at room temperature`, note: (l === 'fr' ? 'simple remise en température — l’apprêt reprend naturellement quand la pâte se détend' : 'warmup only — proofing begins naturally as dough relaxes') },
               ] : [
                 ...(!isTwoPhase ? [t.raw('finalProof.shapeBalls') as { bold: string; note: string }] : [
                   t.raw('finalProof.alreadyShaped') as { bold: string; note: string },
@@ -1558,7 +1558,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               ]),
               t.raw('finalProof.keepCovered') as { bold: string; note: string },
               t.raw('finalProof.pokeTest') as { bold: string; note: string },
-              { bold: `Start preheating your oven ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} before bake time`, note: 'oven heats while dough finishes proofing — they finish together' },
+              { bold: l === 'fr' ? `Lancez le préchauffage du four ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} avant la cuisson` : `Start preheating your oven ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} before bake time`, note: (l === 'fr' ? 'le four chauffe pendant que la pâte finit son apprêt — les deux sont prêts en même temps' : 'oven heats while dough finishes proofing — they finish together') },
             ]} />
           </Section>
 
@@ -1567,7 +1567,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               <Section icon="👁️" title={t('sectionTitles.pokeTest')}>
                 <Bullets items={t.raw('finalProof.pokeResponses') as string[]} />
                 <div style={{ marginTop: '.5rem' }}>
-                  <LearnLink term="poke_test" label="Full poke test guide" onOpen={setLearnTerm} showSparkle={true} />
+                  <LearnLink term="poke_test" label={l === 'fr' ? 'Guide du test du doigt' : 'Full poke test guide'} onOpen={setLearnTerm} showSparkle={true} />
                 </div>
               </Section>
               <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
@@ -1736,22 +1736,6 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />
-        {!isBread && onNavigateToPizzaParty && (
-          <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${D.border}` }}>
-            <button
-              onClick={onNavigateToPizzaParty}
-              style={{
-                background: 'none', border: 'none',
-                color: D.terra, cursor: 'pointer',
-                fontFamily: 'var(--font-dm-sans)',
-                fontSize: '13px', fontWeight: 500,
-                textDecoration: 'underline', padding: 0,
-              }}
-            >
-              {l === 'fr' ? 'Planifier votre Pizza Party →' : 'Plan your Pizza Party →'}
-            </button>
-          </div>
-        )}
       </StepCard>
 
       {learnTerm && (

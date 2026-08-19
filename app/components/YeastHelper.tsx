@@ -105,7 +105,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
               border: 'none', padding: 0,
             }}
           >
-            {showCalc ? 'Hide calculation ↑' : 'How was this calculated? ↓'}
+            {showCalc ? (locale === 'fr' ? 'Masquer le calcul ↑' : 'Hide calculation ↑') : (locale === 'fr' ? 'Comment est-ce calculé ? ↓' : 'How was this calculated? ↓')}
           </button>
 
           {showCalc && (
@@ -114,7 +114,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
               borderRadius: '10px', padding: '.85rem 1rem', marginTop: '.5rem',
               fontSize: '.75rem', color: 'var(--ash)', lineHeight: 1.7,
             }}>
-              <div>Model: Craig&apos;s per-stage formula v1.1</div>
+              <div>{locale === 'fr' ? 'Modèle : formule par phase de Craig v1.1' : "Model: Craig's per-stage formula v1.1"}</div>
               <div style={{ fontFamily: 'var(--font-dm-mono)' }}>
                 RT phases: IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))
               </div>

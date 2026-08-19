@@ -385,13 +385,13 @@
       "sourdough": "Mélangez farine et eau, puis ajoutez votre levain. Ajoutez le sel avec les 10% d'eau restants. Mélangez jusqu'à complète absorption.",
       "hand": "Farine + 90% de l'eau — couvrez et reposez 20 min (autolyse). Puis levure, sel, eau restante, et pétrissez 8–12 min.",
       "spiral": "Farine + eau + levure Vitesse 1. Sel, puis Vitesse 2 jusqu'à la forme de citrouille et le test de la vitre.",
-      "noKnead": "Mélangez tous les ingrédients jusqu'à ce qu'il n'y ait plus de farine sèche — le temps et les stretch & fold font le reste.",
+      "noKnead": "Mélangez tous les ingrédients jusqu'à ce qu'il n'y ait plus de farine sèche — le temps et les rabats font le reste.",
       "stand": "Farine + eau Vitesse 1. Levure, puis sel, puis eau restante. Vitesse 2 jusqu'à ce que la pâte se décolle du bol et passe le test de la vitre."
     },
     "bulkTips": {
-      "long": "Couvrez bien et placez dans un endroit chaud à l'abri des courants d'air. Effectuez 4 séries de stretch & fold dans les 2 premières heures.",
-      "medium": "Couvrez bien. Effectuez 2–3 séries de stretch & fold toutes les 20–30 minutes.",
-      "short": "Couvrez bien. Effectuez une série de stretch & fold après 15 minutes, puis couvrez et reposez.",
+      "long": "Couvrez bien et placez dans un endroit chaud à l'abri des courants d'air. Effectuez 4 séries de rabats dans les 2 premières heures.",
+      "medium": "Couvrez bien. Effectuez 2–3 séries de rabats toutes les 20–30 minutes.",
+      "short": "Couvrez bien. Effectuez une série de rabats après 15 minutes, puis couvrez et reposez.",
       "veryShort": "Couvrez bien et reposez — la pâte va directement au frigo après cette courte fenêtre."
     },
     "coldTips": {
@@ -782,15 +782,15 @@
         }
       ],
       "set1": {
-        "bold": "Série 1 — après 30 min : stretch & fold",
+        "bold": "Série 1 — après 30 min : rabat",
         "note": "main mouillée, saisissez un côté, étirez vers le haut puis repliez au centre. Répétez 4 côtés"
       },
       "set2": {
-        "bold": "Série 2 — après 1h : stretch & fold",
+        "bold": "Série 2 — après 1h : rabat",
         "note": "la pâte doit sembler plus cohésive et résister à la déchirure"
       },
       "set3": {
-        "bold": "Série 3 — après 1h30 : stretch & fold",
+        "bold": "Série 3 — après 1h30 : rabat",
         "note": "la pâte sera lisse et forte"
       },
       "set4": {
@@ -798,7 +798,7 @@
         "note": "puis laissez reposer jusqu'à la fin du pointage"
       },
       "setShort": {
-        "bold": "Après 15 min : une série de stretch & folds",
+        "bold": "Après 15 min : une série de rabats",
         "note": "puis couvrez et reposez — pointage court va directement au froid"
       },
       "setVeryShort": {
@@ -814,7 +814,7 @@
       "pitfallsBase": [
         "Sur-fermentation : plus de 75% de pousse signifie que le gluten commence à se dégrader — pâte molle et déchirures au façonnage",
         "Sous-fermentation : moins de 30% de pousse — pas assez de gaz, pain dense",
-        "Négliger les stretch & folds — ils construisent la force du gluten qui facilite le façonnage"
+        "Négliger les rabats — ils construisent la force du gluten qui facilite le façonnage"
       ]
     },
     "coldRetard": {

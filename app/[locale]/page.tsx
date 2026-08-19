@@ -2358,7 +2358,7 @@ export default function Home() {
                               key={opt.value}
                               onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
                               style={{
-                                flex: 1, padding: '5px 0', borderRadius: '8px',
+                                flex: 1, padding: '5px 4px', borderRadius: '8px', whiteSpace: 'nowrap',
                                 border: pizzaCorn === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
                                 background: pizzaCorn === opt.value ? 'white' : 'transparent',
                                 color: pizzaCorn === opt.value ? '#2B2420' : '#8A7F78',
@@ -2372,20 +2372,6 @@ export default function Home() {
                         </div>
                       </div>
                     )}
-                    {showDiam && (
-                      <div style={{
-                        fontSize: '11px', color: '#8A7F78',
-                        fontFamily: 'DM Sans, sans-serif',
-                        textAlign: 'left',
-                        marginBottom: '8px', marginTop: '10px',
-                        fontStyle: 'italic',
-                      }}>
-                        {locale === 'fr'
-                          ? "Diamètre et poids sont liés — modifiez l'un ou l'autre."
-                          : 'Diameter and weight are linked — set either one.'}
-                      </div>
-                    )}
-
                     {/* ── ROW 3: Diameter + Weight — two equal tiles ── */}
                     <div style={{ display: 'grid', gridTemplateColumns: showDiam ? '1fr 1fr' : '1fr', gap: '10px', marginBottom: '20px' }}>
 
@@ -3078,7 +3064,7 @@ export default function Home() {
                               key={opt.value}
                               onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
                               style={{
-                                flex: 1, padding: '5px 0', borderRadius: '8px',
+                                flex: 1, padding: '5px 4px', borderRadius: '8px', whiteSpace: 'nowrap',
                                 border: pizzaCorn === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
                                 background: pizzaCorn === opt.value ? 'white' : 'transparent',
                                 color: pizzaCorn === opt.value ? '#2B2420' : '#8A7F78',
@@ -3092,20 +3078,6 @@ export default function Home() {
                         </div>
                       </div>
                     )}
-                    {showDiam && (
-                      <div style={{
-                        fontSize: '11px', color: '#8A7F78',
-                        fontFamily: 'DM Sans, sans-serif',
-                        textAlign: 'left',
-                        marginBottom: '8px', marginTop: '10px',
-                        fontStyle: 'italic',
-                      }}>
-                        {locale === 'fr'
-                          ? "Diamètre et poids sont liés — modifiez l'un ou l'autre."
-                          : 'Diameter and weight are linked — set either one.'}
-                      </div>
-                    )}
-
                     {/* ROW 3: Diameter + Weight tiles */}
                     <div style={{ display: 'grid', gridTemplateColumns: showDiam ? '1fr 1fr' : '1fr', gap: '10px', marginBottom: '20px' }}>
 

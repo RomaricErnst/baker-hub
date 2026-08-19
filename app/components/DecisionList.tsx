@@ -73,8 +73,10 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
                 fontSize: '11px',
                 color: 'var(--smoke)',
                 overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical' as const,
+                lineHeight: 1.35,
               }}>
                 {option.tagline}
               </div>
