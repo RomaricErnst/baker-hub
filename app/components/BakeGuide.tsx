@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, createContext, useContext } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
 import { MIXER_TYPES, type MixerType } from '../data';
@@ -33,6 +33,7 @@ interface BakeGuideProps {
   units?: UnitSystem;
   locale?: string;
   onNavigateToPizzaParty?: () => void;
+  simpleMode?: boolean;
   recipe?: import('../utils').RecipeResult | null;
 }
 
@@ -79,7 +80,31 @@ function Bullets({ items }: { items: (string | React.ReactNode)[] }) {
 }
 
 // ── Numbered steps ───────────────────────────────────
+
+// Simple-mode content gate: Simple bakers asked for "very easy" — the same
+// steps, minus technique jargon (windowpane, pumpkin, bassinage, autolyse).
+// Context (not a module flag) because Simple and Custom layouts can both
+// keep a BakeGuide mounted at once with different modes.
+const SimpleModeCtx = createContext(false);
+const JARGON_RE = /windowpane|membrane|pumpkin|citrouille|bassinage|autolyse/i;
+const SIMPLE_HIDDEN_TERMS = new Set(['windowpane', 'pumpkin', 'bassinage', 'autolyse']);
+function easyBold(s: string): string {
+  return s
+    .replace(/Speed 2 until pumpkin shape forms/, 'Speed 2 until the dough gathers into a smooth ball')
+    .replace(/Vitesse 2 jusqu\u2019\u00e0 la forme de citrouille/, 'Vitesse 2 jusqu\u2019\u00e0 une boule lisse qui se d\u00e9colle de la cuve')
+    .replace(/Once pumpkin is stable \u2014 /, '')
+    .replace(/Citrouille stable \u2014 /, '');
+}
+
 function Steps({ items }: { items: { bold: string; note: string }[] }) {
+  const simple = useContext(SimpleModeCtx);
+  items = items.filter(it => it.bold !== '');
+  if (simple) {
+    items = items.map(it => ({
+      bold: easyBold(it.bold),
+      note: JARGON_RE.test(it.note) ? '' : it.note,
+    }));
+  }
   return (
     <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
       {items.map((item, i) => (
@@ -227,6 +252,8 @@ function StepCard({
 function LearnLink({ term, label, onOpen, showSparkle = false }: {
   term: string; label: string; onOpen: (t: string) => void; showSparkle?: boolean;
 }) {
+  const simple = useContext(SimpleModeCtx);
+  if (simple && SIMPLE_HIDDEN_TERMS.has(term)) return null;
   return (
     <button
       onClick={() => onOpen(term)}
@@ -757,7 +784,7 @@ export default function BakeGuide({
   usingPeak2 = false, planningMode = 'last_fed',
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
-  onNavigateToPizzaParty, recipe,
+  onNavigateToPizzaParty, recipe, simpleMode,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
   const l = locale === 'fr' ? 'fr' : 'en';
@@ -905,6 +932,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
   const bgWater10Label = bgWater10 ? (l === 'fr' ? `Ajoutez l’eau restante (${bgWater10}g)` : `Add remaining water (${bgWater10}g)`) : (l === 'fr' ? 'Ajoutez les 10% d’eau restants' : 'Add remaining 10% water');
   const bgPoolishLabel = bgPoolishG ? (l === 'fr' ? `Ajoutez votre ${prefermentType} (${bgPoolishG}g au total)` : `Add your ${prefermentType} (${bgPoolishG}g total)`) : (l === 'fr' ? `Ajoutez votre ${prefermentType} (en entier)` : `Add your ${prefermentType} (all of it)`);
 
+
   let stepNum = 0;
   let lastStep = 0;
   const n = () => { stepNum++; lastStep = stepNum; return stepNum; };
@@ -933,6 +961,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
   };
 
   return (
+    <SimpleModeCtx.Provider value={!!simpleMode}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
       {/* ── Header ──────────────────────────────────── */}
@@ -1756,5 +1785,6 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         />
       )}
     </div>
+    </SimpleModeCtx.Provider>
   );
 }

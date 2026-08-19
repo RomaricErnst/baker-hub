@@ -2846,6 +2846,7 @@ export default function Home() {
                   locale={locale}
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
                   recipe={recipe ?? null}
+                  simpleMode={tab === 'simple'}
                 />
                 {/* Share + party — end of the journey. Quiet chips while
                     baking, gold celebration once marked baked. Anonymous
@@ -4129,6 +4130,7 @@ export default function Home() {
                   locale={locale}
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
                   recipe={advancedRecipe ?? null}
+                  simpleMode={false}
                 />
                 {/* Share + party — end of the journey. Quiet chips while
                     baking, gold celebration once marked baked. Anonymous
