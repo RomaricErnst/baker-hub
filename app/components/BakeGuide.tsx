@@ -1846,18 +1846,6 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         <LearnModal
           term={learnTerm}
           onClose={() => setLearnTerm(null)}
-          footer={TERM_TO_STEPID[learnTerm] ? (
-            <div style={{ borderTop: `1px solid ${D.border}`, marginTop: 16, paddingTop: 12 }}>
-              <CoachButton
-                stepId={TERM_TO_STEPID[learnTerm]}
-                styleKey={styleKey}
-                kitchenTemp={kitchenTemp}
-                prefermentType={prefermentType}
-                locale={locale ?? 'en'}
-                ovenType={ovenType}
-              />
-            </div>
-          ) : undefined}
         />
       )}
     </div>

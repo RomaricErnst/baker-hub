@@ -1,5 +1,7 @@
 'use client';
 
+import { useLocale } from 'next-intl';
+
 interface LearnModalProps {
   term: string;
   onClose: () => void;
@@ -102,6 +104,8 @@ const TERMS: Record<string, TermContent> = {
 };
 
 export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
+  const locale = useLocale();
+  const isFr = locale === 'fr';
   const content = TERMS[term];
   if (!content) return null;
 
@@ -219,22 +223,29 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
           {/* Footer slot — Maestro or other contextual content */}
           {footer}
 
-          {/* External link — only if present */}
-          {content.videoUrl && content.videoLabel && (
+          {/* External reference — quiet line naming its source, with the
+              leaving-the-app affordance. It's a reference, not a deeper
+              level of the app. */}
+          {content.videoUrl && (
             <a
               href={content.videoUrl}
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                gap: '.5rem',
-                padding: '.65rem 1rem',
-                background: 'var(--terra)', color: '#fff',
-                borderRadius: '12px', textDecoration: 'none',
-                fontSize: '.83rem', fontWeight: 600,
+                display: 'block', textAlign: 'center',
+                padding: '.4rem 0 .1rem',
+                color: 'var(--terra)', textDecoration: 'underline',
+                textUnderlineOffset: '3px',
+                fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)',
               }}
             >
-              {content.videoLabel}
+              {(() => {
+                try {
+                  const host = new URL(content.videoUrl).hostname.replace('www.', '').split('.')[0];
+                  const site = host.charAt(0).toUpperCase() + host.slice(1);
+                  return `${isFr ? 'Guide complet sur' : 'Full guide on'} ${site} ↗`;
+                } catch { return `${isFr ? 'Guide complet' : 'Full guide'} ↗`; }
+              })()}
             </a>
           )}
         </div>
