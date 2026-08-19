@@ -155,6 +155,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [typeWOpen, setTypeWOpen] = useState(false);
   const [quickSub, setQuickSub] = useState<'type' | null>(null);
   const [manualQW, setManualQW] = useState<number | null>(null);
+  // Raw text of the W field — the controlled input previously only accepted
+  // already-valid values (100-450), so typing '2' of '280' was rejected
+  // char-by-char and the field appeared dead.
+  const [manualQWText, setManualQWText] = useState('');
 
   // Search section filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -845,9 +849,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       inputMode="numeric"
                       placeholder={locale === 'fr' ? 'ex. 280' : 'e.g. 280'}
                       min={100} max={450}
-                      value={manualQW ?? ''}
+                      value={manualQWText}
                       onChange={e => {
-                        const v = parseInt(e.target.value);
+                        const raw = e.target.value;
+                        setManualQWText(raw);
+                        const v = parseInt(raw);
                         if (!isNaN(v) && v >= 100 && v <= 450) {
                           setManualQW(v);
                           const autoTile: FlourKey = v >= 270 ? 'strong00' : 'pizza00';
@@ -855,7 +861,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                             flour1: autoTile, flour2: blend.flour2, ratio1: blend.ratio1,
                             wOverride: v, w1: v, brandKey: undefined, brandProduct: `Custom W${v}`,
                           });
-                        } else if (e.target.value === '') {
+                        } else if (raw === '') {
                           setManualQW(null);
                         }
                       }}
