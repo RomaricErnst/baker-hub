@@ -873,10 +873,16 @@ export interface FlourBlend {
   flour1: FlourKey;
   flour2: FlourKey | null;
   ratio1: number;           // 0-100, percentage of flour1
-  wOverride?: number;       // manual W value override
+  flour3?: FlourKey | null; // optional third flour
+  ratio2?: number;          // 0-100, percentage of flour2 (flour3 = remainder)
+  wOverride?: number;       // manual W value override / blended W (legacy)
+  w1?: number;              // true W of flour1 (per-component, avoids double-blend)
+  w2?: number;              // true W of flour2
+  w3?: number;              // true W of flour3
   brandKey?: BrandKey;      // selected brand
   brandProduct?: string;    // selected product name
   customFlour2Name?: string; // name of manually entered second flour
+  customFlour3Name?: string; // name of manually entered third flour
 }
 
 export interface BlendProfile {
@@ -889,10 +895,14 @@ export interface BlendProfile {
 
 export function computeBlendProfile(blend: FlourBlend): BlendProfile {
   const f1 = FLOUR_DATA[blend.flour1];
-  const effectiveW1 = blend.wOverride ?? f1.w;
+  // Per-component W when the picker stored it (w1); wOverride is the legacy
+  // slot which — for saved 2-flour blends — already holds the BLENDED W, so
+  // using it as flour1's W double-counted flour2. w1 fixes that; legacy
+  // blends fall back to the old behaviour unchanged.
+  const w1 = blend.w1 ?? blend.wOverride ?? f1.w;
   if (!blend.flour2 || blend.ratio1 === 100) {
     return {
-      blendedW: effectiveW1,
+      blendedW: w1,
       hydrationDelta: f1.hydrationDelta,
       fermToleranceMultiplier: f1.fermTolerance,
       displayName: f1.name,
@@ -900,18 +910,26 @@ export function computeBlendProfile(blend: FlourBlend): BlendProfile {
     };
   }
   const f2 = FLOUR_DATA[blend.flour2];
-  const r1 = blend.ratio1 / 100;
-  const r2 = 1 - r1;
+  const w2 = blend.w2 ?? f2.w;
+  const hasF3 = !!blend.flour3 && blend.ratio2 !== undefined && (100 - blend.ratio1 - blend.ratio2) > 0;
+  const f3 = hasF3 ? FLOUR_DATA[blend.flour3!] : null;
+  const w3 = hasF3 ? (blend.w3 ?? f3!.w) : 0;
+  const p1 = blend.ratio1;
+  const p2 = hasF3 ? blend.ratio2! : 100 - blend.ratio1;
+  const p3 = hasF3 ? 100 - p1 - p2 : 0;
+  const r1 = p1 / 100, r2 = p2 / 100, r3 = p3 / 100;
+  const two = (n: number) => Math.round(n * 100) / 100;
+  const nameOf   = (f: typeof f1, custom?: string) => custom ?? f.name;
+  const nameFrOf = (f: typeof f1, custom?: string) => custom ?? f.nameFr;
+  const parts   = [`${p1}% ${f1.name}`, `${p2}% ${nameOf(f2, blend.customFlour2Name)}`];
+  const partsFr = [`${p1}% ${f1.nameFr}`, `${p2}% ${nameFrOf(f2, blend.customFlour2Name)}`];
+  if (hasF3 && f3) { parts.push(`${p3}% ${nameOf(f3, blend.customFlour3Name)}`); partsFr.push(`${p3}% ${nameFrOf(f3, blend.customFlour3Name)}`); }
   return {
-    blendedW: Math.round(effectiveW1 * r1 + f2.w * r2),
-    hydrationDelta: Math.round((f1.hydrationDelta * r1 + f2.hydrationDelta * r2) * 10) / 10,
-    fermToleranceMultiplier: Math.round((f1.fermTolerance * r1 + f2.fermTolerance * r2) * 100) / 100,
-    displayName: blend.ratio1 === 50
-      ? `${f1.name} + ${f2.name}`
-      : `${blend.ratio1}% ${f1.name} + ${100 - blend.ratio1}% ${f2.name}`,
-    displayNameFr: blend.ratio1 === 50
-      ? `${f1.nameFr} + ${f2.nameFr}`
-      : `${blend.ratio1}% ${f1.nameFr} + ${100 - blend.ratio1}% ${f2.nameFr}`,
+    blendedW: Math.round(w1 * r1 + w2 * r2 + w3 * r3),
+    hydrationDelta: Math.round((f1.hydrationDelta * r1 + f2.hydrationDelta * r2 + (f3 ? f3.hydrationDelta : 0) * r3) * 10) / 10,
+    fermToleranceMultiplier: two(f1.fermTolerance * r1 + f2.fermTolerance * r2 + (f3 ? f3.fermTolerance : 1) * r3),
+    displayName: parts.join(' + '),
+    displayNameFr: partsFr.join(' + '),
   };
 }
 

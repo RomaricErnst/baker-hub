@@ -905,12 +905,18 @@ export default function RecipeOutput({
                 return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>{f1DisplayName}</span>;
               }
               const f2 = FLOUR_DATA[flourBlend.flour2];
-              const f2Weight = flour - f1Weight;
+              const hasF3 = !!flourBlend.flour3 && flourBlend.ratio2 !== undefined && (100 - flourBlend.ratio1 - flourBlend.ratio2) > 0;
+              const p2 = hasF3 ? flourBlend.ratio2! : 100 - flourBlend.ratio1;
+              const p3 = hasF3 ? 100 - flourBlend.ratio1 - p2 : 0;
+              const f2Weight = Math.round(flour * p2 / 100);
+              const f3Weight = hasF3 ? flour - f1Weight - f2Weight : 0;
+              const f3 = hasF3 ? FLOUR_DATA[flourBlend.flour3!] : null;
               return (
                 <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>
                   {flourBlend.ratio1}% {f1DisplayName} ({f1Weight.toLocaleString('en')}g)
                   {' · '}
-                  {100 - flourBlend.ratio1}% {flourBlend.customFlour2Name ?? f2.name} ({f2Weight.toLocaleString('en')}g)
+                  {p2}% {flourBlend.customFlour2Name ?? f2.name} ({f2Weight.toLocaleString('en')}g)
+                  {hasF3 && f3 && <>{' · '}{p3}% {flourBlend.customFlour3Name ?? f3.name} ({f3Weight.toLocaleString('en')}g)</>}
                 </span>
               );
             })() : sdActive ? (

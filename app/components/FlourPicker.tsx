@@ -193,6 +193,18 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
     };
   });
   const [blendRatio, setBlendRatio] = useState(() => blend.ratio1 < 100 ? blend.ratio1 : 85);
+  // Third flour: which slot the blend search assigns to, the picked entry,
+  // and flour2's share (flour3 takes the remainder).
+  const [blendSlot, setBlendSlot] = useState<2 | 3>(2);
+  const [blendSelectedF3, setBlendSelectedF3] = useState<FlourEntry | null>(() => {
+    if (!blend.flour3 || !blend.customFlour3Name) return null;
+    return {
+      brand: blend.customFlour3Name.split(' ')[0] ?? '',
+      name: blend.customFlour3Name,
+      w: blend.w3 ?? 220,
+    } as FlourEntry;
+  });
+  const [blendRatio2, setBlendRatio2] = useState(() => blend.ratio2 ?? 10);
   const [blendShowFullSearch, setBlendShowFullSearch] = useState(false);
 
   const locale = useLocale();
@@ -224,6 +236,24 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
     }
   }, [openSection]);
 
+
+  // Assign a picked blend flour to whichever slot the search was opened for.
+  // Stores the flour's true W per slot (w2/w3) — computeBlendProfile does the
+  // single authoritative blend, fixing the old double-blend of wOverride.
+  function assignBlendFlour(entry: FlourEntry, key: FlourKey, label: string, r1ForSlot2 = 85) {
+    if (blendSlot === 3) {
+      setBlendSelectedF3(entry);
+      const r1 = Math.min(blendRatio, 80);
+      const r2 = Math.min(blendRatio2, 100 - r1 - 5);
+      setBlendRatio(r1); setBlendRatio2(r2);
+      onBlendChange({ ...blend, flour3: key, ratio1: r1, ratio2: r2, w3: entry.w, customFlour3Name: label });
+    } else {
+      setBlendSelectedF2(entry);
+      onBlendChange({ ...blend, flour2: key, ratio1: r1ForSlot2, w2: entry.w, customFlour2Name: label });
+    }
+    setBlendShowFullSearch(false); setBlendSearchQuery('');
+  }
+
   function selectDBEntry(f: FlourEntry) {
     const autoTile: FlourKey = f.w >= 270 ? 'strong00' : 'pizza00';
     onBlendChange({
@@ -231,6 +261,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       flour2: blend.flour2,
       ratio1: blend.ratio1,
       wOverride: f.w,
+      w1: f.w,
       brandKey: undefined,
       brandProduct: `${f.brand} ${f.name}`,
     });
@@ -243,6 +274,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       flour2: blend.flour2,
       ratio1: blend.ratio1,
       wOverride: w,
+      w1: w,
       brandKey: undefined,
       brandProduct: label,
     });
@@ -336,7 +368,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           <FlourScan
             onResult={result => {
               const autoTile: FlourKey = result.w >= 270 ? 'strong00' : 'pizza00';
-              onBlendChange({ ...blend, flour1: autoTile, wOverride: result.w, brandProduct: result.name, brandKey: undefined });
+              onBlendChange({ ...blend, flour1: autoTile, wOverride: result.w, w1: result.w, brandProduct: result.name, brandKey: undefined });
               setScanOpen(false);
             }}
             onCancel={() => setScanOpen(false)}
@@ -821,7 +853,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                           const autoTile: FlourKey = v >= 270 ? 'strong00' : 'pizza00';
                           onBlendChange({
                             flour1: autoTile, flour2: blend.flour2, ratio1: blend.ratio1,
-                            wOverride: v, brandKey: undefined, brandProduct: `Custom W${v}`,
+                            wOverride: v, w1: v, brandKey: undefined, brandProduct: `Custom W${v}`,
                           });
                         } else if (e.target.value === '') {
                           setManualQW(null);
@@ -884,8 +916,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           {openSection === 'blend' && (
             <div style={{ paddingTop: '10px', paddingBottom: '14px', paddingLeft: '14px', paddingRight: '14px', scrollMarginTop: '80px' }}>
 
-              {/* If flour2 selected: show confirmation + ratio slider */}
-              {blendSelectedF2 ? (
+              {/* If flour2 selected: show confirmation + ratio slider —
+                  unless the baker is actively picking a third flour, which
+                  reuses the same search UI below */}
+              {blendSelectedF2 && !(blendSlot === 3 && !blendSelectedF3 && blendShowFullSearch) ? (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <div>
@@ -897,7 +931,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       </div>
                     </div>
                     <button
-                      onClick={() => { setBlendSelectedF2(null); setBlendShowFullSearch(false); setBlendSearchQuery(''); }}
+                      onClick={() => { setBlendSlot(2); setBlendSelectedF2(null); setBlendShowFullSearch(false); setBlendSearchQuery(''); }}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline' }}
                     >
                       {locale === 'fr' ? 'Changer' : 'Change'}
@@ -906,24 +940,59 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   {/* Ratio slider */}
                   <div style={{ marginBottom: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '6px' }}>
-                      <span>Main flour {blendRatio}%</span>
-                      <span>{blendSelectedF2.name} {100 - blendRatio}%</span>
+                      <span>{locale === 'fr' ? 'Farine principale' : 'Main flour'} {blendRatio}%</span>
+                      <span>{blendSelectedF2.name} {blendSelectedF3 ? (blend.ratio2 ?? blendRatio2) : 100 - blendRatio}%{blendSelectedF3 ? ` · ${blendSelectedF3.name} ${100 - blendRatio - (blend.ratio2 ?? blendRatio2)}%` : ''}</span>
                     </div>
                     <input
-                      type="range" min={60} max={95} step={5}
+                      type="range" min={blendSelectedF3 ? 40 : 60} max={blendSelectedF3 ? 100 - (blend.ratio2 ?? blendRatio2) - 5 : 95} step={5}
                       value={blendRatio}
                       onChange={e => {
                         const r = +e.target.value;
                         setBlendRatio(r);
-                        const f1w = blend.wOverride ?? 260;
-                        const blendedW = Math.round((f1w * r / 100) + (blendSelectedF2.w * (100 - r) / 100));
-                        onBlendChange({ ...blend, ratio1: r, wOverride: blendedW, customFlour2Name: `${blendSelectedF2.brand} ${blendSelectedF2.name}` });
+                        onBlendChange({ ...blend, ratio1: r, w2: blendSelectedF2.w, customFlour2Name: `${blendSelectedF2.brand} ${blendSelectedF2.name}`.trim() });
                       }}
                       style={{ width: '100%' }}
                     />
+                    {blendSelectedF3 && (
+                      <div style={{ marginTop: '10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '6px' }}>
+                          <span>{blendSelectedF2.name} {blend.ratio2 ?? blendRatio2}%</span>
+                          <span>{blendSelectedF3.name} {100 - blendRatio - (blend.ratio2 ?? blendRatio2)}%</span>
+                        </div>
+                        <input
+                          type="range" min={5} max={100 - blendRatio - 5} step={5}
+                          value={blend.ratio2 ?? blendRatio2}
+                          onChange={e => {
+                            const r2 = +e.target.value;
+                            setBlendRatio2(r2);
+                            onBlendChange({ ...blend, ratio2: r2 });
+                          }}
+                          style={{ width: '100%' }}
+                        />
+                        <button
+                          onClick={() => { setBlendSelectedF3(null); onBlendChange({ ...blend, flour3: null, ratio2: undefined, w3: undefined, customFlour3Name: undefined }); }}
+                          style={{ marginTop: '6px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: 0 }}
+                        >
+                          {locale === 'fr' ? 'Retirer la 3e farine' : 'Remove third flour'}
+                        </button>
+                      </div>
+                    )}
+                    {!blendSelectedF3 && (
+                      <button
+                        onClick={() => { setBlendSlot(3); setBlendShowFullSearch(true); }}
+                        style={{
+                          marginTop: '8px', padding: '7px 12px',
+                          background: 'none', border: '1.5px dashed #C8B898', borderRadius: '10px',
+                          cursor: 'pointer', color: '#6B4423', fontSize: '12px',
+                          fontFamily: 'DM Sans, sans-serif', width: '100%',
+                        }}
+                      >
+                        {locale === 'fr' ? '+ Ajouter une 3e farine' : '+ Add a third flour'}
+                      </button>
+                    )}
                   </div>
                   <button
-                    onClick={() => { setBlendSelectedF2(null); onBlendChange({ ...blend, flour2: null, ratio1: 100, customFlour2Name: undefined }); }}
+                    onClick={() => { setBlendSelectedF2(null); setBlendSelectedF3(null); setBlendSlot(2); onBlendChange({ ...blend, flour2: null, ratio1: 100, customFlour2Name: undefined, w2: undefined, flour3: null, ratio2: undefined, w3: undefined, customFlour3Name: undefined }); }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: 0 }}
                   >
                     {locale === 'fr' ? 'Retirer le mélange' : 'Remove blend'}
@@ -950,11 +1019,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                   protein: generic.protein, hydration: [60, 75],
                                   bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
                                 };
-                                setBlendSelectedF2(genericEntry);
-                                setBlendRatio(preset.ratio);
-                                const f1w = blend.wOverride ?? 260;
-                                const blendedW = Math.round((f1w * preset.ratio / 100) + (generic.w * (100 - preset.ratio) / 100));
-                                onBlendChange({ ...blend, flour2: preset.type as FlourKey, ratio1: preset.ratio, wOverride: blendedW, customFlour2Name: generic.label });
+                                if (blendSlot === 2) setBlendRatio(preset.ratio);
+                                assignBlendFlour(genericEntry, preset.type as FlourKey, generic.label, preset.ratio);
                               }
                             }}
                             style={{
@@ -971,6 +1037,21 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     </div>
                   )}
 
+                  {blendSlot === 3 && (
+                    <div style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      background: 'var(--cream)', borderRadius: '8px', padding: '7px 10px', marginTop: '4px',
+                      fontSize: '12px', color: '#3D3530', fontFamily: 'DM Sans, sans-serif',
+                    }}>
+                      <span>{locale === 'fr' ? 'Choisissez votre 3e farine' : 'Pick your third flour'}</span>
+                      <button
+                        onClick={() => { setBlendSlot(2); setBlendShowFullSearch(false); setBlendSearchQuery(''); }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: 0 }}
+                      >
+                        {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                      </button>
+                    </div>
+                  )}
                   <div style={{ marginTop: '12px' }}>
                     {/* Row 1 — Input + Type + Origin + Brand on single row */}
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
@@ -1105,14 +1186,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                             <div
                               key={f.id}
                               onClick={() => {
-                                setBlendSelectedF2(f);
-                                setBlendRatio(85);
-                                setBlendSearchQuery('');
+                                if (blendSlot === 2) setBlendRatio(85);
                                 setBlendFilterType(null);
                                 setBlendFilterBrand(null);
-                                const f1w = blend.wOverride ?? 260;
-                                const blendedW = Math.round((f1w * 85 / 100) + (f.w * 15 / 100));
-                                onBlendChange({ ...blend, flour2: f.type as FlourKey, ratio1: 85, wOverride: blendedW, customFlour2Name: `${f.brand} ${f.name}` });
+                                assignBlendFlour(f, f.type as FlourKey, `${f.brand} ${f.name}`);
                               }}
                               style={{ padding: '8px 0', borderBottom: '0.5px solid #E8E0D5', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                               onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
@@ -1162,11 +1239,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                 protein: t.protein, hydration: [60, 75],
                                 bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
                               };
-                              setBlendSelectedF2(genericEntry);
-                              setBlendRatio(85);
-                              const f1w = blend.wOverride ?? 260;
-                              const blendedW = Math.round((f1w * 85 / 100) + (t.w * 15 / 100));
-                              onBlendChange({ ...blend, flour2: t.type as FlourKey, ratio1: 85, wOverride: blendedW, customFlour2Name: t.label });
+                              if (blendSlot === 2) setBlendRatio(85);
+                              assignBlendFlour(genericEntry, t.type as FlourKey, t.label);
                             }}
                             style={{
                               padding: '4px 10px', borderRadius: '20px',
@@ -1203,11 +1277,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                   protein: 12, hydration: [60, 75],
                                   bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
                                 };
-                                setBlendSelectedF2(genericEntry);
-                                setBlendRatio(85);
-                                const f1w = blend.wOverride ?? 260;
-                                const blendedW = Math.round((f1w * 85 / 100) + (v * 15 / 100));
-                                onBlendChange({ ...blend, flour2: (v >= 270 ? 'strong00' : 'pizza00') as FlourKey, ratio1: 85, wOverride: blendedW, customFlour2Name: `Custom W${v}` });
+                                if (blendSlot === 2) setBlendRatio(85);
+                                assignBlendFlour(genericEntry, (v >= 270 ? 'strong00' : 'pizza00') as FlourKey, `Custom W${v}`);
                               }
                             }}
                           />
