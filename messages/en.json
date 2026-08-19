@@ -29,7 +29,7 @@
     "advanced": "🎛️ Custom",
     "setup": "Setup",
     "plan": "Recipe",
-    "guide": "Guide",
+    "guide": "Protocol",
     "pizzaparty": "Pizza Party",
     "myDough": "My Dough",
     "myPizzaParty": "My Pizza Party",
@@ -1764,8 +1764,8 @@
   },
   "planNav": {
     "editSetup": "Edit setup",
-    "guide": "Guide",
-    "guideSub": "step-by-step",
+    "guide": "Protocol",
+    "guideSub": "protocol & step-by-step",
     "share": "Share this bake",
     "shareBaked": "Share this bake"
   }

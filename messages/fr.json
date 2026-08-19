@@ -29,7 +29,7 @@
     "advanced": "🎛️ Personnalisé",
     "setup": "Configuration",
     "plan": "Recette",
-    "guide": "Guide",
+    "guide": "Protocole",
     "pizzaparty": "Pizza Party",
     "myDough": "Ma Pâte",
     "myPizzaParty": "Ma Pizza Party",
@@ -1764,8 +1764,8 @@
   },
   "planNav": {
     "editSetup": "Réglages",
-    "guide": "Guide",
-    "guideSub": "pas à pas",
+    "guide": "Protocole",
+    "guideSub": "protocole & pas à pas",
     "share": "Partager cette fournée",
     "shareBaked": "Partager cette fournée"
   }

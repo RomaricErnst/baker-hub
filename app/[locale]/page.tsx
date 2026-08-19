@@ -2709,30 +2709,6 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-
-                          {schedule && (
-                            <Timeline
-                              schedule={schedule}
-                              blocks={blocks}
-                              preheatMin={preheatMin}
-                              startTime={startTime}
-                              eatTime={eatTime!}
-                              mixerType={mixerType!}
-                              styleKey={styleKey ?? ''}
-                              oil={recipe?.oil ?? 0}
-                              hydration={recipe?.hydration ?? 0}
-                              numItems={numItems}
-                              feedTime={feedTime}
-                              kitchenTemp={kitchenTemp}
-                              prefStartTime={prefStartTime}
-                              prefermentType={prefermentType}
-                              prefGoesInFridge={prefGoesInFridge}
-                              prefRemoveFromFridgeTime={prefRemoveFromFridgeTime}
-                              onStartBaking={() => setActiveTab('guide')}
-                              bakeType={bakeType ?? undefined}
-                              recipe={recipe ?? null}
-                            />
-                          )}
                         </div>
                       )}
                     </>
@@ -2821,6 +2797,30 @@ export default function Home() {
                   <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>{t('common.generateFirst')}</div>
                 </div>
               ) : schedule && recipe && mixerType && (<>
+              {schedule && (
+                <div style={{ marginBottom: '18px' }}>
+                  <Timeline
+                    schedule={schedule}
+                    blocks={blocks}
+                    preheatMin={preheatMin}
+                    startTime={startTime}
+                    eatTime={eatTime!}
+                    mixerType={mixerType!}
+                    styleKey={styleKey ?? ''}
+                    oil={recipe?.oil ?? 0}
+                    hydration={recipe?.hydration ?? 0}
+                    numItems={numItems}
+                    feedTime={feedTime}
+                    kitchenTemp={kitchenTemp}
+                    prefStartTime={prefStartTime}
+                    prefermentType={prefermentType}
+                    prefGoesInFridge={prefGoesInFridge}
+                    prefRemoveFromFridgeTime={prefRemoveFromFridgeTime}
+                    bakeType={bakeType ?? undefined}
+                    recipe={recipe ?? null}
+                  />
+                </div>
+              )}
                 <BakeGuide
                   schedule={schedule}
                   mixerType={mixerType}
@@ -3992,29 +3992,6 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {schedule && (
-                            <Timeline
-                              schedule={schedule}
-                              blocks={blocks}
-                              preheatMin={preheatMin}
-                              startTime={startTime}
-                              eatTime={eatTime!}
-                              mixerType={mixerType!}
-                              styleKey={styleKey ?? ''}
-                              oil={advancedRecipe?.oil ?? 0}
-                              hydration={advancedRecipe?.hydration ?? 0}
-                              numItems={numItems}
-                              feedTime={feedTime}
-                              kitchenTemp={kitchenTemp}
-                              prefStartTime={prefStartTime}
-                              prefermentType={prefermentType}
-                              prefGoesInFridge={prefGoesInFridge}
-                              prefRemoveFromFridgeTime={prefRemoveFromFridgeTime}
-                              onStartBaking={() => setActiveTab('guide')}
-                              bakeType={bakeType ?? undefined}
-                              recipe={advancedRecipe ?? null}
-                            />
-                          )}
                         </div>
                       )}
                     </>
@@ -4103,6 +4080,30 @@ export default function Home() {
                   <div style={{ fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>{t('common.generateFirst')}</div>
                 </div>
               ) : schedule && advancedRecipe && mixerType && (<>
+              {schedule && (
+                <div style={{ marginBottom: '18px' }}>
+                  <Timeline
+                    schedule={schedule}
+                    blocks={blocks}
+                    preheatMin={preheatMin}
+                    startTime={startTime}
+                    eatTime={eatTime!}
+                    mixerType={mixerType!}
+                    styleKey={styleKey ?? ''}
+                    oil={advancedRecipe?.oil ?? 0}
+                    hydration={advancedRecipe?.hydration ?? 0}
+                    numItems={numItems}
+                    feedTime={feedTime}
+                    kitchenTemp={kitchenTemp}
+                    prefStartTime={prefStartTime}
+                    prefermentType={prefermentType}
+                    prefGoesInFridge={prefGoesInFridge}
+                    prefRemoveFromFridgeTime={prefRemoveFromFridgeTime}
+                    bakeType={bakeType ?? undefined}
+                    recipe={advancedRecipe ?? null}
+                  />
+                </div>
+              )}
                 <BakeGuide
                   schedule={schedule}
                   mixerType={mixerType}
