@@ -67,6 +67,11 @@ function Section({ icon, title, children }: {
 
 // ── Bullet list ──────────────────────────────────────
 function Bullets({ items }: { items: (string | React.ReactNode)[] }) {
+  const simple = useContext(SimpleModeCtx);
+  if (simple) {
+    items = items.filter(it => typeof it !== 'string' || !JARGON_RE.test(it));
+  }
+  if (items.length === 0) return null;
   return (
     <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
       {items.map((item, i) => (
@@ -86,8 +91,8 @@ function Bullets({ items }: { items: (string | React.ReactNode)[] }) {
 // Context (not a module flag) because Simple and Custom layouts can both
 // keep a BakeGuide mounted at once with different modes.
 const SimpleModeCtx = createContext(false);
-const JARGON_RE = /windowpane|membrane|pumpkin|citrouille|bassinage|autolyse/i;
-const SIMPLE_HIDDEN_TERMS = new Set(['windowpane', 'pumpkin', 'bassinage', 'autolyse']);
+const JARGON_RE = /windowpane|membrane|pumpkin|citrouille|bassinage|autolyse|\bFDT\b|\bDDT\b|\bTFP\b/i;
+const SIMPLE_HIDDEN_TERMS = new Set(['windowpane', 'pumpkin', 'bassinage', 'autolyse', 'fdt']);
 function easyBold(s: string): string {
   return s
     .replace(/Speed 2 until pumpkin shape forms/, 'Speed 2 until the dough gathers into a smooth ball')
@@ -678,7 +683,9 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
   const [tab, setTab] = useState<'tips' | 'faq' | 'coach' | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const l = locale === 'fr' ? 'fr' : 'en';
-  const faq = faqKey ? (GUIDE_FAQ[faqKey] ?? []) : [];
+  const simpleFaq = useContext(SimpleModeCtx);
+  const faq = (faqKey ? (GUIDE_FAQ[faqKey] ?? []) : []).filter(e =>
+    !simpleFaq || !(JARGON_RE.test(e.q.en + ' ' + e.q.fr + ' ' + e.a.en + ' ' + e.a.fr)));
 
   const pills: Array<{ id: 'tips' | 'faq' | 'coach'; label: string }> = [
     { id: 'tips', label: l === 'fr' ? '💡 Astuces' : '💡 Tips & tricks' },
@@ -1328,15 +1335,18 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           )}
         </Section>
 
+        {!(simpleMode && recipe?.waterTemp == null) && (
         <Section icon="🌡️" title={t('sectionTitles.waterTemp')}>
           <Bullets items={[
             ...(recipe?.waterTemp != null ? [(l === 'fr' ? `Température de l’eau : ${Math.round(recipe.waterTemp)}°C` : `Water temperature: ${Math.round(recipe.waterTemp)}°C`)] : []),
             (l === 'fr' ? `Température finale de pâte (FDT) visée : ${isNeapolitan ? tempC(23, u) : tempC(24, u)}` : `Target Final Dough Temperature (FDT): ${isNeapolitan ? tempC(23, u) : tempC(24, u)}`),
           ]} />
         </Section>
+        )}
 
         <StepExtras
           tips={<>
+            {!simpleMode && (
             <Section icon="🌡️" title={t('sectionTitles.waterTemp')}>
               <Bullets items={[
                 ...(t.raw('mix.waterTempBullets') as string[]),
@@ -1346,6 +1356,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 <LearnLink term="fdt" label={l === 'fr' ? 'Qu’est-ce que la FDT ?' : 'What is FDT?'} onOpen={setLearnTerm} />
               </div>
             </Section>
+            )}
             <Section icon="👁️" title={t('sectionTitles.watchFor')}>
               <Bullets items={[
                 mixerType === 'spiral'
