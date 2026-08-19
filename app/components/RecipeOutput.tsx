@@ -1344,9 +1344,9 @@ export default function RecipeOutput({
         </div>
       )}
 
-      {/* PlanNav — same two pills as below the protocol (quiet variant):
-          one visual language for the tab's three destinations */}
-      <PlanNav variant="quiet" onEditSetup={onEditSetup} onOpenGuide={onOpenGuide} onShare={onShare} />
+      {/* PlanNav used to render here (quiet variant, above the protocol
+          timeline). Since the protocol moved to its own tab, page.tsx's
+          cta variant right below would duplicate it — removed. */}
 
     </div>
   );
