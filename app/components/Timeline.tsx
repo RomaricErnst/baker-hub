@@ -34,7 +34,7 @@ interface TimelineProps {
 }
 
 // ── Step kinds ────────────────────────────────
-type StepKind = 'feed_starter' | 'make_preferment' | 'mixing' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'rt_warmup' | 'preheat' | 'eat';
+export type StepKind = 'feed_starter' | 'make_preferment' | 'mixing' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'rt_warmup' | 'preheat' | 'eat';
 
 interface TimelineStep {
   kind: 'step';
@@ -50,7 +50,7 @@ interface TimelineStep {
 }
 
 // ── Visual themes per step kind ───────────────
-const THEME: Record<StepKind, {
+export const THEME: Record<StepKind, {
   dot: string; ring: string; line: string;
   pill: string; pillText: string;
   cardBg?: string; cardBorder?: string;
@@ -397,7 +397,7 @@ interface Phase {
   stepKind: StepKind;
 }
 
-function buildPhases(schedule: ScheduleResult, preheatMin: number, t: (key: string, params?: Record<string, string | number>) => string = (k) => k): Phase[] {
+export function buildPhases(schedule: ScheduleResult, preheatMin: number, t: (key: string, params?: Record<string, string | number>) => string = (k) => k): Phase[] {
   const phases: Phase[] = [
     { label: t('timeline.phaseLabels.mixing'), icon: '🤌', iconKey: 'mix', durationH: schedule.mixingDurationH || 5 / 60, stepKind: 'mixing' },
   ];

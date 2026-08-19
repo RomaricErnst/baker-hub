@@ -5,6 +5,7 @@ import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
 import { MIXER_TYPES, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
+import PhaseSummary from './PhaseSummary';
 import { type UnitSystem, displayTemp, tempC, tempRange } from '../utils/units';
 import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
 import { GUIDE_FAQ } from '../lib/guideFaq';
@@ -1013,6 +1014,9 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           })()}
         </div>
       </div>
+
+      {/* Executive summary — phase strip from the old protocole */}
+      <PhaseSummary schedule={schedule} />
 
       {/* ── STEP: Make Poolish / Biga ───────────────── */}
       {hasPref && prefStartTime && (
