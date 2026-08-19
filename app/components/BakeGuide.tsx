@@ -177,7 +177,19 @@ function StepCard({
   const ea = done ? D.sage : accent;
   const _fmtLocale = useLocale();
   return (
+    <div style={{ display: 'flex', gap: '10px' }}>
+      {/* Rail: the protocole spine — colored dot + line bridging the list gap */}
+      <div style={{ width: '18px', flexShrink: 0, position: 'relative' }}>
+        <div style={{ position: 'absolute', left: '8px', top: '-9px', bottom: '-9px', width: '2px', background: D.border }} />
+        <div style={{
+          position: 'absolute', left: '3px', top: '18px',
+          width: '12px', height: '12px', borderRadius: '50%',
+          background: ea, border: `2px solid ${D.cream}`,
+          boxShadow: `0 0 0 1.5px ${ea}55`,
+        }} />
+      </div>
     <div ref={divRef} style={{
+      flex: 1, minWidth: 0,
       background: D.warm, borderRadius: '18px',
       border: `1px solid ${done ? D.sage + '60' : D.border}`,
       overflow: 'hidden',
@@ -229,9 +241,16 @@ function StepCard({
             textDecoration: done ? 'line-through' : 'none',
           }}>{title}</div>
           {time && (
-            <div style={{ fontSize: '.72rem', color: D.smoke, fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem' }}>
-              {formatTime(time, _fmtLocale)}
-              {duration ? ` · ${hoursLabel(duration)}` : ''}
+            <div style={{ marginTop: '.2rem' }}>
+              <span style={{
+                display: 'inline-block', fontSize: '.7rem',
+                fontFamily: 'var(--font-dm-mono)', color: ea,
+                background: `${ea}14`, border: `1px solid ${ea}30`,
+                borderRadius: '8px', padding: '1px 7px',
+              }}>
+                {formatTime(time, _fmtLocale)}
+                {duration ? ` · ${hoursLabel(duration)}` : ''}
+              </span>
             </div>
           )}
         </div>
@@ -249,6 +268,7 @@ function StepCard({
           {children}
         </div>
       )}
+    </div>
     </div>
   );
 }
@@ -811,6 +831,11 @@ export default function BakeGuide({
         const arr = JSON.parse(raw) as number[];
         if (arr.length > 0) {
           setDoneSteps(new Set(arr));
+        // Default view: the first not-yet-done step opens; everything else
+        // stays collapsed so the spine reads as the protocole at a glance.
+        let firstUndone = 1;
+        while (arr.includes(firstUndone)) firstUndone++;
+        setCurrentStep(firstUndone);
           setCurrentStep(Math.max(...arr) + 1);
         }
       }
