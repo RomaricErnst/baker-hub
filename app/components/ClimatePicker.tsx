@@ -127,6 +127,9 @@ export default function ClimatePicker({
   const tc = useTranslations('climate');
   const isFr = useLocale() === 'fr';
   const [simpleExpanded, setSimpleExpanded] = useState(true);
+  // Simple mode: no chip is highlighted until the baker actually taps one —
+  // the default kitchen temperature must not read as a pre-selection.
+  const [simpleChosen, setSimpleChosen] = useState(false);
   const [city, setCity] = useState('');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -230,11 +233,12 @@ export default function ClimatePicker({
       { id: 'tropical', temp: 32, hum: 'humid',  thumbnailBg: 'var(--terra)',title: tc('tropical.title'), tagline: tc('tropical.tagline'), badge: tc('tropical.badge') },
     ];
 
-    const selectedId = kitchenTemp <= 20 ? 'cool' : kitchenTemp <= 26 ? 'normal' : kitchenTemp <= 30 ? 'warm' : 'tropical';
-    const selectedOpt = SIMPLE_OPTIONS.find(o => o.id === selectedId)!;
+    const snappedId = kitchenTemp <= 20 ? 'cool' : kitchenTemp <= 26 ? 'normal' : kitchenTemp <= 30 ? 'warm' : 'tropical';
+    const selectedId = simpleChosen ? snappedId : '';
+    const selectedOpt = SIMPLE_OPTIONS.find(o => o.id === snappedId)!;
     const listOptions = SIMPLE_OPTIONS.map(o => ({ ...o, image: '' }));
 
-    if (!simpleExpanded) {
+    if (!simpleExpanded && simpleChosen) {
       return (
         <DecisionSummary
           thumbnailBg={selectedOpt.thumbnailBg}
@@ -247,20 +251,16 @@ export default function ClimatePicker({
 
     return (
       <div>
-        <div style={{ marginBottom: 16 }}>
-          <h2 style={{ fontFamily: 'Playfair Display', fontSize: 22, fontWeight: 700, color: 'var(--char)', margin: 0 }}>
-            {tc('heading')}
-          </h2>
-          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '4px 0 0', fontFamily: 'DM Sans' }}>
-            {tc('subtitle')}
-          </p>
-        </div>
+        <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'DM Sans' }}>
+          {tc('subtitle')}
+        </p>
         <DecisionList
           options={listOptions}
           selectedId={selectedId}
           onSelect={(id) => {
             const opt = SIMPLE_OPTIONS.find(o => o.id === id)!;
             onChange(opt.temp, opt.hum, fridgeTemp);
+            setSimpleChosen(true);
             setSimpleExpanded(false);
           }}
         />

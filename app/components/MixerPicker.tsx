@@ -46,14 +46,9 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
         />
       ) : (
         <div>
-          <div style={{ marginBottom: 16 }}>
-            <h2 style={{ fontFamily: 'Playfair Display', fontSize: 22, fontWeight: 700, color: 'var(--char)', margin: 0 }}>
-              {t('heading')}
-            </h2>
-            <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '4px 0 0', fontFamily: 'DM Sans' }}>
-              {t('subtitle')}
-            </p>
-          </div>
+          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'DM Sans' }}>
+            {t('subtitle')}
+          </p>
           <DecisionList
             options={options}
             selectedId={selected ?? ''}
