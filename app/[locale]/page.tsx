@@ -72,7 +72,7 @@ const STYLE_HAS_DIAMETER = ['neapolitan', 'newyork', 'sourdough', 'pizza_romana'
 const STYLE_DEFAULT_DIAMETER: Record<string, number> = { neapolitan: 30, newyork: 35, sourdough: 30, pizza_romana: 30 };
 const STYLE_BALL_DEFAULTS: Record<string, number> = {
   neapolitan: 4, newyork: 4, pizza_romana: 4, roman: 2, pan: 2, sourdough: 4,
-  pain_campagne: 1, pain_levain: 1, baguette: 4, pain_complet: 1,
+  pain_campagne: 1, pain_levain: 1, baguette: 4, pain_complet: 1, pain_graines: 1,
   pain_seigle: 1, fougasse: 2, brioche: 6, pain_mie: 1, pain_viennois: 8,
 };
 const CORN_LABELS = ['Thin', 'Classic', 'Generous'];
@@ -112,6 +112,7 @@ function getWeightBounds(sk: string | null, bt: string | null): { min: number; m
     case 'pain_mie':      return { min: 300, max: 1200, step: 25 };
     case 'pain_levain':
     case 'pain_campagne':
+    case 'pain_graines':
     case 'pain_complet':
     case 'pain_seigle':   return { min: 300, max: 1500, step: 25 };
     default:              return { min: 200, max: 1200, step: 25 };
@@ -130,6 +131,7 @@ const STYLE_HYDRATION_ZONES: Record<string, {
   pain_levain:   { min: 62, classicMin: 70, classicMax: 78, advancedMax: 84, max: 90, name: 'Pain au Levain' },
   baguette:      { min: 58, classicMin: 65, classicMax: 70, advancedMax: 75, max: 80, name: 'Baguette' },
   pain_complet:  { min: 62, classicMin: 68, classicMax: 75, advancedMax: 80, max: 85, name: 'Pain Complet' },
+  pain_graines:  { min: 62, classicMin: 68, classicMax: 76, advancedMax: 82, max: 85, name: 'Pain aux graines' },
   pain_seigle:   { min: 65, classicMin: 72, classicMax: 80, advancedMax: 85, max: 90, name: 'Pain de Seigle' },
   fougasse:      { min: 65, classicMin: 70, classicMax: 78, advancedMax: 83, max: 88, name: 'Fougasse' },
   brioche:       { min: 45, classicMin: 50, classicMax: 58, advancedMax: 65, max: 72, name: 'Brioche' },
@@ -3762,7 +3764,7 @@ export default function Home() {
                   <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                     {/* DDT stepper */}
                     {(() => {
-                      const styleFDT = styleKey ? ({ neapolitan:23, newyork:24, roman:25, pan:25, sourdough:24, pain_campagne:24, pain_levain:24, baguette:24, pain_complet:24, pain_seigle:24, fougasse:25, brioche:22, pain_mie:24, pain_viennois:23 } as Record<string,number>)[styleKey] ?? 24 : 24;
+                      const styleFDT = styleKey ? ({ neapolitan:23, newyork:24, roman:25, pan:25, sourdough:24, pain_campagne:24, pain_levain:24, baguette:24, pain_complet:24, pain_seigle:24, fougasse:25, brioche:22, pain_mie:24, pain_viennois:23, pain_graines:24 } as Record<string,number>)[styleKey] ?? 24 : 24;
                       const v = targetDoughTemp ?? styleFDT;
                       const mixerFriction = mixerType ? ({ stand:5, hand:1, no_knead:0, spiral:8 } as Record<string,number>)[mixerType] ?? 3 : 3;
                       const isDefaultDDT = targetDoughTemp === undefined || targetDoughTemp === styleFDT;

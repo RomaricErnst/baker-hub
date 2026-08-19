@@ -418,6 +418,7 @@ const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHReq
   pain_levain:   { coldH: 16, rtH: 4 },                          // sweet: 20h
   baguette:      { coldH: 12, rtH: 2 },                          // sweet: 14h
   pain_complet:  { coldH: 12, rtH: 3 },                          // sweet: 15h
+  pain_graines:  { coldH: 18, rtH: 3 },                          // sweet: 21h — campagne-class
   pain_seigle:   { coldH: 0,  rtH: 5 },                          // RT only: sweet 5h
   fougasse:      { coldH: 8,  rtH: 2 },                          // sweet: 10h
   brioche:       { coldH: 8,  rtH: 2, coldHRequired: true },     // sweet: 10h
@@ -836,7 +837,7 @@ export function calculateRecipe(
   const HYDRATION_FLOOR: Record<string, number> = {
     neapolitan: 56, newyork: 58, roman: 70, pan: 68,
     sourdough: 58, pain_campagne: 68, pain_levain: 70,
-    baguette: 65, pain_complet: 68, pain_seigle: 70,
+    baguette: 65, pain_complet: 68, pain_seigle: 70, pain_graines: 73,
     fougasse: 68, brioche: 52, pain_mie: 55, pain_viennois: 52,
   };
   // Enriched or high-oil styles: fat retains moisture, so oven environment
@@ -900,7 +901,7 @@ export function calculateRecipe(
   const TARGET_FDT: Record<string, number> = {
     neapolitan: 23, newyork: 24, roman: 25, pan: 25,
     sourdough: 24, pain_campagne: 24, pain_levain: 24,
-    baguette: 24, pain_complet: 24, pain_seigle: 24,
+    baguette: 24, pain_complet: 24, pain_seigle: 24, pain_graines: 24,
     fougasse: 25, brioche: 22, pain_mie: 24, pain_viennois: 23,
   };
   const targetFDT = (mode === 'custom' && targetDoughTemp !== undefined)

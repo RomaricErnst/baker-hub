@@ -832,7 +832,7 @@ export default function BakeGuide({
   }, [currentStep]);
 
   const isSourdough   = styleKey === 'sourdough' || styleKey === 'pain_levain';
-  const isBread       = ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois','sourdough'].includes(styleKey);
+  const isBread       = ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois','pain_graines','sourdough'].includes(styleKey);
   const isNeapolitan  = styleKey === 'neapolitan';
   const isFougasse    = styleKey === 'fougasse';
   const isBaguette    = styleKey === 'baguette';
@@ -1171,6 +1171,37 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             </StepCard>
           )}
         </>
+      )}
+
+      {/* ── STEP: Soak the seeds (pain aux graines only) ── */}
+      {styleKey === 'pain_graines' && (
+      <StepCard number={n()} {...sc()} icon={<IconPreferment />}
+        title={l === 'fr' ? 'Tremper les graines' : 'Soak the seeds'}
+        time={new Date(bgMixStart.getTime() - 2 * 3600000)} duration={2} accent={D.gold}>
+        <Section icon="🌾" title={t('sectionTitles.whatToDo')}>
+          <Steps items={[
+            { bold: l === 'fr'
+                ? `Pesez ${recipe ? Math.round((recipe.preferment ? recipe.preferment.finalFlour : recipe.flour) * 0.18) + 'g' : '15–20% du poids de farine'} de graines (lin, tournesol, sésame, courge…)`
+                : `Weigh ${recipe ? Math.round((recipe.preferment ? recipe.preferment.finalFlour : recipe.flour) * 0.18) + 'g' : '15–20% of flour weight'} of seeds (flax, sunflower, sesame, pumpkin seed…)`,
+              note: l === 'fr' ? 'toastez-les légèrement à sec pour plus de goût (facultatif)' : 'lightly dry-toast for more flavour (optional)' },
+            { bold: l === 'fr'
+                ? 'Couvrez-les d’eau à poids égal — le trempage'
+                : 'Cover with an equal weight of water — the soaker',
+              note: l === 'fr'
+                ? 'des graines sèches boiraient l’eau de la pâte et donneraient une mie sèche — trempées, elles arrivent déjà gorgées'
+                : 'dry seeds would drink water out of the dough and dry the crumb — soaked, they arrive already saturated' },
+            { bold: l === 'fr' ? 'Laissez tremper 2h minimum — idéalement la veille' : 'Soak 2h minimum — ideally overnight',
+              note: l === 'fr' ? 'couvert, à température ambiante' : 'covered, at room temperature' },
+            { bold: l === 'fr' ? 'Égouttez l’excédent avant le pétrissage' : 'Drain any excess before mixing',
+              note: l === 'fr' ? 'les graines doivent être humides, pas ruisselantes' : 'seeds should be moist, not dripping' },
+          ]} />
+          <div style={{ fontSize: '.78rem', color: D.smoke, fontFamily: 'var(--font-dm-sans)', lineHeight: 1.55, marginTop: '.5rem', paddingTop: '.5rem', borderTop: `1px solid ${D.border}` }}>
+            {l === 'fr'
+              ? 'Au pétrissage : incorporez les graines égouttées en toute fin, à petite vitesse ou à la main, juste assez pour les répartir.'
+              : 'At mix time: fold the drained seeds in at the very end, low speed or by hand, just enough to distribute them.'}
+          </div>
+        </Section>
+      </StepCard>
       )}
 
       {/* ── STEP: Mix Dough ─────────────────────────── */}

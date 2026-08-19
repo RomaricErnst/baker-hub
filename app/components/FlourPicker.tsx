@@ -16,6 +16,7 @@ const BREAD_REC_BY_STYLE: Record<string, string[]> = {
   sourdough:     ['T65', 'Bread flour', 'T80'],
   pain_levain:   ['T65', 'Bread flour', 'T80'],
   pain_campagne: ['T65', 'T80', 'Rye'],
+  pain_graines: ['T65', 'T80', 'Bread flour'],
   baguette:      ['T65', 'T55'],
   pain_complet:  ['T110 / T150', 'Wholemeal'],
   pain_seigle:   ['Rye', 'T80'],
