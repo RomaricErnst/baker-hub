@@ -1516,6 +1516,21 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           PIZZAS pill
       ══════════════════════════════════════ */}
       {/* Context line: style name + count */}
+      {activePill === 'pizzas' && totalQty === 0 && (
+        <div style={{
+          background: 'var(--cream)',
+          borderBottom: '1px solid #E0D8CF',
+          padding: '10px 14px',
+          fontFamily: 'DM Sans, sans-serif',
+          fontSize: '12.5px', lineHeight: 1.5, color: '#3D3530',
+          flexShrink: 0,
+        }}>
+          {l === 'fr'
+            ? 'Composez le menu de votre soirée — choisissez vos pizzas ci-dessous, la liste de courses et le plan de préparation se construisent tout seuls.'
+            : 'Build your party menu — pick your pizzas below, and the shopping list and prep plan build themselves.'}
+        </div>
+      )}
+
       {activePill === 'pizzas' && (
         <div style={{
           background: '#FDFBF7',
@@ -2293,6 +2308,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           SHOPPING pill — placeholder for Prompt 8
       ══════════════════════════════════════ */}
       {activePill === 'shopping' && (
+        <>
         <ShoppingList
           qtys={qtys}
           locale={locale}
@@ -2300,6 +2316,21 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           styleKey={styleKey}
           recipeIngredients={recipeIngredients}
         />
+        <div style={{ padding: '0 12px 14px', background: '#FDFBF7' }}>
+          <button
+            onClick={() => onPillChange('party')}
+            style={{
+              width: '100%', padding: '11px',
+              background: 'transparent', color: '#6B4423',
+              border: '1px solid #E0D8CF', borderRadius: '10px',
+              fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+              fontFamily: 'DM Sans, sans-serif',
+            }}
+          >
+            {l === 'fr' ? 'Courses faites ? Voir le plan de préparation →' : 'Shopping done? See the prep plan →'}
+          </button>
+        </div>
+        </>
       )}
 
       {/* ══════════════════════════════════════
