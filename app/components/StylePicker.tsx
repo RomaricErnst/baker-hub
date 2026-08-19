@@ -185,17 +185,35 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
     );
   }
 
-  // Bread: existing grid layout
-  const styles = BREAD_STYLES;
+  // Bread: two labeled sections — plain breads, then enriched doughs.
+  // Brioche & pain viennois are their own family, not buried "under Pain".
+  const ENRICHED_KEYS = ['brioche', 'pain_viennois'];
+  const allBreadEntries = Object.entries(BREAD_STYLES);
+  const breadSections: { label: string; entries: typeof allBreadEntries }[] = [
+    { label: locale === 'fr' ? 'Pains' : 'Breads',
+      entries: allBreadEntries.filter(([k]) => !ENRICHED_KEYS.includes(k)) },
+    { label: locale === 'fr' ? 'Brioches & Viennoiseries' : 'Brioche & Enriched',
+      entries: allBreadEntries.filter(([k]) => ENRICHED_KEYS.includes(k)) },
+  ];
   const imgHeight = 90;
 
   return (
+    <div>
+    {breadSections.map(section => (
+    <div key={section.label} style={{ marginBottom: '1.1rem' }}>
+    <div style={{
+      fontSize: '.72rem', fontWeight: 600, letterSpacing: '.07em',
+      textTransform: 'uppercase', color: 'var(--smoke)',
+      fontFamily: 'var(--font-dm-sans)', margin: '0 0 .55rem .15rem',
+    }}>
+      {section.label}
+    </div>
     <div style={{
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
       gap: '.75rem',
     }}>
-      {(Object.entries(styles) as [string, { name: string; nameFr?: string; emoji: string; image?: string; desc: string; descFr?: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
+      {(section.entries as [string, { name: string; nameFr?: string; emoji: string; image?: string; desc: string; descFr?: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
         const isSelected = selected === key;
         const isDisabled = disabledIds.includes(key);
         const art = STYLE_ART[key];
@@ -291,6 +309,9 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
           </div>
         );
       })}
+    </div>
+    </div>
+    ))}
     </div>
   );
 }
