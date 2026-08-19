@@ -168,21 +168,18 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
           gap: '10px',
           marginTop: '10px',
         }}>
-          {pizzaListOptions.map((opt, i) => {
-            const isLastOdd = i === pizzaListOptions.length - 1 && pizzaListOptions.length % 2 === 1;
-            return (
-              <div key={opt.id} style={isLastOdd ? { gridColumn: '1 / -1' } : undefined}>
-                <DecisionHero
-                  image={opt.image}
-                  title={opt.title}
-                  tagline={opt.tagline}
-                  isSelected={styleKey === opt.id}
-                  onSelect={() => { onSelect(opt.id as StyleKey); setExpanded(false); }}
-                  size="small"
-                />
-              </div>
-            );
-          })}
+          {pizzaListOptions.map(opt => (
+            <div key={opt.id}>
+              <DecisionHero
+                image={opt.image}
+                title={opt.title}
+                tagline={opt.tagline}
+                isSelected={styleKey === opt.id}
+                onSelect={() => { onSelect(opt.id as StyleKey); setExpanded(false); }}
+                size="small"
+              />
+            </div>
+          ))}
         </div>
       </div>
     );

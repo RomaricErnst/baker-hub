@@ -1382,11 +1382,20 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   const [showStylePicker, setShowStylePicker] = useState(false);
 
 
+  // Name search across the pizza list
+  const [nameSearch, setNameSearch] = useState('');
+
   // Filtered pizzas
-  const filtered = useMemo(() =>
-    filterPizzas(PIZZAS, { ...filter, styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined }),
-    [filter, styleKey]
-  );
+  const filtered = useMemo(() => {
+    const base = filterPizzas(PIZZAS, { ...filter, styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined });
+    const q = nameSearch.trim().toLowerCase();
+    if (!q) return base;
+    return base.filter(p =>
+      (p.name.en ?? '').toLowerCase().includes(q) ||
+      (p.name.fr ?? '').toLowerCase().includes(q) ||
+      p.ingredients.some(ing => (ing.name.en ?? '').toLowerCase().includes(q) || (ing.name.fr ?? '').toLowerCase().includes(q))
+    );
+  }, [filter, styleKey, nameSearch]);
 
   // Perceived-speed: pre-warm the first screenful-and-a-half of card images
   // during idle time so scrolling meets a full cache, re-armed per filter.
@@ -2170,6 +2179,22 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               )}
 
               {/* Pizza cards */}
+              <div style={{ padding: '8px 12px 0' }}>
+                <input
+                  type="search"
+                  value={nameSearch}
+                  onChange={e => setNameSearch(e.target.value)}
+                  placeholder={l === 'fr' ? 'Rechercher une pizza ou un ingrédient…' : 'Search a pizza or ingredient…'}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    padding: '9px 12px',
+                    border: '1px solid #E0D8CF', borderRadius: '10px',
+                    background: '#FDFBF7', color: '#2B2420',
+                    fontSize: '13px', fontFamily: 'DM Sans, sans-serif',
+                    outline: 'none',
+                  }}
+                />
+              </div>
               <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 {filtered.map(pizza => (
                   <PizzaCard
