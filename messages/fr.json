@@ -1419,7 +1419,7 @@
         "steps": [
           {
             "bold": "Étalez la pâte à la taille souhaitée",
-            "note": "pas de rouleau — les phalanges et la gravité seulement"
+            "note": "sur un plan fariné de semoule fine — elle roule comme des billes sous la pâte et facilite l'enfournement"
           },
           {
             "bold": "Garnissez vite — sauce, fromage, garnitures légères",
@@ -1430,12 +1430,8 @@
             "note": "enfournez seulement au-dessus de 400°C"
           },
           {
-            "bold": "Enfournez d'un geste assuré",
-            "note": "l'hésitation colle — un mouvement fluide"
-          },
-          {
-            "bold": "Tournez toutes les 20–30 sec avec la pelle de rotation",
-            "note": "le feu à bois a un côté chaud — rotation constante"
+            "bold": "Enfournez d'un geste assuré, puis tournez toutes les 20–30 sec",
+            "note": "l'hésitation colle — un mouvement fluide ; ensuite le feu à bois a un côté chaud, rotation constante à la pelle"
           },
           {
             "bold": "Cuisson totale : 60–90 sec",
@@ -1486,8 +1482,8 @@
       "homeSteel": {
         "steps": [
           {
-            "bold": "Étalez sur une pelle farinée",
-            "note": "semoule ou farine — pas trop sinon la base sera poudreuse"
+            "bold": "Étalez sur une pelle avec semoule fine",
+            "note": "la semoule roule sous la pâte — l'enfournement glisse au lieu de coller"
           },
           {
             "bold": "Garnissez vite et enfournez sur la pierre",

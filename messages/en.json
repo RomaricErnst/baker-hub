@@ -1419,7 +1419,7 @@
         "steps": [
           {
             "bold": "Stretch dough to target size",
-            "note": "no rolling pin — knuckles and gravity only"
+            "note": "on a bench dusted with fine semolina — it rolls like ball bearings under the dough and makes launching easy"
           },
           {
             "bold": "Top quickly — sauce, cheese, minimal toppings",
@@ -1430,12 +1430,8 @@
             "note": "launch only above 400°C floor"
           },
           {
-            "bold": "Launch with a confident forward motion",
-            "note": "hesitation causes sticking — one smooth push"
-          },
-          {
-            "bold": "Rotate every 20–30 sec with a turning peel",
-            "note": "wood fire has a hot side — constant rotation is key"
+            "bold": "Launch with a confident forward motion, then rotate every 20–30 sec",
+            "note": "hesitation sticks — one fluid motion; the wood fire has a hot side, keep rotating with the turning peel"
           },
           {
             "bold": "Total bake: 60–90 sec",
@@ -1486,8 +1482,8 @@
       "homeSteel": {
         "steps": [
           {
-            "bold": "Stretch dough on a floured peel",
-            "note": "semolina or flour — not too much or the base will be dusty"
+            "bold": "Stretch on a peel dusted with fine semolina",
+            "note": "semolina rolls under the dough — the launch slides instead of sticking"
           },
           {
             "bold": "Top quickly and launch onto hot stone",
