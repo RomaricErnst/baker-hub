@@ -391,9 +391,9 @@ export default function Header({
     <header style={{
       background: 'var(--char)', color: 'var(--cream)',
       padding: '0 1.5rem', display: 'flex', alignItems: 'center',
-      justifyContent: 'space-between', height: '60px',
+      justifyContent: 'space-between', height: '68px',
       position: 'sticky', top: 0, zIndex: 100,
-      borderBottom: '2px solid var(--terra)',
+      
     }}>
       {/* Left: menu button + logo + tagline */}
       <div ref={menuRef} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -402,16 +402,16 @@ export default function Header({
           aria-label="Menu"
           style={{
             background: menuOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
-            border: '1.5px solid rgba(255,255,255,0.15)',
+            border: 'none',
             borderRadius: '8px', cursor: 'pointer',
-            padding: '7px 10px', display: 'flex', flexDirection: 'column',
-            gap: '4px', alignItems: 'center', justifyContent: 'center',
+            padding: '10px 8px', display: 'flex', flexDirection: 'column',
+            gap: '5px', alignItems: 'center', justifyContent: 'center',
           }}
         >
           {[0,1,2].map(i => (
             <span key={i} style={{
-              display: 'block', width: '18px', height: '2px',
-              background: 'var(--cream)', borderRadius: '1px',
+              display: 'block', width: '24px', height: '2.5px',
+              background: 'var(--cream)', borderRadius: '1.5px',
             }} />
           ))}
         </button>
@@ -451,37 +451,10 @@ export default function Header({
         </a>
       )}
 
-      {/* Profile picto — the drawer's auth section was hard to find buried
-          behind ☰; this makes sign-in reachable in one tap. Icon only. */}
-      {!backHref && (
-        <button
-          onClick={() => window.dispatchEvent(new Event('bh-open-auth'))}
-          aria-label={user ? 'Profile' : 'Sign in'}
-          style={{
-            width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
-            border: '1px solid rgba(255,255,255,0.15)', background: 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', position: 'relative', marginRight: '8px',
-          }}
-        >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#C4BBAE" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-            <circle cx="12" cy="8.5" r="3.6" />
-            <path d="M4.5 20c1.6-3.4 4.3-5 7.5-5s5.9 1.6 7.5 5" />
-          </svg>
-          {user && (
-            <span style={{
-              position: 'absolute', top: '1px', right: '1px',
-              width: '9px', height: '9px', borderRadius: '50%',
-              background: 'var(--sage)', border: '1.5px solid #2B2420',
-            }} />
-          )}
-        </button>
-      )}
-
       {/* Right: Save / Restart pill. Restart is ALWAYS visible — it's also
           how bakers switch Pizza ↔ Pain before anything is generated. The
           Save side only joins once there's a session worth saving. */}
-      {!backHref && (() => {
+      {!backHref && (recipeGenerated || sessionSaved || sessionRestored) && (() => {
         const hasWork = (recipeGenerated || sessionSaved || sessionRestored) && !hideActionBar;
         return (
         <div style={{
@@ -547,6 +520,32 @@ export default function Header({
         </div>
         );
       })()}
+      {/* Profile picto — far right, 44px tap target (Flo). */}
+      {!backHref && (
+        <button
+          onClick={() => window.dispatchEvent(new Event('bh-open-auth'))}
+          aria-label={user ? 'Profile' : 'Sign in'}
+          style={{
+            width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
+            border: '1px solid rgba(255,255,255,0.15)', background: 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', position: 'relative', marginLeft: '8px',
+          }}
+        >
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#C4BBAE" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+            <circle cx="12" cy="8.5" r="3.6" />
+            <path d="M4.5 20c1.6-3.4 4.3-5 7.5-5s5.9 1.6 7.5 5" />
+          </svg>
+          {user && (
+            <span style={{
+              position: 'absolute', top: '2px', right: '2px',
+              width: '10px', height: '10px', borderRadius: '50%',
+              background: 'var(--sage)', border: '1.5px solid #2B2420',
+            }} />
+          )}
+        </button>
+      )}
+
     </header>
 
     {/* Drawer rendered via portal — outside header stacking context */}

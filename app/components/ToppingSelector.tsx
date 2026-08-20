@@ -1532,20 +1532,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           PIZZAS pill
       ══════════════════════════════════════ */}
       {/* Context line: style name + count */}
-      {activePill === 'pizzas' && totalQty === 0 && (
-        <div style={{
-          background: 'var(--cream)',
-          borderBottom: '1px solid #E0D8CF',
-          padding: '10px 14px',
-          fontFamily: 'DM Sans, sans-serif',
-          fontSize: '12.5px', lineHeight: 1.5, color: '#3D3530',
-          flexShrink: 0,
-        }}>
-          {l === 'fr'
-            ? 'Composez le menu de votre soirée — choisissez vos pizzas ci-dessous, la liste de courses et le plan de préparation se construisent tout seuls.'
-            : 'Build your party menu — pick your pizzas below, and the shopping list and prep plan build themselves.'}
-        </div>
-      )}
 
       {activePill === 'pizzas' && (
         <div style={{

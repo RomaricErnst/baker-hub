@@ -2028,18 +2028,6 @@ export default function Home() {
               {t('hero.headlineEm')}
             </em>
           </h1>
-          {!profilePrefilled && !recipeGenerated && !loadProfile() && (
-            <p style={{
-              fontFamily: 'var(--font-dm-sans)',
-              fontSize: 'clamp(0.85rem, 3vw, 0.95rem)',
-              color: 'var(--smoke)',
-              lineHeight: 1.5,
-              margin: '-8px auto 20px',
-              maxWidth: '30rem',
-            }}>
-              {t('hero.subtitle')}
-            </p>
-          )}
 
           {/* Pizza / Bread picker — full cards before selection, compact toggle after */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', margin: '0 0 16px' }}>
@@ -2111,16 +2099,6 @@ export default function Home() {
           </div>
           </div>
 
-          <p style={{
-            fontFamily: 'var(--font-dm-sans)',
-            fontSize: '.8rem',
-            fontStyle: 'italic',
-            color: 'var(--smoke)',
-            textAlign: 'center',
-            margin: '28px 0 8px',
-          }}>
-            {t('hero.footerTagline')}
-          </p>
           </div>
           )}
 
@@ -2156,53 +2134,6 @@ export default function Home() {
                     );
                   })}
                 </div>
-                <button
-                  onClick={() => setModeInfoOpen(o => !o)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                    margin: '10px auto 0', background: 'none', border: 'none', cursor: 'pointer',
-                    fontFamily: 'var(--font-dm-sans)', fontSize: '11.5px', color: 'var(--smoke)',
-                  }}
-                >
-                  <span style={{
-                    width: '15px', height: '15px', borderRadius: '50%', border: '1.4px solid var(--smoke)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: 'var(--font-dm-mono)', fontSize: '9px', flexShrink: 0,
-                  }}>i</span>
-                  {locale === 'fr' ? 'Quelle est la différence\u00A0?' : "What's the difference?"}
-                </button>
-                {modeInfoOpen && (
-                  <div style={{
-                    marginTop: '10px', padding: '12px 14px', background: 'var(--cream)', borderRadius: '10px',
-                    fontFamily: 'var(--font-dm-sans)', fontSize: '12.5px', lineHeight: 1.6, color: 'var(--ash)',
-                  }}>
-                    <div style={{ marginBottom: '8px' }}>
-                      <span style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, color: 'var(--char)' }}>
-                        {t('modeCards.simple.title')}
-                      </span>
-                      {' — '}
-                      {t('modeCards.simple.collapsed').split('|').map(s => s.trim().replace(/^·\s*/, '')).join(', ')}.
-                    </div>
-                    <div>
-                      <span style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, color: 'var(--char)' }}>
-                        {t('modeCards.custom.title')}
-                      </span>
-                      {' — '}
-                      {t('modeCards.custom.collapsed').split('|').map(s => s.trim().replace(/^·\s*/, '')).join(', ')}.
-                    </div>
-                    <button
-                      onClick={() => setModeInfoOpen(false)}
-                      style={{
-                        display: 'block', margin: '10px auto 0', padding: '7px 22px',
-                        background: 'none', border: '1px solid var(--border)', borderRadius: '16px',
-                        fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: 'var(--smoke)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {locale === 'fr' ? 'Fermer' : 'Close'}
-                    </button>
-                  </div>
-                )}
               </div>
 
               {/* Sourdough-vs-Simple nudge — observation with a choice, not an alarm */}
