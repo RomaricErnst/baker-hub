@@ -126,7 +126,6 @@ export default function ClimatePicker({
   const u = units ?? 'metric';
   const tc = useTranslations('climate');
   const isFr = useLocale() === 'fr';
-  const [simpleExpanded, setSimpleExpanded] = useState(true);
   // Simple mode: no chip is highlighted until the baker actually taps one —
   // the default kitchen temperature must not read as a pre-selection.
   const [simpleChosen, setSimpleChosen] = useState(false);
@@ -226,44 +225,42 @@ export default function ClimatePicker({
   }
 
   if (mode === 'simple') {
-    const SIMPLE_OPTIONS = [
-      { id: 'cool',     temp: 18, hum: 'normal', thumbnailBg: '#6A7FA8',     title: tc('cool.title'),     tagline: tc('cool.tagline'),     badge: tc('cool.badge') },
-      { id: 'normal',   temp: 23, hum: 'normal', thumbnailBg: 'var(--sage)', title: tc('normal.title'),   tagline: tc('normal.tagline'),   badge: tc('normal.badge') },
-      { id: 'warm',     temp: 28, hum: 'humid',  thumbnailBg: 'var(--gold)', title: tc('warm.title'),     tagline: tc('warm.tagline'),     badge: tc('warm.badge') },
-      { id: 'tropical', temp: 32, hum: 'humid',  thumbnailBg: 'var(--terra)',title: tc('tropical.title'), tagline: tc('tropical.tagline'), badge: tc('tropical.badge') },
-    ];
-
-    const snappedId = kitchenTemp <= 20 ? 'cool' : kitchenTemp <= 26 ? 'normal' : kitchenTemp <= 30 ? 'warm' : 'tropical';
-    const selectedId = simpleChosen ? snappedId : '';
-    const selectedOpt = SIMPLE_OPTIONS.find(o => o.id === snappedId)!;
-    const listOptions = SIMPLE_OPTIONS.map(o => ({ ...o, image: '' }));
-
-    if (!simpleExpanded && simpleChosen) {
-      return (
-        <DecisionSummary
-          thumbnailBg={selectedOpt.thumbnailBg}
-          title={selectedOpt.title}
-          tagline={selectedOpt.tagline}
-          onExpand={() => setSimpleExpanded(true)}
-        />
-      );
-    }
-
+    // One temperature setting (Flo). Humidity is a hidden sensible default
+    // derived from the temperature; Custom mode keeps the full controls.
     return (
       <div>
         <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'DM Sans' }}>
-          {tc('subtitle')}
+          {isFr ? 'À quelle température est votre cuisine en ce moment ?' : 'How warm is your kitchen right now?'}
         </p>
-        <DecisionList
-          options={listOptions}
-          selectedId={selectedId}
-          onSelect={(id) => {
-            const opt = SIMPLE_OPTIONS.find(o => o.id === id)!;
-            onChange(opt.temp, opt.hum, fridgeTemp);
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--char)', fontFamily: 'DM Sans' }}>
+            {isFr ? 'Température de la cuisine' : 'Kitchen temperature'}
+          </label>
+          <span style={{
+            fontFamily: 'var(--font-dm-mono)', fontSize: '1.25rem', fontWeight: 700,
+            color: tempColor(kitchenTemp),
+          }}>
+            {cToDisplay(kitchenTemp, u)}{tempUnit(u)}
+          </span>
+        </div>
+        <input
+          type="range"
+          min={u === 'imperial' ? 59 : 15}
+          max={u === 'imperial' ? 95 : 35}
+          step={1}
+          value={cToDisplay(kitchenTemp, u)}
+          onChange={e => {
+            const c = u === 'imperial' ? Math.round((+e.target.value - 32) * 5 / 9) : +e.target.value;
+            const hum = c >= 28 ? 'humid' : 'normal';
+            onChange(c, hum, fridgeTemp);
             setSimpleChosen(true);
-            setSimpleExpanded(false);
           }}
+          style={{ width: '100%' }}
         />
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--smoke)', fontFamily: 'DM Sans', marginTop: 4 }}>
+          <span>{isFr ? 'Fraîche' : 'Cool'}</span>
+          <span>{isFr ? 'Tropicale' : 'Tropical'}</span>
+        </div>
       </div>
     );
   }

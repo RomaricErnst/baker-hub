@@ -1247,6 +1247,69 @@ function SimpleColourBar({
 
 // ── Component ─────────────────────────────────
 // v1779291581473456000
+
+// Simple mode (Flo): no chart — just the computed start time, editable.
+// The heavy lifting (blocker notes, sourdough re-solve pinning) stays in the
+// caller's onStartChange, unchanged from the colour-bar days.
+function SimpleStartTime({ pendingStart, isFr, onStartChange }: {
+  pendingStart: Date;
+  isFr: boolean;
+  onStartChange: (d: Date) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const toLocal = (d: Date) => {
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+  const label = pendingStart.toLocaleString(isFr ? 'fr-FR' : 'en-US', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: 'numeric', minute: '2-digit', hour12: !isFr,
+  });
+  return (
+    <div style={{
+      background: 'var(--warm)', border: '1px solid var(--border)',
+      borderRadius: '14px', padding: '14px 16px',
+    }}>
+      <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '.35rem' }}>
+        {isFr ? 'Départ de la pâte' : 'Dough start'}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+        <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--char)' }}>
+          {label}
+        </span>
+        <button
+          onClick={() => setEditing(v => !v)}
+          aria-label={isFr ? 'Modifier' : 'Edit'}
+          style={{
+            width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
+            border: '1px solid var(--border)', background: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="var(--ash)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M13.5 3.5l3 3L7 16l-3.7.7L4 13l9.5-9.5z"/>
+          </svg>
+        </button>
+      </div>
+      {editing && (
+        <input
+          type="datetime-local"
+          step={900}
+          value={toLocal(pendingStart)}
+          onChange={e => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) onStartChange(d); }}
+          style={{
+            width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box',
+            marginTop: '10px', padding: '.6rem .6rem',
+            border: '1.5px solid var(--border)', borderRadius: '10px',
+            background: 'var(--card)', color: 'var(--char)',
+            fontSize: '.85rem', fontFamily: 'var(--font-dm-mono)', outline: 'none',
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
@@ -6381,16 +6444,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         })()}
         {startComputed ? (
           mode === 'simple' ? (
-            <SimpleColourBar
-              eatTime={pendingEatTime}
+            <SimpleStartTime
               pendingStart={pendingStart}
-              blocks={blocks}
-              hasColdRetard={hasColdRetard}
-              kitchenTemp={kitchenTemp}
-              sweetFrom={renderSweetFrom}
-              sweetTo={renderSweetTo}
-              yellowTo={renderYellowTo}
-              nowHBF={(pendingEatTime.getTime() - Date.now()) / 3600000}
+              isFr={isFr}
               onStartChange={(newStart) => {
                 setPendingStart(newStart);
                 const bakeMs = pendingEatTime.getTime();
