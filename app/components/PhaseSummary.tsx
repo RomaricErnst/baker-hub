@@ -7,7 +7,7 @@
 
 import { useTranslations } from 'next-intl';
 import { type ScheduleResult, hoursLabel } from '../utils';
-import { THEME, buildPhases } from './Timeline';
+import { buildPhases } from './Timeline';
 import { StepIcon } from './StepIcons';
 
 export default function PhaseSummary({ schedule }: { schedule: ScheduleResult }) {
@@ -16,21 +16,20 @@ export default function PhaseSummary({ schedule }: { schedule: ScheduleResult })
   if (phases.length === 0) return null;
   return (
     <div style={{
-      display: 'flex', gap: '.5rem',
+      display: 'flex', gap: '.35rem',
       overflowX: 'auto', paddingBottom: '.35rem',
       msOverflowStyle: 'none',
     }}>
       {phases.map((phase, i) => {
-        const th = THEME[phase.stepKind];
         return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0 }}>
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               padding: '.55rem .85rem',
-              border: `1.5px solid ${th.cardBorder ?? th.line}`,
+              border: '1.5px solid var(--border)',
               borderRadius: '12px',
-              background: th.cardBg ?? 'var(--warm)',
-              minWidth: '90px',
+              background: 'var(--warm)',
+              minWidth: '86px',
             }}>
               <span style={{ width: '22px', height: '22px', marginBottom: '.2rem',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -42,7 +41,7 @@ export default function PhaseSummary({ schedule }: { schedule: ScheduleResult })
               </span>
               <span style={{
                 fontFamily: 'var(--font-dm-mono)', fontSize: '.65rem',
-                background: th.pill, color: th.pillText,
+                background: 'var(--cream)', color: 'var(--ash)',
                 borderRadius: '10px', padding: '.15rem .5rem',
               }}>
                 {hoursLabel(phase.durationH)}

@@ -176,20 +176,12 @@ function StepCard({
   children: React.ReactNode;
   divRef?: React.RefCallback<HTMLDivElement>;
 }) {
-  const ea = done ? D.sage : accent;
+  // Variant B (Flo): neutral steps — done stays sage, otherwise no per-step
+  // colour; no rail, no dot, no number.
+  const ea = done ? D.sage : D.ash;
   const _fmtLocale = useLocale();
   return (
-    <div style={{ display: 'flex', gap: '10px' }}>
-      {/* Rail: the protocole spine — colored dot + line bridging the list gap */}
-      <div style={{ width: '18px', flexShrink: 0, position: 'relative' }}>
-        <div style={{ position: 'absolute', left: '8px', top: '-9px', bottom: '-9px', width: '2px', background: D.border }} />
-        <div style={{
-          position: 'absolute', left: '3px', top: '18px',
-          width: '12px', height: '12px', borderRadius: '50%',
-          background: ea, border: `2px solid ${D.cream}`,
-          boxShadow: `0 0 0 1.5px ${ea}55`,
-        }} />
-      </div>
+    <div style={{ display: 'flex', gap: '0px' }}>
     <div ref={divRef} style={{
       flex: 1, minWidth: 0,
       background: D.warm, borderRadius: '18px',
@@ -226,14 +218,7 @@ function StepCard({
             </svg>
           )}
         </div>
-        <span style={{
-          width: '28px', height: '28px', borderRadius: '50%',
-          background: `${ea}18`, border: `1.5px solid ${ea}40`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
-          color: ea, fontWeight: 700, flexShrink: 0,
-        }}>{number}</span>
-        <span style={{ width: '22px', height: '22px', flexShrink: 0,
+        <span style={{ width: '26px', height: '26px', flexShrink: 0, alignSelf: 'center',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: ea }}>{icon}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
