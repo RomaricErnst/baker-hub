@@ -844,7 +844,7 @@ export default function BakeGuide({
         // instant, landing just under the header (no smooth: targets
         // must not move under fingers).
         if (r.top < headerH || r.top > window.innerHeight * 0.6) {
-          window.scrollTo({ top: r.top + window.scrollY - headerH, behavior: 'auto' });
+          window.scrollTo({ top: r.top + window.scrollY - headerH, behavior: 'smooth' });
         }
       }
     }

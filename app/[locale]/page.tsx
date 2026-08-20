@@ -159,7 +159,7 @@ function StepJumpChips({ steps, idPrefix, topOffset = 62, raised = false, onBefo
             const el = document.getElementById(`${idPrefix}-${s.n}`);
             if (el) {
               const top = el.getBoundingClientRect().top + window.scrollY - (topOffset + 52);
-              window.scrollTo({ top, behavior: 'auto' });
+              window.scrollTo({ top, behavior: 'smooth' });
             }
           }}
           style={{
@@ -239,8 +239,10 @@ function StepCard({
         </div>
 
         {isCompleted && (
-          <span style={{ fontSize: '.72rem', color: 'var(--sage)', fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}>
-            Edit
+          <span aria-label="Edit" style={{ flexShrink: 0, display: 'flex', padding: '4px' }}>
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="var(--sage)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13.5 3.5l3 3L7 16l-3.7.7L4 13l9.5-9.5z"/>
+            </svg>
           </span>
         )}
       </div>
@@ -818,7 +820,7 @@ export default function Home() {
         setAdvancedStep(9);
         setAdvancedHighestStep(sv => Math.max(sv, 9));
         const el = document.getElementById('adv-step-9');
-        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: 'auto' });
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
       }, 400);
       return () => clearTimeout(tmr);
     }
@@ -899,7 +901,7 @@ export default function Home() {
       const el = document.getElementById(isCustom ? 'adv-step-9' : 'step-7');
       if (el) {
         const top = el.getBoundingClientRect().top + window.scrollY - 70;
-        window.scrollTo({ top, behavior: 'auto' });
+        window.scrollTo({ top, behavior: 'smooth' });
       }
     }, 650);
     return () => clearTimeout(tmr);
@@ -1425,7 +1427,7 @@ export default function Home() {
         const top = el.getBoundingClientRect().top + window.scrollY - 70;
         // Instant scroll — smooth scrolling kept options moving under the
         // baker's finger during step transitions, causing mis-taps.
-        window.scrollTo({ top, behavior: 'auto' });
+        window.scrollTo({ top, behavior: 'smooth' });
       }
     }, 150);
   }
@@ -1456,7 +1458,7 @@ export default function Home() {
         const top = el.getBoundingClientRect().top + window.scrollY - 70;
         // Instant scroll — smooth scrolling kept options moving under the
         // baker's finger during step transitions, causing mis-taps.
-        window.scrollTo({ top, behavior: 'auto' });
+        window.scrollTo({ top, behavior: 'smooth' });
       }
     }, 150);
   }
@@ -3225,7 +3227,7 @@ export default function Home() {
                         const top = el.getBoundingClientRect().top + window.scrollY - 70;
                         // Instant scroll — smooth scrolling kept options moving under the
         // baker's finger during step transitions, causing mis-taps.
-        window.scrollTo({ top, behavior: 'auto' });
+        window.scrollTo({ top, behavior: 'smooth' });
                       }
                     }, 150);
                   } else {
@@ -3255,7 +3257,7 @@ export default function Home() {
                           const top = el.getBoundingClientRect().top + window.scrollY - 70;
                           // Instant scroll — smooth scrolling kept options moving under the
         // baker's finger during step transitions, causing mis-taps.
-        window.scrollTo({ top, behavior: 'auto' });
+        window.scrollTo({ top, behavior: 'smooth' });
                         }
                       }, 150);
                     }}
