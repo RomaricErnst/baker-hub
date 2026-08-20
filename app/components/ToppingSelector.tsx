@@ -841,12 +841,13 @@ const LOCATIONS = [
   { key: 'international',label: 'International' },
 ];
 
-function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
+function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onGoPrep }: {
   qtys: Record<string, number>;
   locale: string;
   numItems: number;
   styleKey?: string;
   recipeIngredients?: Array<{ name: string; amount: string }>;
+  onGoPrep?: () => void;
 }) {
   const l = locale as 'en' | 'fr';
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
@@ -880,18 +881,6 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
 
   const { sections } = buildShoppingList(qtys, locale, styleKey);
   const totalSelected = Object.values(qtys).filter(q => q > 0).length;
-
-  // Pre-tick pantry items
-  useEffect(() => {
-    setTicked(prev => {
-      const next = { ...prev };
-      sections.forEach(s => s.items.forEach(item => {
-        if (item.isCommonPantry && !(item.id in next)) next[item.id] = true;
-      }));
-      return next;
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalSelected]);
 
   function toggleTick(id: string) {
     setTicked(prev => ({ ...prev, [id]: !prev[id] }));
@@ -1033,12 +1022,15 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
       {/* Header */}
       <div style={{ padding: '10px 12px 8px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '12px', color: '#8A7F78' }}>
+          <span style={{
+            fontSize: '15px', fontWeight: 700, color: '#2B2420',
+            fontFamily: 'var(--font-playfair)',
+          }}>
             {(() => {
               const toBuy = sections.reduce((acc, s) => acc + s.items.filter(i => !ticked[i.id]).length, 0);
               return l === 'fr'
-                ? `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} sélectionnée${totalSelected > 1 ? 's' : ''} · ${toBuy} ingrédient${toBuy > 1 ? 's' : ''} à acheter`
-                : `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} selected · ${toBuy} ingredient${toBuy > 1 ? 's' : ''} to buy`;
+                ? `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} · ${toBuy} ingrédient${toBuy > 1 ? 's' : ''} à acheter`
+                : `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} · ${toBuy} ingredient${toBuy > 1 ? 's' : ''} to buy`;
             })()}
           </span>
           <button
@@ -1074,9 +1066,9 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
       {/* List */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
         {sections.map(section => (
-          <div key={section.label}>
-            <div style={{ padding: '7px 12px 4px 11px', background: '#F0EBE0', borderLeft: '3px solid #6B4423' }}>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'DM Mono, monospace' }}>
+          <div key={section.label} style={{ marginBottom: '18px' }}>
+            <div style={{ padding: '10px 12px 7px 11px', background: '#F0EBE0', borderLeft: '3px solid #6B4423', marginTop: '6px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'DM Mono, monospace' }}>
                 {section.label}
               </span>
             </div>
@@ -1225,17 +1217,29 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients }: {
         )}
       </div>
 
-      {/* Share + Copy buttons */}
+      {/* Footer: primary = onward journey (prep), share is secondary */}
       <div style={{ padding: '10px 12px 14px', borderTop: '1px solid #E0D8CF', background: '#FDFBF7' }}>
+        <button
+          onClick={() => onGoPrep?.()}
+          style={{
+            width: '100%', padding: '13px', marginBottom: '8px',
+            background: '#2B2420', color: '#F0EBE0',
+            border: 'none', borderRadius: '10px',
+            fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+            fontFamily: 'DM Sans, sans-serif',
+          }}
+        >
+          {l === 'fr' ? 'Courses faites ? Voir le plan de préparation →' : 'Shopping done? See the prep plan →'}
+        </button>
         <button
           onClick={handleShare}
           style={{
-            width: '100%', padding: '11px', background: '#2B2420', color: '#F0EBE0',
-            border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 500,
+            width: '100%', padding: '12px', background: 'transparent', color: '#3D3530',
+            border: '1px solid #D8D0C5', borderRadius: '10px', fontSize: '14px', fontWeight: 500,
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
           }}
         >
-          <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#F0EBE0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#3D3530" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10 3v10M6 7l4-4 4 4"/>
             <path d="M4 14v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
           </svg>
@@ -2317,21 +2321,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           numItems={numItems}
           styleKey={styleKey}
           recipeIngredients={recipeIngredients}
+          onGoPrep={() => onPillChange('party')}
         />
-        <div style={{ padding: '0 12px 14px', background: '#FDFBF7' }}>
-          <button
-            onClick={() => onPillChange('party')}
-            style={{
-              width: '100%', padding: '11px',
-              background: 'transparent', color: '#6B4423',
-              border: '1px solid #E0D8CF', borderRadius: '10px',
-              fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-              fontFamily: 'DM Sans, sans-serif',
-            }}
-          >
-            {l === 'fr' ? 'Courses faites ? Voir le plan de préparation →' : 'Shopping done? See the prep plan →'}
-          </button>
-        </div>
+
         </>
       )}
 
@@ -2739,19 +2731,38 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
             {totalQty > 0 && (
               <span style={{
-                fontFamily: 'DM Sans, sans-serif', fontSize: '11px',
-                color: '#8A7F78', marginLeft: '2px',
+                fontFamily: 'DM Sans, sans-serif', fontSize: '13px', fontWeight: 600,
+                color: '#6B4423', marginLeft: '4px', padding: '4px 2px',
               }}>
-                {l === 'fr' ? '· voir →' : '· review →'}
+                {l === 'fr' ? '· Voir →' : '· Review →'}
               </span>
             )}
           </div>
 
-          {/* Right: Dessert CTA when threshold reached */}
+          {/* Right CTA: shopping list once the party is complete (Flo);
+              dessert nudge only while still choosing */}
           {(() => {
-            // Visible from ~2/3 of the party onward, and STAYS once the mains
-            // are complete — "mains sorted, now dessert?" is the natural moment.
-            // Hides only when a dessert is already picked.
+            const partyComplete = doughConfigured ? totalQty >= numItems : totalQty >= 4;
+            if (partyComplete) {
+              return (
+                <button
+                  onClick={e => { e.stopPropagation(); onPillChange('shopping'); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    background: '#F0EBE0', border: 'none',
+                    borderRadius: '20px', padding: '8px 14px',
+                    cursor: 'pointer', flexShrink: 0,
+                  }}
+                >
+                  <span style={{
+                    fontFamily: 'DM Sans, sans-serif', fontSize: '13px',
+                    color: '#2B2420', fontWeight: 600,
+                  }}>
+                    {l === 'fr' ? 'Liste de courses →' : 'Shopping list →'}
+                  </span>
+                </button>
+              );
+            }
             const dessertSelected = Object.entries(qtys).some(([id, q]) =>
               (q as number) > 0 && DESSERT_PIZZAS.some(dp => dp.id === id));
             const showDessert = !dessertSelected && (doughConfigured

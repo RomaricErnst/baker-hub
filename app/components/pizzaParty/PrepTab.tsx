@@ -230,16 +230,12 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
     if (!stationTasks?.length) return null;
     const station = STATIONS.find(s => s.id === stationId)!;
     return (
-      <div key={stationId} style={{ marginBottom: '10px' }}>
+      <div key={stationId} style={{ marginBottom: '18px' }}>
         <div style={{
-          fontSize: '9px', fontWeight: 600, letterSpacing: '0.1em',
-          textTransform: 'uppercase', color: '#8A7F78',
-          fontFamily: 'DM Mono, monospace',
-          padding: '6px 14px 4px',
-          background: '#F0EBE0',
-          borderRadius: '10px 10px 0 0',
-          border: '1px solid #E8E0D5',
-          borderBottom: 'none',
+          fontSize: '16px', fontWeight: 700,
+          color: '#2B2420',
+          fontFamily: 'Playfair Display, serif',
+          padding: '12px 2px 8px',
         }}>
           {l === 'fr' ? station.fr : station.en}
         </div>
@@ -256,22 +252,6 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
 
   return (
     <div style={{ padding: '0 16px 24px' }}>
-
-      {/* Header */}
-      <div style={{
-        border: '1px solid #E8E0D5', borderRadius: '14px', padding: '14px 16px',
-        marginTop: '16px', marginBottom: '20px',
-        background: '#FDFBF7',
-      }}>
-        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '18px', fontWeight: 700, color: '#2B2420' }}>
-          {l === 'fr' ? 'Préparer les garnitures' : 'Prep your toppings'}
-        </div>
-        <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: '#8A7F78', marginTop: '4px' }}>
-          {l === 'fr'
-            ? 'Commencez par ce qui a besoin de temps ou de refroidir — le reste est flexible.'
-            : 'Start with anything that needs time or to cool — everything else is flexible.'}
-        </div>
-      </div>
 
       {/* Style-specific notes */}
       {styleKey && STYLE_PREP_NOTES[styleKey] && (
