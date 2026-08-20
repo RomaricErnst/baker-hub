@@ -893,6 +893,15 @@ export default function BakeGuide({
   const bgSdHalf = recipe?.sourdough && !recipe?.preferment ? Math.round(bgSdMid / 2) : 0;
   const bgMainFlour = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalFlour : recipe.flour) - bgSdHalf : null;
   const bgMainWater = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalWater : recipe.water) - bgSdHalf : null;
+  // Feed-step amounts: at ratio 1:R:R, a seed of S grams yields S×(1+2R) of
+  // ripe starter. Size the parts so the build covers the recipe's
+  // recommended starter (bgSdMid) with ~10g to spare, rounded to 5g.
+  const feedR = feedRatio ?? 1;
+  const feedSeed = bgSdMid > 0
+    ? Math.max(5, Math.ceil((bgSdMid + 10) / (1 + 2 * feedR) / 5) * 5)
+    : 50;
+  const feedPart = Math.max(5, Math.round(feedSeed * feedR / 5) * 5);
+  const feedTotal = feedSeed + 2 * feedPart;
   const bgWater90   = bgMainWater ? Math.round(bgMainWater * 0.9) : null;
   const bgWater10   = bgMainWater ? bgMainWater - (bgWater90 ?? 0) : null;
   const bgSaltG     = recipe ? Math.round(recipe.salt) : null;
@@ -1079,8 +1088,12 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           >
             <Section icon={null} title={t('sectionTitles.whatToDo')}>
               <Steps items={[
-                { bold: (l === 'fr' ? 'Levain, farine et eau à parts égales (au poids)' : 'Equal parts starter, flour, water by weight'),
-                  note: (l === 'fr' ? 'ratio 1:1:1 — ex. 50g de levain + 50g de farine + 50g d’eau' : '1:1:1 ratio — e.g. 50g starter + 50g flour + 50g water') },
+                { bold: feedR === 1
+                    ? (l === 'fr' ? 'Levain, farine et eau à parts égales (au poids)' : 'Equal parts starter, flour, water by weight')
+                    : (l === 'fr' ? `Rafraîchissez au ratio recommandé 1:${feedR}:${feedR}` : `Feed at the recommended 1:${feedR}:${feedR} ratio`),
+                  note: (l === 'fr'
+                    ? `ratio 1:${feedR}:${feedR} — ${feedSeed}g de levain + ${feedPart}g de farine + ${feedPart}g d’eau (≈${feedTotal}g${bgSdMid > 0 ? `, la recette en demande ${bgSdMid}g` : ''})`
+                    : `1:${feedR}:${feedR} ratio — ${feedSeed}g starter + ${feedPart}g flour + ${feedPart}g water (≈${feedTotal}g${bgSdMid > 0 ? `, the recipe calls for ${bgSdMid}g` : ''})`) },
                 { bold: (l === 'fr' ? 'Mélangez jusqu’à ce qu’il ne reste plus de farine sèche' : 'Mix until no dry flour remains'),
                   note: (l === 'fr' ? 'couvrez sans fermer — le levain a besoin d’air' : 'cover loosely — starter needs airflow') },
                 ...(starterState === 'fridge_fed'
@@ -1187,8 +1200,10 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 <Steps items={[
                   { bold: (l === 'fr' ? 'Le levain semblera retombé et sentira assez acide' : 'Starter will look deflated and smell quite sour'),
                     note: (l === 'fr' ? 'c’est exactement ça — il est épuisé et prêt pour son second rafraîchi' : 'this is exactly right — it is depleted and ready for its second feed') },
-                  { bold: (l === 'fr' ? 'Levain, farine et eau à parts égales (au poids)' : 'Equal parts starter, flour, water by weight'),
-                    note: (l === 'fr' ? 'même ratio 1:1:1 que le premier rafraîchi' : 'same 1:1:1 ratio as the first feed') },
+                  { bold: feedR === 1
+                    ? (l === 'fr' ? 'Levain, farine et eau à parts égales (au poids)' : 'Equal parts starter, flour, water by weight')
+                    : (l === 'fr' ? `Rafraîchissez au ratio recommandé 1:${feedR}:${feedR}` : `Feed at the recommended 1:${feedR}:${feedR} ratio`),
+                    note: (l === 'fr' ? `même ratio 1:${feedR}:${feedR} que le premier rafraîchi — mêmes quantités` : `same 1:${feedR}:${feedR} ratio as the first feed — same amounts`) },
                   { bold: (l === 'fr' ? 'Mélangez bien et couvrez sans fermer' : 'Mix thoroughly and cover loosely'),
                     note: (l === 'fr' ? 'le second pic développe plus d’acidité — goût plus marqué et complexe' : 'the second peak builds more acidity — expect a stronger, more complex flavour') },
                 ]} />
