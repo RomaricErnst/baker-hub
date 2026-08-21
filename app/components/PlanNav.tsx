@@ -50,10 +50,13 @@ export default function PlanNav({ variant, onEditSetup, onOpenGuide, onShare }: 
             color: 'var(--ash)',
           }}
         >
+          {/* A left arrow, mirroring the forward arrow on the button beside
+              it and the "Precedent" of the step pages. The sliders glyph named
+              the destination but said nothing about direction — and this is the
+              one control on the screen whose whole job is going back. */}
           <span style={LABEL_ROW}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--smoke)" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-              <line x1="4" y1="7" x2="20" y2="7" /><circle cx="9" cy="7" r="2.2" fill="var(--warm)" />
-              <line x1="4" y1="16" x2="20" y2="16" /><circle cx="15" cy="16" r="2.2" fill="var(--warm)" />
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--smoke)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="20" y1="12" x2="4" y2="12" /><polyline points="11 5 4 12 11 19" />
             </svg>
             {t('editSetup')}
           </span>
