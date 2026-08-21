@@ -2155,7 +2155,7 @@ export default function Home() {
                 background: 'var(--terra)', border: 'none',
                 color: 'white', cursor: 'pointer', fontSize: '13px',
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-                padding: '8px 14px', borderRadius: '8px', whiteSpace: 'nowrap',
+                padding: '13px 16px', minHeight: '44px', borderRadius: '8px', whiteSpace: 'nowrap',
               }}
             >
               {locale === 'fr' ? 'Reprendre →' : 'Resume →'}

@@ -1148,7 +1148,7 @@ export default function ShareCard({
             onClick={handleCopyImage}
             disabled={copyingImg}
             style={{
-              width: '100%', padding: '11px', marginTop: '8px',
+              width: '100%', padding: '14px', minHeight: '44px', marginTop: '8px',
               background: 'transparent',
               border: `1px solid ${imgCopied ? 'var(--sage)' : 'var(--border)'}`,
               color: imgCopied ? 'var(--sage)' : 'var(--smoke)',

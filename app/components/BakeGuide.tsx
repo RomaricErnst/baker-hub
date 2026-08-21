@@ -631,7 +631,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           disabled={!canAsk}
           style={{
             background: '#2B2420', color: '#F0EBE0', border: 'none',
-            borderRadius: '8px', padding: '8px 14px', fontSize: '12px',
+            borderRadius: '8px', padding: '13px 16px', minHeight: '44px', fontSize: '13px',
             fontFamily: 'var(--font-dm-mono)', cursor: canAsk ? 'pointer' : 'default',
             opacity: canAsk ? 1 : 0.6, whiteSpace: 'nowrap',
           }}

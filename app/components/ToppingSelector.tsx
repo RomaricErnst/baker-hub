@@ -2699,16 +2699,25 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           position: 'fixed', bottom: `${bottomNavH}px`, left: 0, right: 0,
           background: '#2B2420',
           borderTop: '1px solid #C88A52',
-          padding: '10px 14px',
-          display: 'flex', alignItems: 'center',
+          padding: '12px 14px calc(12px + env(safe-area-inset-bottom, 0px))',
+          display: 'flex', alignItems: 'center', gap: '10px',
           justifyContent: 'space-between',
           zIndex: 90,
         }}>
-          {/* Left: dots + count */}
-          <div
+          {/* Left: progress + review. Review used to be a 13px text link
+              sitting beside a real button — two actions of different weight
+              in the same bar, one of them the review of every choice made. */}
+          <button
             onClick={() => totalQty > 0 && setSummarySheetOpen(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, cursor: totalQty > 0 ? 'pointer' : 'default' }}
+            disabled={totalQty === 0}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '5px',
+              flex: 1, minWidth: 0, minHeight: '44px', justifyContent: 'center',
+              background: 'none', border: 'none', padding: '0 2px', textAlign: 'left',
+              cursor: totalQty > 0 ? 'pointer' : 'default',
+            }}
           >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ display: 'flex', gap: '4px' }}>
               {Array.from({ length: Math.min(doughConfigured ? numItems : Math.max(totalQty, 3), 8) }, (_, i) => (
                 <div key={i} style={{
@@ -2736,15 +2745,17 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   : `${totalQty}`)}
             </span>
 
+            </div>
             {totalQty > 0 && (
               <span style={{
-                fontFamily: 'DM Sans, sans-serif', fontSize: '13px', fontWeight: 600,
-                color: '#6B4423', marginLeft: '4px', padding: '4px 2px',
+                fontFamily: 'DM Sans, sans-serif', fontSize: '14px', fontWeight: 600,
+                color: '#F0EBE0', textDecoration: 'underline',
+                textUnderlineOffset: '3px', textDecorationColor: 'rgba(240,235,224,0.45)',
               }}>
-                {l === 'fr' ? '· Voir →' : '· Review →'}
+                {l === 'fr' ? 'Voir mes pizzas →' : 'Review my pizzas →'}
               </span>
             )}
-          </div>
+          </button>
 
           {/* Right CTA: shopping list once the party is complete (Flo);
               dessert nudge only while still choosing */}
@@ -2757,12 +2768,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   style={{
                     display: 'flex', alignItems: 'center', gap: '6px',
                     background: '#F0EBE0', border: 'none',
-                    borderRadius: '20px', padding: '8px 14px',
+                    borderRadius: '22px', padding: '13px 18px', minHeight: '44px',
                     cursor: 'pointer', flexShrink: 0,
                   }}
                 >
                   <span style={{
-                    fontFamily: 'DM Sans, sans-serif', fontSize: '13px',
+                    fontFamily: 'DM Sans, sans-serif', fontSize: '14.5px',
                     color: '#2B2420', fontWeight: 600,
                   }}>
                     {l === 'fr' ? 'Liste de courses →' : 'Shopping list →'}
@@ -2783,7 +2794,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   display: 'flex', alignItems: 'center', gap: '6px',
                   background: 'rgba(184,144,58,0.15)',
                   border: '1px solid rgba(184,144,58,0.4)',
-                  borderRadius: '20px', padding: '6px 12px',
+                  borderRadius: '20px', padding: '11px 14px', minHeight: '44px',
                   cursor: 'pointer', flexShrink: 0,
                 }}
               >
