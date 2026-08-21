@@ -251,7 +251,7 @@ style={{ display: 'none' }}
                 background: '#FDFBF2', border: '1px solid #E8D890',
                 borderRadius: '16px', fontSize: '12px', color: '#6A5A10', lineHeight: 1.4,
               }}>
-                🔍 {isFr
+                {isFr
                   ? 'Valeurs estimées d’après le type de sachet — correct pour la plupart des farines. Ajustez ci-dessous si votre sachet indique d’autres chiffres.'
                   : `Values estimated from bag type — looks right for most ${extractedResult.name.includes('pizza') ? 'pizza ' : ''}flours. Adjust below if your bag shows different numbers.`}
               </div>

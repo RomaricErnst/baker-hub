@@ -6928,7 +6928,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         const cardPrefLateOk    = hasPrefActive && prefOffsetH >= 0.25 && prefOffsetH < prefMinHCard;
         // For RT: use cardPrefDeveloping instead of cardPrefLateOk for 3h→peak*0.8 range
         const cardPrefTooShort  = hasPrefActive && prefOffsetH < 1;
-        // Protocol already shown via ❄/🌡 indicator below diamond — not repeated in pill
+        // Protocol already shown via /indicator below diamond — not repeated in pill
         const cardPrefStatus = cardPrefInZone      ? tRoot('schedulePicker.prefReadyAtMix')
           : cardPrefEarlyOk                        ? tRoot('schedulePicker.prefEarlyOk')
           : cardPrefDeveloping                     ? tRoot('schedulePicker.prefLateOk')

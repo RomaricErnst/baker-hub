@@ -12,7 +12,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           padding: '24px', textAlign: 'center', fontFamily: 'system-ui, sans-serif',
         }}>
           <div style={{ maxWidth: 420 }}>
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🍞</div>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}></div>
             <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#2B2420', margin: '0 0 0.5rem' }}>
               Something didn&rsquo;t rise as planned
             </h1>

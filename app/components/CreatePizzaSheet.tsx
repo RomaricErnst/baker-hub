@@ -236,7 +236,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
               {picked.map((p, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F0EBE0', border: '1px solid #E8E0D5', borderRadius: '16px', padding: '8px 12px' }}>
                   <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-ui)', fontSize: '13px', color: '#2B2420', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {fr ? p.nameFr : p.nameEn}{p.free ? ' ✎' : ''}
+                    {fr ? p.nameFr : p.nameEn}{p.free ? ' ' : ''}
                   </span>
                   <input
                     type="number" inputMode="numeric" value={p.amount}

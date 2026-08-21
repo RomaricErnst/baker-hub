@@ -613,7 +613,7 @@ export default function Home() {
   // Mode cards — per-card "+ details" expander (visual-first redesign)
   const [modeInfoOpen, setModeInfoOpen] = useState(false);
 
-  // Baker profile — ☰ Mon profil sheet + new-session prefill
+  // Baker profile — Mon profil sheet + new-session prefill
   const bottomNavH = useBottomNavHeight();
   const [profileOpen, setProfileOpen] = useState(false);
   // Sourdough-vs-Simple nudge — shown when a levain profile taps Simple
@@ -2405,8 +2405,8 @@ export default function Home() {
                   color: 'var(--smoke)', letterSpacing: '.05em', margin: '10px 2px 0',
                 }}>
                   {locale === 'fr'
-                    ? 'Astuce : ☰ Mes préférences préremplit four, pétrin & style à chaque session'
-                    : 'Tip: ☰ My preferences prefills oven, mixer & style every session'}
+                    ? 'Astuce : Mes préférences préremplit four, pétrin & style à chaque session'
+                    : 'Tip: My preferences prefills oven, mixer & style every session'}
                 </div>
               )}
 
@@ -2750,7 +2750,7 @@ export default function Home() {
 
                       {/* Weight tile */}
                       <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
-                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>⚖ {isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
+                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>{isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                           <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: itemWeight >= 1000 ? '80px' : '64px', justifyContent: 'center' }}>
@@ -2767,7 +2767,7 @@ export default function Home() {
                     {isAtMax && (
                       <div style={{ marginTop: '12px', padding: '8px 12px', background: '#FEF9F0', borderRadius: '8px', border: '0.5px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                         <span style={{ fontSize: '11px', color: '#7A5A10', lineHeight: 1.4, flex: 1 }}><strong>{t('avpn.atLimit')}</strong> — {t('avpn.limitDesc')}</span>
-                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem 8px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>🤔 {t('avpn.learnMore')}</button>
+                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem 8px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>{t('avpn.learnMore')}</button>
                       </div>
                     )}
                     {isAtMax && avpnOpen && (
@@ -3012,7 +3012,7 @@ export default function Home() {
                     <label htmlFor="bake-photo-input" style={{ width: '56px', height: '56px', borderRadius: '16px', border: '1.5px dashed var(--border)', background: bakePhotoUrl ? 'none' : 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }}>
                       {bakePhotoUrl
                         ? <img src={bakePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <span style={{ fontSize: '20px' }}>📷</span>}
+                        : <span style={{ fontSize: '20px' }}></span>}
                       <input id="bake-photo-input" type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
@@ -3355,7 +3355,7 @@ export default function Home() {
                       )}
 
                       <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
-                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>⚖ {isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
+                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>{isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                           <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: itemWeight >= 1000 ? '80px' : '64px', justifyContent: 'center' }}>
@@ -3373,7 +3373,7 @@ export default function Home() {
                     {isAtMax && (
                       <div style={{ marginTop: '12px', padding: '8px 12px', background: '#FEF9F0', borderRadius: '8px', border: '0.5px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                         <span style={{ fontSize: '11px', color: '#7A5A10', lineHeight: 1.4, flex: 1 }}><strong>{t('avpn.atLimit')}</strong> — {t('avpn.limitDesc')}</span>
-                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem 8px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>🤌 {t('avpn.learnMore')}</button>
+                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem 8px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>{t('avpn.learnMore')}</button>
                       </div>
                     )}
                     {isAtMax && avpnOpen && (
@@ -4096,7 +4096,7 @@ export default function Home() {
                     <label htmlFor="bake-photo-input" style={{ width: '56px', height: '56px', borderRadius: '16px', border: '1.5px dashed var(--border)', background: bakePhotoUrl ? 'none' : 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }}>
                       {bakePhotoUrl
                         ? <img src={bakePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <span style={{ fontSize: '20px' }}>📷</span>}
+                        : <span style={{ fontSize: '20px' }}></span>}
                       <input id="bake-photo-input" type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
                         onChange={async (e) => {
                           const file = e.target.files?.[0];

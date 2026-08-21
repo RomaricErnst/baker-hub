@@ -695,9 +695,9 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
     !simpleFaq || !(JARGON_RE.test(e.q.en + ' ' + e.q.fr + ' ' + e.a.en + ' ' + e.a.fr)));
 
   const pills: Array<{ id: 'tips' | 'faq' | 'coach'; label: string }> = [
-    { id: 'tips', label: l === 'fr' ? '💡 Astuces' : '💡 Tips & tricks' },
+    { id: 'tips', label: l === 'fr' ? 'Astuces' : 'Tips & tricks' },
     ...(faq.length > 0 ? [{ id: 'faq' as const, label: 'FAQ' }] : []),
-    { id: 'coach', label: l === 'fr' ? '✨ Maestro' : '✨ Maestro' },
+    { id: 'coach', label: l === 'fr' ? 'Maestro' : 'Maestro' },
   ];
 
   return (
@@ -1032,7 +1032,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             );
           })()}
 
-          <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
+          <Section icon="" title={t('sectionTitles.whatToDo')}>
             {isPoolish ? (
               <Steps items={t.raw(kitchenTemp >= 26 ? 'poolish.stepsFridge' : 'poolish.stepsRT') as { bold: string; note: string }[]} />
             ) : (
@@ -1042,7 +1042,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
           <StepExtras
             tips={<>
-              <Section icon="👁️" title={t('sectionTitles.watchForReady')}>
+              <Section icon="" title={t('sectionTitles.watchForReady')}>
                 <Bullets items={t.raw(isPoolish ? 'poolish.readyWhen' : 'biga.readyWhen') as string[]} />
               </Section>
               <Section icon={null} title={t('sectionTitles.pitfalls')}>
@@ -1219,7 +1219,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
       <StepCard number={n()} {...sc()} icon={<IconPreferment />}
         title={l === 'fr' ? 'Tremper les graines' : 'Soak the seeds'}
         time={new Date(bgMixStart.getTime() - 8 * 3600000)} duration={null} accent={D.gold}>
-        <Section icon="🌾" title={t('sectionTitles.whatToDo')}>
+        <Section icon="" title={t('sectionTitles.whatToDo')}>
           <Steps items={[
             { bold: l === 'fr'
                 ? `Pesez ${recipe ? Math.round((recipe.preferment ? recipe.preferment.finalFlour : recipe.flour) * 0.18) + 'g' : '15–20% du poids de farine'} de graines (lin, tournesol, sésame, courge…)`
@@ -1249,7 +1249,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
       <StepCard number={n()} {...sc()} icon={<IconMix />} title={t('stepTitles.mixDough')}
         time={bgMixStart} duration={schedule.mixingDurationH} accent={D.ash}>
 
-        <Section icon="🥄" title={t('sectionTitles.mixingOrder')}>
+        <Section icon="" title={t('sectionTitles.mixingOrder')}>
           {mixerType === 'hand' && !isSourdough && (
             <Steps items={hydration > 70 ? [
               // >70%: autolyse, then yeast+salt, brief knead, then bassinage, then full knead
@@ -1366,7 +1366,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         </Section>
 
         {!(simpleMode && recipe?.waterTemp == null) && (
-        <Section icon="🌡️" title={t('sectionTitles.waterTemp')}>
+        <Section icon="" title={t('sectionTitles.waterTemp')}>
           <Bullets items={[
             ...(recipe?.waterTemp != null ? [(l === 'fr' ? `Température de l’eau : ${Math.round(recipe.waterTemp)}°C` : `Water temperature: ${Math.round(recipe.waterTemp)}°C`)] : []),
             (l === 'fr' ? `Température finale de pâte (FDT) visée : ${isNeapolitan ? tempC(23, u) : tempC(24, u)}` : `Target Final Dough Temperature (FDT): ${isNeapolitan ? tempC(23, u) : tempC(24, u)}`),
@@ -1377,7 +1377,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         <StepExtras
           tips={<>
             {!simpleMode && (
-            <Section icon="🌡️" title={t('sectionTitles.waterTemp')}>
+            <Section icon="" title={t('sectionTitles.waterTemp')}>
               <Bullets items={[
                 ...(t.raw('mix.waterTempBullets') as string[]),
                 (l === 'fr' ? `FDT au-dessus de ${tempC(28, u)} : placez la pâte 15 min au frigo avant le pointage` : `FDT above ${tempC(28, u)}: refrigerate dough for 15 min before bulk fermentation`),
@@ -1387,7 +1387,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               </div>
             </Section>
             )}
-            <Section icon="👁️" title={t('sectionTitles.watchFor')}>
+            <Section icon="" title={t('sectionTitles.watchFor')}>
               <Bullets items={[
                 mixerType === 'spiral'
                   ? t('mix.watchForPumpkin')
@@ -1421,7 +1421,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
       <StepCard number={n()} {...sc()} icon={<IconBulk />} title={t('stepTitles.bulkFerm')}
         time={schedule.bulkFermStart} duration={schedule.bulkFermHours} accent={D.terra}>
 
-        <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
+        <Section icon="" title={t('sectionTitles.whatToDo')}>
           <Steps items={[
             ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]),
             ...(schedule.bulkFermHours >= 1.5 ? [
@@ -1441,7 +1441,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
         <StepExtras
           tips={<>
-            <Section icon="👁️" title="Watch for — bulk is done when">
+            <Section icon="" title="Watch for — bulk is done when">
               <Bullets items={t.raw('bulk.watchFor') as string[]} />
               <div style={{ marginTop: '8px' }}>
                 <LearnLink term="bulk_fermentation" label={l === 'fr' ? 'Guide du pointage' : 'Bulk fermentation guide'} onOpen={setLearnTerm} showSparkle={true} />
@@ -1477,7 +1477,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           duration={(schedule.coldRetard1End.getTime() - schedule.coldRetard1Start.getTime()) / 3600000}
           accent="#6A7FA8">
 
-          <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
+          <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
               ...(t.raw('coldRetard.steps') as { bold: string; note: string }[]).slice(0, 2),
               { bold: isBread
@@ -1490,7 +1490,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
           <StepExtras
             tips={<>
-              <Section icon="👁️" title={t('sectionTitles.whatToExpect')}>
+              <Section icon="" title={t('sectionTitles.whatToExpect')}>
                 <Bullets items={t.raw('coldRetard.watchFor') as string[]} />
               </Section>
               <Section icon={null} title={t('sectionTitles.pitfalls')}>
@@ -1515,7 +1515,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           title={isBread ? t('stepTitles.divideShape') : t('stepTitles.divideBall')}
           time={schedule.divideBallTime} duration={divideMin / 60} accent="#8A6A4A">
 
-          <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
+          <Section icon="" title={t('sectionTitles.whatToDo')}>
             {isBread ? (
               <Steps items={isFougasse ? [
                 { bold: `Divide into ${numItems} equal ${breadPiecePlural}`, note: (t.raw('divide.fougasse.steps') as { bold: string; note: string }[])[0].note },
@@ -1556,7 +1556,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
           <StepExtras
             tips={<>
-              <Section icon="👁️" title={isBread ? t('sectionTitles.watchFor') : t('sectionTitles.watchForBall')}>
+              <Section icon="" title={isBread ? t('sectionTitles.watchFor') : t('sectionTitles.watchForBall')}>
                 <Bullets items={isFougasse
                   ? (t.raw('divide.fougasse.watchFor') as string[])
                   : isBaguette
@@ -1615,7 +1615,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           duration={(schedule.coldRetard2End.getTime() - schedule.coldRetard2Start.getTime()) / 3600000}
           accent="#6A7FA8">
 
-          <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
+          <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
               ...(t.raw('coldBalls.steps') as { bold: string; note: string }[]),
               { bold: _isFr ? 'Réglez une alarme pour la remise à température' : 'Set your alarm for warmup time', note: schedule.rtWarmupStart ? formatTime(schedule.rtWarmupStart, _fmtLocale) : (_isFr ? 'voir le planning' : 'see schedule') },
@@ -1624,7 +1624,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
           <StepExtras
             tips={<>
-              <Section icon="👁️" title={t('sectionTitles.whatToExpect')}>
+              <Section icon="" title={t('sectionTitles.whatToExpect')}>
                 <Bullets items={t.raw('coldBalls.watchFor') as string[]} />
               </Section>
               <Section icon={null} title={t('sectionTitles.pitfalls')}>
@@ -1651,7 +1651,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           })()}
           accent="#7A8C6E">
 
-          <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
+          <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
               ...(hasCold ? [
                 t.raw('finalProof.removeFridge') as { bold: string; note: string },
@@ -1668,7 +1668,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
           <StepExtras
             tips={<>
-              <Section icon="👁️" title={t('sectionTitles.pokeTest')}>
+              <Section icon="" title={t('sectionTitles.pokeTest')}>
                 <Bullets items={t.raw('finalProof.pokeResponses') as string[]} />
                 <div style={{ marginTop: '8px' }}>
                   <LearnLink term="poke_test" label={l === 'fr' ? 'Guide du test du doigt' : 'Full poke test guide'} onOpen={setLearnTerm} showSparkle={true} />
@@ -1701,7 +1701,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           {t('preheatNote')}
         </div>
 
-        <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
+        <Section icon="" title={t('sectionTitles.whatToDo')}>
           {isBread ? (
             <Steps items={(t.raw(
               ovenType === 'dutch_oven' ? 'preheat.dutch.steps' :
@@ -1751,7 +1751,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
       <StepCard number={n()} {...sc()} icon={<IconBake />} title={t('stepTitles.bakeEat')} time={schedule.bakeStart} accent="#5A9A50">
 
-        <Section icon="🥄" title={t('sectionTitles.whatToDo')}>
+        <Section icon="" title={t('sectionTitles.whatToDo')}>
           {isPan && (
             <div style={{
               background: 'rgba(156, 130, 72,0.08)', border: '1px solid rgba(156, 130, 72,0.2)',
@@ -1790,7 +1790,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
         <StepExtras
           tips={<>
-            <Section icon="👁️" title={t('sectionTitles.watchFor')}>
+            <Section icon="" title={t('sectionTitles.watchFor')}>
               {isBread ? (
                 <Bullets items={t.raw('bake.dutch.watchFor') as string[]} />
               ) : ovenType === 'pizza_oven' ? (
@@ -1821,7 +1821,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               } />
             </Section>
             {isBread && (
-              <Section icon="🎓" title={t('sectionTitles.learnMore')}>
+              <Section icon="" title={t('sectionTitles.learnMore')}>
                 <ExtLink href="https://www.theperfectloaf.com/guides/how-to-score-bread-dough/" label={t('bake.learnMoreScoring')} />
                 <div style={{ marginTop: '8px' }}>
                   <LearnLink term="score_technique" label={l === 'fr' ? 'Technique de grignage' : 'Scoring technique'} onOpen={setLearnTerm} showSparkle={true} />

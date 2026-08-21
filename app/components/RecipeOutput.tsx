@@ -949,9 +949,9 @@ export default function RecipeOutput({
 
           {yeastInfo && (() => {
             const priorityLabel = ({
-              'flavor': { emoji: '🐢', text: t('recipeOutput.priorityFlavourNote'), color: 'var(--sage)' },
-              'speed':  { emoji: '⚡', text: t('recipeOutput.prioritySpeedNote'),   color: 'var(--gold)' },
-            } as Record<string, { emoji: string; text: string; color: string }>)[result.autoPriority ?? ''] ?? { emoji: '⚖️', text: 'Balanced yeast for your schedule', color: 'var(--smoke)' };
+              'flavor': { text: t('recipeOutput.priorityFlavourNote'), color: 'var(--sage)' },
+              'speed':  { text: t('recipeOutput.prioritySpeedNote'),   color: 'var(--gold)' },
+            } as Record<string, { text: string; color: string }>)[result.autoPriority ?? ''] ?? { text: 'Balanced yeast for your schedule', color: 'var(--smoke)' };
             return (
               <>
                 {mode === 'custom' && (

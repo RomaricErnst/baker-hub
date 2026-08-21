@@ -10,7 +10,7 @@ export default function NotFound() {
       padding: '24px', textAlign: 'center',
     }}>
       <div style={{ maxWidth: 420 }}>
-        <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
+        <div style={{ fontSize: '40px', marginBottom: '12px' }}></div>
         <h1 style={{
           fontFamily: 'var(--font-ui), sans-serif',
           fontSize: '24px', fontWeight: 700, color: 'var(--char, #2B2420)',

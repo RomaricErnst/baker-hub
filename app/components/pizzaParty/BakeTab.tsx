@@ -358,7 +358,7 @@ function CoachButton({
               <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: loading ? 'rgba(240, 235, 224,0.6)' : '#F0EBE0', whiteSpace: 'nowrap' }}>
                 {loading
                   ? (l === 'fr' ? 'Le Maestro regarde...' : 'Maestro is looking...')
-                  : (l === 'fr' ? 'Demander au Maestro ✦' : 'Ask Maestro ✦')}
+                  : (l === 'fr' ? 'Demander au Maestro ' : 'Ask Maestro ')}
               </span>
             </button>
           </div>
@@ -645,8 +645,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 }}
               >
                 {sessionSaved
-                  ? (l === 'fr' ? '✦ Partager cette fournée' : '✦ Share this bake')
-                  : (l === 'fr' ? '✦ Sauvegarder & Partager' : '✦ Save & Share this bake')}
+                  ? (l === 'fr' ? 'Partager cette fournée' : 'Share this bake')
+                  : (l === 'fr' ? 'Sauvegarder & Partager' : 'Save & Share this bake')}
               </button>
             )}
           </div>
@@ -993,9 +993,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
               {/* Technique chips — same language as the Guide's step extras */}
               <div style={{ padding: '16px 16px 4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {([
-                  ['tips', l === 'fr' ? '💡 Conseils' : '💡 Tips & tricks'],
+                  ['tips', l === 'fr' ? 'Conseils' : 'Tips & tricks'],
                   ['faq', 'FAQ'],
-                  ['maestro', l === 'fr' ? '✨ Maestro' : '✨ Maestro'],
+                  ['maestro', l === 'fr' ? 'Maestro' : 'Maestro'],
                 ] as const).map(([key, label]) => (
                   <button
                     key={key}
@@ -1044,9 +1044,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                       {/* Tab chips — mirror of the entry chips on the card */}
                       <div style={{ display: 'flex', gap: '8px', padding: '12px 16px 0' }}>
                         {([
-                          ['tips', l === 'fr' ? '💡 Conseils' : '💡 Tips & tricks'],
+                          ['tips', l === 'fr' ? 'Conseils' : 'Tips & tricks'],
                           ['faq', 'FAQ'],
-                          ['maestro', '✨ Maestro'],
+                          ['maestro', 'Maestro'],
                         ] as const).map(([key, label]) => (
                           <button
                             key={key}
@@ -1145,7 +1145,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                       {techTab === 'maestro' && (
                       <div style={{ padding: '20px 16px 8px' }}>
                         <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '2px' }}>
-                          Maestro ✦
+                          Maestro 
                         </div>
                         <div style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--char)', fontWeight: 500 }}>
                           {l === 'fr' ? 'Comment va ma pizza ?' : 'How is my pizza looking?'}
@@ -1415,8 +1415,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   lineHeight: 1.5,
                 }}>
                   {l === 'fr'
-                    ? 'Connectez-vous pour sauvegarder cette photo — retrouvez-la dans ☰ Mes sessions.'
-                    : 'Sign in to save this photo — find it in ☰ My Sessions.'}
+                    ? 'Connectez-vous pour sauvegarder cette photo — retrouvez-la dans Mes sessions.'
+                    : 'Sign in to save this photo — find it in My Sessions.'}
                 </div>
               )}
             </div>

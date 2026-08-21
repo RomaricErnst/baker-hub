@@ -18,7 +18,7 @@ export default function PizzaPlaceholder({ name, size = 'card' }: { name: string
         position: 'absolute', bottom: 6, right: 8,
         fontFamily: 'var(--font-ui)', fontSize: 8, letterSpacing: '.08em',
         color: 'rgba(240, 235, 224,0.35)', textTransform: 'uppercase',
-      }}>✎</span>
+      }}></span>
     </div>
   );
 }

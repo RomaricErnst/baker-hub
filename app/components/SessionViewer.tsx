@@ -425,7 +425,7 @@ export default function SessionViewer({
                   border: '1px solid rgba(107, 68, 35,0.35)',
                   background: 'rgba(107, 68, 35,0.06)',
                   borderRadius: '16px', padding: '3px 8px', lineHeight: 1.2,
-                }}>✎</span>
+                }}></span>
               </div>
             )}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -720,7 +720,7 @@ export default function SessionViewer({
               letterSpacing: '.06em',
             }}
           >
-            {l === 'fr' ? '✦ Partager' : '✦ Share this bake'}
+            {l === 'fr' ? 'Partager' : 'Share this bake'}
           </button>
 
           {/* DESTRUCTIVE: Delete — low prominence */}

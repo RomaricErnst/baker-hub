@@ -1,5 +1,5 @@
 'use client';
-// ☰ Mon profil — baker preferences persisted locally (bh_profile_v1).
+// Mon profil — baker preferences persisted locally (bh_profile_v1).
 // Every change saves instantly; new sessions prefill from here.
 import { useState } from 'react';
 import { OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PIZZA_STYLES, BREAD_STYLES } from '../data';

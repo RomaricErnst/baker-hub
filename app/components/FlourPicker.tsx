@@ -65,37 +65,37 @@ const ORIGIN_GROUPS: Record<string, string[]> = {
 
 // ── APAC country sub-filter ───────────────────────
 const APAC_COUNTRIES: { code: string; flag: string; name: string }[] = [
-  { code: 'sg', flag: '🇸🇬', name: 'Singapore' },
-  { code: 'jp', flag: '🇯🇵', name: 'Japan' },
-  { code: 'kr', flag: '🇰🇷', name: 'Korea' },
-  { code: 'au', flag: '🇦🇺', name: 'Australia' },
-  { code: 'in', flag: '🇮🇳', name: 'India' },
-  { code: 'id', flag: '🇮🇩', name: 'Indonesia' },
-  { code: 'my', flag: '🇲🇾', name: 'Malaysia' },
-  { code: 'th', flag: '🇹🇭', name: 'Thailand' },
-  { code: 'ph', flag: '🇵🇭', name: 'Philippines' },
-  { code: 'vn', flag: '🇻🇳', name: 'Vietnam' },
-  { code: 'cn', flag: '🇨🇳', name: 'China' },
+  { code: 'sg', flag: 'SG', name: 'Singapore' },
+  { code: 'jp', flag: 'JP', name: 'Japan' },
+  { code: 'kr', flag: 'KR', name: 'Korea' },
+  { code: 'au', flag: 'AU', name: 'Australia' },
+  { code: 'in', flag: 'IN', name: 'India' },
+  { code: 'id', flag: 'ID', name: 'Indonesia' },
+  { code: 'my', flag: 'MY', name: 'Malaysia' },
+  { code: 'th', flag: 'TH', name: 'Thailand' },
+  { code: 'ph', flag: 'PH', name: 'Philippines' },
+  { code: 'vn', flag: 'VN', name: 'Vietnam' },
+  { code: 'cn', flag: 'CN', name: 'China' },
 ];
 
 // ── Europe country sub-filter ────────────────────
 const EUROPE_COUNTRIES: { code: string; flag: string; name: string }[] = [
-  { code: 'de', flag: '🇩🇪', name: 'Germany' },
-  { code: 'nl', flag: '🇳🇱', name: 'Netherlands' },
-  { code: 'se', flag: '🇸🇪', name: 'Sweden' },
-  { code: 'no', flag: '🇳🇴', name: 'Norway' },
-  { code: 'fi', flag: '🇫🇮', name: 'Finland' },
-  { code: 'pl', flag: '🇵🇱', name: 'Poland' },
-  { code: 'at', flag: '🇦🇹', name: 'Austria' },
+  { code: 'de', flag: 'DE', name: 'Germany' },
+  { code: 'nl', flag: 'NL', name: 'Netherlands' },
+  { code: 'se', flag: 'SE', name: 'Sweden' },
+  { code: 'no', flag: 'NO', name: 'Norway' },
+  { code: 'fi', flag: 'FI', name: 'Finland' },
+  { code: 'pl', flag: 'PL', name: 'Poland' },
+  { code: 'at', flag: 'AT', name: 'Austria' },
 ];
 
 // ── Americas country sub-filter ──────────────────
 const AMERICAS_COUNTRIES: { code: string; flag: string; name: string }[] = [
-  { code: 'us', flag: '🇺🇸', name: 'United States' },
-  { code: 'ca', flag: '🇨🇦', name: 'Canada' },
-  { code: 'br', flag: '🇧🇷', name: 'Brazil' },
-  { code: 'mx', flag: '🇲🇽', name: 'Mexico' },
-  { code: 'ar', flag: '🇦🇷', name: 'Argentina' },
+  { code: 'us', flag: 'US', name: 'United States' },
+  { code: 'ca', flag: 'CA', name: 'Canada' },
+  { code: 'br', flag: 'BR', name: 'Brazil' },
+  { code: 'mx', flag: 'MX', name: 'Mexico' },
+  { code: 'ar', flag: 'AR', name: 'Argentina' },
 ];
 
 // ── Type display labels ───────────────────────────
@@ -591,7 +591,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       borderRadius: '20px',
                       border: apacCountry === code ? '1.5px solid #6B4423' : '1px solid #E8E0D5',
                       background: apacCountry === code ? '#FDF0EB' : 'transparent',
-                      fontSize: '17px',
+                      fontSize: '12px', fontWeight: 600, letterSpacing: '.04em',
                       cursor: 'pointer',
                       lineHeight: 1,
                     }}
@@ -615,7 +615,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       borderRadius: '20px',
                       border: europeCountry === code ? '1.5px solid #6B4423' : '1px solid #E8E0D5',
                       background: europeCountry === code ? '#FDF0EB' : 'transparent',
-                      fontSize: '17px',
+                      fontSize: '12px', fontWeight: 600, letterSpacing: '.04em',
                       cursor: 'pointer',
                       lineHeight: 1,
                     }}
@@ -639,7 +639,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       borderRadius: '20px',
                       border: americasCountry === code ? '1.5px solid #6B4423' : '1px solid #E8E0D5',
                       background: americasCountry === code ? '#FDF0EB' : 'transparent',
-                      fontSize: '17px',
+                      fontSize: '12px', fontWeight: 600, letterSpacing: '.04em',
                       cursor: 'pointer',
                       lineHeight: 1,
                     }}

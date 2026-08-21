@@ -157,7 +157,7 @@ export function buildItems(
       kind: 'step', id: 'feed_starter', stepKind: 'feed_starter',
       time: feedTime,
       label: t('timeline.prefSteps.feedStarter'),
-      icon: '🫙',
+      icon: '',
       iconKey: 'starter',
       tip,
       durationH: null,
@@ -208,7 +208,7 @@ export function buildItems(
     kind: 'step', id: 'mixing', stepKind: 'mixing',
     time: startTime,
     label: t('timeline.steps.mixing'),
-    icon: '🤌',
+    icon: '',
     iconKey: 'mix',
     // No tip here: the full mixing walkthrough renders right below on the
     // Protocole tab — repeating a one-liner above it was redundant (tester).
@@ -221,7 +221,7 @@ export function buildItems(
       kind: 'step', id: 'bulk_ferm', stepKind: 'bulk_ferm',
       time: schedule.bulkFermStart,
       label: t('timeline.steps.bulkFerm'),
-      icon: '🌡️',
+      icon: '',
       iconKey: 'bulk',
       tip: bulkFermTip(schedule.bulkFermHours),
       durationH: schedule.bulkFermHours,
@@ -243,7 +243,7 @@ export function buildItems(
         kind: 'step', id: 'cold_1', stepKind: 'cold',
         time: schedule.coldRetard1Start,
         label: t('timeline.steps.coldBulk'),
-        icon: '❄️',
+        icon: '',
         iconKey: 'cold',
         tip: t('timeline.coldTips.bulk'),
         durationH: cold1DurationH,
@@ -256,7 +256,7 @@ export function buildItems(
       kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
       time: schedule.divideBallTime,
       label: t(bakeType === 'bread' ? 'timeline.steps.divideShape' : 'timeline.steps.divideBall'),
-      icon: '⚖️',
+      icon: '',
       iconKey: 'divide',
       tip: divideBallTip(),
       durationH: divideH,
@@ -274,7 +274,7 @@ export function buildItems(
         kind: 'step', id: 'cold_2', stepKind: 'cold',
         time: schedule.coldRetard2Start,
         label: t(bakeType === 'bread' ? 'timeline.steps.coldShaped' : 'timeline.steps.coldBalls'),
-        icon: '❄️',
+        icon: '',
         iconKey: 'cold',
         tip: t(bakeType === 'bread' ? 'timeline.coldTips.shaped' : 'timeline.coldTips.balls'),
         durationH: cold2DurationH,
@@ -299,7 +299,7 @@ export function buildItems(
         kind: 'step', id: 'cold', stepKind: 'cold',
         time: schedule.coldRetard1Start,
         label: t('timeline.steps.coldBulk'),
-        icon: '❄️',
+        icon: '',
         iconKey: 'cold',
         tip: t('timeline.coldTips.single'),
         durationH: coldDurationH,
@@ -314,7 +314,7 @@ export function buildItems(
       kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
       time: schedule.divideBallTime,
       label: t(bakeType === 'bread' ? 'timeline.steps.divideShape' : 'timeline.steps.divideBall'),
-      icon: '⚖️',
+      icon: '',
       iconKey: 'divide',
       tip: divideBallTip(),
       durationH: divideH,
@@ -366,7 +366,7 @@ export function buildItems(
     kind: 'step', id: 'preheat', stepKind: 'preheat',
     time: schedule.preheatStart,
     label: t('timeline.steps.preheat'),
-    icon: '🔥',
+    icon: '',
     iconKey: 'preheat',
     tip: preheatMin >= 45
       ? t('timeline.preheatTips.long', { min: preheatMin })
@@ -379,7 +379,7 @@ export function buildItems(
     kind: 'step', id: 'eat', stepKind: 'eat',
     time: schedule.bakeStart,
     label: t('timeline.steps.eat'),
-    icon: '🎉',
+    icon: '',
     iconKey: 'bake',
     tip: bakeType === 'bread' ? t('timeline.eatTipBread') : t('timeline.eatTipPizza'),
     durationH: null,
@@ -399,15 +399,15 @@ interface Phase {
 
 export function buildPhases(schedule: ScheduleResult, preheatMin: number, t: (key: string, params?: Record<string, string | number>) => string = (k) => k): Phase[] {
   const phases: Phase[] = [
-    { label: t('timeline.phaseLabels.mixing'), icon: '🤌', iconKey: 'mix', durationH: schedule.mixingDurationH || 5 / 60, stepKind: 'mixing' },
+    { label: t('timeline.phaseLabels.mixing'), icon: '', iconKey: 'mix', durationH: schedule.mixingDurationH || 5 / 60, stepKind: 'mixing' },
   ];
 
   if (schedule.bulkFermHours > 0) {
-    phases.push({ label: t('timeline.phaseLabels.bulkFerm'), icon: '🌡️', iconKey: 'bulk', durationH: schedule.bulkFermHours, stepKind: 'bulk_ferm' });
+    phases.push({ label: t('timeline.phaseLabels.bulkFerm'), icon: '', iconKey: 'bulk', durationH: schedule.bulkFermHours, stepKind: 'bulk_ferm' });
   }
 
   if (schedule.coldRetardHours > 0) {
-    phases.push({ label: t('timeline.phaseLabels.coldRetard'), icon: '❄️', iconKey: 'cold', durationH: schedule.coldRetardHours, stepKind: 'cold' });
+    phases.push({ label: t('timeline.phaseLabels.coldRetard'), icon: '', iconKey: 'cold', durationH: schedule.coldRetardHours, stepKind: 'cold' });
   }
 
   // Final Proof phase includes warmup. Preheat overlaps — not shown as a separate phase.

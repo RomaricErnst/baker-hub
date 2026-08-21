@@ -15,31 +15,31 @@ interface ClimatePickerProps {
 }
 
 // ── WMO weather codes ────────────────────────
-const WMO: Record<number, [emoji: string, desc: string]> = {
-   0: ['☀️',  'Clear sky'],
-   1: ['🌤️', 'Mainly clear'],
-   2: ['⛅',  'Partly cloudy'],
-   3: ['☁️',  'Overcast'],
-  45: ['🌫️', 'Fog'],
-  48: ['🌫️', 'Icy fog'],
-  51: ['🌦️', 'Light drizzle'],
-  53: ['🌦️', 'Drizzle'],
-  55: ['🌧️', 'Heavy drizzle'],
-  61: ['🌧️', 'Light rain'],
-  63: ['🌧️', 'Rain'],
-  65: ['🌧️', 'Heavy rain'],
-  71: ['🌨️', 'Light snow'],
-  73: ['❄️',  'Snow'],
-  75: ['❄️',  'Heavy snow'],
-  77: ['❄️',  'Snow grains'],
-  80: ['🌦️', 'Showers'],
-  81: ['🌧️', 'Heavy showers'],
-  82: ['⛈️', 'Violent showers'],
-  85: ['🌨️', 'Snow showers'],
-  86: ['❄️',  'Heavy snow showers'],
-  95: ['⛈️', 'Thunderstorm'],
-  96: ['⛈️', 'Thunderstorm + hail'],
-  99: ['⛈️', 'Severe thunderstorm'],
+const WMO: Record<number, string> = {
+   0: 'Clear sky',
+   1: 'Mainly clear',
+   2: 'Partly cloudy',
+   3: 'Overcast',
+  45: 'Fog',
+  48: 'Icy fog',
+  51: 'Light drizzle',
+  53: 'Drizzle',
+  55: 'Heavy drizzle',
+  61: 'Light rain',
+  63: 'Rain',
+  65: 'Heavy rain',
+  71: 'Light snow',
+  73: 'Snow',
+  75: 'Heavy snow',
+  77: 'Snow grains',
+  80: 'Showers',
+  81: 'Heavy showers',
+  82: 'Violent showers',
+  85: 'Snow showers',
+  86: 'Heavy snow showers',
+  95: 'Thunderstorm',
+  96: 'Thunderstorm + hail',
+  99: 'Severe thunderstorm',
 };
 
 const WMO_FR: Record<number, string> = {
@@ -59,11 +59,52 @@ function getWMODescFr(code: number): string {
   return lower !== undefined ? WMO_FR[lower] : 'Conditions inconnues';
 }
 
-function getWMO(code: number): [string, string] {
+function getWMO(code: number): string {
   // Try exact match, then nearest lower code
   if (WMO[code]) return WMO[code];
   const lower = Object.keys(WMO).map(Number).filter(k => k <= code).pop();
-  return lower !== undefined ? WMO[lower] : ['🌡️', 'Unknown conditions'];
+  return lower !== undefined ? WMO[lower] : 'Unknown conditions';
+}
+
+// The weather card used a platform emoji, which looked like nothing else in
+// the app and rendered differently on every device. WMO codes collapse into
+// six drawn shapes at the same line weight as the rest of the icons.
+function WeatherIcon({ code, size = 34 }: { code: number; size?: number }) {
+  const family =
+    code === 0 ? 'sun'
+    : code <= 2 ? 'partly'
+    : code === 3 || (code >= 45 && code <= 48) ? 'cloud'
+    : (code >= 71 && code <= 77) || code === 85 || code === 86 ? 'snow'
+    : code >= 95 ? 'storm'
+    : 'rain';
+  const p = {
+    fill: 'none', stroke: '#9C8248', strokeWidth: 1.6,
+    strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+  };
+  const cloud = <path d="M7 17.5h9.4a3.4 3.4 0 0 0 .3-6.8 4.9 4.9 0 0 0-9.3-1A3.5 3.5 0 0 0 7 17.5z" {...p} />;
+  const rays = [0, 45, 90, 135, 180, 225, 270, 315].map(a => {
+    const r = (a * Math.PI) / 180;
+    return <line key={a}
+      x1={12 + 6.8 * Math.cos(r)} y1={12 + 6.8 * Math.sin(r)}
+      x2={12 + 9.3 * Math.cos(r)} y2={12 + 9.3 * Math.sin(r)} {...p} />;
+  });
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      {family === 'sun' && <><circle cx="12" cy="12" r="4" {...p} />{rays}</>}
+      {family === 'partly' && <><circle cx="8.5" cy="8" r="3" {...p} />{cloud}</>}
+      {family === 'cloud' && cloud}
+      {family === 'rain' && <>{cloud}
+        <line x1="9.5" y1="19.5" x2="8.5" y2="22" {...p} />
+        <line x1="13.5" y1="19.5" x2="12.5" y2="22" {...p} /></>}
+      {family === 'snow' && <>{cloud}
+        <line x1="8.2" y1="21" x2="10.2" y2="21" {...p} />
+        <line x1="9.2" y1="20" x2="9.2" y2="22" {...p} />
+        <line x1="13.2" y1="21" x2="15.2" y2="21" {...p} />
+        <line x1="14.2" y1="20" x2="14.2" y2="22" {...p} /></>}
+      {family === 'storm' && <>{cloud}
+        <polyline points="12.5,19 10.5,22 13,21.6 11.4,24.4" {...p} /></>}
+    </svg>
+  );
 }
 
 // ── Humidity ─────────────────────────────────
@@ -316,7 +357,7 @@ export default function ClimatePicker({
             marginTop: '12px',
             lineHeight: 1.5,
           }}>
-            🌡️ {isFr ? <>Sous un climat chaud, les après-midis peuvent dépasser {tempC(28, u)}. Si votre cuisine chauffe en journée, indiquez plutôt la température maximale attendue.</> : <>In a warm climate, afternoon temps can push above {tempC(28, u)}. If your kitchen heats up during the day, consider entering your expected peak temperature instead.</>}
+            {isFr ? <>Sous un climat chaud, les après-midis peuvent dépasser {tempC(28, u)}. Si votre cuisine chauffe en journée, indiquez plutôt la température maximale attendue.</> : <>In a warm climate, afternoon temps can push above {tempC(28, u)}. If your kitchen heats up during the day, consider entering your expected peak temperature instead.</>}
           </div>
         )}
       </div>
@@ -443,7 +484,11 @@ export default function ClimatePicker({
             background: 'var(--warm)',
             display: 'flex', alignItems: 'center', gap: '16px',
           }}>
-            <div style={{ fontSize: '32px', opacity: .3 }}>🌡️</div>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8A7F78"
+                 strokeWidth="1.6" strokeLinecap="round" style={{ opacity: .35 }} aria-hidden="true">
+              <path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z" />
+              <line x1="12" y1="9" x2="12" y2="15" />
+            </svg>
             <div style={{ flex: 1 }}>
               <div style={{ height: '12px', background: 'var(--border)', borderRadius: '16px', width: '55%', marginBottom: '8px' }} />
               <div style={{ height: '10px', background: 'var(--border)', borderRadius: '16px', width: '35%' }} />
@@ -453,7 +498,7 @@ export default function ClimatePicker({
 
         {/* Weather card */}
         {weather && !loading && (() => {
-          const [wxEmoji, wxDesc] = getWMO(weather.weatherCode);
+          const wxDesc = getWMO(weather.weatherCode);
           return (
             <div style={{
               marginTop: '12px',
@@ -463,7 +508,7 @@ export default function ClimatePicker({
               background: 'var(--warm)',
               display: 'flex', alignItems: 'center', gap: '16px',
             }}>
-              <span style={{ fontSize: '35px', lineHeight: 1 }}>{wxEmoji}</span>
+              <WeatherIcon code={weather.weatherCode} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--char)' }}>
                   {weather.country ? `${weather.city}, ${weather.country}` : weather.city}

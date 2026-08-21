@@ -1189,7 +1189,7 @@ export default function FermentChart({
                       fontSize={9} fill="rgba(74,127,165,0.75)"
                       textAnchor="middle" fontFamily="DM Mono, monospace"
                     >
-                      ❄ {isFr ? 'frigo' : 'fridge'}
+                      {isFr ? 'frigo' : 'fridge'}
                     </text>
                   )}
                   {/* Fridge-in marker */}
@@ -1261,7 +1261,7 @@ export default function FermentChart({
                             fontSize={9} fill="rgba(74,127,165,0.75)"
                             textAnchor="middle" fontFamily="DM Mono, monospace"
                           >
-                            ❄ {isFr ? 'frigo' : 'fridge'}
+                            {isFr ? 'frigo' : 'fridge'}
                           </text>
                         )}
                       </g>
@@ -2082,9 +2082,9 @@ export default function FermentChart({
                   ? t('cardLabels.makeBiga')
                   : t('cardLabels.makePoolish')}
             </text>
-            {/* Protocol indicator — ❄ Fridge or 🌡 RT */}
+            {/* Protocol indicator — Fridge or RT */}
             <text
-              x={clampLabelX(activePrefX, '❄ Fridge', 10)}
+              x={clampLabelX(activePrefX, 'Fridge', 10)}
               y={allClose ? AXIS_Y + 34 : labelsClose ? AXIS_Y + 64 : AXIS_Y + 50}
               fontSize={10}
               fill={prefNeedsFridge ? '#6A8FAF' : '#C4A030'}
@@ -2094,11 +2094,11 @@ export default function FermentChart({
             >
               {isLevain
                 ? (starterFridgeOutTime
-                    ? (isFr ? '❄ Frigo' : '❄ Fridge')
+                    ? (isFr ? 'Frigo' : 'Fridge')
                     : (isFr ? 'Temp. ambiante' : 'Room temp'))
                 : (prefNeedsFridge
-                    ? (isFr ? '❄ Frigo' : '❄ Fridge')
-                    : (isFr ? '🌡 Temp. ambiante' : '🌡 Room temp'))}
+                    ? (isFr ? 'Frigo' : 'Fridge')
+                    : (isFr ? 'Temp. ambiante' : 'Room temp'))}
             </text>
           </>
         )}

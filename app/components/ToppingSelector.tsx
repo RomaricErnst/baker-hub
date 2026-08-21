@@ -233,26 +233,6 @@ const REGION_NAMES: Record<RegionTag, { en: string; fr: string }> = {
   northern_italian: { en: 'Northern Italy', fr: 'Italie du Nord' },
 };
 
-// ─── Emoji map ────────────────────────────────────────────────
-
-function pizzaEmoji(id: string): string {
-  if (id.includes('diavola') || id.includes('nduja') || id.includes('spicy')) return '🌶️';
-  if (id.includes('formaggi') || id.includes('raclette') || id.includes('tartiflette') || id.includes('chevre') || id.includes('brie')) return '🧀';
-  if (id.includes('burrata')) return '✨';
-  if (id.includes('flamm') || id.includes('tarte_flambee')) return '🥐';
-  if (id.includes('salmon') || id.includes('tuna') || id.includes('tonno')) return '🐟';
-  if (id.includes('bbq') || id.includes('chicken')) return '🍗';
-  if (id.includes('nutella') || id.includes('fraises')) return '🍓';
-  if (id.includes('tatin') || id.includes('camembert')) return '🍎';
-  if (id.includes('chocolat') || id.includes('poire')) return '🍐';
-  if (id.includes('brulee')) return '🍮';
-  if (id.includes('speculoos')) return '🍌';
-  if (id.includes('miel') || id.includes('honey')) return '🍯';
-  if (id.includes('funghi') || id.includes('mushroom')) return '🍄';
-  if (id.includes('prosciutto') || id.includes('bayonne') || id.includes('speck')) return '🥩';
-  return '🍕';
-}
-
 // ─── Inline styles ────────────────────────────────────────────
 
 const S = {
@@ -914,7 +894,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
     sections.forEach(section => {
       text += `${section.label.toUpperCase()}\n`;
       section.items.forEach(item => {
-        const tick = ticked[item.id] ? '✓' : '☐';
+        const tick = ticked[item.id] ? '✓' : '';
         const name = item.name[l] ?? item.name.en;
         const qty = item.totalAmount && item.unit ? formatQty(item.totalAmount, item.unit, locale) : '';
         text += `${tick} ${name}${qty ? '  —  ' + qty : ''}\n`;
@@ -924,7 +904,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
     if (recipeIngredients?.length) {
       text += `${l === 'fr' ? 'POUR VOTRE PÂTE' : 'FOR YOUR DOUGH'}\n`;
-      recipeIngredients.forEach(i => { text += `☐ ${i.name}  —  ${i.amount}\n`; });
+      recipeIngredients.forEach(i => { text += `${i.name}  —  ${i.amount}\n`; });
       text += '\n';
     }
     text += `bakerhub.app`;
@@ -1720,10 +1700,10 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             if (filter.region !== null) {
               activeChips.push({ label: REGION_NAMES[filter.region][l], onRemove: () => setRegion(null) });
             } else if ((filter.regions ?? []).length > 0) {
-              const groupLabel = regionParent === 'italy' ? (l === 'fr' ? '🇮🇹 Italie' : '🇮🇹 Italy')
-                : regionParent === 'france' ? '🇫🇷 France'
-                : regionParent === 'asia' ? '🌏 Asia'
-                : (l === 'fr' ? '🌍 Fusion' : '🌍 Fusion');
+              const groupLabel = regionParent === 'italy' ? (l === 'fr' ? 'Italie' : 'Italy')
+                : regionParent === 'france' ? 'France'
+                : regionParent === 'asia' ? 'Asia'
+                : (l === 'fr' ? 'Fusion' : 'Fusion');
               activeChips.push({ label: groupLabel, onRemove: () => { setRegions(null); setRegionParent('all'); } });
             }
             if (filter.season !== 'all') activeChips.push({ label: SEASON_LABELS[filter.season][l], onRemove: () => setSeason('all') });
@@ -1987,7 +1967,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
                       <FilterSection
                         title={l === 'fr' ? 'Région' : 'Region'}
-                        badge={regionParent !== 'all' ? (regionParent === 'italy' ? '🇮🇹' : regionParent === 'france' ? '🇫🇷' : regionParent === 'asia' ? '🌏' : '🌍') : undefined}
+                        badge={regionParent !== 'all' ? (regionParent === 'italy' ? '' : regionParent === 'france' ? '' : regionParent === 'asia' ? '' : '') : undefined}
                         open={open.region}
                         onToggle={() => togOpen('region')}
                       >
@@ -1996,10 +1976,10 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                             <span key={r} style={S.pill(regionParent === r, 'terra')}
                               onClick={() => { setRegionParent(r); setRegion(null); setRegions(r === 'all' ? null : REGION_GROUP_MAP[r] ?? null); }}>
                               {r === 'all'    ? (l === 'fr' ? 'Toutes' : 'All')
-                              : r === 'italy'  ? '🇮🇹 ' + (l === 'fr' ? 'Italie' : 'Italy')
-                              : r === 'france' ? '🇫🇷 France'
-                              : r === 'asia'   ? '🌏 Asia'
-                              : '🌍 Fusion'}
+                              : r === 'italy'  ? (l === 'fr' ? 'Italie' : 'Italy')
+                              : r === 'france' ? 'France'
+                              : r === 'asia'   ? 'Asia'
+                              : 'Fusion'}
                             </span>
                           ))}
                         </div>
@@ -2246,7 +2226,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         background: 'rgba(253,251,247,0.92)', cursor: 'pointer',
                         fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#6B4423',
                       }}
-                    >✎</button>
+                    ></button>
                   </div>
                 ))}
               </div>

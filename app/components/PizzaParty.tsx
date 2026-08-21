@@ -98,7 +98,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           alignItems: 'center',
           gap: '8px',
         }}>
-          <span style={{ flex: 1 }}>🍕 {slotNote}</span>
+          <span style={{ flex: 1 }}>{slotNote}</span>
           <button
             onClick={() => setSlotNote(null)}
             style={{

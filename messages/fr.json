@@ -3,13 +3,13 @@
     "tagline": "planifiée autour de votre vie."
   },
   "auth": {
-    "signIn": "🔑 Se connecter",
+    "signIn": "Se connecter",
     "signOut": "Se déconnecter"
   },
   "common": {
     "continue": "Continuer →",
     "edit": "Modifier",
-    "notSure": "🤔 Pas sûr ?",
+    "notSure": "Pas sûr ?",
     "grams": "g",
     "total": "Pâte totale",
     "quantity": "Quantité",
@@ -17,7 +17,7 @@
     "saving": "Enregistrement…",
     "saved": "✓ Enregistré !",
     "saveFailed": "Échec de l'enregistrement",
-    "saveRecipe": "💾 Sauvegarder la recette",
+    "saveRecipe": "Sauvegarder la recette",
     "pickDate": "Choisir une date",
     "selectDateFirst": "Sélectionnez d'abord une date",
     "direct": "Direct",
@@ -25,8 +25,8 @@
     "generateFirst": "Générez d'abord votre recette"
   },
   "tabs": {
-    "guided": "🧭 Simple",
-    "advanced": "🎛️ Personnalisé",
+    "guided": "Simple",
+    "advanced": "Personnalisé",
     "setup": "Configuration",
     "plan": "Recette",
     "guide": "Protocole",
@@ -43,7 +43,7 @@
     "generateBtn": "Générer ma recette →",
     "generateBtnPizzaParty": "Planifier ma pizza party →",
     "editSetup": "← Modifier les paramètres",
-    "staleBanner": "⚠️ Réglages modifiés — régénérez pour mettre à jour",
+    "staleBanner": "Réglages modifiés — régénérez pour mettre à jour",
     "regenerate": "Régénérer",
     "emptyBakePlan": "Complétez vos paramètres pour générer votre recette",
     "confirmOverwrite": "Ceci écrasera votre recette sauvegardée. Continuer ?"
@@ -147,14 +147,14 @@
     "corniceGenerous": "Généreuse"
   },
   "results": {
-    "ready": "Votre recette est prête 🎯",
+    "ready": "Votre recette est prête",
     "startNew": "↑ Nouvelle recette",
     "computeError": "Impossible de calculer la recette — vérifiez votre style et vos horaires.",
     "recommended": "Recommandé",
     "adjustmentMultiplier": "Multiplicateur d'ajustement",
-    "largeBatchTitle": "⚖️ Ajustement levure grande quantité",
+    "largeBatchTitle": "Ajustement levure grande quantité",
     "largeBatchDesc": "Une grande masse de pâte retient plus la chaleur — la fermentation peut être plus rapide. Ajustez si nécessaire.",
-    "saveRecipe": "💾 Sauvegarder la recette",
+    "saveRecipe": "Sauvegarder la recette",
     "saving": "Enregistrement…",
     "saved": "✓ Enregistré !",
     "saveFailed": "Échec de l'enregistrement"
@@ -190,7 +190,7 @@
       "heading": "Des contraintes horaires ?",
       "sub": "Optionnel — indiquez vos indisponibilités et on adapte le planning.",
       "quickPresets": "Raccourcis",
-      "weekdays": "💼 Jours ouvrés",
+      "weekdays": "Jours ouvrés",
       "weekdayHours": "· 9h → 18h",
       "noOvernights": "Pas de nuit dans ce planning.",
       "nightHours": "· 23h → 7h",
@@ -201,7 +201,7 @@
       "from": "De",
       "to": "À",
       "addBlock": "Ajouter",
-      "nights": "🌙 Nuits",
+      "nights": "Nuits",
       "nightHoursLabel": "· 23h → 7h"
     },
     "adjustLabel": "Fenêtres de fermentation · ajuster le timing",
@@ -224,7 +224,7 @@
       "belowClassic": "En dessous de la plage classique",
       "classic": "✓ Plage classique",
       "extended": "◆ Plage étendue",
-      "advanced": "⚡ Technique avancée",
+      "advanced": "Technique avancée",
       "noteStiff": "La pâte sera assez ferme — un peu plus d'eau peut aider à l'étirer.",
       "noteBelowClassic": "En dessous de la plage classique pour {name}. La pâte sera plus ferme et un peu plus dense.",
       "noteClassic": "Plage authentique pour {name}. Bonne maniabilité et texture traditionnelle.",
@@ -264,7 +264,7 @@
     "feedStarter": "Rafraîchir le levain",
     "makePreferment": "Préparer le pré-ferment",
     "hydration": "hydratation",
-    "coldFerment": "❄ Fermentation froide",
+    "coldFerment": "Fermentation froide",
     "heading": "Pré-ferment",
     "subtitle": "Tête de fermentation optionnelle pour la saveur et la structure.",
     "none": {
@@ -321,9 +321,9 @@
     "warmNudge": "Dans un climat chaud, les températures de l'après-midi peuvent dépasser 28°C. Si votre cuisine se réchauffe en journée, entrez plutôt la température maximale attendue.",
     "fridgeWarning": "Frigo à {temp}°C — plus chaud que les 4°C standard. La levure sera plus active pendant la pousse au froid.",
     "priority": "Priorité de fermentation",
-    "priorityFlavour": "🐢 Saveur avant tout",
-    "priorityBalanced": "⚖️ Équilibré",
-    "prioritySpeed": "⚡ Pousse rapide",
+    "priorityFlavour": "Saveur avant tout",
+    "priorityBalanced": "Équilibré",
+    "prioritySpeed": "Pousse rapide",
     "heading": "Votre cuisine",
     "subtitle": "Le climat décide de la vitesse de fermentation.",
     "cool": {
@@ -401,8 +401,8 @@
       "shaped": "La pâte façonnée pousse au frigo. Le froid la raffermit, approfondit les arômes et facilite la grigne."
     },
     "divideTip": "Pesez et divisez la pâte en {n} pâton{plural}. Pincez le dessous pour créer une tension de surface.",
-    "divideTipCold": " La pâte froide est plus facile à bouler — travaillez vite avant qu'elle se réchauffe.",
-    "divideTipWarm": " ⚠️ Votre cuisine est chaude — remettez les pâtons au frigo dans les 20 minutes.",
+    "divideTipCold": "La pâte froide est plus facile à bouler — travaillez vite avant qu'elle se réchauffe.",
+    "divideTipWarm": "Votre cuisine est chaude — remettez les pâtons au frigo dans les 20 minutes.",
     "finalProofTips": {
       "withCold": "Sortez les pâtons du frigo et reposez jusqu'à ce qu'ils soient légèrement souples, puis faites l'apprêt couverts à température ambiante. Préchauffez votre four pendant l'apprêt.",
       "withoutCold": "Boulez les pâtons et faites l'apprêt couverts à température ambiante. Préchauffez votre four pendant l'apprêt."
@@ -430,7 +430,7 @@
     "finalProofCovered": "Les pâtons sont déjà façonnés — couvrez et laissez à température ambiante jusqu'au test du creux.",
     "finalProofShape": "Façonnez vos pâtons si ce n'est pas fait. Couvrez et laissez à température ambiante jusqu'au test du creux.",
     "divideTipBread": "Pesez et divisez la pâte en {n} pâton{plural}. Façonnez en gardant une surface tendue — soudure bien pincée dessous.",
-    "divideTipColdBread": " La pâte froide est plus facile à façonner — travaillez vite avant qu'elle se réchauffe.",
+    "divideTipColdBread": "La pâte froide est plus facile à façonner — travaillez vite avant qu'elle se réchauffe.",
     "restRtTipBread": "Sortez la pâte du frigo et laissez-la couverte à température ambiante jusqu'à ce qu'elle soit légèrement souple.",
     "finalProofTipsBread": {
       "withCold": "Sortez la pâte du frigo et laissez-la se détendre, puis faites l'apprêt couverte à température ambiante. Préchauffez votre four pendant l'apprêt.",
@@ -451,7 +451,7 @@
     "largeBatchTitle": "Grande quantité — pétrir en plusieurs fois",
     "largeBatchFinalDough": "Votre pâte finale fait ~{grams}g — trop pour votre {mixer} en une fois. Divisez en {n} pétrissages.",
     "largeBatchTotal": "Votre pâte totale fait {grams}g — trop pour votre {mixer} en une fois. Divisez en {n} pétrissages.",
-    "ovenCapacityNote": "🍕 {n} pizzas, une à la fois dans votre four — prévoyez environ {mins} min de cuisson. Enfourner par vagues garde chaque pizza bien chaude ; vos invités mangeront par tournées.",
+    "ovenCapacityNote": "{n} pizzas, une à la fois dans votre four — prévoyez environ {mins} min de cuisson. Enfourner par vagues garde chaque pizza bien chaude ; vos invités mangeront par tournées.",
     "makeYourPref": "Préparez votre {name}",
     "finalDoughTitle": "Pâte finale",
     "addPrefToRest": "Ajoutez votre {name} aux ingrédients restants",
@@ -468,11 +468,11 @@
     "dilutionHide": "Masquer le conseil →",
     "priorityAdjust": "Ajuster →",
     "priorityReset": "Réinitialiser →",
-    "priorityFlavour": "🟢 Saveur",
+    "priorityFlavour": "Saveur",
     "priorityFlavourDesc": "Moins de levure, plus de temps",
-    "priorityBalanced": "⚖️ Équilibré",
+    "priorityBalanced": "Équilibré",
     "priorityBalancedDesc": "Standard",
-    "prioritySpeed": "⚡ Rapidité",
+    "prioritySpeed": "Rapidité",
     "prioritySpeedDesc": "Plus de levure, plus vite",
     "dilutionTitle": "Dilution requise — quantité trop petite à peser directement",
     "poolishTitle": "Poolish recommandé",
@@ -509,8 +509,8 @@
     "savedRecipe": "Sauvegardé ✓",
     "saveError": "Erreur",
     "precisionScaleMin": "Balance de précision recommandée — quantité trop petite pour une balance standard.",
-    "priorityFlavourNote": "🟢 Levure saveur — vous avez tout le temps",
-    "prioritySpeedNote": "⚡ Levure accélérée — votre fenêtre est courte",
+    "priorityFlavourNote": "Levure saveur — vous avez tout le temps",
+    "prioritySpeedNote": "Levure accélérée — votre fenêtre est courte",
     "starterFeedNote": "Nourrissez votre levain 4–12h avant. Utilisez-le au pic — doublé en volume, surface bombée.",
     "bulkReadyWhen": "La pousse est prête quand…",
     "starterPrepKeep": "Gardez <b>{keep}g</b> de votre levain actuel",
@@ -588,14 +588,14 @@
     "total": "Total",
     "flourNote": {
       "short": "Une farine à pizza ou à pain convient bien pour ce plan.",
-      "medium": "La farine à pizza donne les meilleurs résultats — 00 italienne idéale. T45 forte fonctionne aussi 🌾",
-      "long": "Farine à pizza forte recommandée — 00 italienne W270+. Alternative : T45 forte W260+ 🌾",
+      "medium": "La farine à pizza donne les meilleurs résultats — 00 italienne idéale. T45 forte fonctionne aussi",
+      "long": "Farine à pizza forte recommandée — 00 italienne W270+. Alternative : T45 forte W260+",
       "adapt": "Vous utilisez de la farine ordinaire ou T55 ? Touchez pour adapter →",
       "breadShort": "Une farine à pain convient bien pour ce plan.",
-      "breadMedium": "Farine à pain forte recommandée — T65 ou W200+ 🌾",
-      "breadLong": "Farine riche en protéines indispensable — T65 forte ou W260+ 🌾"
+      "breadMedium": "Farine à pain forte recommandée — T65 ou W200+",
+      "breadLong": "Farine riche en protéines indispensable — T65 forte ou W260+"
     },
-    "yeastReassurance": "C'est intentionnel — moins de levure, plus de temps = saveur plus profonde. Faites confiance au processus. 🍕",
+    "yeastReassurance": "C'est intentionnel — moins de levure, plus de temps = saveur plus profonde. Faites confiance au processus.",
     "iceProtocol": "Protocole eau glacée",
     "precisionScale": "Balance de précision recommandée — c'est une très petite quantité de levure."
   },
@@ -1574,16 +1574,16 @@
       "6pm": "18h"
     },
     "mixStatus": {
-      "ready": "🟢 Pâte prête à la cuisson",
-      "peaksBefore": "🟡 La pâte atteint son pic avant la cuisson",
-      "peaksAfter": "🟡 La pâte atteint son pic juste après la cuisson"
+      "ready": "Pâte prête à la cuisson",
+      "peaksBefore": "La pâte atteint son pic avant la cuisson",
+      "peaksAfter": "La pâte atteint son pic juste après la cuisson"
     },
     "prefStatus": {
-      "inFridge": "🧊 Au frigo — prêt au démarrage",
-      "readyAtMix": "🟢 Prêt au démarrage de la pâte",
-      "earlyOk": "🟡 Légèrement passé son pic — encore utilisable",
-      "notYetPeak": "🟡 Pas encore au pic — en développement",
-      "pastPeak": "🔴 Passé son pic — risque de surfermentation"
+      "inFridge": "Au frigo — prêt au démarrage",
+      "readyAtMix": "Prêt au démarrage de la pâte",
+      "earlyOk": "Légèrement passé son pic — encore utilisable",
+      "notYetPeak": "Pas encore au pic — en développement",
+      "pastPeak": "Passé son pic — risque de surfermentation"
     },
     "zoneLabels": {
       "startDoughWindow": "Fenêtre de démarrage",

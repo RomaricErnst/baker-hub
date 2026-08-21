@@ -1025,7 +1025,7 @@ export default function ShareCard({
                             setSelectedPhotoUrls(prev => [p.url, ...prev.filter(u => u !== p.url)]);
                           }}
                           style={{ ...miniBtn, bottom: '3px', left: '3px' }}
-                        >★</button>
+                        ></button>
                       )}
                       {/* Crop anchor cycle: center → top → bottom */}
                       <button
@@ -1094,7 +1094,7 @@ export default function ShareCard({
             <span style={{
               fontFamily: 'var(--font-ui)', fontSize: '11px',
               color: 'var(--smoke)', opacity: 0.4,
-            }}>✎ editable</span>
+            }}>editable</span>
           </div>
           <textarea
             value={editableCaption}
@@ -1156,7 +1156,7 @@ export default function ShareCard({
         >
           {generating
             ? (l === 'fr' ? 'Génération...' : 'Generating...')
-            : (l === 'fr' ? '✦ Partager' : '✦ Share this bake')}
+            : (l === 'fr' ? 'Partager' : 'Share this bake')}
         </button>
         {canCopyImage && (
           <button
