@@ -220,8 +220,14 @@ function useStepSwipe(flow: StepFlow, enabled: boolean) {
 // A code default is a suggestion until the baker has moved past its page:
 // passing through with Suivant counts as adopting it, which is exactly what
 // highestStep already records.
-function stepAnswered(s: StepDef, highest: number): boolean {
-  return s.value != null && (!s.prefilled || highest > s.id);
+function stepAnswered(s: StepDef, highest: number, list?: StepDef[]): boolean {
+  if (s.value == null) return false;
+  if (!s.prefilled) return true;
+  // A default counts as adopted once the baker has moved past its page — but
+  // there is no past the last page. Without this the final step's own CTA read
+  // "Dough not confirmed" forever and jumped to the page it was already on.
+  const isLast = list != null && list.length > 0 && list[list.length - 1].id === s.id;
+  return isLast ? highest >= s.id : highest > s.id;
 }
 
 // ── Summary chip carousel ─────────────────────
@@ -241,7 +247,7 @@ function SummaryChips({ flow, topOffset = 62, raised = false }: { flow: StepFlow
       zIndex: 25, background: 'var(--cream)',
     }}>
       {shown.map(s => {
-        const answered = stepAnswered(s, flow.highestStep);
+        const answered = stepAnswered(s, flow.highestStep, flow.steps);
         const proposed = s.value != null && !answered;
         const isOn = s.id === flow.activeId;
         return (
@@ -290,7 +296,7 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
   if (!step) return null;
   const fr     = flow.locale === 'fr';
   const isLast = idx === flow.steps.length - 1;
-  const gap    = flow.steps.find(s => !stepAnswered(s, flow.highestStep));
+  const gap    = flow.steps.find(s => !stepAnswered(s, flow.highestStep, flow.steps));
 
   const nextStyle: React.CSSProperties = {
     border: 'none', borderRadius: '16px', padding: '16px 20px',
@@ -1509,7 +1515,7 @@ export default function Home() {
       const step = list[k];
       const sourdoughStep = yeastType === 'sourdough' && step.chip !== 'Plan'
         && (step.id === 6 || step.id === 7);
-      if (sourdoughStep || !stepAnswered(step, highest)) return step.id;
+      if (sourdoughStep || !stepAnswered(step, highest, list)) return step.id;
     }
     return list[list.length - 1].id;
   }
@@ -3460,21 +3466,8 @@ export default function Home() {
                 mode={tab === 'custom' ? 'custom' : 'simple'}
                 styleKey={styleKey}
               />
-              <div style={{ marginTop: '12px' }}>
-                <button
-                  onClick={() => advanceAdv(6)}
-                  className="btn"
-                  style={{
-                    width: '100%', padding: '16px 20px',
-                    border: 'none', borderRadius: '12px',
-                    background: 'var(--terra)', color: '#fff',
-                    fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700,
-                    cursor: 'pointer', boxShadow: '0 2px 8px rgba(107, 68, 35,0.22)',
-                  }}
-                >
-                  {t('common.continueBtn')}
-                </button>
-              </div>
+              {/* The page's own Suivant carries this now — the flour step
+                  kept a second Continue when the accordion was retired. */}
             </StepPage>
 
             {/* ─── ADV STEP 8: Yeast ───────────────── */}

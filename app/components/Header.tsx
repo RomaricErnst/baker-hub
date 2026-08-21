@@ -463,9 +463,11 @@ export default function Header({
           benign actions — Save and Profile — sit together at 8px. Nothing
           destructive is ever adjacent to something frequent. */}
       {!backHref && (() => {
+        // Save appears once there is something worth saving. Start over does
+        // NOT wait for that: it is also how a baker switches Pizza <-> Pain,
+        // so it has to be reachable from the first configuration screen.
+        // Gating both behind "has work" hid it for the whole setup flow.
         const hasWork = (recipeGenerated || sessionSaved || sessionRestored) && !hideActionBar;
-        const showAny = recipeGenerated || sessionSaved || sessionRestored;
-        if (!showAny) return null;
         return (
           <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
 
