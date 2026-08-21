@@ -28,7 +28,7 @@ const PILL_BASE: React.CSSProperties = {
 
 const LABEL_ROW: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: '6px',
-  fontSize: '.85rem', fontWeight: 500,
+  fontSize: '14px', fontWeight: 500,
   whiteSpace: 'nowrap',
 };
 
@@ -77,7 +77,7 @@ export default function PlanNav({ variant, onEditSetup, onOpenGuide, onShare }: 
             </svg>
           </span>
           <span style={{
-            fontFamily: 'var(--font-dm-mono)', fontSize: '.62rem',
+            fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
             color: cta ? 'rgba(255,255,255,0.75)' : 'var(--smoke)',
           }}>
             {t('guideSub')}

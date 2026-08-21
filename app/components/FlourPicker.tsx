@@ -360,8 +360,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             <line x1="12" y1="12" x2="20" y2="12" />
           </svg>
           <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#2B2420', fontFamily: 'DM Sans, sans-serif' }}>{locale === 'fr' ? 'Scannez votre sachet' : 'Scan your bag'}</div>
-            <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>{locale === 'fr' ? 'Photographiez n’importe quel sachet de farine' : 'Point your camera at any flour bag'}</div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#2B2420', fontFamily: 'var(--font-dm-sans)' }}>{locale === 'fr' ? 'Scannez votre sachet' : 'Scan your bag'}</div>
+            <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)' }}>{locale === 'fr' ? 'Photographiez n’importe quel sachet de farine' : 'Point your camera at any flour bag'}</div>
           </div>
         </div>
         <span style={{ fontSize: '15px', color: '#6B4423' }}>→</span>
@@ -385,22 +385,22 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           borderRadius:'14px', padding:'12px 14px', marginBottom:'12px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'8px' }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily:'var(--font-dm-mono)', fontSize:'9.5px', letterSpacing:'.1em', color:'var(--bread)', marginBottom:'3px' }}>
+              <div style={{ fontFamily:'var(--font-dm-mono)', fontSize: '11px', letterSpacing:'.1em', color:'var(--bread)', marginBottom:'3px' }}>
                 {locale === 'fr' ? 'VOTRE FARINE' : 'YOUR FLOUR'}
               </div>
-              <div style={{ fontFamily:'var(--font-playfair)', fontSize:'15px', fontWeight:700, color:'#2B2420', lineHeight:1.25 }}>
+              <div style={{ fontFamily:'var(--font-playfair)', fontSize: '15px', fontWeight:700, color:'#2B2420', lineHeight:1.25 }}>
                 {blend.brandProduct}
               </div>
             </div>
             <button onClick={() => onBlendChange({ ...blend, brandProduct: undefined, brandKey: undefined })}
               style={{ background:'none', border:'none', cursor:'pointer', flexShrink:0,
-                color:'#8A7F78', fontSize:'12px', fontFamily:'DM Sans, sans-serif',
+                color:'#8A7F78', fontSize: '12px', fontFamily:'DM Sans, sans-serif',
                 textDecoration:'underline', textUnderlineOffset:'2px', padding:'2px 0' }}>
               {locale === 'fr' ? 'Changer' : 'Change'}
             </button>
           </div>
           <div style={{ display:'flex', gap:'6px', marginTop:'8px', flexWrap:'wrap' }}>
-            <span style={{ fontFamily:'var(--font-dm-mono)', fontSize:'10.5px', padding:'3px 9px',
+            <span style={{ fontFamily:'var(--font-dm-mono)', fontSize: '11px', padding:'3px 9px',
               borderRadius:'20px', background:'rgba(139,105,20,0.1)', color:'var(--bread)' }}>
               W{blend.wOverride ?? '—'}
             </span>
@@ -411,7 +411,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       {/* ── Divider ────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
         <div style={{ flex: 1, height: '1px', background: '#E8E0D5' }} />
-        <span style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap', letterSpacing: '.04em' }}>or search 285 flours</span>
+        <span style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap', letterSpacing: '.04em' }}>or search 285 flours</span>
         <div style={{ flex: 1, height: '1px', background: '#E8E0D5' }} />
       </div>
 
@@ -446,7 +446,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   style={{
                     padding: '7px 10px', borderRadius: '20px',
                     border: 'none', cursor: 'pointer', flexShrink: 0,
-                    fontSize: '12px', fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+                    fontSize: '12px', fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
                     background: (filtersOpen || filterType || filterOrigin || filterManufacturer) ? '#2B2420' : '#F0EBE0',
                     color: (filtersOpen || filterType || filterOrigin || filterManufacturer) ? 'white' : '#3D3530',
                     display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap',
@@ -467,7 +467,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     style={{
                       padding: '7px 10px', borderRadius: '20px',
                       border: 'none', cursor: 'pointer',
-                      fontSize: '12px', fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+                      fontSize: '12px', fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
                       background: !!filterType ? '#2B2420' : '#F0EBE0',
                       color: !!filterType ? 'white' : '#3D3530',
                       whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px',
@@ -505,7 +505,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     style={{
                       padding: '7px 10px', borderRadius: '20px',
                       border: 'none', cursor: 'pointer',
-                      fontSize: '12px', fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+                      fontSize: '12px', fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
                       background: !!filterOrigin ? '#2B2420' : '#F0EBE0',
                       color: !!filterOrigin ? 'white' : '#3D3530',
                       whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px',
@@ -543,7 +543,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     style={{
                       padding: '7px 10px', borderRadius: '20px',
                       border: 'none', cursor: 'pointer',
-                      fontSize: '12px', fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+                      fontSize: '12px', fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
                       background: !!filterManufacturer ? '#2B2420' : '#F0EBE0',
                       color: !!filterManufacturer ? 'white' : '#3D3530',
                       whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px',
@@ -591,7 +591,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       borderRadius: '20px',
                       border: apacCountry === code ? '1.5px solid #6B4423' : '1px solid #E8E0D5',
                       background: apacCountry === code ? '#FDF0EB' : 'transparent',
-                      fontSize: '18px',
+                      fontSize: '17px',
                       cursor: 'pointer',
                       lineHeight: 1,
                     }}
@@ -615,7 +615,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       borderRadius: '20px',
                       border: europeCountry === code ? '1.5px solid #6B4423' : '1px solid #E8E0D5',
                       background: europeCountry === code ? '#FDF0EB' : 'transparent',
-                      fontSize: '18px',
+                      fontSize: '17px',
                       cursor: 'pointer',
                       lineHeight: 1,
                     }}
@@ -639,7 +639,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       borderRadius: '20px',
                       border: americasCountry === code ? '1.5px solid #6B4423' : '1px solid #E8E0D5',
                       background: americasCountry === code ? '#FDF0EB' : 'transparent',
-                      fontSize: '18px',
+                      fontSize: '17px',
                       cursor: 'pointer',
                       lineHeight: 1,
                     }}
@@ -673,7 +673,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 )}
                 {[filterType, filterOrigin, filterManufacturer].filter(Boolean).length > 1 && (
                   <span
-                    style={{ fontSize: '11px', color: '#6B4423', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+                    style={{ fontSize: '11px', color: '#6B4423', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)' }}
                     onClick={() => { setFilterType(null); setFilterOrigin(null); setFilterManufacturer(null); setApacCountry(null); setEuropeCountry(null); setAmericasCountry(null); }}
                   >
                     {locale === 'fr' ? 'Tout effacer' : 'Clear all'}
@@ -696,7 +696,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   : (isFr ? `Pour le ${styleName}` : `For ${styleName}`);
                 return (
                   <div>
-                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
                       {sectionLabel}
                     </div>
                     <div style={{ marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -713,10 +713,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                               background: isSelected ? 'rgba(139,105,20,0.08)' : '#FDFBF7',
                             }}
                           >
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: isSelected ? 'var(--bread)' : '#2B2420', fontFamily: 'DM Sans, sans-serif' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: isSelected ? 'var(--bread)' : '#2B2420', fontFamily: 'var(--font-dm-sans)' }}>
                               {t.label}
                             </span>
-                            <span style={{ fontSize: '10.5px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>
+                            <span style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>
                               W~{t.w} · ~{t.protein}%
                             </span>
                           </button>
@@ -742,11 +742,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               return (
                 <div>
                   {noFiltersActive ? (
-                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
                       {isFr ? 'Coups de cœur' : 'Crowd favourites'}
                     </div>
                   ) : (
-                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'DM Sans, sans-serif' }}>
+                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'var(--font-dm-sans)' }}>
                       {isFr
                         ? `${displayList.length} farine${displayList.length !== 1 ? 's' : ''} trouvée${displayList.length !== 1 ? 's' : ''}`
                         : `${displayList.length} flour${displayList.length !== 1 ? 's' : ''} found`}
@@ -769,10 +769,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(107, 68, 35,0.04)' : 'transparent'; }}
                       >
                         <div>
-                          <div style={{ fontSize: '13px', fontWeight: 500, color: isSelected ? '#6B4423' : '#2B2420', fontFamily: 'DM Sans, sans-serif' }}>
+                          <div style={{ fontSize: '13px', fontWeight: 500, color: isSelected ? '#6B4423' : '#2B2420', fontFamily: 'var(--font-dm-sans)' }}>
                             {f.brand}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>{f.name}</div>
+                          <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)' }}>{f.name}</div>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
                           <div style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', color: f.wPublished ? '#2B2420' : '#8A7F78' }}>
@@ -794,7 +794,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             <div style={{ marginTop: '12px', borderTop: '1px solid #E8E0D5', paddingTop: '10px' }}>
               <div
                 onClick={() => { setTypeWOpen(o => !o); if (typeWOpen) setQuickSub(null); }}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', fontWeight: 500, background: '#F0EBE0', borderRadius: '8px', padding: '8px 10px' }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontWeight: 500, background: '#F0EBE0', borderRadius: '8px', padding: '8px 10px' }}
               >
                 <span>{locale === 'fr' ? 'Votre farine est absente ? Entrez le type ou le W →' : 'Don’t see your flour? Enter type or W →'}</span>
                 <span style={{ fontSize: '11px', color: '#8A7F78' }}>{typeWOpen ? '▾' : '▸'}</span>
@@ -838,11 +838,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   )}
 
                   {/* or separator */}
-                  <div style={{ textAlign: 'center', fontSize: '11px', color: '#8A7F78', padding: '2px 0', fontFamily: 'DM Sans, sans-serif' }}>or</div>
+                  <div style={{ textAlign: 'center', fontSize: '11px', color: '#8A7F78', padding: '2px 0', fontFamily: 'var(--font-dm-sans)' }}>or</div>
 
                   {/* I know my W value */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', background: '#F0EBE0', marginTop: '6px' }}>
-                    <span style={{ fontSize: '13px', color: '#3D3530', fontFamily: 'DM Sans, sans-serif', flexShrink: 0 }}>{locale === 'fr' ? 'Je connais mon W' : 'I know my W value'}</span>
+                    <span style={{ fontSize: '13px', color: '#3D3530', fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>{locale === 'fr' ? 'Je connais mon W' : 'I know my W value'}</span>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -868,7 +868,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         width: '80px', padding: '0 12px',
                         height: '44px',
                         border: '1.5px solid #E8E0D5', borderRadius: '8px',
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '16px',
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '15px',
                         fontWeight: 700, color: '#2B2420',
                         background: 'white', outline: 'none', textAlign: 'center',
                       }}
@@ -910,7 +910,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               <span style={{ fontSize: '14px', color: '#6B4423', fontWeight: 600 }}>+</span>
               <span>{locale === 'fr' ? 'Ajouter une seconde farine' : 'Add a second flour'}</span>
               <span style={{
-                fontSize: '10px', fontFamily: 'DM Sans, sans-serif',
+                fontSize: '11px', fontFamily: 'var(--font-dm-sans)',
                 background: '#EDE8E0', color: '#8A7F78',
                 borderRadius: '20px', padding: '1px 7px',
                 border: '1px solid #DDD8D0',
@@ -928,10 +928,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <div>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#2B2420', fontFamily: 'DM Sans, sans-serif' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#2B2420', fontFamily: 'var(--font-dm-sans)' }}>
                         {blendSelectedF2.brand ? `${blendSelectedF2.brand} ${blendSelectedF2.name}` : blendSelectedF2.name}
                       </div>
-                      <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
+                      <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)' }}>
                         W{blendSelectedF2.w} · {blendSelectedF2.protein}% protein
                       </div>
                     </div>
@@ -944,7 +944,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   </div>
                   {/* Ratio slider */}
                   <div style={{ marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', marginBottom: '6px' }}>
                       <span>{locale === 'fr' ? 'Farine principale' : 'Main flour'} {blendRatio}%</span>
                       <span>{blendSelectedF2.name} {blendSelectedF3 ? (blend.ratio2 ?? blendRatio2) : 100 - blendRatio}%{blendSelectedF3 ? ` · ${blendSelectedF3.name} ${100 - blendRatio - (blend.ratio2 ?? blendRatio2)}%` : ''}</span>
                     </div>
@@ -960,7 +960,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     />
                     {blendSelectedF3 && (
                       <div style={{ marginTop: '10px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '6px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', marginBottom: '6px' }}>
                           <span>{blendSelectedF2.name} {blend.ratio2 ?? blendRatio2}%</span>
                           <span>{blendSelectedF3.name} {100 - blendRatio - (blend.ratio2 ?? blendRatio2)}%</span>
                         </div>
@@ -989,7 +989,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                           marginTop: '8px', padding: '7px 12px',
                           background: 'none', border: '1.5px dashed #C8B898', borderRadius: '10px',
                           cursor: 'pointer', color: '#6B4423', fontSize: '12px',
-                          fontFamily: 'DM Sans, sans-serif', width: '100%',
+                          fontFamily: 'var(--font-dm-sans)', width: '100%',
                         }}
                       >
                         {locale === 'fr' ? '+ Ajouter une 3e farine' : '+ Add a third flour'}
@@ -1008,7 +1008,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   {/* Preset chips — only if styleKey has presets */}
                   {styleKey && BLEND_PRESETS[styleKey] && BLEND_PRESETS[styleKey].length > 0 && (
                     <div style={{ marginBottom: '14px' }}>
-                      <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', marginBottom: '8px' }}>
                         Popular with {styleKey.replace('_', ' ')}:
                       </div>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -1032,7 +1032,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                               padding: '6px 12px', borderRadius: '20px',
                               border: '1.5px solid #E8E0D5', background: '#FDFBF7',
                               fontSize: '13px', color: '#3D3530',
-                              fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
+                              fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                             }}
                           >
                             {preset.label}
@@ -1046,7 +1046,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     <div style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       background: 'var(--cream)', borderRadius: '8px', padding: '7px 10px', marginTop: '4px',
-                      fontSize: '12px', color: '#3D3530', fontFamily: 'DM Sans, sans-serif',
+                      fontSize: '12px', color: '#3D3530', fontFamily: 'var(--font-dm-sans)',
                     }}>
                       <span>{locale === 'fr' ? 'Choisissez votre 3e farine' : 'Pick your third flour'}</span>
                       <button
@@ -1068,7 +1068,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         style={{
                           flex: 1, padding: '8px 12px',
                           border: '1px solid #E8E0D5', borderRadius: '10px',
-                          fontSize: '13px', fontFamily: 'DM Sans, sans-serif',
+                          fontSize: '13px', fontFamily: 'var(--font-dm-sans)',
                           background: 'white', outline: 'none', color: '#2B2420', minWidth: 0,
                         }}
                       />
@@ -1079,7 +1079,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                           padding: '7px 10px', borderRadius: '20px', border: 'none',
                           background: blendFilterType ? '#2B2420' : '#F0EBE0',
                           color: blendFilterType ? 'white' : '#3D3530',
-                          fontSize: '12px', fontFamily: 'DM Sans, sans-serif',
+                          fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
                           cursor: 'pointer', outline: 'none', flexShrink: 0,
                         }}
                       >
@@ -1095,7 +1095,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                           padding: '7px 10px', borderRadius: '20px', border: 'none',
                           background: blendFilterOrigin ? '#2B2420' : '#F0EBE0',
                           color: blendFilterOrigin ? 'white' : '#3D3530',
-                          fontSize: '12px', fontFamily: 'DM Sans, sans-serif',
+                          fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
                           cursor: 'pointer', outline: 'none', flexShrink: 0,
                         }}
                       >
@@ -1111,7 +1111,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                           padding: '7px 10px', borderRadius: '20px', border: 'none',
                           background: blendFilterBrand ? '#2B2420' : '#F0EBE0',
                           color: blendFilterBrand ? 'white' : '#3D3530',
-                          fontSize: '12px', fontFamily: 'DM Sans, sans-serif',
+                          fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
                           cursor: 'pointer', outline: 'none', flexShrink: 0,
                         }}
                       >
@@ -1151,7 +1151,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                 borderRadius: '20px',
                                 border: active ? '1.5px solid #6B4423' : '1px solid #E8E0D5',
                                 background: active ? '#FDF0EB' : 'transparent',
-                                fontSize: '18px',
+                                fontSize: '17px',
                                 cursor: 'pointer',
                                 lineHeight: 1,
                               }}
@@ -1180,7 +1180,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         .slice(0, 30);
                       if (blendResults.length === 0) {
                         return (
-                          <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', padding: '8px 0' }}>
+                          <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', padding: '8px 0' }}>
                             {locale === 'fr' ? 'Pas dans notre base — utilisez le type ou le W ci-dessous.' : 'Not in our database — use the type or W option below.'}
                           </div>
                         );
@@ -1201,8 +1201,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                               onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                             >
                               <div>
-                                <div style={{ fontSize: '13px', fontWeight: 500, color: '#2B2420', fontFamily: 'DM Sans, sans-serif' }}>{f.brand}</div>
-                                <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>{f.name}</div>
+                                <div style={{ fontSize: '13px', fontWeight: 500, color: '#2B2420', fontFamily: 'var(--font-dm-sans)' }}>{f.brand}</div>
+                                <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)' }}>{f.name}</div>
                               </div>
                               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                 <div style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', color: f.wPublished ? '#2B2420' : '#8A7F78' }}>
@@ -1218,7 +1218,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
                     {/* Type or W fallback — always visible */}
                     <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '0.5px solid #E8E0D5' }}>
-                      <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', marginBottom: '8px' }}>
                         {locale === 'fr' ? 'Ou choisissez un type de farine :' : 'Or pick a flour type:'}
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1251,7 +1251,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                               padding: '4px 10px', borderRadius: '20px',
                               border: '1px solid #E8E0D5', background: 'transparent',
                               fontSize: '12px', color: '#3D3530',
-                              fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
+                              fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                             }}
                           >
                             {t.label}
@@ -1261,7 +1261,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         }
                         {/* W value input */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>W</span>
+                          <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)' }}>W</span>
                           <input
                             type="number"
                             inputMode="numeric"

@@ -597,13 +597,13 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
 
       <div style={{ padding: '16px 16px 0' }}>
         <h2 style={{
-          fontFamily: 'Playfair Display, serif', fontSize: '26px',
+          fontFamily: 'var(--font-playfair)', fontSize: '26px',
           fontWeight: 700, color: 'var(--char)', margin: '0 0 2px',
         }}>
           {t('header.title')}
         </h2>
         <p style={{
-          fontFamily: 'DM Sans, sans-serif', fontSize: '13px',
+          fontFamily: 'var(--font-dm-sans)', fontSize: '13px',
           color: 'var(--smoke)', margin: '0 0 12px',
         }}>
           {t('header.subtitle')}
@@ -611,7 +611,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
         {totalDone > 0 && (
           <div style={{ marginBottom: '16px' }}>
             <div style={{
-              fontFamily: 'DM Mono, monospace', fontSize: '11px',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
               color: totalDone >= totalOrdered ? '#6B7A5A' : 'var(--smoke)',
               marginBottom: '6px',
             }}>
@@ -639,7 +639,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   background: 'transparent',
                   border: '1px solid rgba(156, 130, 72,0.5)',
                   color: '#9C8248',
-                  fontFamily: 'DM Mono, monospace', fontSize: '11px',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                   borderRadius: '8px', cursor: 'pointer',
                   letterSpacing: '.06em',
                 }}
@@ -654,7 +654,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
       </div>
 
       {selectedEntries.length === 0 ? (
-        <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--smoke)', fontFamily: 'DM Sans, sans-serif', fontSize: '15px' }}>
+        <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', fontSize: '15px' }}>
           {l === 'fr' ? "Sélectionnez des pizzas dans l'onglet Choisir" : 'Select pizzas in the Pick tab'}
         </div>
       ) : (
@@ -712,7 +712,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                           </svg>
                         )}
                         <span style={{
-                          fontFamily: 'DM Mono, monospace', fontSize: '11px',
+                          fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                           color: 'white', fontWeight: 700, lineHeight: 1,
                         }}>
                           {baked}/{qty}
@@ -723,7 +723,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 </div>
                 <div style={{ padding: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                    <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '15px', fontWeight: 700, color: 'var(--char)' }}>
+                    <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--char)' }}>
                       {pizza.name[l]}
                     </span>
                     {qty > 1 && (
@@ -734,7 +734,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   </div>
                   {pizza.story && (
                     <div style={{
-                      fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: 'var(--smoke)',
+                      fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: 'var(--smoke)',
                       marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>
                       {pizza.story[l]}
@@ -795,7 +795,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 <div>
                   <span style={{
                     fontFamily: 'var(--font-playfair)',
-                    fontSize: '18px', fontWeight: 700,
+                    fontSize: '17px', fontWeight: 700,
                     color: 'var(--char)',
                   }}>
                     {pizza.name[l]}
@@ -845,7 +845,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   border: '1px solid rgba(107, 68, 35,0.2)',
                   borderRadius: '10px',
                   fontSize: '12px', color: 'var(--ash)',
-                  fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5,
+                  fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,
                 }}>
                   {assemblyNote}
                 </div>
@@ -870,7 +870,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     }}>
                       {/* Ingredient name — full width, no competition */}
                       <span style={{
-                        fontFamily: 'Playfair Display, serif',
+                        fontFamily: 'var(--font-playfair)',
                         fontSize: '15px', fontWeight: 600,
                         color: 'var(--char)',
                       }}>
@@ -952,7 +952,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     }}>
                       {/* Ingredient name — full width, no competition */}
                       <span style={{
-                        fontFamily: 'Playfair Display, serif',
+                        fontFamily: 'var(--font-playfair)',
                         fontSize: '15px', fontWeight: 600,
                         color: 'var(--char)',
                       }}>
@@ -1004,7 +1004,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                       border: '1px solid var(--border)', borderRadius: '20px',
                       background: 'var(--cream)', cursor: 'pointer',
                       padding: '7px 13px', fontFamily: 'var(--font-dm-mono)',
-                      fontSize: '11.5px', color: 'var(--ash)', whiteSpace: 'nowrap',
+                      fontSize: '11px', color: 'var(--ash)', whiteSpace: 'nowrap',
                     }}
                   >
                     {label}
@@ -1035,7 +1035,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: '0 16px 12px', borderBottom: '1px solid var(--border)',
                       }}>
-                        <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '18px', fontWeight: 700, color: 'var(--char)' }}>
+                        <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
                           {l === 'fr' ? 'Étirement & Cuisson' : 'Stretch & Bake'}
                         </span>
                         <button onClick={() => setShowTechSheet(false)} style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--cream)', cursor: 'pointer', fontSize: 16, color: 'var(--smoke)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
@@ -1056,7 +1056,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                               borderRadius: '20px',
                               background: techTab === key ? 'rgba(107, 68, 35,0.07)' : 'transparent',
                               cursor: 'pointer', padding: '7px 13px',
-                              fontFamily: 'var(--font-dm-mono)', fontSize: '11.5px',
+                              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                               color: techTab === key ? 'var(--terra)' : 'var(--ash)',
                               whiteSpace: 'nowrap',
                             }}
@@ -1102,7 +1102,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                         },
                       ] as const).map(({ key, fr: frKey, body }) => (
                         <div key={key} style={{ padding: '16px 16px 0' }}>
-                          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '6px' }}>
+                          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '6px' }}>
                             {l === 'fr' ? frKey : key}
                           </div>
                           <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: 'var(--ash)', lineHeight: 1.6 }}>
@@ -1114,7 +1114,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                       {/* FAQ */}
                       {techTab === 'faq' && (
                       <div style={{ padding: '20px 16px 0' }}>
-                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '8px' }}>
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '8px' }}>
                           FAQ
                         </div>
                         {BAKE_FAQ.map((f, i) => (
@@ -1144,7 +1144,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                       {/* Maestro — unified text + photo input */}
                       {techTab === 'maestro' && (
                       <div style={{ padding: '20px 16px 8px' }}>
-                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '2px' }}>
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '2px' }}>
                           Maestro ✦
                         </div>
                         <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: 'var(--char)', fontWeight: 500 }}>
@@ -1184,7 +1184,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   background: 'rgba(156, 130, 72,0.1)',
                   border: '1px solid rgba(156, 130, 72,0.3)',
                   borderRadius: '8px', fontSize: '12px', color: 'var(--ash)',
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: 'var(--font-dm-sans)',
                   display: 'flex', alignItems: 'flex-start',
                   justifyContent: 'space-between', gap: '8px', lineHeight: 1.4,
                 }}>
@@ -1328,13 +1328,13 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     style={{
                       width: '48px', height: '44px', flexShrink: 0,
                       background: 'transparent', border: 'none',
-                      fontSize: '22px', lineHeight: 1,
+                      fontSize: '20px', lineHeight: 1,
                       color: baked === 0 ? '#C8C0B8' : '#6B7A5A',
                       cursor: baked === 0 ? 'default' : 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >−</button>
-                  <div style={{ flex: 1, textAlign: 'center', fontFamily: 'DM Mono, monospace', lineHeight: 1.2 }}>
+                  <div style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.2 }}>
                     <div style={{
                       fontWeight: 700, fontSize: '15px',
                       color: baked > qty ? '#9C8248' : isComplete ? '#6B7A5A' : 'var(--char)',
@@ -1351,7 +1351,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                         </svg>
                       )}
                     </div>
-                    <div style={{ fontSize: '10px', color: 'var(--smoke)', marginTop: '1px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--smoke)', marginTop: '1px' }}>
                       {l === 'fr' ? 'cuites' : 'baked'}
                     </div>
                   </div>
@@ -1360,7 +1360,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     style={{
                       width: '48px', height: '44px', flexShrink: 0,
                       background: baked >= qty ? '#9C8248' : '#6B7A5A',
-                      border: 'none', fontSize: '22px', lineHeight: 1,
+                      border: 'none', fontSize: '20px', lineHeight: 1,
                       color: 'white', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       transition: 'background 0.15s ease',

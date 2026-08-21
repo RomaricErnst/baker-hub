@@ -53,14 +53,14 @@ function Section({ icon, title, children }: {
   return (
     <div style={{ marginTop: '1rem' }}>
       <div style={{
-        fontSize: '.68rem', fontWeight: 600, color: D.smoke,
+        fontSize: '11px', fontWeight: 600, color: D.smoke,
         textTransform: 'uppercase', letterSpacing: '.07em',
         fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem',
         display: 'flex', alignItems: 'center', gap: '.35rem',
       }}>
         {icon && <span>{icon}</span>}{title}
       </div>
-      <div style={{ fontSize: '.82rem', color: D.ash, lineHeight: 1.65, fontFamily: 'var(--font-dm-sans)' }}>
+      <div style={{ fontSize: '13px', color: D.ash, lineHeight: 1.65, fontFamily: 'var(--font-dm-sans)' }}>
         {children}
       </div>
     </div>
@@ -156,7 +156,7 @@ function Pill({ label, color }: { label: string; color?: string }) {
       border: `1px solid ${color ?? D.border}40`,
       borderRadius: '20px',
       padding: '.15rem .6rem',
-      fontSize: '.7rem',
+      fontSize: '11px',
       fontFamily: 'var(--font-dm-mono)',
       color: color ?? D.smoke,
       marginLeft: '.5rem',
@@ -223,14 +223,14 @@ function StepCard({
           color: ea }}>{icon}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontFamily: 'var(--font-playfair)', fontSize: '1rem',
+            fontFamily: 'var(--font-playfair)', fontSize: '15px',
             fontWeight: 700, color: done ? D.smoke : D.char,
             textDecoration: done ? 'line-through' : 'none',
           }}>{title}</div>
           {time && (
             <div style={{ marginTop: '.2rem' }}>
               <span style={{
-                display: 'inline-block', fontSize: '.7rem',
+                display: 'inline-block', fontSize: '11px',
                 fontFamily: 'var(--font-dm-mono)', color: ea,
                 background: `${ea}14`, border: `1px solid ${ea}30`,
                 borderRadius: '8px', padding: '1px 7px',
@@ -242,7 +242,7 @@ function StepCard({
           )}
         </div>
         <span style={{
-          color: D.smoke, fontSize: '.8rem', flexShrink: 0,
+          color: D.smoke, fontSize: '13px', flexShrink: 0,
           display: 'inline-block', transition: 'transform .2s',
           transform: open ? 'rotate(180deg)' : 'none',
         }}>
@@ -271,7 +271,7 @@ function LearnLink({ term, label, onOpen, showSparkle = false }: {
       onClick={() => onOpen(term)}
       style={{
         background: 'none', border: 'none', cursor: 'pointer',
-        color: D.terra, fontSize: '.78rem',
+        color: D.terra, fontSize: '12px',
         fontFamily: 'var(--font-dm-sans)',
         textDecoration: 'underline', textUnderlineOffset: '2px',
         padding: 0, display: 'inline-flex', alignItems: 'center',
@@ -639,7 +639,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           {loading ? '…' : (l === 'fr' ? 'Demander' : 'Ask')}
         </button>
       </div>
-      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '10.5px', color: D.smoke, fontStyle: 'italic', marginTop: '4px' }}>
+      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: D.smoke, fontStyle: 'italic', marginTop: '4px' }}>
         {l === 'fr' ? 'Le Maestro lit vos questions et regarde vos photos — joignez-en une pour un avis visuel.' : 'Maestro reads questions and looks at photos — attach one for a visual read.'}
       </div>
       {answer && (
@@ -732,7 +732,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
                 style={{
                   width: '100%', textAlign: 'left', background: openFaq === i ? '#fff' : 'transparent',
                   border: 'none', cursor: 'pointer', padding: '.6rem .75rem',
-                  fontSize: '.8rem', fontWeight: 600, color: D.char,
+                  fontSize: '13px', fontWeight: 600, color: D.char,
                   fontFamily: 'var(--font-dm-sans)',
                   display: 'flex', justifyContent: 'space-between', gap: '.5rem',
                 }}
@@ -741,7 +741,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
                 <span style={{ color: D.smoke, flexShrink: 0 }}>{openFaq === i ? '−' : '+'}</span>
               </button>
               {openFaq === i && (
-                <div style={{ padding: '0 .75rem .65rem', fontSize: '.78rem', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-dm-sans)' }}>
+                <div style={{ padding: '0 .75rem .65rem', fontSize: '12px', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-dm-sans)' }}>
                   {f.a[l]}
                 </div>
               )}
@@ -772,7 +772,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
 function ExtLink({ href, label }: { href: string; label: string }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" style={{
-      color: D.terra, fontSize: '.78rem',
+      color: D.terra, fontSize: '12px',
       fontFamily: 'var(--font-dm-sans)',
       textDecoration: 'underline', textUnderlineOffset: '2px',
     }}>{label} →</a>
@@ -998,10 +998,10 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
       {/* ── Header ──────────────────────────────────── */}
       <div style={{ marginBottom: '.25rem' }}>
-        <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.2rem', fontWeight: 700, color: D.char }}>
+        <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '20px', fontWeight: 700, color: D.char }}>
           {_isFr ? 'Guide de cuisson pas à pas' : 'Step-by-step bake guide'}
         </div>
-        <div style={{ fontSize: '.75rem', color: D.smoke, fontFamily: 'var(--font-dm-mono)', marginTop: '.2rem' }}>
+        <div style={{ fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-dm-mono)', marginTop: '.2rem' }}>
           {(() => {
             const rangeStart = hasPref && prefStartTime && prefStartTime < bgMixStart ? prefStartTime : bgMixStart;
             return <>{formatTime(rangeStart, _fmtLocale)} → {formatTime(schedule.bakeStart, _fmtLocale)} · {hoursLabel((schedule.bakeStart.getTime() - rangeStart.getTime()) / 3600000)} {_isFr ? 'au total' : 'total'}</>;
@@ -1236,7 +1236,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             { bold: l === 'fr' ? 'Égouttez l’excédent avant le pétrissage' : 'Drain any excess before mixing',
               note: l === 'fr' ? 'les graines doivent être humides, pas ruisselantes' : 'seeds should be moist, not dripping' },
           ]} />
-          <div style={{ fontSize: '.78rem', color: D.smoke, fontFamily: 'var(--font-dm-sans)', lineHeight: 1.55, marginTop: '.5rem', paddingTop: '.5rem', borderTop: `1px solid ${D.border}` }}>
+          <div style={{ fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-dm-sans)', lineHeight: 1.55, marginTop: '.5rem', paddingTop: '.5rem', borderTop: `1px solid ${D.border}` }}>
             {l === 'fr'
               ? 'Au pétrissage : incorporez les graines égouttées en toute fin, à petite vitesse ou à la main, juste assez pour les répartir.'
               : 'At mix time: fold the drained seeds in at the very end, low speed or by hand, just enough to distribute them.'}
@@ -1344,12 +1344,12 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'préserve la structure du gluten' : 'preserves gluten structure') }] : []),
               ]} />
               {planningMode === 'know_peak' && (
-                <div style={{ marginTop: '.6rem', fontSize: '.75rem', color: D.smoke, fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+                <div style={{ marginTop: '.6rem', fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
                   {l === 'fr' ? 'L’heure de pétrissage est calée sur le pic indiqué — ajustez si votre levain pique plus tôt ou plus tard que prévu.' : 'Mix time is set to your stated peak — adjust if your starter peaks earlier or later than expected.'}
                 </div>
               )}
               <div style={{
-                fontSize: '.78rem',
+                fontSize: '12px',
                 color: D.smoke,
                 fontFamily: 'var(--font-dm-sans)',
                 lineHeight: 1.55,
@@ -1543,7 +1543,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 ]} />
                 {isPan && (
                   <div style={{
-                    fontSize: '.75rem', color: 'var(--smoke)', fontStyle: 'italic',
+                    fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic',
                     fontFamily: 'var(--font-dm-sans)', marginTop: '6px',
                   }}>
                     Pan pizza: press dough directly into your oiled pan rather than
@@ -1696,7 +1696,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
       <StepCard number={n()} {...sc()} icon={<IconPreheat />} title={t('stepTitles.preheatOven')}
         time={schedule.preheatStart} accent={D.gold}>
 
-        <div style={{ fontSize: '.75rem', color: D.smoke, fontStyle: 'italic',
+        <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic',
           fontFamily: 'var(--font-dm-sans)', padding: '.75rem 0 0' }}>
           {t('preheatNote')}
         </div>
@@ -1756,7 +1756,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             <div style={{
               background: 'rgba(156, 130, 72,0.08)', border: '1px solid rgba(156, 130, 72,0.2)',
               borderRadius: '10px', padding: '10px 12px', marginBottom: '12px',
-              fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)', color: 'var(--char)',
+              fontSize: '12px', fontFamily: 'var(--font-dm-sans)', color: 'var(--char)',
               lineHeight: 1.5,
             }}>
               <strong>Pan / Detroit / Deep Dish</strong> — dough bakes IN the oiled pan.

@@ -14,7 +14,7 @@ const SAGE   = '#6B7A5A';
 const BORDER = '#E8E0D5';
 
 const bodyText: React.CSSProperties = {
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: 'var(--font-dm-sans)',
   fontSize: '14px',
   color: ASH,
   lineHeight: 1.65,
@@ -43,7 +43,7 @@ function BulletList({ items }: { items: React.ReactNode[] }) {
       {items.map((item, i) => (
         <li key={i} style={{
           borderLeft: `2px solid ${BORDER}`, paddingLeft: '10px',
-          marginBottom: '6px', fontFamily: 'DM Sans, sans-serif',
+          marginBottom: '6px', fontFamily: 'var(--font-dm-sans)',
           fontSize: '13px', color: ASH, lineHeight: 1.55,
         }}>{item}</li>
       ))}
@@ -57,7 +57,7 @@ function NumberedList({ items }: { items: React.ReactNode[] }) {
       {items.map((item, i) => (
         <li key={i} style={{ display: 'flex', gap: '10px', marginBottom: '8px', alignItems: 'flex-start' }}>
           <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: TERRA, flexShrink: 0, marginTop: '1px' }}>{i + 1}.</span>
-          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: ASH, lineHeight: 1.55 }}>{item}</span>
+          <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: ASH, lineHeight: 1.55 }}>{item}</span>
         </li>
       ))}
     </ol>
@@ -91,9 +91,9 @@ function DataTable({ rows }: { rows: [string, string, string][] }) {
       <tbody>
         {rows.map(([a, b, c], i) => (
           <tr key={i} style={{ background: i % 2 === 0 ? 'rgba(43, 36, 32,0.025)' : 'transparent' }}>
-            <td style={{ padding: '6px 12px', fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: ASH }}>{a}</td>
+            <td style={{ padding: '6px 12px', fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: ASH }}>{a}</td>
             <td style={{ padding: '6px 12px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: CHAR }}>{b}</td>
-            <td style={{ padding: '6px 12px', fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: SMOKE }}>{c}</td>
+            <td style={{ padding: '6px 12px', fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: SMOKE }}>{c}</td>
           </tr>
         ))}
       </tbody>
@@ -118,11 +118,11 @@ function Accordion({ title, children, defaultOpen = false }: {
         }}
       >
         <span style={{
-          fontFamily: 'Playfair Display, serif', fontSize: '16px',
+          fontFamily: 'var(--font-playfair)', fontSize: '15px',
           fontWeight: 600, color: CHAR,
         }}>{title}</span>
         <span style={{
-          fontSize: '18px', color: SMOKE,
+          fontSize: '17px', color: SMOKE,
           display: 'inline-block',
           transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
           transition: 'transform 0.2s ease',
@@ -482,11 +482,11 @@ const CONTENT: Record<string, LocaleContent> = {
             <>
               <P>Baker Hub is actively developed. Things will occasionally break. If a yeast quantity seems wrong, the schedule doesn't fit, or something is confusing — please tell us. Every piece of feedback makes the engine better.</P>
               <div style={{ background: 'rgba(43, 36, 32,0.04)', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
-                <p style={{ margin: '0 0 4px', fontFamily: 'DM Sans, sans-serif', fontSize: '14px', fontWeight: 600, color: CHAR }}>Built by Rom</p>
+                <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-dm-sans)', fontSize: '14px', fontWeight: 600, color: CHAR }}>Built by Rom</p>
                 <p style={{ margin: '0 0 12px' }}>
-                  <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'DM Sans, sans-serif', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
+                  <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'var(--font-dm-sans)', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
                 </p>
-                <p style={{ margin: 0, fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: SMOKE }}>Baker Hub is a solo side project — feedback goes directly to the person who built the engine.</p>
+                <p style={{ margin: 0, fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: SMOKE }}>Baker Hub is a solo side project — feedback goes directly to the person who built the engine.</p>
               </div>
             </>
           ),
@@ -856,11 +856,11 @@ const CONTENT: Record<string, LocaleContent> = {
           <>
             <P>Baker Hub est activement développé comme projet personnel. Des problèmes surviennent parfois. Si une quantité de levure semble incorrecte, si le planning ne convient pas, ou si quelque chose est simplement confus — dites-le nous. Chaque retour améliore le moteur.</P>
             <div style={{ background: 'rgba(43, 36, 32,0.04)', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
-              <p style={{ margin: '0 0 4px', fontFamily: 'DM Sans, sans-serif', fontSize: '14px', fontWeight: 600, color: CHAR }}>Construit par Rom</p>
+              <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-dm-sans)', fontSize: '14px', fontWeight: 600, color: CHAR }}>Construit par Rom</p>
               <p style={{ margin: '0 0 12px' }}>
-                <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'DM Sans, sans-serif', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
+                <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'var(--font-dm-sans)', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
               </p>
-              <p style={{ margin: 0, fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: SMOKE, fontStyle: 'italic' }}>
+              <p style={{ margin: 0, fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: SMOKE, fontStyle: 'italic' }}>
                 &laquo; Qu'est-ce qui rendrait Baker Hub plus utile pour vous ? Une ligne suffit. &raquo;
               </p>
             </div>
@@ -883,7 +883,7 @@ export default function AboutClient() {
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '24px 16px' }}>
 
         <h1 style={{
-          fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 700,
+          fontFamily: 'var(--font-playfair)', fontSize: '28px', fontWeight: 700,
           color: CHAR, marginBottom: '4px', marginTop: '0',
         }}>{c.pageTitle}</h1>
         <p style={{ ...monoSm, marginBottom: '12px' }}>{c.pageSubtitle}</p>
@@ -902,8 +902,8 @@ export default function AboutClient() {
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
             padding: '13px 0', borderRadius: '12px',
             background: TERRA, color: '#fff',
-            fontSize: '13.5px', fontWeight: 500,
-            fontFamily: 'DM Sans, sans-serif', textDecoration: 'none',
+            fontSize: '13px', fontWeight: 500,
+            fontFamily: 'var(--font-dm-sans)', textDecoration: 'none',
           }}
         >
           ← {locale === 'fr' ? 'Retour à Baker Hub' : 'Back to Baker Hub'}

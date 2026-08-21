@@ -744,12 +744,12 @@ export default function ShareCard({
     outline: 'none',
   };
   const labelStyle: React.CSSProperties = {
-    fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+    fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
     color: 'var(--smoke)', textTransform: 'uppercase',
     letterSpacing: '.08em', marginBottom: '4px', display: 'block',
   };
   const sectionLbl: React.CSSProperties = {
-    fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+    fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
     color: 'var(--smoke)', textTransform: 'uppercase',
     letterSpacing: '.08em', marginBottom: '10px',
   };
@@ -764,10 +764,10 @@ export default function ShareCard({
 
       {/* Header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <p style={{ fontFamily: 'var(--font-playfair)', fontSize: '18px', fontWeight: 700, color: 'var(--char)', margin: 0 }}>
+        <p style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', margin: 0 }}>
           {l === 'fr' ? 'Partager cette fournée' : 'Share this bake'}
         </p>
-        <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '18px', width: '44px', height: '44px', marginRight: '-10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+        <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '17px', width: '44px', height: '44px', marginRight: '-10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
       </div>
 
       {/* Scrollable body — single column on phones, preview left + sticky
@@ -845,7 +845,7 @@ export default function ShareCard({
                 style={inputStyle}
               />
               <div style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                 color: 'var(--smoke)', opacity: 0.5, marginTop: '3px',
               }}>
                 {l === 'fr' ? 'Apparaît en bas à gauche de la carte' : 'Appears bottom-left on the card'}
@@ -901,7 +901,7 @@ export default function ShareCard({
                     </div>
                   )}
                 </div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: 'var(--smoke)', textAlign: 'center', marginTop: '4px' }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)', textAlign: 'center', marginTop: '4px' }}>
                   {t === 'full' ? '1 photo' : t === 'two' ? '2 photos' : t === 'four' ? '4 photos' : (l === 'fr' ? 'Protocole' : 'Protocol')}
                 </div>
               </div>
@@ -945,7 +945,7 @@ export default function ShareCard({
             {/* Why the layout just changed — the size picks a suggested
                 photo count; the templates above remain free to override */}
             <div style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
               color: 'var(--smoke)', opacity: 0.6, marginTop: '6px',
               lineHeight: 1.5,
             }}>
@@ -1040,7 +1040,7 @@ export default function ShareCard({
                   <rect x="3" y="5" width="18" height="14" rx="2" />
                   <circle cx="12" cy="12" r="3.5" />
                 </svg>
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: 'var(--smoke)', textAlign: 'center' }}>
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)', textAlign: 'center' }}>
                   {l === 'fr' ? 'Pellicule' : 'Camera roll'}
                 </span>
                 <input
@@ -1077,7 +1077,7 @@ export default function ShareCard({
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
             <div style={{ ...sectionLbl, marginBottom: 0 }}>{l === 'fr' ? 'Légende' : 'Caption'}</div>
             <span style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
               color: 'var(--smoke)', opacity: 0.4,
             }}>✎ editable</span>
           </div>
@@ -1166,7 +1166,7 @@ export default function ShareCard({
           </button>
         )}
         <p style={{
-          fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+          fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
           color: sharedOk ? 'var(--sage)' : 'var(--smoke)', textAlign: 'center',
           marginTop: '8px', opacity: sharedOk ? 1 : 0.6,
           transition: 'color 0.2s ease',

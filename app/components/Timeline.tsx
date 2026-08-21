@@ -433,7 +433,7 @@ function InfoBadge({ term, onOpen }: { term: string; onOpen: (t: string) => void
         width: '16px', height: '16px', borderRadius: '50%',
         border: '1.5px solid var(--terra)', color: 'var(--terra)',
         background: 'transparent', cursor: 'pointer',
-        fontSize: '9px', fontWeight: 700, lineHeight: 1,
+        fontSize: '11px', fontWeight: 700, lineHeight: 1,
         flexShrink: 0, verticalAlign: 'middle',
         padding: 0,
       }}
@@ -484,12 +484,12 @@ export default function Timeline({
       }}>
         <div>
           <div style={{
-            fontFamily: 'var(--font-playfair)', fontSize: '1.15rem',
+            fontFamily: 'var(--font-playfair)', fontSize: '17px',
             fontWeight: 700, color: 'var(--char)',
           }}>
             {t('timeline.bakingProtocol')}
           </div>
-          <div style={{ fontSize: '.75rem', color: 'var(--smoke)', marginTop: '.1rem', fontFamily: 'var(--font-dm-mono)' }}>
+          <div style={{ fontSize: '12px', color: 'var(--smoke)', marginTop: '.1rem', fontFamily: 'var(--font-dm-mono)' }}>
             {formatTime(displayStartTime, _fmtLocale)} → {formatTime(eatTime, _fmtLocale)}
             {' · '}{hoursLabel((eatTime.getTime() - displayStartTime.getTime()) / 3600000)} total
           </div>
@@ -499,7 +499,7 @@ export default function Timeline({
             <div style={{
               marginTop: '.7rem', padding: '10px 14px',
               background: '#FDFBF2', border: '1px solid #E8D890',
-              borderRadius: '10px', fontSize: '.78rem', color: '#7A5A10',
+              borderRadius: '10px', fontSize: '12px', color: '#7A5A10',
               lineHeight: 1.55,
             }}>
               {t('timeline.quickBakeNote')}
@@ -536,11 +536,11 @@ export default function Timeline({
                   color: 'var(--char)' }}>
                   <StepIcon iconKey={phase.iconKey} size={20} />
                 </span>
-                <span style={{ fontSize: '.7rem', fontWeight: 600, color: 'var(--char)', textAlign: 'center', marginBottom: '.3rem', lineHeight: 1.3 }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--char)', textAlign: 'center', marginBottom: '.3rem', lineHeight: 1.3 }}>
                   {phase.label}
                 </span>
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '.65rem',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                   background: th.pill, color: th.pillText,
                   borderRadius: '10px', padding: '.15rem .5rem',
                 }}>
@@ -553,7 +553,7 @@ export default function Timeline({
                 <div style={{
                   width: '16px', flexShrink: 0,
                   textAlign: 'center', color: 'var(--border)',
-                  fontSize: '.7rem',
+                  fontSize: '11px',
                 }}>
                   →
                 </div>
@@ -577,7 +577,7 @@ export default function Timeline({
                 width: '72px', flexShrink: 0,
                 textAlign: 'right', paddingTop: '.1rem',
                 fontFamily: 'var(--font-dm-mono)',
-                fontSize: '.7rem', color: 'var(--smoke)',
+                fontSize: '11px', color: 'var(--smoke)',
                 lineHeight: 1.4,
               }}>
                 {formatTime(item.time, _fmtLocale)}
@@ -617,7 +617,7 @@ export default function Timeline({
                   marginBottom: '.3rem',
                 }}>
                   <div style={{
-                    fontWeight: 600, fontSize: '.9rem', color: 'var(--char)',
+                    fontWeight: 600, fontSize: '14px', color: 'var(--char)',
                     display: 'flex', alignItems: 'center', gap: '.4rem',
                   }}>
                     <span style={{ width: '18px', height: '18px', flexShrink: 0,
@@ -634,7 +634,7 @@ export default function Timeline({
                   {item.durationH !== null && (
                     <span style={{
                       fontFamily: 'var(--font-dm-mono)',
-                      fontSize: '.68rem',
+                      fontSize: '11px',
                       background: th.pill,
                       color: th.pillText,
                       borderRadius: '10px',
@@ -664,7 +664,7 @@ export default function Timeline({
                 {/* Tip — hidden entirely for steps that carry none */}
                 {(item.tip || item.stepKind === 'rest_rt' || item.stepKind === 'final_proof') && (
                 <div style={{
-                  fontSize: '.77rem', color: 'var(--smoke)',
+                  fontSize: '12px', color: 'var(--smoke)',
                   lineHeight: 1.6,
                 }}>
                   {item.id === 'remove_pref_fridge'
@@ -687,7 +687,7 @@ export default function Timeline({
                   <div style={{
                     marginTop: '.5rem',
                     display: 'flex', gap: '.4rem', alignItems: 'center',
-                    fontSize: '.7rem',
+                    fontSize: '11px',
                     color: th.pillText,
                     fontFamily: 'var(--font-dm-mono)',
                   }}>

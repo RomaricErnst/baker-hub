@@ -16,17 +16,17 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       padding: '24px', textAlign: 'center',
     }}>
       <div style={{ maxWidth: 420 }}>
-        <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🍞</div>
+        <div style={{ fontSize: '40px', marginBottom: '0.75rem' }}>🍞</div>
         <h1 style={{
           fontFamily: 'var(--font-playfair, Georgia), serif',
-          fontSize: '1.5rem', fontWeight: 700, color: 'var(--char, #2B2420)',
+          fontSize: '24px', fontWeight: 700, color: 'var(--char, #2B2420)',
           margin: '0 0 0.5rem',
         }}>
           Something didn&rsquo;t rise as planned
         </h1>
         <p style={{
           fontFamily: 'var(--font-dm-sans, system-ui), sans-serif',
-          fontSize: '0.95rem', color: 'var(--smoke, #8A7F78)', lineHeight: 1.6,
+          fontSize: '15px', color: 'var(--smoke, #8A7F78)', lineHeight: 1.6,
           margin: '0 0 1.5rem',
         }}>
           An unexpected error interrupted the app. Your saved plan is safe — try again.
@@ -37,7 +37,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
             padding: '0.8rem 1.5rem', border: 'none', borderRadius: '12px',
             background: 'var(--terra, #6B4423)', color: '#fff',
             fontFamily: 'var(--font-dm-sans, system-ui), sans-serif',
-            fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
+            fontSize: '15px', fontWeight: 600, cursor: 'pointer',
             boxShadow: '0 2px 8px rgba(107, 68, 35,0.25)',
           }}
         >

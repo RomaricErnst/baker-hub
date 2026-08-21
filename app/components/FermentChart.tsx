@@ -2141,7 +2141,7 @@ export default function FermentChart({
       {!hasDragged && !startTimeInPast && (
         <div style={{
           textAlign: 'center', fontSize: '11px', marginTop: '4px',
-          color: '#8A7F78', fontFamily: 'DM Sans, sans-serif',
+          color: '#8A7F78', fontFamily: 'var(--font-dm-sans)',
           fontStyle: 'italic',
         }}>
           {isFr
@@ -2157,7 +2157,7 @@ export default function FermentChart({
           onClick={() => setLegendOpen(o => !o)}
           style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0',
-            fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--smoke, #8A7F78)',
+            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke, #8A7F78)',
             textDecoration: 'underline', textUnderlineOffset: '2px',
           }}
         >
@@ -2191,7 +2191,7 @@ export default function FermentChart({
                 : 'fridge time — biology on pause. That’s by design.'],
             ] as const).map(([term, body]) => (
               <div key={term} style={{ marginBottom: '5px' }}>
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>{term}</span>
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>{term}</span>
                 <span> — {body}</span>
               </div>
             ))}
@@ -2211,7 +2211,7 @@ export default function FermentChart({
                   style={{ width: '14px', height: '14px', accentColor: 'var(--terra, #6B4423)', cursor: 'pointer', flexShrink: 0 }}
                 />
                 <span>
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>
                     {isFr ? 'Fenêtres' : 'Timing windows'}
                   </span>
                   <span> — {isFr

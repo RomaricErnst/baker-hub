@@ -116,3 +116,30 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .bh-step-page { animation: none; }
 }
+
+/* ── Type scale ───────────────────────────────
+   Before this pass the app carried 61 distinct font sizes across two unit
+   systems (566 px declarations, 380 rem), and named the same three faces six
+   different ways. That is what "typo not consistent across the website" was
+   describing. Text now uses eight steps; display type keeps its composed size
+   but is expressed in px like everything else.
+
+   11  captions, mono labels, chip keys      (floor — nothing smaller reads on a phone)
+   12  secondary text, notes
+   13  body small, option notes
+   14  body
+   15  emphasised body, list items
+   17  card titles
+   20  section titles
+   24  page titles
+   26+ display (share cards, big numbers) — composed per surface */
+:root {
+  --text-3xs: 11px;
+  --text-2xs: 12px;
+  --text-xs:  13px;
+  --text-s:   14px;
+  --text-m:   15px;
+  --text-l:   17px;
+  --text-xl:  20px;
+  --text-2xl: 24px;
+}

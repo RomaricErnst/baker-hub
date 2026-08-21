@@ -36,11 +36,11 @@ export default function PhaseSummary({ schedule }: { schedule: ScheduleResult })
                 color: 'var(--char)' }}>
                 <StepIcon iconKey={phase.iconKey} size={20} />
               </span>
-              <span style={{ fontSize: '.7rem', fontWeight: 600, color: 'var(--char)', textAlign: 'center', marginBottom: '.3rem', lineHeight: 1.3 }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--char)', textAlign: 'center', marginBottom: '.3rem', lineHeight: 1.3 }}>
                 {phase.label}
               </span>
               <span style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '.65rem',
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                 background: 'var(--cream)', color: 'var(--ash)',
                 borderRadius: '10px', padding: '.15rem .5rem',
               }}>
@@ -51,7 +51,7 @@ export default function PhaseSummary({ schedule }: { schedule: ScheduleResult })
               <div style={{
                 width: '16px', flexShrink: 0,
                 textAlign: 'center', color: 'var(--border)',
-                fontSize: '.7rem',
+                fontSize: '11px',
               }}>
                 →
               </div>

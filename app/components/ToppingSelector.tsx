@@ -295,12 +295,12 @@ const S = {
     cursor: 'pointer', padding: '8px 12px 4px',
   } as React.CSSProperties,
   secTitle: {
-    fontSize: '10px', color: '#3D3530', textTransform: 'uppercase' as const,
+    fontSize: '11px', color: '#3D3530', textTransform: 'uppercase' as const,
     letterSpacing: '0.08em', fontWeight: 500,
     display: 'flex', alignItems: 'center', gap: '5px',
   } as React.CSSProperties,
   secBadge: (show: boolean): React.CSSProperties => ({
-    fontSize: '9px', background: '#6B4423', color: 'white',
+    fontSize: '11px', background: '#6B4423', color: 'white',
     borderRadius: '10px', padding: '1px 5px', display: show ? 'inline' : 'none',
   }),
   secBody: (open: boolean): React.CSSProperties => ({
@@ -311,7 +311,7 @@ const S = {
     background: '#F0EBE0', borderRadius: '8px', padding: '7px 9px',
   } as React.CSSProperties,
   subLbl: {
-    fontSize: '9px', color: '#8A7F78', textTransform: 'uppercase' as const,
+    fontSize: '11px', color: '#8A7F78', textTransform: 'uppercase' as const,
     letterSpacing: '0.06em', marginBottom: '5px', fontWeight: 500, display: 'block',
   } as React.CSSProperties,
   pillRow: {
@@ -329,7 +329,7 @@ const S = {
     background: '#F0EBE3', borderRadius: '7px',
   } as React.CSSProperties,
   tag: (type: 'default' | 'spicy' | 'season' | 'special'): React.CSSProperties => ({
-    fontSize: '9px', padding: '2px 6px', borderRadius: '10px',
+    fontSize: '11px', padding: '2px 6px', borderRadius: '10px',
     ...(type === 'spicy'   ? { background: '#FFF0EC', color: '#6B4423', border: '0.5px solid #F5C4B3' }
       : type === 'season'  ? { background: '#EFF5E8', color: '#3B6D11', border: '0.5px solid #C0DD97' }
       : type === 'special' ? { background: '#FEF9EC', color: '#9A7020', border: '0.5px solid #FAC775' }
@@ -351,7 +351,7 @@ const S = {
     letterSpacing: '0.02em',
   } as React.CSSProperties,
   ingBadge: {
-    fontSize: '9px', padding: '1px 6px', borderRadius: '8px',
+    fontSize: '11px', padding: '1px 6px', borderRadius: '8px',
     background: '#F0EBE3', color: '#8A7F78',
     marginLeft: '6px', whiteSpace: 'nowrap' as const,
     flexShrink: 0, marginTop: '2px',
@@ -372,7 +372,7 @@ function FilterSection({ title, badge, open, onToggle, children }: {
           {badge && <span style={S.secBadge(true)}>{badge}</span>}
         </span>
         <span style={{
-          fontSize: '10px', color: '#8A7F78',
+          fontSize: '11px', color: '#8A7F78',
           transform: open ? 'rotate(180deg)' : 'none',
           transition: 'transform 0.15s', display: 'inline-block',
         }}>▾</span>
@@ -456,20 +456,20 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
                 quick:   { en: 'Quick',   fr: 'Rapide' },
               };
               return (
-                <span key={tag} style={{ fontSize: '9px', color: 'var(--smoke)', background: 'var(--cream)', borderRadius: '10px', padding: '2px 6px', flexShrink: 0, fontFamily: 'DM Sans, sans-serif' }}>
+                <span key={tag} style={{ fontSize: '11px', color: 'var(--smoke)', background: 'var(--cream)', borderRadius: '10px', padding: '2px 6px', flexShrink: 0, fontFamily: 'var(--font-dm-sans)' }}>
                   {OCCASION_LABELS[tag]?.[l] ?? OCCASION_LABELS[tag]?.en ?? tag}
                 </span>
               );
             })}
             {pizza.winePairing?.[0] && (
-              <span style={{ fontSize: '10px', color: '#8A7F78', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80px', flexShrink: 1 }}>
+              <span style={{ fontSize: '11px', color: '#8A7F78', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80px', flexShrink: 1 }}>
                 {pizza.winePairing[0][l] ?? pizza.winePairing[0].en}
               </span>
             )}
             {pizza.winePairing?.[0] && (
-              <span style={{ fontSize: '10px', color: '#C8C0B8' }}>·</span>
+              <span style={{ fontSize: '11px', color: '#C8C0B8' }}>·</span>
             )}
-            <span style={{ fontSize: '10px', color: '#8A7F78', flexShrink: 0 }}>
+            <span style={{ fontSize: '11px', color: '#8A7F78', flexShrink: 0 }}>
               {pizza.prepMinutes} min
             </span>
             </div>
@@ -589,8 +589,8 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           background: '#FDFBF7',
         }}>
           <div style={{
-            fontSize: '18px', fontWeight: 700,
-            fontFamily: 'Playfair Display, serif',
+            fontSize: '17px', fontWeight: 700,
+            fontFamily: 'var(--font-playfair)',
             color: '#2B2420', marginBottom: '6px',
           }}>
             {pizza.name[l] ?? pizza.name.en}
@@ -652,7 +652,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           }}>
             <span style={{
               fontSize: '13px', color: '#8A7F78',
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: 'var(--font-dm-sans)',
             }}>
               {l === 'fr' ? 'Combien ?' : 'How many?'}
             </span>
@@ -669,7 +669,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
               >&#x2212;</button>
               <span style={{
                 fontSize: '20px', fontWeight: 700, color: '#2B2420',
-                fontFamily: 'DM Mono, monospace',
+                fontFamily: 'var(--font-dm-mono)',
                 minWidth: '28px', textAlign: 'center',
               }}>
                 {qty}
@@ -689,7 +689,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           {qty > 0 && (
             <div style={{
               marginTop: '6px', fontSize: '11px',
-              color: '#6B7A5A', fontFamily: 'DM Sans, sans-serif',
+              color: '#6B7A5A', fontFamily: 'var(--font-dm-sans)',
               textAlign: 'center',
             }}>
               {qty === 1
@@ -1071,7 +1071,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         {sections.map(section => (
           <div key={section.label} style={{ marginBottom: '18px' }}>
             <div style={{ padding: '10px 12px 7px 11px', background: '#F0EBE0', borderLeft: '3px solid #6B4423', marginTop: '6px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'DM Mono, monospace' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-dm-mono)' }}>
                 {section.label}
               </span>
             </div>
@@ -1113,24 +1113,24 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                             color: isTicked ? '#B0A89E' : '#2B2420',
                             textDecoration: 'none',
                             cursor: hasSubInfo ? 'pointer' : 'default',
-                            fontFamily: 'DM Sans, sans-serif',
+                            fontFamily: 'var(--font-dm-sans)',
                           }}
                         >
                           {name}
                           {item.isCommonPantry && (
-                            <span style={{ fontSize: '10px', color: '#8A7F78', marginLeft: '5px', fontStyle: 'italic' }}>pantry</span>
+                            <span style={{ fontSize: '11px', color: '#8A7F78', marginLeft: '5px', fontStyle: 'italic' }}>pantry</span>
                           )}
                           {hasSubInfo && !showSubProactively && (
-                            <span style={{ fontSize: '10px', color: '#C8C0B8', marginLeft: '4px' }}>{isExpanded ? '▲' : '▼'}</span>
+                            <span style={{ fontSize: '11px', color: '#C8C0B8', marginLeft: '4px' }}>{isExpanded ? '▲' : '▼'}</span>
                           )}
                         </span>
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Mono, monospace', flexShrink: 0 }}>
+                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}>
                           {item.totalAmount && item.unit ? formatQty(item.totalAmount, item.unit, locale) : ''}
                         </span>
                       </div>
 
                       {item.qtyNote && (
-                        <div style={{ fontSize: '10px', color: '#A09890', marginTop: '1px' }}>{item.qtyNote}</div>
+                        <div style={{ fontSize: '11px', color: '#A09890', marginTop: '1px' }}>{item.qtyNote}</div>
                       )}
 
                       {showSubProactively && (
@@ -1189,7 +1189,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         {recipeIngredients && recipeIngredients.length > 0 && (
           <div>
             <div style={{ padding: '7px 12px 4px 11px', background: '#F0EBE0', borderLeft: '3px solid #6B4423' }}>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'DM Mono, monospace' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-dm-mono)' }}>
                 {l === 'fr' ? 'Pour votre pâte' : 'For your dough'}
               </span>
             </div>
@@ -1213,7 +1213,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                 <span style={{ fontSize: '13px', color: ticked['dough_' + i] ? '#B0A89E' : '#2B2420', flex: 1, textDecoration: 'none' }}>
                   {ing.name}
                 </span>
-                <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Mono, monospace' }}>{ing.amount}</span>
+                <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>{ing.amount}</span>
               </div>
             ))}
           </div>
@@ -1229,7 +1229,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
             background: '#2B2420', color: '#F0EBE0',
             border: 'none', borderRadius: '10px',
             fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-            fontFamily: 'DM Sans, sans-serif',
+            fontFamily: 'var(--font-dm-sans)',
           }}
         >
           {l === 'fr' ? 'Courses faites ? Voir le plan de préparation →' : 'Shopping done? See the prep plan →'}
@@ -1550,7 +1550,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           flexShrink: 0,
         }}>
           <span style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: '13px',
+            fontFamily: 'var(--font-dm-sans)', fontSize: '13px',
             color: '#3D3530',
           }}>
             {styleKey
@@ -1568,7 +1568,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             onClick={() => setShowStylePicker(true)}
             style={{
               fontSize: '12px', color: '#6B4423',
-              fontFamily: 'DM Mono, monospace',
+              fontFamily: 'var(--font-dm-mono)',
               cursor: 'pointer', textDecoration: 'underline',
               textUnderlineOffset: '2px',
             }}
@@ -1634,7 +1634,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   cursor: 'pointer',
                   whiteSpace: 'nowrap' as const,
                   flexShrink: 0,
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: 'var(--font-dm-sans)',
                   fontWeight: chip.count > 0 ? 500 : 400,
                 }}
               >
@@ -1643,7 +1643,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   <span style={{
                     background: '#6B4423', color: '#fff',
                     borderRadius: '50%', width: '15px', height: '15px',
-                    fontSize: '9px', display: 'inline-flex',
+                    fontSize: '11px', display: 'inline-flex',
                     alignItems: 'center', justifyContent: 'center',
                     fontWeight: 700, flexShrink: 0,
                   }}>
@@ -1668,7 +1668,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 background: '#FDFBF7', color: '#8A7F78',
                 fontSize: '12px', cursor: 'pointer',
                 whiteSpace: 'nowrap' as const, flexShrink: 0,
-                fontFamily: 'DM Sans, sans-serif',
+                fontFamily: 'var(--font-dm-sans)',
               }}
             >
               {l === 'fr' ? 'Plus ▾' : 'More ▾'}
@@ -1682,7 +1682,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   <span style={{
                     background: '#3D3530', color: '#fff',
                     borderRadius: '50%', width: '15px', height: '15px',
-                    fontSize: '9px', display: 'inline-flex',
+                    fontSize: '11px', display: 'inline-flex',
                     alignItems: 'center', justifyContent: 'center',
                     fontWeight: 700, flexShrink: 0,
                   }}>{moreCnt}</span>
@@ -1779,7 +1779,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               >
                 <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px 10px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'Playfair Display, serif' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-playfair)' }}>
                     {filterSheetKey === 'occasion'   ? (l === 'fr' ? 'Occasion' : 'Occasion')
                     : filterSheetKey === 'diet'       ? (l === 'fr' ? 'Régime alimentaire' : 'Diet')
                     : filterSheetKey === 'base'       ? 'Base'
@@ -1865,7 +1865,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                                 color: active ? '#fff' : '#8A7F78',
                                 fontWeight: active ? 600 : 400,
                                 cursor: 'pointer', transition: 'all 0.1s',
-                                fontFamily: 'DM Sans, sans-serif',
+                                fontFamily: 'var(--font-dm-sans)',
                                 borderRight: '1px solid #E0D8CF',
                               }}
                             >
@@ -1889,7 +1889,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                             width: '100%', padding: '8px 10px',
                             border: '1px solid #E0D8CF', borderRadius: '8px',
                             fontSize: '13px', color: '#2B2420',
-                            background: '#FDFBF7', fontFamily: 'DM Sans, sans-serif',
+                            background: '#FDFBF7', fontFamily: 'var(--font-dm-sans)',
                             boxSizing: 'border-box',
                           }}
                         />
@@ -1909,7 +1909,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                                   color: isActive ? '#6B4423' : '#8A7F78',
                                   borderBottom: isActive ? '2px solid #6B4423' : '2px solid transparent',
                                   fontWeight: isActive ? 700 : 400,
-                                  fontFamily: 'DM Sans, sans-serif',
+                                  fontFamily: 'var(--font-dm-sans)',
                                   whiteSpace: 'nowrap' as const, overflow: 'hidden',
                                   textOverflow: 'ellipsis',
                                 }}
@@ -1951,7 +1951,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                                 background: active ? '#6B4423' : '#FDFBF7',
                                 color: active ? '#fff' : '#3D3530',
                                 fontSize: '12px', cursor: 'pointer',
-                                transition: 'all 0.12s', fontFamily: 'DM Sans, sans-serif',
+                                transition: 'all 0.12s', fontFamily: 'var(--font-dm-sans)',
                               }}
                             >
                               {label}
@@ -2145,7 +2145,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         flex: 1, padding: '10px', border: '1px solid #E0D8CF',
                         borderRadius: '10px', background: '#FDFBF7',
                         fontSize: '12px', color: '#8A7F78', cursor: 'pointer',
-                        fontFamily: 'DM Sans, sans-serif',
+                        fontFamily: 'var(--font-dm-sans)',
                       }}
                     >
                       {l === 'fr' ? 'Réinitialiser' : 'Reset'}
@@ -2156,7 +2156,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         flex: 2, padding: '10px', border: 'none',
                         borderRadius: '10px', background: '#6B4423',
                         fontSize: '13px', fontWeight: 600, color: '#fff',
-                        cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                        cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
                       }}
                     >
                       {l === 'fr'
@@ -2181,7 +2181,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 padding: '9px 12px',
                 border: '1px solid #E0D8CF', borderRadius: '10px',
                 background: 'var(--cream)', color: '#2B2420',
-                fontSize: '13px', fontFamily: 'DM Sans, sans-serif',
+                fontSize: '13px', fontFamily: 'var(--font-dm-sans)',
                 outline: 'none',
               }}
             />
@@ -2208,7 +2208,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               {customPizzas.length > 0 && (
               <div style={{ padding: '8px 12px 0', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 2px 0' }}>
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
                     {l === 'fr' ? 'Mes pizzas' : 'My pizzas'}
                   </span>
                   <button
@@ -2216,14 +2216,14 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     style={{
                       border: '1px dashed rgba(107, 68, 35,0.45)', borderRadius: '14px',
                       background: 'rgba(107, 68, 35,0.04)', padding: '4px 11px', cursor: 'pointer',
-                      fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: '#6B4423',
+                      fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#6B4423',
                     }}
                   >
                     {l === 'fr' ? '+ Nouvelle' : '+ New'}
                   </button>
                 </div>
                 {filteredCustom.length === 0 && (
-                  <div style={{ fontSize: '11.5px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', padding: '2px 2px 4px' }}>
+                  <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', padding: '2px 2px 4px' }}>
                     {l === 'fr' ? 'Aucune de vos pizzas ne correspond aux filtres actifs.' : 'None of your pizzas match the active filters.'}
                   </div>
                 )}
@@ -2244,7 +2244,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         position: 'absolute', top: '6px', right: '6px',
                         border: '1px solid #E8E0D5', borderRadius: '14px', padding: '3px 9px',
                         background: 'rgba(253,251,247,0.92)', cursor: 'pointer',
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#6B4423',
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#6B4423',
                       }}
                     >✎</button>
                   </div>
@@ -2282,7 +2282,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     marginTop: '4px',
                   }}
                 >
-                  <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '14px', fontWeight: 700, color: '#6B4423' }}>
+                  <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 700, color: '#6B4423' }}>
                     {l === 'fr' ? 'Vous ne la trouvez pas ?' : "Can't find yours?"}
                   </span>
                   <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: '#8A7F78' }}>
@@ -2360,7 +2360,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           >
             <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px 10px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'Playfair Display, serif' }}>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-playfair)' }}>
                 {!dessertSheetOpen
                   ? (l === 'fr' ? 'Votre pizza party' : 'Your Pizza Party')
                   : (l === 'fr' ? 'Desserts' : 'Dessert pizzas')}
@@ -2380,9 +2380,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           {pizza.name[l] ?? pizza.name.en}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <button onClick={() => changeQty(pizzaId, -1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #E0D8CF', background: '#FDFBF7', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
-                          <span style={{ fontSize: '13px', fontWeight: 600, minWidth: '16px', textAlign: 'center', fontFamily: 'DM Mono, monospace' }}>{qty as number}</span>
-                          <button onClick={() => changeQty(pizzaId, 1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #6B4423', background: '#6B4423', cursor: 'pointer', fontSize: '16px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                          <button onClick={() => changeQty(pizzaId, -1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #E0D8CF', background: '#FDFBF7', cursor: 'pointer', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
+                          <span style={{ fontSize: '13px', fontWeight: 600, minWidth: '16px', textAlign: 'center', fontFamily: 'var(--font-dm-mono)' }}>{qty as number}</span>
+                          <button onClick={() => changeQty(pizzaId, 1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #6B4423', background: '#6B4423', cursor: 'pointer', fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
                         </div>
                       </div>
                     );
@@ -2403,7 +2403,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         {l === 'fr' ? 'Desserts — la touche finale parfaite' : 'Dessert pizzas — the perfect finale'}
                       </div>
                     </div>
-                    <span style={{ marginLeft: 'auto', color: '#B8903A', fontSize: '18px', fontWeight: 300 }}>›</span>
+                    <span style={{ marginLeft: 'auto', color: '#B8903A', fontSize: '17px', fontWeight: 300 }}>›</span>
                   </div>
                   {/* Dough awareness */}
                   {(() => {
@@ -2421,12 +2421,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         }}
                       >
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
+                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)' }}>
                           {l === 'fr'
                             ? 'Définissez vos quantités dans Ma Pâte'
                             : 'Set your dough quantities in My Dough'}
                         </span>
-                        <span style={{ fontSize: '12px', color: '#6B4423', fontFamily: 'DM Mono, monospace' }}>→</span>
+                        <span style={{ fontSize: '12px', color: '#6B4423', fontFamily: 'var(--font-dm-mono)' }}>→</span>
                       </div>
                     );
                     return (
@@ -2442,12 +2442,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         }}
                       >
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif' }}>
+                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)' }}>
                           {l === 'fr'
                             ? 'Vous aurez peut-être besoin de plus de pâte — ajustez dans Ma Pâte'
                             : 'You may need more dough — adjust in My Dough'}
                         </span>
-                        <span style={{ fontSize: '12px', color: '#9C8248', fontFamily: 'DM Mono, monospace' }}>→</span>
+                        <span style={{ fontSize: '12px', color: '#9C8248', fontFamily: 'var(--font-dm-mono)' }}>→</span>
                       </div>
                     );
                   })()}
@@ -2513,7 +2513,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                                 padding: '16px 8px 6px',
                               }}>
                                 <div style={{
-                                  fontFamily: 'Playfair Display, serif',
+                                  fontFamily: 'var(--font-playfair)',
                                   fontSize: '11px', fontWeight: 700,
                                   color: '#FDFBF7', lineHeight: 1.2,
                                 }}>
@@ -2536,8 +2536,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                             </div>
                             <div style={{
                               padding: '6px 8px 8px',
-                              fontFamily: 'DM Sans, sans-serif',
-                              fontSize: '10px', color: '#8A7F78',
+                              fontFamily: 'var(--font-dm-sans)',
+                              fontSize: '11px', color: '#8A7F78',
                               lineHeight: 1.3,
                             }}>
                               {keyIngs || '—'}
@@ -2555,7 +2555,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   </div>
                   <button
                     onClick={() => setDessertSheetOpen(false)}
-                    style={{ margin: '8px 14px', padding: '10px', border: 'none', borderRadius: '10px', background: '#6B4423', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', width: 'calc(100% - 28px)', fontFamily: 'DM Sans, sans-serif' }}
+                    style={{ margin: '8px 14px', padding: '10px', border: 'none', borderRadius: '10px', background: '#6B4423', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', width: 'calc(100% - 28px)', fontFamily: 'var(--font-dm-sans)' }}
                   >
                     {l === 'fr' ? 'Retour à la sélection' : 'Back to party'}
                   </button>
@@ -2597,8 +2597,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               flexShrink: 0,
             }} />
             <div style={{
-              fontFamily: 'Playfair Display, serif',
-              fontSize: '18px', fontWeight: 700,
+              fontFamily: 'var(--font-playfair)',
+              fontSize: '17px', fontWeight: 700,
               color: 'var(--char)',
               padding: '12px 16px 8px',
               flexShrink: 0,
@@ -2639,7 +2639,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   >
                     <div style={{ flex: 1 }}>
                       <div style={{
-                        fontFamily: 'DM Sans, sans-serif',
+                        fontFamily: 'var(--font-dm-sans)',
                         fontSize: '15px', fontWeight: 600,
                         color: 'var(--char)',
                       }}>
@@ -2648,8 +2648,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     </div>
                     {isDoughStyle && (
                       <span style={{
-                        fontFamily: 'DM Mono, monospace',
-                        fontSize: '9px',
+                        fontFamily: 'var(--font-dm-mono)',
+                        fontSize: '11px',
                         color: 'var(--gold)',
                         background: 'rgba(156, 130, 72,0.15)',
                         borderRadius: '10px',
@@ -2662,7 +2662,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     )}
                     {isSelected && (
                       <span style={{
-                        fontFamily: 'DM Mono, monospace',
+                        fontFamily: 'var(--font-dm-mono)',
                         fontSize: '14px',
                         color: 'var(--terra)',
                         flexShrink: 0,
@@ -2678,7 +2678,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               padding: '10px 16px 20px',
               fontSize: '11px',
               color: 'var(--smoke)',
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: 'var(--font-dm-sans)',
               fontStyle: 'italic',
               borderTop: '1px solid var(--border)',
               flexShrink: 0,
@@ -2730,7 +2730,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               ))}
             </div>
             <span style={{
-              fontFamily: 'DM Mono, monospace', fontSize: '12px', fontWeight: 600,
+              fontFamily: 'var(--font-dm-mono)', fontSize: '12px', fontWeight: 600,
               color: totalQty === 0 ? '#B5AC9E'
                 : (doughConfigured && totalQty >= numItems ? '#8BA888' : '#C88A52'),
             }}>
@@ -2748,7 +2748,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             </div>
             {totalQty > 0 && (
               <span style={{
-                fontFamily: 'DM Sans, sans-serif', fontSize: '14px', fontWeight: 600,
+                fontFamily: 'var(--font-dm-sans)', fontSize: '14px', fontWeight: 600,
                 color: '#F0EBE0', textDecoration: 'underline',
                 textUnderlineOffset: '3px', textDecorationColor: 'rgba(240,235,224,0.45)',
               }}>
@@ -2773,7 +2773,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   }}
                 >
                   <span style={{
-                    fontFamily: 'DM Sans, sans-serif', fontSize: '14.5px',
+                    fontFamily: 'var(--font-dm-sans)', fontSize: '14px',
                     color: '#2B2420', fontWeight: 600,
                   }}>
                     {l === 'fr' ? 'Liste de courses →' : 'Shopping list →'}
@@ -2804,7 +2804,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   <path d="M7 1l1.5 4H13l-3.5 2.5L11 12 7 9.5 3 12l1.5-4.5L1 5h4.5L7 1z"/>
                 </svg>
                 <span style={{
-                  fontFamily: 'DM Sans, sans-serif', fontSize: '12px',
+                  fontFamily: 'var(--font-dm-sans)', fontSize: '12px',
                   color: '#B8903A', fontWeight: 500,
                   fontStyle: 'italic',
                 }}>

@@ -76,7 +76,7 @@ function YeastTooltip() {
           width: '13px', height: '13px', borderRadius: '50%',
           border: '1px solid rgba(138,127,120,0.6)',
           color: 'rgba(138,127,120,0.8)',
-          fontSize: '.58rem', cursor: 'pointer', flexShrink: 0,
+          fontSize: '11px', cursor: 'pointer', flexShrink: 0,
           fontFamily: 'var(--font-dm-sans)', lineHeight: 1,
           userSelect: 'none',
         }}
@@ -85,7 +85,7 @@ function YeastTooltip() {
         <span style={{
           position: 'absolute', bottom: '120%', left: 0,
           background: 'var(--ash)', color: 'var(--cream)',
-          fontSize: '.72rem', fontFamily: 'var(--font-dm-sans)',
+          fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
           padding: '.4rem .65rem', borderRadius: '8px',
           width: '220px', zIndex: 10,
           boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
@@ -115,7 +115,7 @@ function FlourTooltip({ bakeType }: { bakeType?: string }) {
           width: '13px', height: '13px', borderRadius: '50%',
           border: '1px solid rgba(138,127,120,0.6)',
           color: 'rgba(138,127,120,0.8)',
-          fontSize: '.58rem', cursor: 'pointer', flexShrink: 0,
+          fontSize: '11px', cursor: 'pointer', flexShrink: 0,
           fontFamily: 'var(--font-dm-sans)', lineHeight: 1,
           userSelect: 'none', marginLeft: '.35rem',
         }}
@@ -124,7 +124,7 @@ function FlourTooltip({ bakeType }: { bakeType?: string }) {
         <span style={{
           position: 'absolute', bottom: '120%', left: 0,
           background: 'var(--ash)', color: 'var(--cream)',
-          fontSize: '.72rem', fontFamily: 'var(--font-dm-sans)',
+          fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
           lineHeight: 1.5,
           padding: '.5rem .7rem', borderRadius: '8px',
           width: '210px', zIndex: 10,
@@ -162,7 +162,7 @@ function IngRow({
     }}>
       <div>
         <div style={{
-          fontSize: '.82rem',
+          fontSize: '13px',
           fontWeight: highlight ? 600 : 400,
           color: highlight ? 'var(--cream)' : D.muted,
           letterSpacing: '.02em',
@@ -171,7 +171,7 @@ function IngRow({
         </div>
         {sub && (
           <div style={{
-            fontSize: '.78rem',
+            fontSize: '12px',
             color: 'rgba(255,255,255,.7)',
             fontFamily: 'var(--font-dm-mono)',
             marginTop: '.1rem',
@@ -195,7 +195,7 @@ function IngRow({
 
       <div style={{
         fontFamily: 'var(--font-dm-mono)',
-        fontSize: '.72rem',
+        fontSize: '12px',
         color: 'var(--gold)',
         textAlign: 'right',
         minWidth: '4rem',
@@ -232,10 +232,10 @@ function InfoCard({
       background: th.bg,
     }}>
       <div style={{ display: 'flex', gap: '.55rem', alignItems: 'center', marginBottom: '.35rem' }}>
-        <span style={{ fontSize: '1rem' }}>{icon}</span>
-        <span style={{ fontSize: '.82rem', fontWeight: 600, color: th.titleColor }}>{title}</span>
+        <span style={{ fontSize: '15px' }}>{icon}</span>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: th.titleColor }}>{title}</span>
       </div>
-      <div style={{ fontSize: '.78rem', color: th.bodyColor, lineHeight: 1.6, paddingLeft: '1.55rem' }}>
+      <div style={{ fontSize: '12px', color: th.bodyColor, lineHeight: 1.6, paddingLeft: '1.55rem' }}>
         {body}
       </div>
     </div>
@@ -332,20 +332,20 @@ function StarterPrepCard({
     gap: '.15rem',
   };
   const labelStyle = {
-    fontSize: '.68rem',
+    fontSize: '11px',
     fontFamily: 'var(--font-dm-mono)',
     color: 'var(--smoke)',
     textTransform: 'uppercase' as const,
     letterSpacing: '.04em',
   };
   const valueStyle = {
-    fontSize: '.9rem',
+    fontSize: '14px',
     fontWeight: 500,
     fontFamily: 'var(--font-dm-mono)',
     color: 'var(--char)',
   };
   const noteStyle = {
-    fontSize: '.72rem',
+    fontSize: '12px',
     color: 'var(--smoke)',
     fontFamily: 'var(--font-dm-sans)',
   };
@@ -574,10 +574,10 @@ export default function RecipeOutput({
     return (
       <>
         {t('recipeOutput.waterUseAt') + ' '}
-        <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', fontSize: '.9rem', color: tempColor }}>{displayTemp(info.targetTemp, u)}</span>
+        <span style={{ fontWeight: 700, fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: tempColor }}>{displayTemp(info.targetTemp, u)}</span>
         {` · ${info.tempGuidance}`}
         {tempDiff >= 8 && (
-          <span style={{ display: 'block', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '.1rem' }}>
+          <span style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '.1rem' }}>
             {t('recipeOutput.waterKeeperNote')}
           </span>
         )}
@@ -633,13 +633,13 @@ export default function RecipeOutput({
       }}>
         <div>
           <div style={{
-            fontFamily: 'var(--font-playfair)', fontSize: '1.3rem',
+            fontFamily: 'var(--font-playfair)', fontSize: '20px',
             fontWeight: 700, color: 'var(--char)', marginBottom: '.2rem',
           }}>
             {t('recipeOutput.recipeReady')}
           </div>
           <div style={{
-            fontSize: '.78rem', color: 'var(--smoke)',
+            fontSize: '12px', color: 'var(--smoke)',
             fontFamily: 'var(--font-dm-mono)',
           }}>
             {styleName}
@@ -653,7 +653,7 @@ export default function RecipeOutput({
             </span>
           </div>
           {wastePct !== undefined && wastePct > 0 && (
-            <div style={{ fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.2rem' }}>
+            <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.2rem' }}>
               {t('recipeOutput.mixingBuffer', { pct: wastePct })}
             </div>
           )}
@@ -667,7 +667,7 @@ export default function RecipeOutput({
               border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--border)'}`,
               background: 'transparent',
               color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--smoke)',
-              fontSize: '.78rem', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
+              fontSize: '12px', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
               fontFamily: 'var(--font-dm-mono)',
             }}
           >
@@ -682,12 +682,12 @@ export default function RecipeOutput({
               style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                 display: 'flex', alignItems: 'center', gap: '.4rem',
-                fontSize: '.72rem', color: 'rgba(156, 130, 72,0.7)',
+                fontSize: '12px', color: 'rgba(156, 130, 72,0.7)',
                 fontFamily: 'var(--font-dm-mono)',
               }}
             >
               <span>{t('recipeOutput.totalIngredients')}</span>
-              <span style={{ fontSize: '.6rem', transition: 'transform .2s', transform: showTotals ? 'rotate(180deg)' : 'none' }}>▾</span>
+              <span style={{ fontSize: '11px', transition: 'transform .2s', transform: showTotals ? 'rotate(180deg)' : 'none' }}>▾</span>
             </button>
             {showTotals && (() => {
               const pf = result.preferment!;
@@ -713,11 +713,11 @@ export default function RecipeOutput({
                       alignItems: 'center',
                       padding: '.6rem .1rem',
                       borderBottom: `1px solid ${D.line}`,
-                      fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
+                      fontSize: '12px', fontFamily: 'var(--font-dm-mono)',
                     }}>
                       <span style={{ color: D.muted }}>{row.label}</span>
                       <span style={{ color: 'rgba(240, 235, 224,0.9)', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap' }}>{row.value}</span>
-                      <span style={{ color: 'var(--gold)', fontSize: '.72rem', textAlign: 'right', minWidth: '4rem', whiteSpace: 'nowrap' }}>{row.pct}</span>
+                      <span style={{ color: 'var(--gold)', fontSize: '12px', textAlign: 'right', minWidth: '4rem', whiteSpace: 'nowrap' }}>{row.pct}</span>
                     </div>
                   ))}
                 </div>
@@ -737,7 +737,7 @@ export default function RecipeOutput({
           <>
             {/* CARD 1: Make your preferment */}
             <div style={{ background: 'var(--char)', borderRadius: '18px', padding: '1.5rem 1.6rem', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
-              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--cream)', marginBottom: '1rem' }}>
+              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)', marginBottom: '1rem' }}>
                 {t('recipeOutput.makeYourPref', { name: pd.name })}
               </div>
               <IngRow
@@ -749,9 +749,9 @@ export default function RecipeOutput({
                   const f1 = FLOUR_DATA[flourBlend.flour1];
                   const f1DisplayName = flourBlend.brandProduct ?? f1.name;
                   if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
-                    return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>{f1DisplayName}</span>;
+                    return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{f1DisplayName}</span>;
                   }
-                  return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>Use your primary flour ({f1DisplayName})</span>;
+                  return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Use your primary flour ({f1DisplayName})</span>;
                 })() : undefined}
               />
               <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(pf.prefWater)} noPct
@@ -766,10 +766,10 @@ export default function RecipeOutput({
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
-                <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
+                <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
                   {t('recipeOutput.prefTotalRow', { name: pd.name })}
                 </div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   ~{wStr(prefTotal)}
                 </div>
                 <div style={{ minWidth: '4rem' }} />
@@ -778,10 +778,10 @@ export default function RecipeOutput({
 
             {/* CARD 2: Final dough */}
             <div style={{ background: 'var(--char)', borderRadius: '18px', padding: '1.5rem 1.6rem', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
-              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--cream)', marginBottom: '.3rem' }}>
+              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)', marginBottom: '.3rem' }}>
                 {t('recipeOutput.finalDoughTitle')}
               </div>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: D.muted, marginBottom: '1rem' }}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: D.muted, marginBottom: '1rem' }}>
                 {t('recipeOutput.addPrefToRest', { name: pd.name })}
               </div>
               <IngRow label={t('recipeOutput.yourPrefAll', { name: pd.name })} grams={wStr(prefTotal)} noPct highlight />
@@ -813,10 +813,10 @@ export default function RecipeOutput({
               {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} noPct />}
               {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} noPct />}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
-                <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
+                <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
                   {t('recipeOutput.totalDough')}
                 </div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   {u === 'imperial' ? wStr(numItems * itemWeight) : `${(numItems * itemWeight).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
                 </div>
                 <div style={{ minWidth: '4rem' }} />
@@ -828,12 +828,12 @@ export default function RecipeOutput({
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                     display: 'flex', alignItems: 'center', gap: '.4rem',
-                    fontSize: '.72rem', color: 'rgba(156, 130, 72,0.7)',
+                    fontSize: '12px', color: 'rgba(156, 130, 72,0.7)',
                     fontFamily: 'var(--font-dm-mono)',
                   }}
                 >
                   <span>{t('recipeOutput.totalIngredients')}</span>
-                  <span style={{ fontSize: '.6rem', transition: 'transform .2s', transform: showTotals ? 'rotate(180deg)' : 'none' }}>▾</span>
+                  <span style={{ fontSize: '11px', transition: 'transform .2s', transform: showTotals ? 'rotate(180deg)' : 'none' }}>▾</span>
                 </button>
                 {showTotals && (() => {
                   const pf = result.preferment!;
@@ -859,11 +859,11 @@ export default function RecipeOutput({
                           alignItems: 'center',
                           padding: '.6rem .1rem',
                           borderBottom: `1px solid ${D.line}`,
-                          fontSize: '.75rem', fontFamily: 'var(--font-dm-mono)',
+                          fontSize: '12px', fontFamily: 'var(--font-dm-mono)',
                         }}>
                           <span style={{ color: D.muted }}>{row.label}</span>
                           <span style={{ color: 'rgba(240, 235, 224,0.9)', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap' }}>{row.value}</span>
-                          <span style={{ color: 'var(--gold)', fontSize: '.72rem', textAlign: 'right', minWidth: '4rem', whiteSpace: 'nowrap' }}>{row.pct}</span>
+                          <span style={{ color: 'var(--gold)', fontSize: '12px', textAlign: 'right', minWidth: '4rem', whiteSpace: 'nowrap' }}>{row.pct}</span>
                         </div>
                       ))}
                     </div>
@@ -878,13 +878,13 @@ export default function RecipeOutput({
         <div style={{ background: 'var(--char)', borderRadius: '18px', padding: '1.5rem 1.6rem', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
           {/* Card header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem' }}>
-            <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--cream)' }}>
+            <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)' }}>
               {t('recipe.ingredients')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', width: '100%', maxWidth: '75%' }}>
               <span />
-              <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em' }}>{t('recipe.weight')}</span>
-              <span style={{ fontSize: '.65rem', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em', minWidth: '4rem' }}>{t('recipe.bakersPercent')}</span>
+              <span style={{ fontSize: '11px', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em' }}>{t('recipe.weight')}</span>
+              <span style={{ fontSize: '11px', color: D.sub, fontFamily: 'var(--font-dm-mono)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em', minWidth: '4rem' }}>{t('recipe.bakersPercent')}</span>
             </div>
           </div>
 
@@ -902,7 +902,7 @@ export default function RecipeOutput({
               const f1DisplayName = flourBlend.brandProduct ?? f1.name;
               const f1Weight = Math.round(flour * flourBlend.ratio1 / 100);
               if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
-                return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>{f1DisplayName}</span>;
+                return <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{f1DisplayName}</span>;
               }
               const f2 = FLOUR_DATA[flourBlend.flour2];
               const hasF3 = !!flourBlend.flour3 && flourBlend.ratio2 !== undefined && (100 - flourBlend.ratio1 - flourBlend.ratio2) > 0;
@@ -912,7 +912,7 @@ export default function RecipeOutput({
               const f3Weight = hasF3 ? flour - f1Weight - f2Weight : 0;
               const f3 = hasF3 ? FLOUR_DATA[flourBlend.flour3!] : null;
               return (
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
                   {flourBlend.ratio1}% {f1DisplayName} ({f1Weight.toLocaleString('en')}g)
                   {' · '}
                   {p2}% {flourBlend.customFlour2Name ?? f2.name} ({f2Weight.toLocaleString('en')}g)
@@ -920,13 +920,13 @@ export default function RecipeOutput({
                 </span>
               );
             })() : sdActive ? (
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
                 {locale === 'fr' ? `+ ${sdHalf}g via le levain = ${flour}g au total` : `+ ${sdHalf}g via the starter = ${flour}g total`}
               </span>
             ) : undefined}
           />
           <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(waterMain)} pct={pctStr(waterPct)} sub={sdActive ? (
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'rgba(255,255,255,0.5)' }}>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
                 {locale === 'fr' ? `+ ${sdHalf}g via le levain = ${water}g au total` : `+ ${sdHalf}g via the starter = ${water}g total`}
               </span>
             ) : waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
@@ -956,7 +956,7 @@ export default function RecipeOutput({
               <>
                 {mode === 'custom' && (
                   <div style={{
-                    fontSize: '.72rem',
+                    fontSize: '12px',
                     fontStyle: 'italic', fontFamily: 'var(--font-dm-sans)',
                     padding: '.2rem .1rem .4rem',
                     display: 'flex', alignItems: 'center',
@@ -966,7 +966,7 @@ export default function RecipeOutput({
                       onClick={() => setShowPriorityOverride(v => !v)}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        color: 'rgba(240, 235, 224,0.45)', fontSize: '.68rem',
+                        color: 'rgba(240, 235, 224,0.45)', fontSize: '11px',
                         fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline',
                         textUnderlineOffset: '2px', padding: 0,
                       }}
@@ -993,12 +993,12 @@ export default function RecipeOutput({
                             border: `1.5px solid ${isActive ? 'var(--gold)' : 'rgba(156, 130, 72,0.2)'}`,
                             background: isActive ? 'rgba(156, 130, 72,0.15)' : 'transparent',
                             color: isActive ? 'var(--gold)' : 'rgba(240, 235, 224,0.5)',
-                            fontSize: '.7rem', fontFamily: 'var(--font-dm-sans)',
+                            fontSize: '11px', fontFamily: 'var(--font-dm-sans)',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '.1rem',
                           }}
                         >
                           <span style={{ fontWeight: isActive ? 600 : 400 }}>{opt.label}</span>
-                          <span style={{ fontSize: '.6rem', opacity: .7 }}>{opt.desc}</span>
+                          <span style={{ fontSize: '11px', opacity: .7 }}>{opt.desc}</span>
                         </button>
                       );
                     })}
@@ -1015,7 +1015,7 @@ export default function RecipeOutput({
                 onClick={() => setShowDilution(v => !v)}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  fontSize: '.72rem', color: 'rgba(240, 235, 224,0.40)',
+                  fontSize: '12px', color: 'rgba(240, 235, 224,0.40)',
                   fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline',
                   textUnderlineOffset: '2px',
                 }}
@@ -1023,7 +1023,7 @@ export default function RecipeOutput({
                 {showDilution ? t('recipeOutput.dilutionHide') : t('recipeOutput.dilutionShow')}
               </button>
               {showDilution && (
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.73rem', color: 'rgba(240, 235, 224,0.50)', marginTop: '.35rem', lineHeight: 1.55 }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'rgba(240, 235, 224,0.50)', marginTop: '.35rem', lineHeight: 1.55 }}>
                   {sachetDilutionNote}
                 </div>
               )}
@@ -1050,10 +1050,10 @@ export default function RecipeOutput({
 
           {/* TOTAL DOUGH row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 1.5rem', alignItems: 'center', padding: '.65rem .1rem 0', marginTop: '.1rem' }}>
-            <div style={{ fontSize: '.75rem', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
+            <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
               {t('recipeOutput.totalDough')}
             </div>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
               {u === 'imperial' ? wStr(numItems * itemWeight) : `${(numItems * itemWeight).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
             </div>
             <div style={{ minWidth: '4rem' }} />
@@ -1072,12 +1072,12 @@ export default function RecipeOutput({
         }}>
           {/* Header */}
           <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.4rem' }}>
-            <span style={{ fontSize: '.85rem', fontWeight: 700, color: '#7A5A10', fontFamily: 'var(--font-dm-sans)' }}>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: '#7A5A10', fontFamily: 'var(--font-dm-sans)' }}>
               {t('recipeOutput.largeBatchTitle')}
             </span>
           </div>
           {/* Explanation */}
-          <div style={{ fontSize: '.78rem', color: '#5A4A10', lineHeight: 1.65, fontFamily: 'var(--font-dm-sans)', marginBottom: '.9rem' }}>
+          <div style={{ fontSize: '12px', color: '#5A4A10', lineHeight: 1.65, fontFamily: 'var(--font-dm-sans)', marginBottom: '.9rem' }}>
             {hasPref
               ? <>{t('recipeOutput.largeBatchFinalDough', { grams: Math.round(batchDoughG), mixer: (MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer', n: effectiveBatches })}</>
               : <>{t('recipeOutput.largeBatchTotal', { grams: totalDoughG, mixer: (MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer', n: effectiveBatches })}</>
@@ -1095,7 +1095,7 @@ export default function RecipeOutput({
                   border: `1.5px solid ${effectiveBatches === n ? '#9C8248' : '#C4B898'}`,
                   background: effectiveBatches === n ? '#9C824820' : 'white',
                   color: effectiveBatches === n ? '#7A5A10' : '#8A7F78',
-                  fontSize: '.8rem',
+                  fontSize: '13px',
                   fontFamily: 'var(--font-dm-mono)',
                   fontWeight: effectiveBatches === n ? 700 : 400,
                   cursor: 'pointer',
@@ -1117,7 +1117,7 @@ export default function RecipeOutput({
                 border: `1.5px solid ${effectiveBatches > 3 ? '#9C8248' : '#C4B898'}`,
                 background: effectiveBatches > 3 ? '#9C824820' : 'white',
                 color: effectiveBatches > 3 ? '#7A5A10' : '#8A7F78',
-                fontSize: '.8rem',
+                fontSize: '13px',
                 fontFamily: 'var(--font-dm-mono)',
                 textAlign: 'center',
                 outline: 'none',
@@ -1126,7 +1126,7 @@ export default function RecipeOutput({
           </div>
           {/* Per-batch breakdown */}
           <div style={{ background: 'white', borderRadius: '8px', padding: '.65rem .9rem', border: '1px solid #E8D890', marginBottom: '.65rem' }}>
-            <div style={{ fontSize: '.65rem', fontWeight: 600, color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '.07em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.45rem' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '.07em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.45rem' }}>
               {hasPref ? t('recipeOutput.batchHeader', { n: effectiveBatches, grams: Math.round(batchDoughG / effectiveBatches) }) : t('recipeOutput.batchHeaderSimple', { n: effectiveBatches, grams: Math.round(totalDoughG / effectiveBatches) })}
             </div>
             {[
@@ -1149,7 +1149,7 @@ export default function RecipeOutput({
             ].map((row, i) => (
               <div key={i} style={{
                 display: 'flex', justifyContent: 'space-between',
-                fontSize: '.78rem', fontFamily: 'var(--font-dm-mono)',
+                fontSize: '12px', fontFamily: 'var(--font-dm-mono)',
                 color: row.isTotal ? '#3D3530' : '#3D3530',
                 padding: '.12rem 0',
                 borderTop: row.isTotal ? '1px solid #E8D890' : 'none',
@@ -1162,7 +1162,7 @@ export default function RecipeOutput({
             ))}
           </div>
           {/* Footer note */}
-          <div style={{ fontSize: '.71rem', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
             Combine all batches into one container immediately after mixing. Bulk fermentation and schedule are unchanged.
           </div>
         </div>
@@ -1182,11 +1182,11 @@ export default function RecipeOutput({
           padding: '.85rem 1rem',
         }}>
           <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.3rem' }}>
-            <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#7A5A10' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
               {t('recipeOutput.precisionScaleTitle')}
             </span>
           </div>
-          <div style={{ fontSize: '.78rem', color: '#5A4010', lineHeight: 1.6, paddingLeft: '1.5rem' }}>
+          <div style={{ fontSize: '12px', color: '#5A4010', lineHeight: 1.6, paddingLeft: '1.5rem' }}>
             {t('recipeOutput.precisionScaleBody', { amount: wStr(result.preferment.prefYeastGrams) })}
           </div>
         </div>
@@ -1203,7 +1203,7 @@ export default function RecipeOutput({
               padding: '.85rem 1rem',
             }}>
               <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-                <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#7A5A10' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
                   {t('recipeOutput.precisionScaleMin')}
                 </span>
               </div>
@@ -1219,11 +1219,11 @@ export default function RecipeOutput({
               padding: '.85rem 1rem',
             }}>
               <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.3rem' }}>
-                <span style={{ fontSize: '.82rem', fontWeight: 600, color: '#7A5A10' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
                   {t('recipeOutput.precisionScaleTitle')}
                 </span>
               </div>
-              <div style={{ fontSize: '.78rem', color: '#5A4010', lineHeight: 1.6, paddingLeft: '1.5rem' }}>
+              <div style={{ fontSize: '12px', color: '#5A4010', lineHeight: 1.6, paddingLeft: '1.5rem' }}>
                 {t('recipeOutput.precisionScaleBody', { amount: wStr(yeastInfo.convertedGrams) })}
               </div>
             </div>
@@ -1278,18 +1278,18 @@ export default function RecipeOutput({
             padding: '1.2rem 1.4rem',
             border: '1px solid rgba(156, 130, 72,0.12)',
           }}>
-            <div style={{ fontSize: '.7rem', color: D.sub, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem' }}>
+            <div style={{ fontSize: '11px', color: D.sub, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem' }}>
               {t('recipeOutput.starterLabel')}
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '.75rem', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold)' }}>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '24px', fontWeight: 700, color: 'var(--gold)' }}>
                 {sourdough.starterGramsMin}–{sourdough.starterGramsMax} g
               </span>
-              <span style={{ fontSize: '.8rem', color: D.muted, fontFamily: 'var(--font-dm-mono)' }}>
+              <span style={{ fontSize: '13px', color: D.muted, fontFamily: 'var(--font-dm-mono)' }}>
                 ({sourdough.starterPctMin}–{sourdough.starterPctMax}% of flour)
               </span>
             </div>
-            <div style={{ fontSize: '.75rem', color: D.sub, marginTop: '.4rem', lineHeight: 1.5 }}>
+            <div style={{ fontSize: '12px', color: D.sub, marginTop: '.4rem', lineHeight: 1.5 }}>
               {t('recipeOutput.starterFeedNote')}
             </div>
           </div>
@@ -1303,7 +1303,7 @@ export default function RecipeOutput({
             background: 'var(--warm)',
           }}>
             <div style={{
-              fontSize: '.72rem', color: 'var(--smoke)',
+              fontSize: '12px', color: 'var(--smoke)',
               textTransform: 'uppercase', letterSpacing: '.06em',
               fontFamily: 'var(--font-dm-mono)', marginBottom: '.7rem',
             }}>
@@ -1316,12 +1316,12 @@ export default function RecipeOutput({
                     width: '18px', height: '18px', borderRadius: '50%',
                     border: '1.5px solid var(--border)',
                     flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '.6rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                    fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
                     marginTop: '.05rem',
                   }}>
                     {i + 1}
                   </span>
-                  <span style={{ fontSize: '.8rem', color: 'var(--ash)', lineHeight: 1.55 }}>{cue}</span>
+                  <span style={{ fontSize: '13px', color: 'var(--ash)', lineHeight: 1.55 }}>{cue}</span>
                 </div>
               ))}
             </div>

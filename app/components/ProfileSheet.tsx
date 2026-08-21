@@ -10,7 +10,7 @@ import type { StyleKey } from '../lib/toppingTypes';
 
 const S = {
   label: {
-    fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--terra)',
+    fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra)',
     textTransform: 'uppercase' as const, letterSpacing: '1.5px', fontWeight: 700,
     margin: '18px 16px 8px', display: 'block',
   },
@@ -18,7 +18,7 @@ const S = {
     border: active ? '1.5px solid var(--terra)' : '1px solid var(--border)',
     background: active ? 'rgba(107, 68, 35,0.07)' : 'var(--warm)',
     color: 'var(--char)', borderRadius: '20px', padding: '7px 13px',
-    fontFamily: 'var(--font-dm-sans)', fontSize: '12.5px', cursor: 'pointer',
+    fontFamily: 'var(--font-dm-sans)', fontSize: '12px', cursor: 'pointer',
     lineHeight: 1.2,
   }),
 };
@@ -110,7 +110,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           padding: '0 16px 12px', borderBottom: '1px solid var(--border)',
         }}>
           <div>
-            <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '18px', fontWeight: 700, color: 'var(--char)' }}>
+            <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
               {fr ? 'Mes préférences' : 'My preferences'}
             </span>
             <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)', marginTop: '2px' }}>
@@ -153,7 +153,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           }}>
             <div>
               <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>{cp.name}</div>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', color: 'var(--smoke)' }}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)' }}>
                 {cp.ingredients.length} {fr ? 'ingrédients' : 'ingredients'}
               </div>
             </div>
@@ -240,7 +240,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         </div>
 
         <span style={S.label}>{fr ? 'Indisponibilités habituelles' : 'Usual busy hours'}</span>
-        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11.5px', color: 'var(--smoke)', padding: '0 16px 6px' }}>
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)', padding: '0 16px 6px' }}>
           {fr ? 'Le planning évitera ces créneaux dans chaque nouvelle session.' : 'New sessions plan around these windows.'}
         </div>
         {blockerRow('sleep', fr ? 'Nuit' : 'Night')}

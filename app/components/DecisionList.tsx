@@ -52,13 +52,13 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>
+                <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>
                   {option.title}
                 </span>
                 {option.badge && (
                   <span style={{
-                    fontFamily: 'DM Mono, monospace',
-                    fontSize: '9px',
+                    fontFamily: 'var(--font-dm-mono)',
+                    fontSize: '11px',
                     color: 'var(--sage)',
                     background: 'rgba(107,122,90,0.15)',
                     borderRadius: '10px',
@@ -69,7 +69,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
                 )}
               </div>
               <div style={{
-                fontFamily: 'DM Sans, sans-serif',
+                fontFamily: 'var(--font-dm-sans)',
                 fontSize: '11px',
                 color: 'var(--smoke)',
                 overflow: 'hidden',
@@ -82,7 +82,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               </div>
             </div>
             {isSelected && (
-              <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '14px', color: 'var(--gold)', flexShrink: 0 }}>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--gold)', flexShrink: 0 }}>
                 ✓
               </span>
             )}

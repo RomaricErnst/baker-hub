@@ -43,7 +43,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
         border: '1px solid rgba(107, 68, 35,0.4)',
       }}>
         <div style={{
-          fontSize: '.72rem', color: '#E8785A',
+          fontSize: '12px', color: '#E8785A',
           fontFamily: 'var(--font-dm-sans)', marginBottom: '8px',
         }}>
           Delete <strong>{name || 'this recipe'}</strong>?
@@ -54,7 +54,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
             style={{
               flex: 1, padding: '.3rem', borderRadius: '6px',
               background: 'var(--terra)', border: 'none',
-              color: '#fff', fontSize: '.72rem', cursor: 'pointer',
+              color: '#fff', fontSize: '12px', cursor: 'pointer',
               fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
             }}>Yes, delete</button>
           <button
@@ -63,7 +63,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
               flex: 1, padding: '.3rem', borderRadius: '6px',
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.15)',
-              color: 'var(--smoke)', fontSize: '.72rem', cursor: 'pointer',
+              color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer',
               fontFamily: 'var(--font-dm-sans)',
             }}>Cancel</button>
         </div>
@@ -81,11 +81,11 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
       }}>
         <div style={{ padding: '8px 12px 6px' }}>
           <div style={{
-            fontSize: '.65rem', color: 'rgba(255,255,255,0.38)',
+            fontSize: '11px', color: 'rgba(255,255,255,0.38)',
             fontFamily: 'var(--font-dm-mono)',
           }}>{sub.line1}</div>
           <div style={{
-            fontSize: '.62rem', color: 'rgba(255,255,255,0.25)',
+            fontSize: '11px', color: 'rgba(255,255,255,0.25)',
             fontFamily: 'var(--font-dm-mono)', marginTop: '1px',
           }}>{sub.line2}</div>
         </div>
@@ -101,7 +101,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.2)',
               borderRadius: '5px', padding: '5px 8px',
-              color: 'var(--cream)', fontSize: '.78rem',
+              color: 'var(--cream)', fontSize: '12px',
               fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
               outline: 'none', marginBottom: '6px',
             }}
@@ -116,7 +116,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.2)',
               borderRadius: '5px', padding: '5px 8px',
-              color: 'rgba(255,255,255,0.7)', fontSize: '.72rem',
+              color: 'rgba(255,255,255,0.7)', fontSize: '12px',
               fontFamily: 'var(--font-dm-sans)',
               outline: 'none', resize: 'none', lineHeight: 1.5,
               marginBottom: '8px',
@@ -128,7 +128,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
               style={{
                 flex: 1, padding: '.35rem', borderRadius: '6px',
                 background: 'var(--terra)', border: 'none',
-                color: '#fff', fontSize: '.72rem', cursor: 'pointer',
+                color: '#fff', fontSize: '12px', cursor: 'pointer',
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
               }}>Save</button>
             <button
@@ -137,7 +137,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
                 flex: 1, padding: '.35rem', borderRadius: '6px',
                 background: 'rgba(255,255,255,0.08)',
                 border: '1px solid rgba(255,255,255,0.15)',
-                color: 'rgba(255,255,255,0.6)', fontSize: '.72rem', cursor: 'pointer',
+                color: 'rgba(255,255,255,0.6)', fontSize: '12px', cursor: 'pointer',
                 fontFamily: 'var(--font-dm-sans)',
               }}>Cancel</button>
           </div>
@@ -158,18 +158,18 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
         style={{ padding: '9px 12px 8px', cursor: 'pointer' }}
       >
         <div style={{
-          fontSize: '.65rem', color: 'rgba(255,255,255,0.38)',
+          fontSize: '11px', color: 'rgba(255,255,255,0.38)',
           fontFamily: 'var(--font-dm-mono)',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{sub.line1}</div>
         <div style={{
-          fontSize: '.62rem', color: 'rgba(255,255,255,0.25)',
+          fontSize: '11px', color: 'rgba(255,255,255,0.25)',
           fontFamily: 'var(--font-dm-mono)', marginTop: '1px',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{sub.line2}</div>
         <div style={{
           marginTop: '5px',
-          fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)',
+          fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
           fontWeight: name ? 600 : 400,
           color: name ? 'var(--cream)' : 'rgba(255,255,255,0.22)',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -177,7 +177,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
         {notes && (
           <div style={{
             marginTop: '3px',
-            fontSize: '.72rem', color: 'rgba(255,255,255,0.42)',
+            fontSize: '12px', color: 'rgba(255,255,255,0.42)',
             fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
             overflow: 'hidden', display: '-webkit-box',
             WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
@@ -193,7 +193,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
           style={{
             flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
             borderRight: '1px solid rgba(255,255,255,0.06)',
-            color: 'rgba(255,255,255,0.5)', fontSize: '.68rem',
+            color: 'rgba(255,255,255,0.5)', fontSize: '11px',
             fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
           }}>Edit</button>
         <button
@@ -201,14 +201,14 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
           style={{
             flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
             borderRight: '1px solid rgba(255,255,255,0.06)',
-            color: 'rgba(255,255,255,0.5)', fontSize: '.68rem',
+            color: 'rgba(255,255,255,0.5)', fontSize: '11px',
             fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
           }}>Delete</button>
         <button
           onClick={() => onLoad?.(r)}
           style={{
             flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
-            color: '#E8785A', fontSize: '.68rem',
+            color: '#E8785A', fontSize: '11px',
             fontFamily: 'var(--font-dm-sans)', fontWeight: 600, cursor: 'pointer',
           }}>Resume</button>
       </div>
@@ -382,7 +382,7 @@ export default function Header({
   }
 
   const monoLabel: React.CSSProperties = {
-    fontSize: '.68rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+    fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
     textTransform: 'uppercase', letterSpacing: '.06em',
   };
 
@@ -420,7 +420,7 @@ export default function Header({
             style={{ objectFit: 'contain' }} alt="Baker Hub" />
           <div style={{
             fontFamily: 'var(--font-playfair)',
-            fontSize: '16px', fontWeight: 700,
+            fontSize: '15px', fontWeight: 700,
             color: 'var(--cream)', lineHeight: 1,
           }}>Baker Hub</div>
         </div>
@@ -438,7 +438,7 @@ export default function Header({
             border: '1px solid rgba(240, 235, 224,0.25)',
             borderRadius: '20px',
             color: 'var(--cream)',
-            fontSize: '12.5px',
+            fontSize: '12px',
             fontFamily: 'var(--font-dm-sans)',
             textDecoration: 'none',
             whiteSpace: 'nowrap',
@@ -572,13 +572,13 @@ export default function Header({
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <img src="/logo-mark.webp" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }}/>
-              <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700, color: 'var(--cream)' }}>
+              <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--cream)' }}>
                 Baker Hub
               </span>
             </div>
             <button
               onClick={() => setMenuOpen(false)}
-              style={{ background: 'transparent', border: 'none', color: 'var(--smoke)', fontSize: '1.2rem', cursor: 'pointer', padding: '4px 8px', lineHeight: 1 }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--smoke)', fontSize: '20px', cursor: 'pointer', padding: '4px 8px', lineHeight: 1 }}
             >x</button>
           </div>
 
@@ -602,14 +602,14 @@ export default function Header({
               }}>
                 {sessionSummary && (
                   <div style={{
-                    fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
+                    fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
                     fontWeight: 600, color: 'var(--cream)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>{sessionSummary}</div>
                 )}
                 {sessionDoughSpec && (
                   <div style={{
-                    fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
+                    fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
                     color: 'var(--smoke)', marginTop: '2px',
                   }}>{sessionDoughSpec}</div>
                 )}
@@ -619,7 +619,7 @@ export default function Header({
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
                 {sessionSaved ? (
                   <span style={{
-                    fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
+                    fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
                     color: 'var(--sage)', cursor: 'default',
                   }}>
                     {locale === 'fr' ? 'Session enregistree' : 'Session saved'}
@@ -628,7 +628,7 @@ export default function Header({
                   <button
                     onClick={() => { onSaveSession?.(); setMenuOpen(false); }}
                     style={{
-                      fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
+                      fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
                       color: 'var(--terra-on-dark)',
                       border: '1px solid rgba(200, 138, 82,0.4)',
                       borderRadius: '6px',
@@ -643,7 +643,7 @@ export default function Header({
                 {onNewSession && <button
                   onClick={() => { onNewSession(); setMenuOpen(false); }}
                   style={{
-                    fontSize: '.68rem', fontFamily: 'var(--font-dm-mono)',
+                    fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
                     color: 'var(--smoke)',
                     background: 'none', border: 'none',
                     cursor: 'pointer',
@@ -667,10 +667,10 @@ export default function Header({
                 cursor: 'pointer', width: '100%', textAlign: 'left', flexShrink: 0,
               }}
             >
-              <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '.82rem', fontWeight: 600, color: 'var(--cream)' }}>
+              <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', fontWeight: 600, color: 'var(--cream)' }}>
                 {locale === 'fr' ? 'Mes préférences' : 'My preferences'}
               </span>
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '.75rem', color: 'var(--smoke)' }}>→</span>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)' }}>→</span>
             </button>
           )}
 
@@ -704,7 +704,7 @@ export default function Header({
                   <button key={opt.key} onClick={opt.onSelect} style={{
                     minWidth: '48px', padding: '.22rem .4rem', borderRadius: '5px',
                     border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)',
-                    fontSize: '.75rem', fontWeight: 600, textAlign: 'center',
+                    fontSize: '12px', fontWeight: 600, textAlign: 'center',
                     background: opt.active ? 'var(--terra)' : 'transparent',
                     color: opt.active ? '#fff' : 'var(--smoke)',
                   }}>{opt.display}</button>
@@ -727,15 +727,15 @@ export default function Header({
           {/* ── My Sessions cards — scrollable ── */}
           <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, padding: '4px 16px 12px' }}>
             {!user ? (
-              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
                 {locale === 'fr' ? 'Connectez-vous pour sauvegarder vos sessions' : 'Sign in to save your sessions'}
               </div>
             ) : loadingRecipes ? (
-              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>
                 {locale === 'fr' ? 'Chargement...' : 'Loading...'}
               </div>
             ) : bakeEvents.length === 0 ? (
-              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
                 {locale === 'fr' ? 'Aucune session sauvegardee' : 'No saved sessions yet'}
               </div>
             ) : (
@@ -779,19 +779,19 @@ export default function Header({
                         style={{ padding: '12px 12px 10px', cursor: 'pointer' }}
                       >
                         <div style={{
-                          fontSize: '.75rem', fontFamily: 'var(--font-dm-sans)',
+                          fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
                           fontWeight: 600, color: 'var(--cream)',
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>{title}</div>
                         {spec && (
                           <div style={{
-                            fontSize: '.65rem', fontFamily: 'var(--font-dm-mono)',
+                            fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
                             color: 'var(--smoke)', marginTop: '2px',
                           }}>{spec}</div>
                         )}
                         {(eventSlots[event.id] ?? []).length > 0 && (
                           <div style={{
-                            fontSize: '.62rem', fontFamily: 'var(--font-dm-mono)',
+                            fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
                             color: 'rgba(255,255,255,0.4)', marginTop: '2px',
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           }}>
@@ -806,20 +806,20 @@ export default function Header({
                         )}
                         <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
                           <span style={{
-                            fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                            fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                             padding: '2px 8px', borderRadius: '20px',
                             background: 'rgba(107,122,90,0.15)', color: 'var(--sage)',
                           }}>Dough</span>
                           {event.pizza_party_id && (
                             <span style={{
-                              fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                               padding: '2px 8px', borderRadius: '20px',
                               background: 'rgba(156, 130, 72,0.15)', color: 'var(--gold)',
                             }}>Pizza</span>
                           )}
                           {event.status === 'baked' && (
                             <span style={{
-                              fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                               padding: '2px 8px', borderRadius: '20px',
                               background: 'rgba(200, 138, 82,0.10)', color: 'var(--terra-on-dark)',
                             }}>Baked</span>
@@ -833,7 +833,7 @@ export default function Header({
                                 setMenuOpen(false);
                               }}
                               style={{
-                                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                                 padding: '2px 9px', borderRadius: '20px',
                                 background: 'rgba(255,255,255,0.08)',
                                 border: '1px solid rgba(255,255,255,0.15)',
@@ -878,7 +878,7 @@ export default function Header({
                                     position: 'absolute', bottom: '2px', right: '2px',
                                     background: 'rgba(0,0,0,0.6)', borderRadius: '4px',
                                     padding: '1px 4px',
-                                    fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: 'white',
+                                    fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'white',
                                   }}>{`×${slot.length}`}</div>
                                 )}
                               </div>
@@ -927,7 +927,7 @@ export default function Header({
           }}>
             {authSpotlight && !user && (
               <div style={{
-                fontSize: '.75rem', color: 'var(--gold)',
+                fontSize: '12px', color: 'var(--gold)',
                 fontFamily: 'var(--font-dm-sans)', marginBottom: '8px',
                 lineHeight: 1.45,
               }}>
@@ -939,18 +939,18 @@ export default function Header({
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.5rem' }}>
                 <span style={{
-                  fontSize: '.7rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                  fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
                 }}>{user.email}</span>
                 <button onClick={signOut} style={{
                   padding: '.3rem .65rem', borderRadius: '7px', flexShrink: 0,
                   border: '1.5px solid rgba(255,255,255,0.15)', background: 'transparent',
-                  color: 'var(--smoke)', fontSize: '.7rem', cursor: 'pointer',
+                  color: 'var(--smoke)', fontSize: '11px', cursor: 'pointer',
                   fontFamily: 'var(--font-dm-sans)',
                 }}>Sign out</button>
               </div>
             ) : emailSent ? (
-              <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', textAlign: 'center', padding: '.25rem 0' }}>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', textAlign: 'center', padding: '.25rem 0' }}>
                 Check your inbox — link sent
               </div>
             ) : (
@@ -959,12 +959,12 @@ export default function Header({
                   width: '100%', padding: '.5rem', borderRadius: '8px',
                   border: '1.5px solid rgba(255,255,255,0.15)',
                   background: 'rgba(255,255,255,0.06)', color: 'var(--cream)',
-                  fontSize: '.8rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                  fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
                   fontWeight: 500, textAlign: 'center',
                 }}>Sign in with Google</button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                  <span style={{ fontSize: '.65rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-mono)' }}>or</span>
+                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-mono)' }}>or</span>
                   <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
                 </div>
                 {showEmailForm ? (
@@ -977,13 +977,13 @@ export default function Header({
                         flex: 1, padding: '.45rem .6rem', borderRadius: '7px',
                         border: '1px solid rgba(255,255,255,0.18)',
                         background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
-                        fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)', outline: 'none',
+                        fontSize: '12px', fontFamily: 'var(--font-dm-sans)', outline: 'none',
                       }}
                     />
                     <button onClick={signInWithEmail} style={{
                       padding: '.45rem .7rem', borderRadius: '7px', flexShrink: 0,
                       background: 'var(--terra)', border: 'none',
-                      color: '#fff', fontSize: '.78rem', cursor: 'pointer',
+                      color: '#fff', fontSize: '12px', cursor: 'pointer',
                       fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
                     }}>Send</button>
                   </div>
@@ -992,7 +992,7 @@ export default function Header({
                     width: '100%', padding: '.5rem', borderRadius: '8px',
                     border: '1.5px solid rgba(255,255,255,0.15)',
                     background: 'transparent', color: 'rgba(255,255,255,0.55)',
-                    fontSize: '.8rem', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                    fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
                     textAlign: 'center',
                   }}>Sign in with email</button>
                 )}

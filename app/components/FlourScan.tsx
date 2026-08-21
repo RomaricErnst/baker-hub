@@ -150,10 +150,10 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
             <path d="M11 21 c0-4 1.5-5 2-7 h6 c.5 2 2 3 2 7 a2 2 0 0 1-2 2 h-6 a2 2 0 0 1-2-2 Z" fill="rgba(107, 68, 35,0.12)" />
             <line x1="12" y1="12" x2="20" y2="12" />
           </svg>
-          <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '1rem', color: 'var(--char)', fontWeight: 700 }}>
+          <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', color: 'var(--char)', fontWeight: 700 }}>
             {isFr ? 'Photographiez votre sachet de farine' : 'Take a photo of your flour bag'}
           </div>
-          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '.78rem', color: 'var(--smoke)' }}>
+          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: 'var(--smoke)' }}>
             {isFr ? 'ou glissez-déposez une image' : 'or drag and drop an image'}
           </div>
         </div>
@@ -171,7 +171,7 @@ style={{ display: 'none' }}
           onClick={onCancel}
           style={{
             marginTop: '.75rem', background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--smoke)', fontSize: '.78rem', fontFamily: 'var(--font-dm-sans)',
+            color: 'var(--smoke)', fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
             textDecoration: 'underline', textUnderlineOffset: '2px', padding: '.2rem 0',
           }}
         >
@@ -193,7 +193,7 @@ style={{ display: 'none' }}
           />
         )}
         <div style={{ marginTop: '.75rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '.82rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '.5rem' }}>
+          <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '.5rem' }}>
             {isFr ? 'Analyse de votre farine…' : 'Analysing your flour bag...'}
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '.3rem' }}>
@@ -232,7 +232,7 @@ style={{ display: 'none' }}
           )}
           <div style={{ flex: 1 }}>
             {/* Flour name */}
-            <div style={{ fontWeight: 600, fontSize: '.95rem', color: 'var(--char)', marginBottom: '.4rem', lineHeight: 1.3 }}>
+            <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--char)', marginBottom: '.4rem', lineHeight: 1.3 }}>
               {extractedResult.name}
             </div>
 
@@ -241,7 +241,7 @@ style={{ display: 'none' }}
               <div style={{
                 marginBottom: '.5rem', padding: '.35rem .65rem',
                 background: 'rgba(107,122,90,0.1)', border: '1px solid rgba(107,122,90,0.25)',
-                borderRadius: '8px', fontSize: '.72rem', color: '#4A7A3A', lineHeight: 1.4,
+                borderRadius: '8px', fontSize: '12px', color: '#4A7A3A', lineHeight: 1.4,
               }}>
                 ✓ Matched in our flour database
               </div>
@@ -249,7 +249,7 @@ style={{ display: 'none' }}
               <div style={{
                 marginBottom: '.5rem', padding: '.35rem .65rem',
                 background: '#FDFBF2', border: '1px solid #E8D890',
-                borderRadius: '8px', fontSize: '.72rem', color: '#6A5A10', lineHeight: 1.4,
+                borderRadius: '8px', fontSize: '12px', color: '#6A5A10', lineHeight: 1.4,
               }}>
                 🔍 {isFr
                   ? 'Valeurs estimées d’après le type de sachet — correct pour la plupart des farines. Ajustez ci-dessous si votre sachet indique d’autres chiffres.'
@@ -261,7 +261,7 @@ style={{ display: 'none' }}
             {!adjusting ? (
               <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
                   color: 'var(--terra)', background: '#FEF4EF',
                   borderRadius: '20px', padding: '.2rem .6rem',
                   border: '1px solid rgba(107, 68, 35,0.2)',
@@ -269,7 +269,7 @@ style={{ display: 'none' }}
                   W {displayW}
                 </span>
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '.72rem',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
                   color: 'var(--sage)', background: 'rgba(107,122,90,0.1)',
                   borderRadius: '20px', padding: '.2rem .6rem',
                   border: '1px solid rgba(107,122,90,0.25)',
@@ -281,7 +281,7 @@ style={{ display: 'none' }}
                     onClick={() => setAdjusting(true)}
                     style={{
                       background: 'none', border: 'none', padding: 0,
-                      fontSize: '.7rem', color: 'var(--smoke)',
+                      fontSize: '11px', color: 'var(--smoke)',
                       fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                       textDecoration: 'underline', textUnderlineOffset: '2px',
                     }}
@@ -293,7 +293,7 @@ style={{ display: 'none' }}
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
                 <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-                  <label style={{ fontSize: '.72rem', color: 'var(--smoke)', width: '60px', fontFamily: 'var(--font-dm-mono)' }}>
+                  <label style={{ fontSize: '12px', color: 'var(--smoke)', width: '60px', fontFamily: 'var(--font-dm-mono)' }}>
                     W value
                   </label>
                   <input
@@ -303,15 +303,15 @@ style={{ display: 'none' }}
                     style={{
                       width: '80px', padding: '.3rem .5rem', borderRadius: '8px',
                       border: '1.5px solid var(--border)', fontFamily: 'var(--font-dm-mono)',
-                      fontSize: '.82rem', color: 'var(--char)', background: 'var(--warm)',
+                      fontSize: '13px', color: 'var(--char)', background: 'var(--warm)',
                     }}
                   />
-                  <span style={{ fontSize: '.65rem', color: 'var(--smoke)' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--smoke)' }}>
                     (on bag? usually 180–380)
                   </span>
                 </div>
                 <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-                  <label style={{ fontSize: '.72rem', color: 'var(--smoke)', width: '60px', fontFamily: 'var(--font-dm-mono)' }}>
+                  <label style={{ fontSize: '12px', color: 'var(--smoke)', width: '60px', fontFamily: 'var(--font-dm-mono)' }}>
                     Protein
                   </label>
                   <input
@@ -322,10 +322,10 @@ style={{ display: 'none' }}
                     style={{
                       width: '80px', padding: '.3rem .5rem', borderRadius: '8px',
                       border: '1.5px solid var(--border)', fontFamily: 'var(--font-dm-mono)',
-                      fontSize: '.82rem', color: 'var(--char)', background: 'var(--warm)',
+                      fontSize: '13px', color: 'var(--char)', background: 'var(--warm)',
                     }}
                   />
-                  <span style={{ fontSize: '.65rem', color: 'var(--smoke)' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--smoke)' }}>
                     % (check nutritional table)
                   </span>
                 </div>
@@ -334,7 +334,7 @@ style={{ display: 'none' }}
                   style={{
                     alignSelf: 'flex-start', padding: '.25rem .65rem',
                     background: 'var(--terra)', border: 'none', borderRadius: '8px',
-                    color: '#fff', fontSize: '.72rem', cursor: 'pointer',
+                    color: '#fff', fontSize: '12px', cursor: 'pointer',
                     fontFamily: 'var(--font-dm-sans)',
                   }}
                 >
@@ -351,7 +351,7 @@ style={{ display: 'none' }}
             style={{
               flex: 2, padding: '.75rem 1rem', border: 'none',
               borderRadius: '12px', background: 'var(--terra)', color: '#fff',
-              fontFamily: 'var(--font-playfair)', fontSize: '.95rem', fontWeight: 700,
+              fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700,
               cursor: 'pointer',
             }}
           >
@@ -363,7 +363,7 @@ style={{ display: 'none' }}
               flex: 1, padding: '.75rem 1rem',
               border: '1.5px solid var(--border)', borderRadius: '12px',
               background: 'transparent', color: 'var(--smoke)',
-              fontSize: '.85rem', cursor: 'pointer',
+              fontSize: '14px', cursor: 'pointer',
               fontFamily: 'var(--font-dm-sans)',
             }}
           >
@@ -381,12 +381,12 @@ style={{ display: 'none' }}
       borderRadius: '12px', padding: '1.25rem',
       textAlign: 'center',
     }}>
-      <div style={{ fontSize: '.88rem', fontWeight: 600, color: 'var(--terra)', marginBottom: '.4rem' }}>
+      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--terra)', marginBottom: '.4rem' }}>
         {scanError === 'service'
           ? (isFr ? 'Scan temporairement indisponible — entrez votre farine manuellement.' : 'Scan temporarily unavailable — enter your flour manually.')
           : (isFr ? 'Lecture du sachet difficile' : 'Couldn\'t read the bag clearly')}
       </div>
-      <div style={{ fontSize: '.8rem', color: 'var(--smoke)', marginBottom: '1rem', lineHeight: 1.5 }}>
+      <div style={{ fontSize: '13px', color: 'var(--smoke)', marginBottom: '1rem', lineHeight: 1.5 }}>
         {isFr ? 'Réessayez avec une photo plus nette, bien éclairée, montrant l’avant du sachet.' : 'Try a clearer photo with good lighting, showing the front of the bag.'}
       </div>
       <button
@@ -394,7 +394,7 @@ style={{ display: 'none' }}
         style={{
           padding: '.6rem 1.25rem', border: 'none', borderRadius: '10px',
           background: 'var(--terra)', color: '#fff',
-          fontSize: '.85rem', cursor: 'pointer',
+          fontSize: '14px', cursor: 'pointer',
           fontFamily: 'var(--font-dm-sans)',
         }}
       >

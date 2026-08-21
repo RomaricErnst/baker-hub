@@ -154,7 +154,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
   return (
     <div style={{ minHeight: '100dvh', background: '#F5F0E8', paddingBottom: '40px' }}>
       <div style={{ background: '#2B2420', padding: '20px 20px 16px', textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '22px', fontWeight: 700, color: '#F5F0E8' }}>
+        <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '20px', fontWeight: 700, color: '#F5F0E8' }}>
           Baker Hub
         </div>
         {row.title && (

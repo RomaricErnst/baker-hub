@@ -311,7 +311,7 @@ export default function SessionViewer({
     fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)',
   };
   const sectionLabel: React.CSSProperties = {
-    fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: 'var(--smoke)',
+    fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)',
     textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '10px',
   };
   const divider = { height: '1px', background: 'var(--border)', margin: '16px 20px 0' };
@@ -359,7 +359,7 @@ export default function SessionViewer({
         <button onClick={onClose} aria-label="Close" style={{
           position: 'absolute', top: '6px', right: '6px',
           background: 'none', border: 'none', cursor: 'pointer',
-          color: 'var(--smoke)', fontSize: '18px', lineHeight: 1,
+          color: 'var(--smoke)', fontSize: '17px', lineHeight: 1,
           width: '44px', height: '44px', zIndex: 2,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>✕</button>
@@ -430,20 +430,20 @@ export default function SessionViewer({
             )}
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               <span style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                 padding: '3px 10px', borderRadius: '20px',
                 background: 'rgba(107,122,90,0.15)', color: 'var(--sage)',
               }}>Dough</span>
               {(event.pizza_party_id || event.status === 'pizza_planned') && (
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                   padding: '3px 10px', borderRadius: '20px',
                   background: 'rgba(156, 130, 72,0.15)', color: 'var(--gold)',
                 }}>Pizza</span>
               )}
               {event.status === 'baked' && (
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                   padding: '3px 10px', borderRadius: '20px',
                   background: 'rgba(107, 68, 35,0.15)', color: 'var(--terra)',
                 }}>Baked</span>
@@ -598,9 +598,9 @@ export default function SessionViewer({
                   alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer', gap: '4px', flexShrink: 0,
                 }}>
-                  <span style={{ fontSize: '22px', opacity: 0.35, lineHeight: 1 }}>+</span>
+                  <span style={{ fontSize: '20px', opacity: 0.35, lineHeight: 1 }}>+</span>
                   <span style={{
-                    fontFamily: 'var(--font-dm-mono)', fontSize: '9px',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                     color: 'var(--smoke)', textAlign: 'center', lineHeight: 1.3,
                   }}>
                     {uploading ? '...' : (l === 'fr' ? 'Ajouter' : 'Add photo')}
@@ -623,7 +623,7 @@ export default function SessionViewer({
               )}
             </div>
             <p style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
               color: 'var(--smoke)', opacity: 0.6, marginTop: '8px',
             }}>
               {photos.length}/6 photos

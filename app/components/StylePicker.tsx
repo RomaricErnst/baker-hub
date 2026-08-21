@@ -202,7 +202,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
     {breadSections.map(section => (
     <div key={section.label} style={{ marginBottom: '1.1rem' }}>
     <div style={{
-      fontSize: '.72rem', fontWeight: 600, letterSpacing: '.07em',
+      fontSize: '12px', fontWeight: 600, letterSpacing: '.07em',
       textTransform: 'uppercase', color: 'var(--smoke)',
       fontFamily: 'var(--font-dm-sans)', margin: '0 0 .55rem .15rem',
     }}>
@@ -277,17 +277,17 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
                 borderRadius: 10,
                 marginBottom: '.6rem',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--cream)', fontSize: '2rem',
+                background: 'var(--cream)', fontSize: '32px',
               }}>
                 {style.emoji}
               </div>
             )}
             <div style={{ width: '100%' }}>
-              <div style={{ fontWeight: 700, fontSize: '.78rem', color: 'var(--char)', marginBottom: '.2rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '12px', color: 'var(--char)', marginBottom: '.2rem' }}>
                 {locale === 'fr' && style.nameFr ? style.nameFr : style.name}
               </div>
               <div style={{
-                fontSize: '.65rem',
+                fontSize: '11px',
                 color: 'var(--smoke)', lineHeight: 1.4, fontWeight: 300,
                 overflow: 'hidden',
                 display: '-webkit-box',
@@ -300,7 +300,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
           </div>
           {isDisabled && disabledNote && (
             <div style={{
-              fontSize: '10px', color: 'var(--smoke)', textAlign: 'center',
+              fontSize: '11px', color: 'var(--smoke)', textAlign: 'center',
               lineHeight: 1.4, padding: '0 4px',
             }}>
               {disabledNote}

@@ -46,7 +46,7 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
         />
       ) : (
         <div>
-          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'DM Sans' }}>
+          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-dm-sans)' }}>
             {t('subtitle')}
           </p>
           <DecisionList
@@ -62,7 +62,7 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
       {selected === 'stand' && (totalDoughG ?? 0) > 1500 && (
         <div style={{
           marginTop: '.75rem', background: '#FDFBF2', border: '1px solid #E8D890',
-          borderRadius: '10px', padding: '.7rem .9rem', fontSize: '.78rem',
+          borderRadius: '10px', padding: '.7rem .9rem', fontSize: '12px',
           color: '#7A5A10', lineHeight: 1.55,
         }}>
           {locale === 'fr'
@@ -75,7 +75,7 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
       {selected === 'no_knead' && bakeType === 'pizza' && styleKey && NO_KNEAD_WARNING[styleKey] && (
         <div style={{
           marginTop: '.75rem', background: '#FFF8E8', border: '1.5px solid #E8D080',
-          borderRadius: '10px', padding: '.7rem .9rem', fontSize: '.78rem',
+          borderRadius: '10px', padding: '.7rem .9rem', fontSize: '12px',
           color: '#7A5A10', lineHeight: 1.55, display: 'flex', gap: '.5rem', alignItems: 'flex-start',
         }}>
           <span>⚠️</span>

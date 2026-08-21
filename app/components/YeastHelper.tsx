@@ -61,7 +61,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
         />
       ) : (
         <div>
-          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'DM Sans' }}>
+          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-dm-sans)' }}>
             {t('subtitle')}
           </p>
           <DecisionList
@@ -82,7 +82,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
             disabledIds={disabledIds}
           />
           {disabledNote && disabledIds && disabledIds.length > 0 && (
-            <p style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', margin: '8px 0 0' }}>
+            <p style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', margin: '8px 0 0' }}>
               {disabledNote}
             </p>
           )}
@@ -95,7 +95,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
           <button
             onClick={() => setShowCalc(v => !v)}
             style={{
-              fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+              fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
               cursor: 'pointer', textDecoration: 'underline', background: 'none',
               border: 'none', padding: 0,
             }}
@@ -107,7 +107,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
             <div style={{
               background: 'var(--cream)', border: '1.5px solid var(--border)',
               borderRadius: '10px', padding: '.85rem 1rem', marginTop: '.5rem',
-              fontSize: '.75rem', color: 'var(--ash)', lineHeight: 1.7,
+              fontSize: '12px', color: 'var(--ash)', lineHeight: 1.7,
             }}>
               <div>{locale === 'fr' ? 'Modèle : formule par phase de Craig v1.1' : "Model: Craig's per-stage formula v1.1"}</div>
               <div style={{ fontFamily: 'var(--font-dm-mono)' }}>

@@ -188,7 +188,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
           }}>
             <span style={{ display: 'flex', alignItems: 'baseline', gap: '6px', minWidth: 0 }}>
               <span style={{
-                fontFamily: 'Playfair Display, serif', fontSize: '14px', fontWeight: 600,
+                fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 600,
                 color: done ? '#8A7F78' : '#2B2420',
                 textDecoration: done ? 'line-through' : undefined,
               }}>
@@ -196,7 +196,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
               </span>
               {task.totalAmount != null && task.unit && (
                 <span style={{
-                  fontFamily: 'DM Mono, monospace', fontSize: '11px',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                   color: done ? '#B8A9A0' : '#6B4423', flexShrink: 0,
                 }}>
                   {formatQty(task.totalAmount, task.unit, l)}
@@ -205,7 +205,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
             </span>
             {task.timing > 5 && (
               <span style={{
-                fontFamily: 'DM Mono, monospace', fontSize: '10px',
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                 color: '#8A7F78', flexShrink: 0,
               }}>
                 {task.timing} {l === 'fr' ? 'min' : 'min'}
@@ -213,7 +213,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
             )}
           </div>
           <span style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: '12px', lineHeight: 1.4,
+            fontFamily: 'var(--font-dm-sans)', fontSize: '12px', lineHeight: 1.4,
             color: '#8A7F78',
             textDecoration: done ? 'line-through' : undefined,
             opacity: done ? 0.6 : 1,
@@ -232,9 +232,9 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
     return (
       <div key={stationId} style={{ marginBottom: '18px' }}>
         <div style={{
-          fontSize: '16px', fontWeight: 700,
+          fontSize: '15px', fontWeight: 700,
           color: '#2B2420',
-          fontFamily: 'Playfair Display, serif',
+          fontFamily: 'var(--font-playfair)',
           padding: '12px 2px 8px',
         }}>
           {l === 'fr' ? station.fr : station.en}
@@ -256,11 +256,11 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
       {/* Style-specific notes */}
       {styleKey && STYLE_PREP_NOTES[styleKey] && (
         <div style={{ margin: '0 0 16px', border: '1px solid #E8E0D5', borderRadius: '12px', overflow: 'hidden' }}>
-          <div style={{ background: '#2B2420', color: 'white', padding: '8px 14px', fontSize: '10px', fontFamily: 'DM Mono, monospace', letterSpacing: '1px', textTransform: 'uppercase' }}>
+          <div style={{ background: '#2B2420', color: 'white', padding: '8px 14px', fontSize: '11px', fontFamily: 'var(--font-dm-mono)', letterSpacing: '1px', textTransform: 'uppercase' }}>
             {styleKey === 'pan' ? (l === 'fr' ? 'Style Detroit' : 'Detroit Style') : (l === 'fr' ? 'Style Teglia' : 'Teglia Style')}
           </div>
           {STYLE_PREP_NOTES[styleKey]!.map((note, i) => (
-            <div key={i} style={{ padding: '10px 14px', borderBottom: i < STYLE_PREP_NOTES[styleKey]!.length - 1 ? '1px solid #E8E0D5' : 'none', fontSize: '13px', color: '#3D3530', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }}>
+            <div key={i} style={{ padding: '10px 14px', borderBottom: i < STYLE_PREP_NOTES[styleKey]!.length - 1 ? '1px solid #E8E0D5' : 'none', fontSize: '13px', color: '#3D3530', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>
               {l === 'fr' ? note.fr : note.en}
             </div>
           ))}
@@ -268,7 +268,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
       )}
 
       {!hasAny ? (
-        <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px', color: '#8A7F78', textAlign: 'center', padding: '32px 0' }}>
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '14px', color: '#8A7F78', textAlign: 'center', padding: '32px 0' }}>
           {l === 'fr' ? 'Aucune préparation nécessaire — vous êtes prêt.' : 'No prep needed — you\'re good to go.'}
         </div>
       ) : (
@@ -276,10 +276,10 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
           {/* Phase 1 — Get ahead */}
           {hasEarly && (
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '15px', fontWeight: 600, color: '#2B2420', marginBottom: '2px' }}>
+              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 600, color: '#2B2420', marginBottom: '2px' }}>
                 {l === 'fr' ? 'Commencez par là' : 'Get ahead'}
               </div>
-              <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: '#8A7F78', marginBottom: '10px' }}>
+              <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: '#8A7F78', marginBottom: '10px' }}>
                 {l === 'fr'
                   ? 'Ces ingrédients ont besoin de temps ou doivent refroidir — ils se gardent au frigo.'
                   : 'These need time or must cool — they keep in the fridge until you\'re ready.'}
@@ -292,7 +292,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
           {hasEarly && hasFlex && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0 16px' }}>
               <div style={{ flex: 1, height: '1px', background: '#E8E0D5' }} />
-              <div style={{ fontSize: '10px', color: '#8A7F78', fontFamily: 'DM Sans, sans-serif', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
                 {l === 'fr' ? 'quand vous voulez' : 'whenever you\'re ready'}
               </div>
               <div style={{ flex: 1, height: '1px', background: '#E8E0D5' }} />
@@ -303,7 +303,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
           {hasFlex && (
             <div>
               {!hasEarly && (
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', color: '#8A7F78', marginBottom: '10px' }}>
+                <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: '#8A7F78', marginBottom: '10px' }}>
                   {l === 'fr' ? 'Tout est flexible — pendant que le four chauffe ou juste avant.' : 'All flexible — while the oven heats or just before.'}
                 </div>
               )}
@@ -319,7 +319,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
         style={{
           width: '100%', height: '52px',
           background: '#6B4423', color: 'white',
-          fontFamily: 'DM Sans, sans-serif', fontSize: '15px', fontWeight: 600,
+          fontFamily: 'var(--font-dm-sans)', fontSize: '15px', fontWeight: 600,
           borderRadius: '14px', marginTop: '24px',
           cursor: 'pointer', border: 'none',
         }}

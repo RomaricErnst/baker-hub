@@ -48,7 +48,7 @@ export default function DecisionHero({
           top: '12px',
           left: '12px',
           fontFamily: 'var(--font-dm-mono)',
-          fontSize: '9.5px',
+          fontSize: '11px',
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
           background: 'rgba(255,255,255,0.92)',
@@ -66,7 +66,7 @@ export default function DecisionHero({
         bottom: isLarge ? '14px' : '10px',
       }}>
         <div style={{
-          fontFamily: 'Playfair Display, serif',
+          fontFamily: 'var(--font-playfair)',
           fontWeight: 800,
           fontSize: isLarge ? '30px' : '20px',
           lineHeight: 1.05,
@@ -75,7 +75,7 @@ export default function DecisionHero({
           {title}
         </div>
         <div style={{
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'var(--font-dm-sans)',
           fontSize: isLarge ? '13.5px' : '11.5px',
           color: 'rgba(255,255,255,0.82)',
           marginTop: '4px',
@@ -93,7 +93,7 @@ export default function DecisionHero({
           background: 'var(--gold)',
           borderRadius: '50%',
           color: '#2B2420',
-          fontSize: '18px',
+          fontSize: '17px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
