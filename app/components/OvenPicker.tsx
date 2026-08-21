@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AnyOvenType } from '../data';
 import DecisionList from './DecisionList';
@@ -28,7 +28,18 @@ interface OvenPickerProps {
 export default function OvenPicker({ bakeType, styleKey, selected, onSelect, onPreselect }: OvenPickerProps) {
   const t = useTranslations('oven');
   const locale = useLocale();
-  const [expanded, setExpanded] = useState(true);
+  // Collapsing on select made sense when picking an oven advanced to the next
+  // card: the finished card folded away and you never looked at it again. On
+  // the merged Equipment page the baker stays put, so two things changed.
+  //
+  // 1. Start collapsed when a choice already exists. Revisiting the page to
+  //    change something now shows both halves as summaries at once, instead of
+  //    two long image lists stacked.
+  // 2. Collapse after a beat, not instantly — otherwise the tile vanishes
+  //    before the baker sees their own tap register.
+  const [expanded, setExpanded] = useState(selected == null);
+  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (collapseTimer.current) clearTimeout(collapseTimer.current); }, []);
 
   const recommendedOven = null;
 
@@ -74,7 +85,8 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, onP
       selectedId={selectedId}
       onSelect={(id) => {
         onSelect(id as AnyOvenType);
-        setExpanded(false);
+        if (collapseTimer.current) clearTimeout(collapseTimer.current);
+        collapseTimer.current = setTimeout(() => setExpanded(false), 420);
       }}
     />
   );

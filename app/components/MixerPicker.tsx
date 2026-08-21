@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { type MixerType } from '../data';
 import DecisionList from './DecisionList';
@@ -24,7 +24,11 @@ const NO_KNEAD_WARNING: Partial<Record<string, string>> = {
 
 export default function MixerPicker({ selected, onSelect, styleKey, bakeType, kitchenTemp, totalDoughG, locale }: MixerPickerProps) {
   const t = useTranslations('mixer');
-  const [expanded, setExpanded] = useState(true);
+  // Same rule as OvenPicker: start collapsed when already chosen, and let the
+  // selection show for a beat before folding away.
+  const [expanded, setExpanded] = useState(selected == null);
+  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (collapseTimer.current) clearTimeout(collapseTimer.current); }, []);
 
   const options = [
     { id: 'stand',    image: '/mixer_stand.webp',   title: t('stand.title'),    tagline: t('stand.tagline') },
@@ -52,7 +56,11 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
           <DecisionList
             options={options}
             selectedId={selected ?? ''}
-            onSelect={(id) => { onSelect(id as MixerType); setExpanded(false); }}
+            onSelect={(id) => {
+              onSelect(id as MixerType);
+              if (collapseTimer.current) clearTimeout(collapseTimer.current);
+              collapseTimer.current = setTimeout(() => setExpanded(false), 420);
+            }}
           />
         </div>
       )}
