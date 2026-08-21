@@ -124,7 +124,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
         onClick={e => e.stopPropagation()}
         style={{
           background: '#fff',
-          borderRadius: '18px',
+          borderRadius: '16px',
           maxWidth: '480px',
           width: '100%',
           overflow: 'hidden',
@@ -152,7 +152,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
             style={{
               background: 'rgba(255,255,255,.1)',
               backgroundClip: 'content-box',
-              border: 'none', borderRadius: '8px',
+              border: 'none', borderRadius: '12px',
               color: 'var(--cream)', fontSize: '15px',
               // 44px tap box, 30px painted square (padding + content-box clip)
               width: '44px', height: '44px', padding: '8px', margin: '-7px',
@@ -178,7 +178,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
           <div style={{
             background: 'var(--cream)',
             border: '1.5px solid var(--border)',
-            borderRadius: '12px',
+            borderRadius: '16px',
             padding: '12px 16px',
           }}>
             <div style={{
@@ -202,7 +202,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
             <div style={{
               background: '#F0F5EA',
               border: '1.5px solid #C8D4BA',
-              borderRadius: '12px',
+              borderRadius: '16px',
               padding: '12px 16px',
             }}>
               <div style={{

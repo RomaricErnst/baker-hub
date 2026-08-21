@@ -184,7 +184,7 @@ function StepCard({
     <div style={{ display: 'flex', gap: '0px' }}>
     <div ref={divRef} style={{
       flex: 1, minWidth: 0,
-      background: D.warm, borderRadius: '18px',
+      background: D.warm, borderRadius: '12px',
       border: `1px solid ${done ? D.sage + '60' : D.border}`,
       overflow: 'hidden',
       boxShadow: '0 2px 12px rgba(43, 36, 32,0.06)',
@@ -233,7 +233,7 @@ function StepCard({
                 display: 'inline-block', fontSize: '11px',
                 fontFamily: 'var(--font-dm-mono)', color: ea,
                 background: `${ea}14`, border: `1px solid ${ea}30`,
-                borderRadius: '8px', padding: '1px 8px',
+                borderRadius: '16px', padding: '1px 8px',
               }}>
                 {formatTime(time, _fmtLocale)}
                 {duration ? ` · ${hoursLabel(duration)}` : ''}
@@ -451,7 +451,7 @@ function CoachButton({
         <div style={{
           background: '#2B2420',
           borderLeft: '3px solid #6B4423',
-          borderRadius: '10px',
+          borderRadius: '16px',
           padding: '12px 16px',
           marginBottom: '12px',
           position: 'relative',
@@ -594,7 +594,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
       <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} ref={fileRef} onChange={attach} />
       {photoB64 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <img src={`data:image/jpeg;base64,${photoB64}`} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '8px', border: `1px solid ${D.border}` }} />
+          <img src={`data:image/jpeg;base64,${photoB64}`} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '12px', border: `1px solid ${D.border}` }} />
           <button onClick={() => setPhotoB64(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: D.smoke, fontSize: '11px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: 0 }}>
             {l === 'fr' ? 'Retirer la photo' : 'Remove photo'}
           </button>
@@ -606,7 +606,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           title={l === 'fr' ? 'Joindre une photo' : 'Attach a photo'}
           style={{
             width: '38px', flexShrink: 0, border: `1px solid ${photoB64 ? '#6B7A5A' : D.border}`,
-            borderRadius: '8px', background: photoB64 ? 'rgba(107,122,90,0.08)' : '#fff', cursor: 'pointer',
+            borderRadius: '12px', background: photoB64 ? 'rgba(107,122,90,0.08)' : '#fff', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
@@ -631,7 +631,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           disabled={!canAsk}
           style={{
             background: '#2B2420', color: '#F0EBE0', border: 'none',
-            borderRadius: '8px', padding: '12px 16px', minHeight: '44px', fontSize: '13px',
+            borderRadius: '12px', padding: '12px 16px', minHeight: '44px', fontSize: '13px',
             fontFamily: 'var(--font-dm-mono)', cursor: canAsk ? 'pointer' : 'default',
             opacity: canAsk ? 1 : 0.6, whiteSpace: 'nowrap',
           }}
@@ -644,7 +644,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
       </div>
       {answer && (
         <div style={{
-          background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '10px',
+          background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '12px',
           padding: '12px 16px', marginTop: '8px',
           color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, whiteSpace: 'pre-line',
         }}>
@@ -726,7 +726,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
       {tab === 'faq' && (
         <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {faq.map((f, i) => (
-            <div key={i} style={{ border: `1px solid ${D.border}`, borderRadius: '10px', overflow: 'hidden' }}>
+            <div key={i} style={{ border: `1px solid ${D.border}`, borderRadius: '12px', overflow: 'hidden' }}>
               <button
                 onClick={() => setOpenFaq(prev => prev === i ? null : i)}
                 style={{
@@ -1319,7 +1319,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 <img
                   src="/Pumpkin.jpeg"
                   alt="Pumpkin shape — dough gathered into a smooth ball around the spiral"
-                  style={{ width: '100%', maxWidth: '340px', borderRadius: '10px', display: 'block', marginTop: '8px', border: '1px solid var(--border)' }}
+                  style={{ width: '100%', maxWidth: '340px', borderRadius: '16px', display: 'block', marginTop: '8px', border: '1px solid var(--border)' }}
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
               </div>
@@ -1755,7 +1755,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           {isPan && (
             <div style={{
               background: 'rgba(156, 130, 72,0.08)', border: '1px solid rgba(156, 130, 72,0.2)',
-              borderRadius: '10px', padding: '12px 12px', marginBottom: '12px',
+              borderRadius: '16px', padding: '12px 12px', marginBottom: '12px',
               fontSize: '12px', fontFamily: 'var(--font-dm-sans)', color: 'var(--char)',
               lineHeight: 1.5,
             }}>

@@ -156,7 +156,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
 
   const canSave = name.trim().length > 0 && picked.length > 0;
   const input = {
-    border: '1px solid #E0D8CF', borderRadius: '8px', padding: '8px 12px',
+    border: '1px solid #E0D8CF', borderRadius: '16px', padding: '8px 12px',
     fontFamily: 'var(--font-dm-sans)', fontSize: '14px', color: '#2B2420',
     background: '#FDFBF7', width: '100%',
   } as const;
@@ -180,7 +180,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
         <div style={{ overflowY: 'auto', flex: 1, padding: '12px 16px' }}>
           {/* Name + photo */}
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <label style={{ width: 56, height: 56, borderRadius: '12px', overflow: 'hidden', flexShrink: 0, cursor: 'pointer', border: '1px dashed #C8C0B8', background: '#F0EBE0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <label style={{ width: 56, height: 56, borderRadius: '16px', overflow: 'hidden', flexShrink: 0, cursor: 'pointer', border: '1px dashed #C8C0B8', background: '#F0EBE0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={attachPhoto} />
               {photoSrc ? (
                 <img src={photoSrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${pos.fx * 100}% ${pos.fy * 100}%` }} />
@@ -209,7 +209,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                 onPointerUp={onDragEnd}
                 onPointerCancel={onDragEnd}
                 style={{
-                  width: '180px', height: '180px', borderRadius: '12px', overflow: 'hidden',
+                  width: '180px', height: '180px', borderRadius: '16px', overflow: 'hidden',
                   border: '1px solid #E0D8CF', touchAction: 'none', cursor: 'grab',
                   position: 'relative', background: '#2B2420',
                 }}
@@ -234,7 +234,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
           {picked.length > 0 && (
             <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {picked.map((p, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F0EBE0', border: '1px solid #E8E0D5', borderRadius: '10px', padding: '8px 12px' }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F0EBE0', border: '1px solid #E8E0D5', borderRadius: '16px', padding: '8px 12px' }}>
                   <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: '#2B2420', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {fr ? p.nameFr : p.nameEn}{p.free ? ' ✎' : ''}
                   </span>
@@ -244,7 +244,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                       const v = Math.max(0, Number(e.target.value) || 0);
                       setPicked(prev => prev.map((x, j) => j === i ? { ...x, amount: v } : x));
                     }}
-                    style={{ width: '50px', border: '1px solid #E0D8CF', borderRadius: '6px', padding: '4px 8px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', textAlign: 'right', background: '#FDFBF7' }}
+                    style={{ width: '50px', border: '1px solid #E0D8CF', borderRadius: '8px', padding: '4px 8px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', textAlign: 'right', background: '#FDFBF7' }}
                   />
                   <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#8A7F78', width: '34px' }}>{p.unit}</span>
                   <button
@@ -318,7 +318,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                         {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
                       </select>
                       <button onClick={() => addFree(gi)} disabled={!f.name.trim()} style={{
-                        border: 'none', borderRadius: '8px', padding: '8px 12px', cursor: f.name.trim() ? 'pointer' : 'default',
+                        border: 'none', borderRadius: '12px', padding: '8px 12px', cursor: f.name.trim() ? 'pointer' : 'default',
                         background: f.name.trim() ? '#6B7A5A' : '#E0D8CF', color: 'white',
                         fontFamily: 'var(--font-dm-sans)', fontSize: '13px', fontWeight: 600, flexShrink: 0,
                       }}>+</button>

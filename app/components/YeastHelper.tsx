@@ -106,7 +106,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
           {showCalc && (
             <div style={{
               background: 'var(--cream)', border: '1.5px solid var(--border)',
-              borderRadius: '10px', padding: '12px 16px', marginTop: '8px',
+              borderRadius: '16px', padding: '12px 16px', marginTop: '8px',
               fontSize: '12px', color: 'var(--ash)', lineHeight: 1.7,
             }}>
               <div>{locale === 'fr' ? 'Modèle : formule par phase de Craig v1.1' : "Model: Craig's per-stage formula v1.1"}</div>

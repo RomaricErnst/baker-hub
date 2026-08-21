@@ -88,7 +88,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
         <div style={{
           background: 'rgba(156, 130, 72,0.12)',
           border: '1px solid rgba(156, 130, 72,0.25)',
-          borderRadius: '10px',
+          borderRadius: '12px',
           padding: '8px 12px',
           marginBottom: '12px',
           fontFamily: 'var(--font-dm-mono)',

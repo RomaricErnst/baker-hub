@@ -309,7 +309,7 @@ export default function ClimatePicker({
           <div style={{
             background: '#FFF8E8',
             border: '1.5px solid #E8D080',
-            borderRadius: '10px',
+            borderRadius: '16px',
             padding: '8px 16px',
             fontSize: '12px',
             color: '#7A5A10',
@@ -348,7 +348,7 @@ export default function ClimatePicker({
         {outdoorOpen && (
         <div style={{
           border: '1.5px solid var(--border)', borderTop: 'none',
-          borderRadius: '0 0 12px 12px', padding: '12px',
+          borderRadius: '0 0 16px 16px', padding: '12px',
         }}>
         <div style={{ display: 'flex', gap: '8px' }}>
           <input
@@ -427,7 +427,7 @@ export default function ClimatePicker({
             marginTop: '8px',
             fontSize: '12px', color: 'var(--terra)',
             background: '#FEF4EF', border: '1px solid #F5C4B0',
-            borderRadius: '8px', padding: '8px 12px',
+            borderRadius: '16px', padding: '8px 12px',
           }}>
             {fetchError}
           </div>
@@ -438,15 +438,15 @@ export default function ClimatePicker({
           <div style={{
             marginTop: '12px',
             border: '1.5px solid var(--border)',
-            borderRadius: '13px',
+            borderRadius: '16px',
             padding: '16px 20px',
             background: 'var(--warm)',
             display: 'flex', alignItems: 'center', gap: '16px',
           }}>
             <div style={{ fontSize: '32px', opacity: .3 }}>🌡️</div>
             <div style={{ flex: 1 }}>
-              <div style={{ height: '12px', background: 'var(--border)', borderRadius: '6px', width: '55%', marginBottom: '8px' }} />
-              <div style={{ height: '10px', background: 'var(--border)', borderRadius: '6px', width: '35%' }} />
+              <div style={{ height: '12px', background: 'var(--border)', borderRadius: '16px', width: '55%', marginBottom: '8px' }} />
+              <div style={{ height: '10px', background: 'var(--border)', borderRadius: '16px', width: '35%' }} />
             </div>
           </div>
         )}
@@ -458,7 +458,7 @@ export default function ClimatePicker({
             <div style={{
               marginTop: '12px',
               border: '1.5px solid var(--border)',
-              borderRadius: '13px',
+              borderRadius: '16px',
               padding: '16px 20px',
               background: 'var(--warm)',
               display: 'flex', alignItems: 'center', gap: '16px',
@@ -592,7 +592,7 @@ export default function ClimatePicker({
               marginTop: '8px',
               fontSize: '12px', color: '#5A7090',
               background: '#EEF2FA', border: '1px solid #C4CDE0',
-              borderRadius: '8px', padding: '8px 12px',
+              borderRadius: '16px', padding: '8px 12px',
             }}>
               {isFr ? <>Un frigo à <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> est plus chaud que le standard {tempC(6, u)} — la levure restera plus active pendant le froid.</> : <>Fridge at <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> is warmer than the standard {tempC(6, u)} — yeast will be more active during cold retard.</>}
             </div>

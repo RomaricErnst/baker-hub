@@ -100,7 +100,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 290 }} />
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: 'var(--cream)', borderRadius: '16px 16px 0 0',
+        background: 'var(--cream)', borderRadius: '20px 20px 0 0',
         zIndex: 300, maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
         paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
       }}>
@@ -149,7 +149,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           <div key={cp.id} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             margin: '0 16px 6px', padding: '8px 12px',
-            background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '10px',
+            background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px',
           }}>
             <div>
               <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>{cp.name}</div>

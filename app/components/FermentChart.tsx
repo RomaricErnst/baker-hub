@@ -2169,7 +2169,7 @@ export default function FermentChart({
           <div style={{
             marginTop: '8px', padding: '12px 12px',
             background: 'rgba(43, 36, 32,0.03)', border: '1px solid var(--border, #E8E0D5)',
-            borderRadius: '10px', fontFamily: 'var(--font-dm-sans)', fontSize: '12px',
+            borderRadius: '16px', fontFamily: 'var(--font-dm-sans)', fontSize: '12px',
             color: 'var(--ash, #3D3530)', lineHeight: 1.65,
           }}>
             {([

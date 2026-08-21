@@ -38,7 +38,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   if (confirmDelete) {
     return (
       <div style={{
-        padding: '8px 12px', borderRadius: '10px',
+        padding: '8px 12px', borderRadius: '8px',
         background: 'rgba(107, 68, 35,0.15)',
         border: '1px solid rgba(107, 68, 35,0.4)',
       }}>
@@ -52,7 +52,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
           <button
             onClick={() => { onDelete?.(r.id); setConfirmDelete(false); }}
             style={{
-              flex: 1, padding: '4px', borderRadius: '6px',
+              flex: 1, padding: '4px', borderRadius: '8px',
               background: 'var(--terra)', border: 'none',
               color: '#fff', fontSize: '12px', cursor: 'pointer',
               fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
@@ -60,7 +60,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
           <button
             onClick={() => setConfirmDelete(false)}
             style={{
-              flex: 1, padding: '4px', borderRadius: '6px',
+              flex: 1, padding: '4px', borderRadius: '12px',
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.15)',
               color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer',
@@ -74,7 +74,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   if (editing) {
     return (
       <div style={{
-        borderRadius: '10px',
+        borderRadius: '16px',
         background: 'rgba(255,255,255,0.07)',
         border: '1px solid rgba(255,255,255,0.2)',
         overflow: 'hidden',
@@ -100,7 +100,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
               display: 'block', width: '100%', boxSizing: 'border-box',
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '5px', padding: '4px 8px',
+              borderRadius: '8px', padding: '4px 8px',
               color: 'var(--cream)', fontSize: '12px',
               fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
               outline: 'none', marginBottom: '8px',
@@ -115,7 +115,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
               display: 'block', width: '100%', boxSizing: 'border-box',
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '5px', padding: '4px 8px',
+              borderRadius: '8px', padding: '4px 8px',
               color: 'rgba(255,255,255,0.7)', fontSize: '12px',
               fontFamily: 'var(--font-dm-sans)',
               outline: 'none', resize: 'none', lineHeight: 1.5,
@@ -126,7 +126,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
             <button
               onClick={saveAll}
               style={{
-                flex: 1, padding: '4px', borderRadius: '6px',
+                flex: 1, padding: '4px', borderRadius: '8px',
                 background: 'var(--terra)', border: 'none',
                 color: '#fff', fontSize: '12px', cursor: 'pointer',
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
@@ -134,7 +134,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
             <button
               onClick={() => { setEditing(false); setName(r.recipe_name ?? ''); setNotes(r.notes ?? ''); }}
               style={{
-                flex: 1, padding: '4px', borderRadius: '6px',
+                flex: 1, padding: '4px', borderRadius: '12px',
                 background: 'rgba(255,255,255,0.08)',
                 border: '1px solid rgba(255,255,255,0.15)',
                 color: 'rgba(255,255,255,0.6)', fontSize: '12px', cursor: 'pointer',
@@ -148,7 +148,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
 
   return (
     <div style={{
-      borderRadius: '10px',
+      borderRadius: '12px',
       background: 'rgba(255,255,255,0.05)',
       border: '1px solid rgba(255,255,255,0.08)',
       overflow: 'hidden',
@@ -403,7 +403,7 @@ export default function Header({
           style={{
             background: menuOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
             border: 'none',
-            borderRadius: '8px', cursor: 'pointer',
+            borderRadius: '12px', cursor: 'pointer',
             padding: '12px 8px', display: 'flex', flexDirection: 'column',
             gap: '4px', alignItems: 'center', justifyContent: 'center',
           }}
@@ -597,7 +597,7 @@ export default function Header({
               <div style={{
                 background: 'rgba(255,255,255,0.05)',
                 border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '10px',
+                borderRadius: '16px',
                 padding: '12px 12px',
               }}>
                 {sessionSummary && (
@@ -631,7 +631,7 @@ export default function Header({
                       fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
                       color: 'var(--terra-on-dark)',
                       border: '1px solid rgba(200, 138, 82,0.4)',
-                      borderRadius: '6px',
+                      borderRadius: '12px',
                       background: 'rgba(200, 138, 82,0.1)',
                       padding: '3px 12px',
                       cursor: 'pointer',
@@ -702,7 +702,7 @@ export default function Header({
               <div style={{ display: 'flex', gap: '4px' }}>
                 {row.options.map(opt => (
                   <button key={opt.key} onClick={opt.onSelect} style={{
-                    minWidth: '48px', padding: '.22rem 8px', borderRadius: '5px',
+                    minWidth: '48px', padding: '.22rem 8px', borderRadius: '12px',
                     border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)',
                     fontSize: '12px', fontWeight: 600, textAlign: 'center',
                     background: opt.active ? 'var(--terra)' : 'transparent',
@@ -745,7 +745,7 @@ export default function Header({
                   const spec = bakeEventDoughSpec(event);
                   return (
                     <div key={event.id} style={{
-                      borderRadius: '10px',
+                      borderRadius: '16px',
                       background: 'rgba(255,255,255,0.05)',
                       border: '1px solid rgba(255,255,255,0.08)',
                       position: 'relative',
@@ -865,7 +865,7 @@ export default function Header({
                             {slots.map((slot, si) => (
                               <div key={si} style={{
                                 width: '40px', height: '40px',
-                                borderRadius: '6px', overflow: 'hidden',
+                                borderRadius: '16px', overflow: 'hidden',
                                 position: 'relative', flexShrink: 0,
                               }}>
                                 <img
@@ -920,7 +920,7 @@ export default function Header({
             flexShrink: 0,
             ...(authSpotlight && !user ? {
               boxShadow: 'inset 0 0 0 1.5px var(--gold)',
-              borderRadius: '12px',
+              borderRadius: '16px',
               background: 'rgba(156, 130, 72,0.08)',
               transition: 'box-shadow .3s, background .3s',
             } : { transition: 'box-shadow .3s, background .3s' }),
@@ -943,7 +943,7 @@ export default function Header({
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
                 }}>{user.email}</span>
                 <button onClick={signOut} style={{
-                  padding: '4px 12px', borderRadius: '7px', flexShrink: 0,
+                  padding: '4px 12px', borderRadius: '8px', flexShrink: 0,
                   border: '1.5px solid rgba(255,255,255,0.15)', background: 'transparent',
                   color: 'var(--smoke)', fontSize: '11px', cursor: 'pointer',
                   fontFamily: 'var(--font-dm-sans)',
@@ -956,7 +956,7 @@ export default function Header({
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <button onClick={signInWithGoogle} style={{
-                  width: '100%', padding: '8px', borderRadius: '8px',
+                  width: '100%', padding: '8px', borderRadius: '12px',
                   border: '1.5px solid rgba(255,255,255,0.15)',
                   background: 'rgba(255,255,255,0.06)', color: 'var(--cream)',
                   fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
@@ -974,14 +974,14 @@ export default function Header({
                       value={emailInput} onChange={e => setEmailInput(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && signInWithEmail()}
                       style={{
-                        flex: 1, padding: '8px 8px', borderRadius: '7px',
+                        flex: 1, padding: '8px 8px', borderRadius: '8px',
                         border: '1px solid rgba(255,255,255,0.18)',
                         background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
                         fontSize: '12px', fontFamily: 'var(--font-dm-sans)', outline: 'none',
                       }}
                     />
                     <button onClick={signInWithEmail} style={{
-                      padding: '8px 12px', borderRadius: '7px', flexShrink: 0,
+                      padding: '8px 12px', borderRadius: '8px', flexShrink: 0,
                       background: 'var(--terra)', border: 'none',
                       color: '#fff', fontSize: '12px', cursor: 'pointer',
                       fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
@@ -989,7 +989,7 @@ export default function Header({
                   </div>
                 ) : (
                   <button onClick={() => setShowEmailForm(true)} style={{
-                    width: '100%', padding: '8px', borderRadius: '8px',
+                    width: '100%', padding: '8px', borderRadius: '12px',
                     border: '1.5px solid rgba(255,255,255,0.15)',
                     background: 'transparent', color: 'rgba(255,255,255,0.55)',
                     fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',

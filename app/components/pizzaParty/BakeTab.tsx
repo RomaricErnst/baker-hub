@@ -364,7 +364,7 @@ function CoachButton({
           </div>
         )}
         {feedback && (
-          <div style={{ background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '10px', padding: '12px 16px', margin: '0 16px 10px', position: 'relative' }}>
+          <div style={{ background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '12px', padding: '12px 16px', margin: '0 16px 10px', position: 'relative' }}>
             <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>{feedback}</div>
             <button onClick={() => { setFeedback(null); setError(false); }}
               style={{ position: 'absolute', bottom: '8px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: 0 }}>
@@ -399,7 +399,7 @@ function CoachButton({
       )}
 
       {feedback && (
-        <div style={{ background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '10px', padding: '12px 16px', marginBottom: '12px', position: 'relative' }}>
+        <div style={{ background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '12px', padding: '12px 16px', marginBottom: '12px', position: 'relative' }}>
           <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>{feedback}</div>
           <button onClick={() => { setFeedback(null); setError(false); }}
             style={{ position: 'absolute', bottom: '8px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: 0 }}>
@@ -640,7 +640,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   border: '1px solid rgba(156, 130, 72,0.5)',
                   color: '#9C8248',
                   fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-                  borderRadius: '8px', cursor: 'pointer',
+                  borderRadius: '12px', cursor: 'pointer',
                   letterSpacing: '.06em',
                 }}
               >
@@ -670,7 +670,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 onClick={() => setSheetPizzaId(pizza.id)}
                 style={{
                   border: cardDone ? '1px solid rgba(107,122,90,0.45)' : '1px solid var(--border)',
-                  borderRadius: '14px',
+                  borderRadius: '16px',
                   overflow: 'hidden',
                   cursor: 'pointer',
                   boxShadow: '0 2px 8px rgba(43, 36, 32,0.06)',
@@ -700,7 +700,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     return (
                       <div style={{
                         position: 'absolute', top: '8px', right: '8px',
-                        background: baked > qty ? '#9C8248' : '#6B7A5A', borderRadius: '12px',
+                        background: baked > qty ? '#9C8248' : '#6B7A5A', borderRadius: '8px',
                         padding: '3px 8px',
                         display: 'flex', alignItems: 'center', gap: '4px',
                       }}>
@@ -772,7 +772,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
             <div ref={sheetScrollRef} style={{
               position: 'fixed', bottom: 0, left: 0, right: 0,
               background: 'var(--warm)',
-              borderRadius: '16px 16px 0 0',
+              borderRadius: '20px 20px 0 0',
               zIndex: 200,
               maxHeight: 'calc(100dvh - 60px)',
               overflowY: 'auto',
@@ -843,7 +843,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   padding: '12px 12px',
                   background: 'rgba(107, 68, 35,0.06)',
                   border: '1px solid rgba(107, 68, 35,0.2)',
-                  borderRadius: '10px',
+                  borderRadius: '16px',
                   fontSize: '12px', color: 'var(--ash)',
                   fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,
                 }}>
@@ -1021,7 +1021,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   />
                   <div style={{
                     position: 'fixed', bottom: 0, left: 0, right: 0,
-                    background: 'var(--warm)', borderRadius: '16px 16px 0 0',
+                    background: 'var(--warm)', borderRadius: '20px 20px 0 0',
                     zIndex: 220, maxHeight: 'calc(100dvh - 60px)',
                     display: 'flex', flexDirection: 'column',
                     animation: 'slideUpSheet 0.3s ease',
@@ -1183,7 +1183,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   padding: '8px 12px',
                   background: 'rgba(156, 130, 72,0.1)',
                   border: '1px solid rgba(156, 130, 72,0.3)',
-                  borderRadius: '8px', fontSize: '12px', color: 'var(--ash)',
+                  borderRadius: '16px', fontSize: '12px', color: 'var(--ash)',
                   fontFamily: 'var(--font-dm-sans)',
                   display: 'flex', alignItems: 'flex-start',
                   justifyContent: 'space-between', gap: '8px', lineHeight: 1.4,
@@ -1288,7 +1288,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     width: 44, height: 44, flexShrink: 0,
                     background: photos[sheetPizzaId] ? 'transparent' : '#F0EAE3',
                     border: photos[sheetPizzaId] ? '1.5px solid #6B7A5A' : '1px solid var(--border)',
-                    borderRadius: '10px',
+                    borderRadius: '12px',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     cursor: uploadingSlot === sheetPizzaId ? 'default' : 'pointer',
                     overflow: 'hidden', padding: 0,
@@ -1318,7 +1318,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   flex: 1, height: '44px',
                   display: 'flex', alignItems: 'center',
                   background: '#F0EBE0',
-                  borderRadius: '10px',
+                  borderRadius: '16px',
                   border: '1px solid var(--border)',
                   overflow: 'hidden',
                 }}>
@@ -1408,7 +1408,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   padding: '12px 16px',
                   background: 'rgba(43, 36, 32,0.04)',
                   border: '1px solid var(--border)',
-                  borderRadius: '10px',
+                  borderRadius: '16px',
                   fontSize: '12px',
                   color: 'var(--smoke)',
                   fontFamily: 'var(--font-dm-sans)',

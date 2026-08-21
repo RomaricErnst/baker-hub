@@ -184,7 +184,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
             }}>
               {section.label}
             </div>
-            <div style={{ background: '#FDFBF7', borderRadius: '14px', border: '1px solid #E8E0D5', overflow: 'hidden' }}>
+            <div style={{ background: '#FDFBF7', borderRadius: '16px', border: '1px solid #E8E0D5', overflow: 'hidden' }}>
               {section.items.map((item, idx) => {
                 const isChecked = !!row.checked[item.id];
                 return (
@@ -236,7 +236,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
             }}>
               {l === 'fr' ? 'Pour votre pâte' : 'For your dough'}
             </div>
-            <div style={{ background: '#FDFBF7', borderRadius: '14px', border: '1px solid #E8E0D5', overflow: 'hidden' }}>
+            <div style={{ background: '#FDFBF7', borderRadius: '16px', border: '1px solid #E8E0D5', overflow: 'hidden' }}>
               {row.dough_items.map((item, idx) => {
                 const itemId = 'dough_' + idx;
                 const isChecked = !!row.checked[itemId];

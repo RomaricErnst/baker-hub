@@ -62,7 +62,7 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
       {selected === 'stand' && (totalDoughG ?? 0) > 1500 && (
         <div style={{
           marginTop: '12px', background: '#FDFBF2', border: '1px solid #E8D890',
-          borderRadius: '10px', padding: '12px 16px', fontSize: '12px',
+          borderRadius: '16px', padding: '12px 16px', fontSize: '12px',
           color: '#7A5A10', lineHeight: 1.55,
         }}>
           {locale === 'fr'
@@ -75,7 +75,7 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
       {selected === 'no_knead' && bakeType === 'pizza' && styleKey && NO_KNEAD_WARNING[styleKey] && (
         <div style={{
           marginTop: '12px', background: '#FFF8E8', border: '1.5px solid #E8D080',
-          borderRadius: '10px', padding: '12px 16px', fontSize: '12px',
+          borderRadius: '16px', padding: '12px 16px', fontSize: '12px',
           color: '#7A5A10', lineHeight: 1.55, display: 'flex', gap: '8px', alignItems: 'flex-start',
         }}>
           <span>⚠️</span>

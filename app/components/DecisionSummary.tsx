@@ -21,7 +21,7 @@ export default function DecisionSummary({ thumbnail, thumbnailBg, title, tagline
         gap: '12px',
         padding: '12px',
         border: '1px solid var(--border)',
-        borderRadius: '14px',
+        borderRadius: '16px',
         background: 'white',
         boxShadow: '0 2px 8px rgba(43, 36, 32,0.06)',
         cursor: 'pointer',

@@ -277,7 +277,7 @@ const CONTENT: Record<string, LocaleContent> = {
               <P>The Custom mode fermentation chart is a live visualisation of quality — not a schedule, but a picture of how close each stage is to its biological optimum.</P>
 
               {/* Inline illustration */}
-              <div style={{ margin: '16px 0', borderRadius: '10px', background: 'rgba(43, 36, 32,0.03)', padding: '16px' }}>
+              <div style={{ margin: '16px 0', borderRadius: '16px', background: 'rgba(43, 36, 32,0.03)', padding: '16px' }}>
                 <svg viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto' }}>
                   {/* RT poolish bell - narrow */}
                   <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
@@ -481,7 +481,7 @@ const CONTENT: Record<string, LocaleContent> = {
           body: (
             <>
               <P>Baker Hub is actively developed. Things will occasionally break. If a yeast quantity seems wrong, the schedule doesn't fit, or something is confusing — please tell us. Every piece of feedback makes the engine better.</P>
-              <div style={{ background: 'rgba(43, 36, 32,0.04)', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
+              <div style={{ background: 'rgba(43, 36, 32,0.04)', borderRadius: '16px', padding: '16px', marginTop: '12px' }}>
                 <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-dm-sans)', fontSize: '14px', fontWeight: 600, color: CHAR }}>Built by Rom</p>
                 <p style={{ margin: '0 0 12px' }}>
                   <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'var(--font-dm-sans)', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
@@ -584,7 +584,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <P><strong style={{ color: CHAR }}>156 recettes sélectionnées.</strong> La base de données pizzas de Baker Hub couvre 144 pizzas salées et 12 desserts — chacun choisi à la main, pas généré. Organisés par tradition, occasion, goût et régime alimentaire pour trouver la bonne pizza au bon moment.</P>
             <div style={{
               background: 'rgba(156, 130, 72,0.06)', borderLeft: `2px solid ${GOLD}`,
-              borderRadius: '8px', padding: '12px', marginBottom: '12px',
+              borderRadius: '16px', padding: '12px', marginBottom: '12px',
               fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: SMOKE,
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -766,7 +766,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Le graphique du mode Avancé est une visualisation en direct de la qualité — pas un planning, mais une image de la proximité de chaque étape avec son optimum biologique.</P>
-            <div style={{ margin: '16px 0', borderRadius: '10px', background: 'rgba(43, 36, 32,0.03)', padding: '16px' }}>
+            <div style={{ margin: '16px 0', borderRadius: '16px', background: 'rgba(43, 36, 32,0.03)', padding: '16px' }}>
               <svg viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto' }}>
                 <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
                 <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Poolish TA</text>
@@ -855,7 +855,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Baker Hub est activement développé comme projet personnel. Des problèmes surviennent parfois. Si une quantité de levure semble incorrecte, si le planning ne convient pas, ou si quelque chose est simplement confus — dites-le nous. Chaque retour améliore le moteur.</P>
-            <div style={{ background: 'rgba(43, 36, 32,0.04)', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
+            <div style={{ background: 'rgba(43, 36, 32,0.04)', borderRadius: '16px', padding: '16px', marginTop: '12px' }}>
               <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-dm-sans)', fontSize: '14px', fontWeight: 600, color: CHAR }}>Construit par Rom</p>
               <p style={{ margin: '0 0 12px' }}>
                 <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'var(--font-dm-sans)', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
@@ -900,7 +900,7 @@ export default function AboutClient() {
           style={{
             marginTop: '20px',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            padding: '12px 0', borderRadius: '12px',
+            padding: '12px 0', borderRadius: '16px',
             background: TERRA, color: '#fff',
             fontSize: '13px', fontWeight: 500,
             fontFamily: 'var(--font-dm-sans)', textDecoration: 'none',

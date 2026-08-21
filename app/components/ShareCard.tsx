@@ -737,7 +737,7 @@ export default function ShareCard({
 
   const inputStyle: React.CSSProperties = {
     fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
-    padding: '8px 12px', borderRadius: '8px',
+    padding: '8px 12px', borderRadius: '16px',
     border: '1px solid var(--border)',
     background: 'var(--cream)', color: 'var(--char)',
     width: '100%', boxSizing: 'border-box',
@@ -787,12 +787,12 @@ export default function ShareCard({
           <div style={{
             position: 'relative', width: 'fit-content', maxWidth: '100%',
             margin: '0 auto', minWidth: '140px', minHeight: '140px',
-            borderRadius: '12px', overflow: 'hidden', background: '#2B2420',
+            borderRadius: '16px', overflow: 'hidden', background: '#2B2420',
           }}>
           <canvas
             ref={previewCanvasRef}
             style={{
-              display: 'block', borderRadius: '12px',
+              display: 'block', borderRadius: '16px',
               // CSS-driven contain-fit: the box shape comes from the format,
               // not from JS measurements — Story previews tall (9:16) even
               // before the first draw lands. Protocol cards have a dynamic
@@ -975,7 +975,7 @@ export default function ShareCard({
                 const cropGlyph = crop === 'top' ? '↑' : crop === 'bottom' ? '↓' : '⊙';
                 const miniBtn: React.CSSProperties = {
                   position: 'absolute', width: '20px', height: '20px',
-                  borderRadius: '6px', border: 'none', cursor: 'pointer',
+                  borderRadius: '12px', border: 'none', cursor: 'pointer',
                   background: 'rgba(43, 36, 32,0.72)', color: '#fff',
                   fontSize: '11px', lineHeight: '20px', textAlign: 'center', padding: 0,
                 };
@@ -984,7 +984,7 @@ export default function ShareCard({
                   key={i}
                   onClick={() => togglePhoto(p.url)}
                   style={{
-                    width: '72px', height: '72px', borderRadius: '8px', overflow: 'hidden',
+                    width: '72px', height: '72px', borderRadius: '16px', overflow: 'hidden',
                     cursor: 'pointer', position: 'relative', flexShrink: 0,
                     outline: isSel ? '2.5px solid var(--gold)' : '2px solid transparent',
                   }}
@@ -995,7 +995,7 @@ export default function ShareCard({
                       {/* Order badge — slot position on the card */}
                       <span style={{
                         position: 'absolute', top: '3px', left: '3px',
-                        minWidth: '18px', height: '18px', borderRadius: '9px',
+                        minWidth: '18px', height: '18px', borderRadius: '8px',
                         background: 'var(--gold)', color: '#2B2420',
                         fontSize: '11px', fontWeight: 700, lineHeight: '18px',
                         textAlign: 'center', padding: '0 4px',
@@ -1031,7 +1031,7 @@ export default function ShareCard({
               })}
 
               <label style={{
-                width: '72px', height: '72px', borderRadius: '8px',
+                width: '72px', height: '72px', borderRadius: '12px',
                 border: '1.5px dashed var(--border)',
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 justifyContent: 'center', cursor: 'pointer', gap: '4px', flexShrink: 0,
@@ -1103,7 +1103,7 @@ export default function ShareCard({
             }}
             style={{
               marginTop: '8px', padding: '8px 16px',
-              borderRadius: '8px',
+              borderRadius: '12px',
               background: 'transparent',
               border: `1px solid ${copied ? 'var(--terra)' : 'var(--border)'}`,
               color: copied ? 'var(--terra)' : 'var(--smoke)',

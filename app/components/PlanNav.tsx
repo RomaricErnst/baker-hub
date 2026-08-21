@@ -21,7 +21,7 @@ const PILL_BASE: React.CSSProperties = {
   display: 'flex', flexDirection: 'column',
   alignItems: 'center', justifyContent: 'center', gap: '1px',
   padding: '8px 0',
-  borderRadius: '12px',
+  borderRadius: '16px',
   cursor: 'pointer',
   fontFamily: 'var(--font-dm-sans)',
 };

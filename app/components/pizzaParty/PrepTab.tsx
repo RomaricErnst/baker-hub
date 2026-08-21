@@ -173,7 +173,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
         }}
       >
         <div style={{
-          width: '22px', height: '22px', borderRadius: '5px', flexShrink: 0,
+          width: '22px', height: '22px', borderRadius: '16px', flexShrink: 0,
           marginTop: '1px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           border: done ? '1.5px solid #9C8248' : '1.5px solid #E0D8CF',
@@ -241,7 +241,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
         </div>
         <div style={{
           border: '1px solid #E8E0D5',
-          borderRadius: '0 0 10px 10px',
+          borderRadius: '0 0 16px 16px',
           overflow: 'hidden',
         }}>
           {stationTasks.map((task, i) => renderTask(task, i === stationTasks.length - 1))}
@@ -255,7 +255,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
 
       {/* Style-specific notes */}
       {styleKey && STYLE_PREP_NOTES[styleKey] && (
-        <div style={{ margin: '0 0 16px', border: '1px solid #E8E0D5', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ margin: '0 0 16px', border: '1px solid #E8E0D5', borderRadius: '16px', overflow: 'hidden' }}>
           <div style={{ background: '#2B2420', color: 'white', padding: '8px 16px', fontSize: '11px', fontFamily: 'var(--font-dm-mono)', letterSpacing: '1px', textTransform: 'uppercase' }}>
             {styleKey === 'pan' ? (l === 'fr' ? 'Style Detroit' : 'Detroit Style') : (l === 'fr' ? 'Style Teglia' : 'Teglia Style')}
           </div>
@@ -320,7 +320,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
           width: '100%', height: '52px',
           background: '#6B4423', color: 'white',
           fontFamily: 'var(--font-dm-sans)', fontSize: '15px', fontWeight: 600,
-          borderRadius: '14px', marginTop: '24px',
+          borderRadius: '12px', marginTop: '24px',
           cursor: 'pointer', border: 'none',
         }}
       >

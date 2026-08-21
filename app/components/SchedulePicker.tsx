@@ -497,7 +497,7 @@ const INPUT_STYLE: React.CSSProperties = {
   width: '100%',
   padding: '12px 12px',
   border: '2px solid var(--border)',
-  borderRadius: '8px',
+  borderRadius: '16px',
   background: 'var(--warm)',
   color: 'var(--char)',
   fontSize: '14px',
@@ -529,7 +529,7 @@ const STARTER_SELECT_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-dm-mono)',
   fontSize: '14px',
   padding: '8px 8px',
-  borderRadius: '8px',
+  borderRadius: '16px',
   border: '1.5px solid var(--border)',
   background: 'var(--cream)',
   color: 'var(--char)',
@@ -1221,7 +1221,7 @@ function SimpleColourBar({
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px', justifyContent: 'center' }}>
         <div style={{
           background: 'var(--cream)',
-          border: '1.5px solid var(--border)', borderRadius: '10px', padding: '8px 12px',
+          border: '1.5px solid var(--border)', borderRadius: '16px', padding: '8px 12px',
           textAlign: 'center',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
@@ -1268,7 +1268,7 @@ function SimpleStartTime({ pendingStart, isFr, onStartChange }: {
   return (
     <div style={{
       background: 'var(--warm)', border: '1px solid var(--border)',
-      borderRadius: '14px', padding: '16px 16px',
+      borderRadius: '16px', padding: '16px 16px',
     }}>
       <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '4px' }}>
         {isFr ? 'Départ de la pâte' : 'Dough start'}
@@ -1300,7 +1300,7 @@ function SimpleStartTime({ pendingStart, isFr, onStartChange }: {
           style={{
             width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box',
             marginTop: '12px', padding: '8px 8px',
-            border: '1.5px solid var(--border)', borderRadius: '10px',
+            border: '1.5px solid var(--border)', borderRadius: '8px',
             background: 'var(--card)', color: 'var(--char)',
             fontSize: '14px', fontFamily: 'var(--font-dm-mono)', outline: 'none',
           }}
@@ -5388,7 +5388,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // ── Shared sub-components ─────────────────────
   const continueBtnStyle: React.CSSProperties = {
     marginTop: '16px', width: '100%', padding: '16px 24px',
-    border: 'none', borderRadius: '12px',
+    border: 'none', borderRadius: '16px',
     background: 'var(--terra)', color: '#fff',
     fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
     cursor: 'pointer',
@@ -5541,7 +5541,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {bakeInPast && (
         <div style={{
           background: 'var(--warm)', border: '1px solid var(--border)',
-          borderRadius: '14px', padding: '16px 20px', marginTop: '16px',
+          borderRadius: '16px', padding: '16px 20px', marginTop: '16px',
           fontFamily: 'var(--font-dm-sans)',
         }}>
           <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', marginBottom: '4px' }}>
@@ -5562,7 +5562,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <div style={{
           background: 'var(--warm)',
           border: '1.5px solid var(--border)',
-          borderRadius: '14px',
+          borderRadius: '16px',
           padding: '20px',
           marginTop: '16px',
           display: 'flex',
@@ -5700,7 +5700,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       fontFamily: 'var(--font-dm-mono)',
                       fontSize: '13px',
                       padding: '4px 8px',
-                      borderRadius: '8px',
+                      borderRadius: '16px',
                       border: '1.5px solid var(--border)',
                       background: 'var(--warm)',
                       color: 'var(--char)',
@@ -6165,7 +6165,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Custom block form */}
       {showCustom && (
         <div style={{
-          border: '1.5px solid var(--border)', borderRadius: '12px',
+          border: '1.5px solid var(--border)', borderRadius: '16px',
           padding: '16px 16px', background: 'var(--warm)',
           marginBottom: '12px',
         }}>
@@ -6258,7 +6258,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   display: 'flex', alignItems: 'center', gap: '8px',
                   padding: '8px 12px',
                   background: '#FEF4EF', border: '1.5px solid var(--terra)',
-                  borderRadius: '10px',
+                  borderRadius: '16px',
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -6302,7 +6302,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {windowTooShort && eatTimeSet && !isSourdough && (
         <div style={{
           background: 'var(--cream)',
-          borderRadius: '12px',
+          borderRadius: '16px',
           border: '1.5px solid var(--border)',
           padding: '16px 20px',
           marginBottom: '16px',
@@ -6734,7 +6734,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <div style={{
           background: 'var(--cream)',
           borderLeft: '4px solid var(--gold)',
-          borderRadius: '10px',
+          borderRadius: '16px',
           padding: '12px 16px',
           marginBottom: '12px',
           fontFamily: 'var(--font-dm-sans)',
@@ -6749,7 +6749,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {showFallbackPopup && fallbackOptions && (
         <div style={{
           background: 'var(--cream)', borderLeft: '4px solid var(--terra)',
-          borderRadius: '10px', padding: '12px 16px',
+          borderRadius: '16px', padding: '12px 16px',
           marginBottom: '12px', fontFamily: 'var(--font-dm-sans)',
         }}>
           <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--char)', marginBottom: '8px' }}>
@@ -6771,7 +6771,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 }}
                 style={{
                   background: 'var(--terra)', color: 'white', border: 'none',
-                  borderRadius: '8px', padding: '8px 16px', fontSize: '12px',
+                  borderRadius: '12px', padding: '8px 16px', fontSize: '12px',
                   fontWeight: 600, cursor: 'pointer', textAlign: 'left',
                   marginBottom: '8px',
                 }}
@@ -6806,7 +6806,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 style={{
                   background: 'transparent', color: 'var(--smoke)',
                   border: '1px solid var(--border)',
-                  borderRadius: '8px', padding: '8px 16px', fontSize: '12px',
+                  borderRadius: '12px', padding: '8px 16px', fontSize: '12px',
                   cursor: 'pointer', textAlign: 'left',
                   marginBottom: '12px',
                 }}
@@ -6841,7 +6841,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         return (
           <div style={{
             background: 'var(--cream)', borderLeft: '4px solid var(--terra)',
-            borderRadius: '10px', padding: '12px 16px',
+            borderRadius: '16px', padding: '12px 16px',
             marginBottom: '12px', fontFamily: 'var(--font-dm-sans)',
           }}>
             {earlierIsReasonable && earlierStart ? (
@@ -6872,7 +6872,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   }}
                   style={{
                     background: 'var(--terra)', color: 'white', border: 'none',
-                    borderRadius: '8px', padding: '8px 16px',
+                    borderRadius: '12px', padding: '8px 16px',
                     fontSize: '12px', fontWeight: 600, cursor: 'pointer',
                     fontFamily: 'var(--font-dm-sans)',
                   }}
@@ -6884,7 +6884,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 onClick={() => setDismissedConflict(true)}
                 style={{
                   background: 'transparent', color: 'var(--smoke)',
-                  border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 16px',
+                  border: '1px solid var(--border)', borderRadius: '12px', padding: '8px 16px',
                   fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
                 }}
               >
@@ -7131,7 +7131,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   flex: 1, minWidth: '140px',
                   background: 'var(--cream)',
                   border: '1.5px solid var(--border)',
-                  borderRadius: '10px', padding: '16px 16px',
+                  borderRadius: '16px', padding: '16px 16px',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '8px' }}>
                     <div style={{ width: 8, height: 8, background: '#4A7FA5', transform: 'rotate(45deg)', flexShrink: 0 }} />
@@ -7310,7 +7310,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       marginBottom: '8px',
                       padding: '8px 8px',
                       background: '#FEF3C7',
-                      borderRadius: '6px',
+                      borderRadius: '16px',
                       border: '1px solid #FDE68A',
                     }}>
                       {_fridgeSuggestion}
@@ -7610,7 +7610,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               <div style={{
                 flex: 1, minWidth: '120px',
                 background: 'var(--cream)', border: '1.5px solid var(--border)',
-                borderRadius: '10px', padding: '16px 16px',
+                borderRadius: '16px', padding: '16px 16px',
                 opacity: (skipPoolishNote || prefAlgoRed) ? 0.7 : 1,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
@@ -7641,7 +7641,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     }}
                     onKeyDown={e => { if (e.key === 'Escape') setEditingPref(false); }}
                     style={{
-                      fontSize: '13px', padding: '4px 8px', borderRadius: '6px',
+                      fontSize: '13px', padding: '4px 8px', borderRadius: '8px',
                       border: '1.5px solid var(--terra)', background: 'var(--warm)',
                       color: 'var(--char)', fontFamily: 'var(--font-dm-mono)',
                       width: '100%', outline: 'none',
@@ -7697,7 +7697,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 Start Dough card renders narrower than the Starter card */}
             <div style={{
               background: 'var(--cream)', border: '1.5px solid var(--border)',
-              borderRadius: '10px', padding: '16px 16px',
+              borderRadius: '16px', padding: '16px 16px',
               ...(cardPrefTime || isSourdough ? { flex: 1, minWidth: '120px' } : { minWidth: '160px', maxWidth: '260px' }),
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
@@ -7726,7 +7726,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   }}
                   onKeyDown={e => { if (e.key === 'Escape') setEditingMix(false); }}
                   style={{
-                    fontSize: '13px', padding: '4px 8px', borderRadius: '6px',
+                    fontSize: '13px', padding: '4px 8px', borderRadius: '8px',
                     border: '1.5px solid var(--terra)', background: 'var(--warm)',
                     color: 'var(--char)', fontFamily: 'var(--font-dm-mono)',
                     width: '100%', outline: 'none',
@@ -7899,7 +7899,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <div style={{
           fontSize: '12px', color: 'var(--terra)',
           background: '#FEF4EF', border: '1px solid #F5C4B0',
-          borderRadius: '8px', padding: '8px 12px',
+          borderRadius: '16px', padding: '8px 12px',
           marginBottom: '12px', marginTop: '8px',
         }}>
           {t('startBeforeBake')}

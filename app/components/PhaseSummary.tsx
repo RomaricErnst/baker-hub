@@ -27,7 +27,7 @@ export default function PhaseSummary({ schedule }: { schedule: ScheduleResult })
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               padding: '8px 12px',
               border: '1.5px solid var(--border)',
-              borderRadius: '12px',
+              borderRadius: '16px',
               background: 'var(--warm)',
               minWidth: '86px',
             }}>
@@ -42,7 +42,7 @@ export default function PhaseSummary({ schedule }: { schedule: ScheduleResult })
               <span style={{
                 fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                 background: 'var(--cream)', color: 'var(--ash)',
-                borderRadius: '10px', padding: '.15rem 8px',
+                borderRadius: '8px', padding: '.15rem 8px',
               }}>
                 {hoursLabel(phase.durationH)}
               </span>

@@ -18,7 +18,7 @@ interface DecisionListProps {
 
 export default function DecisionList({ options, selectedId, onSelect, disabledIds = [] }: DecisionListProps) {
   return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: '14px', overflow: 'hidden' }}>
+    <div style={{ border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
       {options.map((option, idx) => {
         const isSelected = option.id === selectedId;
         const isDisabled = disabledIds.includes(option.id);
@@ -61,7 +61,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
                     fontSize: '11px',
                     color: 'var(--sage)',
                     background: 'rgba(107,122,90,0.15)',
-                    borderRadius: '10px',
+                    borderRadius: '8px',
                     padding: '2px 8px',
                   }}>
                     {option.badge}

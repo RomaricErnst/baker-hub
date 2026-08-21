@@ -131,7 +131,7 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
           }}
           style={{
             border: '2px dashed var(--border)',
-            borderRadius: '18px',
+            borderRadius: '16px',
             padding: '40px 24px',
             background: 'var(--warm)',
             cursor: 'pointer',
@@ -189,7 +189,7 @@ style={{ display: 'none' }}
           <img
             src={imagePreviewUrl}
             alt="Flour bag"
-            style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '12px' }}
+            style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '16px' }}
           />
         )}
         <div style={{ marginTop: '12px', textAlign: 'center' }}>
@@ -227,7 +227,7 @@ style={{ display: 'none' }}
             <img
               src={imagePreviewUrl}
               alt="Flour bag"
-              style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }}
+              style={{ width: '80px', height: '80px', borderRadius: '16px', objectFit: 'cover', flexShrink: 0 }}
             />
           )}
           <div style={{ flex: 1 }}>
@@ -241,7 +241,7 @@ style={{ display: 'none' }}
               <div style={{
                 marginBottom: '8px', padding: '4px 12px',
                 background: 'rgba(107,122,90,0.1)', border: '1px solid rgba(107,122,90,0.25)',
-                borderRadius: '8px', fontSize: '12px', color: '#4A7A3A', lineHeight: 1.4,
+                borderRadius: '16px', fontSize: '12px', color: '#4A7A3A', lineHeight: 1.4,
               }}>
                 ✓ Matched in our flour database
               </div>
@@ -249,7 +249,7 @@ style={{ display: 'none' }}
               <div style={{
                 marginBottom: '8px', padding: '4px 12px',
                 background: '#FDFBF2', border: '1px solid #E8D890',
-                borderRadius: '8px', fontSize: '12px', color: '#6A5A10', lineHeight: 1.4,
+                borderRadius: '16px', fontSize: '12px', color: '#6A5A10', lineHeight: 1.4,
               }}>
                 🔍 {isFr
                   ? 'Valeurs estimées d’après le type de sachet — correct pour la plupart des farines. Ajustez ci-dessous si votre sachet indique d’autres chiffres.'
@@ -333,7 +333,7 @@ style={{ display: 'none' }}
                   onClick={() => setAdjusting(false)}
                   style={{
                     alignSelf: 'flex-start', padding: '4px 12px',
-                    background: 'var(--terra)', border: 'none', borderRadius: '8px',
+                    background: 'var(--terra)', border: 'none', borderRadius: '12px',
                     color: '#fff', fontSize: '12px', cursor: 'pointer',
                     fontFamily: 'var(--font-dm-sans)',
                   }}
@@ -378,7 +378,7 @@ style={{ display: 'none' }}
   return (
     <div style={{
       background: '#FEF4EF', border: '1.5px solid #F5C4B0',
-      borderRadius: '12px', padding: '20px',
+      borderRadius: '16px', padding: '20px',
       textAlign: 'center',
     }}>
       <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--terra)', marginBottom: '8px' }}>
@@ -392,7 +392,7 @@ style={{ display: 'none' }}
       <button
         onClick={reset}
         style={{
-          padding: '8px 20px', border: 'none', borderRadius: '10px',
+          padding: '8px 20px', border: 'none', borderRadius: '12px',
           background: 'var(--terra)', color: '#fff',
           fontSize: '14px', cursor: 'pointer',
           fontFamily: 'var(--font-dm-sans)',

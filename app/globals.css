@@ -165,3 +165,22 @@ body {
   --space-6: 24px;
   --space-8: 32px;
 }
+
+/* ── Radius ───────────────────────────────────
+   The documented system said cards were 18px. The code applied 14, 13, 12 and
+   10 — 18px appeared eight times in the whole app. The description and the
+   product had drifted apart with nothing checking. Six values now, one rule
+   each:
+
+    8   inputs, badges, anything with tight padding
+   12   buttons and tappable rectangles
+   16   cards and panels
+   20   pills (and 20px 20px 0 0 for bottom sheets)
+   50%  circles
+   ≤4px stays: sharp corners are a choice, not drift */
+:root {
+  --radius-s:    8px;
+  --radius-btn: 12px;
+  --radius-card:16px;
+  --radius-pill:20px;
+}

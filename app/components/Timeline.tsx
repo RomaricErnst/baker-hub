@@ -499,7 +499,7 @@ export default function Timeline({
             <div style={{
               marginTop: '12px', padding: '12px 16px',
               background: '#FDFBF2', border: '1px solid #E8D890',
-              borderRadius: '10px', fontSize: '12px', color: '#7A5A10',
+              borderRadius: '8px', fontSize: '12px', color: '#7A5A10',
               lineHeight: 1.55,
             }}>
               {t('timeline.quickBakeNote')}
@@ -527,7 +527,7 @@ export default function Timeline({
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 padding: '8px 12px',
                 border: `1.5px solid ${th.cardBorder ?? th.line}`,
-                borderRadius: '12px',
+                borderRadius: '16px',
                 background: th.cardBg ?? 'var(--warm)',
                 minWidth: '90px',
               }}>
@@ -542,7 +542,7 @@ export default function Timeline({
                 <span style={{
                   fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                   background: th.pill, color: th.pillText,
-                  borderRadius: '10px', padding: '.15rem 8px',
+                  borderRadius: '8px', padding: '.15rem 8px',
                 }}>
                   {hoursLabel(phase.durationH)}
                 </span>
@@ -637,7 +637,7 @@ export default function Timeline({
                       fontSize: '11px',
                       background: th.pill,
                       color: th.pillText,
-                      borderRadius: '10px',
+                      borderRadius: '8px',
                       padding: '.18rem 8px',
                       flexShrink: 0,
                     }}>

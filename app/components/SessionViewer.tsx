@@ -424,7 +424,7 @@ export default function SessionViewer({
                   color: 'var(--terra)', marginTop: '2px', flexShrink: 0,
                   border: '1px solid rgba(107, 68, 35,0.35)',
                   background: 'rgba(107, 68, 35,0.06)',
-                  borderRadius: '12px', padding: '3px 8px', lineHeight: 1.2,
+                  borderRadius: '16px', padding: '3px 8px', lineHeight: 1.2,
                 }}>✎</span>
               </div>
             )}
@@ -572,7 +572,7 @@ export default function SessionViewer({
                   <img
                     src={photo.photo_url}
                     alt="bake photo"
-                    style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '10px', display: 'block' }}
+                    style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '16px', display: 'block' }}
                   />
                   <button
                     onClick={async () => {
@@ -592,7 +592,7 @@ export default function SessionViewer({
 
               {photos.length < 6 && (
                 <label style={{
-                  width: '80px', height: '80px', borderRadius: '10px',
+                  width: '80px', height: '80px', borderRadius: '12px',
                   border: '1.5px dashed var(--border)',
                   display: 'flex', flexDirection: 'column',
                   alignItems: 'center', justifyContent: 'center',
@@ -656,7 +656,7 @@ export default function SessionViewer({
                     setEditingComment(false);
                   }}
                   style={{
-                    marginTop: '8px', padding: '8px 16px', borderRadius: '8px',
+                    marginTop: '8px', padding: '8px 16px', borderRadius: '12px',
                     background: 'var(--terra)', color: 'white', border: 'none',
                     fontFamily: 'var(--font-dm-mono)', fontSize: '12px', cursor: 'pointer',
                   }}
@@ -716,7 +716,7 @@ export default function SessionViewer({
               border: '1px solid rgba(156, 130, 72,0.5)',
               color: 'var(--gold)',
               fontFamily: 'var(--font-dm-mono)', fontSize: '13px',
-              borderRadius: '10px', cursor: 'pointer',
+              borderRadius: '12px', cursor: 'pointer',
               letterSpacing: '.06em',
             }}
           >

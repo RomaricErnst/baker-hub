@@ -86,7 +86,7 @@ function YeastTooltip() {
           position: 'absolute', bottom: '120%', left: 0,
           background: 'var(--ash)', color: 'var(--cream)',
           fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
-          padding: '8px 12px', borderRadius: '8px',
+          padding: '8px 12px', borderRadius: '16px',
           width: '220px', zIndex: 10,
           boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
           pointerEvents: 'none',
@@ -126,7 +126,7 @@ function FlourTooltip({ bakeType }: { bakeType?: string }) {
           background: 'var(--ash)', color: 'var(--cream)',
           fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
           lineHeight: 1.5,
-          padding: '8px 12px', borderRadius: '8px',
+          padding: '8px 12px', borderRadius: '16px',
           width: '210px', zIndex: 10,
           boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
           pointerEvents: 'none',
@@ -227,7 +227,7 @@ function InfoCard({
   return (
     <div style={{
       border: `1.5px solid ${th.border}`,
-      borderRadius: '12px',
+      borderRadius: '16px',
       padding: '12px 16px',
       background: th.bg,
     }}>
@@ -353,7 +353,7 @@ function StarterPrepCard({
   return (
     <div style={{
       background: 'var(--cream)',
-      borderRadius: '12px',
+      borderRadius: '16px',
       border: '1.5px solid var(--border)',
       padding: '16px 20px',
       marginTop: '16px',
@@ -663,7 +663,7 @@ export default function RecipeOutput({
             onClick={onSave}
             disabled={saveStatus === 'saving' || saveStatus === 'saved'}
             style={{
-              padding: '8px 16px', borderRadius: '8px', flexShrink: 0, marginLeft: '1rem',
+              padding: '8px 16px', borderRadius: '12px', flexShrink: 0, marginLeft: '1rem',
               border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--border)'}`,
               background: 'transparent',
               color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--smoke)',
@@ -736,7 +736,7 @@ export default function RecipeOutput({
         return (
           <>
             {/* CARD 1: Make your preferment */}
-            <div style={{ background: 'var(--char)', borderRadius: '18px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
+            <div style={{ background: 'var(--char)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
               <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)', marginBottom: '16px' }}>
                 {t('recipeOutput.makeYourPref', { name: pd.name })}
               </div>
@@ -777,7 +777,7 @@ export default function RecipeOutput({
             </div>
 
             {/* CARD 2: Final dough */}
-            <div style={{ background: 'var(--char)', borderRadius: '18px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
+            <div style={{ background: 'var(--char)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
               <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)', marginBottom: '4px' }}>
                 {t('recipeOutput.finalDoughTitle')}
               </div>
@@ -875,7 +875,7 @@ export default function RecipeOutput({
         );
       })() : (
         /* SCENARIO A: Single ingredients card */
-        <div style={{ background: 'var(--char)', borderRadius: '18px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
+        <div style={{ background: 'var(--char)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
           {/* Card header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
             <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)' }}>
@@ -1067,7 +1067,7 @@ export default function RecipeOutput({
         <div style={{
           background: '#F0EBE0',
           border: '1.5px solid #9C8248',
-          borderRadius: '12px',
+          borderRadius: '16px',
           padding: '16px 20px',
         }}>
           {/* Header */}
@@ -1125,7 +1125,7 @@ export default function RecipeOutput({
             />
           </div>
           {/* Per-batch breakdown */}
-          <div style={{ background: 'white', borderRadius: '8px', padding: '12px 16px', border: '1px solid #E8D890', marginBottom: '12px' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '12px 16px', border: '1px solid #E8D890', marginBottom: '12px' }}>
             <div style={{ fontSize: '11px', fontWeight: 600, color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '.07em', fontFamily: 'var(--font-dm-mono)', marginBottom: '8px' }}>
               {hasPref ? t('recipeOutput.batchHeader', { n: effectiveBatches, grams: Math.round(batchDoughG / effectiveBatches) }) : t('recipeOutput.batchHeaderSimple', { n: effectiveBatches, grams: Math.round(totalDoughG / effectiveBatches) })}
             </div>
@@ -1178,7 +1178,7 @@ export default function RecipeOutput({
         <div style={{
           background: '#FFFBEE',
           border: '1.5px solid #9C8248',
-          borderRadius: '12px',
+          borderRadius: '16px',
           padding: '12px 16px',
         }}>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
@@ -1199,7 +1199,7 @@ export default function RecipeOutput({
             <div style={{
               background: '#FFFBEE',
               border: '1.5px solid #9C8248',
-              borderRadius: '12px',
+              borderRadius: '16px',
               padding: '12px 16px',
             }}>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -1215,7 +1215,7 @@ export default function RecipeOutput({
             <div style={{
               background: '#FFFBEE',
               border: '1.5px solid #9C8248',
-              borderRadius: '12px',
+              borderRadius: '16px',
               padding: '12px 16px',
             }}>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
@@ -1274,7 +1274,7 @@ export default function RecipeOutput({
           {/* Starter range */}
           <div style={{
             background: 'var(--char)',
-            borderRadius: '18px',
+            borderRadius: '16px',
             padding: '20px 24px',
             border: '1px solid rgba(156, 130, 72,0.12)',
           }}>
@@ -1298,7 +1298,7 @@ export default function RecipeOutput({
           {/* Bulk fermentation cues */}
           <div style={{
             border: '1.5px solid var(--border)',
-            borderRadius: '13px',
+            borderRadius: '16px',
             padding: '16px 20px',
             background: 'var(--warm)',
           }}>

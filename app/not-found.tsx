@@ -34,7 +34,7 @@ export default function RootNotFound() {
               href="/"
               style={{
                 display: 'inline-block',
-                padding: '12px 24px', borderRadius: '12px',
+                padding: '12px 24px', borderRadius: '16px',
                 background: '#6B4423', color: '#fff',
                 fontFamily: 'system-ui, sans-serif',
                 fontSize: '15px', fontWeight: 600, textDecoration: 'none',
