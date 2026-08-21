@@ -1488,21 +1488,34 @@ export default function Home() {
   // is what makes merging or hiding a step safe: a page that isn't in the list
   // can never be landed on, which is exactly how Suivant used to reach the
   // preferment step on the sourdough path and show a blank screen.
-  function nextStepId(list: StepDef[], from: number, skip: (id: number) => boolean): number {
-    const ids = list.map(s => s.id);
-    let i = ids.indexOf(from);
-    if (i < 0) return ids[0];
-    do { i++; } while (i < ids.length && skip(ids[i]));
-    return ids[Math.min(i, ids.length - 1)];
+  // Suivant goes to the next step that still needs an answer, not merely the
+  // next one in the list. A signed-in baker whose profile already carries oven,
+  // mixer, yeast and preferment should not be walked through four pages that
+  // only show them what they already told us.
+  //
+  // "Answered" is the same test the chips and the final CTA use
+  // (stepAnswered): a real decision counts, a code default does not until the
+  // baker has passed its page. That matters — if Suivant skipped the pages
+  // carrying defaults, the last page's CTA would immediately send them back to
+  // one, and the two controls would fight each other.
+  //
+  // Sourdough is the one exception that stays hardcoded: its step carries
+  // session-specific starter questions (fed when, where) that no profile can
+  // answer, so a stored yeast preference never skips it.
+  function nextUnanswered(list: StepDef[], from: number, highest: number): number {
+    const i = list.findIndex(s => s.id === from);
+    if (i < 0) return list[0].id;
+    for (let k = i + 1; k < list.length; k++) {
+      const step = list[k];
+      const sourdoughStep = yeastType === 'sourdough' && step.chip !== 'Plan'
+        && (step.id === 6 || step.id === 7);
+      if (sourdoughStep || !stepAnswered(step, highest)) return step.id;
+    }
+    return list[list.length - 1].id;
   }
 
   function advance(from: number) {
-    // Steps already answered by the profile don't need re-asking. Equipment
-    // only counts as answered when BOTH halves are set. Sourdough never skips
-    // its step — it carries session-specific starter questions.
-    const next = nextStepId(SIMPLE_STEPS, from, id =>
-      (id === 3 && ovenType != null && mixerType != null) ||
-      (id === 6 && yeastType != null && yeastType !== 'sourdough'));
+    const next = nextUnanswered(SIMPLE_STEPS, from, highestStep);
     setActiveStep(next);
     setHighestStep(p => Math.max(p, next));
     if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
@@ -1510,11 +1523,7 @@ export default function Home() {
   }
 
   function advanceAdv(from: number) {
-    const profPref = loadProfile()?.prefermentType;
-    const next = nextStepId(CUSTOM_STEPS, from, id =>
-      (id === 3 && ovenType != null && mixerType != null) ||
-      (id === 7 && yeastType != null && yeastType !== 'sourdough') ||
-      (id === 8 && profPref != null));
+    const next = nextUnanswered(CUSTOM_STEPS, from, advancedHighestStep);
     setAdvancedStep(next);
     setAdvancedHighestStep(p => Math.max(p, next));
     if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
