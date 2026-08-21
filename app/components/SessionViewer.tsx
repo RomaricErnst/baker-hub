@@ -312,7 +312,7 @@ export default function SessionViewer({
   };
   const sectionLabel: React.CSSProperties = {
     fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)',
-    textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '10px',
+    textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '12px',
   };
   const divider = { height: '1px', background: 'var(--border)', margin: '16px 20px 0' };
 
@@ -408,7 +408,7 @@ export default function SessionViewer({
                 onClick={() => setEditingTitle(true)}
                 style={{
                   cursor: 'text', display: 'flex', alignItems: 'flex-start',
-                  gap: '6px', marginBottom: '8px', paddingRight: '32px',
+                  gap: '8px', marginBottom: '8px', paddingRight: '32px',
                 }}
               >
                 <p style={{
@@ -424,27 +424,27 @@ export default function SessionViewer({
                   color: 'var(--terra)', marginTop: '2px', flexShrink: 0,
                   border: '1px solid rgba(107, 68, 35,0.35)',
                   background: 'rgba(107, 68, 35,0.06)',
-                  borderRadius: '12px', padding: '3px 9px', lineHeight: 1.2,
+                  borderRadius: '12px', padding: '3px 8px', lineHeight: 1.2,
                 }}>✎</span>
               </div>
             )}
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{
                 fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-                padding: '3px 10px', borderRadius: '20px',
+                padding: '3px 12px', borderRadius: '20px',
                 background: 'rgba(107,122,90,0.15)', color: 'var(--sage)',
               }}>Dough</span>
               {(event.pizza_party_id || event.status === 'pizza_planned') && (
                 <span style={{
                   fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-                  padding: '3px 10px', borderRadius: '20px',
+                  padding: '3px 12px', borderRadius: '20px',
                   background: 'rgba(156, 130, 72,0.15)', color: 'var(--gold)',
                 }}>Pizza</span>
               )}
               {event.status === 'baked' && (
                 <span style={{
                   fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-                  padding: '3px 10px', borderRadius: '20px',
+                  padding: '3px 12px', borderRadius: '20px',
                   background: 'rgba(107, 68, 35,0.15)', color: 'var(--terra)',
                 }}>Baked</span>
               )}
@@ -565,7 +565,7 @@ export default function SessionViewer({
           <div style={divider} />
           <div style={{ padding: '16px 20px 0' }}>
             <div style={sectionLabel}>{l === 'fr' ? 'Photos' : 'Photos'}</div>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
 
               {photos.map(photo => (
                 <div key={photo.id} style={{ position: 'relative', width: '80px', height: '80px', flexShrink: 0 }}>
@@ -643,7 +643,7 @@ export default function SessionViewer({
                   rows={3}
                   placeholder={l === 'fr' ? 'Ajouter une note...' : 'Add a note...'}
                   style={{
-                    width: '100%', padding: '10px', borderRadius: '8px',
+                    width: '100%', padding: '12px', borderRadius: '8px',
                     border: '1px solid var(--border)',
                     fontFamily: 'var(--font-dm-sans)', fontSize: '13px',
                     color: 'var(--char)', background: 'var(--cream)',
@@ -656,7 +656,7 @@ export default function SessionViewer({
                     setEditingComment(false);
                   }}
                   style={{
-                    marginTop: '6px', padding: '6px 16px', borderRadius: '8px',
+                    marginTop: '8px', padding: '8px 16px', borderRadius: '8px',
                     background: 'var(--terra)', color: 'white', border: 'none',
                     fontFamily: 'var(--font-dm-mono)', fontSize: '12px', cursor: 'pointer',
                   }}
@@ -696,7 +696,7 @@ export default function SessionViewer({
           <button
             onClick={() => { onResume(event); onClose(); }}
             style={{
-              width: '100%', padding: '15px',
+              width: '100%', padding: '16px',
               background: 'var(--terra)', color: 'white',
               fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
               borderRadius: '12px', border: 'none', cursor: 'pointer',
@@ -737,7 +737,7 @@ export default function SessionViewer({
               onClose();
             }}
             style={{
-              width: '100%', padding: '6px',
+              width: '100%', padding: '8px',
               background: 'none', border: 'none', cursor: 'pointer',
               fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
               color: 'var(--smoke)', opacity: 0.5,

@@ -53,7 +53,7 @@ export default function DecisionHero({
           textTransform: 'uppercase',
           background: 'rgba(255,255,255,0.92)',
           color: 'var(--char)',
-          padding: '4px 9px',
+          padding: '4px 8px',
           borderRadius: '20px',
         }}>
           {badge}

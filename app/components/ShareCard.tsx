@@ -737,7 +737,7 @@ export default function ShareCard({
 
   const inputStyle: React.CSSProperties = {
     fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
-    padding: '8px 10px', borderRadius: '8px',
+    padding: '8px 12px', borderRadius: '8px',
     border: '1px solid var(--border)',
     background: 'var(--cream)', color: 'var(--char)',
     width: '100%', boxSizing: 'border-box',
@@ -751,7 +751,7 @@ export default function ShareCard({
   const sectionLbl: React.CSSProperties = {
     fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
     color: 'var(--smoke)', textTransform: 'uppercase',
-    letterSpacing: '.08em', marginBottom: '10px',
+    letterSpacing: '.08em', marginBottom: '12px',
   };
 
   return (
@@ -824,7 +824,7 @@ export default function ShareCard({
         {/* Editable fields */}
         <div>
           <div style={sectionLbl}>{l === 'fr' ? 'Personnaliser' : 'Customise'}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
               <label style={labelStyle}>{l === 'fr' ? 'Titre' : 'Title'}</label>
               <input
@@ -857,7 +857,7 @@ export default function ShareCard({
         {/* Template picker */}
         <div>
           <div style={sectionLbl}>{l === 'fr' ? 'Format' : 'Template'}</div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
             {(['protocol', 'full', 'two', 'four'] as const).map(t => (
               <div key={t} onClick={() => setTemplate(t)} style={{ flex: 1, cursor: 'pointer' }}>
                 <div style={{
@@ -866,7 +866,7 @@ export default function ShareCard({
                   overflow: 'hidden', position: 'relative',
                 }}>
                   {t === 'full' && (
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.5) 100%)', display: 'flex', alignItems: 'flex-end', padding: '6px' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.5) 100%)', display: 'flex', alignItems: 'flex-end', padding: '8px' }}>
                       <div style={{ width: '100%', height: '30%', background: 'rgba(255,255,255,0.08)', borderRadius: '2px' }} />
                     </div>
                   )}
@@ -876,7 +876,7 @@ export default function ShareCard({
                         <div style={{ background: 'rgba(255,255,255,0.07)' }} />
                         <div style={{ background: 'rgba(255,255,255,0.07)' }} />
                       </div>
-                      <div style={{ padding: '4px 6px', marginTop: '4px' }}>
+                      <div style={{ padding: '4px 8px', marginTop: '4px' }}>
                         <div style={{ height: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px', marginBottom: '3px' }} />
                         <div style={{ height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', width: '70%' }} />
                       </div>
@@ -887,14 +887,14 @@ export default function ShareCard({
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '1px', height: '55%' }}>
                         {[0,1,2,3].map(i => <div key={i} style={{ background: 'rgba(255,255,255,0.07)' }} />)}
                       </div>
-                      <div style={{ padding: '4px 6px', marginTop: '4px' }}>
+                      <div style={{ padding: '4px 8px', marginTop: '4px' }}>
                         <div style={{ height: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px', marginBottom: '3px' }} />
                         <div style={{ height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', width: '60%' }} />
                       </div>
                     </div>
                   )}
                   {t === 'protocol' && (
-                    <div style={{ position: 'absolute', inset: 0, padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', justifyContent: 'center' }}>
+                    <div style={{ position: 'absolute', inset: 0, padding: '8px 8px', display: 'flex', flexDirection: 'column', gap: '3px', justifyContent: 'center' }}>
                       {[100, 70, 85, 55].map((w, i) => (
                         <div key={i} style={{ height: '3px', background: 'rgba(255,255,255,0.18)', borderRadius: '2px', width: `${w}%` }} />
                       ))}
@@ -930,7 +930,7 @@ export default function ShareCard({
                     else setTemplate(n >= 2 ? 'two' : 'full');
                   }}
                   style={{
-                    flex: 1, padding: '8px 6px', borderRadius: '20px',
+                    flex: 1, padding: '8px 8px', borderRadius: '20px',
                     border: format === key ? '1.5px solid var(--gold)' : '1px solid var(--border)',
                     background: format === key ? 'rgba(156, 130, 72,0.10)' : 'transparent',
                     color: format === key ? 'var(--char)' : 'var(--smoke)',
@@ -946,7 +946,7 @@ export default function ShareCard({
                 photo count; the templates above remain free to override */}
             <div style={{
               fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-              color: 'var(--smoke)', opacity: 0.6, marginTop: '6px',
+              color: 'var(--smoke)', opacity: 0.6, marginTop: '8px',
               lineHeight: 1.5,
             }}>
               {l === 'fr'
@@ -1074,7 +1074,7 @@ export default function ShareCard({
 
         {/* Caption */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <div style={{ ...sectionLbl, marginBottom: 0 }}>{l === 'fr' ? 'Légende' : 'Caption'}</div>
             <span style={{
               fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
@@ -1086,7 +1086,7 @@ export default function ShareCard({
             onChange={e => setEditableCaption(e.target.value)}
             rows={9}
             style={{
-              width: '100%', padding: '10px 12px',
+              width: '100%', padding: '12px 12px',
               fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
               color: 'var(--char)', lineHeight: 1.7,
               background: 'var(--cream)', border: '1px solid var(--border)',
@@ -1102,7 +1102,7 @@ export default function ShareCard({
               });
             }}
             style={{
-              marginTop: '6px', padding: '6px 14px',
+              marginTop: '8px', padding: '8px 16px',
               borderRadius: '8px',
               background: 'transparent',
               border: `1px solid ${copied ? 'var(--terra)' : 'var(--border)'}`,
@@ -1131,7 +1131,7 @@ export default function ShareCard({
           onClick={handleShare}
           disabled={generating}
           style={{
-            width: '100%', padding: '15px',
+            width: '100%', padding: '16px',
             background: generating ? 'var(--smoke)' : 'var(--terra)',
             color: 'white', border: 'none', borderRadius: '12px',
             fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
@@ -1148,7 +1148,7 @@ export default function ShareCard({
             onClick={handleCopyImage}
             disabled={copyingImg}
             style={{
-              width: '100%', padding: '14px', minHeight: '44px', marginTop: '8px',
+              width: '100%', padding: '16px', minHeight: '44px', marginTop: '8px',
               background: 'transparent',
               border: `1px solid ${imgCopied ? 'var(--sage)' : 'var(--border)'}`,
               color: imgCopied ? 'var(--sage)' : 'var(--smoke)',

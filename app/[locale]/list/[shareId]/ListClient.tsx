@@ -177,7 +177,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
 
       <div style={{ padding: '8px 16px' }}>
         {sections.map((section) => (
-          <div key={section.label} style={{ marginBottom: '18px' }}>
+          <div key={section.label} style={{ marginBottom: '20px' }}>
             <div style={{
               fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
               color: '#8A7F78', margin: '0 0 8px 4px', fontFamily: 'var(--font-dm-sans)',
@@ -193,7 +193,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
                     onClick={() => toggle(item.id)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '12px',
-                      padding: '13px 14px',
+                      padding: '12px 16px',
                       borderTop: idx > 0 ? '1px solid #E8E0D5' : 'none',
                       cursor: 'pointer',
                     }}
@@ -229,7 +229,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
         ))}
 
         {row.dough_items.length > 0 && (
-          <div style={{ marginBottom: '18px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <div style={{
               fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
               color: '#8A7F78', margin: '0 0 8px 4px', fontFamily: 'var(--font-dm-sans)',
@@ -246,7 +246,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
                     onClick={() => toggle(itemId)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '12px',
-                      padding: '13px 14px',
+                      padding: '12px 16px',
                       borderTop: idx > 0 ? '1px solid #E8E0D5' : 'none',
                       cursor: 'pointer',
                     }}

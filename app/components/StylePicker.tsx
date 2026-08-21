@@ -165,8 +165,8 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
         <div style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          gap: '10px',
-          marginTop: '10px',
+          gap: '12px',
+          marginTop: '12px',
         }}>
           {pizzaListOptions.map(opt => (
             <div key={opt.id}>
@@ -200,7 +200,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
   return (
     <div>
     {breadSections.map(section => (
-    <div key={section.label} style={{ marginBottom: '1.1rem' }}>
+    <div key={section.label} style={{ marginBottom: '16px' }}>
     <div style={{
       fontSize: '12px', fontWeight: 600, letterSpacing: '.07em',
       textTransform: 'uppercase', color: 'var(--smoke)',
@@ -211,7 +211,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
     <div style={{
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-      gap: '.75rem',
+      gap: '12px',
     }}>
       {(section.entries as [string, { name: string; nameFr?: string; emoji: string; image?: string; desc: string; descFr?: string; hydration: number; salt: number; oil: number; sugar: number; pref: string; bulkH: number; ballW: number; ovenNote: string; flourNote: string }][]).map(([key, style]) => {
         const isSelected = selected === key;
@@ -237,7 +237,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
               flexDirection: 'column',
               alignItems: 'center',
               textAlign: 'center',
-              padding: '1rem .75rem .85rem',
+              padding: '16px 12px 12px',
               opacity: isDisabled ? 0.45 : 1,
               pointerEvents: isDisabled ? 'none' : 'auto',
             }}
@@ -251,7 +251,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
                   height: imgHeight,
                   borderRadius: 10,
                   objectFit: 'cover',
-                  marginBottom: '.6rem',
+                  marginBottom: '8px',
                   display: 'block',
                 }}
               />
@@ -261,7 +261,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
                   width: '100%',
                   height: imgHeight,
                   borderRadius: 10,
-                  marginBottom: '.6rem',
+                  marginBottom: '8px',
                   background: art.bg,
                   overflow: 'hidden',
                   flexShrink: 0,
@@ -275,7 +275,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
                 width: '100%',
                 height: imgHeight,
                 borderRadius: 10,
-                marginBottom: '.6rem',
+                marginBottom: '8px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: 'var(--cream)', fontSize: '32px',
               }}>

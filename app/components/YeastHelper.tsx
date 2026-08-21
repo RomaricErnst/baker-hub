@@ -91,7 +91,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
 
       {/* Transparency panel — always visible when calcData is present */}
       {calcData && (
-        <div style={{ marginTop: '.75rem' }}>
+        <div style={{ marginTop: '12px' }}>
           <button
             onClick={() => setShowCalc(v => !v)}
             style={{
@@ -106,7 +106,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
           {showCalc && (
             <div style={{
               background: 'var(--cream)', border: '1.5px solid var(--border)',
-              borderRadius: '10px', padding: '.85rem 1rem', marginTop: '.5rem',
+              borderRadius: '10px', padding: '12px 16px', marginTop: '8px',
               fontSize: '12px', color: 'var(--ash)', lineHeight: 1.7,
             }}>
               <div>{locale === 'fr' ? 'Modèle : formule par phase de Craig v1.1' : "Model: Craig's per-stage formula v1.1"}</div>
@@ -124,7 +124,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
                   </span>
                 </div>
               )}
-              <div style={{ marginTop: '.35rem' }}>
+              <div style={{ marginTop: '4px' }}>
                 <span style={{ fontFamily: 'var(--font-dm-mono)' }}>
                   RT hours: {calcData.rtHours}h
                   {' · '}Cold hours: {calcData.coldHours}h

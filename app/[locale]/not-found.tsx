@@ -10,7 +10,7 @@ export default function NotFound() {
       padding: '24px', textAlign: 'center',
     }}>
       <div style={{ maxWidth: 420 }}>
-        <div style={{ fontSize: '40px', marginBottom: '0.75rem' }}>🔍</div>
+        <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
         <h1 style={{
           fontFamily: 'var(--font-playfair, Georgia), serif',
           fontSize: '24px', fontWeight: 700, color: 'var(--char, #2B2420)',
@@ -29,7 +29,7 @@ export default function NotFound() {
           href="/"
           style={{
             display: 'inline-block',
-            padding: '0.8rem 1.5rem', borderRadius: '12px',
+            padding: '12px 24px', borderRadius: '12px',
             background: 'var(--terra, #6B4423)', color: '#fff',
             fontFamily: 'var(--font-dm-sans, system-ui), sans-serif',
             fontSize: '15px', fontWeight: 600, textDecoration: 'none',

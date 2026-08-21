@@ -31,7 +31,7 @@ function Code({ children }: { children: React.ReactNode }) {
   return (
     <code style={{
       fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
-      background: 'rgba(43, 36, 32,0.06)', padding: '2px 6px',
+      background: 'rgba(43, 36, 32,0.06)', padding: '2px 8px',
       borderRadius: '4px', color: CHAR,
     }}>{children}</code>
   );
@@ -42,8 +42,8 @@ function BulletList({ items }: { items: React.ReactNode[] }) {
     <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0' }}>
       {items.map((item, i) => (
         <li key={i} style={{
-          borderLeft: `2px solid ${BORDER}`, paddingLeft: '10px',
-          marginBottom: '6px', fontFamily: 'var(--font-dm-sans)',
+          borderLeft: `2px solid ${BORDER}`, paddingLeft: '12px',
+          marginBottom: '8px', fontFamily: 'var(--font-dm-sans)',
           fontSize: '13px', color: ASH, lineHeight: 1.55,
         }}>{item}</li>
       ))}
@@ -55,7 +55,7 @@ function NumberedList({ items }: { items: React.ReactNode[] }) {
   return (
     <ol style={{ listStyle: 'none', padding: 0, margin: '8px 0 0' }}>
       {items.map((item, i) => (
-        <li key={i} style={{ display: 'flex', gap: '10px', marginBottom: '8px', alignItems: 'flex-start' }}>
+        <li key={i} style={{ display: 'flex', gap: '12px', marginBottom: '8px', alignItems: 'flex-start' }}>
           <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: TERRA, flexShrink: 0, marginTop: '1px' }}>{i + 1}.</span>
           <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: ASH, lineHeight: 1.55 }}>{item}</span>
         </li>
@@ -68,7 +68,7 @@ function Pill({ children, bg, color }: { children: React.ReactNode; bg: string; 
   return (
     <span style={{
       display: 'inline-flex', fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-      padding: '3px 10px', borderRadius: '20px', margin: '3px',
+      padding: '3px 12px', borderRadius: '20px', margin: '3px',
       background: bg, color,
     }}>{children}</span>
   );
@@ -76,14 +76,14 @@ function Pill({ children, bg, color }: { children: React.ReactNode; bg: string; 
 
 function DataTable({ rows }: { rows: [string, string, string][] }) {
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px' }}>
       <thead>
         <tr>
           {(['Preferment', 'Correction', 'Why'] as const).map(h => (
             <th key={h} style={{
               fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: SMOKE,
               textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 500,
-              padding: '6px 12px', textAlign: 'left',
+              padding: '8px 12px', textAlign: 'left',
             }}>{h}</th>
           ))}
         </tr>
@@ -91,9 +91,9 @@ function DataTable({ rows }: { rows: [string, string, string][] }) {
       <tbody>
         {rows.map(([a, b, c], i) => (
           <tr key={i} style={{ background: i % 2 === 0 ? 'rgba(43, 36, 32,0.025)' : 'transparent' }}>
-            <td style={{ padding: '6px 12px', fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: ASH }}>{a}</td>
-            <td style={{ padding: '6px 12px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: CHAR }}>{b}</td>
-            <td style={{ padding: '6px 12px', fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: SMOKE }}>{c}</td>
+            <td style={{ padding: '8px 12px', fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: ASH }}>{a}</td>
+            <td style={{ padding: '8px 12px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: CHAR }}>{b}</td>
+            <td style={{ padding: '8px 12px', fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: SMOKE }}>{c}</td>
           </tr>
         ))}
       </tbody>
@@ -180,7 +180,7 @@ const CONTENT: Record<string, LocaleContent> = {
           body: (
             <>
               <P>Baker Hub has two modes, selectable at the start of every session.</P>
-              <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Simple mode</strong> — guided from start to finish. You pick a style (Neapolitan, baguette, pan pizza...), an oven, a kitchen temperature, and a bake time. Baker Hub fills in the rest: flour type assumed standard for the style, hydration at style baseline, preferment recommended automatically. The output is a horizontal step-by-step timeline — kneading, bulk rise, cold retard, balling, final proof, bake.</p>
+              <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Simple mode</strong> — guided from start to finish. You pick a style (Neapolitan, baguette, pan pizza...), an oven, a kitchen temperature, and a bake time. Baker Hub fills in the rest: flour type assumed standard for the style, hydration at style baseline, preferment recommended automatically. The output is a horizontal step-by-step timeline — kneading, bulk rise, cold retard, balling, final proof, bake.</p>
               <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Custom mode</strong> — every variable exposed. Choose your exact flour (or blend two flours by ratio), enter your fridge temperature, override preferment type, adjust hydration, enter W value manually. The scheduler actively searches for the optimal mix time and shows a live fermentation quality chart. The same scientific engine runs in both modes — Custom just exposes all of its inputs and shows the quality score.</p>
             </>
           ),
@@ -244,9 +244,9 @@ const CONTENT: Record<string, LocaleContent> = {
           body: (
             <>
               <P>Baker Hub's flour database contains 285+ entries. Each flour carries three properties that cascade through the recipe and schedule.</P>
-              <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>W value (Force W)</strong> — the alveograph strength index, measuring gluten extensibility and tenacity. Ranges from ~80 (weak cake flour) to 400+ (Manitoba strong flour). Higher W = stronger gluten = longer fermentation needed to relax it and develop flavour. A W220 flour peaks at 4–6h RT. A W370 flour needs 48–96h cold to reach its best. Scan a flour bag with the AI scanner to extract W automatically (or estimate from protein %), or enter it manually in Custom mode.</p>
-              <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation tolerance (ftm)</strong> — a multiplier derived from W value that scales the scheduler's quality plateau. At W250 (baseline), ftm = 1.0. At W300+, ftm ≈ 1.2 — the optimal cold retard window extends by 20%. At W220, ftm ≈ 0.85 — the window is narrower and the dough more fragile. Two bakers using the same style but different flours get different recommended schedules in Custom mode.</p>
-              <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Hydration delta</strong> — how much to shift baseline hydration for this flour. Strong, high-protein flours absorb more water; weak flours need less. For blends, deltas are weighted proportionally by ratio. In practice, corrections range from −2% to +6%. Applied after scheduling — hydration does not affect fermentation speed, only texture, extensibility, and crust character.</p>
+              <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>W value (Force W)</strong> — the alveograph strength index, measuring gluten extensibility and tenacity. Ranges from ~80 (weak cake flour) to 400+ (Manitoba strong flour). Higher W = stronger gluten = longer fermentation needed to relax it and develop flavour. A W220 flour peaks at 4–6h RT. A W370 flour needs 48–96h cold to reach its best. Scan a flour bag with the AI scanner to extract W automatically (or estimate from protein %), or enter it manually in Custom mode.</p>
+              <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation tolerance (ftm)</strong> — a multiplier derived from W value that scales the scheduler's quality plateau. At W250 (baseline), ftm = 1.0. At W300+, ftm ≈ 1.2 — the optimal cold retard window extends by 20%. At W220, ftm ≈ 0.85 — the window is narrower and the dough more fragile. Two bakers using the same style but different flours get different recommended schedules in Custom mode.</p>
+              <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Hydration delta</strong> — how much to shift baseline hydration for this flour. Strong, high-protein flours absorb more water; weak flours need less. For blends, deltas are weighted proportionally by ratio. In practice, corrections range from −2% to +6%. Applied after scheduling — hydration does not affect fermentation speed, only texture, extensibility, and crust character.</p>
               <p style={{ margin: 0, ...bodyText }}>Yeast quantity is always computed from your schedule — the flour's fermentation tolerance scales the timing, but yeast itself adjusts automatically through the hours change.</p>
             </>
           ),
@@ -377,12 +377,12 @@ const CONTENT: Record<string, LocaleContent> = {
             <>
               <P>Baker Hub's fermentation engine is built on two validated sources: Craig's empirical yeast formula (developed by the pizzamaking.com community) and Modernist Pizza Vol. 4 (Myhrvold et al.) — the most comprehensive empirical fermentation dataset available in print.</P>
               <P>The formulas compute <strong style={{color:CHAR}}>IDY%</strong> — Instant Dry Yeast (IDY) as a percentage of flour weight. Baker Hub supports IDY, fresh yeast, and active dry yeast (ADY); each is converted from IDY using validated ratios (fresh yeast = IDY × 3, ADY = IDY × 1.33).</P>
-              <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Room-temperature (RT) fermentation</strong></p>
-              <p style={{ marginBottom: '14px' }}><Code>IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))</Code></p>
-              <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Cold retard fermentation</strong></p>
-              <p style={{ marginBottom: '6px' }}><Code>IDY% = (7.5 / hours^1.313) ÷ Q10</Code></p>
+              <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Room-temperature (RT) fermentation</strong></p>
+              <p style={{ marginBottom: '16px' }}><Code>IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))</Code></p>
+              <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Cold retard fermentation</strong></p>
+              <p style={{ marginBottom: '8px' }}><Code>IDY% = (7.5 / hours^1.313) ÷ Q10</Code></p>
               <P>where <Code>Q10 = 2^((fridgeTemp − 4) / 10)</Code>. Q10 expresses how yeast activity scales with fridge temperature, calibrated at 4°C (standard reference). At 6°C (typical home fridge), Q10 = 1.15 — slightly more active, slightly less yeast needed. At 2°C, Q10 = 0.87 — slower fermentation, more yeast. The formula handles any fridge temperature correctly.</P>
-              <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Mixed RT + cold</strong></p>
+              <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Mixed RT + cold</strong></p>
               <P>An activity-weighted combination accounts for the transition between phases — not a simple sum, but a biological equivalence calculation.</P>
               <p style={{ margin: 0, ...bodyText }}>Yeast is always an output. Change your schedule and it recalculates automatically. Two bakers with the same recipe but different schedules, kitchens, and fridges get different yeast quantities. That's the point.</p>
             </>
@@ -409,11 +409,11 @@ const CONTENT: Record<string, LocaleContent> = {
           body: (
             <>
               <P>Your mixer changes the recipe in two ways.</P>
-              <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Water temperature — DDT method</strong></p>
-              <p style={{ marginBottom: '10px' }}><Code>Water temp = (Target FDT × 3) − flour temp − kitchen temp − friction</Code></p>
+              <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Water temperature — DDT method</strong></p>
+              <p style={{ marginBottom: '12px' }}><Code>Water temp = (Target FDT × 3) − flour temp − kitchen temp − friction</Code></p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
                 {['Spiral +8°C', 'Stand +5°C', 'By hand +1°C', 'No-knead 0°C'].map(l => (
-                  <span key={l} style={{ ...monoSm, padding: '3px 10px', borderRadius: '20px', background: 'rgba(43, 36, 32,0.06)' }}>{l}</span>
+                  <span key={l} style={{ ...monoSm, padding: '3px 12px', borderRadius: '20px', background: 'rgba(43, 36, 32,0.06)' }}>{l}</span>
                 ))}
               </div>
               <P>FDT (Final Dough Temperature) is the temperature of your dough immediately after mixing — it directly controls how fast fermentation begins. Target FDT varies by style (Neapolitan 23°C, enriched doughs 22°C). In hot kitchens the formula often calls for water below 10°C — which is why Baker Hub sometimes recommends ice.</P>
@@ -517,7 +517,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Baker Hub propose deux modes, au choix au début de chaque session.</P>
-            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Mode Simple</strong> — guidé de bout en bout. Vous choisissez un style (napolitaine, baguette, pizza pan...), un four, une température de cuisine et une heure de cuisson. Baker Hub complète le reste : farine standard pour le style, hydratation de base, préferment recommandé automatiquement. Le résultat est un planning étape par étape — pétrissage, pointage, pousse froide, boulage, apprêt, cuisson.</p>
+            <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Mode Simple</strong> — guidé de bout en bout. Vous choisissez un style (napolitaine, baguette, pizza pan...), un four, une température de cuisine et une heure de cuisson. Baker Hub complète le reste : farine standard pour le style, hydratation de base, préferment recommandé automatiquement. Le résultat est un planning étape par étape — pétrissage, pointage, pousse froide, boulage, apprêt, cuisson.</p>
             <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Mode Avancé</strong> — toutes les variables exposées. Choisissez votre farine exacte (ou un mélange de deux farines), entrez la température de votre frigo, changez le type de préferment, ajustez l'hydratation, saisissez la valeur W manuellement. Le planificateur cherche activement la meilleure heure de pétrissage et affiche un graphique de fermentation en direct. Le même moteur scientifique tourne dans les deux modes — l'Avancé expose simplement toutes ses entrées.</p>
           </>
         ),
@@ -587,7 +587,7 @@ const CONTENT: Record<string, LocaleContent> = {
               borderRadius: '8px', padding: '12px', marginBottom: '12px',
               fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: SMOKE,
             }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {[
                   { cat: 'Napolitaine & Romaine classique', detail: '60+ recettes' },
                   { cat: 'Styles américains', detail: 'New York, Detroit, Pan' },
@@ -602,7 +602,7 @@ const CONTENT: Record<string, LocaleContent> = {
                 ))}
               </div>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
               {[
                 { label: 'Impressionner (109)',      bg: 'rgba(43, 36, 32,0.06)', color: CHAR },
                 { label: 'Soirée (50)',              bg: 'rgba(43, 36, 32,0.06)', color: CHAR },
@@ -612,7 +612,7 @@ const CONTENT: Record<string, LocaleContent> = {
                 { label: 'Épicé (11)',               bg: 'rgba(43, 36, 32,0.06)', color: CHAR },
               ].map(p => <Pill key={p.label} bg={p.bg} color={p.color}>{p.label}</Pill>)}
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
               {["Végétarien (64)", "Sans porc (75)", "Halal (73)", "Casher (62)", "Pescatarien (16)", "Sans fruits à coque (127)"].map(l => (
                 <Pill key={l} bg="rgba(107,122,90,0.12)" color={SAGE}>{l}</Pill>
               ))}
@@ -668,22 +668,22 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Le moteur de fermentation de Baker Hub est construit sur deux sources validées : la formule empirique de levure de Craig, développée et affinée par la communauté pizzamaking.com, et Modernist Pizza Vol. 4 (Nathan Myhrvold et al.), qui fournit les données empiriques de fermentation les plus complètes disponibles en impression.</P>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation à température ambiante</strong></p>
-            <p style={{ marginBottom: '14px' }}><Code>IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))</Code></p>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation en pousse froide</strong></p>
-            <p style={{ marginBottom: '6px' }}><Code>IDY% = 7.5 / hours^1.313 ÷ Q10(fridgeTemp)</Code></p>
+            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation à température ambiante</strong></p>
+            <p style={{ marginBottom: '16px' }}><Code>IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))</Code></p>
+            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation en pousse froide</strong></p>
+            <p style={{ marginBottom: '8px' }}><Code>IDY% = 7.5 / hours^1.313 ÷ Q10(fridgeTemp)</Code></p>
             <P>où Q10 = 2^((tempFrigo−4)/10). Un réfrigérateur plus chaud est plus actif — le moteur tient compte de votre température réelle de réfrigérateur en mode Custom. Par défaut : 6 °C (frigo domestique typique).</P>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Mixte TA + froid</strong></p>
+            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Mixte TA + froid</strong></p>
             <P>Une combinaison pondérée par l'activité où chaque phase est pondérée selon sa contribution à la fermentation. Validé par rapport aux tables de pâte en vrac de Modernist Pizza ; concordance entre 0 et 11 %.</P>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Conversion du type de levure</strong></p>
+            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Conversion du type de levure</strong></p>
             <P>Tous les calculs utilisent l'IDY comme référence interne. Levure sèche active = IDY × 1,33 · Levure fraîche = IDY × 3,0.</P>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Correction climatique tropicale</strong></p>
+            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Correction climatique tropicale</strong></p>
             <P>30–32 °C : ÷1,15 · 33–35 °C : ÷1,25. S'applique aux phases TA de la pâte principale et à la fermentation du poolish TA.</P>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Calibration du pré-ferment</strong></p>
+            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Calibration du pré-ferment</strong></p>
             <P>La formule de Craig a été calibrée pour la pâte en vrac — 65 % d'hydratation, avec sel. Les pré-ferments nécessitent une correction :</P>
             <DataTable rows={PREF_TABLE_ROWS} />
-            <p style={{ marginTop: '10px', ...bodyText }}>Validé par rapport aux tables de pré-ferments de Modernist Pizza ; toutes les valeurs dans ±20 % des données empiriques.</p>
-            <p style={{ marginTop: '14px', marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Levain</strong></p>
+            <p style={{ marginTop: '12px', ...bodyText }}>Validé par rapport aux tables de pré-ferments de Modernist Pizza ; toutes les valeurs dans ±20 % des données empiriques.</p>
+            <p style={{ marginTop: '16px', marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Levain</strong></p>
             <p style={{ margin: 0, ...bodyText }}>L'activité du levain varie trop entre les cultures pour qu'une quantité précise en grammes soit significative. Baker Hub donne une fourchette de pourcentage (10–25 % de farine, ajustée au climat) et des repères visuels de maturité.</p>
           </>
         ),
@@ -693,9 +693,9 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>La base de données farines de Baker Hub contient 285+ entrées. Chaque farine porte trois propriétés qui se cascadent à travers la recette et le planning :</P>
-            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Valeur W (Force W)</strong> — indice de force alvéographique mesurant l'extensibilité et la ténacité du gluten. Va de ~80 (farine faible pour gâteaux) à 400+ (Manitoba). Plus W est élevé = gluten plus fort = fermentation plus longue nécessaire pour le détendre et développer les saveurs. La farine W220 culmine en 4–6h TA. La farine W370 nécessite 48–96h au froid pour atteindre son meilleur. Scannez un sac de farine avec le scanner IA pour extraire W automatiquement, ou saisissez-le manuellement en mode Custom.</p>
-            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Delta d'hydratation</strong> — de combien décaler l'hydratation de base. Les farines fortes et riches en protéines absorbent plus d'eau ; les farines faibles en nécessitent moins. Pour les mélanges, les deltas sont pondérés par le ratio. Note : l'hydratation est définie après le planning — elle n'affecte pas la vitesse de fermentation dans les plages normales de boulangerie (55–80 %), uniquement la texture de la pâte, l'extensibilité et le caractère de la croûte.</p>
-            <p style={{ marginBottom: '10px', ...bodyText }}><strong style={{ color: CHAR }}>Tolérance de fermentation (ftm)</strong> — un multiplicateur appliqué à la zone idéale du planificateur. ftm = 1,0 pour W250 (référence), 1,2 pour W300+, 0,85 pour W220. Cela scale la durée de pousse froide optimale, la zone idéale du poolish et la fenêtre de fermentation maximale utile. Deux boulangers utilisant le même style mais des farines différentes obtiennent des plannings recommandés différents — le boulanger W370 est orienté vers une pousse froide plus longue, le boulanger W220 vers une plus courte.</p>
+            <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Valeur W (Force W)</strong> — indice de force alvéographique mesurant l'extensibilité et la ténacité du gluten. Va de ~80 (farine faible pour gâteaux) à 400+ (Manitoba). Plus W est élevé = gluten plus fort = fermentation plus longue nécessaire pour le détendre et développer les saveurs. La farine W220 culmine en 4–6h TA. La farine W370 nécessite 48–96h au froid pour atteindre son meilleur. Scannez un sac de farine avec le scanner IA pour extraire W automatiquement, ou saisissez-le manuellement en mode Custom.</p>
+            <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Delta d'hydratation</strong> — de combien décaler l'hydratation de base. Les farines fortes et riches en protéines absorbent plus d'eau ; les farines faibles en nécessitent moins. Pour les mélanges, les deltas sont pondérés par le ratio. Note : l'hydratation est définie après le planning — elle n'affecte pas la vitesse de fermentation dans les plages normales de boulangerie (55–80 %), uniquement la texture de la pâte, l'extensibilité et le caractère de la croûte.</p>
+            <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Tolérance de fermentation (ftm)</strong> — un multiplicateur appliqué à la zone idéale du planificateur. ftm = 1,0 pour W250 (référence), 1,2 pour W300+, 0,85 pour W220. Cela scale la durée de pousse froide optimale, la zone idéale du poolish et la fenêtre de fermentation maximale utile. Deux boulangers utilisant le même style mais des farines différentes obtiennent des plannings recommandés différents — le boulanger W370 est orienté vers une pousse froide plus longue, le boulanger W220 vers une plus courte.</p>
             <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>La levure est une sortie, pas une entrée.</strong> Baker Hub ne demande jamais de pourcentage de levure. Il le calcule à partir de vos heures de fermentation réelles et de la température avec la formule IDY% = 9,5 / (heures^1,65 × 2,5^((temp−25)/10)) en TA, et IDY% = 7,5 / heures^1,313 au froid. Modifiez votre planning et la levure se met à jour automatiquement. La tolérance de fermentation de la farine scale la zone idéale mais n'affecte pas directement la levure — la formule de levure s'ajuste déjà via le timing.</p>
           </>
         ),
@@ -722,11 +722,11 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Votre pétrin modifie la recette de deux manières.</P>
-            <p style={{ marginBottom: '6px', ...bodyText }}><strong style={{ color: CHAR }}>Température de l'eau — méthode DDT</strong></p>
-            <p style={{ marginBottom: '10px' }}><Code>Water temp = (Target FDT × 3) − flour temp − kitchen temp − friction</Code></p>
+            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Température de l'eau — méthode DDT</strong></p>
+            <p style={{ marginBottom: '12px' }}><Code>Water temp = (Target FDT × 3) − flour temp − kitchen temp − friction</Code></p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
               {['Spirale +8 °C', 'Robot +5 °C', 'À la main +1 °C', 'Sans pétrissage 0 °C'].map(l => (
-                <span key={l} style={{ ...monoSm, padding: '3px 10px', borderRadius: '20px', background: 'rgba(43, 36, 32,0.06)' }}>{l}</span>
+                <span key={l} style={{ ...monoSm, padding: '3px 12px', borderRadius: '20px', background: 'rgba(43, 36, 32,0.06)' }}>{l}</span>
               ))}
             </div>
             <P>La FDT cible varie selon le style (napolitaine 23 °C, pâtes enrichies 22 °C). Dans les cuisines chaudes, la formule nécessite souvent de l'eau en dessous de 10 °C — c'est pourquoi Baker Hub recommande parfois de la glace.</P>
@@ -748,7 +748,7 @@ const CONTENT: Record<string, LocaleContent> = {
               <><strong style={{color:CHAR}}>16,5h – 26,5h</strong> — poolish au frigo double vert. Pousse froide pour des saveurs complexes.</>,
               <><strong style={{color:CHAR}}>{'> 26,5h'}</strong> — poolish au frigo + pousse froide complète 24h. Meilleure qualité possible.</>,
             ]} />
-            <p style={{ marginTop: '14px', ...bodyText }}>Ces limites évoluent avec la température de la cuisine (plus chaud = fermentation plus rapide, fenêtres plus courtes) et le type de four (un préchauffage plus long décale la fenêtre minimale). La force de votre farine scale également la zone idéale — une farine W370 bénéficie d'une pousse froide plus longue qu'une W250.</p>
+            <p style={{ marginTop: '16px', ...bodyText }}>Ces limites évoluent avec la température de la cuisine (plus chaud = fermentation plus rapide, fenêtres plus courtes) et le type de four (un préchauffage plus long décale la fenêtre minimale). La force de votre farine scale également la zone idéale — une farine W370 bénéficie d'une pousse froide plus longue qu'une W250.</p>
             <p style={{ margin: '14px 0 10px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: TERRA, letterSpacing: '.04em' }}>COMMENT L'HEURE DE PÉTRISSAGE EST CHOISIE</p>
             <BulletList items={[
               "Le moteur essaie poolish au frigo et poolish TA, choisit le mode avec le meilleur score. Le frigo gagne à égalité — la fermentation froide développe des saveurs plus complexes.",
@@ -900,7 +900,7 @@ export default function AboutClient() {
           style={{
             marginTop: '20px',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            padding: '13px 0', borderRadius: '12px',
+            padding: '12px 0', borderRadius: '12px',
             background: TERRA, color: '#fff',
             fontSize: '13px', fontWeight: 500,
             fontFamily: 'var(--font-dm-sans)', textDecoration: 'none',

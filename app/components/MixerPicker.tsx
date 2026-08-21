@@ -61,8 +61,8 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
           recipe page, after the baker has already committed to the mixer */}
       {selected === 'stand' && (totalDoughG ?? 0) > 1500 && (
         <div style={{
-          marginTop: '.75rem', background: '#FDFBF2', border: '1px solid #E8D890',
-          borderRadius: '10px', padding: '.7rem .9rem', fontSize: '12px',
+          marginTop: '12px', background: '#FDFBF2', border: '1px solid #E8D890',
+          borderRadius: '10px', padding: '12px 16px', fontSize: '12px',
           color: '#7A5A10', lineHeight: 1.55,
         }}>
           {locale === 'fr'
@@ -74,9 +74,9 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
       {/* Contextual warnings — always visible after selection */}
       {selected === 'no_knead' && bakeType === 'pizza' && styleKey && NO_KNEAD_WARNING[styleKey] && (
         <div style={{
-          marginTop: '.75rem', background: '#FFF8E8', border: '1.5px solid #E8D080',
-          borderRadius: '10px', padding: '.7rem .9rem', fontSize: '12px',
-          color: '#7A5A10', lineHeight: 1.55, display: 'flex', gap: '.5rem', alignItems: 'flex-start',
+          marginTop: '12px', background: '#FFF8E8', border: '1.5px solid #E8D080',
+          borderRadius: '10px', padding: '12px 16px', fontSize: '12px',
+          color: '#7A5A10', lineHeight: 1.55, display: 'flex', gap: '8px', alignItems: 'flex-start',
         }}>
           <span>⚠️</span>
           <span>{NO_KNEAD_WARNING[styleKey]}</span>

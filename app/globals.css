@@ -143,3 +143,25 @@ body {
   --text-xl:  20px;
   --text-2xl: 24px;
 }
+
+/* ── Spacing ──────────────────────────────────
+   Before this pass: 233 distinct padding values across 518 declarations, in
+   two unit systems, with 6px as the most common gap. Spacing now sits on a
+   4px grid; ties were resolved upward, since every piece of feedback pointed
+   the same way ("more space", "everything one step bigger").
+
+   4   inside a tight cluster (icon and its label)
+   8   between related elements
+   12  between elements in a group
+   16  inside a card or panel
+   24  between sections
+   32  between major blocks
+   Values under 4px are hairlines, not spacing. Above 64px is composition. */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+}

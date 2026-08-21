@@ -73,12 +73,12 @@ export default function PrefermentPicker({
         const pData = PREFERMENT_TYPES[selected] as { hydration?: number; cold?: boolean };
         if (!pData.hydration && !pData.cold) return null;
         return (
-          <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', marginTop: '.6rem' }}>
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '8px' }}>
             {pData.hydration && (
               <span style={{
                 fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
                 background: 'var(--cream)', color: 'var(--ash)',
-                borderRadius: '20px', padding: '.1rem .45rem',
+                borderRadius: '20px', padding: '.1rem 8px',
                 border: '1px solid var(--border)',
               }}>
                 {pData.hydration}% {t('hydration')}
@@ -88,7 +88,7 @@ export default function PrefermentPicker({
               <span style={{
                 fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
                 background: 'rgba(107,122,90,0.1)', color: 'var(--sage)',
-                borderRadius: '20px', padding: '.1rem .45rem',
+                borderRadius: '20px', padding: '.1rem 8px',
                 border: '1px solid rgba(107,122,90,0.25)',
               }}>
                 {t('coldFerment')}

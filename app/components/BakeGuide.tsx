@@ -51,12 +51,12 @@ function Section({ icon, title, children }: {
   icon: string | null; title: string; children: React.ReactNode;
 }) {
   return (
-    <div style={{ marginTop: '1rem' }}>
+    <div style={{ marginTop: '16px' }}>
       <div style={{
         fontSize: '11px', fontWeight: 600, color: D.smoke,
         textTransform: 'uppercase', letterSpacing: '.07em',
-        fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem',
-        display: 'flex', alignItems: 'center', gap: '.35rem',
+        fontFamily: 'var(--font-dm-mono)', marginBottom: '8px',
+        display: 'flex', alignItems: 'center', gap: '4px',
       }}>
         {icon && <span>{icon}</span>}{title}
       </div>
@@ -75,9 +75,9 @@ function Bullets({ items }: { items: (string | React.ReactNode)[] }) {
   }
   if (items.length === 0) return null;
   return (
-    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
+    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
       {items.map((item, i) => (
-        <li key={i} style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-start' }}>
+        <li key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
           <span style={{ color: D.terra, flexShrink: 0, marginTop: '.1rem' }}>·</span>
           <span>{item}</span>
         </li>
@@ -113,12 +113,12 @@ function Steps({ items }: { items: { bold: string; note: string }[] }) {
     }));
   }
   return (
-    <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
+    <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {items.map((item, i) => (
-        <li key={i} style={{ display: 'flex', gap: '.55rem', alignItems: 'flex-start' }}>
+        <li key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
           <span style={{
             width: '5px', height: '5px', borderRadius: '50%',
-            background: D.smoke, flexShrink: 0, marginTop: '.5rem',
+            background: D.smoke, flexShrink: 0, marginTop: '8px',
           }} />
           <span>
             <strong style={{ color: D.char }}>{item.bold}</strong>
@@ -155,7 +155,7 @@ function Pill({ label, color }: { label: string; color?: string }) {
       background: color ? `${color}18` : '#F0EBE020',
       border: `1px solid ${color ?? D.border}40`,
       borderRadius: '20px',
-      padding: '.15rem .6rem',
+      padding: '.15rem 8px',
       fontSize: '11px',
       fontFamily: 'var(--font-dm-mono)',
       color: color ?? D.smoke,
@@ -193,8 +193,8 @@ function StepCard({
       <div
         onClick={onToggle}
         style={{
-          display: 'flex', alignItems: 'center', gap: '.75rem',
-          padding: '.8rem 1.1rem', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '12px',
+          padding: '12px 16px', cursor: 'pointer',
           borderLeft: `4px solid ${ea}`,
         }}
       >
@@ -233,7 +233,7 @@ function StepCard({
                 display: 'inline-block', fontSize: '11px',
                 fontFamily: 'var(--font-dm-mono)', color: ea,
                 background: `${ea}14`, border: `1px solid ${ea}30`,
-                borderRadius: '8px', padding: '1px 7px',
+                borderRadius: '8px', padding: '1px 8px',
               }}>
                 {formatTime(time, _fmtLocale)}
                 {duration ? ` · ${hoursLabel(duration)}` : ''}
@@ -251,7 +251,7 @@ function StepCard({
       </div>
       {/* Card body */}
       {open && (
-        <div style={{ padding: '0 1.25rem 1.25rem', borderTop: `1px solid ${D.border}` }}>
+        <div style={{ padding: '0 20px 20px', borderTop: `1px solid ${D.border}` }}>
           {children}
         </div>
       )}
@@ -420,7 +420,7 @@ function CoachButton({
   if (!COACH_STEPS.has(stepId)) return null;
 
   return (
-    <div style={{ marginTop: '14px' }}>
+    <div style={{ marginTop: '16px' }}>
       <input
         type="file"
         accept="image/jpeg,image/png,image/webp"
@@ -452,8 +452,8 @@ function CoachButton({
           background: '#2B2420',
           borderLeft: '3px solid #6B4423',
           borderRadius: '10px',
-          padding: '12px 14px',
-          marginBottom: '10px',
+          padding: '12px 16px',
+          marginBottom: '12px',
           position: 'relative',
         }}>
           <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
@@ -486,7 +486,7 @@ function CoachButton({
             onClick={() => fileInputRef.current?.click()}
             disabled={loading}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
               background: '#2B2420',
               border: isGate ? '1px solid rgba(156, 130, 72,0.5)' : '1px solid rgba(240, 235, 224,0.15)',
               borderRadius: '20px', padding: '4px 12px', cursor: loading ? 'default' : 'pointer',
@@ -587,20 +587,20 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
   return (
     <div style={{ marginTop: '12px' }}>
       {MAESTRO_CONTENT[stepId]?.question && !answer && (
-        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: D.char, fontWeight: 500, marginBottom: '6px' }}>
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: D.char, fontWeight: 500, marginBottom: '8px' }}>
           {MAESTRO_CONTENT[stepId].question[l]}
         </div>
       )}
       <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} ref={fileRef} onChange={attach} />
       {photoB64 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
           <img src={`data:image/jpeg;base64,${photoB64}`} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '8px', border: `1px solid ${D.border}` }} />
           <button onClick={() => setPhotoB64(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: D.smoke, fontSize: '11px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: 0 }}>
             {l === 'fr' ? 'Retirer la photo' : 'Remove photo'}
           </button>
         </div>
       )}
-      <div style={{ display: 'flex', gap: '6px' }}>
+      <div style={{ display: 'flex', gap: '8px' }}>
         <button
           onClick={() => fileRef.current?.click()}
           title={l === 'fr' ? 'Joindre une photo' : 'Attach a photo'}
@@ -622,7 +622,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           placeholder={l === 'fr' ? 'Question, photo, ou les deux…' : 'Question, photo, or both…'}
           style={{
             flex: 1, border: `1px solid ${D.border}`, borderRadius: '8px',
-            padding: '8px 10px', fontSize: '13px', fontFamily: 'var(--font-dm-sans)',
+            padding: '8px 12px', fontSize: '13px', fontFamily: 'var(--font-dm-sans)',
             color: D.char, background: '#fff', outline: 'none', minWidth: 0,
           }}
         />
@@ -631,7 +631,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           disabled={!canAsk}
           style={{
             background: '#2B2420', color: '#F0EBE0', border: 'none',
-            borderRadius: '8px', padding: '13px 16px', minHeight: '44px', fontSize: '13px',
+            borderRadius: '8px', padding: '12px 16px', minHeight: '44px', fontSize: '13px',
             fontFamily: 'var(--font-dm-mono)', cursor: canAsk ? 'pointer' : 'default',
             opacity: canAsk ? 1 : 0.6, whiteSpace: 'nowrap',
           }}
@@ -645,7 +645,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
       {answer && (
         <div style={{
           background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '10px',
-          padding: '12px 14px', marginTop: '8px',
+          padding: '12px 16px', marginTop: '8px',
           color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, whiteSpace: 'pre-line',
         }}>
           {answer}
@@ -655,7 +655,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
-                textDecoration: 'underline', padding: 0, marginTop: '6px',
+                textDecoration: 'underline', padding: 0, marginTop: '8px',
               }}
             >
               {l === 'fr' ? 'Autre question' : 'Ask another'}
@@ -664,7 +664,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
         </div>
       )}
       {error && (
-        <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic', marginTop: '6px', fontFamily: 'var(--font-dm-sans)' }}>
+        <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic', marginTop: '8px', fontFamily: 'var(--font-dm-sans)' }}>
           {l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.'}
         </div>
       )}
@@ -701,8 +701,8 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
   ];
 
   return (
-    <div style={{ marginTop: '1rem', borderTop: `1px solid ${D.border}`, paddingTop: '.85rem' }}>
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+    <div style={{ marginTop: '16px', borderTop: `1px solid ${D.border}`, paddingTop: '12px' }}>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
         {pills.map(p => (
           <button
             key={p.id}
@@ -711,7 +711,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
               border: tab === p.id ? `1.5px solid ${D.terra}` : `1px solid ${D.border}`,
               background: tab === p.id ? '#fff' : 'transparent',
               color: tab === p.id ? D.terra : D.smoke,
-              borderRadius: '20px', padding: '5px 12px',
+              borderRadius: '20px', padding: '4px 12px',
               fontSize: '12px', fontFamily: 'var(--font-dm-mono)',
               cursor: 'pointer', transition: 'all .15s',
             }}
@@ -721,27 +721,27 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
         ))}
       </div>
 
-      {tab === 'tips' && <div style={{ marginTop: '.25rem' }}>{tips}</div>}
+      {tab === 'tips' && <div style={{ marginTop: '4px' }}>{tips}</div>}
 
       {tab === 'faq' && (
-        <div style={{ marginTop: '.75rem', display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
+        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {faq.map((f, i) => (
             <div key={i} style={{ border: `1px solid ${D.border}`, borderRadius: '10px', overflow: 'hidden' }}>
               <button
                 onClick={() => setOpenFaq(prev => prev === i ? null : i)}
                 style={{
                   width: '100%', textAlign: 'left', background: openFaq === i ? '#fff' : 'transparent',
-                  border: 'none', cursor: 'pointer', padding: '.6rem .75rem',
+                  border: 'none', cursor: 'pointer', padding: '8px 12px',
                   fontSize: '13px', fontWeight: 600, color: D.char,
                   fontFamily: 'var(--font-dm-sans)',
-                  display: 'flex', justifyContent: 'space-between', gap: '.5rem',
+                  display: 'flex', justifyContent: 'space-between', gap: '8px',
                 }}
               >
                 <span>{f.q[l]}</span>
                 <span style={{ color: D.smoke, flexShrink: 0 }}>{openFaq === i ? '−' : '+'}</span>
               </button>
               {openFaq === i && (
-                <div style={{ padding: '0 .75rem .65rem', fontSize: '12px', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-dm-sans)' }}>
+                <div style={{ padding: '0 12px 12px', fontSize: '12px', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-dm-sans)' }}>
                   {f.a[l]}
                 </div>
               )}
@@ -751,7 +751,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
       )}
 
       {tab === 'coach' && (
-        <div style={{ marginTop: '.25rem' }}>
+        <div style={{ marginTop: '4px' }}>
           <AskMaestro
             stepId={coachStepId ?? faqKey ?? 'mix'}
             stepTitle={coachTitle}
@@ -994,10 +994,10 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
   return (
     <SimpleModeCtx.Provider value={!!simpleMode}>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
       {/* ── Header ──────────────────────────────────── */}
-      <div style={{ marginBottom: '.25rem' }}>
+      <div style={{ marginBottom: '4px' }}>
         <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '20px', fontWeight: 700, color: D.char }}>
           {_isFr ? 'Guide de cuisson pas à pas' : 'Step-by-step bake guide'}
         </div>
@@ -1026,7 +1026,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               prefYeastGrams > 0 ? `${prefYeastGrams.toFixed(1)}g ${prefermentType ?? 'yeast'}` : null,
             ].filter(Boolean).join(' · ');
             return (
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: D.smoke, marginBottom: '.5rem' }}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: D.smoke, marginBottom: '8px' }}>
                 {parts}
               </div>
             );
@@ -1048,7 +1048,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
                 <Bullets items={t.raw(isPoolish ? 'poolish.pitfalls' : 'biga.pitfalls') as string[]} />
               </Section>
-              <div style={{ marginTop: '.5rem' }}>
+              <div style={{ marginTop: '8px' }}>
                 <LearnLink term="preferment_ready" label={l === 'fr' ? 'Est-il prêt ?' : 'Is it ready?'} onOpen={setLearnTerm} showSparkle={true} />
               </div>
             </>}
@@ -1111,7 +1111,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 <Section icon={null} title={t('sectionTitles.pitfalls')}>
                   <Bullets items={t.raw('starter.pitfalls') as string[]} />
                 </Section>
-                <div style={{ marginTop: '.5rem' }}>
+                <div style={{ marginTop: '8px' }}>
                   <LearnLink
                     term="preferment_ready"
                     label={l === 'fr' ? 'Est-il prêt ?' : 'Is it ready?'}
@@ -1236,7 +1236,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             { bold: l === 'fr' ? 'Égouttez l’excédent avant le pétrissage' : 'Drain any excess before mixing',
               note: l === 'fr' ? 'les graines doivent être humides, pas ruisselantes' : 'seeds should be moist, not dripping' },
           ]} />
-          <div style={{ fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-dm-sans)', lineHeight: 1.55, marginTop: '.5rem', paddingTop: '.5rem', borderTop: `1px solid ${D.border}` }}>
+          <div style={{ fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-dm-sans)', lineHeight: 1.55, marginTop: '8px', paddingTop: '8px', borderTop: `1px solid ${D.border}` }}>
             {l === 'fr'
               ? 'Au pétrissage : incorporez les graines égouttées en toute fin, à petite vitesse ou à la main, juste assez pour les répartir.'
               : 'At mix time: fold the drained seeds in at the very end, low speed or by hand, just enough to distribute them.'}
@@ -1315,7 +1315,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 { bold: (l === 'fr' ? 'Vitesse 2 jusqu’à la forme de citrouille' : 'Speed 2 until pumpkin shape forms'), note: l === 'fr' ? `en général 10–15 min — arrêtez si la FDT dépasse ${tempC(28, u)}` : `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
                 ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'Vitesse 1, 1 min' : 'Speed 1, 1 min') }] : []),
               ]} />
-              <div style={{ marginTop: '.75rem' }}>
+              <div style={{ marginTop: '12px' }}>
                 <img
                   src="/Pumpkin.jpeg"
                   alt="Pumpkin shape — dough gathered into a smooth ball around the spiral"
@@ -1344,7 +1344,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'préserve la structure du gluten' : 'preserves gluten structure') }] : []),
               ]} />
               {planningMode === 'know_peak' && (
-                <div style={{ marginTop: '.6rem', fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+                <div style={{ marginTop: '8px', fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
                   {l === 'fr' ? 'L’heure de pétrissage est calée sur le pic indiqué — ajustez si votre levain pique plus tôt ou plus tard que prévu.' : 'Mix time is set to your stated peak — adjust if your starter peaks earlier or later than expected.'}
                 </div>
               )}
@@ -1353,8 +1353,8 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 color: D.smoke,
                 fontFamily: 'var(--font-dm-sans)',
                 lineHeight: 1.55,
-                marginTop: '.5rem',
-                paddingTop: '.5rem',
+                marginTop: '8px',
+                paddingTop: '8px',
                 borderTop: `1px solid ${D.border}`,
               }}>
                 {l === 'fr'
@@ -1382,7 +1382,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 ...(t.raw('mix.waterTempBullets') as string[]),
                 (l === 'fr' ? `FDT au-dessus de ${tempC(28, u)} : placez la pâte 15 min au frigo avant le pointage` : `FDT above ${tempC(28, u)}: refrigerate dough for 15 min before bulk fermentation`),
               ]} />
-              <div style={{ marginTop: '.5rem' }}>
+              <div style={{ marginTop: '8px' }}>
                 <LearnLink term="fdt" label={l === 'fr' ? 'Qu’est-ce que la FDT ?' : 'What is FDT?'} onOpen={setLearnTerm} />
               </div>
             </Section>
@@ -1394,7 +1394,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                   : t('mix.watchForSmooth'),
                 ...(t.raw('mix.watchForAll') as string[]),
               ]} />
-              <div style={{ marginTop: '.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ marginTop: '8px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                 <LearnLink term="windowpane" label={l === 'fr' ? 'Test de la membrane' : 'Windowpane test'} onOpen={setLearnTerm} showSparkle={true} />
                 {mixerType === 'hand' && !isSourdough && <LearnLink term="autolyse" label="Autolyse" onOpen={setLearnTerm} />}
                 {isSpiral && <LearnLink term="pumpkin" label={l === 'fr' ? 'Forme citrouille' : 'Pumpkin shape'} onOpen={setLearnTerm} />}
@@ -1443,7 +1443,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           tips={<>
             <Section icon="👁️" title="Watch for — bulk is done when">
               <Bullets items={t.raw('bulk.watchFor') as string[]} />
-              <div style={{ marginTop: '.5rem' }}>
+              <div style={{ marginTop: '8px' }}>
                 <LearnLink term="bulk_fermentation" label={l === 'fr' ? 'Guide du pointage' : 'Bulk fermentation guide'} onOpen={setLearnTerm} showSparkle={true} />
               </div>
             </Section>
@@ -1544,7 +1544,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 {isPan && (
                   <div style={{
                     fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic',
-                    fontFamily: 'var(--font-dm-sans)', marginTop: '6px',
+                    fontFamily: 'var(--font-dm-sans)', marginTop: '8px',
                   }}>
                     Pan pizza: press dough directly into your oiled pan rather than
                     forming a round ball. Let it relax 10 min then stretch to the edges.
@@ -1593,7 +1593,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                   ]
                 } />
               </Section>
-              <div style={{ marginTop: '.5rem' }}>
+              <div style={{ marginTop: '8px' }}>
                 <LearnLink term="shape_check" label={l === 'fr' ? 'Vérifier ma forme' : 'Check your shape'} onOpen={setLearnTerm} showSparkle={true} />
               </div>
             </>}
@@ -1670,7 +1670,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             tips={<>
               <Section icon="👁️" title={t('sectionTitles.pokeTest')}>
                 <Bullets items={t.raw('finalProof.pokeResponses') as string[]} />
-                <div style={{ marginTop: '.5rem' }}>
+                <div style={{ marginTop: '8px' }}>
                   <LearnLink term="poke_test" label={l === 'fr' ? 'Guide du test du doigt' : 'Full poke test guide'} onOpen={setLearnTerm} showSparkle={true} />
                 </div>
               </Section>
@@ -1697,7 +1697,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         time={schedule.preheatStart} accent={D.gold}>
 
         <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic',
-          fontFamily: 'var(--font-dm-sans)', padding: '.75rem 0 0' }}>
+          fontFamily: 'var(--font-dm-sans)', padding: '12px 0 0' }}>
           {t('preheatNote')}
         </div>
 
@@ -1755,7 +1755,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           {isPan && (
             <div style={{
               background: 'rgba(156, 130, 72,0.08)', border: '1px solid rgba(156, 130, 72,0.2)',
-              borderRadius: '10px', padding: '10px 12px', marginBottom: '12px',
+              borderRadius: '10px', padding: '12px 12px', marginBottom: '12px',
               fontSize: '12px', fontFamily: 'var(--font-dm-sans)', color: 'var(--char)',
               lineHeight: 1.5,
             }}>
@@ -1823,13 +1823,13 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             {isBread && (
               <Section icon="🎓" title={t('sectionTitles.learnMore')}>
                 <ExtLink href="https://www.theperfectloaf.com/guides/how-to-score-bread-dough/" label={t('bake.learnMoreScoring')} />
-                <div style={{ marginTop: '.5rem' }}>
+                <div style={{ marginTop: '8px' }}>
                   <LearnLink term="score_technique" label={l === 'fr' ? 'Technique de grignage' : 'Scoring technique'} onOpen={setLearnTerm} showSparkle={true} />
                 </div>
               </Section>
             )}
             {!isBread && (
-              <div style={{ marginTop: '.5rem' }}>
+              <div style={{ marginTop: '8px' }}>
                 <LearnLink term="stretch_bake" label={l === 'fr' ? 'Étirer et cuire' : 'Stretch & bake tips'} onOpen={setLearnTerm} showSparkle={true} />
               </div>
             )}

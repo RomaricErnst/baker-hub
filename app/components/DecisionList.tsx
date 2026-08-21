@@ -51,7 +51,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>
                   {option.title}
                 </span>
@@ -62,7 +62,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
                     color: 'var(--sage)',
                     background: 'rgba(107,122,90,0.15)',
                     borderRadius: '10px',
-                    padding: '2px 7px',
+                    padding: '2px 8px',
                   }}>
                     {option.badge}
                   </span>

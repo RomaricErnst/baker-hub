@@ -20,14 +20,14 @@ const PILL_BASE: React.CSSProperties = {
   flex: 1,
   display: 'flex', flexDirection: 'column',
   alignItems: 'center', justifyContent: 'center', gap: '1px',
-  padding: '.55rem 0',
+  padding: '8px 0',
   borderRadius: '12px',
   cursor: 'pointer',
   fontFamily: 'var(--font-dm-sans)',
 };
 
 const LABEL_ROW: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: '6px',
+  display: 'flex', alignItems: 'center', gap: '8px',
   fontSize: '14px', fontWeight: 500,
   whiteSpace: 'nowrap',
 };
@@ -67,7 +67,7 @@ export default function PlanNav({ variant, onEditSetup, onOpenGuide, onShare }: 
             border: cta ? 'none' : '1.5px solid var(--border)',
             background: cta ? 'var(--terra)' : 'var(--warm)',
             color: cta ? '#fff' : 'var(--ash)',
-            padding: '.4rem 0',
+            padding: '8px 0',
           }}
         >
           <span style={LABEL_ROW}>

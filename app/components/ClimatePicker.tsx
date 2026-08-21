@@ -107,7 +107,7 @@ const SECTION_LABEL: React.CSSProperties = {
   color: 'var(--smoke)',
   textTransform: 'uppercase',
   letterSpacing: '.06em',
-  marginBottom: '.5rem',
+  marginBottom: '8px',
   fontFamily: 'var(--font-dm-mono)',
 };
 
@@ -232,7 +232,7 @@ export default function ClimatePicker({
         <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-dm-sans)' }}>
           {isFr ? 'À quelle température est votre cuisine en ce moment ?' : 'How warm is your kitchen right now?'}
         </p>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>
             {isFr ? 'Température de la cuisine' : 'Kitchen temperature'}
           </label>
@@ -266,11 +266,11 @@ export default function ClimatePicker({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
       {/* ── Kitchen temperature ──────────────────── */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
           <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Température de la cuisine' : 'Kitchen temperature'}</label>
           <span style={{
             fontFamily: 'var(--font-dm-mono)',
@@ -296,7 +296,7 @@ export default function ClimatePicker({
         <div style={{
           display: 'flex', justifyContent: 'space-between',
           fontSize: '11px', color: 'var(--smoke)',
-          fontFamily: 'var(--font-dm-mono)', marginTop: '.25rem',
+          fontFamily: 'var(--font-dm-mono)', marginTop: '4px',
         }}>
           <span>{tempC(15, u)} {isFr ? 'froid' : 'cool'}</span>
           <span>{tempC(22, u)} {isFr ? 'idéal' : 'ideal'}</span>
@@ -310,10 +310,10 @@ export default function ClimatePicker({
             background: '#FFF8E8',
             border: '1.5px solid #E8D080',
             borderRadius: '10px',
-            padding: '.6rem .9rem',
+            padding: '8px 16px',
             fontSize: '12px',
             color: '#7A5A10',
-            marginTop: '.75rem',
+            marginTop: '12px',
             lineHeight: 1.5,
           }}>
             🌡️ {isFr ? <>Sous un climat chaud, les après-midis peuvent dépasser {tempC(28, u)}. Si votre cuisine chauffe en journée, indiquez plutôt la température maximale attendue.</> : <>In a warm climate, afternoon temps can push above {tempC(28, u)}. If your kitchen heats up during the day, consider entering your expected peak temperature instead.</>}
@@ -326,7 +326,7 @@ export default function ClimatePicker({
         <button
           onClick={() => setOutdoorOpen(o => !o)}
           style={{
-            width: '100%', padding: '11px 12px',
+            width: '100%', padding: '12px 12px',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             border: '1.5px solid var(--border)',
             borderRadius: outdoorOpen ? '12px 12px 0 0' : '12px',
@@ -334,7 +334,7 @@ export default function ClimatePicker({
             background: 'var(--cream)', cursor: 'pointer',
           }}
         >
-          <span style={{ ...SECTION_LABEL, marginBottom: 0, display: 'inline-flex', alignItems: 'center', gap: '7px' }}>
+          <span style={{ ...SECTION_LABEL, marginBottom: 0, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M6.5 19 a4.5 4.5 0 1 1 .36-8.986 A6 6 0 1 1 18.5 12 a4 4 0 0 1-.5 7 Z" />
             </svg>
@@ -350,7 +350,7 @@ export default function ClimatePicker({
           border: '1.5px solid var(--border)', borderTop: 'none',
           borderRadius: '0 0 12px 12px', padding: '12px',
         }}>
-        <div style={{ display: 'flex', gap: '.5rem' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <input
             type="text"
             placeholder={isFr ? 'Ville — ex. Naples, Tokyo, Paris' : 'City — e.g. Naples, Tokyo, Chicago'}
@@ -359,7 +359,7 @@ export default function ClimatePicker({
             onKeyDown={handleKeyDown}
             style={{
               flex: 1,
-              padding: '.65rem .9rem',
+              padding: '12px 16px',
               border: '2px solid var(--border)',
               borderRadius: '8px',
               background: 'var(--warm)',
@@ -373,7 +373,7 @@ export default function ClimatePicker({
             onClick={fetchClimate}
             disabled={loading || !city.trim()}
             style={{
-              padding: '.65rem 1.15rem',
+              padding: '12px 20px',
               border: 'none',
               borderRadius: '12px',
               background: loading || !city.trim() ? 'var(--border)' : 'var(--terra)',
@@ -395,9 +395,9 @@ export default function ClimatePicker({
           onClick={fetchByLocation}
           disabled={loading}
           style={{
-            marginTop: '.6rem',
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            padding: '.45rem .8rem',
+            marginTop: '8px',
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            padding: '8px 12px',
             border: '1.5px solid var(--border)',
             borderRadius: '20px',
             background: 'var(--cream)',
@@ -424,10 +424,10 @@ export default function ClimatePicker({
         {/* Error */}
         {fetchError && (
           <div style={{
-            marginTop: '.6rem',
+            marginTop: '8px',
             fontSize: '12px', color: 'var(--terra)',
             background: '#FEF4EF', border: '1px solid #F5C4B0',
-            borderRadius: '8px', padding: '.5rem .85rem',
+            borderRadius: '8px', padding: '8px 12px',
           }}>
             {fetchError}
           </div>
@@ -436,16 +436,16 @@ export default function ClimatePicker({
         {/* Loading skeleton */}
         {loading && (
           <div style={{
-            marginTop: '.75rem',
+            marginTop: '12px',
             border: '1.5px solid var(--border)',
             borderRadius: '13px',
-            padding: '1.1rem 1.3rem',
+            padding: '16px 20px',
             background: 'var(--warm)',
-            display: 'flex', alignItems: 'center', gap: '1rem',
+            display: 'flex', alignItems: 'center', gap: '16px',
           }}>
             <div style={{ fontSize: '32px', opacity: .3 }}>🌡️</div>
             <div style={{ flex: 1 }}>
-              <div style={{ height: '12px', background: 'var(--border)', borderRadius: '6px', width: '55%', marginBottom: '.5rem' }} />
+              <div style={{ height: '12px', background: 'var(--border)', borderRadius: '6px', width: '55%', marginBottom: '8px' }} />
               <div style={{ height: '10px', background: 'var(--border)', borderRadius: '6px', width: '35%' }} />
             </div>
           </div>
@@ -456,12 +456,12 @@ export default function ClimatePicker({
           const [wxEmoji, wxDesc] = getWMO(weather.weatherCode);
           return (
             <div style={{
-              marginTop: '.75rem',
+              marginTop: '12px',
               border: '1.5px solid var(--border)',
               borderRadius: '13px',
-              padding: '1rem 1.3rem',
+              padding: '16px 20px',
               background: 'var(--warm)',
-              display: 'flex', alignItems: 'center', gap: '1rem',
+              display: 'flex', alignItems: 'center', gap: '16px',
             }}>
               <span style={{ fontSize: '35px', lineHeight: 1 }}>{wxEmoji}</span>
               <div style={{ flex: 1 }}>
@@ -496,7 +496,7 @@ export default function ClimatePicker({
         })()}
         {weather && !loading && (
           <div style={{
-            marginTop: '.45rem',
+            marginTop: '8px',
             fontSize: '12px', color: 'var(--smoke)',
             fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic',
             lineHeight: 1.4,
@@ -512,7 +512,7 @@ export default function ClimatePicker({
 
       {/* ── Humidity ────────────────────────────── */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '.5rem', marginBottom: '.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
           <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Humidité de la cuisine' : 'Kitchen humidity'}</label>
           {(() => {
             const active = HUMIDITY_OPTIONS.find(o => o.value === humidity);
@@ -523,7 +523,7 @@ export default function ClimatePicker({
             ) : null;
           })()}
         </div>
-        <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'nowrap' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap' }}>
           {HUMIDITY_OPTIONS.map(opt => {
             const active = humidity === opt.value;
             return (
@@ -531,7 +531,7 @@ export default function ClimatePicker({
                 key={opt.value}
                 onClick={() => onChange(kitchenTemp, opt.value, fridgeTemp)}
                 style={{
-                  padding: '.35rem .65rem',
+                  padding: '4px 12px',
                   borderRadius: '20px',
                   border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
                   background: active ? '#FEF4EF' : 'var(--warm)',
@@ -554,7 +554,7 @@ export default function ClimatePicker({
       {/* ── Fridge temperature (advanced only) ────── */}
       {mode === 'custom' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
             <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Température du frigo' : 'Fridge temperature'}</label>
             <span style={{
               fontFamily: 'var(--font-dm-mono)',
@@ -579,7 +579,7 @@ export default function ClimatePicker({
           <div style={{
             display: 'flex', justifyContent: 'space-between',
             fontSize: '11px', color: 'var(--smoke)',
-            fontFamily: 'var(--font-dm-mono)', marginTop: '.25rem',
+            fontFamily: 'var(--font-dm-mono)', marginTop: '4px',
           }}>
             <span>{tempC(1, u)}</span>
             <span>{tempC(6, u)} standard</span>
@@ -589,10 +589,10 @@ export default function ClimatePicker({
 
           {fridgeTemp > 8 && (
             <div style={{
-              marginTop: '.6rem',
+              marginTop: '8px',
               fontSize: '12px', color: '#5A7090',
               background: '#EEF2FA', border: '1px solid #C4CDE0',
-              borderRadius: '8px', padding: '.45rem .8rem',
+              borderRadius: '8px', padding: '8px 12px',
             }}>
               {isFr ? <>Un frigo à <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> est plus chaud que le standard {tempC(6, u)} — la levure restera plus active pendant le froid.</> : <>Fridge at <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> is warmer than the standard {tempC(6, u)} — yeast will be more active during cold retard.</>}
             </div>

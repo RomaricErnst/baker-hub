@@ -339,11 +339,11 @@ function CoachButton({
               onClick={() => { if (imageBase64) { handleImageBase64(imageBase64); } else { fileInputRef.current?.click(); } }}
               disabled={loading}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
                 background: 'rgba(43, 36, 32,0.82)',
                 backdropFilter: 'blur(4px)',
                 border: '1px solid rgba(240, 235, 224,0.22)',
-                borderRadius: '20px', padding: '8px 18px',
+                borderRadius: '20px', padding: '8px 20px',
                 cursor: loading ? 'default' : 'pointer',
                 opacity: loading ? 0.7 : 1,
               }}
@@ -364,7 +364,7 @@ function CoachButton({
           </div>
         )}
         {feedback && (
-          <div style={{ background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '10px', padding: '12px 14px', margin: '0 16px 10px', position: 'relative' }}>
+          <div style={{ background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '10px', padding: '12px 16px', margin: '0 16px 10px', position: 'relative' }}>
             <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>{feedback}</div>
             <button onClick={() => { setFeedback(null); setError(false); }}
               style={{ position: 'absolute', bottom: '8px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: 0 }}>
@@ -383,7 +383,7 @@ function CoachButton({
   }
 
   return (
-    <div style={{ marginTop: '14px', marginBottom: '4px' }}>
+    <div style={{ marginTop: '16px', marginBottom: '4px' }}>
       <input type="file" accept="image/jpeg,image/png,image/webp"
         style={{ display: 'none' }} ref={fileInputRef} onChange={handleFile} />
 
@@ -399,7 +399,7 @@ function CoachButton({
       )}
 
       {feedback && (
-        <div style={{ background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '10px', padding: '12px 14px', marginBottom: '10px', position: 'relative' }}>
+        <div style={{ background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '10px', padding: '12px 16px', marginBottom: '12px', position: 'relative' }}>
           <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>{feedback}</div>
           <button onClick={() => { setFeedback(null); setError(false); }}
             style={{ position: 'absolute', bottom: '8px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: 0 }}>
@@ -415,7 +415,7 @@ function CoachButton({
       {!feedback && (
         <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
           <button onClick={() => { if (imageBase64) { handleImageBase64(imageBase64); } else { fileInputRef.current?.click(); } }} disabled={loading}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#2B2420', border: '1px solid rgba(240, 235, 224,0.15)', borderRadius: '20px', padding: '4px 12px', cursor: loading ? 'default' : 'pointer', height: '28px', opacity: loading ? 0.7 : 1 }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#2B2420', border: '1px solid rgba(240, 235, 224,0.15)', borderRadius: '20px', padding: '4px 12px', cursor: loading ? 'default' : 'pointer', height: '28px', opacity: loading ? 0.7 : 1 }}>
             {loading ? (
               <span style={{ display: 'inline-block', width: '12px', height: '12px', border: '1.5px solid rgba(240, 235, 224,0.3)', borderTop: '1.5px solid #F0EBE0', borderRadius: '50%', animation: 'bh-spin 0.7s linear infinite', flexShrink: 0 }} />
             ) : (
@@ -613,7 +613,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
             <div style={{
               fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
               color: totalDone >= totalOrdered ? '#6B7A5A' : 'var(--smoke)',
-              marginBottom: '6px',
+              marginBottom: '8px',
             }}>
               {totalDone >= totalOrdered
                 ? (l === 'fr' ? 'Toutes les pizzas cuites !' : 'All pizzas baked!')
@@ -635,7 +635,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
               <button
                 onClick={onShare}
                 style={{
-                  marginTop: '10px', padding: '15px 18px', minHeight: '44px',
+                  marginTop: '12px', padding: '16px 20px', minHeight: '44px',
                   background: 'transparent',
                   border: '1px solid rgba(156, 130, 72,0.5)',
                   color: '#9C8248',
@@ -840,7 +840,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
               {assemblyNote && (
                 <div style={{
                   margin: '12px 16px',
-                  padding: '10px 12px',
+                  padding: '12px 12px',
                   background: 'rgba(107, 68, 35,0.06)',
                   border: '1px solid rgba(107, 68, 35,0.2)',
                   borderRadius: '10px',
@@ -863,7 +863,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   {beforeIngredients.map((ing, i) => (
                     <div key={ing.id} style={{
                       display: 'flex', flexDirection: 'column',
-                      padding: '10px 16px',
+                      padding: '12px 16px',
                       borderBottom: i < beforeIngredients.length - 1
                         ? '1px solid var(--border)' : undefined,
                       gap: '2px',
@@ -945,7 +945,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   {afterIngredients.map((ing, i) => (
                     <div key={ing.id} style={{
                       display: 'flex', flexDirection: 'column',
-                      padding: '10px 16px',
+                      padding: '12px 16px',
                       borderBottom: i < afterIngredients.length - 1
                         ? '1px solid var(--border)' : undefined,
                       gap: '2px',
@@ -991,7 +991,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
               )}
 
               {/* Technique chips — same language as the Guide's step extras */}
-              <div style={{ padding: '14px 16px 4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div style={{ padding: '16px 16px 4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {([
                   ['tips', l === 'fr' ? '💡 Conseils' : '💡 Tips & tricks'],
                   ['faq', 'FAQ'],
@@ -1003,7 +1003,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     style={{
                       border: '1px solid var(--border)', borderRadius: '20px',
                       background: 'var(--cream)', cursor: 'pointer',
-                      padding: '7px 13px', fontFamily: 'var(--font-dm-mono)',
+                      padding: '8px 12px', fontFamily: 'var(--font-dm-mono)',
                       fontSize: '11px', color: 'var(--ash)', whiteSpace: 'nowrap',
                     }}
                   >
@@ -1055,7 +1055,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                               border: techTab === key ? '1.5px solid var(--terra)' : '1px solid var(--border)',
                               borderRadius: '20px',
                               background: techTab === key ? 'rgba(107, 68, 35,0.07)' : 'transparent',
-                              cursor: 'pointer', padding: '7px 13px',
+                              cursor: 'pointer', padding: '8px 12px',
                               fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                               color: techTab === key ? 'var(--terra)' : 'var(--ash)',
                               whiteSpace: 'nowrap',
@@ -1102,7 +1102,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                         },
                       ] as const).map(({ key, fr: frKey, body }) => (
                         <div key={key} style={{ padding: '16px 16px 0' }}>
-                          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '6px' }}>
+                          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '8px' }}>
                             {l === 'fr' ? frKey : key}
                           </div>
                           <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: 'var(--ash)', lineHeight: 1.6 }}>
@@ -1122,8 +1122,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                             <button
                               onClick={() => setOpenFaq(openFaq === i ? null : i)}
                               style={{
-                                width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px',
-                                background: 'none', border: 'none', cursor: 'pointer', padding: '9px 0', textAlign: 'left',
+                                width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
+                                background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0', textAlign: 'left',
                               }}
                             >
                               <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', fontWeight: 500, color: 'var(--char)' }}>
@@ -1227,7 +1227,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       width: 'calc(100% - 32px)', margin: '10px 16px 0',
-                      padding: '13px 16px',
+                      padding: '12px 16px',
                       background: 'rgba(107,122,90,0.10)',
                       border: '1px solid rgba(107,122,90,0.4)',
                       borderRadius: '12px', cursor: 'pointer',
@@ -1246,7 +1246,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       width: 'calc(100% - 32px)', margin: '10px 16px 0',
-                      padding: '12px 16px', gap: '10px',
+                      padding: '12px 16px', gap: '12px',
                       background: 'rgba(107,122,90,0.10)',
                       border: '1px solid rgba(107,122,90,0.4)',
                       borderRadius: '12px', cursor: 'pointer',
@@ -1267,7 +1267,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   </button>
                 )}
               <div style={{
-                padding: '10px 16px 0',
+                padding: '12px 16px 0',
                 display: 'flex', gap: 10, alignItems: 'center',
               }}>
                 {/* Hidden photo input */}
@@ -1338,7 +1338,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     <div style={{
                       fontWeight: 700, fontSize: '15px',
                       color: baked > qty ? '#9C8248' : isComplete ? '#6B7A5A' : 'var(--char)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
                       transition: 'color 0.2s ease',
                     }}>
                       {baked > qty ? baked : `${baked} / ${qty}`}
@@ -1405,7 +1405,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
               {!user && photos[sheetPizzaId] && (
                 <div style={{
                   margin: '4px 16px 12px',
-                  padding: '10px 14px',
+                  padding: '12px 16px',
                   background: 'rgba(43, 36, 32,0.04)',
                   border: '1px solid var(--border)',
                   borderRadius: '10px',

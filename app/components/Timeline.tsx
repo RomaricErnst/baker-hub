@@ -480,7 +480,7 @@ export default function Timeline({
       {/* ── Header ─────────────────────────────── */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: '1.25rem',
+        marginBottom: '20px',
       }}>
         <div>
           <div style={{
@@ -497,7 +497,7 @@ export default function Timeline({
               express plan with no hint that it trades flavour for speed */}
           {(eatTime.getTime() - startTime.getTime()) / 3600000 <= 8 && (
             <div style={{
-              marginTop: '.7rem', padding: '10px 14px',
+              marginTop: '12px', padding: '12px 16px',
               background: '#FDFBF2', border: '1px solid #E8D890',
               borderRadius: '10px', fontSize: '12px', color: '#7A5A10',
               lineHeight: 1.55,
@@ -514,9 +514,9 @@ export default function Timeline({
 
       {/* ── Phase summary ──────────────────────── */}
       <div style={{
-        display: 'flex', gap: '.5rem',
-        overflowX: 'auto', paddingBottom: '.35rem',
-        marginBottom: '1.75rem',
+        display: 'flex', gap: '8px',
+        overflowX: 'auto', paddingBottom: '4px',
+        marginBottom: '32px',
         msOverflowStyle: 'none',
       }}>
         {phases.map((phase, i) => {
@@ -525,7 +525,7 @@ export default function Timeline({
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0 }}>
               <div style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
-                padding: '.55rem .85rem',
+                padding: '8px 12px',
                 border: `1.5px solid ${th.cardBorder ?? th.line}`,
                 borderRadius: '12px',
                 background: th.cardBg ?? 'var(--warm)',
@@ -536,13 +536,13 @@ export default function Timeline({
                   color: 'var(--char)' }}>
                   <StepIcon iconKey={phase.iconKey} size={20} />
                 </span>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--char)', textAlign: 'center', marginBottom: '.3rem', lineHeight: 1.3 }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--char)', textAlign: 'center', marginBottom: '4px', lineHeight: 1.3 }}>
                   {phase.label}
                 </span>
                 <span style={{
                   fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                   background: th.pill, color: th.pillText,
-                  borderRadius: '10px', padding: '.15rem .5rem',
+                  borderRadius: '10px', padding: '.15rem 8px',
                 }}>
                   {hoursLabel(phase.durationH)}
                 </span>
@@ -570,7 +570,7 @@ export default function Timeline({
           const isLast = item.id === lastStepId;
 
           return (
-            <div key={item.id} style={{ display: 'flex', gap: '1rem', alignItems: 'stretch' }}>
+            <div key={item.id} style={{ display: 'flex', gap: '16px', alignItems: 'stretch' }}>
 
               {/* Time column */}
               <div style={{
@@ -613,12 +613,12 @@ export default function Timeline({
                 {/* Label row */}
                 <div style={{
                   display: 'flex', justifyContent: 'space-between',
-                  alignItems: 'center', gap: '.5rem',
-                  marginBottom: '.3rem',
+                  alignItems: 'center', gap: '8px',
+                  marginBottom: '4px',
                 }}>
                   <div style={{
                     fontWeight: 600, fontSize: '14px', color: 'var(--char)',
-                    display: 'flex', alignItems: 'center', gap: '.4rem',
+                    display: 'flex', alignItems: 'center', gap: '8px',
                   }}>
                     <span style={{ width: '18px', height: '18px', flexShrink: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -638,7 +638,7 @@ export default function Timeline({
                       background: th.pill,
                       color: th.pillText,
                       borderRadius: '10px',
-                      padding: '.18rem .55rem',
+                      padding: '.18rem 8px',
                       flexShrink: 0,
                     }}>
                       {hoursLabel(item.durationH)}
@@ -655,7 +655,7 @@ export default function Timeline({
                     prefYeastGrams > 0 ? `${prefYeastGrams.toFixed(1)}g yeast` : null,
                   ].filter(Boolean).join(' · ');
                   return (
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)', marginBottom: '.4rem' }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)', marginBottom: '8px' }}>
                       {parts}
                     </div>
                   );
@@ -685,8 +685,8 @@ export default function Timeline({
                 {/* Step sub-label */}
                 {(item.stepKind === 'cold' || item.stepKind === 'bulk_ferm' || item.stepKind === 'final_proof' || item.stepKind === 'rest_rt' || item.stepKind === 'rt_warmup') && th.cardBg && (
                   <div style={{
-                    marginTop: '.5rem',
-                    display: 'flex', gap: '.4rem', alignItems: 'center',
+                    marginTop: '8px',
+                    display: 'flex', gap: '8px', alignItems: 'center',
                     fontSize: '11px',
                     color: th.pillText,
                     fontFamily: 'var(--font-dm-mono)',

@@ -12,7 +12,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           padding: '24px', textAlign: 'center', fontFamily: 'system-ui, sans-serif',
         }}>
           <div style={{ maxWidth: 420 }}>
-            <div style={{ fontSize: '40px', marginBottom: '0.75rem' }}>🍞</div>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🍞</div>
             <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#2B2420', margin: '0 0 0.5rem' }}>
               Something didn&rsquo;t rise as planned
             </h1>
@@ -22,7 +22,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             <button
               onClick={reset}
               style={{
-                padding: '0.8rem 1.5rem', border: 'none', borderRadius: '12px',
+                padding: '12px 24px', border: 'none', borderRadius: '12px',
                 background: '#6B4423', color: '#fff', fontSize: '15px',
                 fontWeight: 600, cursor: 'pointer',
               }}

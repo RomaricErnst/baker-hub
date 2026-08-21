@@ -38,7 +38,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   if (confirmDelete) {
     return (
       <div style={{
-        padding: '9px 12px', borderRadius: '10px',
+        padding: '8px 12px', borderRadius: '10px',
         background: 'rgba(107, 68, 35,0.15)',
         border: '1px solid rgba(107, 68, 35,0.4)',
       }}>
@@ -48,11 +48,11 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
         }}>
           Delete <strong>{name || 'this recipe'}</strong>?
         </div>
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => { onDelete?.(r.id); setConfirmDelete(false); }}
             style={{
-              flex: 1, padding: '.3rem', borderRadius: '6px',
+              flex: 1, padding: '4px', borderRadius: '6px',
               background: 'var(--terra)', border: 'none',
               color: '#fff', fontSize: '12px', cursor: 'pointer',
               fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
@@ -60,7 +60,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
           <button
             onClick={() => setConfirmDelete(false)}
             style={{
-              flex: 1, padding: '.3rem', borderRadius: '6px',
+              flex: 1, padding: '4px', borderRadius: '6px',
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.15)',
               color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer',
@@ -79,7 +79,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
         border: '1px solid rgba(255,255,255,0.2)',
         overflow: 'hidden',
       }}>
-        <div style={{ padding: '8px 12px 6px' }}>
+        <div style={{ padding: '8px 12px 8px' }}>
           <div style={{
             fontSize: '11px', color: 'rgba(255,255,255,0.38)',
             fontFamily: 'var(--font-dm-mono)',
@@ -89,7 +89,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
             fontFamily: 'var(--font-dm-mono)', marginTop: '1px',
           }}>{sub.line2}</div>
         </div>
-        <div style={{ padding: '0 12px 10px' }}>
+        <div style={{ padding: '0 12px 12px' }}>
           <input
             autoFocus
             type="text"
@@ -100,10 +100,10 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
               display: 'block', width: '100%', boxSizing: 'border-box',
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '5px', padding: '5px 8px',
+              borderRadius: '5px', padding: '4px 8px',
               color: 'var(--cream)', fontSize: '12px',
               fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-              outline: 'none', marginBottom: '6px',
+              outline: 'none', marginBottom: '8px',
             }}
           />
           <textarea
@@ -115,18 +115,18 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
               display: 'block', width: '100%', boxSizing: 'border-box',
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '5px', padding: '5px 8px',
+              borderRadius: '5px', padding: '4px 8px',
               color: 'rgba(255,255,255,0.7)', fontSize: '12px',
               fontFamily: 'var(--font-dm-sans)',
               outline: 'none', resize: 'none', lineHeight: 1.5,
               marginBottom: '8px',
             }}
           />
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button
               onClick={saveAll}
               style={{
-                flex: 1, padding: '.35rem', borderRadius: '6px',
+                flex: 1, padding: '4px', borderRadius: '6px',
                 background: 'var(--terra)', border: 'none',
                 color: '#fff', fontSize: '12px', cursor: 'pointer',
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
@@ -134,7 +134,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
             <button
               onClick={() => { setEditing(false); setName(r.recipe_name ?? ''); setNotes(r.notes ?? ''); }}
               style={{
-                flex: 1, padding: '.35rem', borderRadius: '6px',
+                flex: 1, padding: '4px', borderRadius: '6px',
                 background: 'rgba(255,255,255,0.08)',
                 border: '1px solid rgba(255,255,255,0.15)',
                 color: 'rgba(255,255,255,0.6)', fontSize: '12px', cursor: 'pointer',
@@ -155,7 +155,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
     }}>
       <div
         onClick={() => setEditing(true)}
-        style={{ padding: '9px 12px 8px', cursor: 'pointer' }}
+        style={{ padding: '8px 12px 8px', cursor: 'pointer' }}
       >
         <div style={{
           fontSize: '11px', color: 'rgba(255,255,255,0.38)',
@@ -168,7 +168,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{sub.line2}</div>
         <div style={{
-          marginTop: '5px',
+          marginTop: '4px',
           fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
           fontWeight: name ? 600 : 400,
           color: name ? 'var(--cream)' : 'rgba(255,255,255,0.22)',
@@ -191,7 +191,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
         <button
           onClick={() => setEditing(true)}
           style={{
-            flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
+            flex: 1, padding: '4px 0', background: 'none', border: 'none',
             borderRight: '1px solid rgba(255,255,255,0.06)',
             color: 'rgba(255,255,255,0.5)', fontSize: '11px',
             fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
@@ -199,7 +199,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
         <button
           onClick={() => setConfirmDelete(true)}
           style={{
-            flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
+            flex: 1, padding: '4px 0', background: 'none', border: 'none',
             borderRight: '1px solid rgba(255,255,255,0.06)',
             color: 'rgba(255,255,255,0.5)', fontSize: '11px',
             fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
@@ -207,7 +207,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
         <button
           onClick={() => onLoad?.(r)}
           style={{
-            flex: 1, padding: '.32rem 0', background: 'none', border: 'none',
+            flex: 1, padding: '4px 0', background: 'none', border: 'none',
             color: '#E8785A', fontSize: '11px',
             fontFamily: 'var(--font-dm-sans)', fontWeight: 600, cursor: 'pointer',
           }}>Resume</button>
@@ -390,13 +390,13 @@ export default function Header({
     <>
     <header style={{
       background: 'var(--char)', color: 'var(--cream)',
-      padding: '0 1.5rem', display: 'flex', alignItems: 'center',
+      padding: '0 24px', display: 'flex', alignItems: 'center',
       justifyContent: 'space-between', height: '68px',
       position: 'sticky', top: 0, zIndex: 100,
       
     }}>
       {/* Left: menu button + logo + tagline */}
-      <div ref={menuRef} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div ref={menuRef} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button
           onClick={() => setMenuOpen(v => !v)}
           aria-label="Menu"
@@ -404,8 +404,8 @@ export default function Header({
             background: menuOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
             border: 'none',
             borderRadius: '8px', cursor: 'pointer',
-            padding: '10px 8px', display: 'flex', flexDirection: 'column',
-            gap: '5px', alignItems: 'center', justifyContent: 'center',
+            padding: '12px 8px', display: 'flex', flexDirection: 'column',
+            gap: '4px', alignItems: 'center', justifyContent: 'center',
           }}
         >
           {[0,1,2].map(i => (
@@ -433,8 +433,8 @@ export default function Header({
         <a
           href={backHref}
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: '7px',
-            padding: '7px 13px',
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            padding: '8px 12px',
             border: '1px solid rgba(240, 235, 224,0.25)',
             borderRadius: '20px',
             color: 'var(--cream)',
@@ -476,7 +476,7 @@ export default function Header({
                 onClick={() => onSaveSession?.()}
                 style={{
                   background: 'none', border: 'none',
-                  padding: '4px 10px',
+                  padding: '4px 12px',
                   fontFamily: 'var(--font-dm-mono)',
                   fontSize: '11px',
                   color: sessionSaved ? 'var(--sage)' : 'var(--terra-on-dark)',
@@ -507,7 +507,7 @@ export default function Header({
             }}
             style={{
               background: 'none', border: 'none',
-              padding: '4px 10px',
+              padding: '4px 12px',
               fontFamily: 'var(--font-dm-mono)',
               fontSize: '11px',
               color: hasWork ? 'var(--smoke)' : 'var(--cream)',
@@ -570,7 +570,7 @@ export default function Header({
             padding: '16px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)',
             flexShrink: 0,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <img src="/logo-mark.webp" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }}/>
               <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--cream)' }}>
                 Baker Hub
@@ -598,7 +598,7 @@ export default function Header({
                 background: 'rgba(255,255,255,0.05)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '10px',
-                padding: '10px 12px',
+                padding: '12px 12px',
               }}>
                 {sessionSummary && (
                   <div style={{
@@ -633,7 +633,7 @@ export default function Header({
                       border: '1px solid rgba(200, 138, 82,0.4)',
                       borderRadius: '6px',
                       background: 'rgba(200, 138, 82,0.1)',
-                      padding: '3px 10px',
+                      padding: '3px 12px',
                       cursor: 'pointer',
                     }}
                   >
@@ -692,17 +692,17 @@ export default function Header({
             },
           ] as const).map((row, idx) => (
             <div key={row.label} style={{
-              padding: '10px 16px',
+              padding: '12px 16px',
               borderTop: idx === 0 ? '1px solid rgba(255,255,255,0.08)' : undefined,
               borderBottom: '1px solid rgba(255,255,255,0.08)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               flexShrink: 0,
             }}>
               <span style={monoLabel}>{row.label}</span>
-              <div style={{ display: 'flex', gap: '.25rem' }}>
+              <div style={{ display: 'flex', gap: '4px' }}>
                 {row.options.map(opt => (
                   <button key={opt.key} onClick={opt.onSelect} style={{
-                    minWidth: '48px', padding: '.22rem .4rem', borderRadius: '5px',
+                    minWidth: '48px', padding: '.22rem 8px', borderRadius: '5px',
                     border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)',
                     fontSize: '12px', fontWeight: 600, textAlign: 'center',
                     background: opt.active ? 'var(--terra)' : 'transparent',
@@ -715,7 +715,7 @@ export default function Header({
 
           {/* ── My Sessions label — always visible ── */}
           <div style={{
-            padding: '10px 16px 6px',
+            padding: '12px 16px 8px',
             borderTop: '1px solid rgba(255,255,255,0.08)',
             flexShrink: 0,
           }}>
@@ -776,7 +776,7 @@ export default function Header({
                       </button>
                       <div
                         onClick={() => { setViewingEvent(event); setMenuOpen(false); }}
-                        style={{ padding: '12px 12px 10px', cursor: 'pointer' }}
+                        style={{ padding: '12px 12px 12px', cursor: 'pointer' }}
                       >
                         <div style={{
                           fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
@@ -804,7 +804,7 @@ export default function Header({
               }).join(' · ')}
                           </div>
                         )}
-                        <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
                           <span style={{
                             fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                             padding: '2px 8px', borderRadius: '20px',
@@ -834,7 +834,7 @@ export default function Header({
                               }}
                               style={{
                                 fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-                                padding: '2px 9px', borderRadius: '20px',
+                                padding: '2px 8px', borderRadius: '20px',
                                 background: 'rgba(255,255,255,0.08)',
                                 border: '1px solid rgba(255,255,255,0.15)',
                                 color: 'var(--cream)', cursor: 'pointer',
@@ -937,26 +937,26 @@ export default function Header({
               </div>
             )}
             {user ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                 <span style={{
                   fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
                 }}>{user.email}</span>
                 <button onClick={signOut} style={{
-                  padding: '.3rem .65rem', borderRadius: '7px', flexShrink: 0,
+                  padding: '4px 12px', borderRadius: '7px', flexShrink: 0,
                   border: '1.5px solid rgba(255,255,255,0.15)', background: 'transparent',
                   color: 'var(--smoke)', fontSize: '11px', cursor: 'pointer',
                   fontFamily: 'var(--font-dm-sans)',
                 }}>Sign out</button>
               </div>
             ) : emailSent ? (
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', textAlign: 'center', padding: '.25rem 0' }}>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', textAlign: 'center', padding: '4px 0' }}>
                 Check your inbox — link sent
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <button onClick={signInWithGoogle} style={{
-                  width: '100%', padding: '.5rem', borderRadius: '8px',
+                  width: '100%', padding: '8px', borderRadius: '8px',
                   border: '1.5px solid rgba(255,255,255,0.15)',
                   background: 'rgba(255,255,255,0.06)', color: 'var(--cream)',
                   fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
@@ -968,20 +968,20 @@ export default function Header({
                   <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
                 </div>
                 {showEmailForm ? (
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
                     <input
                       type="email" placeholder="your@email.com"
                       value={emailInput} onChange={e => setEmailInput(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && signInWithEmail()}
                       style={{
-                        flex: 1, padding: '.45rem .6rem', borderRadius: '7px',
+                        flex: 1, padding: '8px 8px', borderRadius: '7px',
                         border: '1px solid rgba(255,255,255,0.18)',
                         background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
                         fontSize: '12px', fontFamily: 'var(--font-dm-sans)', outline: 'none',
                       }}
                     />
                     <button onClick={signInWithEmail} style={{
-                      padding: '.45rem .7rem', borderRadius: '7px', flexShrink: 0,
+                      padding: '8px 12px', borderRadius: '7px', flexShrink: 0,
                       background: 'var(--terra)', border: 'none',
                       color: '#fff', fontSize: '12px', cursor: 'pointer',
                       fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
@@ -989,7 +989,7 @@ export default function Header({
                   </div>
                 ) : (
                   <button onClick={() => setShowEmailForm(true)} style={{
-                    width: '100%', padding: '.5rem', borderRadius: '8px',
+                    width: '100%', padding: '8px', borderRadius: '8px',
                     border: '1.5px solid rgba(255,255,255,0.15)',
                     background: 'transparent', color: 'rgba(255,255,255,0.55)',
                     fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',

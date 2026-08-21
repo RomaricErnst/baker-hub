@@ -345,14 +345,14 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       <button
         onClick={() => { setScanOpen(s => !s); }}
         style={{
-          width: '100%', padding: '11px 14px',
+          width: '100%', padding: '12px 16px',
           borderRadius: '10px', border: '1.5px solid #E8E0D5',
           background: '#FDFBF7', display: 'flex',
           alignItems: 'center', justifyContent: 'space-between',
           cursor: 'pointer', marginBottom: '16px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <svg width="20" height="20" viewBox="0 0 32 32" fill="none" stroke="var(--terra)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M4 10 V6 a2 2 0 0 1 2-2 h4" /><path d="M22 4 h4 a2 2 0 0 1 2 2 v4" />
             <path d="M28 22 v4 a2 2 0 0 1-2 2 h-4" /><path d="M10 28 H6 a2 2 0 0 1-2-2 v-4" />
@@ -382,7 +382,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       {/* ── Selected flour — hero card (rendering only; same state) ── */}
       {blend.brandProduct && (
         <div style={{ background:'#FDFBF7', border:'1.5px solid var(--bread)',
-          borderRadius:'14px', padding:'12px 14px', marginBottom:'12px' }}>
+          borderRadius:'14px', padding: '12px 16px', marginBottom:'12px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'8px' }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily:'var(--font-dm-mono)', fontSize: '11px', letterSpacing:'.1em', color:'var(--bread)', marginBottom:'3px' }}>
@@ -399,8 +399,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               {locale === 'fr' ? 'Changer' : 'Change'}
             </button>
           </div>
-          <div style={{ display:'flex', gap:'6px', marginTop:'8px', flexWrap:'wrap' }}>
-            <span style={{ fontFamily:'var(--font-dm-mono)', fontSize: '11px', padding:'3px 9px',
+          <div style={{ display:'flex', gap: '8px', marginTop:'8px', flexWrap:'wrap' }}>
+            <span style={{ fontFamily:'var(--font-dm-mono)', fontSize: '11px', padding: '3px 8px',
               borderRadius:'20px', background:'rgba(139,105,20,0.1)', color:'var(--bread)' }}>
               W{blend.wOverride ?? '—'}
             </span>
@@ -409,7 +409,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       )}
 
       {/* ── Divider ────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
         <div style={{ flex: 1, height: '1px', background: '#E8E0D5' }} />
         <span style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap', letterSpacing: '.04em' }}>or search 285 flours</span>
         <div style={{ flex: 1, height: '1px', background: '#E8E0D5' }} />
@@ -419,7 +419,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       <div style={{ marginBottom: '4px' }}>
 
         {/* search content starts — was inside openSection === 'search' */}
-        <div style={{ paddingBottom: '14px' }}>
+        <div style={{ paddingBottom: '16px' }}>
 
             {/* Search bar + filter chips — single row */}
             <div ref={dropdownRef} style={{ marginBottom: '8px' }}>
@@ -444,7 +444,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   onClick={() => setFiltersOpen(o => !o)}
                   aria-label="Filters"
                   style={{
-                    padding: '7px 10px', borderRadius: '20px',
+                    padding: '8px 12px', borderRadius: '20px',
                     border: 'none', cursor: 'pointer', flexShrink: 0,
                     fontSize: '12px', fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
                     background: (filtersOpen || filterType || filterOrigin || filterManufacturer) ? '#2B2420' : '#F0EBE0',
@@ -465,7 +465,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   <button
                     onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')}
                     style={{
-                      padding: '7px 10px', borderRadius: '20px',
+                      padding: '8px 12px', borderRadius: '20px',
                       border: 'none', cursor: 'pointer',
                       fontSize: '12px', fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
                       background: !!filterType ? '#2B2420' : '#F0EBE0',
@@ -487,7 +487,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         <div
                           key={type}
                           onClick={() => { setFilterType(filterType === type ? null : type); setActiveDropdown(null); }}
-                          style={{ padding: '7px 10px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', color: filterType === type ? '#6B4423' : '#2B2420', fontWeight: filterType === type ? 500 : 400, background: 'transparent' }}
+                          style={{ padding: '8px 12px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', color: filterType === type ? '#6B4423' : '#2B2420', fontWeight: filterType === type ? 500 : 400, background: 'transparent' }}
                           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#F0EBE0'; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                         >
@@ -503,7 +503,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   <button
                     onClick={() => setActiveDropdown(activeDropdown === 'origin' ? null : 'origin')}
                     style={{
-                      padding: '7px 10px', borderRadius: '20px',
+                      padding: '8px 12px', borderRadius: '20px',
                       border: 'none', cursor: 'pointer',
                       fontSize: '12px', fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
                       background: !!filterOrigin ? '#2B2420' : '#F0EBE0',
@@ -525,7 +525,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         <div
                           key={origin}
                           onClick={() => { setFilterOrigin(filterOrigin === origin ? null : origin); setApacCountry(null); setEuropeCountry(null); setAmericasCountry(null); setActiveDropdown(null); }}
-                          style={{ padding: '7px 10px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', color: filterOrigin === origin ? '#6B4423' : '#2B2420', fontWeight: filterOrigin === origin ? 500 : 400, background: 'transparent' }}
+                          style={{ padding: '8px 12px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', color: filterOrigin === origin ? '#6B4423' : '#2B2420', fontWeight: filterOrigin === origin ? 500 : 400, background: 'transparent' }}
                           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#F0EBE0'; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                         >
@@ -541,7 +541,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   <button
                     onClick={() => setActiveDropdown(activeDropdown === 'manufacturer' ? null : 'manufacturer')}
                     style={{
-                      padding: '7px 10px', borderRadius: '20px',
+                      padding: '8px 12px', borderRadius: '20px',
                       border: 'none', cursor: 'pointer',
                       fontSize: '12px', fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
                       background: !!filterManufacturer ? '#2B2420' : '#F0EBE0',
@@ -563,7 +563,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         <div
                           key={mfg}
                           onClick={() => { setFilterManufacturer(filterManufacturer === mfg ? null : mfg); setActiveDropdown(null); }}
-                          style={{ padding: '7px 10px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', color: filterManufacturer === mfg ? '#6B4423' : '#2B2420', fontWeight: filterManufacturer === mfg ? 500 : 400, background: 'transparent' }}
+                          style={{ padding: '8px 12px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', color: filterManufacturer === mfg ? '#6B4423' : '#2B2420', fontWeight: filterManufacturer === mfg ? 500 : 400, background: 'transparent' }}
                           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#F0EBE0'; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                         >
@@ -580,7 +580,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
             {/* APAC country sub-filter pills */}
             {filterOrigin === 'Asia-Pacific' && (
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px', marginBottom: '4px' }}>
                 {APAC_COUNTRIES.map(({ code, flag, name }) => (
                   <button
                     key={code}
@@ -604,7 +604,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
             {/* Europe country sub-filter pills */}
             {filterOrigin === 'Europe' && (
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px', marginBottom: '4px' }}>
                 {EUROPE_COUNTRIES.map(({ code, flag, name }) => (
                   <button
                     key={code}
@@ -628,7 +628,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
             {/* Americas country sub-filter pills */}
             {filterOrigin === 'Americas' && (
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px', marginBottom: '4px' }}>
                 {AMERICAS_COUNTRIES.map(({ code, flag, name }) => (
                   <button
                     key={code}
@@ -652,7 +652,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
             {/* Active filter tags */}
             {(filterType || filterOrigin || filterManufacturer) && (
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '12px' }}>
                 {filterType && (
                   <span style={{ fontSize: '11px', background: '#F0EBE0', borderRadius: '12px', padding: '3px 8px', display: 'inline-flex', gap: '4px', alignItems: 'center', color: '#3D3530' }}>
                     Type: {TYPE_LABELS[filterType] ?? filterType}
@@ -696,7 +696,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   : (isFr ? `Pour le ${styleName}` : `For ${styleName}`);
                 return (
                   <div>
-                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '8px', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
                       {sectionLabel}
                     </div>
                     <div style={{ marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -742,11 +742,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               return (
                 <div>
                   {noFiltersActive ? (
-                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '8px', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
                       {isFr ? 'Coups de cœur' : 'Crowd favourites'}
                     </div>
                   ) : (
-                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '6px', fontFamily: 'var(--font-dm-sans)' }}>
+                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '8px', fontFamily: 'var(--font-dm-sans)' }}>
                       {isFr
                         ? `${displayList.length} farine${displayList.length !== 1 ? 's' : ''} trouvée${displayList.length !== 1 ? 's' : ''}`
                         : `${displayList.length} flour${displayList.length !== 1 ? 's' : ''} found`}
@@ -761,7 +761,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         onClick={() => selectDBEntry(f)}
                         style={{
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          padding: '10px 0', borderBottom: '0.5px solid #E8E0D5',
+                          padding: '12px 0', borderBottom: '0.5px solid #E8E0D5',
                           cursor: 'pointer',
                           background: isSelected ? 'rgba(107, 68, 35,0.04)' : 'transparent',
                         }}
@@ -791,27 +791,27 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             })()}
 
             {/* ── I know my type or W value ── */}
-            <div style={{ marginTop: '12px', borderTop: '1px solid #E8E0D5', paddingTop: '10px' }}>
+            <div style={{ marginTop: '12px', borderTop: '1px solid #E8E0D5', paddingTop: '12px' }}>
               <div
                 onClick={() => { setTypeWOpen(o => !o); if (typeWOpen) setQuickSub(null); }}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontWeight: 500, background: '#F0EBE0', borderRadius: '8px', padding: '8px 10px' }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontWeight: 500, background: '#F0EBE0', borderRadius: '8px', padding: '8px 12px' }}
               >
                 <span>{locale === 'fr' ? 'Votre farine est absente ? Entrez le type ou le W →' : 'Don’t see your flour? Enter type or W →'}</span>
                 <span style={{ fontSize: '11px', color: '#8A7F78' }}>{typeWOpen ? '▾' : '▸'}</span>
               </div>
 
               {typeWOpen && (
-                <div style={{ paddingTop: '10px' }}>
+                <div style={{ paddingTop: '12px' }}>
                   {/* Select by type */}
                   <div
                     onClick={() => setQuickSub(quickSub === 'type' ? null : 'type')}
-                    style={{ padding: '10px 12px', borderRadius: '10px', background: '#F0EBE0', marginBottom: '6px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#2B2420' }}
+                    style={{ padding: '12px 12px', borderRadius: '10px', background: '#F0EBE0', marginBottom: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#2B2420' }}
                   >
                     <span>{locale === 'fr' ? 'Choisir par type' : 'Select by type'}</span>
                     <span style={{ fontSize: '12px', color: '#8A7F78' }}>{quickSub === 'type' ? '▾' : '▸'}</span>
                   </div>
                   {quickSub === 'type' && (
-                    <div style={{ background: '#F0EBE0', borderRadius: '0 0 10px 10px', padding: '4px 0 6px', marginBottom: '6px' }}>
+                    <div style={{ background: '#F0EBE0', borderRadius: '0 0 10px 10px', padding: '4px 0 8px', marginBottom: '8px' }}>
                       {QUICK_TYPES.map(t => {
                         const isSelected = blend.brandProduct === t.label;
                         return (
@@ -841,7 +841,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   <div style={{ textAlign: 'center', fontSize: '11px', color: '#8A7F78', padding: '2px 0', fontFamily: 'var(--font-dm-sans)' }}>or</div>
 
                   {/* I know my W value */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', background: '#F0EBE0', marginTop: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 12px', borderRadius: '10px', background: '#F0EBE0', marginTop: '8px' }}>
                     <span style={{ fontSize: '13px', color: '#3D3530', fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>{locale === 'fr' ? 'Je connais mon W' : 'I know my W value'}</span>
                     <input
                       type="number"
@@ -900,7 +900,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             }}
             style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '12px 14px', cursor: 'pointer',
+              padding: '12px 16px', cursor: 'pointer',
               fontFamily: 'var(--font-dm-sans)', fontSize: '13px', fontWeight: 500,
               color: '#3D3530',
               borderBottom: openSection === 'blend' ? '1px solid #E8E0D5' : 'none',
@@ -912,14 +912,14 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               <span style={{
                 fontSize: '11px', fontFamily: 'var(--font-dm-sans)',
                 background: '#EDE8E0', color: '#8A7F78',
-                borderRadius: '20px', padding: '1px 7px',
+                borderRadius: '20px', padding: '1px 8px',
                 border: '1px solid #DDD8D0',
               }}>optional</span>
             </div>
             <span style={{ fontSize: '12px', color: '#8A7F78' }}>{openSection === 'blend' ? '▾' : '›'}</span>
           </div>
           {openSection === 'blend' && (
-            <div style={{ paddingTop: '10px', paddingBottom: '14px', paddingLeft: '14px', paddingRight: '14px', scrollMarginTop: '80px' }}>
+            <div style={{ paddingTop: '12px', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px', scrollMarginTop: '80px' }}>
 
               {/* If flour2 selected: show confirmation + ratio slider —
                   unless the baker is actively picking a third flour, which
@@ -944,7 +944,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   </div>
                   {/* Ratio slider */}
                   <div style={{ marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', marginBottom: '8px' }}>
                       <span>{locale === 'fr' ? 'Farine principale' : 'Main flour'} {blendRatio}%</span>
                       <span>{blendSelectedF2.name} {blendSelectedF3 ? (blend.ratio2 ?? blendRatio2) : 100 - blendRatio}%{blendSelectedF3 ? ` · ${blendSelectedF3.name} ${100 - blendRatio - (blend.ratio2 ?? blendRatio2)}%` : ''}</span>
                     </div>
@@ -959,8 +959,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       style={{ width: '100%' }}
                     />
                     {blendSelectedF3 && (
-                      <div style={{ marginTop: '10px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', marginBottom: '6px' }}>
+                      <div style={{ marginTop: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', marginBottom: '8px' }}>
                           <span>{blendSelectedF2.name} {blend.ratio2 ?? blendRatio2}%</span>
                           <span>{blendSelectedF3.name} {100 - blendRatio - (blend.ratio2 ?? blendRatio2)}%</span>
                         </div>
@@ -976,7 +976,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         />
                         <button
                           onClick={() => { setBlendSelectedF3(null); onBlendChange({ ...blend, flour3: null, ratio2: undefined, w3: undefined, customFlour3Name: undefined }); }}
-                          style={{ marginTop: '6px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: 0 }}
+                          style={{ marginTop: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: 0 }}
                         >
                           {locale === 'fr' ? 'Retirer la 3e farine' : 'Remove third flour'}
                         </button>
@@ -986,7 +986,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       <button
                         onClick={() => { setBlendSlot(3); setBlendShowFullSearch(true); }}
                         style={{
-                          marginTop: '8px', padding: '7px 12px',
+                          marginTop: '8px', padding: '8px 12px',
                           background: 'none', border: '1.5px dashed #C8B898', borderRadius: '10px',
                           cursor: 'pointer', color: '#6B4423', fontSize: '12px',
                           fontFamily: 'var(--font-dm-sans)', width: '100%',
@@ -1007,7 +1007,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 <div>
                   {/* Preset chips — only if styleKey has presets */}
                   {styleKey && BLEND_PRESETS[styleKey] && BLEND_PRESETS[styleKey].length > 0 && (
-                    <div style={{ marginBottom: '14px' }}>
+                    <div style={{ marginBottom: '16px' }}>
                       <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', marginBottom: '8px' }}>
                         Popular with {styleKey.replace('_', ' ')}:
                       </div>
@@ -1029,7 +1029,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                               }
                             }}
                             style={{
-                              padding: '6px 12px', borderRadius: '20px',
+                              padding: '8px 12px', borderRadius: '20px',
                               border: '1.5px solid #E8E0D5', background: '#FDFBF7',
                               fontSize: '13px', color: '#3D3530',
                               fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
@@ -1045,7 +1045,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   {blendSlot === 3 && (
                     <div style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      background: 'var(--cream)', borderRadius: '8px', padding: '7px 10px', marginTop: '4px',
+                      background: 'var(--cream)', borderRadius: '8px', padding: '8px 12px', marginTop: '4px',
                       fontSize: '12px', color: '#3D3530', fontFamily: 'var(--font-dm-sans)',
                     }}>
                       <span>{locale === 'fr' ? 'Choisissez votre 3e farine' : 'Pick your third flour'}</span>
@@ -1076,7 +1076,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         value={blendFilterType ?? ''}
                         onChange={e => setBlendFilterType(e.target.value || null)}
                         style={{
-                          padding: '7px 10px', borderRadius: '20px', border: 'none',
+                          padding: '8px 12px', borderRadius: '20px', border: 'none',
                           background: blendFilterType ? '#2B2420' : '#F0EBE0',
                           color: blendFilterType ? 'white' : '#3D3530',
                           fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
@@ -1092,7 +1092,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         value={blendFilterOrigin ?? ''}
                         onChange={e => { setBlendFilterOrigin(e.target.value || null); setBlendApacCountry(null); setBlendEuropeCountry(null); setBlendAmericasCountry(null); }}
                         style={{
-                          padding: '7px 10px', borderRadius: '20px', border: 'none',
+                          padding: '8px 12px', borderRadius: '20px', border: 'none',
                           background: blendFilterOrigin ? '#2B2420' : '#F0EBE0',
                           color: blendFilterOrigin ? 'white' : '#3D3530',
                           fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
@@ -1108,7 +1108,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         value={blendFilterBrand ?? ''}
                         onChange={e => setBlendFilterBrand(e.target.value || null)}
                         style={{
-                          padding: '7px 10px', borderRadius: '20px', border: 'none',
+                          padding: '8px 12px', borderRadius: '20px', border: 'none',
                           background: blendFilterBrand ? '#2B2420' : '#F0EBE0',
                           color: blendFilterBrand ? 'white' : '#3D3530',
                           fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
@@ -1124,7 +1124,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
                     {/* APAC / Europe / Americas country sub-filter pills for blend */}
                     {(blendFilterOrigin === 'Asia-Pacific' || blendFilterOrigin === 'Europe' || blendFilterOrigin === 'Americas') && (
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px', marginBottom: '4px' }}>
                         {(blendFilterOrigin === 'Asia-Pacific' ? APAC_COUNTRIES :
                           blendFilterOrigin === 'Europe' ? EUROPE_COUNTRIES :
                           AMERICAS_COUNTRIES).map(({ code, flag, name }) => {
@@ -1217,11 +1217,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     })()}
 
                     {/* Type or W fallback — always visible */}
-                    <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '0.5px solid #E8E0D5' }}>
+                    <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '0.5px solid #E8E0D5' }}>
                       <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', marginBottom: '8px' }}>
                         {locale === 'fr' ? 'Ou choisissez un type de farine :' : 'Or pick a flour type:'}
                       </div>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                         {(() => {
                           const presetTypes = new Set((BLEND_PRESETS[styleKey ?? ''] ?? []).map(p => p.type));
                           return ([
@@ -1248,7 +1248,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                               assignBlendFlour(genericEntry, t.type as FlourKey, t.label);
                             }}
                             style={{
-                              padding: '4px 10px', borderRadius: '20px',
+                              padding: '4px 12px', borderRadius: '20px',
                               border: '1px solid #E8E0D5', background: 'transparent',
                               fontSize: '12px', color: '#3D3530',
                               fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
@@ -1260,7 +1260,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         })()
                         }
                         {/* W value input */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)' }}>W</span>
                           <input
                             type="number"

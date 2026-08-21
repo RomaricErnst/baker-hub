@@ -132,7 +132,7 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
           style={{
             border: '2px dashed var(--border)',
             borderRadius: '18px',
-            padding: '2.5rem 1.5rem',
+            padding: '40px 24px',
             background: 'var(--warm)',
             cursor: 'pointer',
             textAlign: 'center',
@@ -141,7 +141,7 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '.75rem',
+            gap: '12px',
           }}
         >
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="var(--terra)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -170,7 +170,7 @@ style={{ display: 'none' }}
         <button
           onClick={onCancel}
           style={{
-            marginTop: '.75rem', background: 'none', border: 'none', cursor: 'pointer',
+            marginTop: '12px', background: 'none', border: 'none', cursor: 'pointer',
             color: 'var(--smoke)', fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
             textDecoration: 'underline', textUnderlineOffset: '2px', padding: '.2rem 0',
           }}
@@ -192,11 +192,11 @@ style={{ display: 'none' }}
             style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '12px' }}
           />
         )}
-        <div style={{ marginTop: '.75rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '.5rem' }}>
+        <div style={{ marginTop: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '8px' }}>
             {isFr ? 'Analyse de votre farine…' : 'Analysing your flour bag...'}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '.3rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '4px' }}>
             {[0, 1, 2].map(i => (
               <span
                 key={i}
@@ -222,7 +222,7 @@ style={{ display: 'none' }}
 
     return (
       <div>
-        <div style={{ display: 'flex', gap: '.75rem', marginBottom: '1rem', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'flex-start' }}>
           {imagePreviewUrl && (
             <img
               src={imagePreviewUrl}
@@ -232,14 +232,14 @@ style={{ display: 'none' }}
           )}
           <div style={{ flex: 1 }}>
             {/* Flour name */}
-            <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--char)', marginBottom: '.4rem', lineHeight: 1.3 }}>
+            <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--char)', marginBottom: '8px', lineHeight: 1.3 }}>
               {extractedResult.name}
             </div>
 
             {/* Status banner */}
             {isDatabase ? (
               <div style={{
-                marginBottom: '.5rem', padding: '.35rem .65rem',
+                marginBottom: '8px', padding: '4px 12px',
                 background: 'rgba(107,122,90,0.1)', border: '1px solid rgba(107,122,90,0.25)',
                 borderRadius: '8px', fontSize: '12px', color: '#4A7A3A', lineHeight: 1.4,
               }}>
@@ -247,7 +247,7 @@ style={{ display: 'none' }}
               </div>
             ) : (
               <div style={{
-                marginBottom: '.5rem', padding: '.35rem .65rem',
+                marginBottom: '8px', padding: '4px 12px',
                 background: '#FDFBF2', border: '1px solid #E8D890',
                 borderRadius: '8px', fontSize: '12px', color: '#6A5A10', lineHeight: 1.4,
               }}>
@@ -259,11 +259,11 @@ style={{ display: 'none' }}
 
             {/* W and protein — tappable when estimated */}
             {!adjusting ? (
-              <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <span style={{
                   fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
                   color: 'var(--terra)', background: '#FEF4EF',
-                  borderRadius: '20px', padding: '.2rem .6rem',
+                  borderRadius: '20px', padding: '.2rem 8px',
                   border: '1px solid rgba(107, 68, 35,0.2)',
                 }}>
                   W {displayW}
@@ -271,7 +271,7 @@ style={{ display: 'none' }}
                 <span style={{
                   fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
                   color: 'var(--sage)', background: 'rgba(107,122,90,0.1)',
-                  borderRadius: '20px', padding: '.2rem .6rem',
+                  borderRadius: '20px', padding: '.2rem 8px',
                   border: '1px solid rgba(107,122,90,0.25)',
                 }}>
                   {displayProtein}% protein
@@ -291,8 +291,8 @@ style={{ display: 'none' }}
                 )}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
-                <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <label style={{ fontSize: '12px', color: 'var(--smoke)', width: '60px', fontFamily: 'var(--font-dm-mono)' }}>
                     W value
                   </label>
@@ -301,7 +301,7 @@ style={{ display: 'none' }}
                     value={adjustedW ?? extractedResult.w}
                     onChange={e => setAdjustedW(Number(e.target.value))}
                     style={{
-                      width: '80px', padding: '.3rem .5rem', borderRadius: '8px',
+                      width: '80px', padding: '4px 8px', borderRadius: '8px',
                       border: '1.5px solid var(--border)', fontFamily: 'var(--font-dm-mono)',
                       fontSize: '13px', color: 'var(--char)', background: 'var(--warm)',
                     }}
@@ -310,7 +310,7 @@ style={{ display: 'none' }}
                     (on bag? usually 180–380)
                   </span>
                 </div>
-                <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <label style={{ fontSize: '12px', color: 'var(--smoke)', width: '60px', fontFamily: 'var(--font-dm-mono)' }}>
                     Protein
                   </label>
@@ -320,7 +320,7 @@ style={{ display: 'none' }}
                     value={adjustedProtein ?? extractedResult.protein}
                     onChange={e => setAdjustedProtein(Number(e.target.value))}
                     style={{
-                      width: '80px', padding: '.3rem .5rem', borderRadius: '8px',
+                      width: '80px', padding: '4px 8px', borderRadius: '8px',
                       border: '1.5px solid var(--border)', fontFamily: 'var(--font-dm-mono)',
                       fontSize: '13px', color: 'var(--char)', background: 'var(--warm)',
                     }}
@@ -332,7 +332,7 @@ style={{ display: 'none' }}
                 <button
                   onClick={() => setAdjusting(false)}
                   style={{
-                    alignSelf: 'flex-start', padding: '.25rem .65rem',
+                    alignSelf: 'flex-start', padding: '4px 12px',
                     background: 'var(--terra)', border: 'none', borderRadius: '8px',
                     color: '#fff', fontSize: '12px', cursor: 'pointer',
                     fontFamily: 'var(--font-dm-sans)',
@@ -345,11 +345,11 @@ style={{ display: 'none' }}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
             onClick={() => onResult({ ...extractedResult, w: displayW, protein: displayProtein })}
             style={{
-              flex: 2, padding: '.75rem 1rem', border: 'none',
+              flex: 2, padding: '12px 16px', border: 'none',
               borderRadius: '12px', background: 'var(--terra)', color: '#fff',
               fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700,
               cursor: 'pointer',
@@ -360,7 +360,7 @@ style={{ display: 'none' }}
           <button
             onClick={reset}
             style={{
-              flex: 1, padding: '.75rem 1rem',
+              flex: 1, padding: '12px 16px',
               border: '1.5px solid var(--border)', borderRadius: '12px',
               background: 'transparent', color: 'var(--smoke)',
               fontSize: '14px', cursor: 'pointer',
@@ -378,21 +378,21 @@ style={{ display: 'none' }}
   return (
     <div style={{
       background: '#FEF4EF', border: '1.5px solid #F5C4B0',
-      borderRadius: '12px', padding: '1.25rem',
+      borderRadius: '12px', padding: '20px',
       textAlign: 'center',
     }}>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--terra)', marginBottom: '.4rem' }}>
+      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--terra)', marginBottom: '8px' }}>
         {scanError === 'service'
           ? (isFr ? 'Scan temporairement indisponible — entrez votre farine manuellement.' : 'Scan temporarily unavailable — enter your flour manually.')
           : (isFr ? 'Lecture du sachet difficile' : 'Couldn\'t read the bag clearly')}
       </div>
-      <div style={{ fontSize: '13px', color: 'var(--smoke)', marginBottom: '1rem', lineHeight: 1.5 }}>
+      <div style={{ fontSize: '13px', color: 'var(--smoke)', marginBottom: '16px', lineHeight: 1.5 }}>
         {isFr ? 'Réessayez avec une photo plus nette, bien éclairée, montrant l’avant du sachet.' : 'Try a clearer photo with good lighting, showing the front of the bag.'}
       </div>
       <button
         onClick={reset}
         style={{
-          padding: '.6rem 1.25rem', border: 'none', borderRadius: '10px',
+          padding: '8px 20px', border: 'none', borderRadius: '10px',
           background: 'var(--terra)', color: '#fff',
           fontSize: '14px', cursor: 'pointer',
           fontFamily: 'var(--font-dm-sans)',

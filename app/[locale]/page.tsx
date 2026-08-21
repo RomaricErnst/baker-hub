@@ -234,8 +234,8 @@ function SummaryChips({ flow, topOffset = 62, raised = false }: { flow: StepFlow
   const shown = flow.steps.filter(s => s.id <= reach);
   return (
     <div style={{
-      display: 'flex', gap: '7px', overflowX: 'auto',
-      padding: '9px 4px 11px', margin: '0 -4px',
+      display: 'flex', gap: '8px', overflowX: 'auto',
+      padding: '8px 4px 12px', margin: '0 -4px',
       scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
       position: 'sticky', top: raised ? '0px' : `${topOffset}px`, transition: 'top 0.25s ease',
       zIndex: 25, background: 'var(--cream)',
@@ -249,8 +249,8 @@ function SummaryChips({ flow, topOffset = 62, raised = false }: { flow: StepFlow
             key={s.id}
             onClick={() => flow.onJump(s.id)}
             style={{
-              flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: '7px',
-              borderRadius: '20px', padding: '9px 13px', minHeight: '38px',
+              flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: '8px',
+              borderRadius: '20px', padding: '8px 12px', minHeight: '38px',
               fontFamily: 'var(--font-dm-mono)', cursor: 'pointer',
               background: answered ? 'var(--warm)' : 'transparent',
               border: `1px solid ${isOn ? 'var(--walnut, #6B4423)' : answered ? 'var(--border)' : '#DDD4C6'}`,
@@ -293,7 +293,7 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
   const gap    = flow.steps.find(s => !stepAnswered(s, flow.highestStep));
 
   const nextStyle: React.CSSProperties = {
-    border: 'none', borderRadius: '12px', padding: '15px 18px',
+    border: 'none', borderRadius: '12px', padding: '16px 20px',
     background: '#6B4423', color: '#fff',
     fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
     cursor: 'pointer', boxShadow: '0 2px 9px rgba(107,68,35,0.22)',
@@ -328,7 +328,7 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
   // Both pages move together — only the incoming one animating reads as a
   // swap rather than a displacement, which is what loses the eye.
   return (
-    <div id={`step-${id}`} key={id} className="bh-step-page" style={{ padding: '18px 2px 4px' }}>
+    <div id={`step-${id}`} key={id} className="bh-step-page" style={{ padding: '20px 2px 4px' }}>
       <div style={{
         fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.14em',
         textTransform: 'uppercase', color: '#9C8248',
@@ -344,12 +344,12 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
 
       <div style={{
         display: 'grid', gridTemplateColumns: idx > 0 ? 'auto 1fr' : '1fr',
-        gap: '10px', padding: '24px 0 30px',
+        gap: '12px', padding: '24px 0 32px',
       }}>
         {idx > 0 && (
           <button onClick={() => flow.onPrev(id)} style={{
             border: '1px solid var(--border)', background: 'transparent', borderRadius: '12px',
-            padding: '15px 18px', fontFamily: 'var(--font-dm-sans)', fontSize: '14px',
+            padding: '16px 20px', fontFamily: 'var(--font-dm-sans)', fontSize: '14px',
             color: 'var(--ash)', cursor: 'pointer',
           }}>{fr ? '← Précédent' : '← Back'}</button>
         )}
@@ -364,7 +364,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase',
-      letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.4rem',
+      letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '8px',
     }}>
       {children}
     </div>
@@ -2032,9 +2032,9 @@ export default function Home() {
                 onClick={() => { setActiveTab(recipeGenerated ? 'plan' : 'setup'); setNavHidden(false); }}
                 style={{
                   flex: 1,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                   textAlign: 'center',
-                  padding: '9px 10px',
+                  padding: '8px 12px',
                   fontSize: '13px',
                   fontWeight: activeTab !== 'pizzaparty' ? 600 : 400,
                   color: activeTab !== 'pizzaparty' ? '#2B2420' : '#C4BBAE',
@@ -2079,9 +2079,9 @@ export default function Home() {
                     onClick={() => { setActiveTab('pizzaparty'); setNavHidden(false); }}
                     style={{
                       flex: 1,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                       textAlign: 'center',
-                      padding: '9px 10px',
+                      padding: '8px 12px',
                       fontSize: '13px',
                       fontWeight: activeTab === 'pizzaparty' ? 600 : 400,
                       color: activeTab === 'pizzaparty' ? '#2B2420' : '#C4BBAE',
@@ -2134,11 +2134,11 @@ export default function Home() {
             background: 'var(--warm)',
             border: '1px solid var(--border)',
             borderRadius: '14px',
-            padding: '12px 14px',
+            padding: '12px 16px',
             margin: '0 0 14px',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
+            gap: '12px',
             flexWrap: 'wrap',
             boxShadow: 'var(--card-shadow, 0 2px 12px rgba(43, 36, 32,0.06))',
           }}>
@@ -2155,7 +2155,7 @@ export default function Home() {
                 background: 'var(--terra)', border: 'none',
                 color: 'white', cursor: 'pointer', fontSize: '13px',
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-                padding: '13px 16px', minHeight: '44px', borderRadius: '8px', whiteSpace: 'nowrap',
+                padding: '12px 16px', minHeight: '44px', borderRadius: '8px', whiteSpace: 'nowrap',
               }}
             >
               {locale === 'fr' ? 'Reprendre →' : 'Resume →'}
@@ -2170,11 +2170,11 @@ export default function Home() {
             background: 'var(--warm)',
             border: '1px solid var(--border)',
             borderRadius: '14px',
-            padding: '12px 14px',
+            padding: '12px 16px',
             margin: '0 0 14px',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
+            gap: '12px',
             flexWrap: 'wrap',
             boxShadow: 'var(--card-shadow, 0 2px 12px rgba(43, 36, 32,0.06))',
           }}>
@@ -2205,7 +2205,7 @@ export default function Home() {
                 background: 'var(--terra)', border: 'none',
                 color: 'white', cursor: 'pointer', fontSize: '13px',
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-                padding: '8px 14px', borderRadius: '8px', whiteSpace: 'nowrap',
+                padding: '8px 16px', borderRadius: '8px', whiteSpace: 'nowrap',
               }}
             >
               {locale === 'fr' ? 'Reprendre →' : 'Resume →'}
@@ -2278,10 +2278,10 @@ export default function Home() {
                 {/* Gradient overlay with text */}
                 <div style={{
                   position: 'absolute', bottom: 0, left: 0, right: 0,
-                  padding: '2rem 1.25rem 1.25rem',
+                  padding: '32px 20px 20px',
                   background: 'linear-gradient(to top, rgba(43, 36, 32,0.82) 0%, rgba(43, 36, 32,0.0) 100%)',
                 }}>
-                  <div style={{ fontWeight: 700, fontSize: '20px', color: 'white', marginBottom: '.3rem', fontFamily: 'var(--font-playfair)' }}>
+                  <div style={{ fontWeight: 700, fontSize: '20px', color: 'white', marginBottom: '4px', fontFamily: 'var(--font-playfair)' }}>
                     {opt.label}
                   </div>
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
@@ -2325,7 +2325,7 @@ export default function Home() {
                         aria-pressed={isActive}
                         onClick={() => chooseMode(m.key)}
                         style={{
-                          flex: 1, textAlign: 'center', padding: '10px 8px', borderRadius: '9px',
+                          flex: 1, textAlign: 'center', padding: '12px 8px', borderRadius: '9px',
                           border: 'none', cursor: 'pointer',
                           fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: '14px',
                           background: isActive ? '#FFFFFF' : 'transparent',
@@ -2347,11 +2347,11 @@ export default function Home() {
                   background: 'var(--cream)',
                   borderLeft: '4px solid var(--gold)',
                   borderRadius: '10px',
-                  padding: '.75rem 1rem',
-                  marginTop: '10px',
+                  padding: '12px 16px',
+                  marginTop: '12px',
                   fontFamily: 'var(--font-dm-sans)',
                 }}>
-                  <div style={{ fontSize: '14px', color: 'var(--ash)', lineHeight: 1.5, marginBottom: '.6rem' }}>
+                  <div style={{ fontSize: '14px', color: 'var(--ash)', lineHeight: 1.5, marginBottom: '8px' }}>
                     {locale === 'fr'
                       ? 'Votre profil est au levain — le levain vit en mode Avancé.'
                       : 'Your profile bakes sourdough — sourdough lives in Custom mode.'}
@@ -2361,7 +2361,7 @@ export default function Home() {
                       onClick={() => chooseMode('custom')}
                       style={{
                         border: 'none', borderRadius: '12px', background: 'var(--terra)',
-                        color: '#fff', padding: '.5rem .9rem', fontSize: '13px', fontWeight: 500,
+                        color: '#fff', padding: '8px 16px', fontSize: '13px', fontWeight: 500,
                         cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
                       }}
                     >
@@ -2371,7 +2371,7 @@ export default function Home() {
                       onClick={() => chooseMode('simple', true)}
                       style={{
                         border: '1.5px solid var(--border)', borderRadius: '12px', background: 'var(--warm)',
-                        color: 'var(--ash)', padding: '.5rem .9rem', fontSize: '13px', fontWeight: 500,
+                        color: 'var(--ash)', padding: '8px 16px', fontSize: '13px', fontWeight: 500,
                         cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
                       }}
                     >
@@ -2451,7 +2451,7 @@ export default function Home() {
           const doneCount = steps.filter(s => s.done).length;
           const fillPct = (doneCount / (steps.length - 1)) * 100;
           return (
-            <div style={{ position: 'relative', padding: '14px 24px 10px' }}>
+            <div style={{ position: 'relative', padding: '16px 24px 12px' }}>
               <div style={{ position: 'absolute', top: '34px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
               </div>
@@ -2575,7 +2575,7 @@ export default function Home() {
           const doneCount = steps.filter(s => s.done).length;
           const fillPct = (doneCount / (steps.length - 1)) * 100;
           return (
-            <div style={{ position: 'relative', padding: '14px 24px 10px' }}>
+            <div style={{ position: 'relative', padding: '16px 24px 12px' }}>
               <div style={{ position: 'absolute', top: '34px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
               </div>
@@ -2634,10 +2634,10 @@ export default function Home() {
 
         {/* ════════════ GUIDED ════════════ */}
         {tab === 'simple' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
             {/* ── Setup tab content ── */}
-            <div style={{ display: activeTab === 'setup' && !!bakeType && modeChosen ? 'flex' : 'none', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: activeTab === 'setup' && !!bakeType && modeChosen ? 'flex' : 'none', flexDirection: 'column', gap: '16px' }}>
 
             {/* ── Review mode banner ── */}
             {reviewMode && (
@@ -2645,7 +2645,7 @@ export default function Home() {
                 background: 'rgba(156, 130, 72,0.1)',
                 border: '1px solid rgba(156, 130, 72,0.2)',
                 borderRadius: '10px',
-                padding: '10px 14px',
+                padding: '12px 16px',
                 fontFamily: 'var(--font-dm-mono)',
                 fontSize: '12px',
                 color: 'var(--gold)',
@@ -2689,12 +2689,12 @@ export default function Home() {
 
                     {/* ── ROW 1: Quantity — centred, large, primary ── */}
                     <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                      <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '10px' }}>
+                      <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '12px' }}>
                         {isBread ? t('quantity.loaves') : t('quantity.howMany')}
                       </div>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '16px' }}>
                         <button onClick={() => setNumItems(n => Math.max(1, n - 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                           <input type="number" min={1} max={24} step={1} value={numItems}
                             onChange={e => setNumItems(Math.max(1, Math.min(24, Math.round(+e.target.value))))}
                             style={{ width: '52px', border: 'none', borderBottom: '2px solid var(--char)', background: 'transparent', fontSize: '32px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
@@ -2706,7 +2706,7 @@ export default function Home() {
 
                     {/* ── ROW 2: Cornicione — compact, secondary ── */}
                     {showDiam && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
                         <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>{t('quantity.corniceLabel')}</span>
                         <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
                           {([
@@ -2718,7 +2718,7 @@ export default function Home() {
                               key={opt.value}
                               onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
                               style={{
-                                flex: 1, padding: '5px 4px', borderRadius: '8px', whiteSpace: 'nowrap',
+                                flex: 1, padding: '4px 4px', borderRadius: '8px', whiteSpace: 'nowrap',
                                 border: pizzaCorn === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
                                 background: pizzaCorn === opt.value ? 'white' : 'transparent',
                                 color: pizzaCorn === opt.value ? '#2B2420' : '#8A7F78',
@@ -2733,12 +2733,12 @@ export default function Home() {
                       </div>
                     )}
                     {/* ── ROW 3: Diameter + Weight — two equal tiles ── */}
-                    <div style={{ display: 'grid', gridTemplateColumns: showDiam ? '1fr 1fr' : '1fr', gap: '10px', marginBottom: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: showDiam ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '20px' }}>
 
                       {/* Diameter tile — stepper replaces slider */}
                       {showDiam && (
-                        <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 10px', overflow: 'hidden' }}>
-                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>◎ {locale === 'fr' ? 'Diamètre' : 'Diameter'}</div>
+                        <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 12px', overflow: 'hidden' }}>
+                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>◎ {locale === 'fr' ? 'Diamètre' : 'Diameter'}</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                             <button onClick={() => { const d = Math.max(22, pizzaDiameter - 1); setPizzaDiameter(d); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                             <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', minWidth: '48px', textAlign: 'center' }}>{pizzaDiameter}<span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--smoke)', marginLeft: '2px' }}>cm</span></span>
@@ -2748,8 +2748,8 @@ export default function Home() {
                       )}
 
                       {/* Weight tile */}
-                      <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 10px', overflow: 'hidden' }}>
-                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>⚖ {isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
+                      <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 12px', overflow: 'hidden' }}>
+                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>⚖ {isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                           <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: itemWeight >= 1000 ? '80px' : '64px', justifyContent: 'center' }}>
@@ -2764,13 +2764,13 @@ export default function Home() {
                     </div>
                     {/* AVPN note */}
                     {isAtMax && (
-                      <div style={{ marginTop: '10px', padding: '7px 10px', background: '#FEF9F0', borderRadius: '8px', border: '0.5px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                      <div style={{ marginTop: '12px', padding: '8px 12px', background: '#FEF9F0', borderRadius: '8px', border: '0.5px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                         <span style={{ fontSize: '11px', color: '#7A5A10', lineHeight: 1.4, flex: 1 }}><strong>{t('avpn.atLimit')}</strong> — {t('avpn.limitDesc')}</span>
-                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem .5rem', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>🤔 {t('avpn.learnMore')}</button>
+                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem 8px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>🤔 {t('avpn.learnMore')}</button>
                       </div>
                     )}
                     {isAtMax && avpnOpen && (
-                      <div style={{ marginTop: '6px', padding: '8px 10px', background: 'var(--cream)', borderRadius: '8px', fontSize: '11px', color: 'var(--ash)', lineHeight: 1.5 }}>
+                      <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--cream)', borderRadius: '8px', fontSize: '11px', color: 'var(--ash)', lineHeight: 1.5 }}>
                         {t('avpn.body')}
                       </div>
                     )}
@@ -2897,7 +2897,7 @@ export default function Home() {
                 <div style={{
                   background: '#F0EBE0',
                   borderRadius: '10px',
-                  padding: '10px 14px',
+                  padding: '12px 16px',
                   marginBottom: '12px',
                   fontSize: '12px',
                   color: '#3D3530',
@@ -2913,7 +2913,7 @@ export default function Home() {
                       background: '#6B4423',
                       color: 'white',
                       fontSize: '12px',
-                      padding: '11px 16px',
+                      padding: '12px 16px',
                       borderRadius: '8px',
                       border: 'none',
                       cursor: 'pointer',
@@ -2937,7 +2937,7 @@ export default function Home() {
 
               {/* Recipe + Timeline */}
               {recipeGenerated && (
-                <div ref={resultsRef} style={{ marginTop: '1rem' }}>
+                <div ref={resultsRef} style={{ marginTop: '16px' }}>
                   {bakeTimeIsPast && sessionRestored ? (
                     <PostBakeLanding
                       styleName={styleDisplayName(styleKey)}
@@ -2961,13 +2961,13 @@ export default function Home() {
                       {!recipe ? (
                         <div style={{
                           background: '#FEF4EF', border: '1.5px solid #F5C4B0',
-                          borderRadius: '12px', padding: '1.25rem', textAlign: 'center',
+                          borderRadius: '12px', padding: '20px', textAlign: 'center',
                           color: 'var(--terra)', fontSize: '14px',
                         }}>
                           {t('results.computeError')}
                         </div>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
 
                           <RecipeOutput
                             ovenType={ovenType}
@@ -3005,9 +3005,9 @@ export default function Home() {
 
               {/* How did it go? card */}
               {!(bakeTimeIsPast && sessionRestored) && eatTime && new Date() > eatTime && (
-                <div style={{ border: '1.5px solid var(--border)', borderRadius: '14px', background: 'var(--warm)', padding: '14px 16px', marginTop: '16px', marginBottom: '4px' }}>
+                <div style={{ border: '1.5px solid var(--border)', borderRadius: '14px', background: 'var(--warm)', padding: '16px 16px', marginTop: '16px', marginBottom: '4px' }}>
                   <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>How did it go?</p>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <label htmlFor="bake-photo-input" style={{ width: '56px', height: '56px', borderRadius: '10px', border: '1.5px dashed var(--border)', background: bakePhotoUrl ? 'none' : 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }}>
                       {bakePhotoUrl
                         ? <img src={bakePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -3052,7 +3052,7 @@ export default function Home() {
                             await markBaked(bakeEventId);
                           }
                         }}
-                        style={{ flex: 1, background: 'var(--sage)', border: 'none', color: '#fff', borderRadius: '10px', padding: '10px 0', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-dm-sans)' }}
+                        style={{ flex: 1, background: 'var(--sage)', border: 'none', color: '#fff', borderRadius: '10px', padding: '12px 0', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-dm-sans)' }}
                       >
                         ✓ Mark as baked
                       </button>
@@ -3122,8 +3122,8 @@ export default function Home() {
                         onClick={() => setActiveTab('pizzaparty')}
                         style={{
                           alignSelf: 'flex-start',
-                          display: 'inline-flex', alignItems: 'center', gap: '7px',
-                          padding: '8px 14px', border: '1.5px solid var(--border)',
+                          display: 'inline-flex', alignItems: 'center', gap: '8px',
+                          padding: '8px 16px', border: '1.5px solid var(--border)',
                           borderRadius: '20px', background: 'var(--warm)',
                           color: 'var(--ash)', fontSize: '12px',
                           fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
@@ -3143,8 +3143,8 @@ export default function Home() {
                         fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                       } : {
                         alignSelf: 'flex-start',
-                        display: 'inline-flex', alignItems: 'center', gap: '7px',
-                        padding: '8px 14px', border: '1.5px solid var(--border)',
+                        display: 'inline-flex', alignItems: 'center', gap: '8px',
+                        padding: '8px 16px', border: '1.5px solid var(--border)',
                         borderRadius: '20px', background: 'var(--warm)',
                         color: 'var(--ash)', fontSize: '12px',
                         fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
@@ -3215,10 +3215,10 @@ export default function Home() {
 
         {/* ════════════ ADVANCED ════════════ */}
         {tab === 'custom' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
             {/* ── Setup tab content ── */}
-            <div style={{ display: activeTab === 'setup' && !!bakeType && modeChosen ? 'flex' : 'none', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: activeTab === 'setup' && !!bakeType && modeChosen ? 'flex' : 'none', flexDirection: 'column', gap: '16px' }}>
 
             {/* ── Review mode banner ── */}
             {reviewMode && (
@@ -3226,7 +3226,7 @@ export default function Home() {
                 background: 'rgba(156, 130, 72,0.1)',
                 border: '1px solid rgba(156, 130, 72,0.2)',
                 borderRadius: '10px',
-                padding: '10px 14px',
+                padding: '12px 16px',
                 fontFamily: 'var(--font-dm-mono)',
                 fontSize: '12px',
                 color: 'var(--gold)',
@@ -3268,11 +3268,11 @@ export default function Home() {
 
                 {styleKey === 'pain_levain' && (
                   <div style={{
-                    marginTop: '12px', padding: '12px 14px',
+                    marginTop: '12px', padding: '12px 16px',
                     background: 'var(--warm)', border: '1.5px solid var(--border)',
                     borderRadius: '12px',
                   }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
                       <div
                         onClick={() => setAddSeeds(v => !v)}
                         style={{
@@ -3312,12 +3312,12 @@ export default function Home() {
 
                     {/* ROW 1: Quantity — centred, large, primary */}
                     <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                      <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '10px' }}>
+                      <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '12px' }}>
                         {isBread ? t('quantity.loaves') : t('quantity.howMany')}
                       </div>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '16px' }}>
                         <button onClick={() => setNumItems(n => Math.max(1, n - 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                           <input type="number" min={1} max={24} step={1} value={numItems}
                             onChange={e => setNumItems(Math.max(1, Math.min(24, Math.round(+e.target.value))))}
                             style={{ width: '52px', border: 'none', borderBottom: '2px solid var(--char)', background: 'transparent', fontSize: '32px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
@@ -3329,7 +3329,7 @@ export default function Home() {
 
                     {/* ROW 2: Cornicione */}
                     {showDiam && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
                         <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>{t('quantity.corniceLabel')}</span>
                         <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
                           {([
@@ -3341,7 +3341,7 @@ export default function Home() {
                               key={opt.value}
                               onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
                               style={{
-                                flex: 1, padding: '5px 4px', borderRadius: '8px', whiteSpace: 'nowrap',
+                                flex: 1, padding: '4px 4px', borderRadius: '8px', whiteSpace: 'nowrap',
                                 border: pizzaCorn === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
                                 background: pizzaCorn === opt.value ? 'white' : 'transparent',
                                 color: pizzaCorn === opt.value ? '#2B2420' : '#8A7F78',
@@ -3356,12 +3356,12 @@ export default function Home() {
                       </div>
                     )}
                     {/* ROW 3: Diameter + Weight tiles */}
-                    <div style={{ display: 'grid', gridTemplateColumns: showDiam ? '1fr 1fr' : '1fr', gap: '10px', marginBottom: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: showDiam ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '20px' }}>
 
                       {showDiam && (
-                        <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 10px', overflow: 'hidden' }}>
-                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>◎ {locale === 'fr' ? 'Diamètre' : 'Diameter'}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+                        <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 12px', overflow: 'hidden' }}>
+                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>◎ {locale === 'fr' ? 'Diamètre' : 'Diameter'}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                             <button onClick={() => { const d = Math.max(22, pizzaDiameter - 1); setPizzaDiameter(d); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                             <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', minWidth: '48px', textAlign: 'center' }}>{pizzaDiameter}<span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--smoke)', marginLeft: '2px' }}>cm</span></span>
                             <button onClick={() => { const d = Math.min(35, pizzaDiameter + 1); setPizzaDiameter(d); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
@@ -3369,9 +3369,9 @@ export default function Home() {
                         </div>
                       )}
 
-                      <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 10px', overflow: 'hidden' }}>
-                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px', textAlign: 'center' }}>⚖ {isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+                      <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 12px', overflow: 'hidden' }}>
+                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>⚖ {isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                           <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: itemWeight >= 1000 ? '80px' : '64px', justifyContent: 'center' }}>
                             <input type="number" min={weightBounds.min} max={weightBounds.max} step={weightBounds.step} value={itemWeight}
@@ -3386,13 +3386,13 @@ export default function Home() {
 
                     {/* AVPN note */}
                     {isAtMax && (
-                      <div style={{ marginTop: '10px', padding: '7px 10px', background: '#FEF9F0', borderRadius: '8px', border: '0.5px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                      <div style={{ marginTop: '12px', padding: '8px 12px', background: '#FEF9F0', borderRadius: '8px', border: '0.5px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                         <span style={{ fontSize: '11px', color: '#7A5A10', lineHeight: 1.4, flex: 1 }}><strong>{t('avpn.atLimit')}</strong> — {t('avpn.limitDesc')}</span>
-                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem .5rem', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>🤌 {t('avpn.learnMore')}</button>
+                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem 8px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>🤌 {t('avpn.learnMore')}</button>
                       </div>
                     )}
                     {isAtMax && avpnOpen && (
-                      <div style={{ marginTop: '6px', padding: '8px 10px', background: 'var(--cream)', borderRadius: '8px', fontSize: '11px', color: 'var(--ash)', lineHeight: 1.5 }}>
+                      <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--cream)', borderRadius: '8px', fontSize: '11px', color: 'var(--ash)', lineHeight: 1.5 }}>
                         {t('avpn.body')}
                       </div>
                     )}
@@ -3449,12 +3449,12 @@ export default function Home() {
                 mode={tab === 'custom' ? 'custom' : 'simple'}
                 styleKey={styleKey}
               />
-              <div style={{ marginTop: '.85rem' }}>
+              <div style={{ marginTop: '12px' }}>
                 <button
                   onClick={() => advanceAdv(6)}
                   className="btn"
                   style={{
-                    width: '100%', padding: '.9rem 1.25rem',
+                    width: '100%', padding: '16px 20px',
                     border: 'none', borderRadius: '12px',
                     background: 'var(--terra)', color: '#fff',
                     fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
@@ -3483,7 +3483,7 @@ export default function Home() {
                 styleKey={styleKey}
               />
               {styleKey === 'pain_levain' && yeastType === 'sourdough' && advancedStep === 7 && (
-                <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.5rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '8px', textAlign: 'center' }}>
                   {locale === 'fr' ? 'Levain confirmé automatiquement…' : 'Sourdough confirmed automatically…'}
                 </div>
               )}
@@ -3563,7 +3563,7 @@ export default function Home() {
             {/* ─── ADV STEP 11: Dial your dough ────── */}
             <StepPage flow={customFlow} id={10}>
               <div>
-                <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '1rem', lineHeight: 1.5 }}>
+                <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '16px', lineHeight: 1.5 }}>
                   {locale === 'fr' ? 'Les valeurs par défaut correspondent à votre style — ajustez si vous savez ce que vous faites.' : <>Defaults are set for your style — adjust if you know what you&apos;re doing.</>}
                 </div>
 
@@ -3581,8 +3581,8 @@ export default function Home() {
                   const prefHydration = pData.hydration ?? 100;
                   const prefWaterPct = currentPct * (prefHydration / 100);
                   return (
-                    <div style={{ marginBottom: '1.1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
+                    <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
                         <label style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
                           Flour in {pData.name}
                         </label>
@@ -3604,7 +3604,7 @@ export default function Home() {
                           style={{ position: 'absolute', left: 0, right: 0, width: '100%', appearance: 'none', background: 'transparent', cursor: 'pointer', height: '36px', margin: 0, accentColor: 'var(--terra)' }}
                         />
                       </div>
-                      <div style={{ position: 'relative', fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem', height: '1rem' }}>
+                      <div style={{ position: 'relative', fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '8px', height: '1rem' }}>
                         <span style={{ position: 'absolute', left: 0 }}>{t('prefermentSlider.longAhead')}</span>
                         <span style={{ position: 'absolute', left: '37.5%', transform: 'translateX(-50%)', color: 'var(--sage)', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('prefermentSlider.nightBefore')}</span>
                         <span style={{ position: 'absolute', right: 0 }}>{t('prefermentSlider.sameDay')}</span>
@@ -3698,8 +3698,8 @@ export default function Home() {
 
                   const hZone = hydrationZoneLabel(currentHyd);
                   return (
-                    <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
+                    <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
                         <label style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>
                           Dough Hydration
                         </label>
@@ -3723,7 +3723,7 @@ export default function Home() {
                       {(() => {
                         const greenCentrePct = (lowPct + classicMaxPct) / 2;
                         return (
-                          <div style={{ position: 'relative', fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '.5rem', height: '1rem' }}>
+                          <div style={{ position: 'relative', fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem', marginBottom: '8px', height: '1rem' }}>
                             <span style={{ position: 'absolute', left: 0 }}>{sliderMin}%</span>
                             <span style={{ position: 'absolute', left: `${greenCentrePct}%`, transform: 'translateX(-50%)', color: 'var(--sage)', fontWeight: 600, whiteSpace: 'nowrap' }}>{zone.classicMin}–{zone.classicMax}% classic</span>
                             <span style={{ position: 'absolute', right: 0 }}>{sliderMax}%</span>
@@ -3731,7 +3731,7 @@ export default function Home() {
                         );
                       })()}
                       {manualHydration === undefined && Math.abs(hydDiff) >= 0.5 && (
-                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)', marginTop: '4px', lineHeight: 1.4, marginBottom: '.5rem' }}>
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)', marginTop: '4px', lineHeight: 1.4, marginBottom: '8px' }}>
                           {(() => {
                             const parts: string[] = [];
                             const bp = flourBlend ? computeBlendProfile(flourBlend) : null;
@@ -3755,19 +3755,19 @@ export default function Home() {
                       {/* Zone pill + note: only shown when baker set value manually,
                           or when no engine adjustment is explaining the current value */}
                       {(manualHydration !== undefined || !hydAdjustNote) && (<>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.5rem', marginBottom: '.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '4px' }}>
                         <span style={{
                           fontSize: '11px', fontFamily: 'var(--font-dm-mono)', fontWeight: 600,
                           color: hZone.color, flexShrink: 0,
                           background: hZone.color === 'var(--sage)' ? 'rgba(139,168,136,0.12)' :
                                       hZone.color === 'var(--gold)' ? 'rgba(156, 130, 72,0.12)' :
                                       hZone.color === '#C4624A' ? 'rgba(196,98,74,0.1)' : 'rgba(90,122,152,0.1)',
-                          borderRadius: '20px', padding: '.2rem .6rem',
+                          borderRadius: '20px', padding: '.2rem 8px',
                         }}>
                           {hZone.label}
                         </span>
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '.75rem' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '12px' }}>
                         {hZone.note}
                       </div>
                       </>)}
@@ -3776,8 +3776,8 @@ export default function Home() {
                 })()}
 
                 {/* Salt · Oil · Sugar — one row, wraps on mobile */}
-                <div style={{ paddingTop: '.25rem' }}>
-                <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                <div style={{ paddingTop: '4px' }}>
+                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                   {/* Salt stepper — first, most important */}
                   {(() => {
                     const styleSalt = styleKey ? (ALL_STYLES[styleKey]?.salt ?? 2.5) : 2.5;
@@ -3786,7 +3786,7 @@ export default function Home() {
                     const isDefault = manualSalt === undefined || manualSalt === styleSalt;
                     return (
                       <div style={{ flex: 1, minWidth: '80px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                           <FieldLabel>{t('dialIn.saltPct')}</FieldLabel>
                           {!isDefault && (
                             <button
@@ -3795,7 +3795,7 @@ export default function Home() {
                             >↺ {styleSalt}%</button>
                           )}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <button
                             onClick={() => setManualSalt(Math.max(1.5, Math.round((v - STEP) * 10) / 10))}
                             style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
@@ -3806,7 +3806,7 @@ export default function Home() {
                             style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
                           >+</button>
                         </div>
-                        <div style={{ fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '.35rem' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '4px' }}>
                           {v < 2 ? t('dialIn.salt.veryLow') :
                            v <= 2.5 ? t('dialIn.salt.breadRange') :
                            v <= 3 ? t('dialIn.salt.classicPizza') :
@@ -3824,7 +3824,7 @@ export default function Home() {
                     const oilGuideText = oilGuidance(v, ovenType ?? '', styleKey ?? '', t);
                     return (
                       <div style={{ flex: 1 }}>
-                        <div style={{ position: 'relative', marginBottom: '.4rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ position: 'relative', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>{t('dialIn.oilPct')}</span>
                           <button
                             onMouseEnter={() => setOilTip(true)} onMouseLeave={() => setOilTip(false)}
@@ -3832,12 +3832,12 @@ export default function Home() {
                             style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
                           >i</button>
                           {oilTip && (
-                            <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: v > 0 && isHighTemp ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-dm-sans)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
+                            <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: v > 0 && isHighTemp ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-dm-sans)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
                               {oilGuideText}
                             </div>
                           )}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <button
                             onClick={() => setManualOil(Math.max(0, Math.round((v - STEP) * 10) / 10))}
                             style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
@@ -3860,7 +3860,7 @@ export default function Home() {
                     const STEP = 0.5;
                     return (
                       <div style={{ flex: 1 }}>
-                        <div style={{ position: 'relative', marginBottom: '.4rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ position: 'relative', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>{t('dialIn.sugarPct')}</span>
                           <button
                             onMouseEnter={() => setSugarTip(true)} onMouseLeave={() => setSugarTip(false)}
@@ -3868,12 +3868,12 @@ export default function Home() {
                             style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
                           >i</button>
                           {sugarTip && (
-                            <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: sg.warn ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-dm-sans)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
+                            <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: sg.warn ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-dm-sans)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
                               {sg.note}
                             </div>
                           )}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <button
                             onClick={() => setManualSugar(Math.max(0, Math.round((v - STEP) * 10) / 10))}
                             style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}
@@ -3892,11 +3892,11 @@ export default function Home() {
                 </div>
                 </div>
                 {/* Precision — 4th sub-section inside Dial In */}
-                <div style={{ marginTop: '.5rem', paddingTop: '.5rem', borderTop: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '.5rem' }}>
+                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '8px' }}>
                     Precision
                   </div>
-                  <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                     {/* DDT stepper */}
                     {(() => {
                       const styleFDT = styleKey ? ({ neapolitan:23, newyork:24, roman:25, pan:25, sourdough:24, pain_campagne:24, pain_levain:24, baguette:24, pain_complet:24, pain_seigle:24, fougasse:25, brioche:22, pain_mie:24, pain_viennois:23 } as Record<string,number>)[styleKey] ?? 24 : 24;
@@ -3905,7 +3905,7 @@ export default function Home() {
                       const isDefaultDDT = targetDoughTemp === undefined || targetDoughTemp === styleFDT;
                       return (
                         <div style={{ flex: 1, minWidth: '120px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>{t('dialIn.doughTemp')}</span>
                               <button
@@ -3914,7 +3914,7 @@ export default function Home() {
                                 style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
                               >i</button>
                               {ddtTip && (
-                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-dm-sans)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
+                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-dm-sans)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
                                   +{mixerFriction}°C friction from {mixerType === 'spiral' ? 'spiral' : mixerType === 'stand' ? 'stand' : 'hand'} mixer. Flour from fridge removes ~8°C.
                                 </div>
                               )}
@@ -3926,14 +3926,14 @@ export default function Home() {
                               </button>
                             )}
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem', marginBottom: '.4rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
                             <button onClick={() => setTargetDoughTemp(Math.max(18, v - 1))}
                               style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>−</button>
                             <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: 'var(--char)' }}>{v}°C</span>
                             <button onClick={() => setTargetDoughTemp(Math.min(28, v + 1))}
                               style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>+</button>
                           </div>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '.4rem', cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                             <input type="checkbox" checked={flourInFridge} onChange={e => setFlourInFridge(e.target.checked)}
                               style={{ width: '13px', height: '13px', cursor: 'pointer', accentColor: 'var(--terra)', flexShrink: 0 }} />
                             <span style={{ fontSize: '12px', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>{t('dialIn.flourInFridge')}</span>
@@ -3944,7 +3944,7 @@ export default function Home() {
                                 style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
                               >i</button>
                               {flourFridgeTip && (
-                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-dm-sans)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)', whiteSpace: 'normal' }}>
+                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-dm-sans)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)', whiteSpace: 'normal' }}>
                                   Cold flour lowers FDT. Removes ~8°C, offset automatically in the water temp calculation.
                                 </div>
                               )}
@@ -3959,7 +3959,7 @@ export default function Home() {
                       const STEP = 0.5;
                       return (
                         <div style={{ flex: 1, minWidth: '120px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.4rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)' }}>{t('dialIn.mixingLoss')}</span>
                               <button
@@ -3968,7 +3968,7 @@ export default function Home() {
                                 style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}
                               >i</button>
                               {mixLossTip && (
-                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-dm-sans)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
+                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-dm-sans)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
                                   Buffer for bowl residue and transfer losses. Schedule is unchanged — only ingredient quantities scale up.
                                 </div>
                               )}
@@ -3980,7 +3980,7 @@ export default function Home() {
                               </button>
                             )}
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <button onClick={() => setWastePct(Math.max(0, Math.round((v - STEP) * 10) / 10))}
                               style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>−</button>
                             <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: 'var(--char)' }}>
@@ -4012,7 +4012,7 @@ export default function Home() {
                 <div style={{
                   background: '#F0EBE0',
                   borderRadius: '10px',
-                  padding: '10px 14px',
+                  padding: '12px 16px',
                   marginBottom: '12px',
                   fontSize: '12px',
                   color: '#3D3530',
@@ -4028,7 +4028,7 @@ export default function Home() {
                       background: '#6B4423',
                       color: 'white',
                       fontSize: '12px',
-                      padding: '11px 16px',
+                      padding: '12px 16px',
                       borderRadius: '8px',
                       border: 'none',
                       cursor: 'pointer',
@@ -4052,7 +4052,7 @@ export default function Home() {
 
               {/* Recipe + Timeline */}
               {recipeGenerated && (
-                <div style={{ marginTop: '1rem' }}>
+                <div style={{ marginTop: '16px' }}>
                   {bakeTimeIsPast && sessionRestored ? (
                     <PostBakeLanding
                       styleName={styleDisplayName(styleKey)}
@@ -4073,11 +4073,11 @@ export default function Home() {
                   ) : (
                     <>
                       {!advancedRecipe ? (
-                        <div style={{ background: '#FEF4EF', border: '1.5px solid #F5C4B0', borderRadius: '12px', padding: '1.25rem', textAlign: 'center', color: 'var(--terra)', fontSize: '14px' }}>
+                        <div style={{ background: '#FEF4EF', border: '1.5px solid #F5C4B0', borderRadius: '12px', padding: '20px', textAlign: 'center', color: 'var(--terra)', fontSize: '14px' }}>
                           {t('results.computeError')}
                         </div>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                           <RecipeOutput
                             ovenType={ovenType}
                             onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
@@ -4118,9 +4118,9 @@ export default function Home() {
 
               {/* How did it go? card */}
               {!(bakeTimeIsPast && sessionRestored) && eatTime && new Date() > eatTime && (
-                <div style={{ border: '1.5px solid var(--border)', borderRadius: '14px', background: 'var(--warm)', padding: '14px 16px', marginTop: '16px', marginBottom: '4px' }}>
+                <div style={{ border: '1.5px solid var(--border)', borderRadius: '14px', background: 'var(--warm)', padding: '16px 16px', marginTop: '16px', marginBottom: '4px' }}>
                   <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>How did it go?</p>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <label htmlFor="bake-photo-input" style={{ width: '56px', height: '56px', borderRadius: '10px', border: '1.5px dashed var(--border)', background: bakePhotoUrl ? 'none' : 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }}>
                       {bakePhotoUrl
                         ? <img src={bakePhotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -4165,7 +4165,7 @@ export default function Home() {
                             await markBaked(bakeEventId);
                           }
                         }}
-                        style={{ flex: 1, background: 'var(--sage)', border: 'none', color: '#fff', borderRadius: '10px', padding: '10px 0', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-dm-sans)' }}
+                        style={{ flex: 1, background: 'var(--sage)', border: 'none', color: '#fff', borderRadius: '10px', padding: '12px 0', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-dm-sans)' }}
                       >
                         ✓ Mark as baked
                       </button>
@@ -4235,8 +4235,8 @@ export default function Home() {
                         onClick={() => setActiveTab('pizzaparty')}
                         style={{
                           alignSelf: 'flex-start',
-                          display: 'inline-flex', alignItems: 'center', gap: '7px',
-                          padding: '8px 14px', border: '1.5px solid var(--border)',
+                          display: 'inline-flex', alignItems: 'center', gap: '8px',
+                          padding: '8px 16px', border: '1.5px solid var(--border)',
                           borderRadius: '20px', background: 'var(--warm)',
                           color: 'var(--ash)', fontSize: '12px',
                           fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
@@ -4256,8 +4256,8 @@ export default function Home() {
                         fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                       } : {
                         alignSelf: 'flex-start',
-                        display: 'inline-flex', alignItems: 'center', gap: '7px',
-                        padding: '8px 14px', border: '1.5px solid var(--border)',
+                        display: 'inline-flex', alignItems: 'center', gap: '8px',
+                        padding: '8px 16px', border: '1.5px solid var(--border)',
                         borderRadius: '20px', background: 'var(--warm)',
                         color: 'var(--ash)', fontSize: '12px',
                         fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
@@ -4340,7 +4340,7 @@ export default function Home() {
             fontFamily: 'var(--font-dm-sans)', fontSize: '14px',
             borderRadius: '12px', padding: '12px 16px', maxWidth: '280px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-            display: 'flex', alignItems: 'flex-start', gap: '10px',
+            display: 'flex', alignItems: 'flex-start', gap: '12px',
             cursor: 'pointer', animation: 'fadeInUp 0.3s ease',
           }}
         >
@@ -4369,7 +4369,7 @@ export default function Home() {
             color: 'white',
             border: 'none',
             borderRadius: '22px',
-            padding: '11px 20px',
+            padding: '12px 20px',
             fontSize: '13px',
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 600,
@@ -4451,7 +4451,7 @@ function PostBakeLanding({
         onClick={handleYes}
         disabled={saving}
         style={{
-          width: '100%', padding: '15px',
+          width: '100%', padding: '16px',
           background: saving ? 'var(--smoke)' : 'var(--terra)',
           color: 'white', border: 'none', borderRadius: '12px',
           fontFamily: 'var(--font-dm-sans)', fontSize: '15px',
@@ -4465,7 +4465,7 @@ function PostBakeLanding({
       <button
         onClick={onNo}
         style={{
-          width: '100%', padding: '13px',
+          width: '100%', padding: '12px',
           background: 'none', border: '1px solid var(--border)',
           borderRadius: '12px', cursor: 'pointer',
           fontFamily: 'var(--font-dm-mono)', fontSize: '13px',

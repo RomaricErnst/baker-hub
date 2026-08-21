@@ -117,7 +117,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
         background: 'rgba(43, 36, 32,0.55)',
         zIndex: 1000,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '1rem',
+        padding: '16px',
       }}
     >
       <div
@@ -134,10 +134,10 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
         {/* Header */}
         <div style={{
           background: 'var(--char)',
-          padding: '1.25rem 1.4rem',
+          padding: '20px 24px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {content.emoji && <span style={{ fontSize: '26px', lineHeight: 1 }}>{content.emoji}</span>}
             <span style={{
               fontFamily: 'var(--font-playfair)',
@@ -155,7 +155,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
               border: 'none', borderRadius: '8px',
               color: 'var(--cream)', fontSize: '15px',
               // 44px tap box, 30px painted square (padding + content-box clip)
-              width: '44px', height: '44px', padding: '7px', margin: '-7px',
+              width: '44px', height: '44px', padding: '8px', margin: '-7px',
               cursor: 'pointer', flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
@@ -165,7 +165,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
         </div>
 
         {/* Body */}
-        <div style={{ padding: '1.25rem 1.4rem', display: 'flex', flexDirection: 'column', gap: '.85rem' }}>
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Explanation */}
           <p style={{
             fontSize: '14px', color: 'var(--ash)',
@@ -179,12 +179,12 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
             background: 'var(--cream)',
             border: '1.5px solid var(--border)',
             borderRadius: '12px',
-            padding: '.85rem 1rem',
+            padding: '12px 16px',
           }}>
             <div style={{
               fontSize: '11px', fontWeight: 600,
               color: 'var(--smoke)', textTransform: 'uppercase',
-              letterSpacing: '.07em', marginBottom: '.4rem',
+              letterSpacing: '.07em', marginBottom: '8px',
               fontFamily: 'var(--font-dm-mono)',
             }}>
               Practical tip
@@ -203,12 +203,12 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
               background: '#F0F5EA',
               border: '1.5px solid #C8D4BA',
               borderRadius: '12px',
-              padding: '.85rem 1rem',
+              padding: '12px 16px',
             }}>
               <div style={{
                 fontSize: '11px', fontWeight: 600,
                 color: '#4A5A44', textTransform: 'uppercase',
-                letterSpacing: '.07em', marginBottom: '.4rem',
+                letterSpacing: '.07em', marginBottom: '8px',
                 fontFamily: 'var(--font-dm-mono)',
               }}>
                 Also note
@@ -235,7 +235,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
               rel="noopener noreferrer"
               style={{
                 display: 'block', textAlign: 'center',
-                padding: '.4rem 0 .1rem',
+                padding: '8px 0 .1rem',
                 color: 'var(--terra)', textDecoration: 'underline',
                 textUnderlineOffset: '3px',
                 fontSize: '12px', fontFamily: 'var(--font-dm-sans)',

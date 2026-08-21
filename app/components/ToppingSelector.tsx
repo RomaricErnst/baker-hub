@@ -257,7 +257,7 @@ function pizzaEmoji(id: string): string {
 
 const S = {
   pill: (active: boolean, variant: 'terra' | 'sage' | 'default' = 'default'): React.CSSProperties => ({
-    fontSize: '13px', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer',
+    fontSize: '13px', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer',
     border: active
       ? (variant === 'terra' ? '1px solid #6B4423' : variant === 'sage' ? '1px solid #6B7A5A' : '1px solid #2B2420')
       : '1px solid #E0D8CF',
@@ -271,7 +271,7 @@ const S = {
     flexShrink: 0,
   }),
   winePill: (active: boolean): React.CSSProperties => ({
-    fontSize: '11px', padding: '4px 10px', borderRadius: '20px', cursor: 'pointer',
+    fontSize: '11px', padding: '4px 12px', borderRadius: '20px', cursor: 'pointer',
     border: active ? '1px solid #7A4A8A' : '1px solid #DBC8E8',
     background: active ? '#7A4A8A' : '#FDFBF7',
     color: active ? 'white' : '#7A4A8A',
@@ -282,7 +282,7 @@ const S = {
     minWidth: '80px',
   }),
   navPill: (active: boolean): React.CSSProperties => ({
-    flex: 1, textAlign: 'center' as const, padding: '7px 4px',
+    flex: 1, textAlign: 'center' as const, padding: '8px 4px',
     borderRadius: '10px', fontSize: '11px', cursor: 'pointer',
     border: '1px solid #E0D8CF',
     background: active ? '#2B2420' : 'transparent',
@@ -297,25 +297,25 @@ const S = {
   secTitle: {
     fontSize: '11px', color: '#3D3530', textTransform: 'uppercase' as const,
     letterSpacing: '0.08em', fontWeight: 500,
-    display: 'flex', alignItems: 'center', gap: '5px',
+    display: 'flex', alignItems: 'center', gap: '4px',
   } as React.CSSProperties,
   secBadge: (show: boolean): React.CSSProperties => ({
     fontSize: '11px', background: '#6B4423', color: 'white',
-    borderRadius: '10px', padding: '1px 5px', display: show ? 'inline' : 'none',
+    borderRadius: '10px', padding: '1px 4px', display: show ? 'inline' : 'none',
   }),
   secBody: (open: boolean): React.CSSProperties => ({
-    display: open ? 'flex' : 'none', flexDirection: 'column', gap: '6px',
+    display: open ? 'flex' : 'none', flexDirection: 'column', gap: '8px',
     padding: '0 12px 8px',
   }),
   subSec: {
-    background: '#F0EBE0', borderRadius: '8px', padding: '7px 9px',
+    background: '#F0EBE0', borderRadius: '8px', padding: '8px 8px',
   } as React.CSSProperties,
   subLbl: {
     fontSize: '11px', color: '#8A7F78', textTransform: 'uppercase' as const,
-    letterSpacing: '0.06em', marginBottom: '5px', fontWeight: 500, display: 'block',
+    letterSpacing: '0.06em', marginBottom: '4px', fontWeight: 500, display: 'block',
   } as React.CSSProperties,
   pillRow: {
-    display: 'flex', flexWrap: 'wrap' as const, gap: '5px',
+    display: 'flex', flexWrap: 'wrap' as const, gap: '4px',
   } as React.CSSProperties,
   card: (selected: boolean): React.CSSProperties => ({
     background: selected ? '#FFF8F5' : '#FDFBF7',
@@ -329,7 +329,7 @@ const S = {
     background: '#F0EBE3', borderRadius: '7px',
   } as React.CSSProperties,
   tag: (type: 'default' | 'spicy' | 'season' | 'special'): React.CSSProperties => ({
-    fontSize: '11px', padding: '2px 6px', borderRadius: '10px',
+    fontSize: '11px', padding: '2px 8px', borderRadius: '10px',
     ...(type === 'spicy'   ? { background: '#FFF0EC', color: '#6B4423', border: '0.5px solid #F5C4B3' }
       : type === 'season'  ? { background: '#EFF5E8', color: '#3B6D11', border: '0.5px solid #C0DD97' }
       : type === 'special' ? { background: '#FEF9EC', color: '#9A7020', border: '0.5px solid #FAC775' }
@@ -351,7 +351,7 @@ const S = {
     letterSpacing: '0.02em',
   } as React.CSSProperties,
   ingBadge: {
-    fontSize: '11px', padding: '1px 6px', borderRadius: '8px',
+    fontSize: '11px', padding: '1px 8px', borderRadius: '8px',
     background: '#F0EBE3', color: '#8A7F78',
     marginLeft: '6px', whiteSpace: 'nowrap' as const,
     flexShrink: 0, marginTop: '2px',
@@ -395,7 +395,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
 
   return (
     <div style={S.card(qty > 0)} onClick={onTap}>
-      <div style={{ display: 'flex', gap: '8px', padding: '6px 10px 6px' }}>
+      <div style={{ display: 'flex', gap: '8px', padding: '8px 12px 8px' }}>
         {/* Left: image spanning all rows */}
         <div style={{ width: '80px', height: '80px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, background: '#2B2420' }}>
           {pizza.id.startsWith('custom_') ? (
@@ -430,7 +430,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
         {/* Right: 3 rows */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
           {/* Row 1: name · budget */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
             <span style={{ fontSize: '13px', fontWeight: 500, color: '#2B2420', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {name}
             </span>
@@ -443,9 +443,9 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
             </div>
           )}
           {/* Row 3: occasion tags · wine pairing · time · qty controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             {/* left group shrinks + clips so the qty stepper always stays fully visible */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
             {pizza.occasion.slice(0, 2).map(tag => {
               const OCCASION_LABELS: Record<string, { en: string; fr: string }> = {
                 classic: { en: 'Classic', fr: 'Classique' },
@@ -456,7 +456,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
                 quick:   { en: 'Quick',   fr: 'Rapide' },
               };
               return (
-                <span key={tag} style={{ fontSize: '11px', color: 'var(--smoke)', background: 'var(--cream)', borderRadius: '10px', padding: '2px 6px', flexShrink: 0, fontFamily: 'var(--font-dm-sans)' }}>
+                <span key={tag} style={{ fontSize: '11px', color: 'var(--smoke)', background: 'var(--cream)', borderRadius: '10px', padding: '2px 8px', flexShrink: 0, fontFamily: 'var(--font-dm-sans)' }}>
                   {OCCASION_LABELS[tag]?.[l] ?? OCCASION_LABELS[tag]?.en ?? tag}
                 </span>
               );
@@ -473,7 +473,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
               {pizza.prepMinutes} min
             </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0, marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
               <button style={{ ...S.qtyBtn, visibility: qty > 0 ? 'visible' : 'hidden' }} onClick={e => onQtyChange(-1, e)}>−</button>
               <span style={{ fontSize: '12px', fontWeight: 600, color: '#6B4423', minWidth: '14px', textAlign: 'center', visibility: qty > 0 ? 'visible' : 'hidden' }}>{qty}</span>
               <button style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
@@ -591,7 +591,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           <div style={{
             fontSize: '17px', fontWeight: 700,
             fontFamily: 'var(--font-playfair)',
-            color: '#2B2420', marginBottom: '6px',
+            color: '#2B2420', marginBottom: '8px',
           }}>
             {pizza.name[l] ?? pizza.name.en}
           </div>
@@ -599,7 +599,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           {pizza.ingredients.length > 0 && (
             <div style={{
               display: 'flex', flexWrap: 'wrap',
-              gap: '4px', marginBottom: '6px',
+              gap: '4px', marginBottom: '8px',
             }}>
               {pizza.ingredients.map(ing => (
                 <span key={ing.id} style={{
@@ -617,7 +617,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
             <div style={{
               fontSize: '11px', color: '#7A4A8A',
               background: '#F5EDF8', borderRadius: '8px',
-              padding: '5px 10px', lineHeight: 1.5,
+              padding: '4px 12px', lineHeight: 1.5,
             }}>
               <span style={{ fontWeight: 600, marginRight: '4px' }}>
                 {l === 'fr' ? 'Accord vin :' : 'Wine pairing:'}
@@ -642,7 +642,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
         <div style={{
           flexShrink: 0,
           borderTop: '1px solid #E0D8CF',
-          padding: '10px 16px 0',
+          padding: '12px 16px 0',
           paddingBottom: 'calc(20px + env(safe-area-inset-bottom))',
           background: '#FDFBF7',
         }}>
@@ -688,7 +688,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           </div>
           {qty > 0 && (
             <div style={{
-              marginTop: '6px', fontSize: '11px',
+              marginTop: '8px', fontSize: '11px',
               color: '#6B7A5A', fontFamily: 'var(--font-dm-sans)',
               textAlign: 'center',
             }}>
@@ -1023,7 +1023,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <div style={{ padding: '10px 12px 8px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
+      <div style={{ padding: '12px 12px 8px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{
             fontSize: '15px', fontWeight: 700, color: '#2B2420',
@@ -1038,7 +1038,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           </span>
           <button
             onClick={() => setShowLocationPicker(v => !v)}
-            style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
             {shoppingLocation === 'singapore'
               ? (l === 'fr' ? `Où acheter : ${currentLocationLabel} ▾` : `Where to shop: ${currentLocationLabel} ▾`)
@@ -1047,13 +1047,13 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           </button>
         </div>
         {showLocationPicker && (
-          <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+          <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
             {LOCATIONS.map(loc => (
               <button
                 key={loc.key}
                 onClick={() => setLocation(loc.key)}
                 style={{
-                  fontSize: '11px', padding: '3px 10px', borderRadius: '12px', cursor: 'pointer',
+                  fontSize: '11px', padding: '3px 12px', borderRadius: '12px', cursor: 'pointer',
                   border: shoppingLocation === loc.key ? '1px solid #6B4423' : '1px solid #E0D8CF',
                   background: shoppingLocation === loc.key ? '#6B4423' : '#FDFBF7',
                   color: shoppingLocation === loc.key ? 'white' : '#3D3530',
@@ -1069,8 +1069,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
       {/* List */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
         {sections.map(section => (
-          <div key={section.label} style={{ marginBottom: '18px' }}>
-            <div style={{ padding: '10px 12px 7px 11px', background: '#F0EBE0', borderLeft: '3px solid #6B4423', marginTop: '6px' }}>
+          <div key={section.label} style={{ marginBottom: '20px' }}>
+            <div style={{ padding: '12px 12px 8px 12px', background: '#F0EBE0', borderLeft: '3px solid #6B4423', marginTop: '8px' }}>
               <span style={{ fontSize: '12px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-dm-mono)' }}>
                 {section.label}
               </span>
@@ -1086,7 +1086,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
               return (
                 <div key={item.id} style={{ borderBottom: '0.5px solid #F0EBE3', background: isTicked ? '#FAFAF8' : '#FDFBF7' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', padding: '8px 12px', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', padding: '8px 12px', gap: '12px' }}>
                     <button
                       onClick={() => toggleTick(item.id)}
                       style={{
@@ -1157,7 +1157,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                       )}
 
                       {!showSubProactively && isExpanded && hasSubInfo && (
-                        <div style={{ marginTop: '3px', padding: '6px 8px', background: '#F0EBE0', borderRadius: '6px' }}>
+                        <div style={{ marginTop: '3px', padding: '8px 8px', background: '#F0EBE0', borderRadius: '6px' }}>
                           {item.goodEnough && (
                             <div style={{ fontSize: '11px', color: '#6B7A5A', marginBottom: '2px' }}>
                               <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'Très proche :' : 'Also great:'}</span>
@@ -1188,13 +1188,13 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
         {recipeIngredients && recipeIngredients.length > 0 && (
           <div>
-            <div style={{ padding: '7px 12px 4px 11px', background: '#F0EBE0', borderLeft: '3px solid #6B4423' }}>
+            <div style={{ padding: '8px 12px 4px 12px', background: '#F0EBE0', borderLeft: '3px solid #6B4423' }}>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-dm-mono)' }}>
                 {l === 'fr' ? 'Pour votre pâte' : 'For your dough'}
               </span>
             </div>
             {recipeIngredients.map((ing, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '10px', borderBottom: '0.5px solid #F0EBE3' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px', borderBottom: '0.5px solid #F0EBE3' }}>
                 <button
                   onClick={() => toggleTick('dough_' + i)}
                   style={{
@@ -1221,11 +1221,11 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
       </div>
 
       {/* Footer: primary = onward journey (prep), share is secondary */}
-      <div style={{ padding: '10px 12px 14px', borderTop: '1px solid #E0D8CF', background: '#FDFBF7' }}>
+      <div style={{ padding: '12px 12px 16px', borderTop: '1px solid #E0D8CF', background: '#FDFBF7' }}>
         <button
           onClick={() => onGoPrep?.()}
           style={{
-            width: '100%', padding: '13px', marginBottom: '8px',
+            width: '100%', padding: '12px', marginBottom: '8px',
             background: '#2B2420', color: '#F0EBE0',
             border: 'none', borderRadius: '10px',
             fontSize: '14px', fontWeight: 600, cursor: 'pointer',
@@ -1239,7 +1239,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           style={{
             width: '100%', padding: '12px', background: 'transparent', color: '#3D3530',
             border: '1px solid #D8D0C5', borderRadius: '10px', fontSize: '14px', fontWeight: 500,
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           }}
         >
           <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#3D3530" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1252,11 +1252,11 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           onClick={handleShareLink}
           disabled={linkBusy}
           style={{
-            width: '100%', padding: '11px', marginTop: '8px',
+            width: '100%', padding: '12px', marginTop: '8px',
             background: 'transparent', color: linkCopied ? '#6B7A5A' : '#3D3530',
             border: `1px solid ${linkCopied ? '#6B7A5A' : '#E0D8CF'}`, borderRadius: '10px',
             fontSize: '13px', fontWeight: 500, cursor: linkBusy ? 'default' : 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
             opacity: linkBusy ? 0.6 : 1,
           }}
         >
@@ -1271,7 +1271,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
             : (l === 'fr' ? 'Partager un lien cochable' : 'Share checkable link')}
         </button>
         {linkError && (
-          <div style={{ fontSize: '11px', color: '#B5654A', marginTop: '6px', textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', color: '#B5654A', marginTop: '8px', textAlign: 'center' }}>
             {l === 'fr' ? 'Échec de la création du lien : ' : "Couldn't create the link: "}{linkError}
           </div>
         )}
@@ -1586,7 +1586,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           <div className="filter-scroll" onWheel={handleWheelScroll} style={{
             display: 'flex',
             flexWrap: 'nowrap',
-            gap: '6px',
+            gap: '8px',
             padding: '4px 0 8px',
             scrollPaddingInlineStart: '12px',
             background: '#FDFBF7',
@@ -1602,7 +1602,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 ("TERS"). It labels the row, so it stays with the row. */}
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: '4px',
-              padding: '5px 8px 5px 12px', color: '#8A7F78', fontSize: '11px',
+              padding: '4px 8px 4px 12px', color: '#8A7F78', fontSize: '11px',
               fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase',
               letterSpacing: '.05em', flexShrink: 0, whiteSpace: 'nowrap',
               position: 'sticky', left: 0, zIndex: 1, background: '#FDFBF7',
@@ -1625,7 +1625,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px',
-                  padding: '5px 10px',
+                  padding: '4px 12px',
                   borderRadius: '20px',
                   border: chip.count > 0 ? '1px solid #6B4423' : '1px solid #E0D8CF',
                   background: chip.count > 0 ? '#FBF0EB' : '#FDFBF7',
@@ -1656,7 +1656,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               onClick={() => setFilterSheetKey('more')}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '4px',
-                padding: '6px 11px', borderRadius: '20px',
+                padding: '8px 12px', borderRadius: '20px',
                 border: (() => {
                   const moreCnt = (filter.complexity !== null ? 1 : 0)
                     + (filter.region !== null || (filter.regions ?? []).length > 0 ? 1 : 0)
@@ -1732,8 +1732,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             if (activeChips.length === 0) return null;
             return (
               <div style={{
-                display: 'flex', flexWrap: 'wrap', gap: '5px',
-                padding: '6px 10px',
+                display: 'flex', flexWrap: 'wrap', gap: '4px',
+                padding: '8px 12px',
                 background: '#FDFBF7',
                 borderBottom: '1px solid #E0D8CF',
               }}>
@@ -1778,7 +1778,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 }}
               >
                 <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px 10px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px 12px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
                   <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-playfair)' }}>
                     {filterSheetKey === 'occasion'   ? (l === 'fr' ? 'Occasion' : 'Occasion')
                     : filterSheetKey === 'diet'       ? (l === 'fr' ? 'Régime alimentaire' : 'Diet')
@@ -1795,7 +1795,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 <div style={{ overflowY: 'auto', flex: 1, paddingBottom: '8px' }}>
 
                   {filterSheetKey === 'occasion' && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '10px 14px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px 16px' }}>
                       {(['classic','kids','party','impress','quick'] as OccasionTag[]).map(o => {
                         if (filterCounts.occasion[o] === 0 && !filter.occasion.includes(o)) return null;
                         const active = filter.occasion.includes(o);
@@ -1809,7 +1809,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   )}
 
                   {filterSheetKey === 'diet' && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '10px 14px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px 16px' }}>
                       {([
                         ['veg', l === 'fr' ? 'Végétarien' : 'Vegetarian'],
                         ['vegan', 'Vegan'],
@@ -1860,7 +1860,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                               key={String(v)}
                               onClick={() => setComplexity(v)}
                               style={{
-                                flex: 1, padding: '9px 4px', textAlign: 'center', fontSize: '11px',
+                                flex: 1, padding: '8px 4px', textAlign: 'center', fontSize: '11px',
                                 background: active ? '#6B4423' : '#FDFBF7',
                                 color: active ? '#fff' : '#8A7F78',
                                 fontWeight: active ? 600 : 400,
@@ -1879,14 +1879,14 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
                   {filterSheetKey === 'ingredient' && (
                     <>
-                      <div style={{ padding: '8px 14px 4px' }}>
+                      <div style={{ padding: '8px 16px 4px' }}>
                         <input
                           type="text"
                           placeholder={l === 'fr' ? 'Rechercher un ingrédient...' : 'Search ingredients...'}
                           value={ingSearch}
                           onChange={e => setIngSearch(e.target.value)}
                           style={{
-                            width: '100%', padding: '8px 10px',
+                            width: '100%', padding: '8px 12px',
                             border: '1px solid #E0D8CF', borderRadius: '8px',
                             fontSize: '13px', color: '#2B2420',
                             background: '#FDFBF7', fontFamily: 'var(--font-dm-sans)',
@@ -1920,7 +1920,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           })}
                         </div>
                       )}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 14px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 16px' }}>
                         {(ingSearch
                           ? INGREDIENT_CHIPS.flatMap(c => c.items).filter(item => {
                               const name = l === 'fr' ? item.fr : item.en;
@@ -1946,7 +1946,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                                 };
                               })}
                               style={{
-                                padding: '7px 12px', borderRadius: '20px',
+                                padding: '8px 12px', borderRadius: '20px',
                                 border: active ? '1px solid #6B4423' : '1px solid #E0D8CF',
                                 background: active ? '#6B4423' : '#FDFBF7',
                                 color: active ? '#fff' : '#3D3530',
@@ -2004,7 +2004,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           ))}
                         </div>
                         {(regionParent === 'italy' || regionParent === 'france' || regionParent === 'asia') && (
-                          <div style={{ ...S.subSec, marginTop: '6px' }}>
+                          <div style={{ ...S.subSec, marginTop: '8px' }}>
                             <span style={S.subLbl}>
                               {regionParent === 'italy'
                                 ? (l === 'fr' ? 'Régions italiennes' : 'Italian regions')
@@ -2113,7 +2113,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                                       setFilter(p => ({ ...p, flavour: next }));
                                     }}
                                     style={{
-                                      padding: '5px 14px',
+                                      padding: '4px 16px',
                                       borderRadius: '20px',
                                       border: active ? '1.5px solid var(--terra)' : '1px solid var(--border)',
                                       background: active ? 'rgba(107, 68, 35,0.1)' : 'var(--cream)',
@@ -2138,11 +2138,11 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 </div>
 
                 {filterSheetKey === 'more' && (
-                  <div style={{ padding: '10px 14px', borderTop: '1px solid #F0EAE3', display: 'flex', gap: '8px', flexShrink: 0 }}>
+                  <div style={{ padding: '12px 16px', borderTop: '1px solid #F0EAE3', display: 'flex', gap: '8px', flexShrink: 0 }}>
                     <button
                       onClick={() => { clearAll(); }}
                       style={{
-                        flex: 1, padding: '10px', border: '1px solid #E0D8CF',
+                        flex: 1, padding: '12px', border: '1px solid #E0D8CF',
                         borderRadius: '10px', background: '#FDFBF7',
                         fontSize: '12px', color: '#8A7F78', cursor: 'pointer',
                         fontFamily: 'var(--font-dm-sans)',
@@ -2153,7 +2153,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     <button
                       onClick={() => setFilterSheetKey(null)}
                       style={{
-                        flex: 2, padding: '10px', border: 'none',
+                        flex: 2, padding: '12px', border: 'none',
                         borderRadius: '10px', background: '#6B4423',
                         fontSize: '13px', fontWeight: 600, color: '#fff',
                         cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
@@ -2178,7 +2178,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               placeholder={l === 'fr' ? 'Rechercher une pizza ou un ingrédient…' : 'Search a pizza or ingredient…'}
               style={{
                 width: '100%', boxSizing: 'border-box',
-                padding: '9px 12px',
+                padding: '8px 12px',
                 border: '1px solid #E0D8CF', borderRadius: '10px',
                 background: 'var(--cream)', color: '#2B2420',
                 fontSize: '13px', fontFamily: 'var(--font-dm-sans)',
@@ -2186,7 +2186,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               }}
             />
           </div>
-          <div style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0EBE0', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
+          <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0EBE0', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
             <span style={{ fontSize: '11px', color: '#8A7F78' }}>
               {l === 'fr'
                 ? `${filtered.length} pizza${filtered.length !== 1 ? 's' : ''}`
@@ -2206,7 +2206,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               {/* Mes pizzas — only once the baker has creations; the menu
                   always comes before the invitation to leave it */}
               {customPizzas.length > 0 && (
-              <div style={{ padding: '8px 12px 0', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <div style={{ padding: '8px 12px 0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 2px 0' }}>
                   <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
                     {l === 'fr' ? 'Mes pizzas' : 'My pizzas'}
@@ -2215,7 +2215,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     onClick={() => setCreateOpen(true)}
                     style={{
                       border: '1px dashed rgba(107, 68, 35,0.45)', borderRadius: '14px',
-                      background: 'rgba(107, 68, 35,0.04)', padding: '4px 11px', cursor: 'pointer',
+                      background: 'rgba(107, 68, 35,0.04)', padding: '4px 12px', cursor: 'pointer',
                       fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#6B4423',
                     }}
                   >
@@ -2242,7 +2242,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       title={l === 'fr' ? 'Modifier' : 'Edit'}
                       style={{
                         position: 'absolute', top: '6px', right: '6px',
-                        border: '1px solid #E8E0D5', borderRadius: '14px', padding: '3px 9px',
+                        border: '1px solid #E8E0D5', borderRadius: '14px', padding: '3px 8px',
                         background: 'rgba(253,251,247,0.92)', cursor: 'pointer',
                         fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#6B4423',
                       }}
@@ -2253,7 +2253,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               )}
 
               {/* Pizza cards */}
-              <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {filtered.map(pizza => (
                   <PizzaCard
                     key={pizza.id}
@@ -2278,7 +2278,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                     border: '1.5px dashed rgba(107, 68, 35,0.45)', borderRadius: '12px',
-                    background: 'rgba(107, 68, 35,0.04)', padding: '13px', cursor: 'pointer',
+                    background: 'rgba(107, 68, 35,0.04)', padding: '12px', cursor: 'pointer',
                     marginTop: '4px',
                   }}
                 >
@@ -2359,7 +2359,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             }}
           >
             <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px 10px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px 12px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
               <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-playfair)' }}>
                 {!dessertSheetOpen
                   ? (l === 'fr' ? 'Votre pizza party' : 'Your Pizza Party')
@@ -2375,11 +2375,11 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     const pizza = getPizzaById(pizzaId);
                     if (!pizza) return null;
                     return (
-                      <div key={pizzaId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '0.5px solid #F0EAE3' }}>
+                      <div key={pizzaId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '0.5px solid #F0EAE3' }}>
                         <span style={{ fontSize: '13px', color: '#2B2420', fontFamily: 'Georgia, serif', flex: 1 }}>
                           {pizza.name[l] ?? pizza.name.en}
                         </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <button onClick={() => changeQty(pizzaId, -1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #E0D8CF', background: '#FDFBF7', cursor: 'pointer', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
                           <span style={{ fontSize: '13px', fontWeight: 600, minWidth: '16px', textAlign: 'center', fontFamily: 'var(--font-dm-mono)' }}>{qty as number}</span>
                           <button onClick={() => changeQty(pizzaId, 1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #6B4423', background: '#6B4423', cursor: 'pointer', fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
@@ -2391,8 +2391,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     onClick={() => setDessertSheetOpen(true)}
                     style={{
                       margin: '10px 14px', background: '#FBF5E8', border: '1px solid #E8D8A0',
-                      borderRadius: '10px', padding: '12px 14px', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '10px',
+                      borderRadius: '10px', padding: '12px 16px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '12px',
                     }}
                   >
                     <div>
@@ -2413,7 +2413,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         onClick={onGoToMyDough}
                         style={{
                           margin: '8px 14px 0',
-                          padding: '10px 12px',
+                          padding: '12px 12px',
                           background: 'rgba(107, 68, 35,0.06)',
                           border: '1px solid rgba(107, 68, 35,0.15)',
                           borderRadius: '10px',
@@ -2434,7 +2434,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         onClick={onGoToMyDough}
                         style={{
                           margin: '8px 14px 0',
-                          padding: '10px 12px',
+                          padding: '12px 12px',
                           background: 'rgba(156, 130, 72,0.08)',
                           border: '1px solid rgba(156, 130, 72,0.3)',
                           borderRadius: '10px',
@@ -2454,15 +2454,15 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 </>
               ) : (
                 <>
-                  <div style={{ padding: '6px 14px 4px', fontSize: '11px', color: '#8A7F78' }}>
+                  <div style={{ padding: '8px 16px 4px', fontSize: '11px', color: '#8A7F78' }}>
                     {l === 'fr' ? 'Une finale sucrée pour votre soirée pizza' : 'A sweet finale for your pizza night'}
                   </div>
                   <div style={{ position: 'relative' }}>
                   <div onWheel={handleWheelScroll} style={{
                     display: 'flex',
-                    gap: '10px',
+                    gap: '12px',
                     overflowX: 'auto',
-                    padding: '8px 14px 12px',
+                    padding: '8px 16px 12px',
                     scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
                     WebkitOverflowScrolling: 'touch',
                   }}>
@@ -2510,7 +2510,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                               <div style={{
                                 position: 'absolute', bottom: 0, left: 0, right: 0,
                                 background: 'linear-gradient(transparent, rgba(43, 36, 32,0.82))',
-                                padding: '16px 8px 6px',
+                                padding: '16px 8px 8px',
                               }}>
                                 <div style={{
                                   fontFamily: 'var(--font-playfair)',
@@ -2535,7 +2535,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                               )}
                             </div>
                             <div style={{
-                              padding: '6px 8px 8px',
+                              padding: '8px 8px 8px',
                               fontFamily: 'var(--font-dm-sans)',
                               fontSize: '11px', color: '#8A7F78',
                               lineHeight: 1.3,
@@ -2555,7 +2555,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   </div>
                   <button
                     onClick={() => setDessertSheetOpen(false)}
-                    style={{ margin: '8px 14px', padding: '10px', border: 'none', borderRadius: '10px', background: '#6B4423', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', width: 'calc(100% - 28px)', fontFamily: 'var(--font-dm-sans)' }}
+                    style={{ margin: '8px 14px', padding: '12px', border: 'none', borderRadius: '10px', background: '#6B4423', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', width: 'calc(100% - 28px)', fontFamily: 'var(--font-dm-sans)' }}
                   >
                     {l === 'fr' ? 'Retour à la sélection' : 'Back to party'}
                   </button>
@@ -2629,7 +2629,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '14px 16px',
+                      padding: '16px 16px',
                       borderBottom: idx < arr.length - 1
                         ? '1px solid var(--border)' : 'none',
                       cursor: 'pointer',
@@ -2653,7 +2653,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         color: 'var(--gold)',
                         background: 'rgba(156, 130, 72,0.15)',
                         borderRadius: '10px',
-                        padding: '2px 6px',
+                        padding: '2px 8px',
                         marginRight: '8px',
                         flexShrink: 0,
                       }}>
@@ -2675,7 +2675,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               })}
             </div>
             <div style={{
-              padding: '10px 16px 20px',
+              padding: '12px 16px 20px',
               fontSize: '11px',
               color: 'var(--smoke)',
               fontFamily: 'var(--font-dm-sans)',
@@ -2700,7 +2700,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           background: '#2B2420',
           borderTop: '1px solid #C88A52',
           padding: '12px 14px calc(12px + env(safe-area-inset-bottom, 0px))',
-          display: 'flex', alignItems: 'center', gap: '10px',
+          display: 'flex', alignItems: 'center', gap: '12px',
           justifyContent: 'space-between',
           zIndex: 90,
         }}>
@@ -2711,7 +2711,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             onClick={() => totalQty > 0 && setSummarySheetOpen(true)}
             disabled={totalQty === 0}
             style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '5px',
+              display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px',
               flex: 1, minWidth: 0, minHeight: '44px', justifyContent: 'center',
               background: 'none', border: 'none', padding: '0 2px', textAlign: 'left',
               cursor: totalQty > 0 ? 'pointer' : 'default',
@@ -2766,9 +2766,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 <button
                   onClick={e => { e.stopPropagation(); onPillChange('shopping'); }}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
+                    display: 'flex', alignItems: 'center', gap: '8px',
                     background: '#F0EBE0', border: 'none',
-                    borderRadius: '22px', padding: '13px 18px', minHeight: '44px',
+                    borderRadius: '22px', padding: '12px 20px', minHeight: '44px',
                     cursor: 'pointer', flexShrink: 0,
                   }}
                 >
@@ -2791,10 +2791,10 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               <button
                 onClick={e => { e.stopPropagation(); setSummarySheetOpen(true); setDessertSheetOpen(true); }}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
+                  display: 'flex', alignItems: 'center', gap: '8px',
                   background: 'rgba(184,144,58,0.15)',
                   border: '1px solid rgba(184,144,58,0.4)',
-                  borderRadius: '20px', padding: '11px 14px', minHeight: '44px',
+                  borderRadius: '20px', padding: '12px 16px', minHeight: '44px',
                   cursor: 'pointer', flexShrink: 0,
                 }}
               >

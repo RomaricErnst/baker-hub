@@ -16,8 +16,8 @@ export default function PhaseSummary({ schedule }: { schedule: ScheduleResult })
   if (phases.length === 0) return null;
   return (
     <div style={{
-      display: 'flex', gap: '.35rem',
-      overflowX: 'auto', paddingBottom: '.35rem',
+      display: 'flex', gap: '4px',
+      overflowX: 'auto', paddingBottom: '4px',
       msOverflowStyle: 'none',
     }}>
       {phases.map((phase, i) => {
@@ -25,7 +25,7 @@ export default function PhaseSummary({ schedule }: { schedule: ScheduleResult })
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0 }}>
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
-              padding: '.55rem .85rem',
+              padding: '8px 12px',
               border: '1.5px solid var(--border)',
               borderRadius: '12px',
               background: 'var(--warm)',
@@ -36,13 +36,13 @@ export default function PhaseSummary({ schedule }: { schedule: ScheduleResult })
                 color: 'var(--char)' }}>
                 <StepIcon iconKey={phase.iconKey} size={20} />
               </span>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--char)', textAlign: 'center', marginBottom: '.3rem', lineHeight: 1.3 }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--char)', textAlign: 'center', marginBottom: '4px', lineHeight: 1.3 }}>
                 {phase.label}
               </span>
               <span style={{
                 fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
                 background: 'var(--cream)', color: 'var(--ash)',
-                borderRadius: '10px', padding: '.15rem .5rem',
+                borderRadius: '10px', padding: '.15rem 8px',
               }}>
                 {hoursLabel(phase.durationH)}
               </span>

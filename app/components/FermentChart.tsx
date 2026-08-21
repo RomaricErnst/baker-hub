@@ -1009,7 +1009,7 @@ export default function FermentChart({
       {/* ── Curve legend ── */}
       <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '8px' }}>
         {hasPref && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <svg width="24" height="10" viewBox="0 0 24 10">
               <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke={prefColor} strokeWidth="2" fill="none" strokeLinecap="round"/>
             </svg>
@@ -1020,7 +1020,7 @@ export default function FermentChart({
             </span>
           </div>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <svg width="24" height="10" viewBox="0 0 24 10">
             <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke="#4A6B3A" strokeWidth="2" fill="none" strokeLinecap="round"/>
           </svg>
@@ -2152,7 +2152,7 @@ export default function FermentChart({
 
       {/* ── How to read this chart — one panel: legend, windows toggle,
           and the "times are a guide" reminder. Nothing else under the chart. ── */}
-      <div style={{ marginTop: '6px' }}>
+      <div style={{ marginTop: '8px' }}>
         <button
           onClick={() => setLegendOpen(o => !o)}
           style={{
@@ -2167,7 +2167,7 @@ export default function FermentChart({
         </button>
         {legendOpen && (
           <div style={{
-            marginTop: '6px', padding: '10px 12px',
+            marginTop: '8px', padding: '12px 12px',
             background: 'rgba(43, 36, 32,0.03)', border: '1px solid var(--border, #E8E0D5)',
             borderRadius: '10px', fontFamily: 'var(--font-dm-sans)', fontSize: '12px',
             color: 'var(--ash, #3D3530)', lineHeight: 1.65,
@@ -2190,7 +2190,7 @@ export default function FermentChart({
                 ? 'du temps au frigo — la biologie en pause. C’est voulu.'
                 : 'fridge time — biology on pause. That’s by design.'],
             ] as const).map(([term, body]) => (
-              <div key={term} style={{ marginBottom: '5px' }}>
+              <div key={term} style={{ marginBottom: '4px' }}>
                 <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>{term}</span>
                 <span> — {body}</span>
               </div>

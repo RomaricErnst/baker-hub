@@ -17,7 +17,7 @@ const S = {
   pill: (active: boolean) => ({
     border: active ? '1.5px solid var(--terra)' : '1px solid var(--border)',
     background: active ? 'rgba(107, 68, 35,0.07)' : 'var(--warm)',
-    color: 'var(--char)', borderRadius: '20px', padding: '7px 13px',
+    color: 'var(--char)', borderRadius: '20px', padding: '8px 12px',
     fontFamily: 'var(--font-dm-sans)', fontSize: '12px', cursor: 'pointer',
     lineHeight: 1.2,
   }),
@@ -52,7 +52,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
     current: string | null | undefined,
     onPick: (key: string | null) => void,
   ) => (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '0 16px' }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '0 16px' }}>
       {entries.map(e => (
         <button key={e.key} onClick={() => onPick(current === e.key ? null : e.key)} style={S.pill(current === e.key)}>
           {e.label}
@@ -67,7 +67,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
       value={value}
       onChange={e => onChange(e.target.value)}
       style={{
-        border: '1px solid var(--border)', borderRadius: '8px', padding: '5px 8px',
+        border: '1px solid var(--border)', borderRadius: '8px', padding: '4px 8px',
         fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--char)',
         background: 'var(--warm)', width: '86px',
       }}
@@ -77,7 +77,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
   const blockerRow = (key: 'sleep' | 'work', label: string) => {
     const b = blockers[key];
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 16px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', flexWrap: 'wrap' }}>
         <button
           onClick={() => patch({ blockers: { ...blockers, [key]: { ...b, enabled: !b.enabled } } })}
           style={{ ...S.pill(b.enabled), minWidth: '104px', textAlign: 'left' as const }}
@@ -85,7 +85,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           {b.enabled ? '✓ ' : ''}{label}
         </button>
         {b.enabled && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {timeInput(b.from, v => patch({ blockers: { ...blockers, [key]: { ...b, from: v } } }))}
             <span style={{ color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', fontSize: '11px' }}>→</span>
             {timeInput(b.to, v => patch({ blockers: { ...blockers, [key]: { ...b, to: v } } }))}
@@ -132,7 +132,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         </div>
 
         <span style={S.label}>{fr ? 'Mode par défaut' : 'Default mode'}</span>
-        <div style={{ display: 'flex', gap: '6px', padding: '0 16px' }}>
+        <div style={{ display: 'flex', gap: '8px', padding: '0 16px' }}>
           {([['simple', 'Simple'], ['custom', fr ? 'Avancé' : 'Custom']] as const).map(([key, label]) => (
             <button key={key} onClick={() => patch({ preferredMode: profile.preferredMode === key ? null : key })} style={S.pill(profile.preferredMode === key)}>
               {label}
@@ -148,7 +148,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         ) : customs.map(cp => (
           <div key={cp.id} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            margin: '0 16px 6px', padding: '9px 12px',
+            margin: '0 16px 6px', padding: '8px 12px',
             background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '10px',
           }}>
             <div>
@@ -225,7 +225,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         )}
 
         <span style={S.label}>{fr ? 'Mon levain' : 'My starter'}</span>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '0 16px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '0 16px' }}>
           <button onClick={() => patch({ starter: { ...starter, mature: !starter.mature } })} style={S.pill(starter.mature)}>
             {fr ? 'Mature (> 3 mois)' : 'Mature (> 3 months)'}
           </button>
@@ -240,7 +240,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         </div>
 
         <span style={S.label}>{fr ? 'Indisponibilités habituelles' : 'Usual busy hours'}</span>
-        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)', padding: '0 16px 6px' }}>
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)', padding: '0 16px 8px' }}>
           {fr ? 'Le planning évitera ces créneaux dans chaque nouvelle session.' : 'New sessions plan around these windows.'}
         </div>
         {blockerRow('sleep', fr ? 'Nuit' : 'Night')}
