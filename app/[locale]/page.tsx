@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
+import * as React from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import Header from '../components/Header';
@@ -170,6 +171,52 @@ type StepFlow = {
   onGapReturn: () => void;
 };
 
+// ── Swipe between step pages ──────────────────
+// Secondary to the buttons, never the only way anywhere: iOS Safari owns the
+// first ~24px of the left edge for its own back gesture, so a swipe-back
+// started there never reaches us.
+function useStepSwipe(flow: StepFlow, enabled: boolean) {
+  const ref = React.useRef<HTMLDivElement | null>(null);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el || !enabled) return;
+    let sx = 0, sy = 0, live = false;
+    const start = (e: TouchEvent) => {
+      const t = e.touches[0];
+      const target = e.target as HTMLElement | null;
+      // Anything that drags or scrolls horizontally keeps its gesture:
+      // range inputs, the chart's draggable diamonds, chip rows, carousels.
+      if (target?.closest('input[type="range"], svg, [data-noswipe]')) { live = false; return; }
+      let n: HTMLElement | null = target;
+      while (n && n !== el) {
+        const ox = getComputedStyle(n).overflowX;
+        if ((ox === 'auto' || ox === 'scroll') && n.scrollWidth > n.clientWidth) { live = false; return; }
+        n = n.parentElement;
+      }
+      if (t.clientX < 24 || t.clientX > window.innerWidth - 8) { live = false; return; }
+      live = true; sx = t.clientX; sy = t.clientY;
+    };
+    const end = (e: TouchEvent) => {
+      if (!live) return;
+      live = false;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.58) return;
+      const i = flow.steps.findIndex(x => x.id === flow.activeId);
+      if (i < 0) return;
+      if (dx < 0) { if (i < flow.steps.length - 1) flow.onNext(flow.activeId); }
+      else        { if (i > 0) flow.onPrev(flow.activeId); }
+    };
+    el.addEventListener('touchstart', start, { passive: true });
+    el.addEventListener('touchend', end, { passive: true });
+    return () => {
+      el.removeEventListener('touchstart', start);
+      el.removeEventListener('touchend', end);
+    };
+  }, [flow, enabled]);
+  return ref;
+}
+
 // A code default is a suggestion until the baker has moved past its page:
 // passing through with Suivant counts as adopting it, which is exactly what
 // highestStep already records.
@@ -278,8 +325,10 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
     </button>;
   }
 
+  // Both pages move together — only the incoming one animating reads as a
+  // swap rather than a displacement, which is what loses the eye.
   return (
-    <div id={`step-${id}`} style={{ padding: '18px 2px 4px' }}>
+    <div id={`step-${id}`} key={id} className="bh-step-page" style={{ padding: '18px 2px 4px' }}>
       <div style={{
         fontFamily: 'var(--font-dm-mono)', fontSize: '10.5px', letterSpacing: '.14em',
         textTransform: 'uppercase', color: '#9C8248',
@@ -1861,6 +1910,7 @@ export default function Home() {
   };
 
 
+
   const simpleFlow: StepFlow = {
     steps: SIMPLE_STEPS,
     // A restored session parks activeStep on the 99 sentinel; in page mode
@@ -1884,6 +1934,14 @@ export default function Home() {
     gapReturn: gapReturnTo != null,
     onGapReturn: () => { setGapReturnTo(null); setActiveStep(SIMPLE_LAST); scrollToStepTop(); },
   };
+
+  // The scheduler page is excluded: its chart diamonds are dragged sideways,
+  // and a 60px drag there must move a feed time, never the page.
+  const simpleSwipeRef = useStepSwipe(simpleFlow,
+    tab === 'simple' && activeTab === 'setup' && simpleFlow.activeId !== SIMPLE_LAST);
+  const customSwipeRef = useStepSwipe(customFlow,
+    tab === 'custom' && activeTab === 'setup' && customFlow.activeId !== 9);
+
 
 
 
@@ -2600,6 +2658,7 @@ export default function Home() {
             {/* ── Summary chips: progressive while filling, navigation on
                    the way back. Replaces the review-only jump chips. ── */}
             <SummaryChips flow={simpleFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62} />
+            <div ref={simpleSwipeRef}>
 
             {/* ─── STEP 1: Style picker ────────────── */}
             <StepPage flow={simpleFlow} id={1}>
@@ -2826,6 +2885,7 @@ export default function Home() {
             </StepPage>
 
             {/* Generate now lives in the last page's nav bar (StepPage). */}
+            </div>{/* end swipe container */}
 
             </div>{/* end setup tab */}
 
@@ -3179,6 +3239,7 @@ export default function Home() {
             {/* ── Summary chips: progressive while filling, navigation on
                    the way back. Replaces the review-only jump chips. ── */}
             <SummaryChips flow={customFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62} />
+            <div ref={customSwipeRef}>
 
             {/* ─── ADV STEP 1: Style picker ────────── */}
             <StepPage flow={customFlow} id={1}>
@@ -3939,6 +4000,7 @@ export default function Home() {
             {/* Precision section removed — merged into the dough step below */}
 
             {/* Generate now lives in the last page's nav bar (StepPage). */}
+            </div>{/* end swipe container */}
 
             </div>{/* end setup tab */}
 

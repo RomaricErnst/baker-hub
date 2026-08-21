@@ -101,3 +101,18 @@ body {
   to   { transform: translateY(0);    opacity: 1; }
 }
 @keyframes bh-spin { to { transform: rotate(360deg); } }
+
+/* ── Step pages ──────────────────────────────
+   One page mounts at a time, so there is no outgoing element to animate
+   against. A short entrance is enough to say "the page turned"; slowing it
+   further only adds latency across six or nine steps. */
+@keyframes bhStepIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: none; }
+}
+.bh-step-page {
+  animation: bhStepIn 320ms cubic-bezier(.25, .8, .3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bh-step-page { animation: none; }
+}
