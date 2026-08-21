@@ -2016,7 +2016,11 @@ export default function Home() {
               setTimeout(() => setShowSignInForSave(false), 4000);
             }
           }}
-          onNewSession={startOver}
+          // Nothing to start over from on the landing page — the baker is
+          // already at the start. It appears the moment they pick a bake type,
+          // which is also the moment it becomes useful: it is how they switch
+          // Pizza <-> Pain.
+          onNewSession={bakeType ? startOver : undefined}
           onResumeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event); }}
           onRebakeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event, { rebake: true }); }}
           onOpenProfile={() => setProfileOpen(true)}
