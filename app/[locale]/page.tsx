@@ -2023,8 +2023,10 @@ export default function Home() {
 
         {bakeType && bakeType !== 'bread' && (
           <div style={{
+            // Flo: no line under Ma Pâte. It was #2D2824 on a #2B2420 ground —
+            // all but invisible, which is why it survived the first pass, but
+            // it was still there.
             background: '#2B2420',
-            borderBottom: '1px solid #2D2824',
           }}>
             {/* ── Journey bar ── */}
             <div style={{ display: 'flex', gap: '8px', padding: '8px 12px 0' }}>
