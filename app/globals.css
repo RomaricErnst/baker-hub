@@ -184,3 +184,11 @@ body {
   --radius-card:16px;
   --radius-pill:20px;
 }
+
+/* ── Header wordmark ──────────────────────────
+   Three 44px targets plus the burger and the mark leave no room for the
+   wordmark on the narrowest phones. Below 360px the mark identifies the brand
+   on its own — better than shrinking targets or ellipsising the name. */
+@media (max-width: 372px) {
+  .bh-wordmark { display: none; }
+}

@@ -390,13 +390,13 @@ export default function Header({
     <>
     <header style={{
       background: 'var(--char)', color: 'var(--cream)',
-      padding: '0 24px', display: 'flex', alignItems: 'center',
+      padding: '0 12px', display: 'flex', alignItems: 'center',
       justifyContent: 'space-between', height: '68px',
       position: 'sticky', top: 0, zIndex: 100,
       
     }}>
       {/* Left: menu button + logo + tagline */}
-      <div ref={menuRef} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div ref={menuRef} style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: '1 1 auto' }}>
         <button
           onClick={() => setMenuOpen(v => !v)}
           aria-label="Menu"
@@ -418,10 +418,12 @@ export default function Header({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <img src="/logo-mark.webp" width={36} height={36}
             style={{ objectFit: 'contain' }} alt="Baker Hub" />
-          <div style={{
-            fontFamily: 'var(--font-playfair)',
-            fontSize: '15px', fontWeight: 700,
+          <div className="bh-wordmark" style={{
+            fontFamily: 'var(--font-fraunces)',
+            fontVariationSettings: "'SOFT' 40, 'WONK' 1, 'opsz' 20",
+            fontSize: '15px', fontWeight: 600,
             color: 'var(--cream)', lineHeight: 1,
+            whiteSpace: 'nowrap',
           }}>Baker Hub</div>
         </div>
       </div>
@@ -451,73 +453,77 @@ export default function Header({
         </a>
       )}
 
-      {/* Right: Save / Restart pill. Restart is ALWAYS visible — it's also
-          how bakers switch Pizza ↔ Pain before anything is generated. The
-          Save side only joins once there's a session worth saving. */}
-      {!backHref && (recipeGenerated || sessionSaved || sessionRestored) && (() => {
+      {/* Right: three round 44px targets. They used to be two labels sharing
+          one pill, which meant the destructive action sat a thumb-width from
+          the one bakers tap most, both at 11px.
+
+          Order and spacing are the mis-tap guard: Start over is set apart from
+          Save by 16px and rendered quietly (no fill, dim stroke), while the two
+          benign actions — Save and Profile — sit together at 8px. Nothing
+          destructive is ever adjacent to something frequent. */}
+      {!backHref && (() => {
         const hasWork = (recipeGenerated || sessionSaved || sessionRestored) && !hideActionBar;
+        const showAny = recipeGenerated || sessionSaved || sessionRestored;
+        if (!showAny) return null;
         return (
-        <div style={{
-          display: 'flex',
-          border: hasWork
-            ? (sessionSaved ? '1px solid rgba(107,122,90,0.4)' : '1px solid rgba(107, 68, 35,0.4)')
-            : '1px solid rgba(255,255,255,0.15)',
-          borderRadius: '20px',
-          overflow: 'hidden',
-          background: hasWork
-            ? (sessionSaved ? 'rgba(107,122,90,0.08)' : 'rgba(107, 68, 35,0.08)')
-            : 'transparent',
-          flexShrink: 0,
-        }}>
-          {hasWork && (
-            <>
-              {/* Save side */}
+          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+
+            {/* Start over — quiet, and the furthest of the three from Save */}
+            {onNewSession && (
               <button
-                onClick={() => onSaveSession?.()}
+                onClick={() => {
+                  if (!hasWork || window.confirm(tS('newSessionConfirm'))) onNewSession?.();
+                }}
+                aria-label={locale === 'fr' ? 'Recommencer' : 'Start over'}
+                title={locale === 'fr' ? 'Recommencer' : 'Start over'}
                 style={{
-                  background: 'none', border: 'none',
-                  padding: '4px 12px',
-                  fontFamily: 'var(--font-dm-mono)',
-                  fontSize: '11px',
-                  color: sessionSaved ? 'var(--sage)' : 'var(--terra-on-dark)',
-                  cursor: sessionSaved ? 'default' : 'pointer',
-                  whiteSpace: 'nowrap',
+                  width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
+                  border: '1px solid rgba(255,255,255,0.12)', background: 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', marginRight: '16px',
                 }}
               >
-                {sessionSaved ? tS('saved') : tS('saveSession')}
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9A918A"
+                  strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 12a9 9 0 1 0 3-6.7" /><polyline points="3 4 3 9 8 9" />
+                </svg>
               </button>
+            )}
 
-              {/* Divider */}
-              <div style={{
-                width: '1px',
-                background: sessionSaved
-                  ? 'rgba(107,122,90,0.3)'
-                  : 'rgba(107, 68, 35,0.3)',
-                margin: '6px 0',
-              }} />
-            </>
-          )}
-
-          {/* Restart side — confirm only when a plan could be lost.
-              Hidden when no handler is wired (e.g. the About page) — a
-              visible button that does nothing reads as a bug. */}
-          {onNewSession && <button
-            onClick={() => {
-              if (!hasWork || window.confirm(tS('newSessionConfirm'))) onNewSession?.();
-            }}
-            style={{
-              background: 'none', border: 'none',
-              padding: '4px 12px',
-              fontFamily: 'var(--font-dm-mono)',
-              fontSize: '11px',
-              color: hasWork ? 'var(--smoke)' : 'var(--cream)',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {locale === 'fr' ? 'Recommencer' : 'Start over'}
-          </button>}
-        </div>
+            {/* Save — the icon carries the state, since there is no label to
+                carry it: a floppy while unsaved, a tick once stored. */}
+            {hasWork && (
+              <button
+                onClick={() => { if (!sessionSaved) onSaveSession?.(); }}
+                aria-label={sessionSaved ? tS('saved') : tS('saveSession')}
+                title={sessionSaved ? tS('saved') : tS('saveSession')}
+                style={{
+                  width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
+                  border: sessionSaved
+                    ? '1px solid rgba(107,122,90,0.5)'
+                    : '1px solid rgba(200,138,82,0.45)',
+                  background: sessionSaved
+                    ? 'rgba(107,122,90,0.14)'
+                    : 'rgba(200,138,82,0.12)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: sessionSaved ? 'default' : 'pointer',
+                }}
+              >
+                {sessionSaved ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#93A683"
+                    strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 12.5l5 5 11-11" />
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--terra-on-dark)"
+                    strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 4h12l4 4v12H4z" /><path d="M8 4v6h8V4" />
+                    <rect x="8" y="14" width="8" height="6" />
+                  </svg>
+                )}
+              </button>
+            )}
+          </div>
         );
       })()}
       {/* Profile picto — far right, 44px tap target (Flo). */}
