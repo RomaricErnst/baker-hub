@@ -151,9 +151,11 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
             onClick={onClose}
             style={{
               background: 'rgba(255,255,255,.1)',
+              backgroundClip: 'content-box',
               border: 'none', borderRadius: '8px',
               color: 'var(--cream)', fontSize: '1rem',
-              width: '30px', height: '30px',
+              // 44px tap box, 30px painted square (padding + content-box clip)
+              width: '44px', height: '44px', padding: '7px', margin: '-7px',
               cursor: 'pointer', flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}

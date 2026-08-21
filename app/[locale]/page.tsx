@@ -2802,8 +2802,8 @@ export default function Home() {
                     style={{
                       background: '#6B4423',
                       color: 'white',
-                      fontSize: '11px',
-                      padding: '4px 10px',
+                      fontSize: '12px',
+                      padding: '11px 16px',
                       borderRadius: '8px',
                       border: 'none',
                       cursor: 'pointer',
@@ -4099,8 +4099,8 @@ export default function Home() {
                     style={{
                       background: '#6B4423',
                       color: 'white',
-                      fontSize: '11px',
-                      padding: '4px 10px',
+                      fontSize: '12px',
+                      padding: '11px 16px',
                       borderRadius: '8px',
                       border: 'none',
                       cursor: 'pointer',

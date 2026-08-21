@@ -635,7 +635,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
               <button
                 onClick={onShare}
                 style={{
-                  marginTop: '10px', padding: '8px 16px',
+                  marginTop: '10px', padding: '13px 18px',
                   background: 'transparent',
                   border: '1px solid rgba(156, 130, 72,0.5)',
                   color: '#9C8248',

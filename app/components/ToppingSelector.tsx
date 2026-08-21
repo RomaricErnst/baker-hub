@@ -568,9 +568,12 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           <button
             onClick={onClose}
             style={{
-              position: 'absolute', top: '10px', right: '10px',
-              width: '28px', height: '28px',
+              position: 'absolute', top: '2px', right: '2px',
+              // 44px tap box, 28px painted disc: padding + content-box clip
+              // keeps the visual unchanged while the finger gets a real target.
+              width: '44px', height: '44px', padding: '8px',
               background: 'rgba(43, 36, 32,0.6)',
+              backgroundClip: 'content-box',
               border: 'none', borderRadius: '50%',
               color: 'white', fontSize: '13px',
               cursor: 'pointer',
@@ -1594,11 +1597,15 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             flexShrink: 0,
             alignItems: 'center',
           }}>
+            {/* Pinned to the left edge: as a plain scroller item the label
+                slid away with the chips and read as a truncated word
+                ("TERS"). It labels the row, so it stays with the row. */}
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: '4px',
-              padding: '5px 2px 5px 12px', color: '#8A7F78', fontSize: '11px',
+              padding: '5px 8px 5px 12px', color: '#8A7F78', fontSize: '11px',
               fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase',
               letterSpacing: '.05em', flexShrink: 0, whiteSpace: 'nowrap',
+              position: 'sticky', left: 0, zIndex: 1, background: '#FDFBF7',
             }}>
               <svg viewBox="0 0 16 16" width={12} height={12} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
                 <path d="M2 3h12M4.5 8h7M7 13h2"/>

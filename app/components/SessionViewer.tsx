@@ -356,11 +356,12 @@ export default function SessionViewer({
       }}>
 
         {/* X close button */}
-        <button onClick={onClose} style={{
-          position: 'absolute', top: '16px', right: '16px',
+        <button onClick={onClose} aria-label="Close" style={{
+          position: 'absolute', top: '6px', right: '6px',
           background: 'none', border: 'none', cursor: 'pointer',
           color: 'var(--smoke)', fontSize: '18px', lineHeight: 1,
-          padding: '4px', zIndex: 2,
+          width: '44px', height: '44px', zIndex: 2,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>✕</button>
 
         {/* Scrollable content */}

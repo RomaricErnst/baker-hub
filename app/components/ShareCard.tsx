@@ -767,7 +767,7 @@ export default function ShareCard({
         <p style={{ fontFamily: 'var(--font-playfair)', fontSize: '18px', fontWeight: 700, color: 'var(--char)', margin: 0 }}>
           {l === 'fr' ? 'Partager cette fournée' : 'Share this bake'}
         </p>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '18px', padding: '4px' }}>✕</button>
+        <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '18px', width: '44px', height: '44px', marginRight: '-10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
       </div>
 
       {/* Scrollable body — single column on phones, preview left + sticky
