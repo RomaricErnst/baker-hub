@@ -137,126 +137,6 @@ const STYLE_HYDRATION_ZONES: Record<string, {
 };
 const FALLBACK_ZONE = { min: 50, classicMin: 60, classicMax: 70, advancedMax: 78, max: 85, name: 'Custom' };
 
-// ── Step jump chips (review mode) ─────────────
-// The filled setup accordion is ~6 screens tall on mobile; this compact
-// sticky row lets a returning baker jump straight to any step.
-function StepJumpChips({ steps, idPrefix, topOffset = 62, raised = false, onBeforeJump }: { steps: { n: number; label: string }[]; idPrefix: string; topOffset?: number; raised?: boolean; onBeforeJump?: (n: number) => void }) {
-  return (
-    <div style={{
-      position: 'sticky', top: raised ? '0px' : `${topOffset}px`, zIndex: 30,
-      transition: 'top 0.25s ease',
-      display: 'flex', gap: '6px', overflowX: 'auto',
-      padding: '8px 4px', margin: '0 -4px 4px',
-      background: 'var(--cream)',
-      WebkitOverflowScrolling: 'touch',
-      scrollbarWidth: 'none',
-    }}>
-      {steps.map(s => (
-        <button
-          key={s.n}
-          onClick={() => {
-            onBeforeJump?.(s.n);
-            const el = document.getElementById(`${idPrefix}-${s.n}`);
-            if (el) {
-              const top = el.getBoundingClientRect().top + window.scrollY - (topOffset + 52);
-              window.scrollTo({ top, behavior: 'smooth' });
-            }
-          }}
-          style={{
-            flex: '0 0 auto',
-            background: 'var(--warm)',
-            border: '1px solid var(--border)',
-            borderRadius: '20px',
-            padding: '6px 12px',
-            fontSize: '11px',
-            fontFamily: 'var(--font-dm-mono)',
-            color: 'var(--ash)',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {s.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// ── Step card ────────────────────────────────
-function StepCard({
-  num, title, activeStep, highestStep, summary, onEdit, children, idPrefix = 'step', reviewMode = false, canComplete = true,
-}: {
-  num: number;
-  title: string;
-  activeStep: number;
-  highestStep: number;
-  summary?: React.ReactNode;
-  onEdit: () => void;
-  children: React.ReactNode;
-  idPrefix?: string;
-  reviewMode?: boolean;
-  canComplete?: boolean;
-}) {
-  const isActive    = activeStep === num || reviewMode;
-  const isCompleted = highestStep >= num && activeStep !== num && !reviewMode && canComplete;
-  const isLocked    = highestStep < num && !reviewMode;
-
-  return (
-    <div id={`${idPrefix}-${num}`} className={isActive ? 'step-card-active' : undefined} style={{
-      border: `2px solid ${isActive ? 'var(--terra)' : isCompleted ? 'rgba(107,122,90,0.25)' : 'var(--border)'}`,
-      borderRadius: '18px',
-      background: isActive ? '#FDFBF7' : isCompleted ? '#F9FAF7' : 'var(--warm)',
-      marginBottom: '1rem',
-      opacity: isLocked ? 0.4 : 1,
-      transition: 'all .25s',
-      boxShadow: isActive
-        ? '0 0 0 3px rgba(107, 68, 35,0.08), 0 2px 16px rgba(43, 36, 32,0.08)'
-        : '0 2px 12px rgba(43, 36, 32,0.06)',
-    }}>
-      {/* Header */}
-      <div
-        onClick={isCompleted ? onEdit : undefined}
-        style={{
-          padding: '1.1rem 1.4rem',
-          display: 'flex', alignItems: 'center', gap: '.9rem',
-          cursor: isCompleted ? 'pointer' : 'default',
-        }}
-      >
-        {/* Title + summary */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontFamily: 'var(--font-playfair)',
-            fontWeight: 700, fontSize: '1.1rem',
-            color: isLocked ? 'var(--smoke)' : 'var(--char)',
-          }}>
-            {title}
-          </div>
-          {isCompleted && summary && (
-            <div style={{ fontSize: '.77rem', color: 'var(--smoke)', marginTop: '.15rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-dm-mono)' }}>
-              {summary}
-            </div>
-          )}
-        </div>
-
-        {isCompleted && (
-          <span aria-label="Edit" style={{ flexShrink: 0, display: 'flex', padding: '4px' }}>
-            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="var(--sage)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M13.5 3.5l3 3L7 16l-3.7.7L4 13l9.5-9.5z"/>
-            </svg>
-          </span>
-        )}
-      </div>
-
-      {/* Expanded content */}
-      {isActive && (
-        <div style={{ borderTop: '1px solid var(--border)', padding: '1.5rem' }}>
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Step flow model ──────────────────────────
 // One derived list per mode is the single source of truth for: the chip
 // carousel, the "Étape N sur X" counter, Prev/Next targets and the
@@ -427,28 +307,6 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
         {next}
       </div>
     </div>
-  );
-}
-
-// ── Stepper button ────────────────────────────
-function ContinueBtn({ onClick, label }: { onClick: () => void; label?: string }) {
-  const _locale = useLocale();
-  const lbl = label ?? (_locale === 'fr' ? 'Continuer →' : 'Continue →');
-  return (
-    <button
-      onClick={onClick}
-      className="btn"
-      style={{
-        marginTop: '1.25rem', width: '100%', padding: '.9rem 1.25rem',
-        border: 'none', borderRadius: '12px',
-        background: 'var(--terra)', color: '#fff',
-        fontFamily: 'var(--font-playfair)', fontSize: '1.05rem', fontWeight: 700,
-        cursor: 'pointer', transition: 'opacity .15s',
-        boxShadow: '0 2px 8px rgba(107, 68, 35,0.22)',
-      }}
-    >
-      {lbl}
-    </button>
   );
 }
 
@@ -991,13 +849,10 @@ export default function Home() {
   useEffect(() => {
     if (reviewMode || isRestoringRef.current) return;
     if (styleKey === 'pain_levain' && yeastType === 'sourdough' && advancedStep === 7 && prefermentType !== 'levain') {
-      const tmr = setTimeout(() => {
-        setPrefermentType('levain');
-        setAdvancedStep(9);
-        setAdvancedHighestStep(sv => Math.max(sv, 9));
-        const el = document.getElementById('adv-step-9');
-        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
-      }, 400);
+      // Sourdough forces levain and hides the preferment step; advanceAdv now
+      // skips it, so Suivant reaches the plan by itself. The page no longer
+      // flips on its own — only the state it depends on is set.
+      const tmr = setTimeout(() => setPrefermentType('levain'), 400);
       return () => clearTimeout(tmr);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1077,12 +932,7 @@ export default function Home() {
     // the simple flow keeps its page and lets the chips show the change.
     if (!isCustom) return;
     const tmr = setTimeout(() => {
-      setAdvancedStep(9); setAdvancedHighestStep(p => Math.max(p, 9));
-      const el = document.getElementById('adv-step-9');
-      if (el) {
-        const top = el.getBoundingClientRect().top + window.scrollY - 70;
-        window.scrollTo({ top, behavior: 'smooth' });
-      }
+      setAdvancedStep(9); setAdvancedHighestStep(p => Math.max(p, 9)); scrollToStepTop();
     }, 650);
     return () => clearTimeout(tmr);
   }, [styleKey, ovenType, mixerType, yeastType, prefermentType]);
@@ -1620,24 +1470,17 @@ export default function Home() {
       (next === 3 && ovenType != null) ||
       (next === 5 && mixerType != null) ||
       (next === 7 && yeastType != null && yeastType !== 'sourdough') ||
-      (next === 8 && profPref != null && yeastType !== 'sourdough')
+      // Preferment is not rendered at all on the sourdough path, so it is
+      // skipped there unconditionally — otherwise Suivant lands on a page
+      // that does not exist.
+      (next === 8 && (yeastType === 'sourdough' || profPref != null))
     ) next++;
-    const target = next > advancedHighestStep ? next : advancedHighestStep;
-    setAdvancedHighestStep(target);
-    setAdvancedStep(target);
-    setTimeout(() => {
-      if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
-      // Scroll to the NEXT section, not `target`: in a generated session
-      // highestStep is 99, step-99 doesn't exist and the baker saw nothing
-      // happen after picking a value. `next` is always a real section.
-      const el = document.getElementById(`adv-step-${next}`);
-      if (el) {
-        const top = el.getBoundingClientRect().top + window.scrollY - 70;
-        // Instant scroll — smooth scrolling kept options moving under the
-        // baker's finger during step transitions, causing mis-taps.
-        window.scrollTo({ top, behavior: 'smooth' });
-      }
-    }, 150);
+    // One page at a time — see advance(). max(next, highestStep) would land on
+    // the 99 sentinel in a generated session, which is no page at all.
+    setAdvancedStep(next);
+    setAdvancedHighestStep(p => Math.max(p, next));
+    if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
+    scrollToStepTop();
   }
 
   function startOver() {
@@ -1774,7 +1617,7 @@ export default function Home() {
     setActiveTab('setup');
 
     // Advance to scheduler step and mark all prior steps as completed.
-    // Without highestStep updates, the scheduler StepCard renders as locked
+    // Without highestStep updates, the scheduler page renders as locked
     // → graph doesn't show → user stuck.
     if (isCustom) {
       setAdvancedStep(9);
@@ -1787,11 +1630,7 @@ export default function Home() {
     setReviewMode(true);
 
     // Scroll to scheduler step after state settles
-    setTimeout(() => {
-      const stepId = isCustom ? 'adv-step-9' : 'step-7';
-      const el = document.getElementById(stepId);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 150);
+    scrollToStepTop();
   }
 
   // ── Resume / rebake a saved bake event ──
@@ -1955,6 +1794,81 @@ export default function Home() {
       gap: fr ? 'L\u2019heure de cuisson n\u2019est pas choisie' : 'No bake time chosen yet' },
   ];
   const SIMPLE_LAST = SIMPLE_STEPS[SIMPLE_STEPS.length - 1].id;
+  // ── Custom-mode step model ──
+  // Preferment (8) is absent on the sourdough path, so this list is 10 or 9
+  // entries long. Positions are indexes into it; ids never move.
+  const flourSummary = (): string => {
+    if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
+      return flourBlend.brandProduct ?? computeBlendProfile(flourBlend).displayName;
+    }
+    const f1 = flourBlend.brandProduct ?? computeBlendProfile({ ...flourBlend, flour2: null, ratio1: 100 }).displayName;
+    const f2raw = flourBlend.customFlour2Name ?? computeBlendProfile(flourBlend).displayName.split('+')[1]?.trim() ?? '';
+    return `${flourBlend.ratio1}% ${f1} + ${f2raw.replace(/^\d+%\s*/, '')}`;
+  };
+  const CUSTOM_STEPS: StepDef[] = ([
+    { id: 1, chip: fr ? 'Style' : 'Style', title: t('steps.2.title'),
+      value: styleKey ? styleDisplayName(styleKey) : null,
+      gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
+    { id: 2, chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
+      value: `${numItems} × ${itemWeight} g`, prefilled: true,
+      gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
+    { id: 3, chip: fr ? 'Four' : 'Oven', title: t('steps.4.title'),
+      value: localName(ovenData),
+      gap: fr ? 'Le four n\u2019est pas choisi' : 'No oven chosen yet' },
+    { id: 4, chip: fr ? 'Climat' : 'Climate', title: t('steps.5.title'),
+      value: `${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`, prefilled: true,
+      gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
+    { id: 5, chip: fr ? 'Pétrin' : 'Mixer', title: t('steps.6.title'),
+      value: mixerType ? localName(MIXER_TYPES[mixerType]) : null,
+      gap: fr ? 'Le pétrissage n\u2019est pas choisi' : 'No mixing method chosen yet' },
+    { id: 6, chip: fr ? 'Farine' : 'Flour', title: t('steps.flour.title'),
+      value: flourSummary(), prefilled: true,
+      gap: fr ? 'La farine n\u2019est pas confirmée' : 'Flour not confirmed' },
+    { id: 7, chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
+      value: yeastType ? localName(YEAST_TYPES[yeastType]) : null,
+      gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
+    ...(yeastType !== 'sourdough' ? [{
+      id: 8, chip: fr ? 'Préferment' : 'Preferment', title: t('preferment.stepTitle'),
+      value: prefermentType !== 'none' ? localName(PREFERMENT_TYPES[prefermentType]) : t('preferment.direct'),
+      prefilled: true,
+      gap: fr ? 'Le préferment n\u2019est pas confirmé' : 'Preferment not confirmed',
+    } as StepDef] : []),
+    { id: 9, chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
+      value: eatTime
+        ? `${formatTime(startTime, locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
+        : null,
+      gap: fr ? 'L\u2019heure de cuisson n\u2019est pas choisie' : 'No bake time chosen yet' },
+    { id: 10, chip: fr ? 'Pâte' : 'Dough', title: t('dialIn.title'),
+      value: manualHydration !== undefined
+        ? `${manualHydration}% ${t('dialIn.hydrationSuffix')}`
+        : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : null,
+      prefilled: true,
+      gap: fr ? 'La pâte n\u2019est pas confirmée' : 'Dough not confirmed' },
+  ] as StepDef[]);
+  const CUSTOM_LAST = CUSTOM_STEPS[CUSTOM_STEPS.length - 1].id;
+
+  const customFlow: StepFlow = {
+    steps: CUSTOM_STEPS,
+    activeId: advancedStep > CUSTOM_LAST ? CUSTOM_LAST : advancedStep,
+    highestStep: advancedHighestStep,
+    locale,
+    onJump: (id) => { setGapReturnTo(null); setAdvancedStep(id); setAdvancedHighestStep(p => Math.max(p, id)); scrollToStepTop(); },
+    onGapJump: (id) => { setGapReturnTo(CUSTOM_LAST); setAdvancedStep(id); setAdvancedHighestStep(p => Math.max(p, id)); scrollToStepTop(); },
+    onPrev: (id) => {
+      const i = CUSTOM_STEPS.findIndex(x => x.id === id);
+      setAdvancedStep(CUSTOM_STEPS[Math.max(0, i - 1)].id);
+      scrollToStepTop();
+    },
+    onNext: (id) => advanceAdv(id),
+    onGenerate: handleGenerate,
+    showGenerate: canGenerate && !!eatTime && !(sessionRestored && recipeGenerated),
+    generateLabel: t('generate.generateBtn'),
+    onSeePlan: () => setActiveTab('plan'),
+    recipeGenerated,
+    gapReturn: gapReturnTo != null,
+    onGapReturn: () => { setGapReturnTo(null); setAdvancedStep(CUSTOM_LAST); scrollToStepTop(); },
+  };
+
 
   const simpleFlow: StepFlow = {
     steps: SIMPLE_STEPS,
@@ -1965,7 +1879,11 @@ export default function Home() {
     locale,
     onJump: (id) => { setGapReturnTo(null); setActiveStep(id); setHighestStep(p => Math.max(p, id)); scrollToStepTop(); },
     onGapJump: (id) => { setGapReturnTo(SIMPLE_LAST); setActiveStep(id); setHighestStep(p => Math.max(p, id)); scrollToStepTop(); },
-    onPrev: (id) => { setActiveStep(id - 1); scrollToStepTop(); },
+    onPrev: (id) => {
+      const i = SIMPLE_STEPS.findIndex(x => x.id === id);
+      setActiveStep(SIMPLE_STEPS[Math.max(0, i - 1)].id);
+      scrollToStepTop();
+    },
     onNext: (id) => advance(id),
     onGenerate: handleGenerate,
     showGenerate: canGenerate && !(sessionRestored && recipeGenerated),
@@ -3262,38 +3180,12 @@ export default function Home() {
               </div>
             )}
 
-            {/* ── Nav #3: step jump chips (review mode) ── */}
-            {reviewMode && (
-              <StepJumpChips
-                raised={navHidden}
-                topOffset={bakeType === 'pizza' ? 97 : 62}
-                onBeforeJump={n2 => { setAdvancedStep(n2); setAdvancedHighestStep(p2 => Math.max(p2, n2)); setReviewMode(true); }}
-                idPrefix="adv-step"
-                steps={[
-                  { n: 1, label: locale === 'fr' ? 'Style' : 'Style' },
-                  { n: 2, label: locale === 'fr' ? 'Quantité' : 'Quantity' },
-                  { n: 3, label: locale === 'fr' ? 'Four' : 'Oven' },
-                  { n: 4, label: locale === 'fr' ? 'Climat' : 'Climate' },
-                  { n: 5, label: locale === 'fr' ? 'Pétrin' : 'Mixer' },
-                  { n: 6, label: locale === 'fr' ? 'Farine' : 'Flour' },
-                  { n: 7, label: locale === 'fr' ? 'Levure' : 'Yeast' },
-                  { n: 8, label: locale === 'fr' ? 'Préferment' : 'Preferment' },
-                  { n: 9, label: locale === 'fr' ? 'Plan' : 'Plan' },
-                  { n: 10, label: locale === 'fr' ? 'Pâte' : 'Dough' },
-                ]}
-              />
-            )}
+            {/* ── Summary chips: progressive while filling, navigation on
+                   the way back. Replaces the review-only jump chips. ── */}
+            <SummaryChips flow={customFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62} />
 
             {/* ─── ADV STEP 1: Style picker ────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={1} title={t('steps.2.title')}
-              activeStep={advancedStep}
-              highestStep={advancedHighestStep}
-              reviewMode={reviewMode}
-              summary={styleKey ? (locale === 'fr' && (ALL_STYLES[styleKey] as { nameFr?: string }).nameFr ? (ALL_STYLES[styleKey] as { nameFr: string }).nameFr : ALL_STYLES[styleKey].name) : undefined}
-              onEdit={() => setAdvancedStep(1)}
-            >
+            <StepPage flow={customFlow} id={1}>
               {bakeType && (<>
                 <StylePicker
                   bakeType={bakeType}
@@ -3351,18 +3243,10 @@ export default function Home() {
                   </div>
                 )}
               </>)}
-            </StepCard>
+            </StepPage>
 
             {/* ─── ADV STEP 3: Quantity ────────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={2} title={t('steps.3.title')}
-              activeStep={advancedStep}
-              highestStep={advancedHighestStep}
-              reviewMode={reviewMode}
-              summary={styleKey ? `${numItems} × ${itemWeight} g` : undefined}
-              onEdit={() => setAdvancedStep(2)}
-            >
+            <StepPage flow={customFlow} id={2}>
               {(() => {
                 const showDiam = bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '');
                 const isAtMax = styleKey === 'neapolitan' && itemWeight >= 278;
@@ -3458,22 +3342,10 @@ export default function Home() {
                   </div>
                 );
               })()}
-              {!reviewMode && <ContinueBtn onClick={() => advanceAdv(2)} />}
-            </StepCard>
+            </StepPage>
 
             {/* ─── ADV STEP 4: Oven ────────────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={3} title={t('steps.4.title')}
-              activeStep={advancedStep}
-              highestStep={advancedHighestStep}
-              reviewMode={reviewMode}
-              summary={ovenData
-                ? (locale === 'fr' && (ovenData as { nameFr?: string }).nameFr ? (ovenData as { nameFr: string }).nameFr : ovenData.name)
-                : <span style={{ color: 'var(--smoke)', opacity: 0.6 }}>{locale === 'fr' ? 'Choisir votre four' : 'Choose your oven'}</span>}
-              canComplete={!!ovenType}
-              onEdit={() => setAdvancedStep(3)}
-            >
+            <StepPage flow={customFlow} id={3}>
               <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
                 styleKey={styleKey}
@@ -3481,42 +3353,20 @@ export default function Home() {
                 onSelect={ot => { setOvenType(ot); advanceAdv(3); }}
                 onPreselect={setOvenType}
               />
-              {!reviewMode && ovenType && <ContinueBtn onClick={() => advanceAdv(3)} />}
-            </StepCard>
+            </StepPage>
 
             {/* ─── ADV STEP 5: Climate ─────────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={4}
-              title={t('steps.5.title')}
-              activeStep={advancedStep}
-              highestStep={advancedHighestStep}
-              reviewMode={reviewMode}
-              summary={`${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`}
-              onEdit={() => setAdvancedStep(4)}
-            >
+            <StepPage flow={customFlow} id={4}>
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
                 fridgeTemp={fridgeTemp} mode="custom"
                 units={units}
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
-              {!reviewMode && <ContinueBtn onClick={() => advanceAdv(4)} />}
-            </StepCard>
+            </StepPage>
 
             {/* ─── ADV STEP 6: Mixer ───────────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={5} title={t('steps.6.title')}
-              activeStep={advancedStep}
-              highestStep={advancedHighestStep}
-              reviewMode={reviewMode}
-              summary={mixerType
-                ? (locale === 'fr' && (MIXER_TYPES[mixerType] as { nameFr?: string }).nameFr ? (MIXER_TYPES[mixerType] as { nameFr: string }).nameFr : MIXER_TYPES[mixerType].name)
-                : <span style={{ color: 'var(--smoke)', opacity: 0.6 }}>{locale === 'fr' ? 'Choisir votre pétrissage' : 'Choose your mixer'}</span>}
-              canComplete={!!mixerType}
-              onEdit={() => setAdvancedStep(5)}
-            >
+            <StepPage flow={customFlow} id={5}>
               <MixerPicker
                             totalDoughG={numItems * itemWeight}
                             locale={locale}
@@ -3526,30 +3376,10 @@ export default function Home() {
                 bakeType={bakeType ?? undefined}
                 kitchenTemp={kitchenTemp}
               />
-              {!reviewMode && mixerType && <ContinueBtn onClick={() => advanceAdv(5)} />}
-            </StepCard>
+            </StepPage>
 
             {/* ─── ADV STEP 7: Flour ───────────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={6} title={t('steps.flour.title')}
-              activeStep={advancedStep}
-              highestStep={advancedHighestStep}
-              reviewMode={reviewMode}
-              summary={(() => {
-                if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
-                  // brandProduct holds the actual selected flour name (e.g. "Auchan Farine T55")
-                  // fall back to generic tile name only when no specific flour was selected
-                  return flourBlend.brandProduct ?? computeBlendProfile(flourBlend).displayName;
-                }
-                const ratio2 = 100 - flourBlend.ratio1;
-                const flour1Name = flourBlend.brandProduct ?? computeBlendProfile({ ...flourBlend, flour2: null, ratio1: 100 }).displayName;
-                const flour2NameRaw = flourBlend.customFlour2Name ?? computeBlendProfile(flourBlend).displayName.split('+')[1]?.trim() ?? '';
-                const flour2Name = flour2NameRaw.replace(/^\d+%\s*/, '');
-                return `${flourBlend.ratio1}% ${flour1Name} + ${flour2Name}`;
-              })()}
-              onEdit={() => setAdvancedStep(6)}
-            >
+            <StepPage flow={customFlow} id={6}>
               <FlourPicker
                 blend={flourBlend}
                 onBlendChange={b => setFlourBlend(b)}
@@ -3572,35 +3402,16 @@ export default function Home() {
                   {t('common.continueBtn')}
                 </button>
               </div>
-            </StepCard>
+            </StepPage>
 
             {/* ─── ADV STEP 8: Yeast ───────────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={7} title={t('steps.7.title')}
-              activeStep={advancedStep}
-              highestStep={advancedHighestStep}
-              reviewMode={reviewMode}
-              summary={yeastType ? <>{locale === 'fr' && (YEAST_TYPES[yeastType] as { nameFr?: string }).nameFr ? (YEAST_TYPES[yeastType] as { nameFr: string }).nameFr : YEAST_TYPES[yeastType].name} · <span style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--smoke)', fontSize: '.85em' }}>{locale === 'fr' && (YEAST_TYPES[yeastType] as { shortNameFr?: string }).shortNameFr ? (YEAST_TYPES[yeastType] as { shortNameFr: string }).shortNameFr : YEAST_TYPES[yeastType].shortName}</span></> : undefined}
-              onEdit={() => setAdvancedStep(7)}
-            >
+            <StepPage flow={customFlow} id={7}>
               <YeastHelper
                 selected={yeastType}
                 onSelect={(yt) => {
                   setYeastType(yt);
                   if (yt === 'sourdough') {
                     setPrefermentType('levain');
-                    setAdvancedStep(9);
-                    setAdvancedHighestStep(s => Math.max(s, 9));
-                    setTimeout(() => {
-                      const el = document.getElementById('adv-step-9');
-                      if (el) {
-                        const top = el.getBoundingClientRect().top + window.scrollY - 70;
-                        // Instant scroll — smooth scrolling kept options moving under the
-        // baker's finger during step transitions, causing mis-taps.
-        window.scrollTo({ top, behavior: 'smooth' });
-                      }
-                    }, 150);
                   } else {
                     if (prefermentType === 'levain') setPrefermentType('none');
                     advanceAdv(7);
@@ -3609,82 +3420,32 @@ export default function Home() {
                 onClose={() => {}}
                 styleKey={styleKey}
               />
-              {!reviewMode && yeastType && yeastType !== 'sourdough' && <ContinueBtn onClick={() => advanceAdv(7)} />}
               {styleKey === 'pain_levain' && yeastType === 'sourdough' && advancedStep === 7 && (
                 <div style={{ fontSize: '.72rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '.5rem', textAlign: 'center' }}>
                   {locale === 'fr' ? 'Levain confirmé automatiquement…' : 'Sourdough confirmed automatically…'}
                 </div>
               )}
-              {yeastType === 'sourdough' && advancedStep === 7 && styleKey === 'pain_levain' && !reviewMode && (
-                <div style={{ marginTop: '.75rem' }}>
-                  <button
-                    onClick={() => {
-                      setPrefermentType('levain');
-                      setAdvancedStep(9);
-                      setAdvancedHighestStep(s => Math.max(s, 9));
-                      setTimeout(() => {
-                        const el = document.getElementById('adv-step-9');
-                        if (el) {
-                          const top = el.getBoundingClientRect().top + window.scrollY - 70;
-                          // Instant scroll — smooth scrolling kept options moving under the
-        // baker's finger during step transitions, causing mis-taps.
-        window.scrollTo({ top, behavior: 'smooth' });
-                        }
-                      }, 150);
-                    }}
-                    style={{
-                      width: '100%', padding: '.9rem 1.25rem',
-                      border: 'none', borderRadius: '12px',
-                      background: 'var(--terra)', color: '#fff',
-                      fontFamily: 'var(--font-playfair)',
-                      fontSize: '1.05rem', fontWeight: 700,
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(107, 68, 35,0.22)',
-                    }}
-                  >
-                    {locale === 'fr' ? 'Continuer →' : 'Continue →'}
-                  </button>
-                </div>
-              )}
-            </StepCard>
+              {/* The levain confirm button is gone: the page's own Suivant
+                  carries it, and advanceAdv skips the hidden preferment step. */}
+            </StepPage>
 
             {/* ─── ADV STEP 9: Preferment (hidden for sourdough) ── */}
             {yeastType !== 'sourdough' && (
-              <StepCard
-                idPrefix="adv-step"
-                num={8} title={t('preferment.stepTitle')}
-                activeStep={advancedStep}
-                highestStep={advancedHighestStep}
-                reviewMode={reviewMode}
-                summary={prefermentType !== 'none' ? (locale === 'fr' && (PREFERMENT_TYPES[prefermentType] as { nameFr?: string }).nameFr ? (PREFERMENT_TYPES[prefermentType] as { nameFr: string }).nameFr : PREFERMENT_TYPES[prefermentType].name) : t('preferment.direct')}
-                onEdit={() => setAdvancedStep(8)}
-              >
+              <StepPage flow={customFlow} id={8}>
                 <PrefermentPicker
                   selected={prefermentType}
-                  onSelect={pt => {
-                    setPrefermentType(pt);
-                    advanceAdv(8);
-                  }}
+                  onSelect={setPrefermentType}
                   flourPct={prefermentFlourPct}
                   onFlourPctChange={setPrefermentFlourPct}
                   styleKey={styleKey ?? undefined}
                   hideTypes={['levain']}
                   kitchenTemp={kitchenTemp}
                 />
-              </StepCard>
+              </StepPage>
             )}
 
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={9}
-              title={bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title')}
-              activeStep={advancedStep}
-              highestStep={advancedHighestStep}
-              reviewMode={reviewMode}
-              summary={eatTime ? `${formatTime(startTime, locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}` : undefined}
-              onEdit={() => setAdvancedStep(9)}
-            >
+            <StepPage flow={customFlow} id={9}>
               <SchedulePicker
                 key={eatTime && !isNaN(eatTime.getTime()) ? eatTime.toISOString() : 'no-bake'}
                 mode="custom"
@@ -3735,20 +3496,10 @@ export default function Home() {
                 tang={tang}
                 onTangChange={setTang}
               />
-              {eatTime && !reviewMode && <ContinueBtn onClick={() => { setPrefermentFlourPct(undefined); advanceAdv(9); }} />}
-            </StepCard>
+            </StepPage>
 
             {/* ─── ADV STEP 11: Dial your dough ────── */}
-            <StepCard
-              idPrefix="adv-step"
-              num={10}
-              title={t('dialIn.title')}
-              activeStep={advancedStep}
-              highestStep={advancedHighestStep}
-              reviewMode={reviewMode}
-              summary={manualHydration !== undefined ? `${manualHydration}% ${t('dialIn.hydrationSuffix')}` : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : undefined}
-              onEdit={() => setAdvancedStep(10)}
-            >
+            <StepPage flow={customFlow} id={10}>
               <div>
                 <div style={{ fontSize: '.75rem', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '1rem', lineHeight: 1.5 }}>
                   {locale === 'fr' ? 'Les valeurs par défaut correspondent à votre style — ajustez si vous savez ce que vous faites.' : <>Defaults are set for your style — adjust if you know what you&apos;re doing.</>}
@@ -4182,33 +3933,11 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </StepCard>
+            </StepPage>
 
-            {/* Precision section removed — merged into StepCard below */}
+            {/* Precision section removed — merged into the dough step below */}
 
-            {/* ── Generate button (setup tab) ── */}
-            {canGenerate && eatTime && advancedStep > 9 && !(sessionRestored && recipeGenerated) && (
-              <div style={{ marginTop: '1rem' }}>
-                <button
-                  onClick={handleGenerate}
-                  style={{
-                    width: '100%',
-                    padding: '14px 0',
-                    background: '#6B4423',
-                    color: 'white',
-                    borderRadius: '12px',
-                    border: 'none',
-                    fontSize: '15px',
-                    fontWeight: 500,
-                    fontFamily: 'var(--font-dm-sans)',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 16px rgba(107, 68, 35,0.3)',
-                  }}
-                >
-                  {t('generate.generateBtn')}
-                </button>
-              </div>
-            )}
+            {/* Generate now lives in the last page's nav bar (StepPage). */}
 
             </div>{/* end setup tab */}
 
