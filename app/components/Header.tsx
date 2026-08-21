@@ -126,7 +126,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
             <button
               onClick={saveAll}
               style={{
-                flex: 1, padding: '4px', borderRadius: '8px',
+                flex: 1, padding: '4px', minHeight: '44px', borderRadius: '8px',
                 background: 'var(--terra)', border: 'none',
                 color: '#fff', fontSize: '12px', cursor: 'pointer',
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
@@ -702,7 +702,7 @@ export default function Header({
               <div style={{ display: 'flex', gap: '4px' }}>
                 {row.options.map(opt => (
                   <button key={opt.key} onClick={opt.onSelect} style={{
-                    minWidth: '48px', padding: '.22rem 8px', borderRadius: '12px',
+                    minWidth: '48px', padding: '.22rem 8px', minHeight: '44px', borderRadius: '12px',
                     border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)',
                     fontSize: '12px', fontWeight: 600, textAlign: 'center',
                     background: opt.active ? 'var(--terra)' : 'transparent',
@@ -943,7 +943,7 @@ export default function Header({
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
                 }}>{user.email}</span>
                 <button onClick={signOut} style={{
-                  padding: '4px 12px', borderRadius: '8px', flexShrink: 0,
+                  padding: '4px 12px', minHeight: '44px', borderRadius: '8px', flexShrink: 0,
                   border: '1.5px solid rgba(255,255,255,0.15)', background: 'transparent',
                   color: 'var(--smoke)', fontSize: '11px', cursor: 'pointer',
                   fontFamily: 'var(--font-dm-sans)',
@@ -956,7 +956,7 @@ export default function Header({
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <button onClick={signInWithGoogle} style={{
-                  width: '100%', padding: '8px', borderRadius: '12px',
+                  width: '100%', padding: '8px', minHeight: '44px', borderRadius: '12px',
                   border: '1.5px solid rgba(255,255,255,0.15)',
                   background: 'rgba(255,255,255,0.06)', color: 'var(--cream)',
                   fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
@@ -981,7 +981,7 @@ export default function Header({
                       }}
                     />
                     <button onClick={signInWithEmail} style={{
-                      padding: '8px 12px', borderRadius: '8px', flexShrink: 0,
+                      padding: '8px 12px', minHeight: '44px', borderRadius: '8px', flexShrink: 0,
                       background: 'var(--terra)', border: 'none',
                       color: '#fff', fontSize: '12px', cursor: 'pointer',
                       fontFamily: 'var(--font-dm-sans)', fontWeight: 500,

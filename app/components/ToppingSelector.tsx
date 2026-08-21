@@ -1237,7 +1237,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         <button
           onClick={handleShare}
           style={{
-            width: '100%', padding: '12px', background: 'transparent', color: '#3D3530',
+            width: '100%', padding: '12px', minHeight: '44px', background: 'transparent', color: '#3D3530',
             border: '1px solid #D8D0C5', borderRadius: '12px', fontSize: '14px', fontWeight: 500,
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           }}
@@ -1252,7 +1252,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           onClick={handleShareLink}
           disabled={linkBusy}
           style={{
-            width: '100%', padding: '12px', marginTop: '8px',
+            width: '100%', padding: '12px', minHeight: '44px', marginTop: '8px',
             background: 'transparent', color: linkCopied ? '#6B7A5A' : '#3D3530',
             border: `1px solid ${linkCopied ? '#6B7A5A' : '#E0D8CF'}`, borderRadius: '12px',
             fontSize: '13px', fontWeight: 500, cursor: linkBusy ? 'default' : 'pointer',

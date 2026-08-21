@@ -373,7 +373,7 @@ export default function ClimatePicker({
             onClick={fetchClimate}
             disabled={loading || !city.trim()}
             style={{
-              padding: '12px 20px',
+              padding: '12px 20px', minHeight: '44px',
               border: 'none',
               borderRadius: '12px',
               background: loading || !city.trim() ? 'var(--border)' : 'var(--terra)',
@@ -397,7 +397,7 @@ export default function ClimatePicker({
           style={{
             marginTop: '8px',
             display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '8px 12px',
+            padding: '8px 12px', minHeight: '44px',
             border: '1.5px solid var(--border)',
             borderRadius: '20px',
             background: 'var(--cream)',

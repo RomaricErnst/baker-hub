@@ -663,7 +663,7 @@ export default function RecipeOutput({
             onClick={onSave}
             disabled={saveStatus === 'saving' || saveStatus === 'saved'}
             style={{
-              padding: '8px 16px', borderRadius: '12px', flexShrink: 0, marginLeft: '1rem',
+              padding: '8px 16px', minHeight: '44px', borderRadius: '12px', flexShrink: 0, marginLeft: '1rem',
               border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--border)'}`,
               background: 'transparent',
               color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--smoke)',

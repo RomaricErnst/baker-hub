@@ -360,7 +360,7 @@ style={{ display: 'none' }}
           <button
             onClick={reset}
             style={{
-              flex: 1, padding: '12px 16px',
+              flex: 1, padding: '12px 16px', minHeight: '44px',
               border: '1.5px solid var(--border)', borderRadius: '12px',
               background: 'transparent', color: 'var(--smoke)',
               fontSize: '14px', cursor: 'pointer',
@@ -392,7 +392,7 @@ style={{ display: 'none' }}
       <button
         onClick={reset}
         style={{
-          padding: '8px 20px', border: 'none', borderRadius: '12px',
+          padding: '8px 20px', minHeight: '44px', border: 'none', borderRadius: '12px',
           background: 'var(--terra)', color: '#fff',
           fontSize: '14px', cursor: 'pointer',
           fontFamily: 'var(--font-dm-sans)',

@@ -6103,7 +6103,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           <button
             onClick={toggleWork}
             style={{
-              padding: '8px 12px', borderRadius: '20px',
+              padding: '8px 12px', minHeight: '44px', borderRadius: '20px',
               border: `1.5px solid ${isWorkActive ? 'var(--terra)' : 'var(--border)'}`,
               background: isWorkActive ? '#FEF4EF' : 'var(--warm)',
               color: isWorkActive ? 'var(--terra)' : 'var(--smoke)',
@@ -6127,7 +6127,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             <button
               onClick={toggleAllNights}
               style={{
-                padding: '8px 12px', borderRadius: '20px',
+                padding: '8px 12px', minHeight: '44px', borderRadius: '20px',
                 border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
                 background: active ? '#FEF4EF' : 'var(--warm)',
                 color: active ? 'var(--terra)' : 'var(--smoke)',
@@ -6227,7 +6227,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               onClick={addCustomBlock}
               disabled={!customReady}
               style={{
-                alignSelf: 'flex-start', padding: '8px 16px',
+                alignSelf: 'flex-start', padding: '8px 16px', minHeight: '44px',
                 border: 'none', borderRadius: '12px',
                 background: customReady ? 'var(--terra)' : 'var(--border)',
                 color: customReady ? '#fff' : 'var(--smoke)',

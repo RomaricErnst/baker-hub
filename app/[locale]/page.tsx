@@ -2913,7 +2913,7 @@ export default function Home() {
                       background: '#6B4423',
                       color: 'white',
                       fontSize: '12px',
-                      padding: '12px 16px',
+                      padding: '12px 16px', minHeight: '44px',
                       borderRadius: '12px',
                       border: 'none',
                       cursor: 'pointer',
@@ -3137,7 +3137,7 @@ export default function Home() {
                       style={bakedDone ? {
                         width: '100%',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                        padding: '12px 0', border: 'none', borderRadius: '12px',
+                        padding: '12px 0', minHeight: '44px', border: 'none', borderRadius: '12px',
                         background: 'var(--gold)', color: 'var(--char)',
                         fontSize: '13px', fontWeight: 600,
                         fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
@@ -4028,7 +4028,7 @@ export default function Home() {
                       background: '#6B4423',
                       color: 'white',
                       fontSize: '12px',
-                      padding: '12px 16px',
+                      padding: '12px 16px', minHeight: '44px',
                       borderRadius: '12px',
                       border: 'none',
                       cursor: 'pointer',
@@ -4250,7 +4250,7 @@ export default function Home() {
                       style={bakedDone ? {
                         width: '100%',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                        padding: '12px 0', border: 'none', borderRadius: '12px',
+                        padding: '12px 0', minHeight: '44px', border: 'none', borderRadius: '12px',
                         background: 'var(--gold)', color: 'var(--char)',
                         fontSize: '13px', fontWeight: 600,
                         fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
@@ -4369,7 +4369,7 @@ export default function Home() {
             color: 'white',
             border: 'none',
             borderRadius: '20px',
-            padding: '12px 20px',
+            padding: '12px 20px', minHeight: '44px',
             fontSize: '13px',
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 600,
@@ -4465,7 +4465,7 @@ function PostBakeLanding({
       <button
         onClick={onNo}
         style={{
-          width: '100%', padding: '12px',
+          width: '100%', padding: '12px', minHeight: '44px',
           background: 'none', border: '1px solid var(--border)',
           borderRadius: '12px', cursor: 'pointer',
           fontFamily: 'var(--font-dm-mono)', fontSize: '13px',

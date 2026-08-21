@@ -67,7 +67,7 @@ export default function PlanNav({ variant, onEditSetup, onOpenGuide, onShare }: 
             border: cta ? 'none' : '1.5px solid var(--border)',
             background: cta ? 'var(--terra)' : 'var(--warm)',
             color: cta ? '#fff' : 'var(--ash)',
-            padding: '8px 0',
+            padding: '8px 0', minHeight: '44px',
           }}
         >
           <span style={LABEL_ROW}>
