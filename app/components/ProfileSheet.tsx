@@ -125,7 +125,8 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
             </div>
           </div>
           <button onClick={onClose} style={{
-            width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--border)',
+            width: 44, height: 44, padding: 8, margin: -8, borderRadius: '50%',
+            border: 'none', backgroundClip: 'content-box',
             background: 'var(--warm)', cursor: 'pointer', fontSize: 16, color: 'var(--smoke)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>×</button>

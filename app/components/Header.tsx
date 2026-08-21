@@ -639,7 +639,7 @@ export default function Header({
                       border: '1px solid rgba(200, 138, 82,0.4)',
                       borderRadius: '12px',
                       background: 'rgba(200, 138, 82,0.1)',
-                      padding: '3px 12px',
+                      padding: '12px 16px', minHeight: '44px',
                       cursor: 'pointer',
                     }}
                   >
@@ -647,11 +647,20 @@ export default function Header({
                   </button>
                 )}
                 {onNewSession && <button
-                  onClick={() => { onNewSession(); setMenuOpen(false); }}
+                  // Same guard as the header icon. This copy called
+                  // onNewSession() straight through: the destructive action
+                  // was confirmed in one place and not the other.
+                  onClick={() => {
+                    if (window.confirm(tS('newSessionConfirm'))) {
+                      onNewSession();
+                      setMenuOpen(false);
+                    }
+                  }}
                   style={{
-                    fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
+                    fontSize: '13px', fontFamily: 'var(--font-dm-mono)',
                     color: 'var(--smoke)',
                     background: 'none', border: 'none',
+                    padding: '12px 8px', minHeight: '44px',
                     cursor: 'pointer',
                     textDecoration: 'underline',
                   }}

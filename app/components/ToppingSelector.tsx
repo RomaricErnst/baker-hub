@@ -2193,7 +2193,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 : `Showing ${filtered.length} pizza${filtered.length !== 1 ? 's' : ''}`}
               {filter.season !== 'all' ? ` · ${SEASON_LABELS[filter.season][l]}` : ''}
             </span>
-            <button onClick={clearAll} style={{ fontSize: '11px', color: '#6B4423', background: 'none', border: 'none', cursor: 'pointer' }}>
+            <button onClick={clearAll} style={{ fontSize: '13px', color: '#6B4423', background: 'none', border: 'none', cursor: 'pointer', padding: '12px 8px', minHeight: '44px', margin: '-12px -8px' }}>
               {l === 'fr' ? 'Tout effacer' : 'Clear all'}
             </button>
           </div>

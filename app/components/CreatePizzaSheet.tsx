@@ -174,7 +174,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
           <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: '#2B2420' }}>
             {initial ? (fr ? 'Modifier ma pizza' : 'Edit my pizza') : (fr ? 'Créer ma pizza' : 'Create my pizza')}
           </span>
-          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: 14, color: '#8A7F78', cursor: 'pointer' }}>✕</button>
+          <button onClick={onClose} style={{ width: 44, height: 44, padding: 8, backgroundClip: 'content-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: 14, color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '-8px' }}>✕</button>
         </div>
 
         <div style={{ overflowY: 'auto', flex: 1, padding: '12px 16px' }}>
