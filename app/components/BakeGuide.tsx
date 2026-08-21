@@ -55,12 +55,12 @@ function Section({ icon, title, children }: {
       <div style={{
         fontSize: '11px', fontWeight: 600, color: D.smoke,
         textTransform: 'uppercase', letterSpacing: '.07em',
-        fontFamily: 'var(--font-dm-mono)', marginBottom: '8px',
+        fontFamily: 'var(--font-ui)', marginBottom: '8px',
         display: 'flex', alignItems: 'center', gap: '4px',
       }}>
         {icon && <span>{icon}</span>}{title}
       </div>
-      <div style={{ fontSize: '13px', color: D.ash, lineHeight: 1.65, fontFamily: 'var(--font-dm-sans)' }}>
+      <div style={{ fontSize: '13px', color: D.ash, lineHeight: 1.65, fontFamily: 'var(--font-ui)' }}>
         {children}
       </div>
     </div>
@@ -157,7 +157,7 @@ function Pill({ label, color }: { label: string; color?: string }) {
       borderRadius: '20px',
       padding: '.15rem 8px',
       fontSize: '11px',
-      fontFamily: 'var(--font-dm-mono)',
+      fontFamily: 'var(--font-ui)',
       color: color ?? D.smoke,
       marginLeft: '.5rem',
     }}>{label}</span>
@@ -223,7 +223,7 @@ function StepCard({
           color: ea }}>{icon}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontFamily: 'var(--font-fraunces)', fontSize: '15px',
+            fontFamily: 'var(--font-ui)', fontSize: '15px',
             fontWeight: 700, color: done ? D.smoke : D.char,
             textDecoration: done ? 'line-through' : 'none',
           }}>{title}</div>
@@ -231,7 +231,7 @@ function StepCard({
             <div style={{ marginTop: '.2rem' }}>
               <span style={{
                 display: 'inline-block', fontSize: '11px',
-                fontFamily: 'var(--font-dm-mono)', color: ea,
+                fontFamily: 'var(--font-ui)', color: ea,
                 background: `${ea}14`, border: `1px solid ${ea}30`,
                 borderRadius: '16px', padding: '1px 8px',
               }}>
@@ -272,7 +272,7 @@ function LearnLink({ term, label, onOpen, showSparkle = false }: {
       style={{
         background: 'none', border: 'none', cursor: 'pointer',
         color: D.terra, fontSize: '12px',
-        fontFamily: 'var(--font-dm-sans)',
+        fontFamily: 'var(--font-ui)',
         textDecoration: 'underline', textUnderlineOffset: '2px',
         padding: 0, display: 'inline-flex', alignItems: 'center',
       }}
@@ -431,7 +431,7 @@ function CoachButton({
 
       {MAESTRO_CONTENT[stepId]?.question && (
         <div style={{
-          fontFamily: 'var(--font-dm-sans)', fontSize: '13px',
+          fontFamily: 'var(--font-ui)', fontSize: '13px',
           color: 'var(--char)', fontWeight: 500, marginBottom: '4px',
         }}>
           {MAESTRO_CONTENT[stepId].question[l]}
@@ -440,7 +440,7 @@ function CoachButton({
 
       {MAESTRO_CONTENT[stepId]?.instruction && (
         <div style={{
-          fontFamily: 'var(--font-dm-sans)', fontSize: '11px',
+          fontFamily: 'var(--font-ui)', fontSize: '11px',
           color: 'var(--smoke)', fontStyle: 'italic', marginBottom: '8px',
         }}>
           {MAESTRO_CONTENT[stepId].instruction![l]}
@@ -456,7 +456,7 @@ function CoachButton({
           marginBottom: '12px',
           position: 'relative',
         }}>
-          <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+          <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-ui)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
             {feedback}
           </div>
           <button
@@ -465,7 +465,7 @@ function CoachButton({
               position: 'absolute', bottom: '8px', right: '12px',
               background: 'none', border: 'none', cursor: 'pointer',
               color: '#8A7F78', fontSize: '11px',
-              fontFamily: 'var(--font-dm-mono)',
+              fontFamily: 'var(--font-ui)',
               textDecoration: 'underline', padding: 0,
             }}
           >
@@ -475,7 +475,7 @@ function CoachButton({
       )}
 
       {error && !feedback && (
-        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', marginBottom: '8px' }}>
+        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', fontStyle: 'italic', marginBottom: '8px' }}>
           {l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.'}
         </div>
       )}
@@ -510,7 +510,7 @@ function CoachButton({
               </svg>
             )}
             <span style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              fontFamily: 'var(--font-ui)', fontSize: '11px',
               color: loading ? 'rgba(240, 235, 224,0.6)' : '#F0EBE0',
               whiteSpace: 'nowrap',
             }}>
@@ -587,7 +587,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
   return (
     <div style={{ marginTop: '12px' }}>
       {MAESTRO_CONTENT[stepId]?.question && !answer && (
-        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: D.char, fontWeight: 500, marginBottom: '8px' }}>
+        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', color: D.char, fontWeight: 500, marginBottom: '8px' }}>
           {MAESTRO_CONTENT[stepId].question[l]}
         </div>
       )}
@@ -595,7 +595,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
       {photoB64 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
           <img src={`data:image/jpeg;base64,${photoB64}`} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '12px', border: `1px solid ${D.border}` }} />
-          <button onClick={() => setPhotoB64(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: D.smoke, fontSize: '11px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'underline', padding: 0 }}>
+          <button onClick={() => setPhotoB64(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: D.smoke, fontSize: '11px', fontFamily: 'var(--font-ui)', textDecoration: 'underline', padding: 0 }}>
             {l === 'fr' ? 'Retirer la photo' : 'Remove photo'}
           </button>
         </div>
@@ -622,7 +622,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           placeholder={l === 'fr' ? 'Question, photo, ou les deux…' : 'Question, photo, or both…'}
           style={{
             flex: 1, border: `1px solid ${D.border}`, borderRadius: '8px',
-            padding: '8px 12px', fontSize: '13px', fontFamily: 'var(--font-dm-sans)',
+            padding: '8px 12px', fontSize: '13px', fontFamily: 'var(--font-ui)',
             color: D.char, background: '#fff', outline: 'none', minWidth: 0,
           }}
         />
@@ -632,21 +632,21 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           style={{
             background: '#2B2420', color: '#F0EBE0', border: 'none',
             borderRadius: '12px', padding: '12px 16px', minHeight: '44px', fontSize: '13px',
-            fontFamily: 'var(--font-dm-mono)', cursor: canAsk ? 'pointer' : 'default',
+            fontFamily: 'var(--font-ui)', cursor: canAsk ? 'pointer' : 'default',
             opacity: canAsk ? 1 : 0.6, whiteSpace: 'nowrap',
           }}
         >
           {loading ? '…' : (l === 'fr' ? 'Demander' : 'Ask')}
         </button>
       </div>
-      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: D.smoke, fontStyle: 'italic', marginTop: '4px' }}>
+      <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: D.smoke, fontStyle: 'italic', marginTop: '4px' }}>
         {l === 'fr' ? 'Le Maestro lit vos questions et regarde vos photos — joignez-en une pour un avis visuel.' : 'Maestro reads questions and looks at photos — attach one for a visual read.'}
       </div>
       {answer && (
         <div style={{
           background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '12px',
           padding: '12px 16px', marginTop: '8px',
-          color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, whiteSpace: 'pre-line',
+          color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-ui)', lineHeight: 1.6, whiteSpace: 'pre-line',
         }}>
           {answer}
           <div>
@@ -654,7 +654,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
               onClick={() => { setAnswer(null); setQ(''); setPhotoB64(null); }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
+                color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-ui)',
                 textDecoration: 'underline', padding: 0, marginTop: '8px',
               }}
             >
@@ -664,7 +664,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
         </div>
       )}
       {error && (
-        <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic', marginTop: '8px', fontFamily: 'var(--font-dm-sans)' }}>
+        <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic', marginTop: '8px', fontFamily: 'var(--font-ui)' }}>
           {l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.'}
         </div>
       )}
@@ -712,7 +712,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
               background: tab === p.id ? '#fff' : 'transparent',
               color: tab === p.id ? D.terra : D.smoke,
               borderRadius: '20px', padding: '4px 12px',
-              fontSize: '12px', fontFamily: 'var(--font-dm-mono)',
+              fontSize: '12px', fontFamily: 'var(--font-ui)',
               cursor: 'pointer', transition: 'all .15s',
             }}
           >
@@ -733,7 +733,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
                   width: '100%', textAlign: 'left', background: openFaq === i ? '#fff' : 'transparent',
                   border: 'none', cursor: 'pointer', padding: '8px 12px',
                   fontSize: '13px', fontWeight: 600, color: D.char,
-                  fontFamily: 'var(--font-dm-sans)',
+                  fontFamily: 'var(--font-ui)',
                   display: 'flex', justifyContent: 'space-between', gap: '8px',
                 }}
               >
@@ -741,7 +741,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
                 <span style={{ color: D.smoke, flexShrink: 0 }}>{openFaq === i ? '−' : '+'}</span>
               </button>
               {openFaq === i && (
-                <div style={{ padding: '0 12px 12px', fontSize: '12px', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-dm-sans)' }}>
+                <div style={{ padding: '0 12px 12px', fontSize: '12px', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-ui)' }}>
                   {f.a[l]}
                 </div>
               )}
@@ -773,7 +773,7 @@ function ExtLink({ href, label }: { href: string; label: string }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" style={{
       color: D.terra, fontSize: '12px',
-      fontFamily: 'var(--font-dm-sans)',
+      fontFamily: 'var(--font-ui)',
       textDecoration: 'underline', textUnderlineOffset: '2px',
     }}>{label} →</a>
   );
@@ -998,10 +998,10 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
       {/* ── Header ──────────────────────────────────── */}
       <div style={{ marginBottom: '4px' }}>
-        <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '20px', fontWeight: 700, color: D.char }}>
+        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '20px', fontWeight: 700, color: D.char }}>
           {_isFr ? 'Guide de cuisson pas à pas' : 'Step-by-step bake guide'}
         </div>
-        <div style={{ fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-dm-mono)', marginTop: '.2rem' }}>
+        <div style={{ fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-ui)', marginTop: '.2rem' }}>
           {(() => {
             const rangeStart = hasPref && prefStartTime && prefStartTime < bgMixStart ? prefStartTime : bgMixStart;
             return <>{formatTime(rangeStart, _fmtLocale)} → {formatTime(schedule.bakeStart, _fmtLocale)} · {hoursLabel((schedule.bakeStart.getTime() - rangeStart.getTime()) / 3600000)} {_isFr ? 'au total' : 'total'}</>;
@@ -1026,7 +1026,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               prefYeastGrams > 0 ? `${prefYeastGrams.toFixed(1)}g ${prefermentType ?? 'yeast'}` : null,
             ].filter(Boolean).join(' · ');
             return (
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: D.smoke, marginBottom: '8px' }}>
+              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: D.smoke, marginBottom: '8px' }}>
                 {parts}
               </div>
             );
@@ -1236,7 +1236,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             { bold: l === 'fr' ? 'Égouttez l’excédent avant le pétrissage' : 'Drain any excess before mixing',
               note: l === 'fr' ? 'les graines doivent être humides, pas ruisselantes' : 'seeds should be moist, not dripping' },
           ]} />
-          <div style={{ fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-dm-sans)', lineHeight: 1.55, marginTop: '8px', paddingTop: '8px', borderTop: `1px solid ${D.border}` }}>
+          <div style={{ fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-ui)', lineHeight: 1.55, marginTop: '8px', paddingTop: '8px', borderTop: `1px solid ${D.border}` }}>
             {l === 'fr'
               ? 'Au pétrissage : incorporez les graines égouttées en toute fin, à petite vitesse ou à la main, juste assez pour les répartir.'
               : 'At mix time: fold the drained seeds in at the very end, low speed or by hand, just enough to distribute them.'}
@@ -1344,14 +1344,14 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'préserve la structure du gluten' : 'preserves gluten structure') }] : []),
               ]} />
               {planningMode === 'know_peak' && (
-                <div style={{ marginTop: '8px', fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic' }}>
+                <div style={{ marginTop: '8px', fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
                   {l === 'fr' ? 'L’heure de pétrissage est calée sur le pic indiqué — ajustez si votre levain pique plus tôt ou plus tard que prévu.' : 'Mix time is set to your stated peak — adjust if your starter peaks earlier or later than expected.'}
                 </div>
               )}
               <div style={{
                 fontSize: '12px',
                 color: D.smoke,
-                fontFamily: 'var(--font-dm-sans)',
+                fontFamily: 'var(--font-ui)',
                 lineHeight: 1.55,
                 marginTop: '8px',
                 paddingTop: '8px',
@@ -1544,7 +1544,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 {isPan && (
                   <div style={{
                     fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic',
-                    fontFamily: 'var(--font-dm-sans)', marginTop: '8px',
+                    fontFamily: 'var(--font-ui)', marginTop: '8px',
                   }}>
                     Pan pizza: press dough directly into your oiled pan rather than
                     forming a round ball. Let it relax 10 min then stretch to the edges.
@@ -1697,7 +1697,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         time={schedule.preheatStart} accent={D.gold}>
 
         <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic',
-          fontFamily: 'var(--font-dm-sans)', padding: '12px 0 0' }}>
+          fontFamily: 'var(--font-ui)', padding: '12px 0 0' }}>
           {t('preheatNote')}
         </div>
 
@@ -1756,7 +1756,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             <div style={{
               background: 'rgba(156, 130, 72,0.08)', border: '1px solid rgba(156, 130, 72,0.2)',
               borderRadius: '16px', padding: '12px 12px', marginBottom: '12px',
-              fontSize: '12px', fontFamily: 'var(--font-dm-sans)', color: 'var(--char)',
+              fontSize: '12px', fontFamily: 'var(--font-ui)', color: 'var(--char)',
               lineHeight: 1.5,
             }}>
               <strong>Pan / Detroit / Deep Dish</strong> — dough bakes IN the oiled pan.

@@ -108,7 +108,7 @@ const SECTION_LABEL: React.CSSProperties = {
   textTransform: 'uppercase',
   letterSpacing: '.06em',
   marginBottom: '8px',
-  fontFamily: 'var(--font-dm-mono)',
+  fontFamily: 'var(--font-ui)',
 };
 
 interface WeatherData {
@@ -229,15 +229,15 @@ export default function ClimatePicker({
     // derived from the temperature; Custom mode keeps the full controls.
     return (
       <div>
-        <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-dm-sans)' }}>
+        <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-ui)' }}>
           {isFr ? 'À quelle température est votre cuisine en ce moment ?' : 'How warm is your kitchen right now?'}
         </p>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
-          <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-dm-sans)' }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
             {isFr ? 'Température de la cuisine' : 'Kitchen temperature'}
           </label>
           <span style={{
-            fontFamily: 'var(--font-dm-mono)', fontSize: '20px', fontWeight: 700,
+            fontFamily: 'var(--font-ui)', fontSize: '20px', fontWeight: 700,
             color: tempColor(kitchenTemp),
           }}>
             {cToDisplay(kitchenTemp, u)}{tempUnit(u)}
@@ -257,7 +257,7 @@ export default function ClimatePicker({
           }}
           style={{ width: '100%' }}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginTop: 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginTop: 4 }}>
           <span>{isFr ? 'Fraîche' : 'Cool'}</span>
           <span>{isFr ? 'Tropicale' : 'Tropical'}</span>
         </div>
@@ -273,7 +273,7 @@ export default function ClimatePicker({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
           <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Température de la cuisine' : 'Kitchen temperature'}</label>
           <span style={{
-            fontFamily: 'var(--font-dm-mono)',
+            fontFamily: 'var(--font-ui)',
             fontSize: '17px',
             fontWeight: 700,
             color: tempColor(kitchenTemp),
@@ -296,7 +296,7 @@ export default function ClimatePicker({
         <div style={{
           display: 'flex', justifyContent: 'space-between',
           fontSize: '11px', color: 'var(--smoke)',
-          fontFamily: 'var(--font-dm-mono)', marginTop: '4px',
+          fontFamily: 'var(--font-ui)', marginTop: '4px',
         }}>
           <span>{tempC(15, u)} {isFr ? 'froid' : 'cool'}</span>
           <span>{tempC(22, u)} {isFr ? 'idéal' : 'ideal'}</span>
@@ -365,7 +365,7 @@ export default function ClimatePicker({
               background: 'var(--warm)',
               color: 'var(--char)',
               fontSize: '14px',
-              fontFamily: 'var(--font-dm-sans)',
+              fontFamily: 'var(--font-ui)',
               outline: 'none',
             }}
           />
@@ -403,7 +403,7 @@ export default function ClimatePicker({
             background: 'var(--cream)',
             color: 'var(--ash)',
             fontSize: '13px',
-            fontFamily: 'var(--font-dm-sans)',
+            fontFamily: 'var(--font-ui)',
             cursor: loading ? 'default' : 'pointer',
             transition: 'all .15s',
           }}
@@ -470,7 +470,7 @@ export default function ClimatePicker({
                 </div>
                 <div style={{
                   fontSize: '12px', color: 'var(--smoke)',
-                  fontFamily: 'var(--font-dm-mono)', marginTop: '.1rem',
+                  fontFamily: 'var(--font-ui)', marginTop: '.1rem',
                 }}>
                   {isFr ? getWMODescFr(weather.weatherCode) : wxDesc}
                 </div>
@@ -479,14 +479,14 @@ export default function ClimatePicker({
                 <div style={{
                   fontSize: '24px', fontWeight: 700,
                   color: tempColor(weather.temp),
-                  fontFamily: 'var(--font-dm-mono)',
+                  fontFamily: 'var(--font-ui)',
                   lineHeight: 1,
                 }}>
                   {weather.temp}°C
                 </div>
                 <div style={{
                   fontSize: '12px', color: 'var(--smoke)',
-                  fontFamily: 'var(--font-dm-mono)', marginTop: '.15rem',
+                  fontFamily: 'var(--font-ui)', marginTop: '.15rem',
                 }}>
                   {weather.humidityPct}% RH
                 </div>
@@ -498,7 +498,7 @@ export default function ClimatePicker({
           <div style={{
             marginTop: '8px',
             fontSize: '12px', color: 'var(--smoke)',
-            fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic',
+            fontFamily: 'var(--font-ui)', fontStyle: 'italic',
             lineHeight: 1.4,
           }}>
             {isFr
@@ -517,7 +517,7 @@ export default function ClimatePicker({
           {(() => {
             const active = HUMIDITY_OPTIONS.find(o => o.value === humidity);
             return active ? (
-              <span style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+              <span style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
                 {active.desc}
               </span>
             ) : null;
@@ -539,7 +539,7 @@ export default function ClimatePicker({
                   fontSize: '13px',
                   fontWeight: active ? 500 : 400,
                   cursor: 'pointer',
-                  fontFamily: 'var(--font-dm-sans)',
+                  fontFamily: 'var(--font-ui)',
                   transition: 'all .15s',
                   whiteSpace: 'nowrap',
                 }}
@@ -557,7 +557,7 @@ export default function ClimatePicker({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
             <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Température du frigo' : 'Fridge temperature'}</label>
             <span style={{
-              fontFamily: 'var(--font-dm-mono)',
+              fontFamily: 'var(--font-ui)',
               fontSize: '17px',
               fontWeight: 700,
               color: '#6A7FA8',
@@ -579,7 +579,7 @@ export default function ClimatePicker({
           <div style={{
             display: 'flex', justifyContent: 'space-between',
             fontSize: '11px', color: 'var(--smoke)',
-            fontFamily: 'var(--font-dm-mono)', marginTop: '4px',
+            fontFamily: 'var(--font-ui)', marginTop: '4px',
           }}>
             <span>{tempC(1, u)}</span>
             <span>{tempC(6, u)} standard</span>
@@ -594,7 +594,7 @@ export default function ClimatePicker({
               background: '#EEF2FA', border: '1px solid #C4CDE0',
               borderRadius: '16px', padding: '8px 12px',
             }}>
-              {isFr ? <>Un frigo à <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> est plus chaud que le standard {tempC(6, u)} — la levure restera plus active pendant le froid.</> : <>Fridge at <span style={{ fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> is warmer than the standard {tempC(6, u)} — yeast will be more active during cold retard.</>}
+              {isFr ? <>Un frigo à <span style={{ fontFamily: 'var(--font-ui)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> est plus chaud que le standard {tempC(6, u)} — la levure restera plus active pendant le froid.</> : <>Fridge at <span style={{ fontFamily: 'var(--font-ui)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> is warmer than the standard {tempC(6, u)} — yeast will be more active during cold retard.</>}
             </div>
           )}
 

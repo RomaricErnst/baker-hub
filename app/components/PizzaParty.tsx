@@ -91,7 +91,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           borderRadius: '12px',
           padding: '8px 12px',
           marginBottom: '12px',
-          fontFamily: 'var(--font-dm-mono)',
+          fontFamily: 'var(--font-ui)',
           fontSize: '12px',
           color: 'var(--ash, #3D3530)',
           display: 'flex',

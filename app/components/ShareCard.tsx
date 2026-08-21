@@ -4,16 +4,16 @@ import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
 import type { BakePhoto } from '@/app/lib/supabase/fetchBakeEvents';
 
 /* next/font generates an obfuscated family name, so the canvas cannot ask for
-   "Fraunces" by name the way it used to ask for "Playfair Display". Reading the
+   the UI family by name the way it used to ask for "Playfair Display". Reading the
    CSS variable gives the real family list. Without this the share card would
-   have quietly fallen back to Georgia the moment Playfair stopped being
+   have quietly fallen back to a system serif the moment Playfair stopped being
    loaded — a silent typeface change on the one artefact that leaves the app. */
 function displayFontFamily(): string {
   try {
-    const v = getComputedStyle(document.body).getPropertyValue('--font-fraunces').trim();
-    return v ? `${v}, Georgia, serif` : 'Georgia, serif';
+    const v = getComputedStyle(document.body).getPropertyValue('--font-ui').trim();
+    return v ? `${v}, sans-serif` : 'system-ui, sans-serif';
   } catch {
-    return 'Georgia, serif';
+    return 'system-ui, sans-serif';
   }
 }
 
@@ -635,7 +635,7 @@ export default function ShareCard({
       y += 34;
     }
 
-    // Title — Playfair, single line, shrink to fit; ellipsis when even the
+    // Title — display face, single line, shrink to fit; ellipsis when even the
     // floor size overflows (long titles used to clip off the card edge)
     {
       let titleSize = 44;
@@ -751,7 +751,7 @@ export default function ShareCard({
   }
 
   const inputStyle: React.CSSProperties = {
-    fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+    fontFamily: 'var(--font-ui)', fontSize: '12px',
     padding: '8px 12px', borderRadius: '16px',
     border: '1px solid var(--border)',
     background: 'var(--cream)', color: 'var(--char)',
@@ -759,12 +759,12 @@ export default function ShareCard({
     outline: 'none',
   };
   const labelStyle: React.CSSProperties = {
-    fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+    fontFamily: 'var(--font-ui)', fontSize: '11px',
     color: 'var(--smoke)', textTransform: 'uppercase',
     letterSpacing: '.08em', marginBottom: '4px', display: 'block',
   };
   const sectionLbl: React.CSSProperties = {
-    fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+    fontFamily: 'var(--font-ui)', fontSize: '11px',
     color: 'var(--smoke)', textTransform: 'uppercase',
     letterSpacing: '.08em', marginBottom: '12px',
   };
@@ -779,7 +779,7 @@ export default function ShareCard({
 
       {/* Header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <p style={{ fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', margin: 0 }}>
+        <p style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', margin: 0 }}>
           {l === 'fr' ? 'Partager cette fournée' : 'Share this bake'}
         </p>
         <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '17px', width: '44px', height: '44px', marginRight: '-10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
@@ -824,7 +824,7 @@ export default function ShareCard({
               position: 'absolute', inset: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'rgba(43, 36, 32,0.55)',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              fontFamily: 'var(--font-ui)', fontSize: '11px',
               color: 'rgba(255,255,255,0.6)', letterSpacing: '.06em',
             }}>
               {l === 'fr' ? 'Aperçu en cours…' : 'Rendering preview…'}
@@ -860,7 +860,7 @@ export default function ShareCard({
                 style={inputStyle}
               />
               <div style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                fontFamily: 'var(--font-ui)', fontSize: '11px',
                 color: 'var(--smoke)', opacity: 0.5, marginTop: '3px',
               }}>
                 {l === 'fr' ? 'Apparaît en bas à gauche de la carte' : 'Appears bottom-left on the card'}
@@ -916,7 +916,7 @@ export default function ShareCard({
                     </div>
                   )}
                 </div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)', textAlign: 'center', marginTop: '4px' }}>
+                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', textAlign: 'center', marginTop: '4px' }}>
                   {t === 'full' ? '1 photo' : t === 'two' ? '2 photos' : t === 'four' ? '4 photos' : (l === 'fr' ? 'Protocole' : 'Protocol')}
                 </div>
               </div>
@@ -949,7 +949,7 @@ export default function ShareCard({
                     border: format === key ? '1.5px solid var(--gold)' : '1px solid var(--border)',
                     background: format === key ? 'rgba(156, 130, 72,0.10)' : 'transparent',
                     color: format === key ? 'var(--char)' : 'var(--smoke)',
-                    fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                    fontFamily: 'var(--font-ui)', fontSize: '11px',
                     cursor: 'pointer', transition: 'all 0.15s ease',
                   }}
                 >
@@ -960,7 +960,7 @@ export default function ShareCard({
             {/* Why the layout just changed — the size picks a suggested
                 photo count; the templates above remain free to override */}
             <div style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              fontFamily: 'var(--font-ui)', fontSize: '11px',
               color: 'var(--smoke)', opacity: 0.6, marginTop: '8px',
               lineHeight: 1.5,
             }}>
@@ -1014,7 +1014,7 @@ export default function ShareCard({
                         background: 'var(--gold)', color: '#2B2420',
                         fontSize: '11px', fontWeight: 700, lineHeight: '18px',
                         textAlign: 'center', padding: '0 4px',
-                        fontFamily: 'var(--font-dm-mono)',
+                        fontFamily: 'var(--font-ui)',
                       }}>{selIdx + 1}</span>
                       {/* Make hero — move to slot 1 */}
                       {selIdx > 0 && (
@@ -1055,7 +1055,7 @@ export default function ShareCard({
                   <rect x="3" y="5" width="18" height="14" rx="2" />
                   <circle cx="12" cy="12" r="3.5" />
                 </svg>
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)', textAlign: 'center' }}>
+                <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', textAlign: 'center' }}>
                   {l === 'fr' ? 'Pellicule' : 'Camera roll'}
                 </span>
                 <input
@@ -1079,7 +1079,7 @@ export default function ShareCard({
               </label>
 
               {allPhotos.length === 0 && (
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)', fontStyle: 'italic', alignSelf: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', fontStyle: 'italic', alignSelf: 'center' }}>
                   {l === 'fr' ? 'Aucune photo — choisissez depuis la pellicule' : 'No session photos — pick from camera roll'}
                 </div>
               )}
@@ -1092,7 +1092,7 @@ export default function ShareCard({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <div style={{ ...sectionLbl, marginBottom: 0 }}>{l === 'fr' ? 'Légende' : 'Caption'}</div>
             <span style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              fontFamily: 'var(--font-ui)', fontSize: '11px',
               color: 'var(--smoke)', opacity: 0.4,
             }}>✎ editable</span>
           </div>
@@ -1102,7 +1102,7 @@ export default function ShareCard({
             rows={9}
             style={{
               width: '100%', padding: '12px 12px',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              fontFamily: 'var(--font-ui)', fontSize: '11px',
               color: 'var(--char)', lineHeight: 1.7,
               background: 'var(--cream)', border: '1px solid var(--border)',
               borderRadius: '8px', resize: 'none',
@@ -1122,7 +1122,7 @@ export default function ShareCard({
               background: 'transparent',
               border: `1px solid ${copied ? 'var(--terra)' : 'var(--border)'}`,
               color: copied ? 'var(--terra)' : 'var(--smoke)',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              fontFamily: 'var(--font-ui)', fontSize: '11px',
               cursor: 'pointer', transition: 'all 0.15s ease',
             }}
           >
@@ -1149,7 +1149,7 @@ export default function ShareCard({
             width: '100%', padding: '16px',
             background: generating ? 'var(--smoke)' : 'var(--terra)',
             color: 'white', border: 'none', borderRadius: '12px',
-            fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700,
+            fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700,
             cursor: generating ? 'default' : 'pointer',
             boxShadow: '0 2px 8px rgba(107, 68, 35,0.25)',
           }}
@@ -1168,7 +1168,7 @@ export default function ShareCard({
               border: `1px solid ${imgCopied ? 'var(--sage)' : 'var(--border)'}`,
               color: imgCopied ? 'var(--sage)' : 'var(--smoke)',
               borderRadius: '12px',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+              fontFamily: 'var(--font-ui)', fontSize: '12px',
               cursor: copyingImg ? 'default' : 'pointer',
               transition: 'all 0.15s ease',
             }}
@@ -1181,7 +1181,7 @@ export default function ShareCard({
           </button>
         )}
         <p style={{
-          fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+          fontFamily: 'var(--font-ui)', fontSize: '11px',
           color: sharedOk ? 'var(--sage)' : 'var(--smoke)', textAlign: 'center',
           marginTop: '8px', opacity: sharedOk ? 1 : 0.6,
           transition: 'color 0.2s ease',

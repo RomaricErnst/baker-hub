@@ -150,10 +150,10 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
             <path d="M11 21 c0-4 1.5-5 2-7 h6 c.5 2 2 3 2 7 a2 2 0 0 1-2 2 h-6 a2 2 0 0 1-2-2 Z" fill="rgba(107, 68, 35,0.12)" />
             <line x1="12" y1="12" x2="20" y2="12" />
           </svg>
-          <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '15px', color: 'var(--char)', fontWeight: 700 }}>
+          <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', color: 'var(--char)', fontWeight: 700 }}>
             {isFr ? 'Photographiez votre sachet de farine' : 'Take a photo of your flour bag'}
           </div>
-          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: 'var(--smoke)' }}>
+          <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
             {isFr ? 'ou glissez-déposez une image' : 'or drag and drop an image'}
           </div>
         </div>
@@ -171,7 +171,7 @@ style={{ display: 'none' }}
           onClick={onCancel}
           style={{
             marginTop: '12px', background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--smoke)', fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
+            color: 'var(--smoke)', fontSize: '12px', fontFamily: 'var(--font-ui)',
             textDecoration: 'underline', textUnderlineOffset: '2px', padding: '.2rem 0',
           }}
         >
@@ -193,7 +193,7 @@ style={{ display: 'none' }}
           />
         )}
         <div style={{ marginTop: '12px', textAlign: 'center' }}>
-          <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '8px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
             {isFr ? 'Analyse de votre farine…' : 'Analysing your flour bag...'}
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '4px' }}>
@@ -261,7 +261,7 @@ style={{ display: 'none' }}
             {!adjusting ? (
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+                  fontFamily: 'var(--font-ui)', fontSize: '12px',
                   color: 'var(--terra)', background: '#FEF4EF',
                   borderRadius: '20px', padding: '.2rem 8px',
                   border: '1px solid rgba(107, 68, 35,0.2)',
@@ -269,7 +269,7 @@ style={{ display: 'none' }}
                   W {displayW}
                 </span>
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+                  fontFamily: 'var(--font-ui)', fontSize: '12px',
                   color: 'var(--sage)', background: 'rgba(107,122,90,0.1)',
                   borderRadius: '20px', padding: '.2rem 8px',
                   border: '1px solid rgba(107,122,90,0.25)',
@@ -282,7 +282,7 @@ style={{ display: 'none' }}
                     style={{
                       background: 'none', border: 'none', padding: 0,
                       fontSize: '11px', color: 'var(--smoke)',
-                      fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                      fontFamily: 'var(--font-ui)', cursor: 'pointer',
                       textDecoration: 'underline', textUnderlineOffset: '2px',
                     }}
                   >
@@ -293,7 +293,7 @@ style={{ display: 'none' }}
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--smoke)', width: '60px', fontFamily: 'var(--font-dm-mono)' }}>
+                  <label style={{ fontSize: '12px', color: 'var(--smoke)', width: '60px', fontFamily: 'var(--font-ui)' }}>
                     W value
                   </label>
                   <input
@@ -302,7 +302,7 @@ style={{ display: 'none' }}
                     onChange={e => setAdjustedW(Number(e.target.value))}
                     style={{
                       width: '80px', padding: '4px 8px', borderRadius: '8px',
-                      border: '1.5px solid var(--border)', fontFamily: 'var(--font-dm-mono)',
+                      border: '1.5px solid var(--border)', fontFamily: 'var(--font-ui)',
                       fontSize: '13px', color: 'var(--char)', background: 'var(--warm)',
                     }}
                   />
@@ -311,7 +311,7 @@ style={{ display: 'none' }}
                   </span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--smoke)', width: '60px', fontFamily: 'var(--font-dm-mono)' }}>
+                  <label style={{ fontSize: '12px', color: 'var(--smoke)', width: '60px', fontFamily: 'var(--font-ui)' }}>
                     Protein
                   </label>
                   <input
@@ -321,7 +321,7 @@ style={{ display: 'none' }}
                     onChange={e => setAdjustedProtein(Number(e.target.value))}
                     style={{
                       width: '80px', padding: '4px 8px', borderRadius: '8px',
-                      border: '1.5px solid var(--border)', fontFamily: 'var(--font-dm-mono)',
+                      border: '1.5px solid var(--border)', fontFamily: 'var(--font-ui)',
                       fontSize: '13px', color: 'var(--char)', background: 'var(--warm)',
                     }}
                   />
@@ -335,7 +335,7 @@ style={{ display: 'none' }}
                     alignSelf: 'flex-start', padding: '4px 12px',
                     background: 'var(--terra)', border: 'none', borderRadius: '12px',
                     color: '#fff', fontSize: '12px', cursor: 'pointer',
-                    fontFamily: 'var(--font-dm-sans)',
+                    fontFamily: 'var(--font-ui)',
                   }}
                 >
                   {isFr ? 'Terminé' : 'Done'}
@@ -351,7 +351,7 @@ style={{ display: 'none' }}
             style={{
               flex: 2, padding: '12px 16px', border: 'none',
               borderRadius: '12px', background: 'var(--terra)', color: '#fff',
-              fontFamily: 'var(--font-fraunces)', fontSize: '15px', fontWeight: 700,
+              fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700,
               cursor: 'pointer',
             }}
           >
@@ -364,7 +364,7 @@ style={{ display: 'none' }}
               border: '1.5px solid var(--border)', borderRadius: '12px',
               background: 'transparent', color: 'var(--smoke)',
               fontSize: '14px', cursor: 'pointer',
-              fontFamily: 'var(--font-dm-sans)',
+              fontFamily: 'var(--font-ui)',
             }}
           >
             {isFr ? 'Réessayer' : 'Try again'}
@@ -395,7 +395,7 @@ style={{ display: 'none' }}
           padding: '8px 20px', minHeight: '44px', border: 'none', borderRadius: '12px',
           background: 'var(--terra)', color: '#fff',
           fontSize: '14px', cursor: 'pointer',
-          fontFamily: 'var(--font-dm-sans)',
+          fontFamily: 'var(--font-ui)',
         }}
       >
         {isFr ? 'Réessayer' : 'Try again'}

@@ -108,7 +108,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
   if (status === 'loading') {
     return (
       <div style={{ minHeight: '100dvh', background: '#F5F0E8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontSize: '13px' }}>
+        <div style={{ color: '#8A7F78', fontFamily: 'var(--font-ui)', fontSize: '13px' }}>
           {l === 'fr' ? 'Chargement…' : 'Loading…'}
         </div>
       </div>
@@ -118,10 +118,10 @@ export default function ListClient({ shareId }: { shareId: string }) {
   if (status === 'not_found' || !row) {
     return (
       <div style={{ minHeight: '100dvh', background: '#F5F0E8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px', textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '20px', color: '#1A1612', marginBottom: '8px' }}>
+        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '20px', color: '#1A1612', marginBottom: '8px' }}>
           {l === 'fr' ? 'Liste introuvable' : 'List not found'}
         </div>
-        <div style={{ color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontSize: '13px' }}>
+        <div style={{ color: '#8A7F78', fontFamily: 'var(--font-ui)', fontSize: '13px' }}>
           {l === 'fr' ? "Ce lien n'est plus valide." : 'This link is no longer valid.'}
         </div>
       </div>
@@ -154,21 +154,21 @@ export default function ListClient({ shareId }: { shareId: string }) {
   return (
     <div style={{ minHeight: '100dvh', background: '#F5F0E8', paddingBottom: '40px' }}>
       <div style={{ background: '#2B2420', padding: '20px 20px 16px', textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '20px', fontWeight: 700, color: '#F5F0E8' }}>
+        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '20px', fontWeight: 700, color: '#F5F0E8' }}>
           Baker Hub
         </div>
         {row.title && (
-          <div style={{ color: '#C8A878', fontSize: '13px', marginTop: '4px', fontFamily: 'var(--font-dm-sans)' }}>
+          <div style={{ color: '#C8A878', fontSize: '13px', marginTop: '4px', fontFamily: 'var(--font-ui)' }}>
             {row.title}
           </div>
         )}
       </div>
 
       <div style={{ padding: '16px 16px 4px', textAlign: 'center' }}>
-        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>
+        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
           {checkedCount} / {totalItems} {l === 'fr' ? 'cochés' : 'checked'}
         </div>
-        <div style={{ fontSize: '11px', color: '#8A7F78', marginTop: '4px', fontFamily: 'var(--font-dm-sans)' }}>
+        <div style={{ fontSize: '11px', color: '#8A7F78', marginTop: '4px', fontFamily: 'var(--font-ui)' }}>
           {l === 'fr'
             ? 'Synchronisé en direct — visible par tous ceux qui ont ce lien.'
             : 'Synced live — visible to anyone with this link.'}
@@ -180,7 +180,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
           <div key={section.label} style={{ marginBottom: '20px' }}>
             <div style={{
               fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
-              color: '#8A7F78', margin: '0 0 8px 4px', fontFamily: 'var(--font-dm-sans)',
+              color: '#8A7F78', margin: '0 0 8px 4px', fontFamily: 'var(--font-ui)',
             }}>
               {section.label}
             </div>
@@ -211,13 +211,13 @@ export default function ListClient({ shareId }: { shareId: string }) {
                       )}
                     </div>
                     <span style={{
-                      flex: 1, fontSize: '14px', fontFamily: 'var(--font-dm-sans)',
+                      flex: 1, fontSize: '14px', fontFamily: 'var(--font-ui)',
                       color: isChecked ? '#B0A89E' : '#2B2420',
                     }}>
                       {item.name[l] ?? item.name.en}
                     </span>
                     {item.totalAmount != null && item.unit && (
-                      <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>
+                      <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
                         {formatQty(item.totalAmount, item.unit, l)}
                       </span>
                     )}
@@ -232,7 +232,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
           <div style={{ marginBottom: '20px' }}>
             <div style={{
               fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
-              color: '#8A7F78', margin: '0 0 8px 4px', fontFamily: 'var(--font-dm-sans)',
+              color: '#8A7F78', margin: '0 0 8px 4px', fontFamily: 'var(--font-ui)',
             }}>
               {l === 'fr' ? 'Pour votre pâte' : 'For your dough'}
             </div>
@@ -264,12 +264,12 @@ export default function ListClient({ shareId }: { shareId: string }) {
                       )}
                     </div>
                     <span style={{
-                      flex: 1, fontSize: '14px', fontFamily: 'var(--font-dm-sans)',
+                      flex: 1, fontSize: '14px', fontFamily: 'var(--font-ui)',
                       color: isChecked ? '#B0A89E' : '#2B2420',
                     }}>
                       {item.name}
                     </span>
-                    <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-dm-mono)' }}>
+                    <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
                       {item.amount}
                     </span>
                   </div>
@@ -280,7 +280,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
         )}
       </div>
 
-      <div style={{ textAlign: 'center', fontSize: '11px', color: '#B0A89E', fontFamily: 'var(--font-dm-mono)', marginTop: '8px' }}>
+      <div style={{ textAlign: 'center', fontSize: '11px', color: '#B0A89E', fontFamily: 'var(--font-ui)', marginTop: '8px' }}>
         bakerhub.app
       </div>
     </div>

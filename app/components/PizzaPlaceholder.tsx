@@ -1,4 +1,4 @@
-// Elegant stand-in for custom pizzas without a photo — warm tile, Playfair
+// Elegant stand-in for custom pizzas without a photo — warm tile, display
 // initial, no broken-image glyph, no question mark.
 export default function PizzaPlaceholder({ name, size = 'card' }: { name: string; size?: 'thumb' | 'card' | 'hero' }) {
   const initial = (name.trim()[0] ?? 'P').toUpperCase();
@@ -11,12 +11,12 @@ export default function PizzaPlaceholder({ name, size = 'card' }: { name: string
       position: 'relative',
     }}>
       <span style={{
-        fontFamily: 'var(--font-fraunces), Georgia, serif',
+        fontFamily: 'var(--font-ui), sans-serif',
         fontSize: fs, fontWeight: 700, color: 'rgba(156, 130, 72,0.85)', lineHeight: 1,
       }}>{initial}</span>
       <span style={{
         position: 'absolute', bottom: 6, right: 8,
-        fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.08em',
+        fontFamily: 'var(--font-ui)', fontSize: 8, letterSpacing: '.08em',
         color: 'rgba(240, 235, 224,0.35)', textTransform: 'uppercase',
       }}>✎</span>
     </div>

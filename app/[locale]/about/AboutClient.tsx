@@ -14,14 +14,14 @@ const SAGE   = '#6B7A5A';
 const BORDER = '#E8E0D5';
 
 const bodyText: React.CSSProperties = {
-  fontFamily: 'var(--font-dm-sans)',
+  fontFamily: 'var(--font-ui)',
   fontSize: '14px',
   color: ASH,
   lineHeight: 1.65,
 };
 
 const monoSm: React.CSSProperties = {
-  fontFamily: 'var(--font-dm-mono)',
+  fontFamily: 'var(--font-ui)',
   fontSize: '11px',
   color: SMOKE,
   letterSpacing: '.04em',
@@ -30,7 +30,7 @@ const monoSm: React.CSSProperties = {
 function Code({ children }: { children: React.ReactNode }) {
   return (
     <code style={{
-      fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+      fontFamily: 'var(--font-ui)', fontSize: '12px',
       background: 'rgba(43, 36, 32,0.06)', padding: '2px 8px',
       borderRadius: '4px', color: CHAR,
     }}>{children}</code>
@@ -43,7 +43,7 @@ function BulletList({ items }: { items: React.ReactNode[] }) {
       {items.map((item, i) => (
         <li key={i} style={{
           borderLeft: `2px solid ${BORDER}`, paddingLeft: '12px',
-          marginBottom: '8px', fontFamily: 'var(--font-dm-sans)',
+          marginBottom: '8px', fontFamily: 'var(--font-ui)',
           fontSize: '13px', color: ASH, lineHeight: 1.55,
         }}>{item}</li>
       ))}
@@ -56,8 +56,8 @@ function NumberedList({ items }: { items: React.ReactNode[] }) {
     <ol style={{ listStyle: 'none', padding: 0, margin: '8px 0 0' }}>
       {items.map((item, i) => (
         <li key={i} style={{ display: 'flex', gap: '12px', marginBottom: '8px', alignItems: 'flex-start' }}>
-          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: TERRA, flexShrink: 0, marginTop: '1px' }}>{i + 1}.</span>
-          <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: ASH, lineHeight: 1.55 }}>{item}</span>
+          <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: TERRA, flexShrink: 0, marginTop: '1px' }}>{i + 1}.</span>
+          <span style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', color: ASH, lineHeight: 1.55 }}>{item}</span>
         </li>
       ))}
     </ol>
@@ -67,7 +67,7 @@ function NumberedList({ items }: { items: React.ReactNode[] }) {
 function Pill({ children, bg, color }: { children: React.ReactNode; bg: string; color: string }) {
   return (
     <span style={{
-      display: 'inline-flex', fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+      display: 'inline-flex', fontFamily: 'var(--font-ui)', fontSize: '11px',
       padding: '3px 12px', borderRadius: '20px', margin: '3px',
       background: bg, color,
     }}>{children}</span>
@@ -81,7 +81,7 @@ function DataTable({ rows }: { rows: [string, string, string][] }) {
         <tr>
           {(['Preferment', 'Correction', 'Why'] as const).map(h => (
             <th key={h} style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: SMOKE,
+              fontFamily: 'var(--font-ui)', fontSize: '11px', color: SMOKE,
               textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 500,
               padding: '8px 12px', textAlign: 'left',
             }}>{h}</th>
@@ -91,9 +91,9 @@ function DataTable({ rows }: { rows: [string, string, string][] }) {
       <tbody>
         {rows.map(([a, b, c], i) => (
           <tr key={i} style={{ background: i % 2 === 0 ? 'rgba(43, 36, 32,0.025)' : 'transparent' }}>
-            <td style={{ padding: '8px 12px', fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: ASH }}>{a}</td>
-            <td style={{ padding: '8px 12px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: CHAR }}>{b}</td>
-            <td style={{ padding: '8px 12px', fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: SMOKE }}>{c}</td>
+            <td style={{ padding: '8px 12px', fontFamily: 'var(--font-ui)', fontSize: '13px', color: ASH }}>{a}</td>
+            <td style={{ padding: '8px 12px', fontFamily: 'var(--font-ui)', fontSize: '12px', color: CHAR }}>{b}</td>
+            <td style={{ padding: '8px 12px', fontFamily: 'var(--font-ui)', fontSize: '13px', color: SMOKE }}>{c}</td>
           </tr>
         ))}
       </tbody>
@@ -118,7 +118,7 @@ function Accordion({ title, children, defaultOpen = false }: {
         }}
       >
         <span style={{
-          fontFamily: 'var(--font-fraunces)', fontSize: '15px',
+          fontFamily: 'var(--font-ui)', fontSize: '15px',
           fontWeight: 600, color: CHAR,
         }}>{title}</span>
         <span style={{
@@ -482,11 +482,11 @@ const CONTENT: Record<string, LocaleContent> = {
             <>
               <P>Baker Hub is actively developed. Things will occasionally break. If a yeast quantity seems wrong, the schedule doesn't fit, or something is confusing — please tell us. Every piece of feedback makes the engine better.</P>
               <div style={{ background: 'rgba(43, 36, 32,0.04)', borderRadius: '16px', padding: '16px', marginTop: '12px' }}>
-                <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-dm-sans)', fontSize: '14px', fontWeight: 600, color: CHAR }}>Built by Rom</p>
+                <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-ui)', fontSize: '14px', fontWeight: 600, color: CHAR }}>Built by Rom</p>
                 <p style={{ margin: '0 0 12px' }}>
-                  <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'var(--font-dm-sans)', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
+                  <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'var(--font-ui)', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
                 </p>
-                <p style={{ margin: 0, fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: SMOKE }}>Baker Hub is a solo side project — feedback goes directly to the person who built the engine.</p>
+                <p style={{ margin: 0, fontFamily: 'var(--font-ui)', fontSize: '13px', color: SMOKE }}>Baker Hub is a solo side project — feedback goes directly to the person who built the engine.</p>
               </div>
             </>
           ),
@@ -585,7 +585,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <div style={{
               background: 'rgba(156, 130, 72,0.06)', borderLeft: `2px solid ${GOLD}`,
               borderRadius: '16px', padding: '12px', marginBottom: '12px',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: SMOKE,
+              fontFamily: 'var(--font-ui)', fontSize: '12px', color: SMOKE,
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {[
@@ -595,7 +595,7 @@ const CONTENT: Record<string, LocaleContent> = {
                   { cat: 'Régional italien', detail: 'Sicilien, Ligurien, Vénitien, Calabrais' },
                   { cat: 'Moderne & fusion', detail: 'Japonais, Coréen, Espagnol, Moyen-Oriental' },
                 ].map(({ cat, detail }) => (
-                  <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px' }}>
+                  <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px', fontFamily: 'var(--font-ui)', fontSize: '12px' }}>
                     <span style={{ color: CHAR, fontWeight: 500, flexShrink: 0 }}>{cat}</span>
                     <span style={{ color: SMOKE, textAlign: 'right', fontSize: '11px', lineHeight: 1.4 }}>{detail}</span>
                   </div>
@@ -739,7 +739,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Le planificateur remonte depuis votre heure de cuisson cible. Pour chaque scénario, il évalue si un poolish, un biga ou une pâte directe produit le meilleur résultat compte tenu de votre fenêtre disponible.</P>
-            <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: TERRA, letterSpacing: '.04em' }}>FENÊTRES DE FERMENTATION À 22°C</p>
+            <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-ui)', fontSize: '12px', color: TERRA, letterSpacing: '.04em' }}>FENÊTRES DE FERMENTATION À 22°C</p>
             <BulletList items={[
               <><strong style={{color:CHAR}}>{'< 5,5h'}</strong> — fenêtre trop courte pour un préferment. Pâte directe uniquement, cuisson le jour même.</>,
               <><strong style={{color:CHAR}}>5,5h – 9h</strong> — pâte directe. Pas de place pour une fermentation de poolish significative.</>,
@@ -749,7 +749,7 @@ const CONTENT: Record<string, LocaleContent> = {
               <><strong style={{color:CHAR}}>{'> 26,5h'}</strong> — poolish au frigo + pousse froide complète 24h. Meilleure qualité possible.</>,
             ]} />
             <p style={{ marginTop: '16px', ...bodyText }}>Ces limites évoluent avec la température de la cuisine (plus chaud = fermentation plus rapide, fenêtres plus courtes) et le type de four (un préchauffage plus long décale la fenêtre minimale). La force de votre farine scale également la zone idéale — une farine W370 bénéficie d'une pousse froide plus longue qu'une W250.</p>
-            <p style={{ margin: '14px 0 10px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: TERRA, letterSpacing: '.04em' }}>COMMENT L'HEURE DE PÉTRISSAGE EST CHOISIE</p>
+            <p style={{ margin: '14px 0 10px', fontFamily: 'var(--font-ui)', fontSize: '12px', color: TERRA, letterSpacing: '.04em' }}>COMMENT L'HEURE DE PÉTRISSAGE EST CHOISIE</p>
             <BulletList items={[
               "Le moteur essaie poolish au frigo et poolish TA, choisit le mode avec le meilleur score. Le frigo gagne à égalité — la fermentation froide développe des saveurs plus complexes.",
               "Dans chaque mode, il cherche l'heure de pétrissage qui maximise la durée de pousse froide (meilleure saveur) tout en respectant vos heures bloquées.",
@@ -856,11 +856,11 @@ const CONTENT: Record<string, LocaleContent> = {
           <>
             <P>Baker Hub est activement développé comme projet personnel. Des problèmes surviennent parfois. Si une quantité de levure semble incorrecte, si le planning ne convient pas, ou si quelque chose est simplement confus — dites-le nous. Chaque retour améliore le moteur.</P>
             <div style={{ background: 'rgba(43, 36, 32,0.04)', borderRadius: '16px', padding: '16px', marginTop: '12px' }}>
-              <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-dm-sans)', fontSize: '14px', fontWeight: 600, color: CHAR }}>Construit par Rom</p>
+              <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-ui)', fontSize: '14px', fontWeight: 600, color: CHAR }}>Construit par Rom</p>
               <p style={{ margin: '0 0 12px' }}>
-                <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'var(--font-dm-sans)', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
+                <a href="mailto:rom@bakerhub.app" style={{ color: TERRA, fontFamily: 'var(--font-ui)', fontSize: '14px', textDecoration: 'none' }}>rom@bakerhub.app</a>
               </p>
-              <p style={{ margin: 0, fontFamily: 'var(--font-dm-sans)', fontSize: '13px', color: SMOKE, fontStyle: 'italic' }}>
+              <p style={{ margin: 0, fontFamily: 'var(--font-ui)', fontSize: '13px', color: SMOKE, fontStyle: 'italic' }}>
                 &laquo; Qu'est-ce qui rendrait Baker Hub plus utile pour vous ? Une ligne suffit. &raquo;
               </p>
             </div>
@@ -883,7 +883,7 @@ export default function AboutClient() {
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '24px 16px' }}>
 
         <h1 style={{
-          fontFamily: 'var(--font-fraunces)', fontSize: '28px', fontWeight: 700,
+          fontFamily: 'var(--font-ui)', fontSize: '28px', fontWeight: 700,
           color: CHAR, marginBottom: '4px', marginTop: '0',
         }}>{c.pageTitle}</h1>
         <p style={{ ...monoSm, marginBottom: '12px' }}>{c.pageSubtitle}</p>
@@ -903,7 +903,7 @@ export default function AboutClient() {
             padding: '12px 0', borderRadius: '16px',
             background: TERRA, color: '#fff',
             fontSize: '13px', fontWeight: 500,
-            fontFamily: 'var(--font-dm-sans)', textDecoration: 'none',
+            fontFamily: 'var(--font-ui)', textDecoration: 'none',
           }}
         >
           ← {locale === 'fr' ? 'Retour à Baker Hub' : 'Back to Baker Hub'}

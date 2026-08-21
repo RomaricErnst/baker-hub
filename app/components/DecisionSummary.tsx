@@ -38,15 +38,15 @@ export default function DecisionSummary({ thumbnail, thumbnailBg, title, tagline
         )}
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-        <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '15px', fontWeight: 600, color: 'var(--char)' }}>
+        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 600, color: 'var(--char)' }}>
           {title}
         </div>
-        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)' }}>
+        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)' }}>
           {tagline}
         </div>
       </div>
       <div style={{
-        fontFamily: 'var(--font-dm-mono)',
+        fontFamily: 'var(--font-ui)',
         fontSize: '11px',
         color: 'var(--terra)',
         textTransform: 'uppercase',

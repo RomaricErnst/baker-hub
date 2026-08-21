@@ -40,7 +40,7 @@ export default function PhaseSummary({ schedule }: { schedule: ScheduleResult })
                 {phase.label}
               </span>
               <span style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                fontFamily: 'var(--font-ui)', fontSize: '11px',
                 background: 'var(--cream)', color: 'var(--ash)',
                 borderRadius: '8px', padding: '.15rem 8px',
               }}>

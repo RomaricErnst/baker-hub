@@ -204,7 +204,7 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
     <div style={{
       fontSize: '12px', fontWeight: 600, letterSpacing: '.07em',
       textTransform: 'uppercase', color: 'var(--smoke)',
-      fontFamily: 'var(--font-dm-sans)', margin: '0 0 .55rem .15rem',
+      fontFamily: 'var(--font-ui)', margin: '0 0 .55rem .15rem',
     }}>
       {section.label}
     </div>

@@ -501,7 +501,7 @@ const INPUT_STYLE: React.CSSProperties = {
   background: 'var(--warm)',
   color: 'var(--char)',
   fontSize: '14px',
-  fontFamily: 'var(--font-dm-mono)',
+  fontFamily: 'var(--font-ui)',
   outline: 'none',
   cursor: 'pointer',
 };
@@ -513,20 +513,20 @@ const LABEL_STYLE: React.CSSProperties = {
   textTransform: 'uppercase',
   letterSpacing: '.06em',
   marginBottom: '4px',
-  fontFamily: 'var(--font-dm-mono)',
+  fontFamily: 'var(--font-ui)',
 };
 
 // ── Sourdough card helper styles ──────────────
 const STARTER_LABEL_STYLE: React.CSSProperties = {
   fontSize: '12px',
-  fontFamily: 'var(--font-dm-mono)',
+  fontFamily: 'var(--font-ui)',
   color: 'var(--smoke)',
   letterSpacing: '.06em',
   textTransform: 'uppercase',
   marginBottom: '8px',
 };
 const STARTER_SELECT_STYLE: React.CSSProperties = {
-  fontFamily: 'var(--font-dm-mono)',
+  fontFamily: 'var(--font-ui)',
   fontSize: '14px',
   padding: '8px 8px',
   borderRadius: '16px',
@@ -542,7 +542,7 @@ function starterPillButton(active: boolean): React.CSSProperties {
     border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
     background: active ? '#FEF4EF' : 'transparent',
     color: active ? 'var(--terra)' : 'var(--smoke)',
-    fontFamily: 'var(--font-dm-sans)',
+    fontFamily: 'var(--font-ui)',
     fontSize: '13px',
     cursor: 'pointer',
   };
@@ -1203,7 +1203,7 @@ function SimpleColourBar({
       <div style={{
         display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap',
         marginTop: '4px', fontSize: '11px', color: 'var(--smoke)',
-        fontFamily: 'var(--font-dm-mono)',
+        fontFamily: 'var(--font-ui)',
       }}>
         {([
           ['rgba(107,122,90,0.7)', locale === 'fr' ? 'idéal' : 'sweet spot'],
@@ -1226,11 +1226,11 @@ function SimpleColourBar({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
             <div style={{ width: 8, height: 8, background: '#2B2420', transform: 'rotate(45deg)', flexShrink: 0 }} />
-            <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+            <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
               {tRoot('schedulePicker.startDough')}
             </div>
           </div>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
             {fmtDT(pendingStart)}
           </div>
           <div style={{ fontSize: '11px', marginTop: '.1rem', color: inZone ? '#4A7A3A' : (earlyOk || nearLate) ? '#C49A28' : '#6B4423' }}>
@@ -1270,11 +1270,11 @@ function SimpleStartTime({ pendingStart, isFr, onStartChange }: {
       background: 'var(--warm)', border: '1px solid var(--border)',
       borderRadius: '16px', padding: '16px 16px',
     }}>
-      <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '4px' }}>
+      <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '4px' }}>
         {isFr ? 'Départ de la pâte' : 'Dough start'}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-        <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: '20px', fontWeight: 700, color: 'var(--char)' }}>
+        <span style={{ fontFamily: 'var(--font-ui)', fontSize: '20px', fontWeight: 700, color: 'var(--char)' }}>
           {label}
         </span>
         <button
@@ -1302,7 +1302,7 @@ function SimpleStartTime({ pendingStart, isFr, onStartChange }: {
             marginTop: '12px', padding: '8px 8px',
             border: '1.5px solid var(--border)', borderRadius: '8px',
             background: 'var(--card)', color: 'var(--char)',
-            fontSize: '14px', fontFamily: 'var(--font-dm-mono)', outline: 'none',
+            fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none',
           }}
         />
       )}
@@ -5390,7 +5390,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     marginTop: '16px', width: '100%', padding: '16px 24px',
     border: 'none', borderRadius: '16px',
     background: 'var(--terra)', color: '#fff',
-    fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700,
+    fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700,
     cursor: 'pointer',
     boxShadow: '0 3px 10px rgba(107, 68, 35,0.25)',
     letterSpacing: '.01em',
@@ -5414,7 +5414,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     && pendingEatTime.getTime() < Date.now() - 2 * 60 * 1000;
 
   return (
-    <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
+    <div style={{ fontFamily: 'var(--font-ui)' }}>
 
       {/* Bake time inputs — always visible */}
       <div style={{ marginBottom: '16px' }}>
@@ -5542,9 +5542,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <div style={{
           background: 'var(--warm)', border: '1px solid var(--border)',
           borderRadius: '16px', padding: '16px 20px', marginTop: '16px',
-          fontFamily: 'var(--font-dm-sans)',
+          fontFamily: 'var(--font-ui)',
         }}>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', marginBottom: '4px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)', marginBottom: '4px' }}>
             {isFr ? 'Cet horaire est déjà passé' : "That bake time has already passed"}
           </div>
           <div style={{ fontSize: '13px', color: 'var(--smoke)', lineHeight: 1.55 }}>
@@ -5573,7 +5573,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           {/* ── Card header ── */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '-.25rem' }}>
             <div style={{ width: 8, height: 8, background: '#4A7FA5', transform: 'rotate(45deg)', flexShrink: 0 }} />
-            <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+            <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
               {isFr ? 'Votre levain' : 'Your starter'}
             </div>
           </div>
@@ -5664,7 +5664,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       border: `1.5px solid ${lastFedAge === chip.id ? 'var(--terra)' : 'var(--border)'}`,
                       background: lastFedAge === chip.id ? '#FEF4EF' : 'transparent',
                       color: lastFedAge === chip.id ? 'var(--terra)' : 'var(--smoke)',
-                      fontFamily: 'var(--font-dm-sans)',
+                      fontFamily: 'var(--font-ui)',
                       fontSize: '13px',
                       cursor: 'pointer',
                       fontWeight: lastFedAge === chip.id ? 600 : 400,
@@ -5679,7 +5679,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               {/* Time select — inline, Today / Yesterday only */}
               {(lastFedAge === 'today' || lastFedAge === 'yesterday') && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '.1rem' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
                     {isFr ? 'à' : 'at'}
                   </div>
                   <select
@@ -5697,7 +5697,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       onLastFedTimeChange?.(base);
                     }}
                     style={{
-                      fontFamily: 'var(--font-dm-mono)',
+                      fontFamily: 'var(--font-ui)',
                       fontSize: '13px',
                       padding: '4px 8px',
                       borderRadius: '16px',
@@ -5726,7 +5726,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
               {/* Approximate age note — 2+ days */}
               {(lastFedAge === 'days23' || lastFedAge === 'days45' || lastFedAge === 'week') && (
-                <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>
+                <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>
                   {starterLocation === 'fridge'
                     ? (isFr
                         ? 'Le plan ci-dessous indiquera quand sortir votre levain.'
@@ -5742,7 +5742,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 {!lastFeedRatioEditing ? (
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: '8px',
-                    fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+                    fontFamily: 'var(--font-ui)', fontSize: '12px',
                     color: 'var(--smoke)',
                   }}>
                     <span>
@@ -5752,7 +5752,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       onClick={() => setLastFeedRatioEditing(true)}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                        color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
                         fontSize: '12px',
                         textDecoration: 'underline', textUnderlineOffset: '2px',
                         padding: 0,
@@ -5775,7 +5775,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                           border: '1px solid var(--smoke)',
                           background: showRatioInfo ? 'var(--smoke)' : 'transparent',
                           color: showRatioInfo ? 'white' : 'var(--smoke)',
-                          fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
+                          fontSize: '11px', fontFamily: 'var(--font-ui)',
                           cursor: 'pointer', display: 'inline-flex',
                           alignItems: 'center', justifyContent: 'center',
                           padding: 0, lineHeight: 1, flexShrink: 0,
@@ -5783,7 +5783,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       >i</button>
                     </div>
                     {showRatioInfo && (
-                      <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: '8px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5, marginBottom: '8px' }}>
                         {isFr
                           ? "Levain : eau : farine. Le ratio que vous avez utilisé la dernière fois — aide à dessiner la courbe historique correctement."
                           : 'Starter : water : flour. The ratio you used for your last feed — helps draw the historical curve correctly.'}
@@ -5803,7 +5803,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                             border: `1.5px solid ${lastFeedRatio === r ? 'var(--bread)' : 'var(--border)'}`,
                             background: lastFeedRatio === r ? 'rgba(139,105,20,0.10)' : 'transparent',
                             color: lastFeedRatio === r ? 'var(--bread)' : 'var(--smoke)',
-                            fontFamily: 'var(--font-dm-mono)', fontSize: '12px', cursor: 'pointer',
+                            fontFamily: 'var(--font-ui)', fontSize: '12px', cursor: 'pointer',
                           }}
                         >
                           1:{r}:{r}
@@ -5814,7 +5814,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       onClick={() => setLastFeedRatioEditing(false)}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                        color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
                         fontSize: '12px',
                         textDecoration: 'underline', textUnderlineOffset: '2px',
                         padding: 0, alignSelf: 'flex-start', marginTop: '.2rem',
@@ -5840,7 +5840,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       border: '1px solid var(--smoke)',
                       background: showRatioModeInfo ? 'var(--smoke)' : 'transparent',
                       color: showRatioModeInfo ? 'white' : 'var(--smoke)',
-                      fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
+                      fontSize: '11px', fontFamily: 'var(--font-ui)',
                       cursor: 'pointer', display: 'inline-flex',
                       alignItems: 'center', justifyContent: 'center',
                       padding: 0, lineHeight: 1, flexShrink: 0,
@@ -5848,7 +5848,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   >i</button>
                 </div>
                 {showRatioModeInfo && (
-                  <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>
+                  <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>
                     {isFr
                       ? "On peut suggérer un ratio plus fort ou plus léger pour que le rafraîchi et le pétrissage évitent vos heures bloquées — même levain, juste un timing qui s'adapte à votre journée."
                       : 'We may suggest a stronger or lighter feed so your refresh and mix times avoid your blocked hours — same starter, just timed to fit your day.'}
@@ -5882,7 +5882,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         border: `1.5px solid ${ratioMode === opt.id ? 'var(--bread)' : 'var(--border)'}`,
                         background: ratioMode === opt.id ? 'rgba(139,105,20,0.10)' : 'transparent',
                         color: ratioMode === opt.id ? 'var(--bread)' : 'var(--smoke)',
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '12px', cursor: 'pointer',
+                        fontFamily: 'var(--font-ui)', fontSize: '12px', cursor: 'pointer',
                       }}
                     >
                       {isFr ? opt.fr : opt.en}
@@ -5918,7 +5918,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   border: `1.5px solid ${starterHasRye ? 'var(--sage)' : 'var(--border)'}`,
                   background: starterHasRye ? 'rgba(107,122,90,0.08)' : 'transparent',
                   color: starterHasRye ? 'var(--sage)' : 'var(--smoke)',
-                  fontFamily: 'var(--font-dm-sans)', fontSize: '13px', cursor: 'pointer',
+                  fontFamily: 'var(--font-ui)', fontSize: '13px', cursor: 'pointer',
                 }}
               >
                 {isFr ? 'Levain de seigle' : 'Rye starter'}
@@ -5943,7 +5943,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: 'var(--smoke)', fontSize: '11px',
-                fontFamily: 'var(--font-dm-mono)',
+                fontFamily: 'var(--font-ui)',
                 textDecoration: 'underline',
                 textUnderlineOffset: '2px',
                 padding: 0, alignSelf: 'flex-start',
@@ -6009,7 +6009,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     })}
                   </select>
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', marginTop: '4px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginTop: '4px' }}>
                   {isFr ? 'La fenêtre de mélange sera centrée sur ce moment' : 'Mix window will be centered on this time'}
                 </div>
               </div>
@@ -6023,7 +6023,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   color: 'var(--smoke)', fontSize: '11px',
-                  fontFamily: 'var(--font-dm-mono)',
+                  fontFamily: 'var(--font-ui)',
                   textDecoration: 'underline',
                   textUnderlineOffset: '2px',
                   padding: 0, alignSelf: 'flex-start',
@@ -6038,7 +6038,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           {_tangRelevant && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                   {isFr ? 'GOÛT' : 'TASTE'}
                 </span>
                 <button
@@ -6047,7 +6047,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
                     color: 'var(--smoke)', padding: 0,
-                    fontFamily: 'var(--font-dm-mono)',
+                    fontFamily: 'var(--font-ui)',
                     fontSize: '11px', lineHeight: 1,
                   }}
                 >ⓘ</button>
@@ -6062,7 +6062,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       border: `1.5px solid ${tang === t ? 'var(--bread)' : 'var(--border)'}`,
                       background: tang === t ? 'rgba(139,105,20,0.10)' : 'transparent',
                       color: tang === t ? 'var(--bread)' : 'var(--smoke)',
-                      fontFamily: 'var(--font-dm-mono)', fontSize: '12px', cursor: 'pointer',
+                      fontFamily: 'var(--font-ui)', fontSize: '12px', cursor: 'pointer',
                     }}
                   >
                     {t === 'mild'
@@ -6074,7 +6074,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 ))}
               </div>
               {showTasteInfo && (
-                <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>
+                <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>
                   {t('taste.info')}
                 </div>
               )}
@@ -6108,14 +6108,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               background: isWorkActive ? '#FEF4EF' : 'var(--warm)',
               color: isWorkActive ? 'var(--terra)' : 'var(--smoke)',
               fontSize: '12px', fontWeight: isWorkActive ? 500 : 400,
-              cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+              cursor: 'pointer', fontFamily: 'var(--font-ui)',
               transition: 'all .15s',
               display: 'inline-flex', alignItems: 'center', gap: '4px',
               whiteSpace: 'nowrap', flexShrink: 0,
             }}
           >
             {t('blockers.weekdays')}
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', opacity: .65 }}>
+            <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', opacity: .65 }}>
               {t('blockers.weekdayHours')}
             </span>
             {isWorkActive && <span style={{ opacity: .7 }}>✓</span>}
@@ -6132,14 +6132,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 background: active ? '#FEF4EF' : 'var(--warm)',
                 color: active ? 'var(--terra)' : 'var(--smoke)',
                 fontSize: '12px', fontWeight: active ? 500 : 400,
-                cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                cursor: 'pointer', fontFamily: 'var(--font-ui)',
                 transition: 'all .15s',
                 display: 'inline-flex', alignItems: 'center', gap: '4px',
                 whiteSpace: 'nowrap', flexShrink: 0,
               }}
             >
               {t('blockers.nights')}
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', opacity: .65 }}>
+              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', opacity: .65 }}>
                 {t('blockers.nightHoursLabel')}
               </span>
               {active && <span style={{ opacity: .7 }}>✓</span>}
@@ -6155,7 +6155,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             background: showCustom ? '#FEF4EF' : 'var(--warm)',
             color: showCustom ? 'var(--terra)' : 'var(--smoke)',
             fontSize: '12px', cursor: 'pointer',
-            fontFamily: 'var(--font-dm-sans)', transition: 'all .15s',
+            fontFamily: 'var(--font-ui)', transition: 'all .15s',
           }}
         >
           {showCustom ? t('blockers.cancel') : t('blockers.addCustom')}
@@ -6182,12 +6182,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 padding: '8px 12px',
                 border: '1.5px solid var(--border)', borderRadius: '8px',
                 background: 'var(--card)', color: 'var(--char)',
-                fontSize: '13px', fontFamily: 'var(--font-dm-sans)', outline: 'none',
+                fontSize: '13px', fontFamily: 'var(--font-ui)', outline: 'none',
               }}
             />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: '8px' }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>
                   {t('blockers.from')}
                 </div>
                 <input
@@ -6200,12 +6200,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     padding: '8px 8px',
                     border: '1.5px solid var(--border)', borderRadius: '8px',
                     background: 'var(--card)', color: 'var(--char)',
-                    fontSize: '12px', fontFamily: 'var(--font-dm-mono)', outline: 'none',
+                    fontSize: '12px', fontFamily: 'var(--font-ui)', outline: 'none',
                   }}
                 />
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>
                   {t('blockers.to')}
                 </div>
                 <input
@@ -6218,7 +6218,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     padding: '8px 8px',
                     border: '1.5px solid var(--border)', borderRadius: '8px',
                     background: 'var(--card)', color: 'var(--char)',
-                    fontSize: '12px', fontFamily: 'var(--font-dm-mono)', outline: 'none',
+                    fontSize: '12px', fontFamily: 'var(--font-ui)', outline: 'none',
                   }}
                 />
               </div>
@@ -6268,13 +6268,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   <span style={{ opacity: .7, marginLeft: '.3rem', fontSize: '13px' }}>✓</span>
                   <span style={{
                     marginLeft: '.5rem', fontSize: '12px',
-                    color: 'var(--terra)', opacity: .75, fontFamily: 'var(--font-dm-mono)',
+                    color: 'var(--terra)', opacity: .75, fontFamily: 'var(--font-ui)',
                   }}>
                     {formatTimeShort(block.from, isFr)} → {formatTimeShort(block.to, isFr)}
                   </span>
                   <span style={{
                     marginLeft: '.35rem', fontSize: '11px',
-                    color: 'var(--terra)', opacity: .5, fontFamily: 'var(--font-dm-mono)',
+                    color: 'var(--terra)', opacity: .5, fontFamily: 'var(--font-ui)',
                   }}>
                     ({hoursLabel(durationH)})
                   </span>
@@ -6306,12 +6306,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           border: '1.5px solid var(--border)',
           padding: '16px 20px',
           marginBottom: '16px',
-          fontFamily: 'var(--font-dm-sans)',
+          fontFamily: 'var(--font-ui)',
           display: 'flex',
           flexDirection: 'column',
           gap: '8px',
         }}>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
             {isFr ? 'Pas assez de temps pour ce créneau' : 'Not enough time for this bake'}
           </div>
           <div style={{ fontSize: '13px', color: 'var(--smoke)', lineHeight: 1.55 }}>
@@ -6321,7 +6321,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           </div>
           {isSourdough && bakeType === 'bread' && suggestedBakeTime && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+              <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
                 {isFr ? 'Essayez plutôt :' : 'Try instead:'}
               </div>
               <button
@@ -6338,7 +6338,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   border: '1.5px solid var(--terra)',
                   background: '#FEF4EF',
                   color: 'var(--terra)',
-                  fontFamily: 'var(--font-dm-mono)',
+                  fontFamily: 'var(--font-ui)',
                   fontSize: '13px',
                   cursor: 'pointer',
                   fontWeight: 600,
@@ -6350,7 +6350,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           )}
           {!isSourdough && bakeType === 'bread' && suggestedBakeTimeBread && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+              <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
                 {isFr ? 'Essayez plutôt :' : 'Try instead:'}
               </div>
               <button
@@ -6367,7 +6367,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   border: '1.5px solid var(--terra)',
                   background: '#FEF4EF',
                   color: 'var(--terra)',
-                  fontFamily: 'var(--font-dm-mono)',
+                  fontFamily: 'var(--font-ui)',
                   fontSize: '13px',
                   cursor: 'pointer',
                   fontWeight: 600,
@@ -6392,7 +6392,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           color: 'var(--smoke)',
           lineHeight: 1.55,
           padding: '8px 0',
-          fontFamily: 'var(--font-dm-sans)',
+          fontFamily: 'var(--font-ui)',
         }}>
           {guardNote}
         </div>
@@ -6409,7 +6409,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           padding: '24px 20px',
           textAlign: 'center',
           color: 'var(--smoke)',
-          fontFamily: 'var(--font-dm-sans)',
+          fontFamily: 'var(--font-ui)',
           fontSize: '13px',
           lineHeight: 1.6,
         }}>
@@ -6419,7 +6419,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem', display: isSourdough && lastFedAge === null ? 'none' : undefined }}>
-        <div style={{ fontSize: '11px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-dm-mono)', marginBottom: '8px' }}>
+        <div style={{ fontSize: '11px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
           {hasDragged ? t('schedulerTitle.yours') : t('schedulerTitle.recommended')}
         </div>
         {/* Why this plan — one calm line naming the main scheduling decision.
@@ -6437,7 +6437,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             ? (isFr ? `${Math.round(coldH)}h au froid — plus de goût et un horaire plus souple.` : `${Math.round(coldH)}h in the fridge — deeper flavour and a more flexible timing.`)
             : (isFr ? `Calculé à rebours depuis votre heure de cuisson, à ${kitchenTemp}°C.` : `Timed backwards from your bake time at ${kitchenTemp}°C.`);
           return (
-            <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', marginBottom: '8px', lineHeight: 1.5 }}>
+            <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginBottom: '8px', lineHeight: 1.5 }}>
               {why}
             </div>
           );
@@ -6654,7 +6654,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           )
         ) : (
           <div style={{
-            textAlign: 'center', fontFamily: 'var(--font-dm-mono)',
+            textAlign: 'center', fontFamily: 'var(--font-ui)',
             fontSize: '14px', color: 'var(--smoke)',
             padding: '24px 0', letterSpacing: '.01em',
           }}>
@@ -6702,7 +6702,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 background: 'var(--cream)',
                 color: 'var(--ash)',
                 fontSize: '12px',
-                fontFamily: 'var(--font-dm-sans)',
+                fontFamily: 'var(--font-ui)',
                 cursor: 'pointer',
               }}
             >
@@ -6715,7 +6715,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           {startTimeInPast && (
             <div style={{
               fontSize: '12px', color: 'var(--smoke)',
-              fontFamily: 'var(--font-dm-mono)',
+              fontFamily: 'var(--font-ui)',
               textAlign: 'center', padding: '8px 0',
             }}>
               {locale === 'fr'
@@ -6737,7 +6737,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           borderRadius: '16px',
           padding: '12px 16px',
           marginBottom: '12px',
-          fontFamily: 'var(--font-dm-sans)',
+          fontFamily: 'var(--font-ui)',
           fontSize: '13px',
           color: 'var(--ash)',
         }}>
@@ -6750,7 +6750,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         <div style={{
           background: 'var(--cream)', borderLeft: '4px solid var(--terra)',
           borderRadius: '16px', padding: '12px 16px',
-          marginBottom: '12px', fontFamily: 'var(--font-dm-sans)',
+          marginBottom: '12px', fontFamily: 'var(--font-ui)',
         }}>
           <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--char)', marginBottom: '8px' }}>
             No free mixing window found
@@ -6842,7 +6842,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           <div style={{
             background: 'var(--cream)', borderLeft: '4px solid var(--terra)',
             borderRadius: '16px', padding: '12px 16px',
-            marginBottom: '12px', fontFamily: 'var(--font-dm-sans)',
+            marginBottom: '12px', fontFamily: 'var(--font-ui)',
           }}>
             {earlierIsReasonable && earlierStart ? (
               <>
@@ -6874,7 +6874,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     background: 'var(--terra)', color: 'white', border: 'none',
                     borderRadius: '12px', padding: '8px 16px',
                     fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                    fontFamily: 'var(--font-dm-sans)',
+                    fontFamily: 'var(--font-ui)',
                   }}
                 >
                   Start at {formatSliderDisplay(earlierStart, isFr)} →
@@ -6885,7 +6885,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 style={{
                   background: 'transparent', color: 'var(--smoke)',
                   border: '1px solid var(--border)', borderRadius: '12px', padding: '8px 16px',
-                  fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                  fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)',
                 }}
               >
                 {earlierIsReasonable && earlierStart ? tRoot('schedulePicker.keepAsIs') : tRoot('schedulePicker.gotIt')}
@@ -7137,7 +7137,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     <div style={{ width: 8, height: 8, background: '#4A7FA5', transform: 'rotate(45deg)', flexShrink: 0 }} />
                     <div style={{
                       fontSize: '13px', color: 'var(--smoke)',
-                      fontFamily: 'var(--font-dm-mono)',
+                      fontFamily: 'var(--font-ui)',
                       textTransform: 'uppercase', letterSpacing: '.04em',
                     }}>
                       {isFr ? 'LEVAIN' : 'STARTER'}
@@ -7153,7 +7153,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     return (
                       <div style={{
                         fontSize: '11px', color: 'var(--smoke)',
-                        fontFamily: 'var(--font-dm-mono)',
+                        fontFamily: 'var(--font-ui)',
                         marginTop: '-.35rem', marginBottom: '8px',
                       }}>
                         {isFr ? `Rafraîchi à 1:${r}:${r}` : `Feeding at 1:${r}:${r}`}
@@ -7185,14 +7185,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                           const labelUpper = ev.label.toUpperCase();
                           return (
                             <div key={`ev-card-${i}`}>
-                              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                                 {labelUpper}
                               </div>
-                              <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                              <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
                                 {timeStr}
                               </div>
                               {ev.cardNote && (
-                                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
+                                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px' }}>
                                   {ev.cardNote}
                                 </div>
                               )}
@@ -7210,7 +7210,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                                   _t > b.from.getTime() && _t < b.to.getTime());
                                 if (!_inBlock) return null;
                                 return (
-                                  <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px', fontStyle: 'italic' }}>
+                                  <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px', fontStyle: 'italic' }}>
                                     {(Math.abs(_t - Date.now()) <= 15 * 60000)
                                       ? (isFr
                                         ? 'Cela tombe dans vos heures bloquées — faites-le maintenant si vous le pouvez, ou ajustez vos heures bloquées pour que le plan le déplace.'
@@ -7235,16 +7235,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   {/* Future feed path: planned Next Feed */}
                   {!solverResult?.starterEvents?.length && isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && planningMode !== 'last_fed' && !_isFridgeHoldPath && (
                     <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'RAFRAÎCHI FINAL' : 'PRE-MIX FEED'}
                       </div>
-                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
                         {(() => {
                           const isNow = Math.abs(_feed2Time.getTime() - Date.now()) < 30 * 60 * 1000;
                           return isNow ? (isFr ? 'Maintenant' : 'Now') : fmtCardDT(_feed2Time, isFr);
                         })()}
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px' }}>
                         {isFr
                           ? 'Rafraîchi pour que le levain soit prêt au pétrissage'
                           : 'Feed so your starter peaks at mix time'}
@@ -7254,12 +7254,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
                   {!solverResult?.starterEvents?.length && isSourdough && _starterRefeedTime && !_usingPeak2 && !_isFridgeHoldPath && (
                     <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)',
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
                         textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'RAFRAÎCHI' : 'REFRESH FEED'}
                       </div>
                       <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)',
-                        fontFamily: 'var(--font-dm-mono)' }}>
+                        fontFamily: 'var(--font-ui)' }}>
                         {(() => {
                           const fifteen = 15 * 60 * 1000;
                           const rounded = new Date(Math.ceil(_starterRefeedTime.getTime() / fifteen) * fifteen);
@@ -7267,7 +7267,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                           return isFr ? `Maintenant · ${timeStr}` : `Now · ${timeStr}`;
                         })()}
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)',
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
                         lineHeight: 1.4, marginTop: '2px' }}>
                         {(() => {
                           const stretchFactor = solverResult?.refreshStretchFactor ?? 1.0;
@@ -7286,16 +7286,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
                   {!solverResult?.starterEvents?.length && _usingPeak2 && _feed2Time && feedPlan.length === 0 && !_isFridgeHoldPath && (
                     <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'PROCHAIN RAFRAÎCHI' : 'NEXT FEED'}
                       </div>
-                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
                         {(() => {
                           const isNow = Math.abs(_feed2Time.getTime() - Date.now()) < 30 * 60 * 1000;
                           return isNow ? (isFr ? 'Maintenant' : 'Now') : fmtCardDT(_feed2Time, isFr);
                         })()}
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '1px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '1px' }}>
                         {isFr ? 'Rafraîchir pour un pic plus fort' : 'Feed for a stronger peak'}
                       </div>
                     </div>
@@ -7305,7 +7305,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     <div style={{
                       fontSize: '11px',
                       color: '#78350F',
-                      fontFamily: 'var(--font-dm-sans)',
+                      fontFamily: 'var(--font-ui)',
                       lineHeight: 1.5,
                       marginBottom: '8px',
                       padding: '8px 8px',
@@ -7321,10 +7321,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     <>
                       {/* REFRESH FEED */}
                       <div style={{ marginBottom: '8px' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                           {isFr ? 'RAFRAÎCHI' : 'REFRESH FEED'}
                         </div>
-                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
                           {(() => {
                             const fifteen = 15 * 60 * 1000;
                             const rounded = new Date(Math.ceil(_fridgeHoldRefreshTime.getTime() / fifteen) * fifteen);
@@ -7332,7 +7332,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                             return isFr ? `Maintenant · ${timeStr}` : `Now · ${timeStr}`;
                           })()}
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px' }}>
                           {(() => {
                             const stretchFactor = solverResult?.refreshStretchFactor ?? 1.0;
                             const adjPeakH_eff = solverResult?.adjPeakHValue ?? null;
@@ -7349,13 +7349,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
                       {/* INTO FRIDGE */}
                       <div style={{ marginBottom: '8px' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                           {isFr ? 'AU FRIGO' : 'INTO FRIDGE'}
                         </div>
-                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
                           {fmtCardDT(_fridgeHoldInTime, isFr)}
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px' }}>
                           {isFr
                             ? 'Au pic — ralentit la fermentation'
                             : 'At peak — slows fermentation'}
@@ -7364,13 +7364,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
                       {/* OUT OF FRIDGE */}
                       <div style={{ marginBottom: '8px' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                           {isFr ? 'SORTIE DU FRIGO' : 'OUT OF FRIDGE'}
                         </div>
-                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
                           {fmtCardDT(_fridgeHoldOutTime, isFr)}
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px' }}>
                           {(() => {
                             const warmupMin = Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60);
                             return isFr
@@ -7382,13 +7382,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
                       {/* PRE-MIX FEED */}
                       <div style={{ marginBottom: '8px' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                           {isFr ? 'RAFRAÎCHI FINAL' : 'PRE-MIX FEED'}
                         </div>
-                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
                           {fmtCardDT(_feed2Time, isFr)}
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '2px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px' }}>
                           {(() => {
                             const stretchFactor = solverResult?.preMixStretchFactor ?? 1.0;
                             const peakAt = new Date(_feed2Time.getTime() + adjPeakH * stretchFactor * 3600000);
@@ -7405,14 +7405,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
                       {feedPlan.map((fp, i) => (
                         <div key={i}>
-                          <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                             {fp.label}
                           </div>
-                          <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                          <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
                             {fmtCardDT(fp.ft, isFr)}
                           </div>
                           {fp.note && (
-                            <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '1px' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '1px' }}>
                               {fp.note}
                             </div>
                           )}
@@ -7423,13 +7423,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
                   {(!isSourdough || !solverResult?.starterEvents?.length) && starterLocation === 'fridge' && _activeFridgeOutTime && (
                     <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'SORTIR DU FRIGO' : 'REMOVE FROM FRIDGE'}
                       </div>
-                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
                         {fmtCardDT(_activeFridgeOutTime, isFr)}
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginTop: '1px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '1px' }}>
                         {isFr
                           ? `~${Math.round(warmupH * 60)} min pour atteindre la temp. ambiante`
                           : `~${Math.round(warmupH * 60)} min to reach room temp`}
@@ -7439,10 +7439,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
                   {activePeakTime && activePeakTime > new Date() && (
                     <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
                         {isFr ? 'PIC' : 'PEAK'}
                       </div>
-                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)' }}>
+                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
                         {fmtCardDT(activePeakTime, isFr)}
                       </div>
                     </div>
@@ -7518,7 +7518,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                         padding: '.2rem 12px',
                         fontSize: '12px',
                         color: pillGreen ? '#4A7A3A' : '#9A7010',
-                        fontFamily: 'var(--font-dm-mono)',
+                        fontFamily: 'var(--font-ui)',
                       }}>
                         <div style={{
                           width: 8, height: 8, borderRadius: '50%',
@@ -7534,7 +7534,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     <div style={{
                       fontSize: '12px',
                       color: 'var(--char)',
-                      fontFamily: 'var(--font-dm-sans)',
+                      fontFamily: 'var(--font-ui)',
                       lineHeight: 1.5,
                       marginTop: '8px',
                     }}>
@@ -7544,18 +7544,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   {!solverResult?.planExplanation && _starterStateNote
                     && !(_hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && _feed2Time.getTime() - Date.now() > 30 * 60 * 1000)
                     && (
-                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginTop: '8px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5, marginTop: '8px' }}>
                       {_starterStateNote}
                     </div>
                   )}
                   {!solverResult?.planExplanation && _driftNote && (
-                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginTop: '8px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5, marginTop: '8px' }}>
                       {_driftNote}
                     </div>
                   )}
 
                   {isSourdough && !solverResult?.planExplanation && feedPlan.length === 0 && (_starterRefeedTime && !_hasFutureFeedPath || _usingPeak2 && _feed2Time || _hasFutureFeedPath && _feed2Time) && (
-                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)',
+                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
                       lineHeight: 1.5, marginTop: '8px' }}>
                       {_starterRefeedTime && !_hasFutureFeedPath
                         ? (() => {
@@ -7584,7 +7584,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       <button onClick={() => setShowStarterTips(v => !v)}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                           display: 'inline-flex', alignItems: 'center', gap: '4px',
-                          fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+                          fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
                         <span style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid var(--smoke)',
                           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: '11px', flexShrink: 0 }}>i</span>
@@ -7592,7 +7592,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       </button>
                       {showStarterTips && (
                         <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--smoke)',
-                          fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
+                          fontFamily: 'var(--font-ui)', lineHeight: 1.6,
                           borderLeft: '2px solid var(--border)', paddingLeft: '8px' }}>
                           {isFr
                             ? "Dôme bombé · Odeur alcoolisée et légèrement acide · Texture bulleuse · Flotte dans l'eau"
@@ -7617,7 +7617,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   <div style={{ width: 8, height: 8, background: cardPrefColor, transform: 'rotate(45deg)', flexShrink: 0 }} />
                   <div style={{
                     fontSize: '13px', color: 'var(--smoke)',
-                    fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
+                    fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em',
                   }}>{prefLabel}</div>
                 </div>
                 {(skipPoolishNote || prefAlgoRed) ? (
@@ -7643,14 +7643,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     style={{
                       fontSize: '13px', padding: '4px 8px', borderRadius: '8px',
                       border: '1.5px solid var(--terra)', background: 'var(--warm)',
-                      color: 'var(--char)', fontFamily: 'var(--font-dm-mono)',
+                      color: 'var(--char)', fontFamily: 'var(--font-ui)',
                       width: '100%', outline: 'none',
                     }}
                   />
                 ) : (
                   <div
                     onClick={() => setEditingPref(true)}
-                    style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', cursor: 'text' }}
+                    style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)', cursor: 'text' }}
                   >
                     {fmtCardDT(cardPrefTime!, isFr)}
                   </div>
@@ -7668,7 +7668,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       marginTop: '4px',
                       background: bg, border: `1px solid ${border}`,
                       borderRadius: '20px', padding: '.2rem 12px',
-                      fontSize: '12px', color, fontFamily: 'var(--font-dm-mono)',
+                      fontSize: '12px', color, fontFamily: 'var(--font-ui)',
                     }}>
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
                       {cardPrefStatus}
@@ -7704,7 +7704,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 <div style={{ width: 8, height: 8, background: '#3D5A30', transform: 'rotate(45deg)', flexShrink: 0 }} />
                 <div style={{
                   fontSize: '13px', color: 'var(--smoke)',
-                  fontFamily: 'var(--font-dm-mono)', textTransform: 'uppercase', letterSpacing: '.04em',
+                  fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em',
                 }}>{tRoot('schedulePicker.startDough')}</div>
               </div>
               {editingMix ? (
@@ -7728,14 +7728,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   style={{
                     fontSize: '13px', padding: '4px 8px', borderRadius: '8px',
                     border: '1.5px solid var(--terra)', background: 'var(--warm)',
-                    color: 'var(--char)', fontFamily: 'var(--font-dm-mono)',
+                    color: 'var(--char)', fontFamily: 'var(--font-ui)',
                     width: '100%', outline: 'none',
                   }}
                 />
               ) : (
                 <div
                   onClick={() => setEditingMix(true)}
-                  style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-dm-mono)', cursor: 'text' }}
+                  style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)', cursor: 'text' }}
                 >
                   {fmtCardDT(pendingStart, isFr)}
                 </div>
@@ -7790,7 +7790,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     padding: '.2rem 12px',
                     fontSize: '12px',
                     color: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#6B4423',
-                    fontFamily: 'var(--font-dm-mono)',
+                    fontFamily: 'var(--font-ui)',
                   }}>
                     <div style={{
                       width: 8, height: 8, borderRadius: '50%',
@@ -7813,14 +7813,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               )}
               {isSourdough && _windowTooShortRender && (
                 <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--terra)', fontFamily: 'var(--font-dm-mono)' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--terra)', fontFamily: 'var(--font-ui)' }}>
                     {isFr ? 'Pas assez de temps pour ce créneau' : 'Not enough time for this bake'}
                   </div>
                   {/* Cool kitchens slow the starter a lot — a cold bench is a
                       common reason the window is tight. Offer the levers a baker
                       actually has, framed as an observation (no alarm). */}
                   {kitchenTemp < 20 && (
-                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>
                       {isFr
                         ? `Votre cuisine est fraîche (${kitchenTemp}°C), donc votre levain met plus de temps à piquer. Réchauffez-le (~24–26°C), rafraîchissez-le à plus petit ratio (1:1:1), ou cuisez un peu plus tard.`
                         : `Your kitchen is cool (${kitchenTemp}°C), so your starter takes longer to peak. Warm it (~24–26°C), feed a smaller ratio (1:1:1), or bake a little later.`}
@@ -7828,7 +7828,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   )}
                   {bakeType === 'bread' && solverResult?.suggestedBakeTime && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
                         {isFr ? 'Essayez plutôt :' : 'Try instead:'}
                       </div>
                       <button
@@ -7846,7 +7846,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                           border: '1.5px solid var(--terra)',
                           background: '#FEF4EF',
                           color: 'var(--terra)',
-                          fontFamily: 'var(--font-dm-mono)',
+                          fontFamily: 'var(--font-ui)',
                           fontSize: '11px',
                           cursor: 'pointer',
                           fontWeight: 600,
@@ -7867,7 +7867,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 <button onClick={() => setShowDoughTips(v => !v)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                     display: 'inline-flex', alignItems: 'center', gap: '4px',
-                    fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-sans)' }}>
+                    fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
                   <span style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid var(--smoke)',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '11px', flexShrink: 0 }}>i</span>
@@ -7875,7 +7875,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 </button>
                 {showDoughTips && (
                   <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--smoke)',
-                    fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
+                    fontFamily: 'var(--font-ui)', lineHeight: 1.6,
                     borderLeft: '2px solid var(--border)', paddingLeft: '8px' }}>
                     {isFr
                       ? 'Le temps donne le cap ; votre pâte donne le feu vert. Prête quand elle a gonflé d’environ moitié, qu’elle est bombée et gonflée de bulles, et qu’une pression légère se retend lentement. Encore dense et sans vie ? Laissez-la un peu. Bulleuse et retombée ? Enfournez sans tarder.'

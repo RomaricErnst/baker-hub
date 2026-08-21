@@ -308,10 +308,10 @@ export default function SessionViewer({
     : null;
 
   const monoSm: React.CSSProperties = {
-    fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)',
+    fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)',
   };
   const sectionLabel: React.CSSProperties = {
-    fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)',
+    fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)',
     textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '12px',
   };
   const divider = { height: '1px', background: 'var(--border)', margin: '16px 20px 0' };
@@ -395,7 +395,7 @@ export default function SessionViewer({
                   }
                 }}
                 style={{
-                  fontFamily: 'var(--font-fraunces)', fontSize: '20px',
+                  fontFamily: 'var(--font-ui)', fontSize: '20px',
                   fontWeight: 700, color: 'var(--char)',
                   border: 'none', borderBottom: '1px solid var(--border)',
                   background: 'transparent', outline: 'none',
@@ -412,7 +412,7 @@ export default function SessionViewer({
                 }}
               >
                 <p style={{
-                  fontFamily: 'var(--font-fraunces)', fontSize: '20px',
+                  fontFamily: 'var(--font-ui)', fontSize: '20px',
                   fontWeight: 700, color: 'var(--char)', margin: 0,
                   borderBottom: '1px dashed rgba(0,0,0,0.15)',
                   paddingBottom: '1px',
@@ -420,7 +420,7 @@ export default function SessionViewer({
                   {sessionTitle || title}
                 </p>
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+                  fontFamily: 'var(--font-ui)', fontSize: '12px',
                   color: 'var(--terra)', marginTop: '2px', flexShrink: 0,
                   border: '1px solid rgba(107, 68, 35,0.35)',
                   background: 'rgba(107, 68, 35,0.06)',
@@ -430,20 +430,20 @@ export default function SessionViewer({
             )}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                fontFamily: 'var(--font-ui)', fontSize: '11px',
                 padding: '3px 12px', borderRadius: '20px',
                 background: 'rgba(107,122,90,0.15)', color: 'var(--sage)',
               }}>Dough</span>
               {(event.pizza_party_id || event.status === 'pizza_planned') && (
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                  fontFamily: 'var(--font-ui)', fontSize: '11px',
                   padding: '3px 12px', borderRadius: '20px',
                   background: 'rgba(156, 130, 72,0.15)', color: 'var(--gold)',
                 }}>Pizza</span>
               )}
               {event.status === 'baked' && (
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                  fontFamily: 'var(--font-ui)', fontSize: '11px',
                   padding: '3px 12px', borderRadius: '20px',
                   background: 'rgba(107, 68, 35,0.15)', color: 'var(--terra)',
                 }}>Baked</span>
@@ -600,7 +600,7 @@ export default function SessionViewer({
                 }}>
                   <span style={{ fontSize: '20px', opacity: 0.35, lineHeight: 1 }}>+</span>
                   <span style={{
-                    fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                    fontFamily: 'var(--font-ui)', fontSize: '11px',
                     color: 'var(--smoke)', textAlign: 'center', lineHeight: 1.3,
                   }}>
                     {uploading ? '...' : (l === 'fr' ? 'Ajouter' : 'Add photo')}
@@ -623,7 +623,7 @@ export default function SessionViewer({
               )}
             </div>
             <p style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              fontFamily: 'var(--font-ui)', fontSize: '11px',
               color: 'var(--smoke)', opacity: 0.6, marginTop: '8px',
             }}>
               {photos.length}/6 photos
@@ -645,7 +645,7 @@ export default function SessionViewer({
                   style={{
                     width: '100%', padding: '12px', borderRadius: '8px',
                     border: '1px solid var(--border)',
-                    fontFamily: 'var(--font-dm-sans)', fontSize: '13px',
+                    fontFamily: 'var(--font-ui)', fontSize: '13px',
                     color: 'var(--char)', background: 'var(--cream)',
                     resize: 'none', boxSizing: 'border-box', outline: 'none',
                   }}
@@ -658,7 +658,7 @@ export default function SessionViewer({
                   style={{
                     marginTop: '8px', padding: '8px 16px', borderRadius: '12px',
                     background: 'var(--terra)', color: 'white', border: 'none',
-                    fontFamily: 'var(--font-dm-mono)', fontSize: '12px', cursor: 'pointer',
+                    fontFamily: 'var(--font-ui)', fontSize: '12px', cursor: 'pointer',
                   }}
                 >
                   {l === 'fr' ? 'Sauvegarder' : 'Save'}
@@ -668,7 +668,7 @@ export default function SessionViewer({
               <div
                 onClick={() => setEditingComment(true)}
                 style={{
-                  fontFamily: 'var(--font-dm-sans)', fontSize: '13px',
+                  fontFamily: 'var(--font-ui)', fontSize: '13px',
                   color: comment ? 'var(--char)' : 'var(--smoke)',
                   fontStyle: comment ? 'normal' : 'italic',
                   cursor: 'pointer', minHeight: '36px', lineHeight: 1.5,
@@ -698,7 +698,7 @@ export default function SessionViewer({
             style={{
               width: '100%', padding: '16px',
               background: 'var(--terra)', color: 'white',
-              fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700,
+              fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700,
               borderRadius: '12px', border: 'none', cursor: 'pointer',
               boxShadow: '0 2px 8px rgba(107, 68, 35,0.25)',
               letterSpacing: '.01em',
@@ -715,7 +715,7 @@ export default function SessionViewer({
               background: 'transparent',
               border: '1px solid rgba(156, 130, 72,0.5)',
               color: 'var(--gold)',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '13px',
+              fontFamily: 'var(--font-ui)', fontSize: '13px',
               borderRadius: '12px', cursor: 'pointer',
               letterSpacing: '.06em',
             }}
@@ -739,7 +739,7 @@ export default function SessionViewer({
             style={{
               width: '100%', padding: '8px',
               background: 'none', border: 'none', cursor: 'pointer',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+              fontFamily: 'var(--font-ui)', fontSize: '11px',
               color: 'var(--smoke)', opacity: 0.5,
               textDecoration: 'underline', textUnderlineOffset: '2px',
             }}

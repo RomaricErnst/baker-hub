@@ -40,7 +40,11 @@ html {
 }
 
 body {
-  font-family: var(--font-dm-sans), sans-serif;
+  font-family: var(--font-ui), system-ui, sans-serif;
+  /* Number columns — grams, hydration, times — misalign with proportional
+     figures. Tabular figures fix that on the UI face itself, which is what
+     lets the monospace go everywhere except the formula panel. */
+  font-variant-numeric: tabular-nums;
   background: var(--cream);
   color: var(--char);
   min-height: 100vh;
@@ -200,9 +204,17 @@ body {
      DM Sans   everything readable
      DM Mono   numbers, units, short uppercase labels
 
-   Playfair is gone: it was doing the same job as Fraunces, and it was also
-   turning up at 11-14px where a display serif has no business. SOFT and WONK
-   are set once here and inherit — the fonts that lack those axes ignore them. */
-body {
-  font-variation-settings: 'SOFT' 40, 'WONK' 1;
-}
+   Superseded: the site now runs on one family. See "Type roles v2" below. */
+
+
+
+/* ── Type roles v2 ────────────────────────────
+   One family, one exception.
+
+     Figtree   everything readable — wordmark, titles, body, labels, numbers
+     DM Mono   the yeast formula panel only, where monospacing is the point
+
+   Two serifs (Playfair, then Fraunces) and a second sans used to share the
+   work, and DM Mono had drifted into 346 declarations it had no business in —
+   that spread is what read as "many different fonts". Tabular figures on
+   Figtree keep gram and time columns aligned without it. */

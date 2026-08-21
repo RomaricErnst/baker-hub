@@ -484,12 +484,12 @@ export default function Timeline({
       }}>
         <div>
           <div style={{
-            fontFamily: 'var(--font-fraunces)', fontSize: '17px',
+            fontFamily: 'var(--font-ui)', fontSize: '17px',
             fontWeight: 700, color: 'var(--char)',
           }}>
             {t('timeline.bakingProtocol')}
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--smoke)', marginTop: '.1rem', fontFamily: 'var(--font-dm-mono)' }}>
+          <div style={{ fontSize: '12px', color: 'var(--smoke)', marginTop: '.1rem', fontFamily: 'var(--font-ui)' }}>
             {formatTime(displayStartTime, _fmtLocale)} → {formatTime(eatTime, _fmtLocale)}
             {' · '}{hoursLabel((eatTime.getTime() - displayStartTime.getTime()) / 3600000)} total
           </div>
@@ -540,7 +540,7 @@ export default function Timeline({
                   {phase.label}
                 </span>
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                  fontFamily: 'var(--font-ui)', fontSize: '11px',
                   background: th.pill, color: th.pillText,
                   borderRadius: '8px', padding: '.15rem 8px',
                 }}>
@@ -576,7 +576,7 @@ export default function Timeline({
               <div style={{
                 width: '72px', flexShrink: 0,
                 textAlign: 'right', paddingTop: '.1rem',
-                fontFamily: 'var(--font-dm-mono)',
+                fontFamily: 'var(--font-ui)',
                 fontSize: '11px', color: 'var(--smoke)',
                 lineHeight: 1.4,
               }}>
@@ -633,7 +633,7 @@ export default function Timeline({
 
                   {item.durationH !== null && (
                     <span style={{
-                      fontFamily: 'var(--font-dm-mono)',
+                      fontFamily: 'var(--font-ui)',
                       fontSize: '11px',
                       background: th.pill,
                       color: th.pillText,
@@ -655,7 +655,7 @@ export default function Timeline({
                     prefYeastGrams > 0 ? `${prefYeastGrams.toFixed(1)}g yeast` : null,
                   ].filter(Boolean).join(' · ');
                   return (
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--smoke)', marginBottom: '8px' }}>
+                    <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)', marginBottom: '8px' }}>
                       {parts}
                     </div>
                   );
@@ -689,7 +689,7 @@ export default function Timeline({
                     display: 'flex', gap: '8px', alignItems: 'center',
                     fontSize: '11px',
                     color: th.pillText,
-                    fontFamily: 'var(--font-dm-mono)',
+                    fontFamily: 'var(--font-ui)',
                   }}>
                     <span style={{
                       width: '6px', height: '6px', borderRadius: '50%',

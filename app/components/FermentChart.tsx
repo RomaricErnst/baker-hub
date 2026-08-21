@@ -1013,7 +1013,7 @@ export default function FermentChart({
             <svg width="24" height="10" viewBox="0 0 24 10">
               <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke={prefColor} strokeWidth="2" fill="none" strokeLinecap="round"/>
             </svg>
-            <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+            <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
               {prefermentType === 'biga' ? 'Biga' :
                prefermentType === 'levain' || prefermentType === 'sourdough' ? (isFr ? 'Levain' : 'Starter') :
                'Poolish'}
@@ -1024,7 +1024,7 @@ export default function FermentChart({
           <svg width="24" height="10" viewBox="0 0 24 10">
             <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke="#4A6B3A" strokeWidth="2" fill="none" strokeLinecap="round"/>
           </svg>
-          <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)' }}>
+          <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
             {isFr ? 'Pâte' : 'Dough'}
           </span>
         </div>
@@ -2000,7 +2000,7 @@ export default function FermentChart({
                       const collidesWithActive = activeX !== null && Math.abs(r.x - activeX) < 50;
                       const labelY = (collidesWithTick || collidesWithActive) ? AXIS_Y + S + 42 : AXIS_Y + S + 22;
                       return (
-                        <text x={r.x} y={labelY} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-dm-mono)">
+                        <text x={r.x} y={labelY} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-ui)">
                           {labelText}
                         </text>
                       );
@@ -2042,7 +2042,7 @@ export default function FermentChart({
                       y={AXIS_Y + 22}
                       fill="var(--smoke)"
                       fontSize="9"
-                      fontFamily="var(--font-dm-mono)"
+                      fontFamily="var(--font-ui)"
                       textAnchor="middle"
                     >
                       {item.label}
@@ -2141,7 +2141,7 @@ export default function FermentChart({
       {!hasDragged && !startTimeInPast && (
         <div style={{
           textAlign: 'center', fontSize: '11px', marginTop: '4px',
-          color: '#8A7F78', fontFamily: 'var(--font-dm-sans)',
+          color: '#8A7F78', fontFamily: 'var(--font-ui)',
           fontStyle: 'italic',
         }}>
           {isFr
@@ -2157,7 +2157,7 @@ export default function FermentChart({
           onClick={() => setLegendOpen(o => !o)}
           style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0',
-            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke, #8A7F78)',
+            fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke, #8A7F78)',
             textDecoration: 'underline', textUnderlineOffset: '2px',
           }}
         >
@@ -2169,7 +2169,7 @@ export default function FermentChart({
           <div style={{
             marginTop: '8px', padding: '12px 12px',
             background: 'rgba(43, 36, 32,0.03)', border: '1px solid var(--border, #E8E0D5)',
-            borderRadius: '16px', fontFamily: 'var(--font-dm-sans)', fontSize: '12px',
+            borderRadius: '16px', fontFamily: 'var(--font-ui)', fontSize: '12px',
             color: 'var(--ash, #3D3530)', lineHeight: 1.65,
           }}>
             {([
@@ -2191,7 +2191,7 @@ export default function FermentChart({
                 : 'fridge time — biology on pause. That’s by design.'],
             ] as const).map(([term, body]) => (
               <div key={term} style={{ marginBottom: '4px' }}>
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>{term}</span>
+                <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>{term}</span>
                 <span> — {body}</span>
               </div>
             ))}
@@ -2211,7 +2211,7 @@ export default function FermentChart({
                   style={{ width: '14px', height: '14px', accentColor: 'var(--terra, #6B4423)', cursor: 'pointer', flexShrink: 0 }}
                 />
                 <span>
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>
+                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>
                     {isFr ? 'Fenêtres' : 'Timing windows'}
                   </span>
                   <span> — {isFr

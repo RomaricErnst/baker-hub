@@ -10,7 +10,7 @@ import type { StyleKey } from '../lib/toppingTypes';
 
 const S = {
   label: {
-    fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--terra)',
+    fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--terra)',
     textTransform: 'uppercase' as const, letterSpacing: '1.5px', fontWeight: 700,
     margin: '18px 16px 8px', display: 'block',
   },
@@ -18,7 +18,7 @@ const S = {
     border: active ? '1.5px solid var(--terra)' : '1px solid var(--border)',
     background: active ? 'rgba(107, 68, 35,0.07)' : 'var(--warm)',
     color: 'var(--char)', borderRadius: '20px', padding: '8px 12px',
-    fontFamily: 'var(--font-dm-sans)', fontSize: '12px', cursor: 'pointer',
+    fontFamily: 'var(--font-ui)', fontSize: '12px', cursor: 'pointer',
     lineHeight: 1.2,
   }),
 };
@@ -68,7 +68,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
       onChange={e => onChange(e.target.value)}
       style={{
         border: '1px solid var(--border)', borderRadius: '8px', padding: '4px 8px',
-        fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--char)',
+        fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--char)',
         background: 'var(--warm)', width: '86px',
       }}
     />
@@ -87,7 +87,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         {b.enabled && (
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {timeInput(b.from, v => patch({ blockers: { ...blockers, [key]: { ...b, from: v } } }))}
-            <span style={{ color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', fontSize: '11px' }}>→</span>
+            <span style={{ color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontSize: '11px' }}>→</span>
             {timeInput(b.to, v => patch({ blockers: { ...blockers, [key]: { ...b, to: v } } }))}
           </span>
         )}
@@ -110,10 +110,10 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           padding: '0 16px 12px', borderBottom: '1px solid var(--border)',
         }}>
           <div>
-            <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
+            <span style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
               {fr ? 'Mes préférences' : 'My preferences'}
             </span>
-            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)', marginTop: '2px' }}>
+            <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', marginTop: '2px' }}>
               {fr ? 'Enregistré automatiquement à chaque changement — prérempli dans chaque nouvelle session.' : 'Saved automatically on every change — prefilled into each new session.'}
               {signedIn !== null && (
                 <span style={{ display: 'block', marginTop: '2px', color: signedIn ? 'var(--sage, #6B7A5A)' : 'var(--smoke)' }}>
@@ -143,7 +143,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
 
         <span style={S.label}>{fr ? 'Mes pizzas' : 'My pizzas'}</span>
         {customs.length === 0 ? (
-          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', padding: '0 16px' }}>
+          <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', padding: '0 16px' }}>
             {fr ? 'Créez vos pizzas depuis Ma Pizza Party — elles vivront ici.' : 'Create pizzas from My Pizza Party — they will live here.'}
           </div>
         ) : customs.map(cp => (
@@ -153,8 +153,8 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
             background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px',
           }}>
             <div>
-              <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>{cp.name}</div>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)' }}>
+              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>{cp.name}</div>
+              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)' }}>
                 {cp.ingredients.length} {fr ? 'ingrédients' : 'ingredients'}
               </div>
             </div>
@@ -162,7 +162,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
               onClick={() => { deleteCustomPizza(cp.id); setProfile({ version: 1, ...(loadProfile() ?? {}) }); }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)',
+                fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)',
                 textDecoration: 'underline', textUnderlineOffset: '2px',
               }}
             >
@@ -209,7 +209,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           {[4, 5, 6, 7, 8].map(t => (
             <button key={t} onClick={() => patch({ fridgeTemp: profile.fridgeTemp === t ? undefined : t })}
               style={S.pill(profile.fridgeTemp === t)}>
-              <span style={{ fontFamily: 'var(--font-dm-mono)' }}>{t}°C</span>
+              <span style={{ fontFamily: 'var(--font-ui)' }}>{t}°C</span>
             </button>
           ))}
         </div>
@@ -241,7 +241,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         </div>
 
         <span style={S.label}>{fr ? 'Indisponibilités habituelles' : 'Usual busy hours'}</span>
-        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)', padding: '0 16px 8px' }}>
+        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', padding: '0 16px 8px' }}>
           {fr ? 'Le planning évitera ces créneaux dans chaque nouvelle session.' : 'New sessions plan around these windows.'}
         </div>
         {blockerRow('sleep', fr ? 'Nuit' : 'Night')}

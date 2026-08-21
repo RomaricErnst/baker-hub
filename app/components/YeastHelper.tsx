@@ -61,7 +61,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
         />
       ) : (
         <div>
-          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-dm-sans)' }}>
+          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-ui)' }}>
             {t('subtitle')}
           </p>
           <DecisionList

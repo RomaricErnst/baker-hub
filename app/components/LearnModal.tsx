@@ -140,7 +140,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {content.emoji && <span style={{ fontSize: '26px', lineHeight: 1 }}>{content.emoji}</span>}
             <span style={{
-              fontFamily: 'var(--font-fraunces)',
+              fontFamily: 'var(--font-ui)',
               fontSize: '17px', fontWeight: 700,
               color: 'var(--cream)',
             }}>
@@ -185,7 +185,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
               fontSize: '11px', fontWeight: 600,
               color: 'var(--smoke)', textTransform: 'uppercase',
               letterSpacing: '.07em', marginBottom: '8px',
-              fontFamily: 'var(--font-dm-mono)',
+              fontFamily: 'var(--font-ui)',
             }}>
               Practical tip
             </div>
@@ -209,7 +209,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
                 fontSize: '11px', fontWeight: 600,
                 color: '#4A5A44', textTransform: 'uppercase',
                 letterSpacing: '.07em', marginBottom: '8px',
-                fontFamily: 'var(--font-dm-mono)',
+                fontFamily: 'var(--font-ui)',
               }}>
                 Also note
               </div>
@@ -238,7 +238,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
                 padding: '8px 0 .1rem',
                 color: 'var(--terra)', textDecoration: 'underline',
                 textUnderlineOffset: '3px',
-                fontSize: '12px', fontFamily: 'var(--font-dm-sans)',
+                fontSize: '12px', fontFamily: 'var(--font-ui)',
               }}
             >
               {(() => {

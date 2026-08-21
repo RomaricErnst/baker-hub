@@ -53,10 +53,10 @@ export default function PrefermentPicker({
       ) : (
         <div>
           <div style={{ marginBottom: 16 }}>
-            <h2 style={{ fontFamily: 'var(--font-fraunces)', fontSize: 22, fontWeight: 700, color: 'var(--char)', margin: 0 }}>
+            <h2 style={{ fontFamily: 'var(--font-ui)', fontSize: 22, fontWeight: 700, color: 'var(--char)', margin: 0 }}>
               {t('heading')}
             </h2>
-            <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '4px 0 0', fontFamily: 'var(--font-dm-sans)' }}>
+            <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '4px 0 0', fontFamily: 'var(--font-ui)' }}>
               {t('subtitle')}
             </p>
           </div>
@@ -76,7 +76,7 @@ export default function PrefermentPicker({
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '8px' }}>
             {pData.hydration && (
               <span style={{
-                fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
+                fontSize: '11px', fontFamily: 'var(--font-ui)',
                 background: 'var(--cream)', color: 'var(--ash)',
                 borderRadius: '20px', padding: '.1rem 8px',
                 border: '1px solid var(--border)',
@@ -86,7 +86,7 @@ export default function PrefermentPicker({
             )}
             {pData.cold && (
               <span style={{
-                fontSize: '11px', fontFamily: 'var(--font-dm-mono)',
+                fontSize: '11px', fontFamily: 'var(--font-ui)',
                 background: 'rgba(107,122,90,0.1)', color: 'var(--sage)',
                 borderRadius: '20px', padding: '.1rem 8px',
                 border: '1px solid rgba(107,122,90,0.25)',

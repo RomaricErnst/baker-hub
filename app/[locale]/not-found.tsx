@@ -12,14 +12,14 @@ export default function NotFound() {
       <div style={{ maxWidth: 420 }}>
         <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
         <h1 style={{
-          fontFamily: 'var(--font-fraunces, Georgia), serif',
+          fontFamily: 'var(--font-ui), sans-serif',
           fontSize: '24px', fontWeight: 700, color: 'var(--char, #2B2420)',
           margin: '0 0 0.5rem',
         }}>
           This page is out of the oven
         </h1>
         <p style={{
-          fontFamily: 'var(--font-dm-sans, system-ui), sans-serif',
+          fontFamily: 'var(--font-ui), sans-serif',
           fontSize: '15px', color: 'var(--smoke, #8A7F78)', lineHeight: 1.6,
           margin: '0 0 1.5rem',
         }}>
@@ -31,7 +31,7 @@ export default function NotFound() {
             display: 'inline-block',
             padding: '12px 24px', borderRadius: '16px',
             background: 'var(--terra, #6B4423)', color: '#fff',
-            fontFamily: 'var(--font-dm-sans, system-ui), sans-serif',
+            fontFamily: 'var(--font-ui), sans-serif',
             fontSize: '15px', fontWeight: 600, textDecoration: 'none',
             boxShadow: '0 2px 8px rgba(107, 68, 35,0.25)',
           }}

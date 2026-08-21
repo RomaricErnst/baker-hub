@@ -47,7 +47,7 @@ export default function DecisionHero({
           position: 'absolute',
           top: '12px',
           left: '12px',
-          fontFamily: 'var(--font-dm-mono)',
+          fontFamily: 'var(--font-ui)',
           fontSize: '11px',
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
@@ -66,7 +66,7 @@ export default function DecisionHero({
         bottom: isLarge ? '14px' : '10px',
       }}>
         <div style={{
-          fontFamily: 'var(--font-fraunces)',
+          fontFamily: 'var(--font-ui)',
           fontWeight: 800,
           fontSize: isLarge ? '30px' : '20px',
           lineHeight: 1.05,
@@ -75,7 +75,7 @@ export default function DecisionHero({
           {title}
         </div>
         <div style={{
-          fontFamily: 'var(--font-dm-sans)',
+          fontFamily: 'var(--font-ui)',
           fontSize: isLarge ? '13.5px' : '11.5px',
           color: 'rgba(255,255,255,0.82)',
           marginTop: '4px',
