@@ -162,6 +162,7 @@ type StepFlow = {
   onGapJump: (id: number) => void;
   onPrev: (id: number) => void;
   onNext: (id: number) => void;
+  nextIdFor: (id: number) => number;
   onGenerate: () => void;
   showGenerate: boolean;
   generateLabel: string;
@@ -236,7 +237,6 @@ function stepAnswered(s: StepDef, highest: number, list?: StepDef[]): boolean {
 function SummaryChips({ flow, topOffset = 62, raised = false }: { flow: StepFlow; topOffset?: number; raised?: boolean }) {
   const lastId = flow.steps[flow.steps.length - 1]?.id ?? 0;
   const reach = Math.max(flow.activeId, Math.min(flow.highestStep, lastId));
-  const navMode = flow.recipeGenerated || flow.highestStep >= lastId;
   const shown = flow.steps.filter(s => s.id <= reach);
   return (
     <div style={{
@@ -248,7 +248,10 @@ function SummaryChips({ flow, topOffset = 62, raised = false }: { flow: StepFlow
     }}>
       {shown.map(s => {
         const answered = stepAnswered(s, flow.highestStep, flow.steps);
-        const proposed = s.value != null && !answered;
+        // A code default shows on its own page, where it can be changed. It
+        // does not belong in the summary: a value with no tick reads as a
+        // decision the baker never made.
+        const proposed = false;
         const isOn = s.id === flow.activeId;
         return (
           <button
@@ -266,9 +269,9 @@ function SummaryChips({ flow, topOffset = 62, raised = false }: { flow: StepFlow
           >
             <span style={{
               fontSize: '11px', letterSpacing: '.1em', textTransform: 'uppercase',
-              color: isOn ? '#6B4423' : s.value ? 'var(--smoke)' : '#AFA598',
+              color: isOn ? '#6B4423' : answered ? 'var(--smoke)' : '#AFA598',
             }}>{s.chip}</span>
-            {s.value && (
+            {answered && s.value && (
               <span style={{
                 fontSize: '12px', whiteSpace: 'nowrap', maxWidth: '118px',
                 overflow: 'hidden', textOverflow: 'ellipsis',
@@ -325,7 +328,10 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
       next = <button onClick={flow.onSeePlan} style={nextStyle}>{fr ? 'Voir ma recette →' : 'See my recipe →'}</button>;
     }
   } else {
-    const nx = flow.steps[idx + 1];
+    // Label the step Suivant actually reaches, not the one that happens to sit
+    // next in the list: with profile-answered steps skipped, "Suivant :
+    // Équipement" was landing on Climat.
+    const nx = flow.steps.find(x => x.id === flow.nextIdFor(id)) ?? flow.steps[idx + 1];
     next = <button onClick={() => flow.onNext(id)} style={nextStyle}>
       {fr ? 'Suivant : ' : 'Next: '}{nx.chip} →
     </button>;
@@ -1315,36 +1321,19 @@ export default function Home() {
       if (prefOven && prefOven in ovenPool) {
         setOvenType(prefOven as AnyOvenType); applied = true;
       }
-      const stylePool = bt === 'bread' ? BREAD_STYLES : PIZZA_STYLES;
-      const prefStyle = (bt === 'bread' ? prof.styleKeyBread : prof.styleKeyPizza) ?? prof.styleKey;
-      let appliedStyle = false;
-      if (prefStyle && prefStyle in stylePool) {
-        setStyleKey(prefStyle as StyleKey); applied = true; appliedStyle = true;
-        // Same per-style defaults a manual pick applies via selectStyle —
-        // a prefilled Neapolitan must weigh like a Neapolitan.
-        const sk = prefStyle as StyleKey;
-        setManualHydration(undefined);
-        setManualOil(oilDefault(sk));
-        setManualSugar(sugarDefault(sk));
-        setNumItems(STYLE_BALL_DEFAULTS[sk] ?? (bt === 'bread' ? 1 : 4));
-        if (STYLE_HAS_DIAMETER.includes(sk)) {
-          const d = STYLE_DEFAULT_DIAMETER[sk] ?? 30;
-          setPizzaDiameter(d);
-          setPizzaCorn(1);
-          setItemWeight(pizzaWeightFromTable(sk, d, 1));
-        } else {
-          setItemWeight(ALL_STYLES[sk].ballW);
-        }
-      }
+      // Style is deliberately NOT prefilled. Oven, mixer and yeast describe the
+      // baker's kitchen and are stable between bakes; the style is the one
+      // creative decision of THIS bake. Prefilling it meant a returning baker
+      // was handed a Neapolitan they never picked — and once Suivant started
+      // skipping answered steps, they never even saw the page to change it.
       if (prof.mixerType && prof.mixerType in MIXER_TYPES) {
         setMixerType(prof.mixerType as MixerType); applied = true;
       }
-      // Sourdough-native styles (pain au levain, pizza au levain) are
-      // sourdough by definition — the yeast preference yields to the style.
-      const styleWantsSourdough = ['pain_levain', 'sourdough'].includes(prefStyle as string);
-      if (styleWantsSourdough && appliedStyle) {
-        setYeastType('sourdough'); applied = true;
-      } else if (prof.yeastType && prof.yeastType in YEAST_TYPES) {
+      // The style-yields-to-sourdough rule went with the style prefill: with no
+      // style applied there is nothing for the yeast preference to yield to.
+      // The baker picks a sourdough-native style themselves, and selectStyle
+      // already forces levain when they do.
+      if (prof.yeastType && prof.yeastType in YEAST_TYPES) {
         setYeastType(prof.yeastType as YeastType); applied = true;
       }
       // Preferment — Custom-mode preference only (Simple has no preferment
@@ -1352,7 +1341,7 @@ export default function Home() {
       // Pizza only — biga/poolish preferences are pizza-centric; bread has its
       // own preferment conventions and shouldn't inherit the pizza pick.
       if (bt !== 'bread' && prof.prefermentType && prof.preferredMode === 'custom'
-          && prof.yeastType !== 'sourdough' && !(styleWantsSourdough && appliedStyle)
+          && prof.yeastType !== 'sourdough'
           && ['none', 'poolish', 'biga'].includes(prof.prefermentType)) {
         setPrefermentType(prof.prefermentType as PrefermentType); applied = true;
       }
@@ -1364,13 +1353,9 @@ export default function Home() {
         setTang(prof.starter.tang);
       }
       if (applied) setProfilePrefilled(true);
-      // Style already answered by the profile — open on Quantity & Size
-      // instead of asking to re-confirm a choice the baker already made.
-      // The style card stays visible as a collapsed summary (Change).
-      if (appliedStyle) {
-        setActiveStep(2); setHighestStep(2);
-        setAdvancedStep(2); setAdvancedHighestStep(2);
-      }
+      // The flow always opens on Style now. It is the one page a returning
+      // baker still has to answer, and Suivant skips whatever the profile
+      // already covered from there.
     }
   }
 
@@ -1915,6 +1900,7 @@ export default function Home() {
       scrollToStepTop();
     },
     onNext: (id) => advanceAdv(id),
+    nextIdFor: (id) => nextUnanswered(CUSTOM_STEPS, id, advancedHighestStep),
     onGenerate: handleGenerate,
     showGenerate: canGenerate && !!eatTime && !(sessionRestored && recipeGenerated),
     generateLabel: t('generate.generateBtn'),
@@ -1941,6 +1927,7 @@ export default function Home() {
       scrollToStepTop();
     },
     onNext: (id) => advance(id),
+    nextIdFor: (id) => nextUnanswered(SIMPLE_STEPS, id, highestStep),
     onGenerate: handleGenerate,
     showGenerate: canGenerate && !(sessionRestored && recipeGenerated),
     generateLabel: t('generate.generateBtn'),
