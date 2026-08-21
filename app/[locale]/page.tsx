@@ -1351,8 +1351,8 @@ export default function Home() {
 
   function firstIncompleteStep(isCustom: boolean): number {
     if (!styleKey) return 1;
-    if (!ovenType) return 3;          // qty (2) + climate (4) have sane defaults
-    if (!mixerType) return 5;
+    // Oven and mixing share the equipment page (3) since A2.
+    if (!ovenType || !mixerType) return 3;   // qty (2) + climate (4) have sane defaults
     if (isCustom) {
       if (!yeastType) return 7;       // flour (6) has a default blend
       return 9;                       // preferment (8) defaults to Direct — scheduler is the goal
@@ -1435,24 +1435,25 @@ export default function Home() {
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 30);
   }
 
+  // Both advance functions walk the step model rather than raw numbers. That
+  // is what makes merging or hiding a step safe: a page that isn't in the list
+  // can never be landed on, which is exactly how Suivant used to reach the
+  // preferment step on the sourdough path and show a blank screen.
+  function nextStepId(list: StepDef[], from: number, skip: (id: number) => boolean): number {
+    const ids = list.map(s => s.id);
+    let i = ids.indexOf(from);
+    if (i < 0) return ids[0];
+    do { i++; } while (i < ids.length && skip(ids[i]));
+    return ids[Math.min(i, ids.length - 1)];
+  }
+
   function advance(from: number) {
-    // Steps already answered (profile prefill) don't need re-validating —
-    // hop past them to the next one that still needs input. Only the
-    // value-backed steps are skippable: 3 oven, 5 mixer, 6 yeast. Quantity
-    // (2), climate (4) and the scheduler (7) always deserve a stop, and
-    // every skipped step stays editable as a collapsed summary.
-    let next = from + 1;
-    while (
-      (next === 3 && ovenType != null) ||
-      (next === 5 && mixerType != null) ||
-      // Sourdough never skips — its step carries session-specific starter
-      // questions (fed when, where) that no profile can answer.
-      (next === 6 && yeastType != null && yeastType !== 'sourdough')
-    ) next++;
-    // One page at a time: Suivant goes to the NEXT page, never to the
-    // furthest-reached one. The old `max(next, highestStep)` was right for an
-    // accordion (open everything seen) and wrong here — in a generated
-    // session highestStep is the 99 sentinel, which is no page at all.
+    // Steps already answered by the profile don't need re-asking. Equipment
+    // only counts as answered when BOTH halves are set. Sourdough never skips
+    // its step — it carries session-specific starter questions.
+    const next = nextStepId(SIMPLE_STEPS, from, id =>
+      (id === 3 && ovenType != null && mixerType != null) ||
+      (id === 6 && yeastType != null && yeastType !== 'sourdough'));
     setActiveStep(next);
     setHighestStep(p => Math.max(p, next));
     if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
@@ -1460,23 +1461,11 @@ export default function Home() {
   }
 
   function advanceAdv(from: number) {
-    // Mirror of advance(): hop past steps already answered by the profile.
-    // Custom map — 3 oven, 5 mixer, 7 yeast; 8 preferment only when the
-    // profile carries a preference. Flour (6) and climate (4) always stop,
-    // and sourdough never skips its step (session-specific starter state).
-    let next = from + 1;
     const profPref = loadProfile()?.prefermentType;
-    while (
-      (next === 3 && ovenType != null) ||
-      (next === 5 && mixerType != null) ||
-      (next === 7 && yeastType != null && yeastType !== 'sourdough') ||
-      // Preferment is not rendered at all on the sourdough path, so it is
-      // skipped there unconditionally — otherwise Suivant lands on a page
-      // that does not exist.
-      (next === 8 && (yeastType === 'sourdough' || profPref != null))
-    ) next++;
-    // One page at a time — see advance(). max(next, highestStep) would land on
-    // the 99 sentinel in a generated session, which is no page at all.
+    const next = nextStepId(CUSTOM_STEPS, from, id =>
+      (id === 3 && ovenType != null && mixerType != null) ||
+      (id === 7 && yeastType != null && yeastType !== 'sourdough') ||
+      (id === 8 && profPref != null));
     setAdvancedStep(next);
     setAdvancedHighestStep(p => Math.max(p, next));
     if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
@@ -1775,15 +1764,16 @@ export default function Home() {
     { id: 2, chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
       value: `${numItems} × ${itemWeight} g`, prefilled: true,
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
-    { id: 3, chip: fr ? 'Four' : 'Oven', title: t('steps.4.title'),
-      value: localName(ovenData),
-      gap: fr ? 'Le four n\u2019est pas choisi' : 'No oven chosen yet' },
+    // Oven and mixing are one page: same nature (your kitchen, not your
+    // dough), both single-choice, both remembered by the profile.
+    { id: 3, chip: fr ? 'Équipement' : 'Equipment', title: fr ? 'Votre matériel' : 'Your equipment',
+      value: (ovenType && mixerType)
+        ? `${localName(ovenData)} · ${localName(MIXER_TYPES[mixerType])}`
+        : null,
+      gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
     { id: 4, chip: fr ? 'Climat' : 'Climate', title: t('steps.5.title'),
       value: `${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`, prefilled: true,
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
-    { id: 5, chip: fr ? 'Pétrin' : 'Mixer', title: t('steps.6.title'),
-      value: mixerType ? localName(MIXER_TYPES[mixerType]) : null,
-      gap: fr ? 'Le pétrissage n\u2019est pas choisi' : 'No mixing method chosen yet' },
     { id: 6, chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
       value: yeastType ? localName(YEAST_TYPES[yeastType]) : null,
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
@@ -1812,15 +1802,16 @@ export default function Home() {
     { id: 2, chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
       value: `${numItems} × ${itemWeight} g`, prefilled: true,
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
-    { id: 3, chip: fr ? 'Four' : 'Oven', title: t('steps.4.title'),
-      value: localName(ovenData),
-      gap: fr ? 'Le four n\u2019est pas choisi' : 'No oven chosen yet' },
+    // Oven and mixing are one page: same nature (your kitchen, not your
+    // dough), both single-choice, both remembered by the profile.
+    { id: 3, chip: fr ? 'Équipement' : 'Equipment', title: fr ? 'Votre matériel' : 'Your equipment',
+      value: (ovenType && mixerType)
+        ? `${localName(ovenData)} · ${localName(MIXER_TYPES[mixerType])}`
+        : null,
+      gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
     { id: 4, chip: fr ? 'Climat' : 'Climate', title: t('steps.5.title'),
       value: `${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`, prefilled: true,
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
-    { id: 5, chip: fr ? 'Pétrin' : 'Mixer', title: t('steps.6.title'),
-      value: mixerType ? localName(MIXER_TYPES[mixerType]) : null,
-      gap: fr ? 'Le pétrissage n\u2019est pas choisi' : 'No mixing method chosen yet' },
     { id: 6, chip: fr ? 'Farine' : 'Flour', title: t('steps.flour.title'),
       value: flourSummary(), prefilled: true,
       gap: fr ? 'La farine n\u2019est pas confirmée' : 'Flour not confirmed' },
@@ -2729,14 +2720,31 @@ export default function Home() {
               })()}
             </StepPage>
 
-            {/* ─── STEP 4: Oven ────────────────────── */}
+            {/* ─── STEP 4: Equipment (oven + mixing) ── */}
             <StepPage flow={simpleFlow} id={3}>
+              <div style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.11em',
+                textTransform: 'uppercase', color: 'var(--smoke)', margin: '0 0 10px',
+              }}>{locale === 'fr' ? 'Four' : 'Oven'}</div>
               <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
                 styleKey={styleKey}
                 selected={ovenType}
                 onSelect={setOvenType}
                 onPreselect={setOvenType}
+              />
+              <div style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.11em',
+                textTransform: 'uppercase', color: 'var(--smoke)', margin: '28px 0 10px',
+              }}>{locale === 'fr' ? 'Pétrissage' : 'Mixing'}</div>
+              <MixerPicker
+                totalDoughG={numItems * itemWeight}
+                locale={locale}
+                selected={mixerType}
+                onSelect={setMixerType}
+                styleKey={styleKey ?? undefined}
+                bakeType={bakeType ?? undefined}
+                kitchenTemp={kitchenTemp}
               />
             </StepPage>
 
@@ -2751,18 +2759,6 @@ export default function Home() {
 
             </StepPage>
 
-            {/* ─── STEP 6: Mixer ───────────────────── */}
-            <StepPage flow={simpleFlow} id={5}>
-              <MixerPicker
-                            totalDoughG={numItems * itemWeight}
-                            locale={locale}
-                selected={mixerType}
-                onSelect={setMixerType}
-                styleKey={styleKey ?? undefined}
-                bakeType={bakeType ?? undefined}
-                kitchenTemp={kitchenTemp}
-              />
-            </StepPage>
 
             {/* ─── STEP 7: Yeast type ──────────────── */}
             <StepPage flow={simpleFlow} id={6}>
@@ -3344,14 +3340,31 @@ export default function Home() {
               })()}
             </StepPage>
 
-            {/* ─── ADV STEP 4: Oven ────────────────── */}
+            {/* ─── ADV STEP 4: Equipment (oven + mixing) ── */}
             <StepPage flow={customFlow} id={3}>
+              <div style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.11em',
+                textTransform: 'uppercase', color: 'var(--smoke)', margin: '0 0 10px',
+              }}>{locale === 'fr' ? 'Four' : 'Oven'}</div>
               <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
                 styleKey={styleKey}
                 selected={ovenType}
-                onSelect={ot => { setOvenType(ot); advanceAdv(3); }}
+                onSelect={setOvenType}
                 onPreselect={setOvenType}
+              />
+              <div style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.11em',
+                textTransform: 'uppercase', color: 'var(--smoke)', margin: '28px 0 10px',
+              }}>{locale === 'fr' ? 'Pétrissage' : 'Mixing'}</div>
+              <MixerPicker
+                totalDoughG={numItems * itemWeight}
+                locale={locale}
+                selected={mixerType}
+                onSelect={setMixerType}
+                styleKey={styleKey ?? undefined}
+                bakeType={bakeType ?? undefined}
+                kitchenTemp={kitchenTemp}
               />
             </StepPage>
 
@@ -3365,18 +3378,6 @@ export default function Home() {
               />
             </StepPage>
 
-            {/* ─── ADV STEP 6: Mixer ───────────────── */}
-            <StepPage flow={customFlow} id={5}>
-              <MixerPicker
-                            totalDoughG={numItems * itemWeight}
-                            locale={locale}
-                selected={mixerType}
-                onSelect={mt => { setMixerType(mt); advanceAdv(5); }}
-                styleKey={styleKey ?? undefined}
-                bakeType={bakeType ?? undefined}
-                kitchenTemp={kitchenTemp}
-              />
-            </StepPage>
 
             {/* ─── ADV STEP 7: Flour ───────────────── */}
             <StepPage flow={customFlow} id={6}>
