@@ -13,10 +13,15 @@ const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfa
 // terminals, WONK lets the shapes lean slightly off-square. Playfair's thin
 // strokes were dissolving at 15px on the dark header, which is where the
 // wordmark is seen most often.
+// No `weight` here on purpose: pinning a weight makes next/font treat this as
+// a static instance, and `axes` is only valid on a variable font — the two
+// together fail the build. Omitting weight keeps the full 100..900 range, so
+// the 600 the wordmark asks for still resolves.
+// `opsz` is dropped too: next/font applies optical sizing itself, and listing
+// it alongside the custom axes is the other way this config can be rejected.
 const fraunces = Fraunces({
   subsets: ["latin"],
-  weight: ["600"],
-  axes: ["SOFT", "WONK", "opsz"],
+  axes: ["SOFT", "WONK"],
   variable: "--font-fraunces",
 });
 
