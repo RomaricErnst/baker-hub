@@ -295,7 +295,7 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
   const nextStyle: React.CSSProperties = {
     border: 'none', borderRadius: '16px', padding: '16px 20px',
     background: '#6B4423', color: '#fff',
-    fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
+    fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700,
     cursor: 'pointer', boxShadow: '0 2px 9px rgba(107,68,35,0.22)',
     lineHeight: 1.2, width: '100%',
   };
@@ -336,7 +336,7 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
         {fr ? 'Étape' : 'Step'} {idx + 1} {fr ? 'sur' : 'of'} {flow.steps.length}
       </div>
       <h2 style={{
-        fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: '29px',
+        fontFamily: 'var(--font-fraunces)', fontWeight: 700, fontSize: '29px',
         lineHeight: 1.12, letterSpacing: '-.015em', margin: '9px 0 22px', color: 'var(--char)',
       }}>{step.title}</h2>
 
@@ -2231,7 +2231,7 @@ export default function Home() {
           <div style={{ minHeight: 'calc(100dvh - 260px)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <h1 style={{
-            fontFamily: 'var(--font-playfair)',
+            fontFamily: 'var(--font-fraunces)',
             fontSize: 'clamp(1.4rem, 5vw, 2rem)',
             fontWeight: 700,
             color: 'var(--char)',
@@ -2292,7 +2292,7 @@ export default function Home() {
                   padding: '32px 20px 20px',
                   background: 'linear-gradient(to top, rgba(43, 36, 32,0.82) 0%, rgba(43, 36, 32,0.0) 100%)',
                 }}>
-                  <div style={{ fontWeight: 700, fontSize: '20px', color: 'white', marginBottom: '4px', fontFamily: 'var(--font-playfair)' }}>
+                  <div style={{ fontWeight: 700, fontSize: '20px', color: 'white', marginBottom: '4px', fontFamily: 'var(--font-fraunces)' }}>
                     {opt.label}
                   </div>
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
@@ -3468,7 +3468,7 @@ export default function Home() {
                     width: '100%', padding: '16px 20px',
                     border: 'none', borderRadius: '12px',
                     background: 'var(--terra)', color: '#fff',
-                    fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
+                    fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700,
                     cursor: 'pointer', boxShadow: '0 2px 8px rgba(107, 68, 35,0.22)',
                   }}
                 >
@@ -4436,7 +4436,7 @@ function PostBakeLanding({
     }}>
       <div>
         <p style={{
-          fontFamily: 'var(--font-playfair)', fontSize: '24px',
+          fontFamily: 'var(--font-fraunces)', fontSize: '24px',
           fontWeight: 700, color: 'var(--char)', margin: '0 0 4px',
           lineHeight: 1.2,
         }}>

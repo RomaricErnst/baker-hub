@@ -597,7 +597,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
 
       <div style={{ padding: '16px 16px 0' }}>
         <h2 style={{
-          fontFamily: 'var(--font-playfair)', fontSize: '26px',
+          fontFamily: 'var(--font-fraunces)', fontSize: '26px',
           fontWeight: 700, color: 'var(--char)', margin: '0 0 2px',
         }}>
           {t('header.title')}
@@ -723,7 +723,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 </div>
                 <div style={{ padding: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                    <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--char)' }}>
+                    <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: '15px', fontWeight: 700, color: 'var(--char)' }}>
                       {pizza.name[l]}
                     </span>
                     {qty > 1 && (
@@ -794,7 +794,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
               }}>
                 <div>
                   <span style={{
-                    fontFamily: 'var(--font-playfair)',
+                    fontFamily: 'var(--font-fraunces)',
                     fontSize: '17px', fontWeight: 700,
                     color: 'var(--char)',
                   }}>
@@ -870,7 +870,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     }}>
                       {/* Ingredient name — full width, no competition */}
                       <span style={{
-                        fontFamily: 'var(--font-playfair)',
+                        fontFamily: 'var(--font-fraunces)',
                         fontSize: '15px', fontWeight: 600,
                         color: 'var(--char)',
                       }}>
@@ -952,7 +952,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                     }}>
                       {/* Ingredient name — full width, no competition */}
                       <span style={{
-                        fontFamily: 'var(--font-playfair)',
+                        fontFamily: 'var(--font-fraunces)',
                         fontSize: '15px', fontWeight: 600,
                         color: 'var(--char)',
                       }}>
@@ -1035,7 +1035,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: '0 16px 12px', borderBottom: '1px solid var(--border)',
                       }}>
-                        <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
+                        <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
                           {l === 'fr' ? 'Étirement & Cuisson' : 'Stretch & Bake'}
                         </span>
                         <button onClick={() => setShowTechSheet(false)} style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--cream)', cursor: 'pointer', fontSize: 16, color: 'var(--smoke)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>

@@ -395,7 +395,7 @@ export default function SessionViewer({
                   }
                 }}
                 style={{
-                  fontFamily: 'var(--font-playfair)', fontSize: '20px',
+                  fontFamily: 'var(--font-fraunces)', fontSize: '20px',
                   fontWeight: 700, color: 'var(--char)',
                   border: 'none', borderBottom: '1px solid var(--border)',
                   background: 'transparent', outline: 'none',
@@ -412,7 +412,7 @@ export default function SessionViewer({
                 }}
               >
                 <p style={{
-                  fontFamily: 'var(--font-playfair)', fontSize: '20px',
+                  fontFamily: 'var(--font-fraunces)', fontSize: '20px',
                   fontWeight: 700, color: 'var(--char)', margin: 0,
                   borderBottom: '1px dashed rgba(0,0,0,0.15)',
                   paddingBottom: '1px',
@@ -698,7 +698,7 @@ export default function SessionViewer({
             style={{
               width: '100%', padding: '16px',
               background: 'var(--terra)', color: 'white',
-              fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
+              fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700,
               borderRadius: '12px', border: 'none', cursor: 'pointer',
               boxShadow: '0 2px 8px rgba(107, 68, 35,0.25)',
               letterSpacing: '.01em',

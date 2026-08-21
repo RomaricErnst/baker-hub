@@ -118,7 +118,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
   if (status === 'not_found' || !row) {
     return (
       <div style={{ minHeight: '100dvh', background: '#F5F0E8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px', textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '20px', color: '#1A1612', marginBottom: '8px' }}>
+        <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '20px', color: '#1A1612', marginBottom: '8px' }}>
           {l === 'fr' ? 'Liste introuvable' : 'List not found'}
         </div>
         <div style={{ color: '#8A7F78', fontFamily: 'var(--font-dm-sans)', fontSize: '13px' }}>
@@ -154,7 +154,7 @@ export default function ListClient({ shareId }: { shareId: string }) {
   return (
     <div style={{ minHeight: '100dvh', background: '#F5F0E8', paddingBottom: '40px' }}>
       <div style={{ background: '#2B2420', padding: '20px 20px 16px', textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '20px', fontWeight: 700, color: '#F5F0E8' }}>
+        <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '20px', fontWeight: 700, color: '#F5F0E8' }}>
           Baker Hub
         </div>
         {row.title && (

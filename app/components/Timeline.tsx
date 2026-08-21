@@ -484,7 +484,7 @@ export default function Timeline({
       }}>
         <div>
           <div style={{
-            fontFamily: 'var(--font-playfair)', fontSize: '17px',
+            fontFamily: 'var(--font-fraunces)', fontSize: '17px',
             fontWeight: 700, color: 'var(--char)',
           }}>
             {t('timeline.bakingProtocol')}

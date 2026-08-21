@@ -590,7 +590,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
         }}>
           <div style={{
             fontSize: '17px', fontWeight: 700,
-            fontFamily: 'var(--font-playfair)',
+            fontFamily: 'var(--font-fraunces)',
             color: '#2B2420', marginBottom: '8px',
           }}>
             {pizza.name[l] ?? pizza.name.en}
@@ -1027,7 +1027,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{
             fontSize: '15px', fontWeight: 700, color: '#2B2420',
-            fontFamily: 'var(--font-playfair)',
+            fontFamily: 'var(--font-fraunces)',
           }}>
             {(() => {
               const toBuy = sections.reduce((acc, s) => acc + s.items.filter(i => !ticked[i.id]).length, 0);
@@ -1779,7 +1779,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               >
                 <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px 12px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-playfair)' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-fraunces)' }}>
                     {filterSheetKey === 'occasion'   ? (l === 'fr' ? 'Occasion' : 'Occasion')
                     : filterSheetKey === 'diet'       ? (l === 'fr' ? 'Régime alimentaire' : 'Diet')
                     : filterSheetKey === 'base'       ? 'Base'
@@ -2282,7 +2282,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     marginTop: '4px',
                   }}
                 >
-                  <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 700, color: '#6B4423' }}>
+                  <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: '14px', fontWeight: 700, color: '#6B4423' }}>
                     {l === 'fr' ? 'Vous ne la trouvez pas ?' : "Can't find yours?"}
                   </span>
                   <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: '#8A7F78' }}>
@@ -2360,7 +2360,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           >
             <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px 12px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-playfair)' }}>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-fraunces)' }}>
                 {!dessertSheetOpen
                   ? (l === 'fr' ? 'Votre pizza party' : 'Your Pizza Party')
                   : (l === 'fr' ? 'Desserts' : 'Dessert pizzas')}
@@ -2513,7 +2513,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                                 padding: '16px 8px 8px',
                               }}>
                                 <div style={{
-                                  fontFamily: 'var(--font-playfair)',
+                                  fontFamily: 'var(--font-fraunces)',
                                   fontSize: '11px', fontWeight: 700,
                                   color: '#FDFBF7', lineHeight: 1.2,
                                 }}>
@@ -2597,7 +2597,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               flexShrink: 0,
             }} />
             <div style={{
-              fontFamily: 'var(--font-playfair)',
+              fontFamily: 'var(--font-fraunces)',
               fontSize: '17px', fontWeight: 700,
               color: 'var(--char)',
               padding: '12px 16px 8px',

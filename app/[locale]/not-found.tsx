@@ -12,7 +12,7 @@ export default function NotFound() {
       <div style={{ maxWidth: 420 }}>
         <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
         <h1 style={{
-          fontFamily: 'var(--font-playfair, Georgia), serif',
+          fontFamily: 'var(--font-fraunces, Georgia), serif',
           fontSize: '24px', fontWeight: 700, color: 'var(--char, #2B2420)',
           margin: '0 0 0.5rem',
         }}>

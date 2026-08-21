@@ -3,6 +3,21 @@ import { useRef, useState, useEffect } from 'react';
 import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
 import type { BakePhoto } from '@/app/lib/supabase/fetchBakeEvents';
 
+/* next/font generates an obfuscated family name, so the canvas cannot ask for
+   "Fraunces" by name the way it used to ask for "Playfair Display". Reading the
+   CSS variable gives the real family list. Without this the share card would
+   have quietly fallen back to Georgia the moment Playfair stopped being
+   loaded — a silent typeface change on the one artefact that leaves the app. */
+function displayFontFamily(): string {
+  try {
+    const v = getComputedStyle(document.body).getPropertyValue('--font-fraunces').trim();
+    return v ? `${v}, Georgia, serif` : 'Georgia, serif';
+  } catch {
+    return 'Georgia, serif';
+  }
+}
+
+
 interface ShareCardProps {
   styleName: string;
   sessionName?: string | null;
@@ -429,10 +444,10 @@ export default function ShareCard({
       // size overflows (long titles used to clip off the card edge)
       {
         let titleSize = 44;
-        ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
+        ctx.font = `bold ${titleSize}px ${displayFontFamily()}`;
         while (ctx.measureText(displayTitle).width > CONTENT_W_P && titleSize > 26) {
           titleSize--;
-          ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
+          ctx.font = `bold ${titleSize}px ${displayFontFamily()}`;
         }
         let shownTitle = displayTitle;
         while (shownTitle.length > 4 && ctx.measureText(shownTitle === displayTitle ? shownTitle : `${shownTitle}…`).width > CONTENT_W_P) {
@@ -624,10 +639,10 @@ export default function ShareCard({
     // floor size overflows (long titles used to clip off the card edge)
     {
       let titleSize = 44;
-      ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
+      ctx.font = `bold ${titleSize}px ${displayFontFamily()}`;
       while (ctx.measureText(displayTitle).width > CONTENT_W && titleSize > 26) {
         titleSize--;
-        ctx.font = `bold ${titleSize}px "Playfair Display", Georgia, serif`;
+        ctx.font = `bold ${titleSize}px ${displayFontFamily()}`;
       }
       let shownTitle = displayTitle;
       while (shownTitle.length > 4 && ctx.measureText(shownTitle === displayTitle ? shownTitle : `${shownTitle}…`).width > CONTENT_W) {
@@ -764,7 +779,7 @@ export default function ShareCard({
 
       {/* Header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <p style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', margin: 0 }}>
+        <p style={{ fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', margin: 0 }}>
           {l === 'fr' ? 'Partager cette fournée' : 'Share this bake'}
         </p>
         <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '17px', width: '44px', height: '44px', marginRight: '-10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
@@ -1134,7 +1149,7 @@ export default function ShareCard({
             width: '100%', padding: '16px',
             background: generating ? 'var(--smoke)' : 'var(--terra)',
             color: 'white', border: 'none', borderRadius: '12px',
-            fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
+            fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700,
             cursor: generating ? 'default' : 'pointer',
             boxShadow: '0 2px 8px rgba(107, 68, 35,0.25)',
           }}

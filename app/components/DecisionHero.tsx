@@ -66,7 +66,7 @@ export default function DecisionHero({
         bottom: isLarge ? '14px' : '10px',
       }}>
         <div style={{
-          fontFamily: 'var(--font-playfair)',
+          fontFamily: 'var(--font-fraunces)',
           fontWeight: 800,
           fontSize: isLarge ? '30px' : '20px',
           lineHeight: 1.05,

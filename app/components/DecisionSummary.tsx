@@ -38,7 +38,7 @@ export default function DecisionSummary({ thumbnail, thumbnailBg, title, tagline
         )}
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-        <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 600, color: 'var(--char)' }}>
+        <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '15px', fontWeight: 600, color: 'var(--char)' }}>
           {title}
         </div>
         <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)' }}>

@@ -420,7 +420,6 @@ export default function Header({
             style={{ objectFit: 'contain' }} alt="Baker Hub" />
           <div className="bh-wordmark" style={{
             fontFamily: 'var(--font-fraunces)',
-            fontVariationSettings: "'SOFT' 40, 'WONK' 1",
             fontSize: '15px', fontWeight: 600,
             color: 'var(--cream)', lineHeight: 1,
             whiteSpace: 'nowrap',
@@ -578,7 +577,7 @@ export default function Header({
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <img src="/logo-mark.webp" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }}/>
-              <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700, color: 'var(--cream)' }}>
+              <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: '15px', fontWeight: 700, color: 'var(--cream)' }}>
                 Baker Hub
               </span>
             </div>

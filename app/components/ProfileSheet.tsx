@@ -110,7 +110,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           padding: '0 16px 12px', borderBottom: '1px solid var(--border)',
         }}>
           <div>
-            <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
+            <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
               {fr ? 'Mes préférences' : 'My preferences'}
             </span>
             <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: 'var(--smoke)', marginTop: '2px' }}>
@@ -153,7 +153,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
             background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px',
           }}>
             <div>
-              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>{cp.name}</div>
+              <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>{cp.name}</div>
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--smoke)' }}>
                 {cp.ingredients.length} {fr ? 'ingrédients' : 'ingredients'}
               </div>

@@ -140,7 +140,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {content.emoji && <span style={{ fontSize: '26px', lineHeight: 1 }}>{content.emoji}</span>}
             <span style={{
-              fontFamily: 'var(--font-playfair)',
+              fontFamily: 'var(--font-fraunces)',
               fontSize: '17px', fontWeight: 700,
               color: 'var(--cream)',
             }}>

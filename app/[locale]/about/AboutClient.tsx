@@ -118,7 +118,7 @@ function Accordion({ title, children, defaultOpen = false }: {
         }}
       >
         <span style={{
-          fontFamily: 'var(--font-playfair)', fontSize: '15px',
+          fontFamily: 'var(--font-fraunces)', fontSize: '15px',
           fontWeight: 600, color: CHAR,
         }}>{title}</span>
         <span style={{
@@ -883,7 +883,7 @@ export default function AboutClient() {
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '24px 16px' }}>
 
         <h1 style={{
-          fontFamily: 'var(--font-playfair)', fontSize: '28px', fontWeight: 700,
+          fontFamily: 'var(--font-fraunces)', fontSize: '28px', fontWeight: 700,
           color: CHAR, marginBottom: '4px', marginTop: '0',
         }}>{c.pageTitle}</h1>
         <p style={{ ...monoSm, marginBottom: '12px' }}>{c.pageSubtitle}</p>

@@ -53,7 +53,7 @@ export default function PrefermentPicker({
       ) : (
         <div>
           <div style={{ marginBottom: 16 }}>
-            <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 22, fontWeight: 700, color: 'var(--char)', margin: 0 }}>
+            <h2 style={{ fontFamily: 'var(--font-fraunces)', fontSize: 22, fontWeight: 700, color: 'var(--char)', margin: 0 }}>
               {t('heading')}
             </h2>
             <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '4px 0 0', fontFamily: 'var(--font-dm-sans)' }}>

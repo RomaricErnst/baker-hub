@@ -633,7 +633,7 @@ export default function RecipeOutput({
       }}>
         <div>
           <div style={{
-            fontFamily: 'var(--font-playfair)', fontSize: '20px',
+            fontFamily: 'var(--font-fraunces)', fontSize: '20px',
             fontWeight: 700, color: 'var(--char)', marginBottom: '.2rem',
           }}>
             {t('recipeOutput.recipeReady')}
@@ -737,7 +737,7 @@ export default function RecipeOutput({
           <>
             {/* CARD 1: Make your preferment */}
             <div style={{ background: 'var(--char)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
-              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)', marginBottom: '16px' }}>
+              <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)', marginBottom: '16px' }}>
                 {t('recipeOutput.makeYourPref', { name: pd.name })}
               </div>
               <IngRow
@@ -778,7 +778,7 @@ export default function RecipeOutput({
 
             {/* CARD 2: Final dough */}
             <div style={{ background: 'var(--char)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
-              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)', marginBottom: '4px' }}>
+              <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)', marginBottom: '4px' }}>
                 {t('recipeOutput.finalDoughTitle')}
               </div>
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: D.muted, marginBottom: '16px' }}>
@@ -878,7 +878,7 @@ export default function RecipeOutput({
         <div style={{ background: 'var(--char)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
           {/* Card header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
-            <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)' }}>
+            <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)' }}>
               {t('recipe.ingredients')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px', width: '100%', maxWidth: '75%' }}>

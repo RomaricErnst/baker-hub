@@ -188,7 +188,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
           }}>
             <span style={{ display: 'flex', alignItems: 'baseline', gap: '8px', minWidth: 0 }}>
               <span style={{
-                fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 600,
+                fontFamily: 'var(--font-fraunces)', fontSize: '14px', fontWeight: 600,
                 color: done ? '#8A7F78' : '#2B2420',
                 textDecoration: done ? 'line-through' : undefined,
               }}>
@@ -234,7 +234,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
         <div style={{
           fontSize: '15px', fontWeight: 700,
           color: '#2B2420',
-          fontFamily: 'var(--font-playfair)',
+          fontFamily: 'var(--font-fraunces)',
           padding: '12px 2px 8px',
         }}>
           {l === 'fr' ? station.fr : station.en}
@@ -276,7 +276,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
           {/* Phase 1 — Get ahead */}
           {hasEarly && (
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 600, color: '#2B2420', marginBottom: '2px' }}>
+              <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '15px', fontWeight: 600, color: '#2B2420', marginBottom: '2px' }}>
                 {l === 'fr' ? 'Commencez par là' : 'Get ahead'}
               </div>
               <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '11px', color: '#8A7F78', marginBottom: '12px' }}>

@@ -150,7 +150,7 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
             <path d="M11 21 c0-4 1.5-5 2-7 h6 c.5 2 2 3 2 7 a2 2 0 0 1-2 2 h-6 a2 2 0 0 1-2-2 Z" fill="rgba(107, 68, 35,0.12)" />
             <line x1="12" y1="12" x2="20" y2="12" />
           </svg>
-          <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '15px', color: 'var(--char)', fontWeight: 700 }}>
+          <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '15px', color: 'var(--char)', fontWeight: 700 }}>
             {isFr ? 'Photographiez votre sachet de farine' : 'Take a photo of your flour bag'}
           </div>
           <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: '12px', color: 'var(--smoke)' }}>
@@ -351,7 +351,7 @@ style={{ display: 'none' }}
             style={{
               flex: 2, padding: '12px 16px', border: 'none',
               borderRadius: '12px', background: 'var(--terra)', color: '#fff',
-              fontFamily: 'var(--font-playfair)', fontSize: '15px', fontWeight: 700,
+              fontFamily: 'var(--font-fraunces)', fontSize: '15px', fontWeight: 700,
               cursor: 'pointer',
             }}
           >

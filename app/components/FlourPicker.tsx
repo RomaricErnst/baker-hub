@@ -388,7 +388,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               <div style={{ fontFamily:'var(--font-dm-mono)', fontSize: '11px', letterSpacing:'.1em', color:'var(--bread)', marginBottom:'3px' }}>
                 {locale === 'fr' ? 'VOTRE FARINE' : 'YOUR FLOUR'}
               </div>
-              <div style={{ fontFamily:'var(--font-playfair)', fontSize: '15px', fontWeight:700, color:'#2B2420', lineHeight:1.25 }}>
+              <div style={{ fontFamily:'var(--font-fraunces)', fontSize: '15px', fontWeight:700, color:'#2B2420', lineHeight:1.25 }}>
                 {blend.brandProduct}
               </div>
             </div>

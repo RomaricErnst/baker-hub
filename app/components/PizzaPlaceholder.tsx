@@ -11,7 +11,7 @@ export default function PizzaPlaceholder({ name, size = 'card' }: { name: string
       position: 'relative',
     }}>
       <span style={{
-        fontFamily: 'var(--font-playfair), Playfair Display, serif',
+        fontFamily: 'var(--font-fraunces), Georgia, serif',
         fontSize: fs, fontWeight: 700, color: 'rgba(156, 130, 72,0.85)', lineHeight: 1,
       }}>{initial}</span>
       <span style={{

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, DM_Mono, Playfair_Display, Fraunces } from "next/font/google";
+import { DM_Sans, DM_Mono, Fraunces } from "next/font/google";
 import "../globals.css";
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -8,7 +8,6 @@ import { routing } from '@/i18n/routing';
 
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
 const dmMono = DM_Mono({ weight: ["300","400","500"], subsets: ["latin"], variable: "--font-dm-mono" });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 // Wordmark only. Fraunces carries SOFT and WONK axes: SOFT rounds the
 // terminals, WONK lets the shapes lean slightly off-square. Playfair's thin
 // strokes were dissolving at 15px on the dark header, which is where the
@@ -58,7 +57,7 @@ export default async function LocaleLayout({
   const messages = await getMessages();
   return (
     <html lang={locale}>
-      <body className={`${dmSans.variable} ${dmMono.variable} ${playfair.variable} ${fraunces.variable} antialiased`}>
+      <body className={`${dmSans.variable} ${dmMono.variable} ${fraunces.variable} antialiased`}>
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

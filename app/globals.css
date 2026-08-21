@@ -192,3 +192,17 @@ body {
 @media (max-width: 372px) {
   .bh-wordmark { display: none; }
 }
+
+
+/* ── Type roles ───────────────────────────────
+   Three faces, three jobs, no overlap:
+     Fraunces  display — titles, names, the wordmark
+     DM Sans   everything readable
+     DM Mono   numbers, units, short uppercase labels
+
+   Playfair is gone: it was doing the same job as Fraunces, and it was also
+   turning up at 11-14px where a display serif has no business. SOFT and WONK
+   are set once here and inherit — the fonts that lack those axes ignore them. */
+body {
+  font-variation-settings: 'SOFT' 40, 'WONK' 1;
+}

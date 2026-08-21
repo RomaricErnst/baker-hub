@@ -223,7 +223,7 @@ function StepCard({
           color: ea }}>{icon}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontFamily: 'var(--font-playfair)', fontSize: '15px',
+            fontFamily: 'var(--font-fraunces)', fontSize: '15px',
             fontWeight: 700, color: done ? D.smoke : D.char,
             textDecoration: done ? 'line-through' : 'none',
           }}>{title}</div>
@@ -998,7 +998,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
       {/* ── Header ──────────────────────────────────── */}
       <div style={{ marginBottom: '4px' }}>
-        <div style={{ fontFamily: 'var(--font-playfair)', fontSize: '20px', fontWeight: 700, color: D.char }}>
+        <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '20px', fontWeight: 700, color: D.char }}>
           {_isFr ? 'Guide de cuisson pas à pas' : 'Step-by-step bake guide'}
         </div>
         <div style={{ fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-dm-mono)', marginTop: '.2rem' }}>

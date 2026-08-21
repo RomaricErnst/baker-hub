@@ -1274,7 +1274,7 @@ function SimpleStartTime({ pendingStart, isFr, onStartChange }: {
         {isFr ? 'Départ de la pâte' : 'Dough start'}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-        <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '20px', fontWeight: 700, color: 'var(--char)' }}>
+        <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: '20px', fontWeight: 700, color: 'var(--char)' }}>
           {label}
         </span>
         <button
@@ -5390,7 +5390,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     marginTop: '16px', width: '100%', padding: '16px 24px',
     border: 'none', borderRadius: '16px',
     background: 'var(--terra)', color: '#fff',
-    fontFamily: 'var(--font-playfair)', fontSize: '17px', fontWeight: 700,
+    fontFamily: 'var(--font-fraunces)', fontSize: '17px', fontWeight: 700,
     cursor: 'pointer',
     boxShadow: '0 3px 10px rgba(107, 68, 35,0.25)',
     letterSpacing: '.01em',

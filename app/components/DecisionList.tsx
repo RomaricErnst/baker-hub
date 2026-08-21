@@ -52,7 +52,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontFamily: 'var(--font-playfair)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>
+                <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>
                   {option.title}
                 </span>
                 {option.badge && (
