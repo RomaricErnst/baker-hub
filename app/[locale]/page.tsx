@@ -291,6 +291,17 @@ function SummaryChips({ flow, topOffset = 62, raised = false }: { flow: StepFlow
   );
 }
 
+// Every forward move in the journey wears the same button: Suivant between
+// step pages, Generer ma recette at the end of setup, Planifier ma Pizza Party
+// at the end of the protocol. They were three different shapes for one idea.
+const NEXT_CTA: React.CSSProperties = {
+  border: 'none', borderRadius: '12px', padding: '15px 18px',
+  background: '#6B4423', color: '#fff',
+  fontFamily: 'var(--font-ui)', fontSize: '16px', fontWeight: 700,
+  cursor: 'pointer', boxShadow: '0 2px 9px rgba(107,68,35,0.22)',
+  lineHeight: 1.2, width: '100%', minHeight: '44px',
+};
+
 // ── One step = one page ───────────────────────
 function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children: React.ReactNode }) {
   if (flow.activeId !== id) return null;
@@ -301,14 +312,7 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
   const isLast = idx === flow.steps.length - 1;
   const gap    = flow.steps.find(s => !stepAnswered(s, flow.highestStep, flow.steps));
 
-  const nextStyle: React.CSSProperties = {
-    border: 'none', borderRadius: '16px', padding: '16px 20px',
-    background: '#6B4423', color: '#fff',
-    fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700,
-    cursor: 'pointer', boxShadow: '0 2px 9px rgba(107,68,35,0.22)',
-    lineHeight: 1.2, width: '100%',
-  };
-  // A dead button is a dead end: the CTA stays live and names what's missing.
+  const nextStyle = NEXT_CTA;  // A dead button is a dead end: the CTA stays live and names what's missing.
   const missingStyle: React.CSSProperties = {
     ...nextStyle,
     background: 'var(--warm)', color: '#6B4423',
@@ -2493,9 +2497,14 @@ export default function Home() {
                         border: `2px solid ${nodeBorder}`, background: nodeBg,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
                       }}>
+                        {/* A completed node behind the current one is not a
+                            trophy, it is the way back — show the direction of
+                            travel rather than a tick the baker cannot act on. */}
                         {s.done ? (
-                          <svg width="9" height="9" viewBox="0 0 7 7" fill="none">
-                            <path d="M1.5 3.5l1.5 1.5 2.5-2.5" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                          <svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                            <line x1="16" y1="10" x2="5" y2="10" stroke="white" strokeWidth="1.7" strokeLinecap="round"/>
+                            <polyline points="9,5 4,10 9,15" stroke="white" strokeWidth="1.7"
+                              strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                           </svg>
                         ) : s.icon(iconColor)}
                         {s.locked && (
@@ -3121,14 +3130,7 @@ export default function Home() {
                     {pizzaPartyEnabled && (
                       <button
                         onClick={() => setActiveTab('pizzaparty')}
-                        style={{
-                          alignSelf: 'flex-start',
-                          display: 'inline-flex', alignItems: 'center', gap: '8px',
-                          padding: '8px 16px', border: '1.5px solid var(--border)',
-                          borderRadius: '20px', background: 'var(--warm)',
-                          color: 'var(--ash)', fontSize: '12px',
-                          fontFamily: 'var(--font-ui)', cursor: 'pointer',
-                        }}
+                        style={{ ...NEXT_CTA, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         {locale === 'fr' ? 'Planifier ma Pizza Party →' : 'Plan my Pizza Party →'}
                       </button>
@@ -4205,14 +4207,7 @@ export default function Home() {
                     {pizzaPartyEnabled && (
                       <button
                         onClick={() => setActiveTab('pizzaparty')}
-                        style={{
-                          alignSelf: 'flex-start',
-                          display: 'inline-flex', alignItems: 'center', gap: '8px',
-                          padding: '8px 16px', border: '1.5px solid var(--border)',
-                          borderRadius: '20px', background: 'var(--warm)',
-                          color: 'var(--ash)', fontSize: '12px',
-                          fontFamily: 'var(--font-ui)', cursor: 'pointer',
-                        }}
+                        style={{ ...NEXT_CTA, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         {locale === 'fr' ? 'Planifier ma Pizza Party →' : 'Plan my Pizza Party →'}
                       </button>
