@@ -86,7 +86,6 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
           borderRadius: '16px', padding: '12px 16px', fontSize: '12px',
           color: '#7A5A10', lineHeight: 1.55, display: 'flex', gap: '8px', alignItems: 'flex-start',
         }}>
-          <span>⚠️</span>
           <span>{NO_KNEAD_WARNING[styleKey]}</span>
         </div>
       )}

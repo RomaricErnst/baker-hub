@@ -1045,7 +1045,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               <Section icon="👁️" title={t('sectionTitles.watchForReady')}>
                 <Bullets items={t.raw(isPoolish ? 'poolish.readyWhen' : 'biga.readyWhen') as string[]} />
               </Section>
-              <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+              <Section icon={null} title={t('sectionTitles.pitfalls')}>
                 <Bullets items={t.raw(isPoolish ? 'poolish.pitfalls' : 'biga.pitfalls') as string[]} />
               </Section>
               <div style={{ marginTop: '8px' }}>
@@ -1401,7 +1401,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 {hydration > 70 && <LearnLink term="bassinage" label="Bassinage" onOpen={setLearnTerm} />}
               </div>
             </Section>
-            <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+            <Section icon={null} title={t('sectionTitles.pitfalls')}>
               <Bullets items={[
                 ...(t.raw('mix.pitfalls') as string[]).slice(0, 2),
                 isSpiral ? (l === 'fr' ? `FDT ignorée — les pétrins à spirale chauffent, la pâte peut dépasser ${tempC(28, u)} sans qu’on s’en aperçoive` : `Ignoring FDT — spiral mixers generate heat, dough can exceed ${tempC(28, u)} without noticing`) : '',
@@ -1447,7 +1447,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 <LearnLink term="bulk_fermentation" label={l === 'fr' ? 'Guide du pointage' : 'Bulk fermentation guide'} onOpen={setLearnTerm} showSparkle={true} />
               </div>
             </Section>
-            <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+            <Section icon={null} title={t('sectionTitles.pitfalls')}>
               <Bullets items={[
                 ...(hydration >= 70 ? [
                   oil > 0
@@ -1493,7 +1493,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               <Section icon="👁️" title={t('sectionTitles.whatToExpect')}>
                 <Bullets items={t.raw('coldRetard.watchFor') as string[]} />
               </Section>
-              <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+              <Section icon={null} title={t('sectionTitles.pitfalls')}>
                 <Bullets items={[
                   (t.raw('coldRetard.pitfalls') as string[])[0],
                   `Fridge temperature above ${tempC(8, u)}: dough over-ferments during retard — check your fridge`,
@@ -1571,7 +1571,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                   ]
                 } />
               </Section>
-              <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+              <Section icon={null} title={t('sectionTitles.pitfalls')}>
                 <Bullets items={isFougasse
                   ? (t.raw('divide.fougasse.pitfalls') as string[])
                   : isBaguette
@@ -1627,7 +1627,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               <Section icon="👁️" title={t('sectionTitles.whatToExpect')}>
                 <Bullets items={t.raw('coldBalls.watchFor') as string[]} />
               </Section>
-              <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+              <Section icon={null} title={t('sectionTitles.pitfalls')}>
                 <Bullets items={t.raw('coldBalls.pitfalls') as string[]} />
               </Section>
             </>}
@@ -1674,7 +1674,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                   <LearnLink term="poke_test" label={l === 'fr' ? 'Guide du test du doigt' : 'Full poke test guide'} onOpen={setLearnTerm} showSparkle={true} />
                 </div>
               </Section>
-              <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+              <Section icon={null} title={t('sectionTitles.pitfalls')}>
                 <Bullets items={[
                   (t.raw('finalProof.pitfalls') as string[])[0],
                   (t.raw('finalProof.pitfalls') as string[])[1],
@@ -1723,7 +1723,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
         <StepExtras
           tips={
-            <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+            <Section icon={null} title={t('sectionTitles.pitfalls')}>
               <Bullets items={isBread
                 ? (t.raw(
                     ovenType === 'dutch_oven' ? 'preheat.dutch.pitfalls' :
@@ -1803,7 +1803,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 <Bullets items={t.raw('bake.homeStandard.watchFor') as string[]} />
               )}
             </Section>
-            <Section icon="⚠️" title={t('sectionTitles.pitfalls')}>
+            <Section icon={null} title={t('sectionTitles.pitfalls')}>
               <Bullets items={isBread
                 ? (t.raw(
                     ovenType === 'dutch_oven' ? 'bake.dutch.pitfalls' :

@@ -2151,10 +2151,21 @@ export default function Home() {
               color: 'var(--smoke)', textTransform: 'uppercase',
               letterSpacing: '.08em', flex: '1 1 auto',
             }}>
-              {locale === 'fr' ? 'Session précédente trouvée' : 'Previous session found'}
+              {locale === 'fr' ? 'Session précédente chargée' : 'Previous session loaded'}
             </span>
             <button
-              onClick={answerWelcomeBack}
+              onClick={() => {
+                // "Resume" used to only dismiss the banner: the session is
+                // already restored on mount, so it promised an action that had
+                // happened. It now takes the baker where they left off.
+                answerWelcomeBack();
+                if (recipeGenerated) setActiveTab('plan');
+                else {
+                  const target = firstIncompleteStep(tab === 'custom');
+                  if (tab === 'custom') setAdvancedStep(target); else setActiveStep(target);
+                  scrollToStepTop();
+                }
+              }}
               style={{
                 background: 'var(--terra)', border: 'none',
                 color: 'white', cursor: 'pointer', fontSize: '13px',
@@ -2162,7 +2173,9 @@ export default function Home() {
                 padding: '12px 16px', minHeight: '44px', borderRadius: '12px', whiteSpace: 'nowrap',
               }}
             >
-              {locale === 'fr' ? 'Reprendre →' : 'Resume →'}
+              {recipeGenerated
+                ? (locale === 'fr' ? 'Voir ma recette →' : 'See my recipe →')
+                : (locale === 'fr' ? 'Reprendre →' : 'Resume →')}
             </button>
           </div>
         )}
@@ -2642,22 +2655,6 @@ export default function Home() {
 
             {/* ── Setup tab content ── */}
             <div style={{ display: activeTab === 'setup' && !!bakeType && modeChosen ? 'flex' : 'none', flexDirection: 'column', gap: '16px' }}>
-
-            {/* ── Review mode banner ── */}
-            {reviewMode && (
-              <div style={{
-                background: 'rgba(156, 130, 72,0.1)',
-                border: '1px solid rgba(156, 130, 72,0.2)',
-                borderRadius: '16px',
-                padding: '12px 16px',
-                fontFamily: 'var(--font-ui)',
-                fontSize: '12px',
-                color: 'var(--gold)',
-                marginBottom: '4px',
-              }}>
-                ↩ {locale === 'fr' ? 'Session précédente chargée — touchez une étiquette pour revoir une étape' : 'Previous session loaded — tap a label to revisit a step'}
-              </div>
-            )}
 
             {/* ── Summary chips: progressive while filling, navigation on
                    the way back. Replaces the review-only jump chips. ── */}
@@ -3224,22 +3221,6 @@ export default function Home() {
             {/* ── Setup tab content ── */}
             <div style={{ display: activeTab === 'setup' && !!bakeType && modeChosen ? 'flex' : 'none', flexDirection: 'column', gap: '16px' }}>
 
-            {/* ── Review mode banner ── */}
-            {reviewMode && (
-              <div style={{
-                background: 'rgba(156, 130, 72,0.1)',
-                border: '1px solid rgba(156, 130, 72,0.2)',
-                borderRadius: '16px',
-                padding: '12px 16px',
-                fontFamily: 'var(--font-ui)',
-                fontSize: '12px',
-                color: 'var(--gold)',
-                marginBottom: '4px',
-              }}>
-                ↩ {locale === 'fr' ? 'Session précédente chargée — touchez une étiquette pour revoir une étape' : 'Previous session loaded — tap a label to revisit a step'}
-              </div>
-            )}
-
             {/* ── Summary chips: progressive while filling, navigation on
                    the way back. Replaces the review-only jump chips. ── */}
             <SummaryChips flow={customFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62} />
@@ -3737,7 +3718,7 @@ export default function Home() {
                                 <span
                                   onClick={() => setManualHydration(styleBaseHyd)}
                                   style={{ color: 'var(--terra)', cursor: 'pointer', textDecoration: 'underline' }}
-                                >Use {styleBaseHyd}% ↩</span>
+                                >Use {styleBaseHyd}%</span>
                               </>
                             );
                           })()}
