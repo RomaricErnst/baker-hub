@@ -254,10 +254,17 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
   // drop the ones just made. Show the three most recent, in order, and mark
   // that there are earlier ones — the sheet holds the full list anyway.
   const parts = all.length > 3 ? ['…', ...all.slice(-3)] : all;
-  // The mode counts: it is step 1 of setup and it is always answered by the
-  // time this bar exists, so both the numerator and the total include it.
+  // Position, not tally. Counting answered steps made "2/10" appear on the
+  // third page — true, but read as "you are on step 2", because a number at
+  // the head of a line naming the current page is read as a position.
+  //
+  // Counting answers was the right call when Suivant skipped profile-answered
+  // steps and the position jumped 1, 2, 4, 7. Nothing is skipped any more —
+  // the profile prefills the page instead — so position is contiguous again
+  // and the reason for the tally has gone. The bar fills by position too, so
+  // the two can never disagree.
   const total = flow.steps.length + (modeChip ? 1 : 0);
-  const count = answered.length + (modeChip ? 1 : 0);
+  const count = flow.steps.findIndex(s => s.id === flow.activeId) + 1 + (modeChip ? 1 : 0);
   const pct = Math.round((count / Math.max(1, total)) * 100);
 
   return (
