@@ -6,10 +6,24 @@ import FlourScan from './FlourScan';
 import { FLOUR_DB, type FlourEntry } from '@/lib/flourDatabase';
 
 // ── Crowd favourite IDs ───────────────────────────
-const CROWD_FAV_IDS = [
-  'caputo_pizzeria', 'caputo_cuoco', 'caputo_nuvola',
-  'stagioni_napoletana', 'stagioni_superiore',
-];
+// One shortlist served every pizza style, so a New York baker was shown the
+// same four Neapolitan 00s — flours far too weak for a long cold ferment at
+// 65% hydration. Bread already had per-style recommendations; pizza did not.
+const PIZZA_FAV_BY_STYLE: Record<string, string[]> = {
+  // Strong 00, the Naples standard.
+  neapolitan:   ['caputo_pizzeria', 'caputo_nuvola', 'stagioni_napoletana', 'caputo_cuoco'],
+  // Sourdough pizza needs more tolerance for the longer bulk.
+  sourdough:    ['caputo_cuoco', 'stagioni_napoletana', 'caputo_saccorosso', 'caputo_nuvola'],
+  // New York is a bread-flour dough: high protein, long cold ferment.
+  newyork:      ['ka_bread', 'caputo_americana', 'ka_sir_lancelot', 'generic_bread'],
+  // Romana is rolled thin and crisp — a softer, finer 00 suits it.
+  pizza_romana: ['caputo_classica', 'polselli_classica', 'generic_00', 'caputo_pizzeria'],
+  // Teglia is very wet and proofs long in the tray: the strongest flours.
+  roman:        ['caputo_nuvola_super', 'caputo_saccorosso', 'stagioni_manitoba', 'molino_marino_rossa'],
+  // Pan and Detroit are enriched, tray-baked breads more than pizzas.
+  pan:          ['generic_bread', 'ka_bread', 'gold_medal_bread', 'caputo_americana'],
+};
+const CROWD_FAV_IDS = PIZZA_FAV_BY_STYLE.neapolitan;
 
 // ── Bread recommendations by style ───────────────
 const BREAD_REC_BY_STYLE: Record<string, string[]> = {
@@ -575,7 +589,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
               // Pizza / filtered path: crowd favs or search results
               const displayList: FlourEntry[] = noFiltersActive
-                ? CROWD_FAV_IDS.map(id => FLOUR_DB.find(f => f.id === id)).filter(Boolean) as FlourEntry[]
+                ? (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)
+                    .map(id => FLOUR_DB.find(f => f.id === id)).filter(Boolean) as FlourEntry[]
                 : results;
 
               if (displayList.length === 0) {
@@ -1008,7 +1023,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
               // Pizza / filtered path: crowd favs or search results
               const displayList: FlourEntry[] = noFiltersActive
-                ? CROWD_FAV_IDS.map(id => FLOUR_DB.find(f => f.id === id)).filter(Boolean) as FlourEntry[]
+                ? (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)
+                    .map(id => FLOUR_DB.find(f => f.id === id)).filter(Boolean) as FlourEntry[]
                 : results;
 
               if (displayList.length === 0) {
