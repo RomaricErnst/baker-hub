@@ -366,7 +366,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'gmp_t45_gruau',
     brand: 'Grands Moulins de Paris', name: 'T45 Gruau Rouge',
-    type: '00', country: 'fr',
+    type: 'T45', country: 'fr',
     w: 300, wPublished: false, protein: 12.9, hydration: [60, 66],
     bestFor: [], crowdFavourite: [],
     note: 'Strong French T45. For croissants, brioches, long-ferment pizza.',
@@ -375,7 +375,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'gmp_t45_violette',
     brand: 'Grands Moulins de Paris', name: 'T45 Violette',
-    type: '00', country: 'fr',
+    type: 'T45', country: 'fr',
     w: 180, wPublished: false, protein: 9.5, hydration: [55, 61],
     bestFor: [], crowdFavourite: [],
     note: 'Weak T45. For pastries, cakes, short-rise doughs.',
@@ -384,7 +384,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'gmp_t55',
     brand: 'Grands Moulins de Paris', name: 'T55 La Finoise',
-    type: 'all_purpose', country: 'fr',
+    type: 'T55', country: 'fr',
     w: 200, wPublished: false, protein: 10.5, hydration: [57, 63],
     bestFor: [], crowdFavourite: [],
     note: 'Standard French T55. All-purpose. Baguettes, boules, brioche.',
@@ -393,7 +393,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'gmp_t65',
     brand: 'Grands Moulins de Paris', name: 'T65 Tradition',
-    type: 'bread', country: 'fr',
+    type: 'T65', country: 'fr',
     w: 220, wPublished: false, protein: 11.0, hydration: [62, 68],
     bestFor: [], crowdFavourite: [],
     note: 'French bread flour. For baguettes de tradition.',
@@ -402,7 +402,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'francine_t45',
     brand: 'Francine', name: 'Farine T45',
-    type: '00', country: 'fr',
+    type: 'T45', country: 'fr',
     w: 170, wPublished: false, protein: 9.5, hydration: [55, 61],
     bestFor: [], crowdFavourite: [],
     note: 'Consumer supermarket T45. Widely available in France.',
@@ -429,7 +429,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'francine_t55',
     brand: 'Francine', name: 'Farine T55',
-    type: 'all_purpose', country: 'fr',
+    type: 'T55', country: 'fr',
     w: 180, wPublished: false, protein: 10.0, hydration: [57, 63],
     bestFor: [], crowdFavourite: [],
     note: 'Most common French supermarket flour. Standard all-purpose.',
@@ -438,7 +438,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'francine_t65',
     brand: 'Francine', name: 'Farine T65',
-    type: 'bread', country: 'fr',
+    type: 'T65', country: 'fr',
     w: 200, wPublished: false, protein: 10.5, hydration: [60, 66],
     bestFor: [], crowdFavourite: [],
     note: 'French bread flour. Common in French supermarkets.',
@@ -447,7 +447,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'foricher_t45',
     brand: 'Foricher', name: 'Gruau T45 Bagatelle',
-    type: '00', country: 'fr',
+    type: 'T45', country: 'fr',
     w: 300, wPublished: false, protein: 13.0, hydration: [60, 66],
     bestFor: [], crowdFavourite: [],
     note: 'Label Rouge. CRC certified. For viennoiserie and pizza.',
@@ -456,7 +456,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'foricher_t65',
     brand: 'Foricher', name: 'T65 Tradition Bagatelle',
-    type: 'bread', country: 'fr',
+    type: 'T65', country: 'fr',
     w: 220, wPublished: false, protein: 11.0, hydration: [62, 68],
     bestFor: [], crowdFavourite: [],
     note: 'Artisan T65. Label Rouge. For baguettes de tradition.',
@@ -465,7 +465,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'viron_retrodor',
     brand: 'Minoteries Viron', name: 'Rétrodor T65',
-    type: 'bread', country: 'fr',
+    type: 'T65', country: 'fr',
     w: 230, wPublished: false, protein: 11.5, hydration: [63, 69],
     bestFor: [], crowdFavourite: [],
     note: 'Premium French baker\'s flour. Used by top Parisian boulangeries.',
@@ -474,7 +474,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'colagne_t65',
     brand: 'Moulin de Colagne', name: 'T65 Tradition',
-    type: 'bread', country: 'fr',
+    type: 'T65', country: 'fr',
     w: 220, wPublished: false, protein: 11.0, hydration: [62, 68],
     bestFor: [], crowdFavourite: [],
     note: 'Regional French mill. Good artisan bread flour.',
@@ -492,7 +492,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'carrefour_t45',
     brand: 'Carrefour', name: 'Farine de blé T45',
-    type: '00', country: 'fr',
+    type: 'T45', country: 'fr',
     w: 160, wPublished: false, protein: 9.0, hydration: [55, 61],
     bestFor: [], crowdFavourite: [],
     note: 'French supermarket own brand T45. Weak flour.',
@@ -501,7 +501,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'carrefour_t55',
     brand: 'Carrefour', name: 'Farine de blé T55',
-    type: 'all_purpose', country: 'fr',
+    type: 'T55', country: 'fr',
     w: 175, wPublished: false, protein: 10.0, hydration: [57, 63],
     bestFor: [], crowdFavourite: [],
     note: 'Standard French supermarket T55.',
@@ -519,7 +519,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'leclerc_t55',
     brand: 'Marque Repère', name: 'Farine T55',
-    type: 'all_purpose', country: 'fr',
+    type: 'T55', country: 'fr',
     w: 170, wPublished: false, protein: 9.5, hydration: [56, 62],
     bestFor: [], crowdFavourite: [],
     note: 'E.Leclerc own brand flour.',
@@ -530,7 +530,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'shipton_t55',
     brand: 'Shipton Mill', name: 'T55 French Flour',
-    type: 'all_purpose', country: 'uk',
+    type: 'T55', country: 'uk',
     w: 200, wPublished: false, protein: 10.5, hydration: [59, 65],
     bestFor: [], crowdFavourite: [],
     note: 'French-style T55 milled or imported by UK\'s Shipton Mill.',
@@ -548,7 +548,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'shipton_t45',
     brand: 'Shipton Mill', name: 'T45 Gruau',
-    type: '00', country: 'uk',
+    type: 'T45', country: 'uk',
     w: 290, wPublished: false, protein: 12.5, hydration: [60, 66],
     bestFor: [], crowdFavourite: [],
     note: 'Strong T45 for croissants and long-ferment pizza.',
@@ -1376,7 +1376,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'soufflet_t65',
     brand: 'Moulins Soufflet', name: 'T65 Tradition',
-    type: 'bread', country: 'fr',
+    type: 'T65', country: 'fr',
     w: 220, wPublished: false, protein: 11.0, hydration: [62, 68],
     bestFor: [], crowdFavourite: [],
     note: 'Classic French tradition baguette flour.',
@@ -1394,7 +1394,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'minoterie_brie_t65',
     brand: 'Minoterie de la Brie', name: 'T65 Tradition',
-    type: 'bread', country: 'fr',
+    type: 'T65', country: 'fr',
     w: 230, wPublished: false, protein: 11.5, hydration: [63, 69],
     bestFor: [], crowdFavourite: [],
     note: 'French regional mill near Paris. Artisan boulangeries.',
@@ -1412,7 +1412,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'celnat_t65_bio',
     brand: 'Celnat', name: 'T65 Bio',
-    type: 'bread', country: 'fr',
+    type: 'T65', country: 'fr',
     w: 210, wPublished: false, protein: 11.0, hydration: [62, 68],
     bestFor: [], crowdFavourite: [],
     note: 'French organic T65. Available in bio stores across France.',
@@ -1493,7 +1493,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'viron_campaillette',
     brand: 'Minoteries Viron', name: 'Campaillette T65',
-    type: 'bread', country: 'fr',
+    type: 'T65', country: 'fr',
     w: 220, wPublished: false, protein: 11.0, hydration: [62, 68],
     bestFor: [], crowdFavourite: [],
     note: 'Rustic T65 blend. For pain de campagne and sourdough.',
@@ -1511,7 +1511,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'minoterie_chariot_t65',
     brand: 'Minoterie Chariot', name: 'T65 Label Rouge',
-    type: 'bread', country: 'fr',
+    type: 'T65', country: 'fr',
     w: 240, wPublished: false, protein: 11.5, hydration: [63, 69],
     bestFor: [], crowdFavourite: [],
     note: 'Label Rouge T65. Premium artisan boulangerie flour.',
@@ -1529,7 +1529,7 @@ export const FLOUR_DB: FlourEntry[] = [
   {
     id: 'paulette_t65',
     brand: 'Paulette', name: 'T65 Bio Tradition',
-    type: 'bread', country: 'fr',
+    type: 'T65', country: 'fr',
     w: 215, wPublished: false, protein: 11.0, hydration: [62, 68],
     bestFor: [], crowdFavourite: [],
     note: 'GMP sub-brand. Organic T65 for tradition baguettes.',
