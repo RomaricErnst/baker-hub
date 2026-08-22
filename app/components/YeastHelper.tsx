@@ -27,7 +27,6 @@ interface YeastHelperProps {
 export default function YeastHelper({ onSelect, onClose, selected, calcData, disabledIds, disabledNote, styleKey }: YeastHelperProps) {
   const t = useTranslations('yeast');
   const locale = useLocale();
-  const [expanded, setExpanded] = useState(true);
   const [showCalc, setShowCalc] = useState(false);
 
   // Option IDs use YEAST_TYPES keys; i18n keys use simplified aliases (idy/ady)
@@ -52,15 +51,11 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
 
   return (
     <div>
-      {!expanded && selectedOpt ? (
-        <DecisionSummary
-          thumbnail={selectedOpt.image}
-          title={selectedOpt.title}
-          tagline={selectedOpt.tagline}
-          onExpand={() => setExpanded(true)}
-        />
-      ) : (
-        <div>
+      {/* Single-picker page: no collapse. Folding the list into a summary
+          hides the alternatives behind a CHANGE link and turns one tap into
+          three. Oven and mixer still fold, because they share one page and
+          folding the first is what reveals the second. */}
+      <div>
           {/* "How you'll leaven the dough" only restated the title, and the
               line it cost was the difference between this page fitting on one
               screen and not. Each option already carries its own tagline. */}
@@ -78,7 +73,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
                 : opt.tagline,
             }))}
             selectedId={selected ?? ''}
-            onSelect={(id) => { onSelect(id as YeastType); setExpanded(false); }}
+            onSelect={(id) => onSelect(id as YeastType)}
             disabledIds={disabledIds}
           />
           {disabledNote && disabledIds && disabledIds.length > 0 && (
@@ -86,8 +81,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
               {disabledNote}
             </p>
           )}
-        </div>
-      )}
+      </div>
 
       {/* Transparency panel — always visible when calcData is present */}
       {calcData && (

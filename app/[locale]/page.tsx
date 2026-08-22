@@ -3879,7 +3879,10 @@ export default function Home() {
 
                 {/* Salt · Oil · Sugar — one row, wraps on mobile */}
                 <div style={{ paddingTop: '4px' }}>
-                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                <div style={{
+                  display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px',
+                  alignItems: 'start',
+                }}>
                   {/* Salt stepper — first, most important */}
                   {(() => {
                     const styleSalt = styleKey ? (ALL_STYLES[styleKey]?.salt ?? 2.5) : 2.5;
@@ -3887,9 +3890,9 @@ export default function Home() {
                     const STEP = 0.1;
                     const isDefault = manualSalt === undefined || manualSalt === styleSalt;
                     return (
-                      <div style={{ flex: 1, minWidth: '80px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                          <FieldLabel>{t('dialIn.saltPct')}</FieldLabel>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', minHeight: '17px', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.saltPct')}</span>
                           {!isDefault && (
                             <button
                               onClick={() => setManualSalt(undefined)}
@@ -3925,8 +3928,8 @@ export default function Home() {
                     const STEP = 0.5;
                     const oilGuideText = oilGuidance(v, ovenType ?? '', styleKey ?? '', t);
                     return (
-                      <div style={{ flex: 1 }}>
-                        <div style={{ position: 'relative', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ position: 'relative', marginBottom: '8px', minHeight: '17px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.oilPct')}</span>
                           <button
                             onMouseEnter={() => setOilTip(true)} onMouseLeave={() => setOilTip(false)}
@@ -3961,8 +3964,8 @@ export default function Home() {
                     const sg = sugarGuidance(v, ovenType ?? '', t);
                     const STEP = 0.5;
                     return (
-                      <div style={{ flex: 1 }}>
-                        <div style={{ position: 'relative', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ position: 'relative', marginBottom: '8px', minHeight: '17px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.sugarPct')}</span>
                           <button
                             onMouseEnter={() => setSugarTip(true)} onMouseLeave={() => setSugarTip(false)}

@@ -1,9 +1,7 @@
 'use client';
-import { useState } from 'react';
 import { PREFERMENT_TYPES, type PrefermentType } from '../data';
 import { useTranslations } from 'next-intl';
 import DecisionList from './DecisionList';
-import DecisionSummary from './DecisionSummary';
 
 interface PrefermentPickerProps {
   selected: PrefermentType;
@@ -21,7 +19,6 @@ export default function PrefermentPicker({
   styleKey, hideTypes = [], kitchenTemp, yeastType,
 }: PrefermentPickerProps) {
   const t = useTranslations('preferment');
-  const [expanded, setExpanded] = useState(true);
 
   const ALL_OPTIONS = [
     { id: 'none',    image: '/preferment-direct.webp',  title: t('none.title'),    tagline: t('none.tagline') },
@@ -39,34 +36,24 @@ export default function PrefermentPicker({
       return { ...o, badge: isRecommended ? t('recommended') : undefined };
     });
 
-  const selectedOpt = options.find(o => o.id === selected);
-
+  // Collapsing to a summary made sense when this picker shared a card with
+  // others. On its own page it hides the alternatives behind a CHANGE link and
+  // turns a one-tap decision into three — and the page already has a title, so
+  // the summary was the second thing repeating what the header said.
   return (
     <div>
-      {!expanded && selectedOpt ? (
-        <DecisionSummary
-          thumbnail={selectedOpt.image}
-          title={selectedOpt.title}
-          tagline={selectedOpt.tagline}
-          onExpand={() => setExpanded(true)}
-        />
-      ) : (
-        <div>
-          <div style={{ marginBottom: 16 }}>
-            <h2 style={{ fontFamily: 'var(--font-ui)', fontSize: 22, fontWeight: 700, color: 'var(--char)', margin: 0 }}>
-              {t('heading')}
-            </h2>
-            <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '4px 0 0', fontFamily: 'var(--font-ui)' }}>
-              {t('subtitle')}
-            </p>
-          </div>
+      <div>
+          {/* No heading here: the step page above already says "Preferment
+              method". Two titles, one question. */}
+          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-ui)' }}>
+            {t('subtitle')}
+          </p>
           <DecisionList
             options={options}
             selectedId={selected}
-            onSelect={(id) => { onSelect(id as PrefermentType); setExpanded(false); }}
+            onSelect={(id) => onSelect(id as PrefermentType)}
           />
-        </div>
-      )}
+      </div>
 
       {/* Hydration / cold-ferment pills when a preferment is active */}
       {selected !== 'none' && (() => {
