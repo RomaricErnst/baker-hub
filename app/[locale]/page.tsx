@@ -234,7 +234,9 @@ function stepAnswered(s: StepDef, highest: number, list?: StepDef[]): boolean {
 // ── Summary chip carousel ─────────────────────
 // Appears progressively while the baker advances, and becomes the navigation
 // once they come back from the recipe. One mechanic, two uses.
-function SummaryChips({ flow, topOffset = 62, raised = false }: { flow: StepFlow; topOffset?: number; raised?: boolean }) {
+function SummaryChips({ flow, topOffset = 62, raised = false, modeChip }:
+  { flow: StepFlow; topOffset?: number; raised?: boolean;
+    modeChip?: { value: string; onClick: () => void } }) {
   const lastId = flow.steps[flow.steps.length - 1]?.id ?? 0;
   const reach = Math.max(flow.activeId, Math.min(flow.highestStep, lastId));
   const shown = flow.steps.filter(s => s.id <= reach);
@@ -246,6 +248,23 @@ function SummaryChips({ flow, topOffset = 62, raised = false }: { flow: StepFlow
       position: 'sticky', top: raised ? '0px' : `${topOffset}px`, transition: 'top 0.25s ease',
       zIndex: 25, background: 'var(--cream)',
     }}>
+      {/* Mode leads the row: it is the decision every other chip depends on. */}
+      {modeChip && (
+        <button
+          onClick={modeChip.onClick}
+          style={{
+            flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: '7px',
+            borderRadius: '20px', padding: '9px 13px', minHeight: '38px',
+            fontFamily: 'var(--font-ui)', cursor: 'pointer',
+            background: 'var(--warm)', border: '1px solid var(--border)',
+          }}
+        >
+          <span style={{ fontSize: '9px', letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--smoke)' }}>
+            {flow.locale === 'fr' ? 'Mode' : 'Mode'}
+          </span>
+          <span style={{ fontSize: '12px', color: 'var(--ash)', whiteSpace: 'nowrap' }}>{modeChip.value}</span>
+        </button>
+      )}
       {shown.map(s => {
         const answered = stepAnswered(s, flow.highestStep, flow.steps);
         // A code default shows on its own page, where it can be changed. It
@@ -2336,35 +2355,57 @@ export default function Home() {
           {bakeType && (
             <div style={{ padding: '2px 0' }}>
 
-              {/* Simple / Custom toggle — segmented control, always switchable */}
-              <div style={{ marginBottom: bakeType === 'pizza' ? '12px' : '0' }}>
-                <div style={{ display: 'flex', background: 'var(--cream)', borderRadius: '8px', padding: '4px', gap: '4px' }}>
-                  {([
-                    { key: 'simple' as const, title: t('modeCards.simple.title') },
-                    { key: 'custom' as const, title: t('modeCards.custom.title') },
-                  ]).map(m => {
-                    const isActive = tab === m.key;
-                    return (
+              {/* Mode is the first step of setup, not a permanent bar.
+                  It was a fourth navigation layer above the content — under the
+                  brand header, the journey tabs and the stepper — for a
+                  decision taken once per session. Shown here only until it is
+                  made; afterwards it lives as a chip in the summary row, which
+                  is the same mechanic every other choice uses. */}
+              {!modeChosen && (
+                <div style={{ padding: '4px 0 8px' }}>
+                  <div style={{
+                    fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.12em',
+                    textTransform: 'uppercase', color: '#9C8248', fontWeight: 600,
+                  }}>{locale === 'fr' ? 'Pour commencer' : 'To begin'}</div>
+                  <h2 style={{
+                    fontFamily: 'var(--font-ui)', fontSize: '26px', fontWeight: 800,
+                    letterSpacing: '-.022em', lineHeight: 1.13, margin: '8px 0 16px',
+                  }}>{locale === 'fr' ? 'Comment voulez-vous procéder ?' : 'How would you like to work?'}</h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {([
+                      { key: 'simple' as const, title: t('modeCards.simple.title'),
+                        desc: locale === 'fr'
+                          ? 'Nous choisissons la farine, le préferment et les réglages fins. Le plan reste complet.'
+                          : 'We pick the flour, the preferment and the fine settings. The plan is just as complete.' },
+                      { key: 'custom' as const, title: t('modeCards.custom.title'),
+                        desc: locale === 'fr'
+                          ? 'Vous réglez le mélange de farines, le poolish ou la biga, l\u2019hydratation, le sel, la température de pâte.'
+                          : 'You set the flour blend, poolish or biga, hydration, salt and dough temperature.' },
+                    ]).map(m => (
                       <button
                         key={m.key}
-                        aria-pressed={isActive}
                         onClick={() => chooseMode(m.key)}
                         style={{
-                          flex: 1, textAlign: 'center', padding: '12px 8px', borderRadius: '12px',
-                          border: 'none', cursor: 'pointer',
-                          fontFamily: 'var(--font-ui)', fontWeight: 600, fontSize: '14px',
-                          background: isActive ? '#FFFFFF' : 'transparent',
-                          boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
-                          color: isActive ? 'var(--char)' : 'var(--smoke)',
-                          transition: 'all 0.15s',
+                          display: 'flex', alignItems: 'flex-start', gap: '12px', textAlign: 'left',
+                          border: '1px solid var(--border)', background: 'var(--warm)',
+                          borderRadius: '12px', padding: '14px 16px', minHeight: '44px',
+                          cursor: 'pointer', fontFamily: 'var(--font-ui)',
                         }}
                       >
-                        {m.title}
+                        <span style={{ flex: 1 }}>
+                          <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--char)' }}>{m.title}</span>
+                          <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--smoke)', marginTop: '3px', lineHeight: 1.45 }}>{m.desc}</span>
+                        </span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9C8248"
+                          strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                          style={{ marginTop: '3px', flexShrink: 0 }} aria-hidden="true">
+                          <line x1="4" y1="12" x2="19" y2="12" /><polyline points="13 6 19 12 13 18" />
+                        </svg>
                       </button>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Sourdough-vs-Simple nudge — observation with a choice, not an alarm */}
               {sdNudgeOpen && (
@@ -2671,7 +2712,8 @@ export default function Home() {
 
             {/* ── Summary chips: progressive while filling, navigation on
                    the way back. Replaces the review-only jump chips. ── */}
-            <SummaryChips flow={simpleFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62} />
+            <SummaryChips flow={simpleFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62}
+              modeChip={{ value: t('modeCards.simple.title'), onClick: () => setModeChosen(false) }} />
             <div ref={simpleSwipeRef}>
 
             {/* ─── STEP 1: Style picker ────────────── */}
@@ -3229,7 +3271,8 @@ export default function Home() {
 
             {/* ── Summary chips: progressive while filling, navigation on
                    the way back. Replaces the review-only jump chips. ── */}
-            <SummaryChips flow={customFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62} />
+            <SummaryChips flow={customFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62}
+              modeChip={{ value: t('modeCards.custom.title'), onClick: () => setModeChosen(false) }} />
             <div ref={customSwipeRef}>
 
             {/* ─── ADV STEP 1: Style picker ────────── */}
