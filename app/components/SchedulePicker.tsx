@@ -1251,6 +1251,91 @@ function SimpleColourBar({
 // Simple mode (Flo): no chart — just the computed start time, editable.
 // The heavy lifting (blocker notes, sourdough re-solve pinning) stays in the
 // caller's onStartChange, unchanged from the colour-bar days.
+// ── Simple mode: the plan as dated actions ────
+// Simple mode has no chart by design, which left the blockers invisible: the
+// solver was avoiding them all along, but the only visible consequence was a
+// single start time quietly landing on a different hour. A baker who toggles
+// "Nights" and sees nothing move concludes the control is broken.
+function SimplePlan({ schedule, isFr, movedNote }: {
+  schedule: ScheduleResult;
+  isFr: boolean;
+  movedNote: string | null;
+}) {
+  const when = (d: Date) => d.toLocaleString(isFr ? 'fr-FR' : 'en-US', {
+    weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: !isFr,
+  });
+  type Row = { t: string; s?: string; d: Date; c: string };
+  const rows: Row[] = [];
+  rows.push({
+    t: isFr ? 'Pétrissage' : 'Mix',
+    s: isFr ? 'puis pointage' : 'then bulk rise',
+    d: schedule.bulkFermStart, c: '#6B7A5A',
+  });
+  if (schedule.coldRetardStart && schedule.coldRetardEnd) {
+    rows.push({
+      t: isFr ? 'Au réfrigérateur' : 'Into the fridge',
+      s: `${Math.round(schedule.coldRetardHours)} h`,
+      d: schedule.coldRetardStart, c: '#A8B8D0',
+    });
+    rows.push({
+      t: isFr ? 'Sortie du froid' : 'Out of the fridge',
+      s: isFr ? 'retour à température' : 'back to room temperature',
+      d: schedule.coldRetardEnd, c: '#A8B8D0',
+    });
+  }
+  rows.push({
+    t: isFr ? 'Apprêt' : 'Final proof',
+    s: `${schedule.finalProofHours < 1
+      ? `${Math.round(schedule.finalProofHours * 60)} min`
+      : `${Math.round(schedule.finalProofHours * 10) / 10} h`}`,
+    d: schedule.finalProofStart, c: '#9C8248',
+  });
+  rows.push({
+    t: isFr ? 'Préchauffage' : 'Preheat',
+    d: schedule.preheatStart, c: '#8A7F78',
+  });
+  rows.push({
+    t: isFr ? 'Cuisson' : 'Bake',
+    d: schedule.bakeStart, c: '#6B4423',
+  });
+
+  return (
+    <div style={{ marginTop: '16px' }}>
+      <div style={{
+        fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.08em',
+        textTransform: 'uppercase', color: 'var(--smoke)', fontWeight: 600, marginBottom: '4px',
+      }}>{isFr ? 'Votre déroulé' : 'Your plan'}</div>
+      <div style={{ borderTop: '1px solid var(--border)' }}>
+        {rows.map((r, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'flex-start', gap: '12px',
+            padding: '12px 0', borderBottom: '1px solid var(--border)',
+          }}>
+            <span style={{
+              width: '10px', height: '10px', borderRadius: '50%', marginTop: '5px',
+              background: r.c, flexShrink: 0,
+            }} />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--char)' }}>{r.t}</div>
+              {r.s && <div style={{ fontSize: '12px', color: 'var(--smoke)', marginTop: '2px' }}>{r.s}</div>}
+            </span>
+            <span style={{
+              fontSize: '13px', color: 'var(--ash)', whiteSpace: 'nowrap', paddingTop: '2px',
+            }}>{when(r.d)}</span>
+          </div>
+        ))}
+      </div>
+      {movedNote && (
+        <div style={{
+          background: 'rgba(156,130,72,0.09)', border: '1px solid rgba(156,130,72,0.22)',
+          borderRadius: '12px', padding: '12px 14px', marginTop: '14px',
+          fontSize: '13px', color: '#7A6636', lineHeight: 1.5,
+        }}>{movedNote}</div>
+      )}
+    </div>
+  );
+}
+
 function SimpleStartTime({ pendingStart, isFr, onStartChange }: {
   pendingStart: Date;
   isFr: boolean;
@@ -1333,6 +1418,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [customTo, setCustomTo] = useState('');
   const [isNarrow, setIsNarrow] = useState(false);
   const [blockerNote, setBlockerNote] = useState<string | null>(null);
+  // Set when a blocker toggle actually shifts the plan, so the baker is told
+  // what moved and why instead of watching a time change for no stated reason.
+  const [movedNote, setMovedNote] = useState<string | null>(null);
+  const blockerMoveRef = useRef<{ prevStart: number; labels: string[] } | null>(null);
   const [guardNote, setGuardNote] = useState<string | null>(null);
   const [windowTooShort, setWindowTooShort] = useState(false);
   const [suggestedBakeTime, setSuggestedBakeTime] = useState<Date | null>(null);
@@ -5317,6 +5406,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     buildAndSetResult();
   }
 
+  // The solver reruns inside applyAndUpdate; by the time pendingStart settles
+  // we can say whether the blockers moved it, and by how much.
+  useEffect(() => {
+    const rec = blockerMoveRef.current;
+    if (!rec) return;
+    blockerMoveRef.current = null;
+    const deltaMin = Math.round((pendingStart.getTime() - rec.prevStart) / 60000);
+    if (Math.abs(deltaMin) < 15) return;
+    const at = pendingStart.toLocaleString(isFr ? 'fr-FR' : 'en-US', {
+      weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: !isFr,
+    });
+    const earlier = deltaMin < 0;
+    setMovedNote(isFr
+      ? `Pétrissage ${earlier ? 'avancé' : 'repoussé'} à ${at} — il tombait dans une plage bloquée.`
+      : `Mix moved ${earlier ? 'earlier' : 'later'}, to ${at} — it fell inside a blocked window.`);
+  }, [pendingStart, isFr]);
+
   // ── Handlers ─────────────────────────────────
 
   function adjustStart(deltaH: number) {
@@ -5326,6 +5432,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }
 
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
+    blockerMoveRef.current = {
+      prevStart: pendingStart.getTime(),
+      labels: newBlocks.map(b => b.label),
+    };
+    setMovedNote(null);
     // Blocker set changed — stale oscillation history must not veto fresh
     // ratio recommendations (it froze the ratchet across blocker toggles).
     ratioApplyHistoryRef.current.length = 0;
@@ -6444,6 +6555,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         })()}
         {startComputed ? (
           mode === 'simple' ? (
+            <>
             <SimpleStartTime
               pendingStart={pendingStart}
               isFr={isFr}
@@ -6480,6 +6592,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 }
               }}
             />
+            {schedule && <SimplePlan schedule={schedule} isFr={isFr} movedNote={movedNote} />}
+            </>
           ) : (
             <FermentChart
               eatTime={pendingEatTime}
