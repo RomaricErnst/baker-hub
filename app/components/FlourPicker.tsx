@@ -268,6 +268,71 @@ const W_SOURCE_LABEL = (l: string): Record<WSource, string> => l === 'fr' ? {
 // One row, used by both slots. They were two copies that had already drifted —
 // different padding, different selected state — and most of the visual defects
 // on this page came from pairs of copies rather than from logic.
+// ── One filter menu, used six times ───────────
+// The base picker drew three of these by hand; the blend panel drew three
+// native selects. Same filters, two different controls — which is how the two
+// panels kept drifting apart on everything around them. One component, its own
+// open state per instance, closing on an outside tap.
+function FilterMenu({ label, value, options, onChange, format }: {
+  label: string;
+  value: string | null;
+  options: string[];
+  onChange: (v: string | null) => void;
+  format?: (v: string) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          padding: '11px 14px', minHeight: '44px', borderRadius: '20px',
+          border: 'none', cursor: 'pointer',
+          fontSize: '12.5px', fontFamily: 'var(--font-ui)', fontWeight: 500,
+          background: value ? '#2B2420' : '#F0EBE0',
+          color: value ? 'white' : '#3D3530',
+          whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px',
+        }}
+      >
+        {value ? (format ? format(value) : value) : label} ▾
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', zIndex: 50, top: '100%', left: 0, marginTop: '4px',
+          background: 'white', borderRadius: '16px', border: '1px solid #E8E0D5',
+          boxShadow: '0 4px 16px rgba(43, 36, 32,0.10)',
+          padding: '8px', minWidth: '180px', maxHeight: '260px', overflowY: 'auto',
+        }}>
+          {options.map(o => (
+            <div
+              key={o}
+              onClick={() => { onChange(value === o ? null : o); setOpen(false); }}
+              style={{
+                padding: '11px 12px', minHeight: '44px', display: 'flex', alignItems: 'center',
+                borderRadius: '16px', fontSize: '13px', cursor: 'pointer',
+                color: value === o ? '#6B4423' : '#2B2420',
+                fontWeight: value === o ? 500 : 400, background: 'transparent',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#F0EBE0'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+            >{format ? format(o) : o}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FlourRow({ f, selected, onClick }: {
   f: FlourEntry; selected?: boolean; onClick: () => void;
 }) {
@@ -328,7 +393,6 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [filterType, setFilterType] = useState<string | null>(null);
   const [filterOrigin, setFilterOrigin] = useState<string | null>(null);
   const [filterManufacturer, setFilterManufacturer] = useState<string | null>(null);
-  const [activeDropdown, setActiveDropdown] = useState<'type' | 'origin' | 'manufacturer' | null>(null);
   // Rendering-only: fold the three filter chips behind a funnel toggle.
 
   // APAC + Europe sub-filter + blend state
@@ -391,17 +455,6 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const blendRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!activeDropdown) return;
-    function handleOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setActiveDropdown(null);
-      }
-    }
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
-  }, [activeDropdown]);
 
   useEffect(() => {
     if (openSection === 'blend' && blendRef.current) {
@@ -759,119 +812,14 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     road is already opened deliberately; nothing here needs a
                     second door. */}
                 {(<>
-                {/* Type chip */}
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <button
-                    onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')}
-                    style={{
-                      padding: '8px 12px', borderRadius: '20px',
-                      border: 'none', cursor: 'pointer',
-                      fontSize: '12px', fontFamily: 'var(--font-ui)', fontWeight: 500,
-                      background: !!filterType ? '#2B2420' : '#F0EBE0',
-                      color: !!filterType ? 'white' : '#3D3530',
-                      whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px',
-                    }}
-                  >
-                    Type ▾
-                  </button>
-                  {activeDropdown === 'type' && (
-                    <div style={{
-                      position: 'absolute', zIndex: 50, top: '100%', left: 0, marginTop: '4px',
-                      background: 'white', borderRadius: '16px',
-                      border: '1px solid #E8E0D5',
-                      boxShadow: '0 4px 16px rgba(43, 36, 32,0.10)',
-                      padding: '8px', minWidth: '160px', maxHeight: '240px', overflowY: 'auto',
-                    }}>
-                      {typeOptions.map(type => (
-                        <div
-                          key={type}
-                          onClick={() => { setFilterType(filterType === type ? null : type); setActiveDropdown(null); }}
-                          style={{ padding: '8px 12px', borderRadius: '16px', fontSize: '13px', cursor: 'pointer', color: filterType === type ? '#6B4423' : '#2B2420', fontWeight: filterType === type ? 500 : 400, background: 'transparent' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#F0EBE0'; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
-                        >
-                          {TYPE_LABELS[type] ?? type}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <FilterMenu label={locale === 'fr' ? 'Type' : 'Type'} value={filterType} options={typeOptions}
+                  onChange={setFilterType} format={v => TYPE_LABELS[v] ?? v} />
 
-                {/* Origin chip */}
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <button
-                    onClick={() => setActiveDropdown(activeDropdown === 'origin' ? null : 'origin')}
-                    style={{
-                      padding: '8px 12px', borderRadius: '20px',
-                      border: 'none', cursor: 'pointer',
-                      fontSize: '12px', fontFamily: 'var(--font-ui)', fontWeight: 500,
-                      background: !!filterOrigin ? '#2B2420' : '#F0EBE0',
-                      color: !!filterOrigin ? 'white' : '#3D3530',
-                      whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px',
-                    }}
-                  >
-                    {locale === 'fr' ? 'Origine ▾' : 'Origin ▾'}
-                  </button>
-                  {activeDropdown === 'origin' && (
-                    <div style={{
-                      position: 'absolute', zIndex: 50, top: '100%', left: 0, marginTop: '4px',
-                      background: 'white', borderRadius: '8px',
-                      border: '1px solid #E8E0D5',
-                      boxShadow: '0 4px 16px rgba(43, 36, 32,0.10)',
-                      padding: '8px', minWidth: '160px', maxHeight: '240px', overflowY: 'auto',
-                    }}>
-                      {originOptions.map(origin => (
-                        <div
-                          key={origin}
-                          onClick={() => { setFilterOrigin(filterOrigin === origin ? null : origin); setApacCountry(null); setEuropeCountry(null); setAmericasCountry(null); setActiveDropdown(null); }}
-                          style={{ padding: '8px 12px', borderRadius: '16px', fontSize: '13px', cursor: 'pointer', color: filterOrigin === origin ? '#6B4423' : '#2B2420', fontWeight: filterOrigin === origin ? 500 : 400, background: 'transparent' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#F0EBE0'; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
-                        >
-                          {origin}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <FilterMenu label={locale === 'fr' ? 'Origine' : 'Origin'} value={filterOrigin} options={originOptions}
+                  onChange={v => { setFilterOrigin(v); setApacCountry(null); setEuropeCountry(null); setAmericasCountry(null); }} />
 
-                {/* Brand chip */}
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <button
-                    onClick={() => setActiveDropdown(activeDropdown === 'manufacturer' ? null : 'manufacturer')}
-                    style={{
-                      padding: '8px 12px', borderRadius: '20px',
-                      border: 'none', cursor: 'pointer',
-                      fontSize: '12px', fontFamily: 'var(--font-ui)', fontWeight: 500,
-                      background: !!filterManufacturer ? '#2B2420' : '#F0EBE0',
-                      color: !!filterManufacturer ? 'white' : '#3D3530',
-                      whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px',
-                    }}
-                  >
-                    {locale === 'fr' ? 'Marque ▾' : 'Brand ▾'}
-                  </button>
-                  {activeDropdown === 'manufacturer' && (
-                    <div style={{
-                      position: 'absolute', zIndex: 50, top: '100%', right: 0, marginTop: '4px',
-                      background: 'white', borderRadius: '16px',
-                      border: '1px solid #E8E0D5',
-                      boxShadow: '0 4px 16px rgba(43, 36, 32,0.10)',
-                      padding: '8px', minWidth: '160px', maxHeight: '240px', overflowY: 'auto',
-                    }}>
-                      {mfgOptions.map(mfg => (
-                        <div
-                          key={mfg}
-                          onClick={() => { setFilterManufacturer(filterManufacturer === mfg ? null : mfg); setActiveDropdown(null); }}
-                          style={{ padding: '8px 12px', borderRadius: '16px', fontSize: '13px', cursor: 'pointer', color: filterManufacturer === mfg ? '#6B4423' : '#2B2420', fontWeight: filterManufacturer === mfg ? 500 : 400, background: 'transparent' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#F0EBE0'; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
-                        >
-                          {mfg}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <FilterMenu label={locale === 'fr' ? 'Marque' : 'Brand'} value={filterManufacturer}
+                  options={mfgOptions} onChange={setFilterManufacturer} />
                 </>)}
 
               </div>
@@ -1402,54 +1350,14 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                           background: 'white', outline: 'none', color: '#2B2420',
                         }}
                       />
-                      <select
-                        value={blendFilterType ?? ''}
-                        onChange={e => setBlendFilterType(e.target.value || null)}
-                        style={{
-                          padding: '8px 12px', borderRadius: '20px', border: 'none',
-                          background: blendFilterType ? '#2B2420' : '#F0EBE0',
-                          color: blendFilterType ? 'white' : '#3D3530',
-                          fontSize: '12px', fontFamily: 'var(--font-ui)',
-                          cursor: 'pointer', outline: 'none', flexShrink: 0,
-                        }}
-                      >
-                        <option value="">Type ▾</option>
-                        {[...new Set(FLOUR_DB.map(f => f.type))].sort().map(t => (
-                          <option key={t} value={t}>{TYPE_LABELS[t] ?? t}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={blendFilterOrigin ?? ''}
-                        onChange={e => { setBlendFilterOrigin(e.target.value || null); setBlendApacCountry(null); setBlendEuropeCountry(null); setBlendAmericasCountry(null); }}
-                        style={{
-                          padding: '8px 12px', borderRadius: '20px', border: 'none',
-                          background: blendFilterOrigin ? '#2B2420' : '#F0EBE0',
-                          color: blendFilterOrigin ? 'white' : '#3D3530',
-                          fontSize: '12px', fontFamily: 'var(--font-ui)',
-                          cursor: 'pointer', outline: 'none', flexShrink: 0,
-                        }}
-                      >
-                        <option value="">{locale === 'fr' ? 'Origine ▾' : 'Origin ▾'}</option>
-                        {Object.keys(ORIGIN_GROUPS).map(g => (
-                          <option key={g} value={g}>{g}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={blendFilterBrand ?? ''}
-                        onChange={e => setBlendFilterBrand(e.target.value || null)}
-                        style={{
-                          padding: '8px 12px', borderRadius: '20px', border: 'none',
-                          background: blendFilterBrand ? '#2B2420' : '#F0EBE0',
-                          color: blendFilterBrand ? 'white' : '#3D3530',
-                          fontSize: '12px', fontFamily: 'var(--font-ui)',
-                          cursor: 'pointer', outline: 'none', flexShrink: 0,
-                        }}
-                      >
-                        <option value="">{locale === 'fr' ? 'Marque ▾' : 'Brand ▾'}</option>
-                        {blendBrandOptions.map(b => (
-                          <option key={b} value={b}>{b}</option>
-                        ))}
-                      </select>
+                      <FilterMenu label={locale === 'fr' ? 'Type' : 'Type'} value={blendFilterType}
+                        options={[...new Set(FLOUR_DB.map(f => f.type))].sort()}
+                        onChange={setBlendFilterType} format={v => TYPE_LABELS[v] ?? v} />
+                      <FilterMenu label={locale === 'fr' ? 'Origine' : 'Origin'} value={blendFilterOrigin}
+                        options={Object.keys(ORIGIN_GROUPS)}
+                        onChange={v => { setBlendFilterOrigin(v); setBlendApacCountry(null); setBlendEuropeCountry(null); setBlendAmericasCountry(null); }} />
+                      <FilterMenu label={locale === 'fr' ? 'Marque' : 'Brand'} value={blendFilterBrand}
+                        options={blendBrandOptions} onChange={setBlendFilterBrand} />
                     </div>
 
                     {/* APAC / Europe / Americas country sub-filter pills for blend */}
