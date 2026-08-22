@@ -283,10 +283,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [openSection, setOpenSection] = useState<'search' | 'blend' | null>('search');
 
   // Scan state
-  const [scanOpen, setScanOpen] = useState(false);
 
   // "I know my type or W value" collapsible in Section 2
-  const [typeWOpen, setTypeWOpen] = useState(false);
   const [quickSub, setQuickSub] = useState<'type' | null>(null);
   const [manualQW, setManualQW] = useState<number | null>(null);
   // Raw text of the W field — the controlled input previously only accepted
@@ -316,6 +314,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   // brandProduct was still undefined and the picker latched open forever. That
   // is why "Change" appeared to do nothing: it set true on something already
   // true. null means "follow the choice"; true/false is an explicit override.
+  // Which road the baker opened. Only one at a time: the page holds the card,
+  // the shortlist and one row of entries, and whatever is opened appears under
+  // it. Everything else stays shut.
+  const [road, setRoad] = useState<'scan' | 'search' | 'type' | 'w' | null>(null);
   const [pickerOverride, setPickerOverride] = useState<boolean | null>(null);
   const pickerOpen = pickerOverride ?? !blend.brandProduct;
   const setPickerOpen = (v: boolean) => setPickerOverride(v ? true : null);
@@ -652,58 +654,61 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             })()}
 
 
-      {/* The shortlist is the shortcut; everything below is the other ways in.
-          Each names the quality of the W it produces, because that is the only
-          real difference between scanning a bag and picking a flour type. */}
-      <div style={{
-        display: 'flex', alignItems: 'baseline', gap: '8px',
-        margin: '22px 0 10px', flexWrap: 'wrap',
+      {/* The shortlist is the shortcut. Below it, one sentence and one row.
+          The W is not a fourth road — it is the destination, so it lives in the
+          sentence rather than under the buttons: whoever knows it has nothing
+          left to identify, and the "ou" says so grammatically. */}
+      <p style={{
+        fontFamily: 'var(--font-ui)', fontSize: '12.5px', color: 'var(--smoke)',
+        lineHeight: 1.45, margin: '18px 0 0',
       }}>
-        <span style={{
-          fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.11em',
-          textTransform: 'uppercase', color: '#8A7F78', fontWeight: 600,
-        }}>{locale === 'fr' ? 'Autres façons de la trouver' : 'Other ways to find it'}</span>
-        <span style={{ fontSize: '11px', color: '#B0A69B', fontFamily: 'var(--font-ui)' }}>
-          {locale === 'fr' ? `${FLOUR_DB.length} farines référencées` : `${FLOUR_DB.length} flours listed`}
-        </span>
+        {locale === 'fr' ? 'Sinon, déterminez la force de votre farine — ou ' : 'Otherwise, work out your flour\u2019s strength — or '}
+        <button
+          onClick={() => setRoad(r => r === 'w' ? null : 'w')}
+          style={{
+            background: 'none', border: 'none', padding: 0, font: 'inherit',
+            color: '#6B4423', textDecoration: 'underline', textUnderlineOffset: '3px', cursor: 'pointer',
+          }}
+        >{locale === 'fr' ? 'saisissez-la directement' : 'enter it directly'}</button>
+        {locale === 'fr' ? ' si vous la connaissez.' : ' if you know it.'}
+      </p>
+
+      <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+        {([
+          { k: 'scan' as const,   n: locale === 'fr' ? 'Scanner'  : 'Scan',
+            c: locale === 'fr' ? 'le sac' : 'the bag' },
+          { k: 'search' as const, n: locale === 'fr' ? 'Chercher' : 'Search',
+            c: `${FLOUR_DB.length} ${locale === 'fr' ? 'farines' : 'flours'}` },
+          { k: 'type' as const,   n: locale === 'fr' ? 'Type'     : 'Type',
+            c: locale === 'fr' ? 'valeur courante' : 'typical value' },
+        ]).map(r => (
+          <button
+            key={r.k}
+            onClick={() => setRoad(cur => cur === r.k ? null : r.k)}
+            style={{
+              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+              border: `1px solid ${road === r.k ? '#6B4423' : 'var(--border)'}`,
+              background: road === r.k ? '#F7F1E9' : 'var(--warm)',
+              borderRadius: '12px', padding: '11px 6px', minHeight: '44px',
+              fontFamily: 'var(--font-ui)', fontSize: '12.5px', fontWeight: 600,
+              color: 'var(--ash)', cursor: 'pointer',
+            }}
+          >
+            <span>{r.n}</span>
+            <span style={{ fontSize: '10.5px', fontWeight: 400, color: 'var(--smoke)', textAlign: 'center' }}>{r.c}</span>
+          </button>
+        ))}
       </div>
 
-      {/* Scanning is a road like the others, not the front door: most bakers
-          reach for the shortlist, and the ones holding a bag will look for the
-          camera wherever it is. */}
-      <button
-        onClick={() => { setScanOpen(s => !s); }}
-        style={{
-          width: '100%', padding: '12px 16px',
-          borderRadius: '12px', border: '1.5px solid #E8E0D5',
-          background: '#FDFBF7', display: 'flex',
-          alignItems: 'center', justifyContent: 'space-between',
-          cursor: 'pointer', marginBottom: '16px', gap: '10px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <svg width="20" height="20" viewBox="0 0 32 32" fill="none" stroke="var(--terra)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M4 10 V6 a2 2 0 0 1 2-2 h4" /><path d="M22 4 h4 a2 2 0 0 1 2 2 v4" />
-            <path d="M28 22 v4 a2 2 0 0 1-2 2 h-4" /><path d="M10 28 H6 a2 2 0 0 1-2-2 v-4" />
-            <path d="M11 21 c0-4 1.5-5 2-7 h6 c.5 2 2 3 2 7 a2 2 0 0 1-2 2 h-6 a2 2 0 0 1-2-2 Z" fill="rgba(107, 68, 35,0.12)" />
-            <line x1="12" y1="12" x2="20" y2="12" />
-          </svg>
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#2B2420', fontFamily: 'var(--font-ui)' }}>{locale === 'fr' ? 'Scannez votre sachet' : 'Scan your bag'}</div>
-            <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{locale === 'fr' ? 'Photographiez n’importe quel sachet de farine' : 'Point your camera at any flour bag'}</div>
-          </div>
-        </div>
-        <span style={{ fontSize: '15px', color: '#6B4423' }}>→</span>
-      </button>
-      {scanOpen && (
+      {road === 'scan' && (
         <div style={{ marginBottom: '16px' }}>
           <FlourScan
             onResult={result => {
               const autoTile: FlourKey = result.w >= 270 ? 'strong00' : 'pizza00';
               onBlendChange({ ...blend, flour1: autoTile, wOverride: result.w, w1: result.w, w1Source: 'photo', brandProduct: result.name, brandKey: undefined });
-              setScanOpen(false);
+              setRoad(null);
             }}
-            onCancel={() => setScanOpen(false)}
+            onCancel={() => setRoad(null)}
           />
         </div>
       )}
@@ -716,15 +721,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
         {/* search content starts — was inside openSection === 'search' */}
         <div style={{ paddingBottom: '16px' }}>
 
-            {/* Search bar + filter chips — single row */}
+            {/* Search bar + filter chips, revealed by the Search entry */}
+            {road === 'search' && (<>
             {/* Same shape as the blend panel's search: the field owns a full
                 row, the filters wrap under it. They were two different layouts
                 for one control, and the shared row squeezed both. */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#2B2420', fontFamily: 'var(--font-ui)', flex: 1 }}>
-                {locale === 'fr' ? 'Chercher par marque ou nom' : 'Search by brand or name'}
-              </span>
-            </div>
             <div ref={dropdownRef} style={{ marginBottom: '8px' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
                 <input
@@ -968,11 +969,9 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 )}
               </div>
             )}
+            </>)}
 
-            {/* The shortlist and the search results are the same list in two
-                moments. Rendered twice: idle above the search box (the
-                shortcut most bakers take), active below it (where results
-                belong, under the field that produced them). */}
+            {/* Results sit under the field that produced them. */}
             {(() => {
               const noFiltersActive = !searchQuery && !filterType && !filterOrigin && !filterManufacturer;
               if (noFiltersActive) return null;
@@ -1085,18 +1084,14 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               );
             })()}
 
-            {/* ── I know my type or W value ── */}
+            {/* Type and W are two roads now, opened from the row and the
+                sentence respectively — no shared accordion, no header asking
+                "don't see your flour?" once the baker has already said so by
+                tapping. The type list opens straight to its choices. */}
+            {(road === 'type' || road === 'w') && (
             <div style={{ marginTop: '12px', borderTop: '1px solid #E8E0D5', paddingTop: '12px' }}>
-              <div
-                onClick={() => { setTypeWOpen(o => !o); if (typeWOpen) setQuickSub(null); }}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', fontWeight: 500, background: '#F0EBE0', borderRadius: '16px', padding: '8px 12px' }}
-              >
-                <span>{locale === 'fr' ? 'Votre farine est absente ? Entrez le type ou le W →' : 'Don’t see your flour? Enter type or W →'}</span>
-                <span style={{ fontSize: '11px', color: '#8A7F78' }}>{typeWOpen ? '▾' : '▸'}</span>
-              </div>
-
-              {typeWOpen && (
-                <div style={{ paddingTop: '12px' }}>
+              {road === 'type' && (
+                <div style={{ paddingTop: '0' }}>
                   {/* Select by type */}
                   <div
                     onClick={() => setQuickSub(quickSub === 'type' ? null : 'type')}
@@ -1133,12 +1128,16 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     </div>
                   )}
 
-                  {/* or separator */}
-                  <div style={{ textAlign: 'center', fontSize: '11px', color: '#8A7F78', padding: '2px 0', fontFamily: 'var(--font-ui)' }}>or</div>
+                </div>
+              )}
 
-                  {/* I know my W value */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 12px', borderRadius: '16px', background: '#F0EBE0', marginTop: '8px' }}>
-                    <span style={{ fontSize: '13px', color: '#3D3530', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>{locale === 'fr' ? 'Je connais mon W' : 'I know my W value'}</span>
+              {/* The W is its own road, reached from the sentence above. Just a
+                  field: the baker already knows the number, they need somewhere
+                  to put it, not a menu. */}
+              {road === 'w' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 12px', borderRadius: '16px', background: '#F0EBE0' }}>
+                    <span style={{ fontSize: '13px', color: '#3D3530', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>{locale === 'fr' ? 'Force (W)' : 'Strength (W)'}</span>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -1178,6 +1177,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 </div>
               )}
             </div>
+            )}
 
         </div>
       </div>
