@@ -1388,7 +1388,10 @@ export default function Home() {
     // values were just cleared, making them look "skipped".
     setAdvancedStep(1);
     setAdvancedHighestStep(1);
-    setModeChosen(true);
+    // Deliberately NOT setModeChosen(true): picking a bake type used to drop
+    // the baker straight into setup, because the mode was a permanent bar at
+    // the top they could flip at any time. It is a page now, so choosing Pizza
+    // has to lead to it rather than past it.
 
     // ── Baker profile prefill — bakeType-compatible defaults, always overridable ──
     const prof = loadProfile();
@@ -2691,6 +2694,12 @@ export default function Home() {
                       >
                         <span style={{ flex: 1 }}>
                           <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--char)' }}>{m.title}</span>
+                          {loadProfile()?.preferredMode === m.key && (
+                            <span style={{
+                              marginLeft: '8px', fontSize: '10px', letterSpacing: '.08em',
+                              textTransform: 'uppercase', color: '#9C8248', fontWeight: 700,
+                            }}>{locale === 'fr' ? 'votre habitude' : 'your usual'}</span>
+                          )}
                           <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--smoke)', marginTop: '3px', lineHeight: 1.45 }}>{m.desc}</span>
                         </span>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9C8248"
