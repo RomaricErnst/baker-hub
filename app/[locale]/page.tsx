@@ -92,15 +92,28 @@ function pizzaWeightFromTable(sk: string, d: number, corn: number): number {
   return Math.round(table[table.length - 1][corn + 1] / 5) * 5;
 }
 
-function diameterFromWeight(w: number, sk: string, corn: number): number {
-  const table = PIZZA_WEIGHT_TABLE[sk];
-  if (!table) return STYLE_DEFAULT_DIAMETER[sk] ?? 30;
-  let best = table[0][0], bestDiff = 999;
-  for (let d = table[0][0]; d <= table[table.length - 1][0]; d++) {
-    const diff = Math.abs(pizzaWeightFromTable(sk, d, corn) - w);
-    if (diff < bestDiff) { bestDiff = diff; best = d; }
+// Diameter, crust and weight are three controls over two degrees of freedom:
+// weight is what the table gives for a diameter and a crust. So editing weight
+// has to move one of the other two, and which one is a real decision.
+//
+// It used to move the DIAMETER: asking for 270g at 30cm quietly made the pizza
+// 33cm. But diameter is an intent — "I want 30cm pizzas" — and it should not
+// drift because the baker wanted more dough. Crust is a description of how much
+// dough sits on that area, which is exactly what weight expresses.
+function cornFromWeight(sk: string, d: number, w: number): number {
+  let best = 1, bestDiff = Infinity;
+  for (let c = 0; c <= 2; c++) {
+    const diff = Math.abs(pizzaWeightFromTable(sk, d, c) - w);
+    if (diff < bestDiff) { bestDiff = diff; best = c; }
   }
   return best;
+}
+
+// True when the weight is exactly what the chosen crust gives at this
+// diameter. When it is not, no crust segment is highlighted — the label would
+// otherwise claim a precision the number does not have.
+function crustMatchesWeight(sk: string, d: number, corn: number, w: number): boolean {
+  return pizzaWeightFromTable(sk, d, corn) === w;
 }
 
 function getWeightBounds(sk: string | null, bt: string | null): { min: number; max: number; step: number } {
@@ -1891,6 +1904,12 @@ export default function Home() {
   };
   const accentColor = isBread ? 'var(--bread)' : 'var(--terra)';
 
+  // The crust segment shown as chosen, or -1 when the weight sits between two
+  // crusts — a baker who typed 265g at 30cm is neither Classic nor Generous,
+  // and pretending otherwise is how the three controls drift apart.
+  const crustActive = (styleKey && crustMatchesWeight(styleKey, pizzaDiameter, pizzaCorn, itemWeight))
+    ? pizzaCorn : -1;
+
   // ── Simple-mode step model (single source of truth) ──
   const localName = (o: unknown): string | null => {
     if (!o) return null;
@@ -2879,10 +2898,10 @@ export default function Home() {
                               onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
                               style={{
                                 flex: 1, padding: '4px 4px', borderRadius: '12px', whiteSpace: 'nowrap',
-                                border: pizzaCorn === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
-                                background: pizzaCorn === opt.value ? 'white' : 'transparent',
-                                color: pizzaCorn === opt.value ? '#2B2420' : '#8A7F78',
-                                fontSize: '12px', fontWeight: pizzaCorn === opt.value ? 600 : 400,
+                                border: crustActive === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
+                                background: crustActive === opt.value ? 'white' : 'transparent',
+                                color: crustActive === opt.value ? '#2B2420' : '#8A7F78',
+                                fontSize: '12px', fontWeight: crustActive === opt.value ? 600 : 400,
                                 fontFamily: 'var(--font-ui)', cursor: 'pointer',
                               }}
                             >
@@ -2911,14 +2930,14 @@ export default function Home() {
                       <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
                         <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>{isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                          <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                          <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); setItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: itemWeight >= 1000 ? '80px' : '64px', justifyContent: 'center' }}>
                             <input type="number" min={weightBounds.min} max={weightBounds.max} step={weightBounds.step} value={itemWeight}
-                              onChange={e => { const w = Math.max(weightBounds.min, Math.min(weightBounds.max, Math.round(+e.target.value / weightBounds.step) * weightBounds.step)); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }}
+                              onChange={e => { const w = Math.max(weightBounds.min, Math.min(weightBounds.max, Math.round(+e.target.value / weightBounds.step) * weightBounds.step)); setItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }}
                               style={{ width: itemWeight >= 1000 ? '62px' : '48px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '17px', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-ui)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
                             <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--smoke)' }}>g</span>
                           </div>
-                          <button onClick={() => { const w = Math.min(weightBounds.max, itemWeight + weightBounds.step); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                          <button onClick={() => { const w = Math.min(weightBounds.max, itemWeight + weightBounds.step); setItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
                         </div>
                       </div>
                     </div>
@@ -3483,10 +3502,10 @@ export default function Home() {
                               onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
                               style={{
                                 flex: 1, padding: '4px 4px', borderRadius: '12px', whiteSpace: 'nowrap',
-                                border: pizzaCorn === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
-                                background: pizzaCorn === opt.value ? 'white' : 'transparent',
-                                color: pizzaCorn === opt.value ? '#2B2420' : '#8A7F78',
-                                fontSize: '12px', fontWeight: pizzaCorn === opt.value ? 600 : 400,
+                                border: crustActive === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
+                                background: crustActive === opt.value ? 'white' : 'transparent',
+                                color: crustActive === opt.value ? '#2B2420' : '#8A7F78',
+                                fontSize: '12px', fontWeight: crustActive === opt.value ? 600 : 400,
                                 fontFamily: 'var(--font-ui)', cursor: 'pointer',
                               }}
                             >
@@ -3513,14 +3532,14 @@ export default function Home() {
                       <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
                         <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>{isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                          <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                          <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); setItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: itemWeight >= 1000 ? '80px' : '64px', justifyContent: 'center' }}>
                             <input type="number" min={weightBounds.min} max={weightBounds.max} step={weightBounds.step} value={itemWeight}
-                              onChange={e => { const w = Math.max(weightBounds.min, Math.min(weightBounds.max, Math.round(+e.target.value / weightBounds.step) * weightBounds.step)); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }}
+                              onChange={e => { const w = Math.max(weightBounds.min, Math.min(weightBounds.max, Math.round(+e.target.value / weightBounds.step) * weightBounds.step)); setItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }}
                               style={{ width: itemWeight >= 1000 ? '62px' : '48px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '17px', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-ui)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
                             <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--smoke)' }}>g</span>
                           </div>
-                          <button onClick={() => { const w = Math.min(weightBounds.max, itemWeight + weightBounds.step); setItemWeight(w); if (showDiam) setPizzaDiameter(diameterFromWeight(w, styleKey ?? 'neapolitan', pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                          <button onClick={() => { const w = Math.min(weightBounds.max, itemWeight + weightBounds.step); setItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
                         </div>
                       </div>
                     </div>
