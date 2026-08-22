@@ -1371,6 +1371,32 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           )}
         </Section>
 
+        {/* Blending advice — only when there is actually a blend. Two or three
+            flours behave as one dough only if they are combined dry first;
+            everything below follows from that. */}
+        {(() => {
+          const parts = recipe?.blendProfile?.displayName?.split(' + ') ?? [];
+          if (parts.length < 2) return null;
+          return (
+            <Section icon="" title={l === 'fr' ? 'Votre mélange de farines' : 'Your flour blend'}>
+              <Steps items={[
+                { bold: l === 'fr' ? 'Pesez chaque farine séparément' : 'Weigh each flour separately',
+                  note: l === 'fr'
+                    ? `${parts.join(' + ')} — les pourcentages portent sur la farine totale, pas les unes sur les autres`
+                    : `${parts.join(' + ')} — the percentages are of total flour, not of each other` },
+                { bold: l === 'fr' ? 'Fouettez-les à sec avant l\u2019eau' : 'Whisk them together dry, before the water',
+                  note: l === 'fr'
+                    ? 'chaque farine boit à sa vitesse ; versées séparément dans l\u2019eau elles laissent des traînées qui ne partent plus au pétrissage'
+                    : 'each flour drinks at its own rate; added separately to water they leave streaks that kneading will not remove' },
+                { bold: l === 'fr' ? 'Laissez l\u2019autolyse faire le travail' : 'Let the autolyse do the work',
+                  note: l === 'fr'
+                    ? 'la pâte paraîtra plus ferme au début — l\u2019eau supplémentaire est déjà dans la recette, n\u2019en rajoutez pas avant 20 minutes'
+                    : 'the dough will feel stiffer at first — the extra water is already in the recipe, do not add more before 20 minutes' },
+              ]} />
+            </Section>
+          );
+        })()}
+
         {!(simpleMode && recipe?.waterTemp == null) && (
         <Section icon="" title={t('sectionTitles.waterTemp')}>
           <Bullets items={[
@@ -1382,6 +1408,25 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
         <StepExtras
           tips={<>
+            {(() => {
+              const parts = recipe?.blendProfile?.displayName?.split(' + ') ?? [];
+              if (parts.length < 2) return null;
+              return (
+                <Section icon={null} title={l === 'fr' ? 'Questions sur le mélange' : 'About blending'}>
+                  <Bullets items={l === 'fr' ? [
+                    'La pâte colle plus ou se déchire ? Le son du complet et du seigle coupe le réseau de gluten — travaillez plus doucement et fiez-vous aux rabats plutôt qu\u2019au pétrissage.',
+                    'Ne prolongez pas le pointage parce qu\u2019il « paraît lent » : le plan tient déjà compte de la tolérance réduite de votre mélange.',
+                    'Le préferment utilise le même mélange que la pâte finale — pesez chaque farine selon la recette, pas la base seule.',
+                    'Changer une farine du mélange change sa force W, donc le plan : régénérez la recette plutôt que de substituer au moment du pétrissage.',
+                  ] : [
+                    'Dough sticking more, or tearing? The bran in wholemeal and rye cuts the gluten network — work more gently and trust the folds rather than the kneading.',
+                    'Do not extend the bulk because it "looks slow": the plan already accounts for your blend\u2019s reduced tolerance.',
+                    'The preferment uses the same blend as the final dough — weigh each flour as the recipe states, not the base alone.',
+                    'Swapping one flour changes the blend\u2019s W, and so the plan: regenerate the recipe rather than substituting at the mixing bowl.',
+                  ]} />
+                </Section>
+              );
+            })()}
             {!simpleMode && (
             <Section icon="" title={t('sectionTitles.waterTemp')}>
               <Bullets items={[

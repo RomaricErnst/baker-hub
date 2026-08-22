@@ -790,16 +790,32 @@ export default function RecipeOutput({
               </div>
               <IngRow label={t('recipeOutput.yourPrefAll', { name: pd.name })} grams={wStr(prefTotal)} noPct highlight />
               {mode === 'custom' && flourBlend && flourBlend.flour2 && flourBlend.ratio1 < 100 ? (() => {
+                // The final dough split only ever listed two flours: flour 2
+                // took "everything that is not flour 1", so with a preferment a
+                // three-flour blend lost its third flour — its weight silently
+                // folded into the second. The direct-dough breakdown already
+                // handled three; this one did not.
                 const f1 = FLOUR_DATA[flourBlend.flour1];
                 const f2 = FLOUR_DATA[flourBlend.flour2];
+                const hasF3 = !!flourBlend.flour3 && flourBlend.ratio2 !== undefined
+                  && (100 - flourBlend.ratio1 - flourBlend.ratio2) > 0;
+                const f3 = hasF3 ? FLOUR_DATA[flourBlend.flour3!] : null;
+                const p2 = hasF3 ? flourBlend.ratio2! : 100 - flourBlend.ratio1;
                 const f1Weight = Math.round(pf.finalFlour * flourBlend.ratio1 / 100);
-                const f2Weight = pf.finalFlour - f1Weight;
-                const f1Pct = Math.round(f1Weight / flour * 1000) / 10;
-                const f2Pct = Math.round(f2Weight / flour * 1000) / 10;
+                const f2Weight = hasF3
+                  ? Math.round(pf.finalFlour * p2 / 100)
+                  : pf.finalFlour - f1Weight;
+                // The last flour absorbs the rounding, so the parts always sum
+                // to the flour the recipe actually calls for.
+                const f3Weight = hasF3 ? pf.finalFlour - f1Weight - f2Weight : 0;
+                const pctOf = (w: number) => pctStr(Math.round(w / flour * 1000) / 10);
                 return (
                   <>
-                    <IngRow label={flourBlend.brandProduct ?? f1.name} grams={wStr(f1Weight)} noPct advancedPct={pctStr(f1Pct)} />
-                    <IngRow label={flourBlend.customFlour2Name ?? f2.name} grams={wStr(f2Weight)} noPct advancedPct={pctStr(f2Pct)} />
+                    <IngRow label={flourBlend.brandProduct ?? f1.name} grams={wStr(f1Weight)} noPct advancedPct={pctOf(f1Weight)} />
+                    <IngRow label={flourBlend.customFlour2Name ?? f2.name} grams={wStr(f2Weight)} noPct advancedPct={pctOf(f2Weight)} />
+                    {hasF3 && f3 && (
+                      <IngRow label={flourBlend.customFlour3Name ?? f3.name} grams={wStr(f3Weight)} noPct advancedPct={pctOf(f3Weight)} />
+                    )}
                   </>
                 );
               })() : (
