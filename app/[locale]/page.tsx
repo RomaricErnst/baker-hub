@@ -251,7 +251,11 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
   // drop the ones just made. Show the three most recent, in order, and mark
   // that there are earlier ones — the sheet holds the full list anyway.
   const parts = all.length > 3 ? ['…', ...all.slice(-3)] : all;
-  const pct = Math.round((answered.length / Math.max(1, flow.steps.length)) * 100);
+  // The mode counts: it is step 1 of setup and it is always answered by the
+  // time this bar exists, so both the numerator and the total include it.
+  const total = flow.steps.length + (modeChip ? 1 : 0);
+  const count = answered.length + (modeChip ? 1 : 0);
+  const pct = Math.round((count / Math.max(1, total)) * 100);
 
   return (
     <>
@@ -277,7 +281,7 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
           <span style={{
             fontSize: '10px', letterSpacing: '.09em', color: '#9C8248',
             fontWeight: 700, flexShrink: 0,
-          }}>{answered.length}/{flow.steps.length}</span>
+          }}>{count}/{total}</span>
           {/* Running text, not chips: the row never scrolls sideways, so
               nothing is ever half-cut at the screen edge. */}
           <span style={{
@@ -414,12 +418,12 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
   // Both pages move together — only the incoming one animating reads as a
   // swap rather than a displacement, which is what loses the eye.
   return (
-    <div id={`step-${id}`} key={id} className="bh-step-page" style={{ padding: '20px 2px 4px' }}>
+    <div id={`step-${id}`} key={id} className="bh-step-page" style={{ padding: '16px 2px 4px' }}>
       {/* No step counter here: the summary bar above carries it, and two
           "3 of 9" forty pixels apart is just noise. */}
       <h2 style={{
         fontFamily: 'var(--font-ui)', fontWeight: 700, fontSize: '29px',
-        lineHeight: 1.12, letterSpacing: '-.015em', margin: '0 0 22px', color: 'var(--char)',
+        lineHeight: 1.12, letterSpacing: '-.015em', margin: '0 0 18px', color: 'var(--char)',
       }}>{step.title}</h2>
 
       {children}
@@ -2663,10 +2667,15 @@ export default function Home() {
                   is the same mechanic every other choice uses. */}
               {!modeChosen && (
                 <div style={{ padding: '4px 0 8px' }}>
+                  {/* Mode is the first step of setup, so it says so. Without a
+                      number here it read as a step zero sitting outside the
+                      count, which is exactly what it is not. */}
                   <div style={{
                     fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.12em',
                     textTransform: 'uppercase', color: '#9C8248', fontWeight: 600,
-                  }}>{locale === 'fr' ? 'Pour commencer' : 'To begin'}</div>
+                  }}>{locale === 'fr'
+                    ? `Étape 1 sur ${(tab === 'custom' ? CUSTOM_STEPS.length : SIMPLE_STEPS.length) + 1}`
+                    : `Step 1 of ${(tab === 'custom' ? CUSTOM_STEPS.length : SIMPLE_STEPS.length) + 1}`}</div>
                   <h2 style={{
                     fontFamily: 'var(--font-ui)', fontSize: '26px', fontWeight: 800,
                     letterSpacing: '-.022em', lineHeight: 1.13, margin: '8px 0 16px',

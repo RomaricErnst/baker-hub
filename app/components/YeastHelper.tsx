@@ -61,9 +61,9 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
         />
       ) : (
         <div>
-          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-ui)' }}>
-            {t('subtitle')}
-          </p>
+          {/* "How you'll leaven the dough" only restated the title, and the
+              line it cost was the difference between this page fitting on one
+              screen and not. Each option already carries its own tagline. */}
           <DecisionList
             options={orderedOptions.map(opt => ({
               ...opt,

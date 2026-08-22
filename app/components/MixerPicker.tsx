@@ -50,9 +50,8 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
         />
       ) : (
         <div>
-          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-ui)' }}>
-            {t('subtitle')}
-          </p>
+          {/* Subtitle dropped: the Equipment page already carries two pickers
+              and two group labels, and each option states its own effect. */}
           <DecisionList
             options={options}
             selectedId={selected ?? ''}
