@@ -2676,10 +2676,14 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
            visual viewport and would float mid-screen above the keyboard. */}
       {activePill === 'pizzas' && !keyboardOpen && (
         <div style={{
-          position: 'fixed', bottom: `${bottomNavH}px`, left: 0, right: 0,
+          // The bar sits ON the home indicator, so it pins to bottom 0 and
+          // carries the safe-area inset as padding instead. Offsetting by
+          // bottomNavH AND padding by the inset counted the same gap twice,
+          // and on a rounded screen the second line still landed in the curve.
+          position: 'fixed', bottom: 0, left: 0, right: 0,
           background: '#2B2420',
           borderTop: '1px solid #C88A52',
-          padding: '12px 14px calc(12px + env(safe-area-inset-bottom, 0px))',
+          padding: '14px 16px calc(18px + env(safe-area-inset-bottom, 0px))',
           display: 'flex', alignItems: 'center', gap: '12px',
           justifyContent: 'space-between',
           zIndex: 90,

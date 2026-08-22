@@ -937,7 +937,13 @@ export default function BakeGuide({
       leaven.push('leavened with a sourdough starter (levain), no commercial yeast');
     } else if (recipe.yeast) {
       const yg = parseFloat(recipe.yeast.convertedGrams.toFixed(2));
-      const yp = (recipe.yeast.convertedGrams / totalFlour * 100).toFixed(3);
+      // Same precision rule as the recipe card: two significant figures below
+      // 1%. This string goes to Maestro, so a fabricated third digit would be
+      // repeated back to the baker as fact.
+      const ypRaw = recipe.yeast.convertedGrams / totalFlour * 100;
+      const yp = ypRaw >= 1
+        ? ypRaw.toFixed(1)
+        : ypRaw.toFixed(Math.max(2, 1 - Math.floor(Math.log10(ypRaw))));
       const yt = recipe.yeast.yeastType ?? 'IDY';
       leaven.push(`final-dough yeast ${yg}g ${yt} (${yp}% of total flour)`);
     }

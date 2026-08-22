@@ -41,10 +41,14 @@ interface RecipeOutputProps {
 }
 
 // ── Helpers ──────────────────────────────────
+// A percentage must not claim more precision than the weight it comes from.
+// Yeast shows as 0.7 g — two significant figures — so 0.107% was inventing a
+// third. Two significant figures below 1%, one decimal above.
 function pctStr(n: number): string {
-  return n < 1
-    ? `${parseFloat(n.toFixed(3))}%`
-    : `${parseFloat(n.toFixed(1))}%`;
+  if (n <= 0) return '0%';
+  if (n >= 1) return `${parseFloat(n.toFixed(1))}%`;
+  const decimals = Math.max(2, 1 - Math.floor(Math.log10(n)));
+  return `${parseFloat(n.toFixed(decimals))}%`;
 }
 
 function wStr(n: number): string {
