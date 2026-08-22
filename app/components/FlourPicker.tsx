@@ -1058,18 +1058,21 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     </div>
                   )}
                   <div style={{ marginTop: '12px' }}>
-                    {/* Row 1 — Input + Type + Origin + Brand on single row */}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                    {/* Search gets its own row. Four controls shared one line
+                        with minWidth 0, so the input collapsed to a blank white
+                        box — its placeholder clipped away — while Brand ran off
+                        the right edge. Same cause, both symptoms. */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
                       <input
                         type="text"
                         placeholder={locale === 'fr' ? 'Rechercher une farine…' : 'Search flour...'}
                         value={blendSearchQuery}
                         onChange={e => { setBlendSearchQuery(e.target.value); setBlendShowFullSearch(true); }}
                         style={{
-                          flex: 1, padding: '8px 12px',
+                          flexBasis: '100%', padding: '12px', minHeight: '44px',
                           border: '1px solid #E8E0D5', borderRadius: '8px',
                           fontSize: '13px', fontFamily: 'var(--font-ui)',
-                          background: 'white', outline: 'none', color: '#2B2420', minWidth: 0,
+                          background: 'white', outline: 'none', color: '#2B2420',
                         }}
                       />
                       <select
