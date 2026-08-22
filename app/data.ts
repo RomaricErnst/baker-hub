@@ -866,6 +866,29 @@ export interface FlourBlend {
   brandProduct?: string;    // selected product name
   customFlour2Name?: string; // name of manually entered second flour
   customFlour3Name?: string; // name of manually entered third flour
+
+  // How well each W is known. Every route into this page — scan, search,
+  // shortlist, flour type, typed W — writes the same record; what separates
+  // them is the quality of the W they produce, and that is worth carrying.
+  //   'exact'   read off a specific product in the database
+  //   'photo'   read off the bag's own label by the scanner
+  //   'typical' a representative value for a flour type
+  //   'manual'  the number the baker entered
+  w1Source?: WSource;
+  w2Source?: WSource;
+  w3Source?: WSource;
+}
+
+export type WSource = 'exact' | 'photo' | 'typical' | 'manual';
+
+// A blend is never better known than its least-known component: mixing a
+// scanned Caputo with a "typical" rye gives an approximate W, and printing it
+// without a tilde overstates what the app knows.
+export function blendWIsApproximate(b: FlourBlend): boolean {
+  const used: (WSource | undefined)[] = [b.w1Source];
+  if (b.flour2) used.push(b.w2Source);
+  if (b.flour3) used.push(b.w3Source);
+  return used.some(s => s === 'typical' || s === undefined);
 }
 
 export interface BlendProfile {

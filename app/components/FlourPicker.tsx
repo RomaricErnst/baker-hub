@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useLocale } from 'next-intl';
-import { type FlourKey, type FlourBlend } from '../data';
+import { type FlourKey, type FlourBlend, type WSource, blendWIsApproximate } from '../data';
 import FlourScan from './FlourScan';
 import { FLOUR_DB, type FlourEntry } from '@/lib/flourDatabase';
 
@@ -149,10 +149,14 @@ interface FlourPickerProps {
 // two parts it separates; the others hold still. Three flours is the ceiling —
 // below about 14% a segment can no longer hold its own name, and two 5%
 // segments on a narrow phone are 18px wide.
-function BlendBar({ parts, onChange, locale }: {
+function BlendBar({ parts, onChange, locale, approx }: {
   parts: { name: string; pct: number; w: number }[];
   onChange: (pcts: number[]) => void;
   locale: string;
+  // A blend is never better known than its least-known part. Printing 244
+  // rather than ~244 would claim a precision that feeds straight into the
+  // fermentation windows.
+  approx: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const COLORS = ['#6B4423', '#9C8248', '#6B7A5A'];
@@ -225,11 +229,23 @@ function BlendBar({ parts, onChange, locale }: {
         color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
       }}>
         <span>{locale === 'fr' ? 'Glissez pour ajuster' : 'Drag to adjust'}</span>
-        <span style={{ color: '#9C8248' }}>{locale === 'fr' ? 'Force du mélange' : 'Blend strength'} W {blendW}</span>
+        <span style={{ color: '#9C8248' }}>{locale === 'fr' ? 'Force du mélange' : 'Blend strength'} W{approx ? ' ~' : ' '}{blendW}</span>
       </div>
     </div>
   );
 }
+
+const W_SOURCE_LABEL = (l: string): Record<WSource, string> => l === 'fr' ? {
+  exact:   'valeur de ce produit',
+  photo:   'lue sur l\u2019étiquette',
+  typical: 'valeur courante pour ce type',
+  manual:  'valeur que vous avez saisie',
+} : {
+  exact:   'this product\u2019s value',
+  photo:   'read off the label',
+  typical: 'typical for this flour type',
+  manual:  'the value you entered',
+};
 
 export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', mode = 'custom', styleKey }: FlourPickerProps) {
   // Accordion
@@ -333,16 +349,19 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   // Assign a picked blend flour to whichever slot the search was opened for.
   // Stores the flour's true W per slot (w2/w3) — computeBlendProfile does the
   // single authoritative blend, fixing the old double-blend of wOverride.
-  function assignBlendFlour(entry: FlourEntry, key: FlourKey, label: string, r1ForSlot2 = 85) {
+  // `source` says how the W of this addition is known — the caller knows which
+  // road it came from, and the blend needs it to decide whether its own W can
+  // be printed without a tilde.
+  function assignBlendFlour(entry: FlourEntry, key: FlourKey, label: string, r1ForSlot2 = 85, source: WSource = 'exact') {
     if (blendSlot === 3) {
       setBlendSelectedF3(entry);
       const r1 = Math.min(blendRatio, 80);
       const r2 = Math.min(blendRatio2, 100 - r1 - 5);
       setBlendRatio(r1); setBlendRatio2(r2);
-      onBlendChange({ ...blend, flour3: key, ratio1: r1, ratio2: r2, w3: entry.w, customFlour3Name: label });
+      onBlendChange({ ...blend, flour3: key, ratio1: r1, ratio2: r2, w3: entry.w, w3Source: source, customFlour3Name: label });
     } else {
       setBlendSelectedF2(entry);
-      onBlendChange({ ...blend, flour2: key, ratio1: r1ForSlot2, w2: entry.w, customFlour2Name: label });
+      onBlendChange({ ...blend, flour2: key, ratio1: r1ForSlot2, w2: entry.w, w2Source: source, customFlour2Name: label });
     }
     setBlendShowFullSearch(false); setBlendSearchQuery('');
   }
@@ -355,6 +374,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       ratio1: blend.ratio1,
       wOverride: f.w,
       w1: f.w,
+      w1Source: 'exact',
       brandKey: undefined,
       brandProduct: `${f.brand} ${f.name}`,
     });
@@ -369,6 +389,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       ratio1: blend.ratio1,
       wOverride: w,
       w1: w,
+      w1Source: 'typical',
       brandKey: undefined,
       brandProduct: label,
     });
@@ -463,7 +484,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           <FlourScan
             onResult={result => {
               const autoTile: FlourKey = result.w >= 270 ? 'strong00' : 'pizza00';
-              onBlendChange({ ...blend, flour1: autoTile, wOverride: result.w, w1: result.w, brandProduct: result.name, brandKey: undefined });
+              onBlendChange({ ...blend, flour1: autoTile, wOverride: result.w, w1: result.w, w1Source: 'photo', brandProduct: result.name, brandKey: undefined });
               setScanOpen(false);
             }}
             onCancel={() => setScanOpen(false)}
@@ -493,11 +514,19 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               {locale === 'fr' ? 'Changer' : 'Change'}
             </button>
           </div>
-          <div style={{ display:'flex', gap: '8px', marginTop:'8px', flexWrap:'wrap' }}>
+          {/* The W and how well it is known. "W ~220, typical for this type"
+              is not the same promise as "W 260, read off the label", and the
+              app used to print both the same way. */}
+          <div style={{ display:'flex', gap: '8px', marginTop:'8px', flexWrap:'wrap', alignItems:'center' }}>
             <span style={{ fontFamily:'var(--font-ui)', fontSize: '11px', padding: '3px 8px',
               borderRadius:'20px', background:'rgba(139,105,20,0.1)', color:'var(--bread)' }}>
-              W{blend.wOverride ?? '—'}
+              W{blend.w1Source === 'typical' ? '~' : ''}{blend.wOverride ?? '—'}
             </span>
+            {blend.w1Source && (
+              <span style={{ fontFamily:'var(--font-ui)', fontSize: '11px', color:'#8A7F78' }}>
+                {W_SOURCE_LABEL(locale)[blend.w1Source]}
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -969,6 +998,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                           const autoTile: FlourKey = v >= 270 ? 'strong00' : 'pizza00';
                           onBlendChange({
                             flour1: autoTile, flour2: blend.flour2, ratio1: blend.ratio1,
+                            w1Source: 'manual',
                             wOverride: v, w1: v, brandKey: undefined, brandProduct: `Custom W${v}`,
                           });
                         } else if (raw === '') {
@@ -1087,6 +1117,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         <BlendBar
                           parts={parts}
                           locale={locale}
+                          approx={blendWIsApproximate(blend)}
                           onChange={(pcts) => {
                             const r1 = pcts[0];
                             setBlendRatio(r1);
@@ -1154,7 +1185,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                   bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
                                 };
                                 if (blendSlot === 2) setBlendRatio(preset.ratio);
-                                assignBlendFlour(genericEntry, preset.type as FlourKey, generic.label, preset.ratio);
+                                assignBlendFlour(genericEntry, preset.type as FlourKey, generic.label, preset.ratio, 'typical');
                               }
                             }}
                             style={{
@@ -1377,7 +1408,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                 bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
                               };
                               if (blendSlot === 2) setBlendRatio(85);
-                              assignBlendFlour(genericEntry, t.type as FlourKey, t.label);
+                              assignBlendFlour(genericEntry, t.type as FlourKey, t.label, undefined, 'typical');
                             }}
                             style={{
                               padding: '4px 12px', borderRadius: '20px',
@@ -1415,7 +1446,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                   bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
                                 };
                                 if (blendSlot === 2) setBlendRatio(85);
-                                assignBlendFlour(genericEntry, (v >= 270 ? 'strong00' : 'pizza00') as FlourKey, `Custom W${v}`);
+                                assignBlendFlour(genericEntry, (v >= 270 ? 'strong00' : 'pizza00') as FlourKey, `Custom W${v}`, undefined, 'manual');
                               }
                             }}
                           />
