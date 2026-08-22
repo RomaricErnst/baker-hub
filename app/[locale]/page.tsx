@@ -2692,14 +2692,25 @@ export default function Home() {
                   }}>{locale === 'fr' ? 'Comment voulez-vous procéder ?' : 'How would you like to work?'}</h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {([
+                      // Same template on both sides — a count, then three words.
+                      // Parallel structure is what keeps the comparison cheap:
+                      // the eye reads only the part that differs.
+                      //
+                      // Nothing here claims the app "chooses" anything. In
+                      // Simple there is no flour step at all; the flour follows
+                      // from the style. Saying we choose it invented a
+                      // mechanism that does not exist, and raised the question
+                      // of how.
                       { key: 'simple' as const, title: t('modeCards.simple.title'),
+                        steps: SIMPLE_STEPS.length + 1,
                         desc: locale === 'fr'
-                          ? 'Nous choisissons la farine, le préferment et les réglages fins. Le plan reste complet.'
-                          : 'We pick the flour, the preferment and the fine settings. The plan is just as complete.' },
+                          ? 'l\u2019essentiel, et rien de plus'
+                          : 'the essentials, nothing more' },
                       { key: 'custom' as const, title: t('modeCards.custom.title'),
+                        steps: CUSTOM_STEPS.length + 1,
                         desc: locale === 'fr'
-                          ? 'Vous réglez le mélange de farines, le poolish ou la biga, l\u2019hydratation, le sel, la température de pâte.'
-                          : 'You set the flour blend, poolish or biga, hydration, salt and dough temperature.' },
+                          ? 'farine, préferment, hydratation'
+                          : 'flour, preferment, hydration' },
                     ]).map(m => (
                       <button
                         key={m.key}
@@ -2719,7 +2730,12 @@ export default function Home() {
                               textTransform: 'uppercase', color: '#9C8248', fontWeight: 700,
                             }}>{locale === 'fr' ? 'votre habitude' : 'your usual'}</span>
                           )}
-                          <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--smoke)', marginTop: '3px', lineHeight: 1.45 }}>{m.desc}</span>
+                          <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--smoke)', marginTop: '3px', lineHeight: 1.45 }}>
+                            <span style={{ color: '#9C8248', fontWeight: 700 }}>
+                              {locale === 'fr' ? `${m.steps} étapes` : `${m.steps} steps`}
+                            </span>
+                            {' · '}{m.desc}
+                          </span>
                         </span>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9C8248"
                           strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
