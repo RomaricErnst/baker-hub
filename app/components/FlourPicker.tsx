@@ -247,11 +247,14 @@ const W_SOURCE_LABEL = (l: string): Record<WSource, string> => l === 'fr' ? {
   manual:  'the value you entered',
 };
 
-// A road announces the quality of the W it will produce, before it is taken.
+// Only one road needs announcing. Scanning, searching and typing a W all give
+// the real number for the flour in the baker's hands; picking a TYPE gives a
+// representative one. Tagging all four made the distinction disappear into
+// decoration — the tag is worth something only where it warns.
 function WQualityTag({ kind, locale }: { kind: WSource; locale: string }) {
   const label = locale === 'fr'
-    ? { photo: 'W du produit', exact: 'W du produit', typical: 'W typique', manual: 'W saisi' }[kind]
-    : { photo: 'product W',    exact: 'product W',    typical: 'typical W', manual: 'your W'   }[kind];
+    ? { photo: 'W du produit', exact: 'W du produit', typical: 'W approché', manual: 'W saisi' }[kind]
+    : { photo: 'product W',    exact: 'product W',    typical: 'approximate W', manual: 'your W' }[kind];
   return (
     <span style={{
       fontFamily: 'var(--font-ui)', fontSize: '9px', letterSpacing: '.06em',
@@ -284,7 +287,6 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [filterManufacturer, setFilterManufacturer] = useState<string | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<'type' | 'origin' | 'manufacturer' | null>(null);
   // Rendering-only: fold the three filter chips behind a funnel toggle.
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // APAC + Europe sub-filter + blend state
   const [apacCountry, setApacCountry] = useState<string | null>(null);
@@ -468,44 +470,6 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   return (
     <div>
 
-      {/* ── Scan your bag ──────────────────────────── */}
-      <button
-        onClick={() => { setScanOpen(s => !s); }}
-        style={{
-          width: '100%', padding: '12px 16px',
-          borderRadius: '12px', border: '1.5px solid #E8E0D5',
-          background: '#FDFBF7', display: 'flex',
-          alignItems: 'center', justifyContent: 'space-between',
-          cursor: 'pointer', marginBottom: '16px', gap: '10px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <svg width="20" height="20" viewBox="0 0 32 32" fill="none" stroke="var(--terra)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M4 10 V6 a2 2 0 0 1 2-2 h4" /><path d="M22 4 h4 a2 2 0 0 1 2 2 v4" />
-            <path d="M28 22 v4 a2 2 0 0 1-2 2 h-4" /><path d="M10 28 H6 a2 2 0 0 1-2-2 v-4" />
-            <path d="M11 21 c0-4 1.5-5 2-7 h6 c.5 2 2 3 2 7 a2 2 0 0 1-2 2 h-6 a2 2 0 0 1-2-2 Z" fill="rgba(107, 68, 35,0.12)" />
-            <line x1="12" y1="12" x2="20" y2="12" />
-          </svg>
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#2B2420', fontFamily: 'var(--font-ui)' }}>{locale === 'fr' ? 'Scannez votre sachet' : 'Scan your bag'}</div>
-            <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{locale === 'fr' ? 'Photographiez n’importe quel sachet de farine' : 'Point your camera at any flour bag'}</div>
-          </div>
-        </div>
-        <WQualityTag kind="photo" locale={locale} />
-      </button>
-      {scanOpen && (
-        <div style={{ marginBottom: '16px' }}>
-          <FlourScan
-            onResult={result => {
-              const autoTile: FlourKey = result.w >= 270 ? 'strong00' : 'pizza00';
-              onBlendChange({ ...blend, flour1: autoTile, wOverride: result.w, w1: result.w, w1Source: 'photo', brandProduct: result.name, brandKey: undefined });
-              setScanOpen(false);
-            }}
-            onCancel={() => setScanOpen(false)}
-          />
-        </div>
-      )}
-
       {/* ── Selected flour — hero card (rendering only; same state) ── */}
       {blend.brandProduct && (
         <div style={{ background:'#FDFBF7', border:'1.5px solid var(--bread)',
@@ -682,6 +646,48 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
         </span>
       </div>
 
+      {/* Scanning is a road like the others, not the front door: most bakers
+          reach for the shortlist, and the ones holding a bag will look for the
+          camera wherever it is. */}
+      <button
+        onClick={() => { setScanOpen(s => !s); }}
+        style={{
+          width: '100%', padding: '12px 16px',
+          borderRadius: '12px', border: '1.5px solid #E8E0D5',
+          background: '#FDFBF7', display: 'flex',
+          alignItems: 'center', justifyContent: 'space-between',
+          cursor: 'pointer', marginBottom: '16px', gap: '10px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <svg width="20" height="20" viewBox="0 0 32 32" fill="none" stroke="var(--terra)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 10 V6 a2 2 0 0 1 2-2 h4" /><path d="M22 4 h4 a2 2 0 0 1 2 2 v4" />
+            <path d="M28 22 v4 a2 2 0 0 1-2 2 h-4" /><path d="M10 28 H6 a2 2 0 0 1-2-2 v-4" />
+            <path d="M11 21 c0-4 1.5-5 2-7 h6 c.5 2 2 3 2 7 a2 2 0 0 1-2 2 h-6 a2 2 0 0 1-2-2 Z" fill="rgba(107, 68, 35,0.12)" />
+            <line x1="12" y1="12" x2="20" y2="12" />
+          </svg>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#2B2420', fontFamily: 'var(--font-ui)' }}>{locale === 'fr' ? 'Scannez votre sachet' : 'Scan your bag'}</div>
+            <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{locale === 'fr' ? 'Photographiez n’importe quel sachet de farine' : 'Point your camera at any flour bag'}</div>
+          </div>
+        </div>
+        <span style={{ fontSize: '15px', color: '#6B4423' }}>→</span>
+      </button>
+      {scanOpen && (
+        <div style={{ marginBottom: '16px' }}>
+          <FlourScan
+            onResult={result => {
+              const autoTile: FlourKey = result.w >= 270 ? 'strong00' : 'pizza00';
+              onBlendChange({ ...blend, flour1: autoTile, wOverride: result.w, w1: result.w, w1Source: 'photo', brandProduct: result.name, brandKey: undefined });
+              setScanOpen(false);
+            }}
+            onCancel={() => setScanOpen(false)}
+          />
+        </div>
+      )}
+
+
+
       {/* ── Search + list (always open) ─────────────── */}
       <div style={{ marginBottom: '4px' }}>
 
@@ -696,7 +702,6 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               <span style={{ fontSize: '13px', fontWeight: 600, color: '#2B2420', fontFamily: 'var(--font-ui)', flex: 1 }}>
                 {locale === 'fr' ? 'Chercher par marque ou nom' : 'Search by brand or name'}
               </span>
-              <WQualityTag kind="exact" locale={locale} />
             </div>
             <div ref={dropdownRef} style={{ marginBottom: '8px' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
@@ -714,32 +719,12 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   }}
                 />
 
-                {/* Funnel toggle — filters fold away until wanted; auto-open
-                    while any filter is active so clearing stays reachable */}
-                <button
-                  onClick={() => setFiltersOpen(o => !o)}
-                  aria-label={locale === 'fr' ? 'Filtres' : 'Filters'}
-                  style={{
-                    padding: '12px 16px', minHeight: '44px', borderRadius: '20px',
-                    border: 'none', cursor: 'pointer', flexShrink: 0,
-                    fontSize: '13px', fontFamily: 'var(--font-ui)', fontWeight: 600,
-                    background: (filtersOpen || filterType || filterOrigin || filterManufacturer) ? '#2B2420' : '#F0EBE0',
-                    color: (filtersOpen || filterType || filterOrigin || filterManufacturer) ? 'white' : '#3D3530',
-                    display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap',
-                  }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M4 5 h16 l-6.5 8 v6 l-3 -2 v-4 Z" />
-                  </svg>
-                  {/* A bare 13px funnel is a guess, not a control. The word
-                      says what it does; the count says whether it is doing
-                      anything. */}
-                  <span>{locale === 'fr' ? 'Filtres' : 'Filters'}</span>
-                  {[filterType, filterOrigin, filterManufacturer].filter(Boolean).length > 0
-                    && ` · ${[filterType, filterOrigin, filterManufacturer].filter(Boolean).length}`}
-                </button>
-
-                {(filtersOpen || !!filterType || !!filterOrigin || !!filterManufacturer) && (<>
+                {/* The three dimensions show themselves. Hiding them behind a
+                    funnel cost a tap and, worse, hid WHAT could be filtered —
+                    a baker cannot want a filter they cannot see. The search
+                    road is already opened deliberately; nothing here needs a
+                    second door. */}
+                {(<>
                 {/* Type chip */}
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   <button
@@ -1131,7 +1116,6 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   {/* I know my W value */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 12px', borderRadius: '16px', background: '#F0EBE0', marginTop: '8px' }}>
                     <span style={{ fontSize: '13px', color: '#3D3530', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>{locale === 'fr' ? 'Je connais mon W' : 'I know my W value'}</span>
-                    <WQualityTag kind="manual" locale={locale} />
                     <input
                       type="number"
                       inputMode="numeric"
