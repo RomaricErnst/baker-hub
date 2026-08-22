@@ -510,18 +510,21 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
         <div style={{ paddingBottom: '16px' }}>
 
             {/* Search bar + filter chips — single row */}
+            {/* Same shape as the blend panel's search: the field owns a full
+                row, the filters wrap under it. They were two different layouts
+                for one control, and the shared row squeezed both. */}
             <div ref={dropdownRef} style={{ marginBottom: '8px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
                 <input
                   type="text"
                   placeholder={locale === 'fr' ? 'Rechercher une farine…' : 'Search flour...'}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   style={{
-                    flex: 1, padding: '8px 12px',
+                    flexBasis: '100%', padding: '12px', minHeight: '44px',
                     border: '1px solid #E8E0D5', borderRadius: '8px',
                     fontSize: '13px', fontFamily: 'var(--font-ui)',
-                    background: 'white', outline: 'none', minWidth: 0,
+                    background: 'white', outline: 'none',
                     color: '#2B2420',
                   }}
                 />
@@ -995,14 +998,27 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '14px', color: '#6B4423', fontWeight: 600 }}>+</span>
-              <span>{locale === 'fr' ? 'Ajouter une seconde farine' : 'Add a second flour'}</span>
-              <span style={{
-                fontSize: '11px', fontFamily: 'var(--font-ui)',
-                background: '#EDE8E0', color: '#8A7F78',
-                borderRadius: '20px', padding: '1px 8px',
-                border: '1px solid #DDD8D0',
-              }}>optional</span>
+              {!blend.flour2 && <span style={{ fontSize: '14px', color: '#6B4423', fontWeight: 600 }}>+</span>}
+              {/* The header used to read "Add a second flour" while the panel
+                  was picking the THIRD — the search for flour three appeared
+                  inside a section named for flour two. */}
+              <span>{
+                blendSlot === 3
+                  ? (locale === 'fr' ? 'Ajouter une 3e farine' : 'Add a third flour')
+                  : blend.flour2
+                    ? (locale === 'fr' ? 'Votre mélange' : 'Your blend')
+                    : (locale === 'fr' ? 'Ajouter une seconde farine' : 'Add a second flour')
+              }</span>
+              {/* "optional" belongs to the invitation, not to a blend that
+                  already exists — and it was never translated. */}
+              {!blend.flour2 && blendSlot !== 3 && (
+                <span style={{
+                  fontSize: '11px', fontFamily: 'var(--font-ui)',
+                  background: '#EDE8E0', color: '#8A7F78',
+                  borderRadius: '20px', padding: '1px 8px',
+                  border: '1px solid #DDD8D0',
+                }}>{locale === 'fr' ? 'facultatif' : 'optional'}</span>
+              )}
             </div>
             <span style={{ fontSize: '12px', color: '#8A7F78' }}>{openSection === 'blend' ? '▾' : '›'}</span>
           </div>
