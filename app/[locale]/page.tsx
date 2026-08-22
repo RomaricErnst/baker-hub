@@ -187,7 +187,10 @@ function useStepSwipe(flow: StepFlow, enabled: boolean) {
       const target = e.target as HTMLElement | null;
       // Anything that drags or scrolls horizontally keeps its gesture:
       // range inputs, the chart's draggable diamonds, chip rows, carousels.
-      if (target?.closest('input[type="range"], svg, [data-noswipe]')) { live = false; return; }
+      // Any control keeps its own gesture. A tap that drifts sideways on a
+      // button — the filter toggle, a chip, a stepper — could turn the page
+      // under the baker's finger.
+      if (target?.closest('button, a, input, select, textarea, svg, [role="button"], [data-noswipe]')) { live = false; return; }
       let n: HTMLElement | null = target;
       while (n && n !== el) {
         const ox = getComputedStyle(n).overflowX;

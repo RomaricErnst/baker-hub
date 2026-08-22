@@ -264,6 +264,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [blendEuropeCountry, setBlendEuropeCountry] = useState<string | null>(null);
   const [blendAmericasCountry, setBlendAmericasCountry] = useState<string | null>(null);
   const [blendSearchQuery, setBlendSearchQuery] = useState('');
+  // Open while no flour is chosen; the hero card's Change reopens it.
+  const [pickerOpen, setPickerOpen] = useState(() => !blend.brandProduct);
   const [blendFilterType, setBlendFilterType] = useState<string | null>(null);
   const [blendFilterOrigin, setBlendFilterOrigin] = useState<string | null>(null);
   const [blendFilterBrand, setBlendFilterBrand] = useState<string | null>(null);
@@ -356,6 +358,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       brandKey: undefined,
       brandProduct: `${f.brand} ${f.name}`,
     });
+    setPickerOpen(false);
   }
 
   function applyQuickType(label: string, w: number) {
@@ -369,6 +372,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       brandKey: undefined,
       brandProduct: label,
     });
+    setPickerOpen(false);
   }
 
   // ── Dynamic filter options ──
@@ -480,7 +484,9 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 {blend.brandProduct}
               </div>
             </div>
-            <button onClick={() => onBlendChange({ ...blend, brandProduct: undefined, brandKey: undefined })}
+            {/* Change reopens the picker; it no longer clears the choice, so
+                the baker can back out of changing their mind. */}
+            <button onClick={() => setPickerOpen(true)}
               style={{ background:'none', border:'none', cursor:'pointer', flexShrink:0,
                 color:'#8A7F78', fontSize: '12px', fontFamily:'var(--font-ui)',
                 textDecoration:'underline', textUnderlineOffset:'2px', padding:'2px 0' }}>
@@ -496,10 +502,17 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
         </div>
       )}
 
+      {/* Everything below is the act of CHOOSING a flour. Once one is chosen
+          the hero card above says which, so the search, the quick picks, the
+          type list and the W field all fold away — the page then holds the
+          choice and the invitation to blend, nothing else. */}
+      {pickerOpen && (<>
       {/* ── Divider ────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
         <div style={{ flex: 1, height: '1px', background: '#E8E0D5' }} />
-        <span style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap', letterSpacing: '.04em' }}>or search 285 flours</span>
+        <span style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap', letterSpacing: '.04em' }}>
+          {locale === 'fr' ? `ou cherchez parmi ${FLOUR_DB.length} farines` : `or search ${FLOUR_DB.length} flours`}
+        </span>
         <div style={{ flex: 1, height: '1px', background: '#E8E0D5' }} />
       </div>
 
@@ -533,11 +546,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     while any filter is active so clearing stays reachable */}
                 <button
                   onClick={() => setFiltersOpen(o => !o)}
-                  aria-label="Filters"
+                  aria-label={locale === 'fr' ? 'Filtres' : 'Filters'}
                   style={{
-                    padding: '8px 12px', borderRadius: '20px',
+                    padding: '12px 16px', minHeight: '44px', borderRadius: '20px',
                     border: 'none', cursor: 'pointer', flexShrink: 0,
-                    fontSize: '12px', fontFamily: 'var(--font-ui)', fontWeight: 500,
+                    fontSize: '13px', fontFamily: 'var(--font-ui)', fontWeight: 600,
                     background: (filtersOpen || filterType || filterOrigin || filterManufacturer) ? '#2B2420' : '#F0EBE0',
                     color: (filtersOpen || filterType || filterOrigin || filterManufacturer) ? 'white' : '#3D3530',
                     display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap',
@@ -546,8 +559,12 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M4 5 h16 l-6.5 8 v6 l-3 -2 v-4 Z" />
                   </svg>
+                  {/* A bare 13px funnel is a guess, not a control. The word
+                      says what it does; the count says whether it is doing
+                      anything. */}
+                  <span>{locale === 'fr' ? 'Filtres' : 'Filters'}</span>
                   {[filterType, filterOrigin, filterManufacturer].filter(Boolean).length > 0
-                    && [filterType, filterOrigin, filterManufacturer].filter(Boolean).length}
+                    && ` · ${[filterType, filterOrigin, filterManufacturer].filter(Boolean).length}`}
                 </button>
 
                 {(filtersOpen || !!filterType || !!filterOrigin || !!filterManufacturer) && (<>
@@ -782,9 +799,12 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 const recLabels = BREAD_REC_BY_STYLE[styleKey ?? ''] ?? ['Bread flour', 'T65', 'All-purpose'];
                 const breadRecs = recLabels.map(label => QUICK_TYPES.find(q => q.label === label)).filter(Boolean) as { label: string; w: number; protein: number }[];
                 const styleName = styleKey ? styleKey.replace(/_/g, ' ') : '';
+                // "For pain levain" read as a filter on the 285-flour list.
+                // It is a shortlist, and saying so is the difference between
+                // "these are your options" and "here are three good ones".
                 const sectionLabel = !styleKey
-                  ? (isFr ? 'Pour le pain' : 'For bread')
-                  : (isFr ? `Pour le ${styleName}` : `For ${styleName}`);
+                  ? (isFr ? 'Choix rapides pour le pain' : 'Quick picks for bread')
+                  : (isFr ? `Choix rapides pour le ${styleName}` : `Quick picks for ${styleName}`);
                 return (
                   <div>
                     <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '8px', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
@@ -975,6 +995,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
         </div>
       </div>
+      </>)}
 
       {/* ── Blend (custom mode only) ────────────────── */}
       {mode === 'custom' && (
