@@ -265,6 +265,37 @@ const W_SOURCE_LABEL = (l: string): Record<WSource, string> => l === 'fr' ? {
 // the real number for the flour in the baker's hands; picking a TYPE gives a
 // representative one. Tagging all four made the distinction disappear into
 // decoration — the tag is worth something only where it warns.
+// One row, used by both slots. They were two copies that had already drifted —
+// different padding, different selected state — and most of the visual defects
+// on this page came from pairs of copies rather than from logic.
+function FlourRow({ f, selected, onClick }: {
+  f: FlourEntry; selected?: boolean; onClick: () => void;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '12px 0', borderBottom: '0.5px solid #E8E0D5', cursor: 'pointer',
+        background: selected ? 'rgba(107, 68, 35,0.04)' : 'transparent',
+      }}
+      onMouseEnter={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = selected ? 'rgba(107, 68, 35,0.04)' : 'transparent'; }}
+    >
+      <div>
+        <div style={{ fontSize: '13px', fontWeight: 500, color: selected ? '#6B4423' : '#2B2420', fontFamily: 'var(--font-ui)' }}>{f.brand}</div>
+        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{f.name}</div>
+      </div>
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <div style={{ fontSize: '13px', fontFamily: 'var(--font-ui)', color: f.wPublished ? '#2B2420' : '#8A7F78' }}>
+          {f.wPublished ? `W${f.w}` : `~W${f.w}`}
+        </div>
+        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{f.protein}%</div>
+      </div>
+    </div>
+  );
+}
+
 function WQualityTag({ kind, locale }: { kind: WSource; locale: string }) {
   const label = locale === 'fr'
     ? { photo: 'W du produit', exact: 'W du produit', typical: 'W approché', manual: 'W saisi' }[kind]
@@ -391,7 +422,9 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   // `source` says how the W of this addition is known — the caller knows which
   // road it came from, and the blend needs it to decide whether its own W can
   // be printed without a tilde.
-  function assignBlendFlour(entry: FlourEntry, key: FlourKey, label: string, r1ForSlot2 = 85, source: WSource = 'exact') {
+  function assignBlendFlour(entry: FlourEntry, key: FlourKey, label: string, r1ForSlot2 = 85, source?: WSource) {
+    // Same rule for additions: default to what the database says it knows.
+    source = source ?? (entry.wPublished ? 'exact' : 'typical');
     if (blendSlot === 3) {
       setBlendSelectedF3(entry);
       const r1 = Math.min(blendRatio, 80);
@@ -413,7 +446,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       ratio1: blend.ratio1,
       wOverride: f.w,
       w1: f.w,
-      w1Source: 'exact',
+      // 254 of the 291 entries carry an estimated W — the database flags it
+      // with wPublished, and the list already prints ~W for those. Stamping
+      // 'exact' regardless would have let an estimate print without its tilde
+      // the moment it reached the card.
+      w1Source: f.wPublished ? 'exact' : 'typical',
       brandKey: undefined,
       brandProduct: `${f.brand} ${f.name}`,
     });
@@ -619,33 +656,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   {displayList.map(f => {
                     const isSelected = blend.brandProduct === `${f.brand} ${f.name}`;
                     return (
-                      <div
-                        key={f.id}
-                        onClick={() => selectDBEntry(f)}
-                        style={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          padding: '12px 0', borderBottom: '0.5px solid #E8E0D5',
-                          cursor: 'pointer',
-                          background: isSelected ? 'rgba(107, 68, 35,0.04)' : 'transparent',
-                        }}
-                        onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(107, 68, 35,0.04)' : 'transparent'; }}
-                      >
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: 500, color: isSelected ? '#6B4423' : '#2B2420', fontFamily: 'var(--font-ui)' }}>
-                            {f.brand}
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{f.name}</div>
-                        </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div style={{ fontSize: '13px', fontFamily: 'var(--font-ui)', color: f.wPublished ? '#2B2420' : '#8A7F78' }}>
-                            {f.wPublished ? `W${f.w}` : `~W${f.w}`}
-                          </div>
-                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
-                            {f.protein}%
-                          </div>
-                        </div>
-                      </div>
+                      <FlourRow key={f.id} f={f} selected={isSelected} onClick={() => selectDBEntry(f)} />
                     );
                   })}
                   </div>
@@ -1507,29 +1518,16 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       return (
                         <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                           {blendResults.map(f => (
-                            <div
+                            <FlourRow
                               key={f.id}
+                              f={f}
                               onClick={() => {
                                 if (blendSlot === 2) setBlendRatio(85);
                                 setBlendFilterType(null);
                                 setBlendFilterBrand(null);
                                 assignBlendFlour(f, f.type as FlourKey, `${f.brand} ${f.name}`);
                               }}
-                              style={{ padding: '8px 0', borderBottom: '0.5px solid #E8E0D5', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
-                              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
-                            >
-                              <div>
-                                <div style={{ fontSize: '13px', fontWeight: 500, color: '#2B2420', fontFamily: 'var(--font-ui)' }}>{f.brand}</div>
-                                <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{f.name}</div>
-                              </div>
-                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                <div style={{ fontSize: '13px', fontFamily: 'var(--font-ui)', color: f.wPublished ? '#2B2420' : '#8A7F78' }}>
-                                  {f.wPublished ? `W${f.w}` : `~W${f.w}`}
-                                </div>
-                                <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{f.protein}%</div>
-                              </div>
-                            </div>
+                            />
                           ))}
                         </div>
                       );
