@@ -239,7 +239,6 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
     modeChip?: { value: string; onClick: () => void } }) {
   const [open, setOpen] = React.useState(false);
   const fr = flow.locale === 'fr';
-  const idx = flow.steps.findIndex(s => s.id === flow.activeId);
   const answered = flow.steps.filter(s => stepAnswered(s, flow.highestStep, flow.steps));
 
   // The mode is a decision but not one of the numbered steps, so it leads the
@@ -271,10 +270,14 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
             cursor: 'pointer', fontFamily: 'var(--font-ui)', textAlign: 'left',
           }}
         >
+          {/* Answered out of total, not page position. The number sits beside
+              a progress bar, so it has to count the same thing the bar fills
+              — "1/6" next to a third-full bar was two different denominators
+              in one control. */}
           <span style={{
             fontSize: '10px', letterSpacing: '.09em', color: '#9C8248',
             fontWeight: 700, flexShrink: 0,
-          }}>{idx + 1}/{flow.steps.length}</span>
+          }}>{answered.length}/{flow.steps.length}</span>
           {/* Running text, not chips: the row never scrolls sideways, so
               nothing is ever half-cut at the screen edge. */}
           <span style={{
@@ -777,13 +780,13 @@ export default function Home() {
     }
     // Sourdough-native styles override the yeast preference (same rule as
     // the tap-time prefill in selectBakeType).
+    // Yeast is no longer prefilled from the profile — see selectBakeType. The
+    // one exception stays: a sourdough-native style IS its leavening, so the
+    // style the baker just picked decides it, not a stored preference.
     const effStyle = styleKey ?? ((prefStyle && prefStyle in stylePool) ? prefStyle : null);
     const lateWantsSourdough = ['pain_levain', 'sourdough'].includes(effStyle as string);
     if (!yeastType && lateWantsSourdough && sdAllowed) {
       setYeastType('sourdough'); applied = true;
-    } else if (!yeastType && prof.yeastType && prof.yeastType in YEAST_TYPES
-        && (sdAllowed || prof.yeastType !== 'sourdough')) {
-      setYeastType(prof.yeastType as YeastType); applied = true;
     }
     if (applied) setProfilePrefilled(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1400,18 +1403,14 @@ export default function Home() {
       // style applied there is nothing for the yeast preference to yield to.
       // The baker picks a sourdough-native style themselves, and selectStyle
       // already forces levain when they do.
-      if (prof.yeastType && prof.yeastType in YEAST_TYPES) {
-        setYeastType(prof.yeastType as YeastType); applied = true;
-      }
-      // Preferment — Custom-mode preference only (Simple has no preferment
-      // step to change it in), and never on the sourdough path (levain).
-      // Pizza only — biga/poolish preferences are pizza-centric; bread has its
-      // own preferment conventions and shouldn't inherit the pizza pick.
-      if (bt !== 'bread' && prof.prefermentType && prof.preferredMode === 'custom'
-          && prof.yeastType !== 'sourdough'
-          && ['none', 'poolish', 'biga'].includes(prof.prefermentType)) {
-        setPrefermentType(prof.prefermentType as PrefermentType); applied = true;
-      }
+      // The profile now remembers the kitchen, not the bake. Oven and mixer
+      // are the same every time you bake; yeast and preferment are decisions
+      // about THIS dough — you might do a poolish today and go direct
+      // tomorrow. Prefilling them meant a baker who had chosen nothing was
+      // shown "Simple · Pizza oven · Spiral Mixer · Instant Dry" in the
+      // summary and never saw those pages, because Suivant skips what is
+      // already answered. Two mechanisms, each right on its own, adding up to
+      // an app that had decided the bake for them.
       if (prof.fridgeTemp !== undefined) { setFridgeTemp(prof.fridgeTemp); applied = true; }
       if (prof.preferredMode) { setTab(prof.preferredMode); applied = true; }
       if (prof.starter) {
@@ -2394,117 +2393,6 @@ export default function Home() {
           </div>
           )}
 
-          {/* Mode + Pizza Party — only shown after bakeType selected.
-              No card frame: the toggle sits directly on the page surface. */}
-          {bakeType && (
-            <div style={{ padding: '2px 0' }}>
-
-              {/* Mode is the first step of setup, not a permanent bar.
-                  It was a fourth navigation layer above the content — under the
-                  brand header, the journey tabs and the stepper — for a
-                  decision taken once per session. Shown here only until it is
-                  made; afterwards it lives as a chip in the summary row, which
-                  is the same mechanic every other choice uses. */}
-              {!modeChosen && (
-                <div style={{ padding: '4px 0 8px' }}>
-                  <div style={{
-                    fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.12em',
-                    textTransform: 'uppercase', color: '#9C8248', fontWeight: 600,
-                  }}>{locale === 'fr' ? 'Pour commencer' : 'To begin'}</div>
-                  <h2 style={{
-                    fontFamily: 'var(--font-ui)', fontSize: '26px', fontWeight: 800,
-                    letterSpacing: '-.022em', lineHeight: 1.13, margin: '8px 0 16px',
-                  }}>{locale === 'fr' ? 'Comment voulez-vous procéder ?' : 'How would you like to work?'}</h2>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {([
-                      { key: 'simple' as const, title: t('modeCards.simple.title'),
-                        desc: locale === 'fr'
-                          ? 'Nous choisissons la farine, le préferment et les réglages fins. Le plan reste complet.'
-                          : 'We pick the flour, the preferment and the fine settings. The plan is just as complete.' },
-                      { key: 'custom' as const, title: t('modeCards.custom.title'),
-                        desc: locale === 'fr'
-                          ? 'Vous réglez le mélange de farines, le poolish ou la biga, l\u2019hydratation, le sel, la température de pâte.'
-                          : 'You set the flour blend, poolish or biga, hydration, salt and dough temperature.' },
-                    ]).map(m => (
-                      <button
-                        key={m.key}
-                        onClick={() => chooseMode(m.key)}
-                        style={{
-                          display: 'flex', alignItems: 'flex-start', gap: '12px', textAlign: 'left',
-                          border: '1px solid var(--border)', background: 'var(--warm)',
-                          borderRadius: '12px', padding: '14px 16px', minHeight: '44px',
-                          cursor: 'pointer', fontFamily: 'var(--font-ui)',
-                        }}
-                      >
-                        <span style={{ flex: 1 }}>
-                          <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--char)' }}>{m.title}</span>
-                          <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--smoke)', marginTop: '3px', lineHeight: 1.45 }}>{m.desc}</span>
-                        </span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9C8248"
-                          strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-                          style={{ marginTop: '3px', flexShrink: 0 }} aria-hidden="true">
-                          <line x1="4" y1="12" x2="19" y2="12" /><polyline points="13 6 19 12 13 18" />
-                        </svg>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Sourdough-vs-Simple nudge — observation with a choice, not an alarm */}
-              {sdNudgeOpen && (
-                <div style={{
-                  background: 'var(--cream)',
-                  borderLeft: '4px solid var(--gold)',
-                  borderRadius: '16px',
-                  padding: '12px 16px',
-                  marginTop: '12px',
-                  fontFamily: 'var(--font-ui)',
-                }}>
-                  <div style={{ fontSize: '14px', color: 'var(--ash)', lineHeight: 1.5, marginBottom: '8px' }}>
-                    {locale === 'fr'
-                      ? 'Votre profil est au levain — le levain vit en mode Avancé.'
-                      : 'Your profile bakes sourdough — sourdough lives in Custom mode.'}
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    <button
-                      onClick={() => chooseMode('custom')}
-                      style={{
-                        border: 'none', borderRadius: '12px', background: 'var(--terra)',
-                        color: '#fff', padding: '8px 16px', fontSize: '13px', fontWeight: 500,
-                        cursor: 'pointer', fontFamily: 'var(--font-ui)',
-                      }}
-                    >
-                      {locale === 'fr' ? 'Continuer en Avancé →' : 'Continue in Custom →'}
-                    </button>
-                    <button
-                      onClick={() => chooseMode('simple', true)}
-                      style={{
-                        border: '1.5px solid var(--border)', borderRadius: '12px', background: 'var(--warm)',
-                        color: 'var(--ash)', padding: '8px 16px', fontSize: '13px', fontWeight: 500,
-                        cursor: 'pointer', fontFamily: 'var(--font-ui)',
-                      }}
-                    >
-                      {locale === 'fr' ? 'Rester en Simple · levure classique' : 'Stay in Simple · regular yeast'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Gentle discovery — profile-less bakers learn preferences exist */}
-              {!profilePrefilled && !recipeGenerated && !loadProfile() && (
-                <div style={{
-                  fontFamily: 'var(--font-ui)', fontSize: '11px',
-                  color: 'var(--smoke)', letterSpacing: '.05em', margin: '10px 2px 0',
-                }}>
-                  {locale === 'fr'
-                    ? 'Astuce : Mes préférences préremplit four, pétrin & style à chaque session'
-                    : 'Tip: My preferences prefills oven, mixer & style every session'}
-                </div>
-              )}
-
-            </div>
-          )}
         </div>
         )}
 
@@ -2745,6 +2633,118 @@ export default function Home() {
           );
         })()}
       </div>}
+
+          {/* Mode + Pizza Party — only shown after bakeType selected.
+              No card frame: the toggle sits directly on the page surface. */}
+          {bakeType && (
+            <div style={{ padding: '2px 0' }}>
+
+              {/* Mode is the first step of setup, not a permanent bar.
+                  It was a fourth navigation layer above the content — under the
+                  brand header, the journey tabs and the stepper — for a
+                  decision taken once per session. Shown here only until it is
+                  made; afterwards it lives as a chip in the summary row, which
+                  is the same mechanic every other choice uses. */}
+              {!modeChosen && (
+                <div style={{ padding: '4px 0 8px' }}>
+                  <div style={{
+                    fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.12em',
+                    textTransform: 'uppercase', color: '#9C8248', fontWeight: 600,
+                  }}>{locale === 'fr' ? 'Pour commencer' : 'To begin'}</div>
+                  <h2 style={{
+                    fontFamily: 'var(--font-ui)', fontSize: '26px', fontWeight: 800,
+                    letterSpacing: '-.022em', lineHeight: 1.13, margin: '8px 0 16px',
+                  }}>{locale === 'fr' ? 'Comment voulez-vous procéder ?' : 'How would you like to work?'}</h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {([
+                      { key: 'simple' as const, title: t('modeCards.simple.title'),
+                        desc: locale === 'fr'
+                          ? 'Nous choisissons la farine, le préferment et les réglages fins. Le plan reste complet.'
+                          : 'We pick the flour, the preferment and the fine settings. The plan is just as complete.' },
+                      { key: 'custom' as const, title: t('modeCards.custom.title'),
+                        desc: locale === 'fr'
+                          ? 'Vous réglez le mélange de farines, le poolish ou la biga, l\u2019hydratation, le sel, la température de pâte.'
+                          : 'You set the flour blend, poolish or biga, hydration, salt and dough temperature.' },
+                    ]).map(m => (
+                      <button
+                        key={m.key}
+                        onClick={() => chooseMode(m.key)}
+                        style={{
+                          display: 'flex', alignItems: 'flex-start', gap: '12px', textAlign: 'left',
+                          border: '1px solid var(--border)', background: 'var(--warm)',
+                          borderRadius: '12px', padding: '14px 16px', minHeight: '44px',
+                          cursor: 'pointer', fontFamily: 'var(--font-ui)',
+                        }}
+                      >
+                        <span style={{ flex: 1 }}>
+                          <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--char)' }}>{m.title}</span>
+                          <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--smoke)', marginTop: '3px', lineHeight: 1.45 }}>{m.desc}</span>
+                        </span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9C8248"
+                          strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                          style={{ marginTop: '3px', flexShrink: 0 }} aria-hidden="true">
+                          <line x1="4" y1="12" x2="19" y2="12" /><polyline points="13 6 19 12 13 18" />
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sourdough-vs-Simple nudge — observation with a choice, not an alarm */}
+              {sdNudgeOpen && (
+                <div style={{
+                  background: 'var(--cream)',
+                  borderLeft: '4px solid var(--gold)',
+                  borderRadius: '16px',
+                  padding: '12px 16px',
+                  marginTop: '12px',
+                  fontFamily: 'var(--font-ui)',
+                }}>
+                  <div style={{ fontSize: '14px', color: 'var(--ash)', lineHeight: 1.5, marginBottom: '8px' }}>
+                    {locale === 'fr'
+                      ? 'Votre profil est au levain — le levain vit en mode Avancé.'
+                      : 'Your profile bakes sourdough — sourdough lives in Custom mode.'}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => chooseMode('custom')}
+                      style={{
+                        border: 'none', borderRadius: '12px', background: 'var(--terra)',
+                        color: '#fff', padding: '8px 16px', fontSize: '13px', fontWeight: 500,
+                        cursor: 'pointer', fontFamily: 'var(--font-ui)',
+                      }}
+                    >
+                      {locale === 'fr' ? 'Continuer en Avancé →' : 'Continue in Custom →'}
+                    </button>
+                    <button
+                      onClick={() => chooseMode('simple', true)}
+                      style={{
+                        border: '1.5px solid var(--border)', borderRadius: '12px', background: 'var(--warm)',
+                        color: 'var(--ash)', padding: '8px 16px', fontSize: '13px', fontWeight: 500,
+                        cursor: 'pointer', fontFamily: 'var(--font-ui)',
+                      }}
+                    >
+                      {locale === 'fr' ? 'Rester en Simple · levure classique' : 'Stay in Simple · regular yeast'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Gentle discovery — profile-less bakers learn preferences exist */}
+              {!profilePrefilled && !recipeGenerated && !loadProfile() && (
+                <div style={{
+                  fontFamily: 'var(--font-ui)', fontSize: '11px',
+                  color: 'var(--smoke)', letterSpacing: '.05em', margin: '10px 2px 0',
+                }}>
+                  {locale === 'fr'
+                    ? 'Astuce : Mes préférences retient votre four et votre pétrin d\u2019une fournée à l\u2019autre'
+                    : 'Tip: My preferences remembers your oven and mixer between bakes'}
+                </div>
+              )}
+
+            </div>
+          )}
 
 
         {/* ════════════ GUIDED ════════════ */}
