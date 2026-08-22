@@ -143,6 +143,94 @@ interface FlourPickerProps {
 }
 
 // ── Main component ────────────────────────────────
+// ── Blend ratio bar ──────────────────────────
+// The base flour never carries a control of its own: it is 100 minus the rest,
+// so an invalid blend cannot be expressed. Dragging a handle trades between the
+// two parts it separates; the others hold still. Three flours is the ceiling —
+// below about 14% a segment can no longer hold its own name, and two 5%
+// segments on a narrow phone are 18px wide.
+function BlendBar({ parts, onChange, locale }: {
+  parts: { name: string; pct: number; w: number }[];
+  onChange: (pcts: number[]) => void;
+  locale: string;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const COLORS = ['#6B4423', '#9C8248', '#6B7A5A'];
+  const blendW = Math.round(parts.reduce((a, p) => a + p.w * p.pct / 100, 0));
+
+  function grab(i: number, e: React.PointerEvent<HTMLDivElement>) {
+    e.preventDefault();
+    const el = ref.current; if (!el) return;
+    const before = parts.slice(0, i).reduce((a, p) => a + p.pct, 0);
+    const pair = parts[i].pct + parts[i + 1].pct;
+    const move = (ev: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      const pos = Math.max(0, Math.min(100, ((ev.clientX - r.left) / r.width) * 100));
+      const left = Math.max(5, Math.min(pair - 5, Math.round(pos - before)));
+      const next = parts.map(p => p.pct);
+      next[i] = left; next[i + 1] = pair - left;
+      onChange(next);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+
+  // Cumulative boundaries computed up front rather than mutated during the
+  // render pass — the accumulator was being reassigned inside .map().
+  const bounds = parts.reduce<number[]>((a, p) => [...a, (a[a.length - 1] ?? 0) + p.pct], []);
+  return (
+    <div>
+      <div ref={ref} style={{
+        position: 'relative', height: '52px', borderRadius: '12px', overflow: 'hidden',
+        display: 'flex', border: '1px solid var(--border)', background: 'var(--warm)',
+        touchAction: 'none', marginBottom: '10px',
+      }}>
+        {parts.map((p, i) => (
+          <div key={i} style={{
+            flex: `0 0 ${p.pct}%`, background: COLORS[i], color: '#fff', minWidth: 0,
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: '1px', overflow: 'hidden',
+          }}>
+            {p.pct >= 14 && (
+              <span style={{
+                fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap',
+                overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '94%',
+              }}>{p.name}</span>
+            )}
+            <span style={{ fontSize: '11px', opacity: .85 }}>{p.pct}%</span>
+          </div>
+        ))}
+        {parts.map((p, i) => {
+          if (i >= parts.length - 1) return null;
+          return (
+            <div key={`g${i}`} onPointerDown={e => grab(i, e)} style={{
+              position: 'absolute', top: 0, bottom: 0, width: '30px', marginLeft: '-15px',
+              left: `${bounds[i]}%`, cursor: 'ew-resize', zIndex: 3,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{
+                width: '3px', height: '26px', borderRadius: '2px',
+                background: 'rgba(255,255,255,0.85)', boxShadow: '0 0 0 1px rgba(26,22,18,0.18)',
+              }} />
+            </div>
+          );
+        })}
+      </div>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', fontSize: '12px',
+        color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
+      }}>
+        <span>{locale === 'fr' ? 'Glissez pour ajuster' : 'Drag to adjust'}</span>
+        <span style={{ color: '#9C8248' }}>{locale === 'fr' ? 'Force du mélange' : 'Blend strength'} W {blendW}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', mode = 'custom', styleKey }: FlourPickerProps) {
   // Accordion
   const [openSection, setOpenSection] = useState<'search' | 'blend' | null>('search');
@@ -942,60 +1030,64 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       {locale === 'fr' ? 'Changer' : 'Change'}
                     </button>
                   </div>
-                  {/* Ratio slider */}
-                  <div style={{ marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
-                      <span>{locale === 'fr' ? 'Farine principale' : 'Main flour'} {blendRatio}%</span>
-                      <span>{blendSelectedF2.name} {blendSelectedF3 ? (blend.ratio2 ?? blendRatio2) : 100 - blendRatio}%{blendSelectedF3 ? ` · ${blendSelectedF3.name} ${100 - blendRatio - (blend.ratio2 ?? blendRatio2)}%` : ''}</span>
-                    </div>
-                    <input
-                      type="range" min={blendSelectedF3 ? 40 : 60} max={blendSelectedF3 ? 100 - (blend.ratio2 ?? blendRatio2) - 5 : 95} step={5}
-                      value={blendRatio}
-                      onChange={e => {
-                        const r = +e.target.value;
-                        setBlendRatio(r);
-                        onBlendChange({ ...blend, ratio1: r, w2: blendSelectedF2.w, customFlour2Name: `${blendSelectedF2.brand} ${blendSelectedF2.name}`.trim() });
-                      }}
-                      style={{ width: '100%' }}
-                    />
-                    {blendSelectedF3 && (
-                      <div style={{ marginTop: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
-                          <span>{blendSelectedF2.name} {blend.ratio2 ?? blendRatio2}%</span>
-                          <span>{blendSelectedF3.name} {100 - blendRatio - (blend.ratio2 ?? blendRatio2)}%</span>
-                        </div>
-                        <input
-                          type="range" min={5} max={100 - blendRatio - 5} step={5}
-                          value={blend.ratio2 ?? blendRatio2}
-                          onChange={e => {
-                            const r2 = +e.target.value;
-                            setBlendRatio2(r2);
-                            onBlendChange({ ...blend, ratio2: r2 });
+                  {/* The bar replaces two ranges that each owned a raw ratio
+                      field. Percentages live here as one list; the write-back
+                      keeps the engine's contract untouched — ratio1 is the
+                      base, ratio2 is flour 2 when a third exists, and the last
+                      flour takes the remainder. */}
+                  {(() => {
+                    const p2 = blendSelectedF3 ? (blend.ratio2 ?? blendRatio2) : 100 - blendRatio;
+                    const parts = [
+                      // The base is whatever the baker picked on this page —
+                      // brandProduct when it is a named bag, otherwise the type.
+                      { name: blend.brandProduct ?? (locale === 'fr' ? 'Farine de base' : 'Base flour'),
+                        pct: blendRatio, w: blend.w1 ?? blend.wOverride ?? 260 },
+                      { name: blendSelectedF2!.name, pct: p2, w: blendSelectedF2!.w },
+                      ...(blendSelectedF3 ? [{ name: blendSelectedF3.name, pct: 100 - blendRatio - p2, w: blendSelectedF3.w }] : []),
+                    ];
+                    return (
+                      <div style={{ marginBottom: '10px' }}>
+                        <BlendBar
+                          parts={parts}
+                          locale={locale}
+                          onChange={(pcts) => {
+                            const r1 = pcts[0];
+                            setBlendRatio(r1);
+                            if (blendSelectedF3) {
+                              setBlendRatio2(pcts[1]);
+                              onBlendChange({ ...blend, ratio1: r1, ratio2: pcts[1],
+                                w2: blendSelectedF2!.w, w3: blendSelectedF3.w,
+                                customFlour2Name: `${blendSelectedF2!.brand} ${blendSelectedF2!.name}`.trim(),
+                                customFlour3Name: `${blendSelectedF3.brand} ${blendSelectedF3.name}`.trim() });
+                            } else {
+                              onBlendChange({ ...blend, ratio1: r1, w2: blendSelectedF2!.w,
+                                customFlour2Name: `${blendSelectedF2!.brand} ${blendSelectedF2!.name}`.trim() });
+                            }
                           }}
-                          style={{ width: '100%' }}
                         />
-                        <button
-                          onClick={() => { setBlendSelectedF3(null); onBlendChange({ ...blend, flour3: null, ratio2: undefined, w3: undefined, customFlour3Name: undefined }); }}
-                          style={{ marginTop: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: 0 }}
-                        >
-                          {locale === 'fr' ? 'Retirer la 3e farine' : 'Remove third flour'}
-                        </button>
+                        {blendSelectedF3 ? (
+                          <button
+                            onClick={() => { setBlendSelectedF3(null); onBlendChange({ ...blend, flour3: null, ratio2: undefined, w3: undefined, customFlour3Name: undefined }); }}
+                            style={{ marginTop: '6px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: '10px 0', minHeight: '44px' }}
+                          >
+                            {locale === 'fr' ? 'Retirer la 3e farine' : 'Remove third flour'}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => { setBlendSlot(3); setBlendShowFullSearch(true); }}
+                            style={{
+                              marginTop: '10px', padding: '13px 12px', minHeight: '44px',
+                              background: 'none', border: '1.5px dashed #C8B898', borderRadius: '12px',
+                              cursor: 'pointer', color: '#6B4423', fontSize: '13px', fontWeight: 600,
+                              fontFamily: 'var(--font-ui)', width: '100%',
+                            }}
+                          >
+                            {locale === 'fr' ? '+ Ajouter une 3e farine' : '+ Add a third flour'}
+                          </button>
+                        )}
                       </div>
-                    )}
-                    {!blendSelectedF3 && (
-                      <button
-                        onClick={() => { setBlendSlot(3); setBlendShowFullSearch(true); }}
-                        style={{
-                          marginTop: '8px', padding: '8px 12px',
-                          background: 'none', border: '1.5px dashed #C8B898', borderRadius: '12px',
-                          cursor: 'pointer', color: '#6B4423', fontSize: '12px',
-                          fontFamily: 'var(--font-ui)', width: '100%',
-                        }}
-                      >
-                        {locale === 'fr' ? '+ Ajouter une 3e farine' : '+ Add a third flour'}
-                      </button>
-                    )}
-                  </div>
+                    );
+                  })()}
                   <button
                     onClick={() => { setBlendSelectedF2(null); setBlendSelectedF3(null); setBlendSlot(2); onBlendChange({ ...blend, flour2: null, ratio1: 100, customFlour2Name: undefined, w2: undefined, flour3: null, ratio2: undefined, w3: undefined, customFlour3Name: undefined }); }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: 0 }}
