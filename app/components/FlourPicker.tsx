@@ -297,7 +297,14 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [blendAmericasCountry, setBlendAmericasCountry] = useState<string | null>(null);
   const [blendSearchQuery, setBlendSearchQuery] = useState('');
   // Open while no flour is chosen; the hero card's Change reopens it.
-  const [pickerOpen, setPickerOpen] = useState(() => !blend.brandProduct);
+  // Derived, not captured. The initial value used to be read once at mount —
+  // but this component mounts before a saved session has restored, so
+  // brandProduct was still undefined and the picker latched open forever. That
+  // is why "Change" appeared to do nothing: it set true on something already
+  // true. null means "follow the choice"; true/false is an explicit override.
+  const [pickerOverride, setPickerOverride] = useState<boolean | null>(null);
+  const pickerOpen = pickerOverride ?? !blend.brandProduct;
+  const setPickerOpen = (v: boolean) => setPickerOverride(v ? true : null);
   const [blendFilterType, setBlendFilterType] = useState<string | null>(null);
   const [blendFilterOrigin, setBlendFilterOrigin] = useState<string | null>(null);
   const [blendFilterBrand, setBlendFilterBrand] = useState<string | null>(null);
