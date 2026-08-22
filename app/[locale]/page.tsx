@@ -234,79 +234,127 @@ function stepAnswered(s: StepDef, highest: number, list?: StepDef[]): boolean {
 // ── Summary chip carousel ─────────────────────
 // Appears progressively while the baker advances, and becomes the navigation
 // once they come back from the recipe. One mechanic, two uses.
-function SummaryChips({ flow, topOffset = 62, raised = false, modeChip }:
+function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
   { flow: StepFlow; topOffset?: number; raised?: boolean;
     modeChip?: { value: string; onClick: () => void } }) {
-  const lastId = flow.steps[flow.steps.length - 1]?.id ?? 0;
-  const reach = Math.max(flow.activeId, Math.min(flow.highestStep, lastId));
-  const shown = flow.steps.filter(s => s.id <= reach);
+  const [open, setOpen] = React.useState(false);
+  const fr = flow.locale === 'fr';
+  const idx = flow.steps.findIndex(s => s.id === flow.activeId);
+  const answered = flow.steps.filter(s => stepAnswered(s, flow.highestStep, flow.steps));
+
+  // The mode is a decision but not one of the numbered steps, so it leads the
+  // summary and the sheet without counting toward the total.
+  const all = [
+    ...(modeChip ? [modeChip.value] : []),
+    ...answered.map(s => s.value as string),
+  ];
+  // Ellipsis cuts from the right, which would keep the oldest decisions and
+  // drop the ones just made. Show the three most recent, in order, and mark
+  // that there are earlier ones — the sheet holds the full list anyway.
+  const parts = all.length > 3 ? ['…', ...all.slice(-3)] : all;
+  const pct = Math.round((answered.length / Math.max(1, flow.steps.length)) * 100);
+
   return (
-    <div style={{
-      display: 'flex', gap: '8px', overflowX: 'auto',
-      padding: '8px 4px 12px', margin: '0 -4px',
-      scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
-      position: 'sticky', top: raised ? '0px' : `${topOffset}px`, transition: 'top 0.25s ease',
-      zIndex: 25, background: 'var(--cream)',
-    }}>
-      {/* Mode leads the row: it is the decision every other chip depends on. */}
-      {modeChip && (
+    <>
+      <div style={{
+        position: 'sticky', top: raised ? '0px' : `${topOffset}px`,
+        transition: 'top 0.25s ease', zIndex: 25,
+        background: 'var(--cream)', padding: '8px 0 10px',
+        boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
+      }}>
         <button
-          onClick={modeChip.onClick}
+          onClick={() => setOpen(true)}
           style={{
-            flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: '7px',
-            borderRadius: '20px', padding: '9px 13px', minHeight: '38px',
-            fontFamily: 'var(--font-ui)', cursor: 'pointer',
-            background: 'var(--warm)', border: '1px solid var(--border)',
+            width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+            border: '1px solid var(--border)', background: 'var(--warm)',
+            borderRadius: '20px', padding: '9px 13px', minHeight: '44px',
+            cursor: 'pointer', fontFamily: 'var(--font-ui)', textAlign: 'left',
           }}
         >
-          <span style={{ fontSize: '9px', letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--smoke)' }}>
-            {flow.locale === 'fr' ? 'Mode' : 'Mode'}
-          </span>
-          <span style={{ fontSize: '12px', color: 'var(--ash)', whiteSpace: 'nowrap' }}>{modeChip.value}</span>
+          <span style={{
+            fontSize: '10px', letterSpacing: '.09em', color: '#9C8248',
+            fontWeight: 700, flexShrink: 0,
+          }}>{idx + 1}/{flow.steps.length}</span>
+          {/* Running text, not chips: the row never scrolls sideways, so
+              nothing is ever half-cut at the screen edge. */}
+          <span style={{
+            flex: 1, minWidth: 0, fontSize: '12.5px', color: 'var(--smoke)',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>{parts.length ? parts.join(' · ') : (fr ? 'Rien de choisi pour l\u2019instant' : 'Nothing chosen yet')}</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A7F78"
+            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            style={{ flexShrink: 0 }} aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </button>
+        <div style={{ height: '2px', background: '#E2DACD', borderRadius: '2px', marginTop: '8px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${pct}%`, background: '#9C8248', transition: 'width .3s ease' }} />
+        </div>
+      </div>
+
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{
+            position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.45)', zIndex: 150,
+          }} />
+          <div style={{
+            position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 151,
+            background: 'var(--warm)', borderRadius: '20px 20px 0 0',
+            padding: '14px 16px calc(20px + env(safe-area-inset-bottom, 0px))',
+            maxHeight: '74vh', overflowY: 'auto',
+          }}>
+            <div style={{ width: '38px', height: '4px', borderRadius: '2px', background: '#E0D8CC', margin: '0 auto 10px' }} />
+            <h3 style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, margin: '2px 0 12px' }}>
+              {fr ? 'Où vous en êtes' : 'Where you are'}
+            </h3>
+            {modeChip && (
+              <button
+                onClick={() => { setOpen(false); modeChip.onClick(); }}
+                style={sheetRowStyle}
+              >
+                <span style={sheetKeyStyle}>{fr ? 'Mode' : 'Mode'}</span>
+                <span style={{ flex: 1, fontSize: '14.5px', fontWeight: 600, textAlign: 'left' }}>{modeChip.value}</span>
+                <SheetChevron />
+              </button>
+            )}
+            {flow.steps.map(st => {
+              const ok = stepAnswered(st, flow.highestStep, flow.steps);
+              return (
+                <button key={st.id} onClick={() => { setOpen(false); flow.onJump(st.id); }} style={sheetRowStyle}>
+                  <span style={sheetKeyStyle}>{st.chip}</span>
+                  <span style={{
+                    flex: 1, fontSize: '14.5px', textAlign: 'left',
+                    fontWeight: ok ? 600 : 400,
+                    color: ok ? 'var(--char)' : '#B0A69B',
+                    fontStyle: ok ? 'normal' : 'italic',
+                  }}>{ok ? st.value : (fr ? 'à choisir' : 'not chosen')}</span>
+                  <SheetChevron />
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
-      {shown.map(s => {
-        const answered = stepAnswered(s, flow.highestStep, flow.steps);
-        // A code default shows on its own page, where it can be changed. It
-        // does not belong in the summary: a value with no tick reads as a
-        // decision the baker never made.
-        const proposed = false;
-        const isOn = s.id === flow.activeId;
-        return (
-          <button
-            key={s.id}
-            onClick={() => flow.onJump(s.id)}
-            style={{
-              flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: '8px',
-              borderRadius: '20px', padding: '8px 12px', minHeight: '38px',
-              fontFamily: 'var(--font-ui)', cursor: 'pointer',
-              background: answered ? 'var(--warm)' : 'transparent',
-              border: `1px solid ${isOn ? 'var(--walnut, #6B4423)' : answered ? 'var(--border)' : '#DDD4C6'}`,
-              borderStyle: answered ? 'solid' : 'dashed',
-              boxShadow: isOn ? '0 0 0 2.5px rgba(107,68,35,0.07)' : 'none',
-            }}
-          >
-            <span style={{
-              fontSize: '11px', letterSpacing: '.1em', textTransform: 'uppercase',
-              color: isOn ? '#6B4423' : answered ? 'var(--smoke)' : '#AFA598',
-            }}>{s.chip}</span>
-            {answered && s.value && (
-              <span style={{
-                fontSize: '12px', whiteSpace: 'nowrap', maxWidth: '118px',
-                overflow: 'hidden', textOverflow: 'ellipsis',
-                color: proposed ? '#AFA598' : 'var(--ash)',
-                fontStyle: proposed ? 'italic' : 'normal',
-              }}>{s.value}</span>
-            )}
-            {answered && (
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
-                <path d="M2 6.3l2.6 2.6L10 3.4" stroke="#6B7A5A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-          </button>
-        );
-      })}
-    </div>
+    </>
+  );
+}
+
+const sheetRowStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
+  padding: '14px 2px', borderBottom: '1px solid var(--border)',
+  background: 'none', border: 'none', borderBottomStyle: 'solid',
+  cursor: 'pointer', fontFamily: 'var(--font-ui)', minHeight: '44px',
+};
+const sheetKeyStyle: React.CSSProperties = {
+  fontSize: '10px', letterSpacing: '.1em', textTransform: 'uppercase',
+  color: 'var(--smoke)', width: '96px', flexShrink: 0, textAlign: 'left',
+};
+function SheetChevron() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B0A69B"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }} aria-hidden="true">
+      <polyline points="9 6 15 12 9 18" />
+    </svg>
   );
 }
 
@@ -364,15 +412,11 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
   // swap rather than a displacement, which is what loses the eye.
   return (
     <div id={`step-${id}`} key={id} className="bh-step-page" style={{ padding: '20px 2px 4px' }}>
-      <div style={{
-        fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.14em',
-        textTransform: 'uppercase', color: '#9C8248',
-      }}>
-        {fr ? 'Étape' : 'Step'} {idx + 1} {fr ? 'sur' : 'of'} {flow.steps.length}
-      </div>
+      {/* No step counter here: the summary bar above carries it, and two
+          "3 of 9" forty pixels apart is just noise. */}
       <h2 style={{
         fontFamily: 'var(--font-ui)', fontWeight: 700, fontSize: '29px',
-        lineHeight: 1.12, letterSpacing: '-.015em', margin: '9px 0 22px', color: 'var(--char)',
+        lineHeight: 1.12, letterSpacing: '-.015em', margin: '0 0 22px', color: 'var(--char)',
       }}>{step.title}</h2>
 
       {children}
@@ -2710,9 +2754,12 @@ export default function Home() {
             {/* ── Setup tab content ── */}
             <div style={{ display: activeTab === 'setup' && !!bakeType && modeChosen ? 'flex' : 'none', flexDirection: 'column', gap: '16px' }}>
 
-            {/* ── Summary chips: progressive while filling, navigation on
-                   the way back. Replaces the review-only jump chips. ── */}
-            <SummaryChips flow={simpleFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62}
+            {/* ── Summary bar: one collapsed line while going forward, a
+                   sheet of every step on demand. It lives inside the
+                   modeChosen gate, so the opening mode page carries no bar —
+                   nothing decided yet, nothing to navigate to, and a progress
+                   bar at zero is a discouraging way to greet someone. ── */}
+            <SummaryBar flow={simpleFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62}
               modeChip={{ value: t('modeCards.simple.title'), onClick: () => setModeChosen(false) }} />
             <div ref={simpleSwipeRef}>
 
@@ -3269,9 +3316,12 @@ export default function Home() {
             {/* ── Setup tab content ── */}
             <div style={{ display: activeTab === 'setup' && !!bakeType && modeChosen ? 'flex' : 'none', flexDirection: 'column', gap: '16px' }}>
 
-            {/* ── Summary chips: progressive while filling, navigation on
-                   the way back. Replaces the review-only jump chips. ── */}
-            <SummaryChips flow={customFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62}
+            {/* ── Summary bar: one collapsed line while going forward, a
+                   sheet of every step on demand. It lives inside the
+                   modeChosen gate, so the opening mode page carries no bar —
+                   nothing decided yet, nothing to navigate to, and a progress
+                   bar at zero is a discouraging way to greet someone. ── */}
+            <SummaryBar flow={customFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62}
               modeChip={{ value: t('modeCards.custom.title'), onClick: () => setModeChosen(false) }} />
             <div ref={customSwipeRef}>
 
