@@ -247,6 +247,20 @@ const W_SOURCE_LABEL = (l: string): Record<WSource, string> => l === 'fr' ? {
   manual:  'the value you entered',
 };
 
+// A road announces the quality of the W it will produce, before it is taken.
+function WQualityTag({ kind, locale }: { kind: WSource; locale: string }) {
+  const label = locale === 'fr'
+    ? { photo: 'W du produit', exact: 'W du produit', typical: 'W typique', manual: 'W saisi' }[kind]
+    : { photo: 'product W',    exact: 'product W',    typical: 'typical W', manual: 'your W'   }[kind];
+  return (
+    <span style={{
+      fontFamily: 'var(--font-ui)', fontSize: '9px', letterSpacing: '.06em',
+      textTransform: 'uppercase', color: '#9C8248', whiteSpace: 'nowrap', flexShrink: 0,
+      border: '1px solid rgba(156,130,72,0.3)', borderRadius: '20px', padding: '3px 8px',
+    }}>{label}</span>
+  );
+}
+
 export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', mode = 'custom', styleKey }: FlourPickerProps) {
   // Accordion
   const [openSection, setOpenSection] = useState<'search' | 'blend' | null>('search');
@@ -462,7 +476,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           borderRadius: '12px', border: '1.5px solid #E8E0D5',
           background: '#FDFBF7', display: 'flex',
           alignItems: 'center', justifyContent: 'space-between',
-          cursor: 'pointer', marginBottom: '16px',
+          cursor: 'pointer', marginBottom: '16px', gap: '10px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -477,7 +491,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{locale === 'fr' ? 'Photographiez n’importe quel sachet de farine' : 'Point your camera at any flour bag'}</div>
           </div>
         </div>
-        <span style={{ fontSize: '15px', color: '#6B4423' }}>→</span>
+        <WQualityTag kind="photo" locale={locale} />
       </button>
       {scanOpen && (
         <div style={{ marginBottom: '16px' }}>
@@ -536,13 +550,136 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           type list and the W field all fold away — the page then holds the
           choice and the invitation to blend, nothing else. */}
       {pickerOpen && (<>
-      {/* ── Divider ────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-        <div style={{ flex: 1, height: '1px', background: '#E8E0D5' }} />
-        <span style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap', letterSpacing: '.04em' }}>
-          {locale === 'fr' ? `ou cherchez parmi ${FLOUR_DB.length} farines` : `or search ${FLOUR_DB.length} flours`}
+            {/* The shortlist and the search results are the same list in two
+                moments. Rendered twice: idle above the search box (the
+                shortcut most bakers take), active below it (where results
+                belong, under the field that produced them). */}
+            {(() => {
+              const noFiltersActive = !searchQuery && !filterType && !filterOrigin && !filterManufacturer;
+              if (!noFiltersActive) return null;
+
+              // Bread path: show quick-type recommendations for the style
+              if (bakeType === 'bread' && noFiltersActive) {
+                const recLabels = BREAD_REC_BY_STYLE[styleKey ?? ''] ?? ['Bread flour', 'T65', 'All-purpose'];
+                const breadRecs = recLabels.map(label => QUICK_TYPES.find(q => q.label === label)).filter(Boolean) as { label: string; w: number; protein: number }[];
+                const styleName = styleKey ? styleKey.replace(/_/g, ' ') : '';
+                // "For pain levain" read as a filter on the 285-flour list.
+                // It is a shortlist, and saying so is the difference between
+                // "these are your options" and "here are three good ones".
+                const sectionLabel = !styleKey
+                  ? (isFr ? 'Choix rapides pour le pain' : 'Quick picks for bread')
+                  : (isFr ? `Choix rapides pour le ${styleName}` : `Quick picks for ${styleName}`);
+                return (
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '8px', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                      {sectionLabel}
+                    </div>
+                    <div style={{ marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {breadRecs.map(t => {
+                        const isSelected = blend.brandProduct === t.label;
+                        return (
+                          <button
+                            key={t.label}
+                            onClick={() => applyQuickType(t.label, t.w)}
+                            style={{
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px',
+                              padding: '8px 16px', borderRadius: '12px', cursor: 'pointer',
+                              border: isSelected ? '1.5px solid var(--bread)' : '1.5px solid #E8E0D5',
+                              background: isSelected ? 'rgba(139,105,20,0.08)' : '#FDFBF7',
+                            }}
+                          >
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: isSelected ? 'var(--bread)' : '#2B2420', fontFamily: 'var(--font-ui)' }}>
+                              {t.label}
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
+                              W~{t.w} · ~{t.protein}%
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Pizza / filtered path: crowd favs or search results
+              const displayList: FlourEntry[] = noFiltersActive
+                ? CROWD_FAV_IDS.map(id => FLOUR_DB.find(f => f.id === id)).filter(Boolean) as FlourEntry[]
+                : results;
+
+              if (displayList.length === 0) {
+                return (
+                  <div style={{ fontSize: '13px', color: '#8A7F78', textAlign: 'center', padding: '16px 0' }}>
+                    {locale === 'fr' ? 'Aucune farine ne correspond à vos filtres.' : 'No flours match your filters.'}
+                  </div>
+                );
+              }
+              return (
+                <div>
+                  {noFiltersActive ? (
+                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '8px', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                      {isFr ? 'Coups de cœur' : 'Crowd favourites'}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '8px', fontFamily: 'var(--font-ui)' }}>
+                      {isFr
+                        ? `${displayList.length} farine${displayList.length !== 1 ? 's' : ''} trouvée${displayList.length !== 1 ? 's' : ''}`
+                        : `${displayList.length} flour${displayList.length !== 1 ? 's' : ''} found`}
+                    </div>
+                  )}
+                  <div style={{ maxHeight: '320px', overflowY: 'auto', marginTop: '4px' }}>
+                  {displayList.map(f => {
+                    const isSelected = blend.brandProduct === `${f.brand} ${f.name}`;
+                    return (
+                      <div
+                        key={f.id}
+                        onClick={() => selectDBEntry(f)}
+                        style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          padding: '12px 0', borderBottom: '0.5px solid #E8E0D5',
+                          cursor: 'pointer',
+                          background: isSelected ? 'rgba(107, 68, 35,0.04)' : 'transparent',
+                        }}
+                        onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = '#FDFBF7'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(107, 68, 35,0.04)' : 'transparent'; }}
+                      >
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 500, color: isSelected ? '#6B4423' : '#2B2420', fontFamily: 'var(--font-ui)' }}>
+                            {f.brand}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{f.name}</div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontSize: '13px', fontFamily: 'var(--font-ui)', color: f.wPublished ? '#2B2420' : '#8A7F78' }}>
+                            {f.wPublished ? `W${f.w}` : `~W${f.w}`}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
+                            {f.protein}%
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  </div>
+                </div>
+              );
+            })()}
+
+
+      {/* The shortlist is the shortcut; everything below is the other ways in.
+          Each names the quality of the W it produces, because that is the only
+          real difference between scanning a bag and picking a flour type. */}
+      <div style={{
+        display: 'flex', alignItems: 'baseline', gap: '8px',
+        margin: '22px 0 10px', flexWrap: 'wrap',
+      }}>
+        <span style={{
+          fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.11em',
+          textTransform: 'uppercase', color: '#8A7F78', fontWeight: 600,
+        }}>{locale === 'fr' ? 'Autres façons de la trouver' : 'Other ways to find it'}</span>
+        <span style={{ fontSize: '11px', color: '#B0A69B', fontFamily: 'var(--font-ui)' }}>
+          {locale === 'fr' ? `${FLOUR_DB.length} farines référencées` : `${FLOUR_DB.length} flours listed`}
         </span>
-        <div style={{ flex: 1, height: '1px', background: '#E8E0D5' }} />
       </div>
 
       {/* ── Search + list (always open) ─────────────── */}
@@ -555,6 +692,12 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             {/* Same shape as the blend panel's search: the field owns a full
                 row, the filters wrap under it. They were two different layouts
                 for one control, and the shared row squeezed both. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#2B2420', fontFamily: 'var(--font-ui)', flex: 1 }}>
+                {locale === 'fr' ? 'Chercher par marque ou nom' : 'Search by brand or name'}
+              </span>
+              <WQualityTag kind="exact" locale={locale} />
+            </div>
             <div ref={dropdownRef} style={{ marginBottom: '8px' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
                 <input
@@ -819,9 +962,13 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               </div>
             )}
 
-            {/* Results list — style recs for bread, crowd favs for pizza, filtered results otherwise */}
+            {/* The shortlist and the search results are the same list in two
+                moments. Rendered twice: idle above the search box (the
+                shortcut most bakers take), active below it (where results
+                belong, under the field that produced them). */}
             {(() => {
               const noFiltersActive = !searchQuery && !filterType && !filterOrigin && !filterManufacturer;
+              if (noFiltersActive) return null;
 
               // Bread path: show quick-type recommendations for the style
               if (bakeType === 'bread' && noFiltersActive) {
@@ -947,7 +1094,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     onClick={() => setQuickSub(quickSub === 'type' ? null : 'type')}
                     style={{ padding: '12px 12px', borderRadius: '8px', background: '#F0EBE0', marginBottom: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#2B2420' }}
                   >
-                    <span>{locale === 'fr' ? 'Choisir par type' : 'Select by type'}</span>
+                    <span style={{ flex: 1 }}>{locale === 'fr' ? 'Choisir par type' : 'Select by type'}</span>
+                    <WQualityTag kind="typical" locale={locale} />
                     <span style={{ fontSize: '12px', color: '#8A7F78' }}>{quickSub === 'type' ? '▾' : '▸'}</span>
                   </div>
                   {quickSub === 'type' && (
@@ -983,6 +1131,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   {/* I know my W value */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 12px', borderRadius: '16px', background: '#F0EBE0', marginTop: '8px' }}>
                     <span style={{ fontSize: '13px', color: '#3D3530', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>{locale === 'fr' ? 'Je connais mon W' : 'I know my W value'}</span>
+                    <WQualityTag kind="manual" locale={locale} />
                     <input
                       type="number"
                       inputMode="numeric"
