@@ -885,10 +885,13 @@ export type WSource = 'exact' | 'photo' | 'typical' | 'manual';
 // scanned Caputo with a "typical" rye gives an approximate W, and printing it
 // without a tilde overstates what the app knows.
 export function blendWIsApproximate(b: FlourBlend): boolean {
+  // Only a positive 'typical' earns the tilde. undefined means the record
+  // predates this field — a session saved before provenance existed — and
+  // sprinkling tildes over old sessions would be noise, not honesty.
   const used: (WSource | undefined)[] = [b.w1Source];
   if (b.flour2) used.push(b.w2Source);
   if (b.flour3) used.push(b.w3Source);
-  return used.some(s => s === 'typical' || s === undefined);
+  return used.some(s => s === 'typical');
 }
 
 export interface BlendProfile {
