@@ -2692,22 +2692,24 @@ export default function Home() {
                   }}>{locale === 'fr' ? 'Comment voulez-vous procéder ?' : 'How would you like to work?'}</h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {([
-                      // Same template on both sides — a count, then three words.
-                      // Parallel structure is what keeps the comparison cheap:
-                      // the eye reads only the part that differs.
+                      // Same frame both sides: who it is for, then what you get.
                       //
-                      // Nothing here claims the app "chooses" anything. In
-                      // Simple there is no flour step at all; the flour follows
-                      // from the style. Saying we choose it invented a
-                      // mechanism that does not exist, and raised the question
-                      // of how.
+                      // No numeral: the card is drawn before the yeast is
+                      // chosen and the sourdough path drops a step, so any
+                      // figure here can become false.
+                      //
+                      // Simple names no technical term — preferment and
+                      // hydration are the words a beginner picks Simple to
+                      // avoid — and refers to nothing they have not met yet.
+                      // "Your style" failed on that count: the style step comes
+                      // after this page.
                       { key: 'simple' as const, title: t('modeCards.simple.title'),
-                        steps: SIMPLE_STEPS.length + 1,
+                        lead: locale === 'fr' ? 'Pour commencer' : 'To get started',
                         desc: locale === 'fr'
-                          ? 'l\u2019essentiel, et rien de plus'
-                          : 'the essentials, nothing more' },
+                          ? 'votre pâte en quelques touches'
+                          : 'your dough in a few taps' },
                       { key: 'custom' as const, title: t('modeCards.custom.title'),
-                        steps: CUSTOM_STEPS.length + 1,
+                        lead: locale === 'fr' ? 'Pour aller plus loin' : 'To go further',
                         desc: locale === 'fr'
                           ? 'farine, préferment, hydratation'
                           : 'flour, preferment, hydration' },
@@ -2731,10 +2733,8 @@ export default function Home() {
                             }}>{locale === 'fr' ? 'votre habitude' : 'your usual'}</span>
                           )}
                           <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--smoke)', marginTop: '3px', lineHeight: 1.45 }}>
-                            <span style={{ color: '#9C8248', fontWeight: 700 }}>
-                              {locale === 'fr' ? `${m.steps} étapes` : `${m.steps} steps`}
-                            </span>
-                            {' · '}{m.desc}
+                            {m.lead}{' · '}
+                            <span style={{ color: 'var(--ash)', fontWeight: 700 }}>{m.desc}</span>
                           </span>
                         </span>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9C8248"
