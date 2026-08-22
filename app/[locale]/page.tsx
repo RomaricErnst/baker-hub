@@ -689,6 +689,12 @@ export default function Home() {
   // Sourdough-vs-Simple nudge — shown when a levain profile taps Simple
   const [sdNudgeOpen, setSdNudgeOpen] = useState(false);
   const [profilePrefilled, setProfilePrefilled] = useState(false);
+  // Which steps carry a value the profile supplied rather than one the baker
+  // chose in this session. They are marked `prefilled`, which means the page
+  // still appears with the value already in place — the baker presses Suivant
+  // and moves on — and the summary only fills in once they have passed it.
+  const [profileFields, setProfileFields] = useState<Set<string>>(new Set());
+  const markProfile = (k: string) => setProfileFields(p => p.has(k) ? p : new Set(p).add(k));
   // Bumped when a cloud profile pull settles — lets a late-arriving profile
   // prefill a bake type the baker already tapped (fresh-device login race).
   const [profilePullTick, setProfilePullTick] = useState(0);
@@ -776,17 +782,19 @@ export default function Home() {
       setStyleKey(prefStyle as StyleKey); applied = true;
     }
     if (!mixerType && prof.mixerType && prof.mixerType in MIXER_TYPES) {
-      setMixerType(prof.mixerType as MixerType); applied = true;
+      setMixerType(prof.mixerType as MixerType); applied = true; markProfile('equip');
     }
     // Sourdough-native styles override the yeast preference (same rule as
     // the tap-time prefill in selectBakeType).
-    // Yeast is no longer prefilled from the profile — see selectBakeType. The
-    // one exception stays: a sourdough-native style IS its leavening, so the
-    // style the baker just picked decides it, not a stored preference.
     const effStyle = styleKey ?? ((prefStyle && prefStyle in stylePool) ? prefStyle : null);
     const lateWantsSourdough = ['pain_levain', 'sourdough'].includes(effStyle as string);
     if (!yeastType && lateWantsSourdough && sdAllowed) {
+      // A sourdough-native style IS its leavening — not a stored preference,
+      // a consequence of the style just chosen. It counts as answered.
       setYeastType('sourdough'); applied = true;
+    } else if (!yeastType && prof.yeastType && prof.yeastType in YEAST_TYPES
+        && (sdAllowed || prof.yeastType !== 'sourdough')) {
+      setYeastType(prof.yeastType as YeastType); applied = true; markProfile('yeast');
     }
     if (applied) setProfilePrefilled(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1397,20 +1405,24 @@ export default function Home() {
       // was handed a Neapolitan they never picked — and once Suivant started
       // skipping answered steps, they never even saw the page to change it.
       if (prof.mixerType && prof.mixerType in MIXER_TYPES) {
-        setMixerType(prof.mixerType as MixerType); applied = true;
+        setMixerType(prof.mixerType as MixerType); applied = true; markProfile('equip'); markProfile('equip');
       }
       // The style-yields-to-sourdough rule went with the style prefill: with no
       // style applied there is nothing for the yeast preference to yield to.
       // The baker picks a sourdough-native style themselves, and selectStyle
       // already forces levain when they do.
-      // The profile now remembers the kitchen, not the bake. Oven and mixer
-      // are the same every time you bake; yeast and preferment are decisions
-      // about THIS dough — you might do a poolish today and go direct
-      // tomorrow. Prefilling them meant a baker who had chosen nothing was
-      // shown "Simple · Pizza oven · Spiral Mixer · Instant Dry" in the
-      // summary and never saw those pages, because Suivant skips what is
-      // already answered. Two mechanisms, each right on its own, adding up to
-      // an app that had decided the bake for them.
+      if (prof.yeastType && prof.yeastType in YEAST_TYPES) {
+        setYeastType(prof.yeastType as YeastType); applied = true; markProfile('yeast');
+      }
+      // Preferment — Custom-mode preference only (Simple has no preferment
+      // step to change it in), and never on the sourdough path (levain).
+      // Pizza only — biga/poolish preferences are pizza-centric; bread has its
+      // own preferment conventions and shouldn't inherit the pizza pick.
+      if (bt !== 'bread' && prof.prefermentType && prof.preferredMode === 'custom'
+          && prof.yeastType !== 'sourdough'
+          && ['none', 'poolish', 'biga'].includes(prof.prefermentType)) {
+        setPrefermentType(prof.prefermentType as PrefermentType); applied = true; markProfile('preferment');
+      }
       if (prof.fridgeTemp !== undefined) { setFridgeTemp(prof.fridgeTemp); applied = true; }
       if (prof.preferredMode) { setTab(prof.preferredMode); applied = true; }
       if (prof.starter) {
@@ -1563,10 +1575,7 @@ export default function Home() {
     const i = list.findIndex(s => s.id === from);
     if (i < 0) return list[0].id;
     for (let k = i + 1; k < list.length; k++) {
-      const step = list[k];
-      const sourdoughStep = yeastType === 'sourdough' && step.chip !== 'Plan'
-        && (step.id === 6 || step.id === 7);
-      if (sourdoughStep || !stepAnswered(step, highest, list)) return step.id;
+      if (!stepAnswered(list[k], highest, list)) return list[k].id;
     }
     return list[list.length - 1].id;
   }
@@ -1591,7 +1600,7 @@ export default function Home() {
     // Fresh session = fresh chance for profile blockers to apply — without
     // this reset, only the first session per page load ever received them.
     profileBlockersAppliedRef.current = false;
-    setBakeType(null); setStyleKey(null);
+    setBakeType(null); setStyleKey(null); setProfileFields(new Set());
     setNumItems(2); setItemWeight(270);
     setOvenType(null); setMixerType(null);
     const now = new Date(); now.setMinutes(0, 0, 0);
@@ -1885,12 +1894,14 @@ export default function Home() {
       value: (ovenType && mixerType)
         ? `${localName(ovenData)} · ${localName(MIXER_TYPES[mixerType])}`
         : null,
+      prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
     { id: 4, chip: fr ? 'Climat' : 'Climate', title: t('steps.5.title'),
       value: `${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`, prefilled: true,
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
     { id: 6, chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
       value: yeastType ? localName(YEAST_TYPES[yeastType]) : null,
+      prefilled: profileFields.has('yeast'),
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
     { id: 7, chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
       value: eatTime
@@ -1923,6 +1934,7 @@ export default function Home() {
       value: (ovenType && mixerType)
         ? `${localName(ovenData)} · ${localName(MIXER_TYPES[mixerType])}`
         : null,
+      prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
     { id: 4, chip: fr ? 'Climat' : 'Climate', title: t('steps.5.title'),
       value: `${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`, prefilled: true,
@@ -1932,6 +1944,7 @@ export default function Home() {
       gap: fr ? 'La farine n\u2019est pas confirmée' : 'Flour not confirmed' },
     { id: 7, chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
       value: yeastType ? localName(YEAST_TYPES[yeastType]) : null,
+      prefilled: profileFields.has('yeast'),
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
     ...(yeastType !== 'sourdough' ? [{
       id: 8, chip: fr ? 'Préferment' : 'Preferment', title: t('preferment.stepTitle'),
