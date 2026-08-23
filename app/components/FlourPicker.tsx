@@ -381,7 +381,6 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   // Scan state
 
   // "I know my type or W value" collapsible in Section 2
-  const [quickSub, setQuickSub] = useState<'type' | null>(null);
   const [manualQW, setManualQW] = useState<number | null>(null);
   // Raw text of the W field — the controlled input previously only accepted
   // already-valid values (100-450), so typing '2' of '280' was rejected
@@ -449,6 +448,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   });
   const [blendRatio2, setBlendRatio2] = useState(() => blend.ratio2 ?? 10);
   const [blendShowFullSearch, setBlendShowFullSearch] = useState(false);
+  // Same mechanic as the base flour: one road open at a time, chosen from a row
+  // under one sentence. The blend used to stack the search, its filters, a type
+  // list and a W field all at once — which is exactly what the base stopped
+  // doing, and why the two still looked like different products.
+  const [blendRoad, setBlendRoad] = useState<'search' | 'type' | 'w' | null>(null);
 
   const locale = useLocale();
   const isFr = locale === 'fr';
@@ -765,7 +769,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       </div>
 
       {road === 'scan' && (
-        <div style={{ marginBottom: '16px' }}>
+        <div style={{ marginTop: '12px', marginBottom: '16px' }}>
           <FlourScan
             onResult={result => {
               const autoTile: FlourKey = result.w >= 270 ? 'strong00' : 'pizza00';
@@ -1051,16 +1055,14 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             <div style={{ marginTop: '12px', borderTop: '1px solid #E8E0D5', paddingTop: '12px' }}>
               {road === 'type' && (
                 <div style={{ paddingTop: '0' }}>
-                  {/* Select by type */}
-                  <div
-                    onClick={() => setQuickSub(quickSub === 'type' ? null : 'type')}
-                    style={{ padding: '12px 12px', borderRadius: '8px', background: '#F0EBE0', marginBottom: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#2B2420' }}
-                  >
-                    <span style={{ flex: 1 }}>{locale === 'fr' ? 'Choisir par type' : 'Select by type'}</span>
+                  {/* No header repeating the button that opened this panel —
+                      its accordion made the baker tap twice for a list they had
+                      just asked for. The one thing worth saying stays: these
+                      values are approximate. */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
                     <WQualityTag kind="typical" locale={locale} />
-                    <span style={{ fontSize: '12px', color: '#8A7F78' }}>{quickSub === 'type' ? '▾' : '▸'}</span>
                   </div>
-                  {quickSub === 'type' && (
+                  {true && (
                     <div style={{ background: '#F0EBE0', borderRadius: '0 0 16px 16px', padding: '4px 0 8px', marginBottom: '8px' }}>
                       {QUICK_TYPES.map(t => {
                         const isSelected = blend.brandProduct === t.label;
@@ -1332,6 +1334,50 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       </button>
                     </div>
                   )}
+                  {/* Same sentence, same row as the base flour — the W lives
+                      inside the sentence rather than under the buttons. No scan
+                      here: the camera belongs to the flour the dough is built
+                      on, not to what you sprinkle into it. */}
+                  <p style={{
+                    fontFamily: 'var(--font-ui)', fontSize: '12.5px', color: '#8A7F78',
+                    lineHeight: 1.45, margin: '14px 0 0',
+                  }}>
+                    {locale === 'fr' ? 'Sinon, déterminez sa force — ou ' : 'Otherwise, work out its strength — or '}
+                    <button
+                      onClick={() => setBlendRoad(r => r === 'w' ? null : 'w')}
+                      style={{
+                        background: 'none', border: 'none', padding: 0, font: 'inherit',
+                        color: '#6B4423', textDecoration: 'underline', textUnderlineOffset: '3px', cursor: 'pointer',
+                      }}
+                    >{locale === 'fr' ? 'saisissez-la directement' : 'enter it directly'}</button>
+                    {locale === 'fr' ? ' si vous la connaissez.' : ' if you know it.'}
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                    {([
+                      { k: 'search' as const, n: locale === 'fr' ? 'Chercher' : 'Search',
+                        c: `${FLOUR_DB.length} ${locale === 'fr' ? 'farines' : 'flours'}` },
+                      { k: 'type' as const, n: locale === 'fr' ? 'Type' : 'Type',
+                        c: locale === 'fr' ? 'valeur courante' : 'typical value' },
+                    ]).map(r => (
+                      <button
+                        key={r.k}
+                        onClick={() => setBlendRoad(cur => cur === r.k ? null : r.k)}
+                        style={{
+                          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                          border: `1px solid ${blendRoad === r.k ? '#6B4423' : '#E8E0D5'}`,
+                          background: blendRoad === r.k ? '#F7F1E9' : '#FDFBF7',
+                          borderRadius: '12px', padding: '11px 6px', minHeight: '44px',
+                          fontFamily: 'var(--font-ui)', fontSize: '12.5px', fontWeight: 600,
+                          color: '#3D3530', cursor: 'pointer',
+                        }}
+                      >
+                        <span>{r.n}</span>
+                        <span style={{ fontSize: '10.5px', fontWeight: 400, color: '#8A7F78', textAlign: 'center' }}>{r.c}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {blendRoad === 'search' && (
                   <div style={{ marginTop: '12px' }}>
                     {/* Search gets its own row. Four controls shared one line
                         with minWidth 0, so the input collapsed to a blank white
@@ -1441,11 +1487,13 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                       );
                     })()}
 
-                    {/* Type or W fallback — always visible */}
-                    <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '0.5px solid #E8E0D5' }}>
-                      <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
-                        {locale === 'fr' ? 'Ou choisissez un type de farine :' : 'Or pick a flour type:'}
-                      </div>
+                    </div>
+                    )}
+
+                    {/* Type and W are their own roads here too — no header
+                        repeating the button that opened them. */}
+                    {(blendRoad === 'type' || blendRoad === 'w') && (
+                    <div style={{ marginTop: '12px' }}>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                         {(() => {
                           const presetTypes = new Set((BLEND_PRESETS[styleKey ?? ''] ?? []).map(p => p.type));
@@ -1515,7 +1563,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         </div>
                       </div>
                     </div>
-                  </div>
+                    )}
                 </div>
               )}
             </div>
