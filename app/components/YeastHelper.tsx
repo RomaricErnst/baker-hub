@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslations, useLocale } from 'next-intl';
 import { type YeastType } from '../data';
 import DecisionList from './DecisionList';
@@ -82,7 +83,14 @@ const IDENTIFY = (fr: boolean) => [
 function IdentifySheet({ onPick, onClose, fr }: {
   onPick: (y: YeastType) => void; onClose: () => void; fr: boolean;
 }) {
-  return (
+  // Rendered into <body>. A position:fixed element is anchored to the nearest
+  // ancestor carrying a transform, and this sheet sits inside the step page,
+  // which animates in on translateX — so it was being positioned against the
+  // page rather than the viewport, and painted underneath the summary bar.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
+  return createPortal(
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.45)', zIndex: 150 }} />
       <div style={{
@@ -130,7 +138,8 @@ function IdentifySheet({ onPick, onClose, fr }: {
           </div>
         ))}
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
 
