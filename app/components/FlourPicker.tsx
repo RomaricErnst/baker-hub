@@ -1137,9 +1137,14 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               }
               return (
                 <div>
+                  {/* The pizza path has its own heading — sectionLabel above
+                      belongs to the bread branch only, which is why three
+                      attempts at spacing this changed nothing on this screen. */}
                   {noFiltersActive ? (
-                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '8px', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-                      {isFr ? 'Coups de cœur' : 'Crowd favourites'}
+                    <div style={{ fontSize: '11px', color: '#8A7F78', margin: '32px 0 10px', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                      {road
+                        ? (isFr ? 'Ou reprenez un coup de cœur' : 'Or take one of these')
+                        : (isFr ? 'Coups de cœur' : 'Crowd favourites')}
                     </div>
                   ) : (
                     <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '8px', fontFamily: 'var(--font-ui)' }}>
