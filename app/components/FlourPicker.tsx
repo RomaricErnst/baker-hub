@@ -698,7 +698,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 </div>
               )}
 
-      <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
         {([
           { k: 'scan' as const,   n: locale === 'fr' ? 'Scanner'  : 'Scan',
             c: locale === 'fr' ? 'le sac' : 'the bag' },
@@ -726,7 +726,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       </div>
 
       {road === 'scan' && (
-        <div style={{ marginTop: '12px', marginBottom: '16px' }}>
+        <div style={{ marginTop: '16px', marginBottom: '16px' }}>
           <FlourScan
             onResult={result => {
               const autoTile: FlourKey = result.w >= 270 ? 'strong00' : 'pizza00';
@@ -748,11 +748,12 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
             {/* Search bar + filter chips, revealed by the Search entry */}
             {road === 'search' && (<>
+            <div style={{ height: '16px' }} />
             {/* Same shape as the blend panel's search: the field owns a full
                 row, the filters wrap under it. They were two different layouts
                 for one control, and the shared row squeezed both. */}
             <div ref={dropdownRef} style={{ marginBottom: '8px' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
                 <input
                   type="text"
                   placeholder={locale === 'fr' ? 'Rechercher une farine…' : 'Search flour...'}
@@ -1012,7 +1013,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 "don't see your flour?" once the baker has already said so by
                 tapping. The type list opens straight to its choices. */}
             {(road === 'type' || road === 'w') && (
-            <div style={{ marginTop: '12px', borderTop: '1px solid #E8E0D5', paddingTop: '12px' }}>
+            <div style={{ marginTop: '16px' }}>
               {road === 'type' && (
                 <div style={{ paddingTop: '0' }}>
                   {/* No header repeating the button that opened this panel —
@@ -1083,7 +1084,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     : (isFr ? `Choix rapides pour le ${styleName}` : `Quick picks for ${styleName}`);
                 return (
                   <div>
-                    <div style={{ fontSize: '11px', color: '#8A7F78', margin: '20px 0 8px', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                    <div style={{ fontSize: '11px', color: '#8A7F78', margin: '24px 0 10px', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
                       {sectionLabel}
                     </div>
                     <div style={{ marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
