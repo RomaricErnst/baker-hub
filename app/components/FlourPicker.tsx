@@ -639,15 +639,17 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
         fontFamily: 'var(--font-ui)', fontSize: '12.5px', color: 'var(--smoke)',
         lineHeight: 1.45, margin: '18px 0 0',
       }}>
-        {locale === 'fr' ? 'Sinon, déterminez la force de votre farine — ou ' : 'Otherwise, work out your flour\u2019s strength — or '}
+        {locale === 'fr'
+          ? 'Choisissez votre farine pour en déterminer la force — ou '
+          : 'Choose your flour to work out its strength — or '}
         <button
           onClick={() => setRoad(r => r === 'w' ? null : 'w')}
           style={{
             background: 'none', border: 'none', padding: 0, font: 'inherit',
             color: '#6B4423', textDecoration: 'underline', textUnderlineOffset: '3px', cursor: 'pointer',
           }}
-        >{locale === 'fr' ? 'saisissez-la directement' : 'enter it directly'}</button>
-        {locale === 'fr' ? ' si vous la connaissez.' : ' if you know it.'}
+        >{locale === 'fr' ? 'précisez-la ici' : 'enter it here'}</button>
+        {locale === 'fr' ? '.' : '.'}
       </p>
 
       {/* The field opens under the sentence that offered it, not at the far
@@ -1081,7 +1083,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     : (isFr ? `Choix rapides pour le ${styleName}` : `Quick picks for ${styleName}`);
                 return (
                   <div>
-                    <div style={{ fontSize: '11px', color: '#8A7F78', marginBottom: '8px', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                    <div style={{ fontSize: '11px', color: '#8A7F78', margin: '20px 0 8px', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
                       {sectionLabel}
                     </div>
                     <div style={{ marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
