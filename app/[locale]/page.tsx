@@ -254,6 +254,10 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
   { flow: StepFlow; topOffset?: number; raised?: boolean;
     modeChip?: { value: string; onClick: () => void } }) {
   const [open, setOpen] = React.useState(false);
+  // A bottom sheet that can only be dismissed by tapping outside is a sheet in
+  // appearance only — the grab handle promises a drag it did not accept.
+  const [dragY, setDragY] = React.useState(0);
+  const dragFrom = React.useRef<number | null>(null);
   const fr = flow.locale === 'fr';
   const answered = flow.steps.filter(s => stepAnswered(s, flow.highestStep, flow.steps));
 
@@ -263,10 +267,21 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
     ...(modeChip ? [modeChip.value] : []),
     ...answered.map(s => s.value as string),
   ];
-  // Ellipsis cuts from the right, which would keep the oldest decisions and
-  // drop the ones just made. Show the three most recent, in order, and mark
-  // that there are earlier ones — the sheet holds the full list anyway.
-  const parts = all.length > 3 ? ['…', ...all.slice(-3)] : all;
+  // Fitting every step is not possible: ten values run to 132 characters, and
+  // about 90 even abbreviated as hard as they can be, against a budget of ~47
+  // on one line. So the question is not how many to show but where to cut —
+  // and CSS ellipsis cuts mid-word, which is how "Spiral Mixer" became "S…".
+  //
+  // Take the most recent values whole, until the budget runs out. The line is
+  // then always readable, and the sheet holds the rest.
+  const BUDGET = 44;
+  const kept: string[] = [];
+  for (let i = all.length - 1; i >= 0; i--) {
+    const next = [all[i], ...kept].join(' · ');
+    if (next.length > BUDGET && kept.length > 0) break;
+    kept.unshift(all[i]);
+  }
+  const parts = kept.length < all.length ? ['…', ...kept] : kept;
   // Position, not tally. Counting answered steps made "2/10" appear on the
   // third page — true, but read as "you are on step 2", because a number at
   // the head of a line naming the current page is read as a position.
@@ -289,7 +304,7 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
         boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
       }}>
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => { setDragY(0); dragFrom.current = null; setOpen(true); }}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
             border: '1px solid var(--border)', background: 'var(--warm)',
@@ -332,9 +347,41 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
             background: 'var(--warm)', borderRadius: '20px 20px 0 0',
             padding: '14px 16px calc(20px + env(safe-area-inset-bottom, 0px))',
             maxHeight: '74vh', overflowY: 'auto',
+            transform: `translateY(${dragY}px)`,
+            transition: dragFrom.current === null ? 'transform .22s ease' : 'none',
           }}>
-            <div style={{ width: '38px', height: '4px', borderRadius: '2px', background: '#E0D8CC', margin: '0 auto 10px' }} />
-            <h3 style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, margin: '2px 0 12px' }}>
+            {/* The drag lives on the handle and the header, not the whole
+                sheet: the list below scrolls, and a sheet that follows the
+                finger while the list is trying to scroll fights the baker. */}
+            <div
+              onPointerDown={e => { dragFrom.current = e.clientY; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }}
+              onPointerMove={e => { if (dragFrom.current !== null) setDragY(Math.max(0, e.clientY - dragFrom.current)); }}
+              onPointerUp={() => {
+                // Past a quarter of the sheet it closes; short of that it
+                // springs back, so a hesitant pull is not a decision.
+                const shouldClose = dragY > 120;
+                dragFrom.current = null;
+                setDragY(0);
+                if (shouldClose) setOpen(false);
+              }}
+              style={{ padding: '4px 0 10px', margin: '-4px 0 0', touchAction: 'none', cursor: 'grab' }}
+            >
+              <div style={{ width: '38px', height: '4px', borderRadius: '2px', background: '#E0D8CC', margin: '0 auto' }} />
+            </div>
+            <h3
+              onPointerDown={e => { dragFrom.current = e.clientY; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }}
+              onPointerMove={e => { if (dragFrom.current !== null) setDragY(Math.max(0, e.clientY - dragFrom.current)); }}
+              onPointerUp={() => {
+                const shouldClose = dragY > 120;
+                dragFrom.current = null;
+                setDragY(0);
+                if (shouldClose) setOpen(false);
+              }}
+              style={{
+                fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700,
+                margin: '2px 0 12px', touchAction: 'none', cursor: 'grab',
+              }}
+            >
               {fr ? 'Où vous en êtes' : 'Where you are'}
             </h3>
             {modeChip && (
