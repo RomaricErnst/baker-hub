@@ -1068,6 +1068,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             {(() => {
               const noFiltersActive = !searchQuery && !filterType && !filterOrigin && !filterManufacturer;
               if (!noFiltersActive) return null;
+              // Scan and Type are different modes, not different views of the
+              // same list: pointing a camera or picking "T65" has nothing to do
+              // with a shortlist of products. Under Search it is the useful
+              // empty state, so it stays there until a query replaces it.
+              if (road === 'scan' || road === 'type' || road === 'w') return null;
 
               // Bread path: show quick-type recommendations for the style
               if (bakeType === 'bread' && noFiltersActive) {
@@ -1077,14 +1082,16 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 // "For pain levain" read as a filter on the 285-flour list.
                 // It is a shortlist, and saying so is the difference between
                 // "these are your options" and "here are three good ones".
-                const sectionLabel = (road && road !== 'w')
+                // Only Search can still be open at this point, so the heading
+                // has two states rather than three.
+                const sectionLabel = road
                   ? (isFr ? 'Ou reprenez une conseillée' : 'Or take one of these')
                   : !styleKey
                     ? (isFr ? 'Choix rapides pour le pain' : 'Quick picks for bread')
                     : (isFr ? `Choix rapides pour le ${styleName}` : `Quick picks for ${styleName}`);
                 return (
                   <div>
-                    <div style={{ fontSize: '11px', color: '#8A7F78', margin: '24px 0 10px', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                    <div style={{ fontSize: '11px', color: '#8A7F78', margin: '32px 0 10px', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
                       {sectionLabel}
                     </div>
                     <div style={{ marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
