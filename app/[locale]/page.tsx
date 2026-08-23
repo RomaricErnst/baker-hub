@@ -258,6 +258,9 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
   // appearance only — the grab handle promises a drag it did not accept.
   const [dragY, setDragY] = React.useState(0);
   const dragFrom = React.useRef<number | null>(null);
+  // `dragging` mirrors the ref for render use: reading a ref while rendering is
+  // untracked, so the transition could be computed from a stale value.
+  const [dragging, setDragging] = React.useState(false);
   const fr = flow.locale === 'fr';
   const answered = flow.steps.filter(s => stepAnswered(s, flow.highestStep, flow.steps));
 
@@ -304,7 +307,7 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
         boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
       }}>
         <button
-          onClick={() => { setDragY(0); dragFrom.current = null; setOpen(true); }}
+          onClick={() => { setDragY(0); setDragging(false); dragFrom.current = null; setOpen(true); }}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
             border: '1px solid var(--border)', background: 'var(--warm)',
@@ -348,19 +351,20 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
             padding: '14px 16px calc(20px + env(safe-area-inset-bottom, 0px))',
             maxHeight: '74vh', overflowY: 'auto',
             transform: `translateY(${dragY}px)`,
-            transition: dragFrom.current === null ? 'transform .22s ease' : 'none',
+            transition: dragging ? 'none' : 'transform .22s ease',
           }}>
             {/* The drag lives on the handle and the header, not the whole
                 sheet: the list below scrolls, and a sheet that follows the
                 finger while the list is trying to scroll fights the baker. */}
             <div
-              onPointerDown={e => { dragFrom.current = e.clientY; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }}
+              onPointerDown={e => { dragFrom.current = e.clientY; setDragging(true); (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }}
               onPointerMove={e => { if (dragFrom.current !== null) setDragY(Math.max(0, e.clientY - dragFrom.current)); }}
               onPointerUp={() => {
                 // Past a quarter of the sheet it closes; short of that it
                 // springs back, so a hesitant pull is not a decision.
                 const shouldClose = dragY > 120;
                 dragFrom.current = null;
+                setDragging(false);
                 setDragY(0);
                 if (shouldClose) setOpen(false);
               }}
@@ -369,11 +373,12 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
               <div style={{ width: '38px', height: '4px', borderRadius: '2px', background: '#E0D8CC', margin: '0 auto' }} />
             </div>
             <h3
-              onPointerDown={e => { dragFrom.current = e.clientY; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }}
+              onPointerDown={e => { dragFrom.current = e.clientY; setDragging(true); (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }}
               onPointerMove={e => { if (dragFrom.current !== null) setDragY(Math.max(0, e.clientY - dragFrom.current)); }}
               onPointerUp={() => {
                 const shouldClose = dragY > 120;
                 dragFrom.current = null;
+                setDragging(false);
                 setDragY(0);
                 if (shouldClose) setOpen(false);
               }}
