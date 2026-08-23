@@ -162,6 +162,9 @@ type StepDef = {
   chip: string;          // short label carried by the chip
   title: string;         // page title
   value: string | null;  // summary, null when the step has no answer
+  // Short form for the summary bar when the full values no longer fit one
+  // line. Only steps whose value is long need one; the rest fall back.
+  short?: string | null;
   prefilled?: boolean;   // value is a code default, not a baker's decision
   gap: string;           // sentence used by the missing-field CTA
 };
@@ -270,21 +273,33 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
     ...(modeChip ? [modeChip.value] : []),
     ...answered.map(s => s.value as string),
   ];
-  // Fitting every step is not possible: ten values run to 132 characters, and
-  // about 90 even abbreviated as hard as they can be, against a budget of ~47
-  // on one line. So the question is not how many to show but where to cut —
-  // and CSS ellipsis cuts mid-word, which is how "Spiral Mixer" became "S…".
+  // One line while everything fits; two, on short forms, once it does not.
   //
-  // Take the most recent values whole, until the budget runs out. The line is
-  // then always readable, and the sheet holds the rest.
+  // The measurements: ten full values run to about 132 characters against a
+  // budget near 44 per line, so one line never holds a finished setup and two
+  // lines of full values still fall short. Ten SHORT values come to 87, which
+  // two lines hold on every iPhone size. The bar therefore grows only when it
+  // has to, and grows into the one form that fits.
+  //
+  // Whatever the case, values are taken whole from the most recent: CSS
+  // ellipsis cuts mid-word, which is how "Spiral Mixer" became "S…".
   const BUDGET = 44;
+  const short = [
+    ...(modeChip ? [modeChip.value] : []),
+    ...answered.map(s => (s.short ?? s.value) as string),
+  ];
+  const fits = (list: string[], budget: number) => list.join(' · ').length <= budget;
+  const oneLine = fits(all, BUDGET);
+  const source = oneLine ? all : short;
+  const budget = oneLine ? BUDGET : BUDGET * 2;
+
   const kept: string[] = [];
-  for (let i = all.length - 1; i >= 0; i--) {
-    const next = [all[i], ...kept].join(' · ');
-    if (next.length > BUDGET && kept.length > 0) break;
-    kept.unshift(all[i]);
+  for (let i = source.length - 1; i >= 0; i--) {
+    const next = [source[i], ...kept].join(' · ');
+    if (next.length > budget && kept.length > 0) break;
+    kept.unshift(source[i]);
   }
-  const parts = kept.length < all.length ? ['…', ...kept] : kept;
+  const parts = kept.length < source.length ? ['…', ...kept] : kept;
   // Position, not tally. Counting answered steps made "2/10" appear on the
   // third page — true, but read as "you are on step 2", because a number at
   // the head of a line naming the current page is read as a position.
@@ -327,7 +342,10 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
               nothing is ever half-cut at the screen edge. */}
           <span style={{
             flex: 1, minWidth: 0, fontSize: '12.5px', color: 'var(--smoke)',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            lineHeight: 1.35,
+            ...(oneLine
+              ? { whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }
+              : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }),
           }}>{parts.length ? parts.join(' · ') : (fr ? 'Rien de choisi pour l\u2019instant' : 'Nothing chosen yet')}</span>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A7F78"
             strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
@@ -1972,6 +1990,9 @@ export default function Home() {
   const SIMPLE_STEPS: StepDef[] = [
     { id: 1, chip: fr ? 'Style' : 'Style', title: t('steps.2.title'),
       value: styleKey ? styleDisplayName(styleKey) : null,
+      // "Classic Neapolitan" and "New York Style" carry a qualifier the baker
+      // does not need re-read on a summary line.
+      short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
     { id: 2, chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
       value: `${numItems} × ${itemWeight} g`, prefilled: true,
@@ -1982,6 +2003,8 @@ export default function Home() {
       value: (ovenType && mixerType)
         ? `${localName(ovenData)} · ${localName(MIXER_TYPES[mixerType])}`
         : null,
+      // The oven alone identifies the step; the mixer rarely changes the read.
+      short: (ovenType && mixerType) ? localName(ovenData) : null,
       prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
     { id: 4, chip: fr ? 'Climat' : 'Climate', title: t('steps.5.title'),
@@ -1989,6 +2012,10 @@ export default function Home() {
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
     { id: 6, chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
       value: yeastType ? localName(YEAST_TYPES[yeastType]) : null,
+      short: yeastType
+        ? ({ idy: 'IDY', ady: 'ADY', fresh: fr ? 'Fraîche' : 'Fresh', sourdough: fr ? 'Levain' : 'Sourdough' } as Record<string, string>)[yeastType]
+          ?? localName(YEAST_TYPES[yeastType])
+        : null,
       prefilled: profileFields.has('yeast'),
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
     { id: 7, chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
@@ -2012,6 +2039,9 @@ export default function Home() {
   const CUSTOM_STEPS: StepDef[] = ([
     { id: 1, chip: fr ? 'Style' : 'Style', title: t('steps.2.title'),
       value: styleKey ? styleDisplayName(styleKey) : null,
+      // "Classic Neapolitan" and "New York Style" carry a qualifier the baker
+      // does not need re-read on a summary line.
+      short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
     { id: 2, chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
       value: `${numItems} × ${itemWeight} g`, prefilled: true,
@@ -2022,6 +2052,8 @@ export default function Home() {
       value: (ovenType && mixerType)
         ? `${localName(ovenData)} · ${localName(MIXER_TYPES[mixerType])}`
         : null,
+      // The oven alone identifies the step; the mixer rarely changes the read.
+      short: (ovenType && mixerType) ? localName(ovenData) : null,
       prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
     { id: 4, chip: fr ? 'Climat' : 'Climate', title: t('steps.5.title'),
@@ -2032,6 +2064,10 @@ export default function Home() {
       gap: fr ? 'La farine n\u2019est pas confirmée' : 'Flour not confirmed' },
     { id: 7, chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
       value: yeastType ? localName(YEAST_TYPES[yeastType]) : null,
+      short: yeastType
+        ? ({ idy: 'IDY', ady: 'ADY', fresh: fr ? 'Fraîche' : 'Fresh', sourdough: fr ? 'Levain' : 'Sourdough' } as Record<string, string>)[yeastType]
+          ?? localName(YEAST_TYPES[yeastType])
+        : null,
       prefilled: profileFields.has('yeast'),
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
     ...(yeastType !== 'sourdough' ? [{
