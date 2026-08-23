@@ -36,6 +36,10 @@ interface YeastHelperProps {
 const IDENTIFY = (fr: boolean) => [
   {
     id: 'instant' as YeastType,
+    name: fr ? 'Instantanée' : 'Instant dry',
+    dose: '×1',
+    use: fr ? 'Le choix par défaut, et le seul qui pardonne six mois oubliés dans un placard.'
+            : 'The default choice, and the only one that forgives six months forgotten in a cupboard.',
     look: fr ? 'Granules très fins, presque une poudre, beige clair'
              : 'Very fine granules, almost a powder, pale beige',
     label: fr ? '« Instantanée », « Instant », « Rapid Rise », « Fast Action », « Briochin »'
@@ -47,6 +51,10 @@ const IDENTIFY = (fr: boolean) => [
   },
   {
     id: 'active_dry' as YeastType,
+    name: fr ? 'Active' : 'Active dry',
+    dose: '×1,33',
+    use: fr ? 'Quand c\u2019est ce que vend votre supermarché — elle fait le même pain, avec une étape de plus.'
+            : 'When it is what your supermarket sells — same bread, one more step.',
     look: fr ? 'Granules plus gros, bruns, visibles à l\u2019œil nu'
              : 'Larger granules, brown, clearly visible',
     label: fr ? '« Active », « Traditionnelle », « Boulangère », « Active Dry »'
@@ -58,6 +66,10 @@ const IDENTIFY = (fr: boolean) => [
   },
   {
     id: 'fresh' as YeastType,
+    name: fr ? 'Fraîche' : 'Fresh',
+    dose: '×3',
+    use: fr ? 'Quand vous boulangez dans la semaine qui suit l\u2019achat. Au-delà, elle se perd.'
+            : 'When you bake within a week of buying it. Beyond that, it goes to waste.',
     look: fr ? 'Un bloc mou beige-gris qui s\u2019émiette, au rayon frais'
              : 'A soft beige-grey block that crumbles, sold refrigerated',
     label: fr ? '« Fraîche », « Levure de boulanger fraîche », « Cube »'
@@ -69,6 +81,10 @@ const IDENTIFY = (fr: boolean) => [
   },
   {
     id: 'sourdough' as YeastType,
+    name: fr ? 'Levain' : 'Sourdough',
+    dose: '—',
+    use: fr ? 'Quand le pain est le sujet, pas le support. Demande d\u2019en avoir un vivant.'
+            : 'When the bread is the subject, not the base. Requires keeping one alive.',
     look: fr ? 'Un bocal de pâte vivante que vous nourrissez vous-même'
              : 'A jar of living culture you feed yourself',
     label: fr ? '« Levain », « Sourdough starter », « Lievito madre »'
@@ -80,62 +96,61 @@ const IDENTIFY = (fr: boolean) => [
   },
 ];
 
-function IdentifySheet({ onPick, onClose, fr }: {
-  onPick: (y: YeastType) => void; onClose: () => void; fr: boolean;
+function YeastInfoSheet({ id, onPick, onClose, fr }: {
+  id: YeastType; onPick: (y: YeastType) => void; onClose: () => void; fr: boolean;
 }) {
   // Rendered into <body>. A position:fixed element is anchored to the nearest
-  // ancestor carrying a transform, and this sheet sits inside the step page,
-  // which animates in on translateX — so it was being positioned against the
-  // page rather than the viewport, and painted underneath the summary bar.
-  // typeof document guards the server render without a state round-trip.
+  // ancestor carrying a transform, and this sits inside the step page, which
+  // animates in on translateX — so "fixed" meant fixed to the page, and the
+  // sheet painted underneath the summary bar.
   if (typeof document === 'undefined') return null;
+  const y = IDENTIFY(fr).find(v => v.id === id);
+  if (!y) return null;
   return createPortal(
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.45)', zIndex: 150 }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.5)', zIndex: 300 }} />
       <div style={{
-        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 151,
+        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 301,
         background: 'var(--warm)', borderRadius: '20px 20px 0 0',
         padding: '14px 16px calc(20px + env(safe-area-inset-bottom, 0px))',
         maxHeight: '80vh', overflowY: 'auto',
       }}>
         <div style={{ width: '38px', height: '4px', borderRadius: '2px', background: '#E0D8CC', margin: '0 auto 12px' }} />
-        <h3 style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, margin: '0 0 4px' }}>
-          {fr ? 'Laquelle avez-vous ?' : 'Which one do you have?'}
-        </h3>
-        <p style={{ fontFamily: 'var(--font-ui)', fontSize: '12.5px', color: 'var(--smoke)', margin: '0 0 14px', lineHeight: 1.45 }}>
-          {fr ? 'Regardez le sachet : l\u2019aspect suffit presque toujours.'
-              : 'Look at the packet — the appearance is almost always enough.'}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '2px' }}>
+          <h3 style={{ fontFamily: 'var(--font-ui)', fontSize: '18px', fontWeight: 700, margin: 0 }}>{y.name}</h3>
+          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: '#9C8248' }}>{y.dose}</span>
+        </div>
+        <p style={{ fontFamily: 'var(--font-ui)', fontSize: '12.5px', color: 'var(--smoke)', margin: '0 0 14px', lineHeight: 1.5 }}>
+          {y.look}<br />
+          {fr ? 'Sur l\u2019étiquette : ' : 'On the label: '}{y.label}
         </p>
-        {IDENTIFY(fr).map(y => (
-          <div key={y.id} style={{
-            border: '1px solid var(--border)', background: '#fff',
-            borderRadius: '12px', padding: '14px 16px', marginBottom: '10px',
-          }}>
-            <div style={{ fontFamily: 'var(--font-ui)', fontSize: '14.5px', fontWeight: 700, marginBottom: '8px' }}>
-              {y.look}
-            </div>
-            <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)', marginBottom: '10px', lineHeight: 1.45 }}>
-              {fr ? 'Sur l\u2019étiquette : ' : 'On the label: '}{y.label}
-            </div>
-            <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12.5px', color: 'var(--ash)', lineHeight: 1.5 }}>
-              <div style={{ marginBottom: '4px' }}>
-                <span style={{ color: '#6B7A5A', fontWeight: 700 }}>+ </span>{y.pro}
-              </div>
-              <div>
-                <span style={{ color: '#9C8248', fontWeight: 700 }}>− </span>{y.con}
-              </div>
-            </div>
-            <button
-              onClick={() => { onPick(y.id); onClose(); }}
-              style={{
-                marginTop: '12px', width: '100%', minHeight: '44px',
-                border: '1px solid #6B4423', background: 'transparent', borderRadius: '12px',
-                color: '#6B4423', fontFamily: 'var(--font-ui)', fontSize: '13.5px',
-                fontWeight: 600, cursor: 'pointer',
-              }}
-            >{fr ? 'C\u2019est celle-là' : 'That\u2019s the one'}</button>
+        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--ash)', lineHeight: 1.55 }}>
+          <div style={{ marginBottom: '5px' }}>
+            <span style={{ color: '#6B7A5A', fontWeight: 700 }}>+ </span>{y.pro}
           </div>
-        ))}
+          <div><span style={{ color: '#9C8248', fontWeight: 700 }}>− </span>{y.con}</div>
+        </div>
+        <p style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--ash)', fontStyle: 'italic', margin: '12px 0 0', lineHeight: 1.5 }}>
+          {y.use}
+        </p>
+        {/* The dose is relative to instant, which is the engine's reference —
+            and the plan converts it, so this is context, not a task. */}
+        <p style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)', margin: '12px 0 0', lineHeight: 1.5 }}>
+          {y.id === 'sourdough'
+            ? (fr ? 'Le plan suit la pâte plutôt que l\u2019horloge — la quantité dépend de votre levain.'
+                  : 'The plan follows the dough rather than the clock — the amount depends on your starter.')
+            : (fr ? `Dose ${y.dose} par rapport à l\u2019instantanée. Le plan la convertit pour vous.`
+                  : `Dose ${y.dose} against instant. The plan converts it for you.`)}
+        </p>
+        <button
+          onClick={() => { onPick(y.id); onClose(); }}
+          style={{
+            marginTop: '16px', width: '100%', minHeight: '44px',
+            border: '1px solid #6B4423', background: 'transparent', borderRadius: '12px',
+            color: '#6B4423', fontFamily: 'var(--font-ui)', fontSize: '14px',
+            fontWeight: 600, cursor: 'pointer',
+          }}
+        >{fr ? 'C\u2019est celle-là' : 'That\u2019s the one'}</button>
       </div>
     </>,
     document.body,
@@ -146,7 +161,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
   const t = useTranslations('yeast');
   const locale = useLocale();
   const [showCalc, setShowCalc] = useState(false);
-  const [identify, setIdentify] = useState(false);
+  const [identify, setIdentify] = useState<YeastType | null>(null);
 
   // Option IDs use YEAST_TYPES keys; i18n keys use simplified aliases (idy/ady)
   const options = [
@@ -194,6 +209,8 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
             selectedId={selected ?? ''}
             onSelect={(id) => onSelect(id as YeastType)}
             disabledIds={disabledIds}
+            onInfo={(id) => setIdentify(id as YeastType)}
+            infoLabel={locale === 'fr' ? 'En savoir plus' : 'Learn more'}
           />
           {disabledNote && disabledIds && disabledIds.length > 0 && (
             <p style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', margin: '8px 0 0' }}>
@@ -201,26 +218,18 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
             </p>
           )}
 
-          {/* One tap, under the list, phrased as the question the baker is
-              actually asking. A bare "i" would have to be noticed and
-              interpreted; this says what it answers. */}
-          <button
-            onClick={() => setIdentify(true)}
-            style={{
-              marginTop: '12px', width: '100%', minHeight: '44px',
-              background: 'none', border: 'none', padding: '10px 0',
-              fontFamily: 'var(--font-ui)', fontSize: '13px', color: '#6B4423',
-              textDecoration: 'underline', textUnderlineOffset: '3px',
-              cursor: 'pointer', textAlign: 'left',
-            }}
-          >
-            {locale === 'fr' ? 'Vous ne savez pas laquelle vous avez ? →' : 'Not sure which one you have? →'}
-          </button>
+          {/* The detail hangs off each row rather than off the list: a baker
+              wanting to know what "active dry" is has a specific question, and
+              the single link answered it by opening all four. */}
+          <p style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)', margin: '10px 0 0' }}>
+            {locale === 'fr' ? 'Touchez le « i » pour le détail d\u2019une levure.' : 'Tap the "i" for the detail of a yeast.'}
+          </p>
 
           {identify && (
-            <IdentifySheet
+            <YeastInfoSheet
+              id={identify}
               fr={locale === 'fr'}
-              onClose={() => setIdentify(false)}
+              onClose={() => setIdentify(null)}
               onPick={(y) => onSelect(y)}
             />
           )}

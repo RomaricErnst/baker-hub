@@ -14,9 +14,14 @@ interface DecisionListProps {
   selectedId: string;
   onSelect: (id: string) => void;
   disabledIds?: string[];
+  // When given, each row carries an info target. It stops propagation, so
+  // reading about an option never selects it by accident — the two gestures
+  // sit 8px apart and one of them is destructive to the other.
+  onInfo?: (id: string) => void;
+  infoLabel?: string;
 }
 
-export default function DecisionList({ options, selectedId, onSelect, disabledIds = [] }: DecisionListProps) {
+export default function DecisionList({ options, selectedId, onSelect, disabledIds = [], onInfo, infoLabel }: DecisionListProps) {
   return (
     <div style={{ border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
       {options.map((option, idx) => {
@@ -85,6 +90,19 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               <span style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--gold)', flexShrink: 0 }}>
                 ✓
               </span>
+            )}
+            {onInfo && (
+              <button
+                onClick={e => { e.stopPropagation(); onInfo(option.id); }}
+                aria-label={infoLabel ? `${infoLabel} — ${option.title}` : option.title}
+                style={{
+                  width: '36px', height: '36px', minWidth: '36px', borderRadius: '18px',
+                  border: '1px solid var(--border)', background: 'var(--warm)',
+                  color: 'var(--brass)', fontFamily: 'var(--font-ui)', fontSize: '13px',
+                  fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >i</button>
             )}
           </div>
         );
