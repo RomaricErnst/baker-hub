@@ -218,12 +218,9 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
             </p>
           )}
 
-          {/* The detail hangs off each row rather than off the list: a baker
-              wanting to know what "active dry" is has a specific question, and
-              the single link answered it by opening all four. */}
-          <p style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)', margin: '10px 0 0' }}>
-            {locale === 'fr' ? 'Touchez le « i » pour le détail d\u2019une levure.' : 'Tap the "i" for the detail of a yeast.'}
-          </p>
+          {/* No line explaining the i. A circled i is one of the few marks
+              nobody needs taught, and the sentence cost more attention than
+              the sign it described. */}
 
           {identify && (
             <YeastInfoSheet

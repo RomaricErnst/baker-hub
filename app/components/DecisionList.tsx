@@ -1,4 +1,5 @@
 'use client';
+import InfoDot from './InfoDot';
 
 interface Option {
   id: string;
@@ -92,17 +93,10 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               </span>
             )}
             {onInfo && (
-              <button
-                onClick={e => { e.stopPropagation(); onInfo(option.id); }}
-                aria-label={infoLabel ? `${infoLabel} — ${option.title}` : option.title}
-                style={{
-                  width: '36px', height: '36px', minWidth: '36px', borderRadius: '18px',
-                  border: '1px solid var(--border)', background: 'var(--warm)',
-                  color: 'var(--brass)', fontFamily: 'var(--font-ui)', fontSize: '13px',
-                  fontWeight: 700, cursor: 'pointer', flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >i</button>
+              <InfoDot
+                onClick={() => onInfo(option.id)}
+                label={infoLabel ? `${infoLabel} — ${option.title}` : option.title}
+              />
             )}
           </div>
         );

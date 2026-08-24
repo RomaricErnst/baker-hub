@@ -21,6 +21,7 @@ import { getPrefPeakH_RT, getPrefRTWarmupH } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
 const PizzaParty = dynamic(() => import('../components/PizzaParty'), { ssr: false });
 import FlourPicker from '../components/FlourPicker';
+import InfoDot from '../components/InfoDot';
 import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
@@ -4064,11 +4065,11 @@ export default function Home() {
                       <div style={{ minWidth: 0 }}>
                         <div style={{ position: 'relative', marginBottom: '8px', minHeight: '17px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.oilPct')}</span>
-                          <button
-                            onMouseEnter={() => setOilTip(true)} onMouseLeave={() => setOilTip(false)}
+                          <InfoDot
+                            inline
+                            label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}
                             onClick={() => setOilTip(p => !p)}
-                            style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-ui)', flexShrink: 0 }}
-                          >i</button>
+                          />
                           {oilTip && (
                             <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '8px 12px', fontSize: '12px', color: v > 0 && isHighTemp ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-ui)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
                               {oilGuideText}
@@ -4100,11 +4101,11 @@ export default function Home() {
                       <div style={{ minWidth: 0 }}>
                         <div style={{ position: 'relative', marginBottom: '8px', minHeight: '17px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.sugarPct')}</span>
-                          <button
-                            onMouseEnter={() => setSugarTip(true)} onMouseLeave={() => setSugarTip(false)}
+                          <InfoDot
+                            inline
+                            label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}
                             onClick={() => setSugarTip(p => !p)}
-                            style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-ui)', flexShrink: 0 }}
-                          >i</button>
+                          />
                           {sugarTip && (
                             <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '8px 12px', fontSize: '12px', color: sg.warn ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-ui)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
                               {sg.note}
@@ -4146,11 +4147,11 @@ export default function Home() {
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.doughTemp')}</span>
-                              <button
-                                onMouseEnter={() => setDdtTip(true)} onMouseLeave={() => setDdtTip(false)}
+                              <InfoDot
+                                inline
+                                label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}
                                 onClick={() => setDdtTip(p => !p)}
-                                style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-ui)', flexShrink: 0 }}
-                              >i</button>
+                              />
                               {ddtTip && (
                                 <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '8px 12px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-ui)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
                                   +{mixerFriction}°C friction from {mixerType === 'spiral' ? 'spiral' : mixerType === 'stand' ? 'stand' : 'hand'} mixer. Flour from fridge removes ~8°C.
@@ -4200,11 +4201,11 @@ export default function Home() {
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.mixingLoss')}</span>
-                              <button
-                                onMouseEnter={() => setMixLossTip(true)} onMouseLeave={() => setMixLossTip(false)}
+                              <InfoDot
+                                inline
+                                label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}
                                 onClick={() => setMixLossTip(p => !p)}
-                                style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-ui)', flexShrink: 0 }}
-                              >i</button>
+                              />
                               {mixLossTip && (
                                 <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '8px 12px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-ui)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
                                   Buffer for bowl residue and transfer losses. Schedule is unchanged — only ingredient quantities scale up.
