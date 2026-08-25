@@ -112,37 +112,34 @@ export function buildItems(
   if (prefGoesInFridge && prefRemoveFromFridgeTime && prefStartTime &&
       (prefermentType === 'poolish' || prefermentType === 'biga')) {
     const temp = kitchenTemp ?? 20;
-    // Poolish: push removal AFTER any blocker — never before.
-    // Biga: no warmup needed, use straight from fridge, no adjustment.
-    let removeTime = new Date(prefRemoveFromFridgeTime);
-    if (prefermentType === 'poolish') {
-      let safety = 0;
-      while (safety++ < 10) {
-        const inBlock = blocks.find(b => removeTime >= b.from && removeTime < b.to);
-        if (!inBlock) break;
-        removeTime = new Date(inBlock.to);
-      }
-      if (removeTime >= schedule.bulkFermStart) removeTime = new Date(prefRemoveFromFridgeTime);
-    }
+    // Removal time comes from the engine (utils.requiredPrefWarmupH) — it is no
+    // longer nudged around here. Two policies used to fight: this file silently
+    // pushed removal past a blocker (shortening the warm-up without telling
+    // anyone) while the plan card asked the baker to move Start Dough. The
+    // solver now scores warm-up clearance itself, and taking a container out of
+    // the fridge is a five-second action that does not need a free window.
+    const removeTime = new Date(prefRemoveFromFridgeTime);
     // Duration = time until Mix & Knead starts (not until bulk ferm starts).
     // The poolish is used at mix time — it warms during mixing, not after.
     const mixStartMs = schedule.bulkFermStart.getTime() - (schedule.mixingDurationH ?? 0.25) * 3600000;
     const warmupHRaw = (mixStartMs - removeTime.getTime()) / 3600000;
     const warmupH = Math.max(0, Math.round(warmupHRaw * 4) / 4); // round to nearest 15 min
-    const idealWarmupH = temp >= 28 ? 1.5 : temp >= 24 ? 2 : 2.5;
-    const warmupShort = prefermentType === 'poolish' && warmupH < idealWarmupH * 0.6;
-    items.push({
-      kind: 'step', id: 'remove_pref_fridge', stepKind: 'mixing',
-      time: removeTime,
-      label: prefermentType === 'biga' ? t('timeline.prefSteps.removeBiga') : t('timeline.prefSteps.removePoolish'),
-      iconKey: 'preferment',
-      tip: prefermentType === 'biga'
-        ? t('timeline.prefSteps.tipRemoveBiga')
-        : warmupShort
-        ? t('timeline.prefSteps.tipRemovePoolishShort')
-        : `${t('timeline.prefSteps.removePoolish')} — ${warmupH.toFixed(1)}h à ${temp}°C.`,
-      durationH: warmupH > 0 ? warmupH : null,
-    });
+    // Zero warm-up for a poolish means it goes from fridge straight into the
+    // mix (water temperature carries the dough to target) — no step to show.
+    if (prefermentType === 'biga' || warmupH > 0) {
+      items.push({
+        kind: 'step', id: 'remove_pref_fridge', stepKind: 'mixing',
+        time: removeTime,
+        label: prefermentType === 'biga' ? t('timeline.prefSteps.removeBiga') : t('timeline.prefSteps.removePoolish'),
+        iconKey: 'preferment',
+        tip: prefermentType === 'biga'
+          ? t('timeline.prefSteps.tipRemoveBiga')
+          : t('timeline.prefSteps.tipRemovePoolish', {
+              dur: hoursLabel(warmupH), temp: `${temp}°C`,
+            }),
+        durationH: warmupH > 0 ? warmupH : null,
+      });
+    }
   }
 
   // 0b — Feed Starter (sourdough only, when feedTime provided)

@@ -376,10 +376,10 @@
       "tipPoolishRT": "Mélangez farine et eau à parts égales (100% hydratation) avec une pincée de levure. Mélangez jusqu'à ce qu'il n'y ait plus de farine sèche. Laissez à température ambiante.",
       "tipBiga": "Mélangez farine, eau et une infime quantité de levure (0,1–0,2%). Mélangez grossièrement — la biga est volontairement grumeleuse. Couvrez et réfrigérez.",
       "tipRemoveBiga": "Sortez la biga du frigo — pas besoin de réchauffage, la biga va directement dans le pétrin froide.",
-      "tipRemovePoolishShort": "Sortez le poolish du frigo maintenant — le temps est court avant le pétrissage. Observez le pic plutôt que l'horloge.",
       "tipFeedHot": "Nourrissez le levain avec farine et eau à parts égales. À {temp} il atteint son pic en 3–5h — surveillez le dôme + les bulles.",
       "tipFeedWarm": "Nourrissez le levain avec farine et eau à parts égales. Pic en 4–6h à {temp}.",
-      "tipFeedRT": "Nourrissez le levain avec farine et eau à parts égales. Pic en 6–10h à température ambiante."
+      "tipFeedRT": "Nourrissez le levain avec farine et eau à parts égales. Pic en 6–10h à température ambiante.",
+      "tipRemovePoolish": "Sortez votre poolish du frigo — il lui faut environ {dur} à {temp} avant le pétrissage."
     },
     "mixTips": {
       "sourdough": "Mélangez farine et eau, puis ajoutez votre levain. Ajoutez le sel avec les 10% d'eau restants. Mélangez jusqu'à complète absorption.",
@@ -1026,7 +1026,7 @@
       ],
       "pitfalls": [
         "Sur-fermentation au froid : boules gonflées de plus de 100% au frigo — enfournez immédiatement",
-        "Boules qui se déchirent à l'étirement : besoin de plus de temps de réchauffage — ne jamais étirer une pâte froide"
+        "Un pâton qui se déchire à l'étirage est encore trop froid — laissez-le plus longtemps, ou ouvrez-le plus doucement"
       ]
     },
     "finalProof": {
@@ -1056,7 +1056,7 @@
         "Ne revient pas, pâte molle — sur-fermentée, enfournez immédiatement"
       ],
       "pitfalls": [
-        "Étirer la pâte froide — attendez le réchauffage, le gluten froid se déchire",
+        "Forcer un pâton qui se rétracte — il lui faut du temps, pas de la force",
         "Se fier au temps plutôt qu'au ressenti — utilisez toujours le test du creux",
         "Boules sur-fermentées s'effondrent au four et perdent le développement"
       ]

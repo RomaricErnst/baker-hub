@@ -1,8 +1,8 @@
 'use client';
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { type AvailabilityBlock, type ScheduleResult, hoursLabel } from '../utils';
-import FermentChart, { getPrefOptH, getPrefPeakH_RT, getPrefRTWarmupH, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
+import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH } from '../utils';
+import FermentChart, { getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 
 export type StarterEventKind =
   | 'last_fed'
@@ -659,18 +659,21 @@ function findOptimalPosition(
       });
       const bulkClear = bulkEndHBF > 0 && (!isInBlocker(bulkEndHBF) || !bulkBlockedDeep);
       if (!bulkClear) continue;
-      // Poolish fridge: ensure at least 30min warmup before mix is available.
-      // Full warmup (prefRTWarmupH) is ideal but not a hard requirement —
-      // 30min minimum is scientifically sufficient for yeast to resume activity.
-      if (hasPref && prefermentType === 'poolish' && prefGoesInFridge && prefRTWarmupH > 0) {
-        const MIN_WARMUP_H = 0.5;
-        const removeHBF = candidate + prefRTWarmupH;
-        if (isInBlocker(removeHBF)) {
-          // Full warmup slot blocked — find the latest unblocked slot >= 30min before mix
-          const fallbackRemove = candidate + MIN_WARMUP_H;
-          if (isInBlocker(fallbackRemove)) continue; // even 30min warmup impossible — skip
-        }
-      }
+      // Poolish fridge warm-up: prefRTWarmupH is now the warm-up the dough
+      // TEMPERATURE actually requires (utils.requiredPrefWarmupH) — it is 0
+      // whenever water temperature alone can reach the target FDT, which is the
+      // normal case at the 20–30% flour a fridge poolish uses. When it is 0
+      // there is no constraint here at all.
+      //
+      // When it is non-zero, clearing the slot is a PREFERENCE, not a gate:
+      // taking a container out of the fridge is a five-second action, so a busy
+      // window is a mild inconvenience, never a reason to reject an otherwise
+      // good plan. Scored below so the solver quietly picks a mix time that
+      // clears it — instead of asking the baker to move Start Dough itself.
+      const warmupClear =
+        (hasPref && prefermentType === 'poolish' && prefGoesInFridge && prefRTWarmupH > 0
+          && isInBlocker(candidate + prefRTWarmupH))
+          ? 0 : 1;
       if (!hasPref) {
         // No preferment — score mix position only
         const score = inSweet(candidate) ? 3 : 0;
@@ -810,7 +813,11 @@ function findOptimalPosition(
       // fridge, and biga equally.
       const prefScoreComponent = prefInZone ? 2 : prefYellow ? 1 : 0;
       const retardWeight = prefScoreComponent >= 2 ? 8 : 3;
-      const combinedScore = score * 100 + fridgeBonus * 10 + retardBonus * retardWeight + doughReasonable * 5 + poolishComfort;
+      // Warm-up clearance sits with the other practicality terms (doughReasonable 5,
+      // poolishComfort 0–8): enough to win a near-tie and shift the mix by an hour,
+      // never enough to outrank a quality tier (100) or the cold-retard bonus.
+      const combinedScore = score * 100 + fridgeBonus * 10 + retardBonus * retardWeight
+        + doughReasonable * 5 + poolishComfort + warmupClear * 6;
 
       if (combinedScore > bestCombinedScore) {
         bestScore = score;
@@ -1881,7 +1888,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       prefermentType,
       prefMinViableH,
       minTotalRTLocal,
-      localPrefGoesInFridge ? getPrefRTWarmupH(kitchenTemp) : 0,
+      requiredPrefWarmupH({
+        prefermentType, prefInFridge: localPrefGoesInFridge,
+        styleKey: styleKey ?? 'neapolitan', kitchenTemp, fridgeTemp,
+      }),
       localPrefGoesInFridge,
       fridgeTemp,
       styleKey ?? 'neapolitan',
@@ -2179,8 +2189,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     onPrefGoesInFridgeChange?.(prefGoesInFridge);
   }, [prefGoesInFridge, onPrefGoesInFridgeChange]);
   useEffect(() => { setLocalBlocks(blocks); }, [blocks]);
-  // "Remove poolish from fridge" time: rtWarmupH before mix, pushed out of blockers
-  const prefRTWarmupH = prefGoesInFridge ? getPrefRTWarmupH(kitchenTemp) : 0;
+  // "Remove poolish from fridge" time: the warm-up the dough TEMPERATURE needs,
+  // not a fixed ladder. 0 for biga (goes into the mix cold by protocol) and 0
+  // for any fridge poolish whose target dough temp is reachable on water alone.
+  const prefRTWarmupH = requiredPrefWarmupH({
+    prefermentType, prefInFridge: prefGoesInFridge,
+    styleKey: styleKey ?? 'neapolitan', kitchenTemp, fridgeTemp,
+  });
   const prefRemoveFromFridgeHBF = prefGoesInFridge ? mixOffsetH + prefRTWarmupH : null;
   const prefRemoveFromFridgeTime = prefRemoveFromFridgeHBF !== null
     ? new Date(pendingEatTime.getTime() - prefRemoveFromFridgeHBF * 3600000)
@@ -7789,20 +7804,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     </div>
                   );
                 })()}
-                {(() => {
-                  if (!prefGoesInFridge || prefermentType !== 'poolish' || prefRTWarmupH <= 0) return null;
-                  const removeMs = pendingEatTime.getTime() - (mixOffsetH + prefRTWarmupH) * 3600000;
-                  const removeDate = new Date(removeMs);
-                  const inBlock = blocks.find(b => removeDate >= b.from && removeDate < b.to);
-                  if (!inBlock) return null;
-                  const delayMin = Math.round(((inBlock.to.getTime() - removeMs) / 3600000) * 60 / 15) * 15;
-                  return (
-                    <div style={{ fontSize: '11px', color: '#7A5A10', marginTop: '4px', lineHeight: 1.5 }}>
-                      Remove from fridge at {formatTimeShort(removeDate, isFr)} — falls in your busy window.
-                      {delayMin > 0 && ` Moving Start Dough ${delayMin} min later would clear it.`}
-                    </div>
-                  );
-                })()}
+                {/* The old \"remove from fridge falls in your busy window —
+                    moving Start Dough 75 min later would clear it\" note lived
+                    here. It asked the baker to arbitrate a conflict the solver
+                    had already solved. The solver now scores warm-up clearance
+                    itself (findOptimalPosition), and the warm-up is usually 0
+                    because water temperature carries the dough to target — so
+                    there is nothing left to report. Removal time belongs in the
+                    Guide/Timeline as a bake-day action, not in the plan card. */}
               </div>
             )}
 

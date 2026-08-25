@@ -17,7 +17,7 @@ import ClimatePicker from '../components/ClimatePicker';
 const RecipeOutput = dynamic(() => import('../components/RecipeOutput'), { ssr: false });
 import PlanNav from '../components/PlanNav';
 const BakeGuide = dynamic(() => import('../components/BakeGuide'), { ssr: false });
-import { getPrefPeakH_RT, getPrefRTWarmupH } from '../components/FermentChart';
+import { getPrefPeakH_RT } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
 const PizzaParty = dynamic(() => import('../components/PizzaParty'), { ssr: false });
 import FlourPicker from '../components/FlourPicker';
@@ -37,7 +37,7 @@ import {
   type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType, type FlourBlend, type PrefermentType,
 } from '../data';
 import {
-  buildSchedule, calculateRecipe, formatTime,
+  buildSchedule, calculateRecipe, formatTime, requiredPrefWarmupH,
   type AvailabilityBlock,
 } from '../utils';
 import { buildItems } from '@/app/components/Timeline';
@@ -1245,11 +1245,22 @@ export default function Home() {
 
   const prefRemoveFromFridgeTime = useMemo(() => {
     if (!prefGoesInFridge || !eatTime) return null;
-    const rtWarmupH = getPrefRTWarmupH(kitchenTemp);
+    // Same single source of truth the scheduler uses. Returns 0 for biga and for
+    // any fridge poolish whose target dough temperature is reachable on water
+    // alone — in that case removal lands exactly at mix time and the Timeline
+    // drops the step entirely (the preferment goes into the mix cold).
+    const rtWarmupH = requiredPrefWarmupH({
+      prefermentType: prefermentType ?? 'none',
+      prefInFridge: prefGoesInFridge,
+      styleKey: styleKey ?? 'neapolitan',
+      kitchenTemp, fridgeTemp,
+      mixerType: (mixerType ?? 'hand') as MixerType,
+      targetDoughTemp,
+    });
     const mixHBF = schedule ? (eatTime.getTime() - schedule.bulkFermStart.getTime()) / 3600000 : 0;
     const removeHBF = mixHBF + rtWarmupH;
     return new Date(eatTime.getTime() - removeHBF * 3600000);
-  }, [prefGoesInFridge, kitchenTemp, eatTime, schedule]);
+  }, [prefGoesInFridge, prefermentType, styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp, eatTime, schedule]);
 
   const feedToMixH = useMemo(() => {
     if (yeastType !== 'sourdough' || !feedTime || !startTime) return undefined;

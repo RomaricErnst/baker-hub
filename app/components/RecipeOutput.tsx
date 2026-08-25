@@ -281,6 +281,14 @@ function computeWaterInfo(
     iceGuidance = isSpiral
       ? (isFr ? `${iceGrams}g de glace + ${tapGrams}g d'eau — glace directement dans la cuve` : `${iceGrams}g ice + ${tapGrams}g water — add ice directly to bowl`)
       : (isFr ? `mélangez ${iceGrams}g de glace + ${tapGrams}g d'eau, remuez 1 min, filtrez avant usage` : `mix ${iceGrams}g ice + ${tapGrams}g water, stir 1 min, strain before using`);
+  } else if (tempDiff <= -8) {
+    // Target ABOVE ambient. Only reachable with a cold preferment in the mix —
+    // it is 25–55% of the dough mass, so the water has to carry the difference.
+    // Every branch below assumes target < ambient and would have silently told
+    // the baker "at room temperature", which is the opposite of what is needed.
+    tempGuidance = isFr ? 'eau chaude — au-dessus de la température de la pièce' : 'warm water — above room temperature';
+  } else if (tempDiff <= -3) {
+    tempGuidance = isFr ? 'eau tiède — légèrement au-dessus de la température de la pièce' : 'lukewarm water — slightly above room temperature';
   } else if (iceGrams >= 20 && tempDiff >= 3) {
     // Ice helpful but not critical — suggest as an easy option
     tempGuidance = isFr ? `eau bien froide, ou ${iceGrams}g de glace dans ${tapGrams}g d'eau` : `chilled water, or add ${iceGrams}g ice to ${tapGrams}g water`;

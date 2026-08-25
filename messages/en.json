@@ -376,10 +376,10 @@
       "tipPoolishRT": "Mix equal weight flour and water (100% hydration) with a pinch of yeast. Stir until no dry flour remains. Leave at room temperature.",
       "tipBiga": "Combine flour, water and a tiny amount of yeast (0.1–0.2%). Mix roughly — biga is intentionally shaggy, not smooth. Cover and refrigerate.",
       "tipRemoveBiga": "Take your biga out of the fridge — no warmup needed, biga goes straight into the mix cold.",
-      "tipRemovePoolishShort": "Take your poolish out of the fridge now — time is short before mixing. Watch for peak rather than the clock.",
       "tipFeedHot": "Feed equal weights starter + flour + water. At {temp} your starter peaks in 3–5h — watch for dome + bubbles.",
       "tipFeedWarm": "Feed equal weights starter + flour + water. Peaks in 4–6h at {temp}.",
-      "tipFeedRT": "Feed equal weights starter + flour + water. Peaks in 6–10h at room temperature."
+      "tipFeedRT": "Feed equal weights starter + flour + water. Peaks in 6–10h at room temperature.",
+      "tipRemovePoolish": "Take your poolish out of the fridge — it needs about {dur} at {temp} before mixing."
     },
     "mixTips": {
       "sourdough": "Combine flour and water, then add your starter. Add salt with the remaining water. Mix until fully absorbed.",
@@ -1026,7 +1026,7 @@
       ],
       "pitfalls": [
         "Over-retarding: balls that have risen more than 100% in the fridge are over-fermented — bake immediately when removed",
-        "Cold balls that tear on stretching: need more warmup time — never stretch cold dough"
+        "Balls that tear on stretching are still too cold — give them longer, or open them more gently"
       ]
     },
     "finalProof": {
@@ -1056,7 +1056,7 @@
         "Does not spring back, feels slack — over-proofed, bake immediately"
       ],
       "pitfalls": [
-        "Stretching cold dough — wait for warmup, cold gluten tears",
+        "Forcing a ball that keeps springing back — it needs more time, not more force",
         "Going by time instead of feel — always use the poke test",
         "Over-proofed balls collapse in the oven and lose oven spring"
       ]

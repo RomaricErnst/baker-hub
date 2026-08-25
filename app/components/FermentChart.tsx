@@ -129,15 +129,12 @@ export function getPrefPeakH_RT(type: string, temp: number, styleKey = 'neapolit
   return 11;
 }
 
-// ── RT warmup time to bring cold poolish to peak ─────────────────────
-// How long poolish needs at room temp after coming out of fridge.
-// Climate-sensitive: hotter kitchen = faster warmup.
-export function getPrefRTWarmupH(temp: number): number {
-  if (temp >= 30) return 0.5;
-  if (temp >= 28) return 0.75;
-  if (temp >= 26) return 1.0;
-  return 2.0;
-}
+// NOTE: getPrefRTWarmupH (a fixed climate ladder) lived here and is gone.
+// Preferment warm-up is now utils.requiredPrefWarmupH — solved from the dough
+// temperature the mix actually needs, and 0 whenever water temperature alone
+// can reach it. Starter warm-up below is unrelated and still a ladder: a
+// 100–150 g starter has a ~80–90 min time constant, so 0.5–1.5h genuinely
+// warms it, unlike a 600 g poolish.
 
 // How long after Feed 1 until starter is depleted (trough = ready for Feed 2)
 export function getStarterTroughH(temp: number, mature: boolean, styleKey = 'neapolitan'): number {
@@ -538,8 +535,16 @@ export default function FermentChart({
   // needsFridge = offset > RT peak time for this style+temp
   // If fridge: peak = AT mix (fridge cold phase + RT warmup lands at mix)
   // If RT only: peak = after mix naturally (curve still rising at mix = honest)
-  const rtPeakH = hasPref ? getPrefPeakH_RT(prefermentType, kitchenTemp) : 0;
-  const prefNeedsFridge = hasPref && (prefermentType === 'biga' || prefOffsetH > rtPeakH);
+  const rtPeakH = hasPref ? getPrefPeakH_RT(prefermentType, kitchenTemp, styleKey) : 0;
+  // The scheduler decides fridge vs room temp (it scores both modes) and hands
+  // the answer down as prefInFridge. Re-deriving it here from prefOffsetH made
+  // the chart disagree with the card on the same screen — an 11h poolish in a
+  // sub-24°C kitchen hits `11 > 11 === false` and printed "Room temp" while the
+  // card printed a fridge removal time. Local derivation is the fallback only.
+  const prefNeedsFridge = hasPref && (
+    prefermentType === 'biga' ||
+    (prefInFridge !== undefined ? prefInFridge : prefOffsetH > rtPeakH)
+  );
   // Fridge: fix sigma at optimal duration so curve shape is stable during drag
   // RT: use actual prefOffsetH (small sigma, negligible effect)
   const prefSigInput = prefNeedsFridge

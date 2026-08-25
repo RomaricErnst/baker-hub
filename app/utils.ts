@@ -405,6 +405,157 @@ function roundTo15(d: Date | null): Date | null {
   return r;
 }
 
+// ══════════════════════════════════════════
+// PREFERMENT THERMAL MODEL + ENTHALPY DDT
+// ══════════════════════════════════════════
+// Why this exists: a fridge poolish/biga is 25–55% of the finished dough by
+// mass. The classic 3-factor DDT rule (FDT×3 − flour − room − friction) has no
+// preferment term, so it cannot see that a 6°C preferment drags the mix down by
+// 4–8°C. The warm-up step was the (unmodelled, thermally token) patch for that.
+// Here we model it properly: solve the water temperature from a real enthalpy
+// balance, and only ask for warm-up when water alone cannot reach the target.
+
+const CP_WATER = 4180;   // J/kg·K
+const CP_FLOUR = 1800;   // J/kg·K (dry solids)
+
+/** Target dough temperature by style. Hoisted so the warm-up solver can read it. */
+export const TARGET_FDT: Record<string, number> = {
+  neapolitan: 23, newyork: 24, roman: 25, pan: 25,
+  sourdough: 24, pain_campagne: 24, pain_levain: 24,
+  baguette: 24, pain_complet: 24, pain_seigle: 24,
+  fougasse: 25, brioche: 22, pain_mie: 24, pain_viennois: 23,
+};
+
+export const WATER_TEMP_MIN = 2;
+export const WATER_TEMP_MAX = 40;
+
+/**
+ * Warm-up ceiling. Deliberately equal to the OLD getPrefRTWarmupH maximum, so
+ * the computed value can only ever be shorter than what shipped before — the
+ * scheduler can get looser, never tighter.
+ */
+export const MAX_PREF_WARMUP_H = 2;
+
+/**
+ * Lumped-capacitance time constant (minutes) for a covered preferment mass
+ * warming in still air. Bi correction accounts for the core lagging the skin.
+ * ~400 g → 130 min · ~600 g → 152 min · ~1000 g → 185 min.
+ */
+export function prefThermalTauMin(massG: number, prefHydrationPct: number): number {
+  const hyd = Math.max(0.2, prefHydrationPct / 100);
+  const waterFrac = hyd / (1 + hyd);
+  const cp = waterFrac * CP_WATER + (1 - waterFrac) * CP_FLOUR;
+  const rho = 1000;                                    // kg/m³
+  const V = Math.max(massG, 1) / 1000 / rho;           // m³
+  const r = Math.cbrt((3 * V) / (4 * Math.PI));        // equivalent sphere radius, m
+  const A = 4 * Math.PI * r * r * 0.85;                // container base insulates ~15%
+  const h = 8;                                         // W/m²·K — still air, covered
+  const k = 0.45;                                      // W/m·K — dough
+  const Bi = (h * r) / k;
+  return ((rho * V * cp) / (h * A) / 60) * (1 + Bi / 5);
+}
+
+/** Preferment temperature after `warmupH` at room temperature. */
+export function prefTempAfterWarmup(
+  massG: number, prefHydrationPct: number,
+  fromTempC: number, roomTempC: number, warmupH: number,
+): number {
+  if (warmupH <= 0) return fromTempC;
+  const tau = prefThermalTauMin(massG, prefHydrationPct);
+  return roomTempC - (roomTempC - fromTempC) * Math.exp(-(warmupH * 60) / tau);
+}
+
+/**
+ * Enthalpy-balance water temperature. Total flour/water are the WHOLE dough;
+ * prefFlourG/prefWaterG are the portion already locked inside the preferment
+ * at prefTempC. Returns the unclamped ideal and the dough temp actually
+ * reachable once the water is clamped to [WATER_TEMP_MIN, WATER_TEMP_MAX].
+ */
+export function solveWaterTempEnthalpy(p: {
+  targetFDT: number; kitchenTemp: number; flourTemp: number; friction: number;
+  flourG: number; waterG: number; saltG: number;
+  prefFlourG: number; prefWaterG: number; prefTempC: number;
+}): { idealWaterTemp: number; waterTemp: number; doughTempC: number; freeWaterG: number } {
+  const prefMass = p.prefFlourG + p.prefWaterG;
+  const freeWater = p.waterG - p.prefWaterG;
+  const cPref = prefMass > 0 ? prefMass * ((p.prefWaterG / prefMass) * CP_WATER + (p.prefFlourG / prefMass) * CP_FLOUR) : 0;
+  const cDry = (p.flourG - p.prefFlourG + p.saltG) * CP_FLOUR;
+  const cWater = Math.max(0, freeWater) * CP_WATER;
+  const total = cPref + cDry + cWater;
+
+  // (FDT − friction) · Σc = cPref·Tpref + cDry·Tkitchen + cWater·Twater
+  const target = (p.targetFDT - p.friction) * total;
+  const idealWaterTemp = cWater > 0
+    ? (target - cPref * p.prefTempC - cDry * p.flourTemp) / cWater
+    : WATER_TEMP_MAX;
+  const waterTemp = Math.max(WATER_TEMP_MIN, Math.min(WATER_TEMP_MAX, idealWaterTemp));
+  const doughTempC = total > 0
+    ? (cPref * p.prefTempC + cDry * p.flourTemp + cWater * waterTemp) / total + p.friction
+    : p.targetFDT;
+  return { idealWaterTemp, waterTemp, doughTempC, freeWaterG: freeWater };
+}
+
+/**
+ * SINGLE SOURCE OF TRUTH for "how long does the preferment need out of the
+ * fridge before mixing". Returns 0 whenever water temperature alone can hit the
+ * target dough temperature — which, at the flour percentages a fridge poolish
+ * actually uses (20–30%), is almost always.
+ *
+ * Biga returns 0 by protocol: it goes straight from the fridge into the mix
+ * (matches the shipped Bake Guide copy), and the water carries the temperature.
+ *
+ * ANTI-FEEDBACK RULE: this is a PURE PROTOCOL FUNCTION of climate + style. It
+ * deliberately takes no preferment percentage and no batch size, because both
+ * are derived from prefOffsetH upstream (the default-% ladder) and feeding
+ * either one back in would make the solver depend on its own previous answer —
+ * the POOLISH-BIGA-AUDIT §1 bug class. Batch size only moves the thermal time
+ * constant between ~128 and ~195 min across every realistic home batch, which
+ * cannot shift a 15-minute-quantised answer; flour % is absorbed by the water
+ * temperature instead, which is where fine adjustment belongs.
+ */
+export function requiredPrefWarmupH(o: {
+  prefermentType: string;
+  prefInFridge: boolean;
+  styleKey: string;
+  kitchenTemp: number;
+  fridgeTemp: number;
+  mixerType?: MixerType;
+  targetDoughTemp?: number;
+}): number {
+  if (o.prefermentType !== 'poolish' || !o.prefInFridge) return 0;
+
+  const style = ALL_STYLES[o.styleKey as StyleKey];
+  const hydPct = style?.hydration ?? 62;
+  const saltPct = style?.salt ?? 2.8;
+  const prefHydPct = PREFERMENT_TYPES.poolish.hydration;      // 100
+  // Canonical fridge-poolish fraction and batch size. Fridge windows are always
+  // ≥12h, where the shipped default ladder gives 20–30% — 25% is the honest
+  // midpoint, and a constant rather than a function of the current plan.
+  const prefPct = 0.25;
+  const targetFDT = o.targetDoughTemp ?? TARGET_FDT[o.styleKey] ?? 24;
+  const friction = MIXER_TYPES[o.mixerType ?? 'hand']?.frictionFactor ?? 3;
+
+  const doughTotal = 1000;
+  const flourG = doughTotal / (1 + hydPct / 100 + saltPct / 100);
+  const waterG = flourG * (hydPct / 100);
+  const saltG = flourG * (saltPct / 100);
+  const prefFlourG = flourG * prefPct;
+  const prefWaterG = prefFlourG * (prefHydPct / 100);
+  if (waterG - prefWaterG <= 0) return MAX_PREF_WARMUP_H;      // no free water to steer with
+
+  for (let w = 0; w <= MAX_PREF_WARMUP_H + 1e-9; w += 0.25) {
+    const prefTempC = prefTempAfterWarmup(
+      prefFlourG + prefWaterG, prefHydPct, o.fridgeTemp, o.kitchenTemp, w,
+    );
+    const { idealWaterTemp } = solveWaterTempEnthalpy({
+      targetFDT, kitchenTemp: o.kitchenTemp, flourTemp: o.kitchenTemp, friction,
+      flourG, waterG, saltG, prefFlourG, prefWaterG, prefTempC,
+    });
+    if (idealWaterTemp <= WATER_TEMP_MAX) return w;
+  }
+  return MAX_PREF_WARMUP_H;
+}
+
 const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHRequired?: boolean }> = {
   // Pizza — sweet spot = coldH + rtH (where dough peaks at bake)
   neapolitan:    { coldH: 24, rtH: 2 },                          // sweet: 26h
@@ -893,16 +1044,12 @@ export function calculateRecipe(
   const oilG   = oil   > 0 ? Math.round(flour * oil / 100)   : 0;
   const sugarG = sugar > 0 ? Math.round(flour * sugar / 100 * 10) / 10 : 0;
 
-  // Water temperature — DDT method (Desired Dough Temperature)
-  // Formula: waterTemp = (FDT × 3) - flourTemp - kitchenTemp - frictionFactor
-  // flourTemp ≈ kitchenTemp (flour stored at room temperature)
-  // FDT varies by style: extensible doughs target lower, enriched higher
-  const TARGET_FDT: Record<string, number> = {
-    neapolitan: 23, newyork: 24, roman: 25, pan: 25,
-    sourdough: 24, pain_campagne: 24, pain_levain: 24,
-    baguette: 24, pain_complet: 24, pain_seigle: 24,
-    fougasse: 25, brioche: 22, pain_mie: 24, pain_viennois: 23,
-  };
+  // Water temperature — DDT (Desired Dough Temperature).
+  // FDT varies by style: extensible doughs target lower, enriched higher.
+  // flourTemp ≈ kitchenTemp (flour stored at room temperature).
+  // The solve itself happens AFTER the preferment is computed — see below —
+  // because a cold preferment is 25–55% of the dough mass and the classic
+  // 3-factor rule has no term for it.
   const targetFDT = (mode === 'custom' && targetDoughTemp !== undefined)
     ? targetDoughTemp
     : TARGET_FDT[styleKey] ?? 24;
@@ -910,9 +1057,6 @@ export function calculateRecipe(
     ? fridgeTemp
     : kitchenTemp;
   const frictionFactor = MIXER_TYPES[mixerType]?.frictionFactor ?? 3;
-  const waterTemp = Math.max(2, Math.min(40,
-    targetFDT * 3 - flourTemp - kitchenTemp - frictionFactor
-  ));
 
   // Yeast or sourdough
   let yeast: YeastResult | null = null;
@@ -1004,6 +1148,37 @@ export function calculateRecipe(
         directNeedIDY,
       )
     : null;
+
+  // ── DDT solve ────────────────────────────────────────────────
+  // No preferment, or a preferment already sitting at room temperature:
+  // the classic 3-factor rule is left EXACTLY as it shipped. Only a COLD
+  // preferment gets the enthalpy treatment, so nothing else can regress.
+  const prefIsCold = !!preferment && prefInFridge
+    && (prefermentType === 'poolish' || prefermentType === 'biga');
+  let waterTemp: number;
+  if (prefIsCold && preferment) {
+    const prefHydPct = PREFERMENT_TYPES[prefermentType as PrefermentType].hydration;
+    const prefWarmupH = requiredPrefWarmupH({
+      prefermentType: prefermentType as string,
+      prefInFridge, styleKey, kitchenTemp, fridgeTemp,
+      mixerType,
+      targetDoughTemp: mode === 'custom' ? targetDoughTemp : undefined,
+    });
+    const prefTempC = prefTempAfterWarmup(
+      preferment.prefFlour + preferment.prefWater, prefHydPct,
+      fridgeTemp, kitchenTemp, prefWarmupH,
+    );
+    waterTemp = solveWaterTempEnthalpy({
+      targetFDT, kitchenTemp, flourTemp, friction: frictionFactor,
+      flourG: flour, waterG: water, saltG: salt,
+      prefFlourG: preferment.prefFlour, prefWaterG: preferment.prefWater,
+      prefTempC,
+    }).waterTemp;
+  } else {
+    waterTemp = Math.max(WATER_TEMP_MIN, Math.min(WATER_TEMP_MAX,
+      targetFDT * 3 - flourTemp - kitchenTemp - frictionFactor
+    ));
+  }
 
   return {
     flour, water, salt, yeast, sourdough,
