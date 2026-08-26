@@ -2093,7 +2093,7 @@ export default function Home() {
         ? `${formatTime(startTime, locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
         : null,
       gap: fr ? 'L\u2019heure de cuisson n\u2019est pas choisie' : 'No bake time chosen yet' },
-    { id: 10, chip: fr ? 'Pâte' : 'Dough', title: t('dialIn.title'),
+    { id: 10, chip: fr ? 'Peaufiner' : 'Fine-tune', title: t('dialIn.title'),
       value: manualHydration !== undefined
         ? `${manualHydration}% ${t('dialIn.hydrationSuffix')}`
         : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : null,

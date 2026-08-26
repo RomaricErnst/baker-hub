@@ -6560,7 +6560,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             : kitchenTemp <= 18
             ? (isFr ? `Cuisine fraîche (${kitchenTemp}°C) — chaque étape reçoit un peu plus de temps.` : `Cool kitchen (${kitchenTemp}°C) — each stage gets a little more time.`)
             : coldH >= 12
-            ? (isFr ? `${Math.round(coldH)}h au froid — plus de goût et un horaire plus souple.` : `${Math.round(coldH)}h in the fridge — deeper flavour and a more flexible timing.`)
+            ? (isFr ? 'Un long repos au froid — plus de goût, et plus de souplesse dans la journée.' : 'A long cold rest — deeper flavour, and more room in your day.')
+            : coldH <= 0
+            ? (isFr ? 'Tout à température ambiante — une mie plus légère et plus vive.' : 'All at room temperature — a lighter, brighter crumb.')
             : (isFr ? `Calculé à rebours depuis votre heure de cuisson, à ${kitchenTemp}°C.` : `Timed backwards from your bake time at ${kitchenTemp}°C.`);
           return (
             <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginBottom: '8px', lineHeight: 1.5 }}>
