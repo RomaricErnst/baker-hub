@@ -33,9 +33,14 @@ export interface FermentChartProps {
   };
   scheduleNote?: string | null;
   recommendedMixHBF?: number | null;
-  showZoneLabels?: boolean;
-  onToggleZones?: (v: boolean) => void;
-  hasDragged?: boolean;
+  /** id of the row selected in the plan list — that step is highlighted and
+   *  everything else drops back. Ids match the list: 'mix' | 'pref' | 'bake'
+   *  | `ev:<index>` for sourdough starter events. */
+  focusId?: string | null;
+  /** Reset lives directly under the chart so the baker sees the diamond jump
+   *  back when they press it. Rendered only when the plan is the baker's. */
+  showReset?: boolean;
+  onReset?: () => void;
   starterFeedTime?: Date | null;
   starterFeed2Time?: Date | null;
   starterFridgeOutTime?: Date | null;
@@ -65,18 +70,32 @@ export interface FermentChartProps {
 // ── Constants ────────────────────────────────────────────────
 const WINDOW_H_DEFAULT = 96;
 const PAD       = 16;
-const CHART_H   = 272;  // tall enough for 3 staggered label rows below the axis (was 252 — row-2 labels clipped)
-const TOP_PAD   = 72;   // space above curves for window labels
-const BL        = 175;  // baseline = TOP_PAD + curve height area
+// Window lane — a step's "room to move" bar. The lane height is RESERVED
+// permanently (whether or not any window is drawn) so the plot never shifts
+// when the window layer is switched on.
+const WIN_LANE_Y = 5;
+const WIN_LANE_H = 6;
+const TOP_PAD   = 30;   // plot top — busy columns and the tallest bell start here
 const MAXH      = 110;  // max bell height (fits within TOP_PAD to BL)
-const AXIS_Y    = 175;  // axis line = same as baseline BL
-const BLOCKER_TOP = BL - MAXH - 8; // blocker columns cap a touch above the tallest bell
+const BL        = 140;  // baseline
+const AXIS_Y    = 140;  // axis line = same as baseline BL
+const CHART_H   = 164;  // baseline + now tick + day-name row
+
+// Diamond labels now sit ABOVE the axis (over the curves, with a cream halo),
+// so there are no label rows below the axis to make room for.
+const LABEL_Y      = BL - 17;  // lane 0
+const LABEL_LANE_H = 14;       // lane 1 sits this much higher
 
 // DOUGH_SIG and DOUGH_SWEET_CENTER are computed inside the component
 // based on hasColdRetard — see derived physics section
 
-// Diamond half-size
-const S = 13;
+// Diamond half-diagonal. Matches the settled prototype's marker size once its
+// 320-unit viewBox is scaled to a 360px phone (21.2 units ≈ 24px across).
+const S = 12;
+
+// Cold casing drawn behind a curve wherever that curve is in the fridge.
+const COLD_STROKE = '#5B87AD';
+const BUSY_FILL   = '#8A7F78';
 
 // ── Sigma / optimal-hours functions ──────────────────────────
 // ── Poolish RT peak time (hours from start to peak at room temp) ─────
@@ -171,6 +190,45 @@ export function getPrefOptH(type: string, temp: number, inFridge = false, styleK
   }
   // levain / sourdough — align with getPrefPeakH_RT
   return getPrefPeakH_RT(type, temp, styleKey);
+}
+
+// ── Chart layers ─────────────────────────────────────────────
+export interface ChartLayers { fridge: boolean; busy: boolean; window: boolean }
+const LAYERS_KEY = 'bh_chart_layers_v1';
+
+// ── Label packing: clamp, then stagger, then drop ───────────
+// 1. Clamp each label inside the canvas so "Bake" cannot overflow the right
+//    edge. 2. Test against everything already placed, left to right.
+// 3. On a clash, drop to a second lane. 4. If both lanes are full, omit the
+//    label rather than overlap it.
+interface PackIn  { x: number; text: string; color: string; key: string; dim: boolean;
+  /** Anchors (Dough, Bake) claim their lane first. Left-to-right alone let a
+   *  cluster of starter refreshes fill both lanes and drop `Dough` — the one
+   *  label the chart most needs. Within a tier the pass is still left-to-right. */
+  anchor?: boolean }
+interface PackOut extends PackIn { lane: number }
+function packLabels(items: PackIn[], W: number): PackOut[] {
+  const CW = 6.2;   // DM Mono 10px ≈ 6.2px/char
+  const GAP = 5;
+  const out: PackOut[] = [];
+  const lanes: Array<Array<[number, number]>> = [[], []];
+  [...items]
+    .sort((a, b) => (Number(!!b.anchor) - Number(!!a.anchor)) || (a.x - b.x))
+    .forEach(it => {
+    const half = (it.text.length * CW) / 2;
+    const cx = Math.max(PAD + half, Math.min(W - PAD - half, it.x));
+    const lo = cx - half - GAP;
+    const hi = cx + half + GAP;
+    for (let ln = 0; ln < lanes.length; ln++) {
+      if (!lanes[ln].some(r => lo < r[1] && hi > r[0])) {
+        lanes[ln].push([lo, hi]);
+        out.push({ ...it, x: cx, lane: ln });
+        return;
+      }
+    }
+    // both lanes taken at this x — omit rather than overlap
+  });
+  return out;
 }
 
 // ── Math helpers ─────────────────────────────────────────────
@@ -432,7 +490,7 @@ export default function FermentChart({
   blocks, onMixChange, onPrefChange, onRefreshChange, onDragStart, onDragEnd,
   windowH, prefInFridge, hasColdRetard, sweetCenterH, sweetFromH, sweetToH,
   nowHBF = 999, phases, scheduleNote,
-  recommendedMixHBF, showZoneLabels, onToggleZones, hasDragged,
+  recommendedMixHBF, focusId = null, showReset = false, onReset,
   starterFeedTime, starterFeed2Time, starterFridgeOutTime,
   starterKnownPeakTime = null, starterIsDepletedAt = null, starterRefeedTime = null,
   starterIntermediateFeeds = [],
@@ -466,11 +524,51 @@ export default function FermentChart({
   // dragging, one solver commit on release (the solver sweep is too heavy
   // to run per pointermove).
   const [localRefreshHBF, setLocalRefreshHBF] = useState<number | null>(null);
-  // Glow guidance state
-  const hasMovedMixRef  = useRef(false);
-  const hasMovedPrefRef = useRef(false);
-  const [glowState, setGlowState] = useState<'mix' | 'pref' | 'both' | 'done'>('mix');
-  const [legendOpen, setLegendOpen] = useState(false); // B1 — first-use chart literacy
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  // ── Chart layers ─────────────────────────────────────────
+  // All three off by default: the resting chart is curves, diamonds and the
+  // day scale, nothing else. The baker's selection persists in localStorage
+  // (works signed out, no schema) — a later move into the F1 baker profile is
+  // a one-line migration of load/save below.
+  const [layers, setLayers] = useState<ChartLayers>({ fridge: false, busy: false, window: false });
+  const [everOpened, setEverOpened] = useState(false);
+  const layersHydrated = useRef(false);
+
+  useEffect(() => {
+    // Deferred to after paint on purpose. Server and client both render the
+    // all-off default, so there is no hydration mismatch; the saved selection
+    // is applied on the next frame.
+    const raf = requestAnimationFrame(() => {
+      try {
+        const raw = window.localStorage.getItem(LAYERS_KEY);
+        if (raw) {
+          const p = JSON.parse(raw) as Partial<ChartLayers> & { everOpened?: boolean };
+          setLayers({ fridge: !!p.fridge, busy: !!p.busy, window: !!p.window });
+          setEverOpened(!!p.everOpened);
+        }
+      } catch { /* private mode / corrupt value — defaults are fine */ }
+      layersHydrated.current = true;
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  useEffect(() => {
+    if (!layersHydrated.current) return;
+    try {
+      window.localStorage.setItem(LAYERS_KEY, JSON.stringify({ ...layers, everOpened }));
+    } catch { /* storage full or blocked — the chart still works */ }
+  }, [layers, everOpened]);
+
+  // While dragging, all three switch on temporarily: that is the one moment
+  // all of them are genuinely needed (still in its window? just dropped into
+  // work hours? after now?). The baker's saved selection is untouched.
+  const revealAll = dragging !== null;
+  const L = {
+    fridge: layers.fridge || revealAll,
+    busy:   layers.busy   || revealAll,
+    window: layers.window || revealAll,
+  };
 
   useEffect(() => {
     const el = containerRef.current;
@@ -478,24 +576,6 @@ export default function FermentChart({
     const ro = new ResizeObserver(entries => setW(entries[0].contentRect.width));
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
-
-  // Inject diamond glow keyframes once
-  useEffect(() => {
-    const id = 'fc-diamond-glow-style';
-    if (document.getElementById(id)) return;
-    const s = document.createElement('style');
-    s.id = id;
-    s.textContent = `
-      @keyframes fc-glow-pulse {
-        0%   { filter: drop-shadow(0 0 0px rgba(107, 68, 35,0)); }
-        50%  { filter: drop-shadow(0 0 6px rgba(107, 68, 35,0.8)); }
-        100% { filter: drop-shadow(0 0 0px rgba(107, 68, 35,0)); }
-      }
-      .fc-diamond-glow { animation: fc-glow-pulse 1.6s ease-in-out infinite; }
-    `;
-    document.head.appendChild(s);
-    return () => { document.getElementById(id)?.remove(); };
   }, []);
 
   // ── Derived ──────────────────────────────────────────────
@@ -509,12 +589,10 @@ export default function FermentChart({
   // For non-sourdough (!isLevain), legacy paths always used.
   const useEventDrivenStarter = isLevain && starterEvents.length > 0;
   const prefColor  = isLevain ? '#4A7FA5' : '#C4A030';
-  const prefStroke = isLevain ? '#2A5F85' : '#7A6010';
   const SAGE            = '#6B7A5A';
   const TERRA           = '#6B4423';
   const CHAR            = '#2B2420';
   const DARK_SAGE       = '#3D5A30';
-  const DARK_SAGE_STR   = '#4A6B3A';
 
   // ── Physics ──────────────────────────────────────────────
   // DOUGH_SWEET_CENTER = offset from mix to dough peak = coldH + rtH per style
@@ -616,6 +694,49 @@ export default function FermentChart({
   } else {
     prefZoneFrom = hasPref ? effectiveMixHBF + prefZoneMax : 0;
     prefZoneTo   = hasPref ? effectiveMixHBF + 3 : 0;
+  }
+
+  // ── Visible starter events (sourdough) ───────────────────
+  // fridge_in / fridge_out carry no diamond — they are consequences of a
+  // step, drawn as the cold casing on the curve and listed as a plain row.
+  const visibleStarterEvents = !useEventDrivenStarter ? [] : starterEvents
+    .map((ev, idx) => ({ ev, idx }))
+    .filter(({ ev }) => ev.kind !== 'fridge_out' && ev.kind !== 'fridge_in')
+    .map(({ ev, idx }) => {
+      const hbf = (bakeMs - ev.time.getTime()) / 3600000;
+      if (hbf < 0 || hbf > WH) return null;
+      // Live drag: the refresh diamond follows the pointer; bells and card
+      // re-render after the solver commits on release.
+      const useLocal = ev.kind === 'refresh' && dragging === 'refresh' && localRefreshHBF !== null;
+      return { ev, idx, x: hToX(useLocal ? localRefreshHBF! : hbf, W, WH) };
+    })
+    .filter((v): v is { ev: StarterEvent; idx: number; x: number } => v !== null);
+
+  // ── Windows ("room to move") ─────────────────────────────
+  // Draw a window only where the engine already computes one. Sourdough
+  // starter feeds have no such range — they get none, and that is correct.
+  const hasDoughWindow = sweetFromH !== undefined && sweetToH !== undefined
+    && sweetFromH > sweetToH;
+  const hasPrefWindow  = hasPref && !isLevain && prefZoneFrom > prefZoneTo;
+  const prefOptWindowHBF = effectiveMixHBF
+    + getPrefOptH(prefermentType, kitchenTemp, prefNeedsFridge, styleKey, fridgeTemp);
+
+  // ── Cold ranges, per curve ───────────────────────────────
+  // Each entry is an [x1, x2] pixel span of the SAME curve that is in the
+  // fridge. The dough's cold retard sits between the end of bulk and the end
+  // of the retard; a fridge preferment is cold for its whole span. Sourdough
+  // starter bells carry their own hold and are cased in the event-bell block.
+  const doughColdRanges: Array<[number, number]> = [];
+  if (hasColdRetard && phases && phases.coldRetardH > 0) {
+    const coldStartHBF = effectiveMixHBF - (phases.bulkFermH ?? 0);
+    const coldEndHBF   = Math.max(0, coldStartHBF - phases.coldRetardH);
+    if (coldStartHBF > coldEndHBF) {
+      doughColdRanges.push([hToX(coldStartHBF, W, WH), hToX(coldEndHBF, W, WH)]);
+    }
+  }
+  const prefColdRanges: Array<[number, number]> = [];
+  if (hasPref && !isLevain && prefNeedsFridge) {
+    prefColdRanges.push([hToX(prefStartAbsHBF, W, WH), hToX(effectiveMixHBF, W, WH)]);
   }
 
   // ── Pixel positions ──────────────────────────────────────
@@ -738,16 +859,57 @@ export default function FermentChart({
     ? (bakeMs - starterFridgeHoldOutTime.getTime()) / 3600000 : null;
   const isFridgeHoldPath = fridgeHoldRefreshHBF !== null && fridgeHoldInHBF !== null && fridgeHoldOutHBF !== null;
 
-  // ── Label collision detection ────────────────────────────
-  const labelsClose = hasPref && Math.abs(mixX - activePrefX) < 130;
-  // Keep centred diamond labels fully inside the canvas (12px mono ≈ 7.2px/char)
-  const clampLabelX = (x: number, text: string, fs = 12) => {
-    const half = text.length * fs * 0.3 + 4;
-    return Math.min(Math.max(x, half), W - half);
+  // ── Focus ────────────────────────────────────────────────
+  // A row's name button in the plan list focuses that step here: its diamond
+  // gets a ring, its window appears, everything else drops back.
+  const hasFocus = !!focusId;
+  const dimOthers = (id: string) => hasFocus && focusId !== id;
+  const opacityFor = (id: string) => (dimOthers(id) ? 0.4 : 1);
+
+  // Short chart labels. The list carries the verb ("Make Poolish"); the chart
+  // only has to say which curve this diamond belongs to.
+  const shortPrefLabel = prefermentType === 'biga' ? t('shortLabels.biga')
+    : isLevain ? t('shortLabels.starter')
+    : t('shortLabels.poolish');
+  const shortEventLabel = (kind: string, fallback: string): string => {
+    switch (kind) {
+      case 'last_fed':             return t('shortLabels.fed');
+      case 'refresh':
+      case 'intermediate_refresh': return t('shortLabels.refresh');
+      case 'pre_mix':              return t('shortLabels.preMix');
+      case 'known_peak':           return t('shortLabels.starter');
+      default:                     return fallback;
+    }
   };
-  const allClose = isLevain && histPrefX !== null
-    && Math.abs((histPrefX ?? 0) - activePrefX) < 80
-    && Math.abs(activePrefX - mixX) < 80;
+
+  // A guide row whose layer has nothing to show is omitted — no fridge row on
+  // a plan with no cold phase, no window row on a plan with no windows.
+  const hasAnyCold = doughColdRanges.length > 0 || prefColdRanges.length > 0
+    || (useEventDrivenStarter && starterEvents.some(e => e.kind === 'fridge_out'))
+    || (isLevain && !!starterFridgeOutTime);
+  const hasAnyWindow = hasDoughWindow || hasPrefWindow;
+
+  // ── One label pass for the whole chart ───────────────────
+  // Every marker's label goes through the same clamp → stagger → drop, so a
+  // starter feed and Start Dough can never overlap each other.
+  const labelItems: PackIn[] = [];
+  if (hasPref && !isLevain && !knownPeakHBF) {
+    labelItems.push({ x: activePrefX, text: shortPrefLabel, color: prefColor, key: 'pref', dim: dimOthers('pref') });
+  }
+  visibleStarterEvents.forEach(({ ev, idx, x }) => {
+    const isHistorical = ev.kind === 'last_fed' && ev.isPast;
+    labelItems.push({
+      x,
+      text: shortEventLabel(ev.kind, ev.label),
+      color: isHistorical ? 'var(--smoke, #8A7F78)'
+        : ev.kind === 'intermediate_refresh' ? '#4A7FA5'
+        : ev.isActive ? prefColor : 'rgba(74,127,165,0.85)',
+      key: `ev:${idx}`,
+      dim: dimOthers(`ev:${idx}`),
+    });
+  });
+  labelItems.push({ x: mixX, text: t('shortLabels.dough'), color: DARK_SAGE, key: 'mix', dim: dimOthers('mix'), anchor: true });
+  labelItems.push({ x: bakeX, text: t('bakeLabel'), color: TERRA, key: 'bake', dim: dimOthers('bake'), anchor: true });
 
   function blockerHBF(b: AvailabilityBlock) {
     return {
@@ -763,46 +925,32 @@ export default function FermentChart({
     });
   }
 
-  // Adaptive ticks: clock-aligned, stepping backward from bake time
-  const tickIntervalH = WH <= 18 ? 3 : WH <= 48 ? 6 : WH <= 96 ? 12 : 24;
-  const ticks: { x: number; label: string }[] = [];
-  const _fmtTickLabel = (d: Date): string => {
-    const wd = d.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' });
-    const hr = d.getHours();
-    const timeLabel = hr === 0 ? t('tickLabels.midnight')
-      : hr === 6 ? t('tickLabels.6am')
-      : hr === 12 ? t('tickLabels.noon')
-      : hr === 18 ? t('tickLabels.6pm')
-      : isFr ? `${hr}h`
-      : `${hr > 12 ? hr - 12 : hr}${hr < 12 ? 'am' : 'pm'}`;
-    return `${wd} ${timeLabel}`;
-  };
+  // ── Day scale ────────────────────────────────────────────
+  // The old evenly-spaced ticks were clock-aligned labels that bakers read as
+  // event times — a documented trap. Replaced by day dividers at midnight
+  // plus the day name for the stretch that starts there.
+  const days: { x: number; dividerX: number | null; name: string }[] = [];
   {
-    const firstTick = new Date(bakeMs);
-    firstTick.setMinutes(0, 0, 0);
-    firstTick.setHours(Math.floor(firstTick.getHours() / tickIntervalH) * tickIntervalH);
-    for (let tMs = firstTick.getTime(); tMs > bakeMs - WH * 3600000; tMs -= tickIntervalH * 3600000) {
-      const h = (bakeMs - tMs) / 3600000;
-      if (h < 1.5) continue;
-      if (h > WH - 0.5) continue;
-      ticks.push({ x: hToX(h, W, WH), label: _fmtTickLabel(new Date(tMs)) });
-    }
-  }
-  // Feed-day tick: when the earliest rendered event (typically "Last fed")
-  // falls beyond the last clock-aligned tick, the leftmost feed day had no
-  // labeled tick. Add one anchored on the earliest event time so the feed
-  // day is dated on the axis. Skip if a clock-aligned tick already sits
-  // within ~32 px (the same dedupe stride the renderer uses).
-  if (useEventDrivenStarter && starterEvents.length > 0) {
-    const earliestEv = starterEvents.reduce(
-      (acc, ev) => (ev.time.getTime() < acc.time.getTime() ? ev : acc),
-      starterEvents[0],
-    );
-    const earliestHBF = (bakeMs - earliestEv.time.getTime()) / 3600000;
-    if (earliestHBF > 1.5 && earliestHBF < WH - 0.5) {
-      const x = hToX(earliestHBF, W, WH);
-      const hasNearby = ticks.some(tk => Math.abs(tk.x - x) < 32);
-      if (!hasNearby) ticks.push({ x, label: _fmtTickLabel(earliestEv.time) });
+    const windowStartMs = bakeMs - WH * 3600000;
+    // First (usually partial) day: starts at the left edge of the window.
+    const pushDay = (startMs: number, isDivider: boolean) => {
+      const hbf = (bakeMs - startMs) / 3600000;
+      const x = hToX(Math.max(0, Math.min(WH, hbf)), W, WH);
+      days.push({
+        x,
+        dividerX: isDivider ? x : null,
+        name: new Date(startMs)
+          .toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' })
+          .replace('.', '')
+          .toUpperCase(),
+      });
+    };
+    pushDay(windowStartMs, false);
+    const firstMidnight = new Date(windowStartMs);
+    firstMidnight.setHours(0, 0, 0, 0);
+    firstMidnight.setDate(firstMidnight.getDate() + 1);
+    for (let ms = firstMidnight.getTime(); ms < bakeMs; ms += 86400000) {
+      pushDay(ms, true);
     }
   }
 
@@ -847,20 +995,10 @@ export default function FermentChart({
   function onPointerUp() {
     onDragEnd?.();
     if (dragging === 'mix' && localMixHBF !== null) {
-      hasMovedMixRef.current = true;
       onMixChange(localMixHBF);
       setLocalMixHBF(null);
-      setGlowState(prev => {
-        if (prev === 'mix') return hasPref ? 'pref' : 'done';
-        if (prev === 'pref') return 'done';
-        return prev;
-      });
     } else if (dragging === 'pref') {
-      hasMovedPrefRef.current = true;
-      setGlowState(prev => {
-        if (prev === 'pref' || prev === 'mix') return 'done';
-        return prev;
-      });
+      /* committed live on move — nothing to flush on release */
     } else if (dragging === 'refresh') {
       if (localRefreshHBF !== null) onRefreshChange?.(localRefreshHBF);
       setLocalRefreshHBF(null);
@@ -868,140 +1006,72 @@ export default function FermentChart({
     setDragging(null);
   }
 
-  // ── Status logic ─────────────────────────────────────────
-  const mixInZone   = effectiveMixHBF >= doughZoneTo   && effectiveMixHBF <= doughZoneFrom;
-  const mixTooEarly = false;
-  const mixStatus = mixInZone   ? t('mixStatus.ready')
-    : mixTooEarly ? t('mixStatus.peaksBefore')
-    : t('mixStatus.peaksAfter');
+  // The mix/pref STATUS strings and the info-card values lived here. Both
+  // fed the green/gold pills on the old boxed cards; the plan list carries no
+  // pills, so the engine's own work is no longer narrated back at the baker.
 
-  // 5-state — same boundaries as zone and plateau
-  // Protocol indicator already shown below diamond — no need to repeat in pill
-  const prefOptHChart  = prefermentType === 'biga' ? 48 : prefNeedsFridge ? 18 : rtPeakH;
-  const prefMaxHChart  = prefermentType === 'biga' ? 72 : prefNeedsFridge ? 24 : rtPeakH * 1.5;
-  // Biga green mirrors solver + card: 24h→58h (optH 48, −24h/+10h plateau)
-  const prefInZone     = prefermentType === 'biga'
-    ? hasPref && prefOffsetH >= 24 && prefOffsetH <= 58
-    : hasPref && prefOffsetH >= 3 && prefOffsetH <= prefOptHChart;
-  const prefEarlyOk    = prefermentType === 'biga'
-    ? hasPref && prefOffsetH > 58 && prefOffsetH <= prefMaxHChart
-    : hasPref && prefOffsetH > prefOptHChart && prefOffsetH <= prefMaxHChart;
-  const prefTooShort   = hasPref && prefOffsetH < 3;
-  const prefStatus = prefInZone   ? t('prefStatus.readyAtMix')
-    : prefEarlyOk                 ? t('prefStatus.earlyOk')
-    : prefTooShort                ? t('prefStatus.notYetPeak')
-    :                               t('prefStatus.pastPeak');
-
-  // ── Info card data ───────────────────────────────────────
-  const mixTime  = new Date(bakeMs - effectiveMixHBF * 3600000);
-  const prefTime = hasPref ? new Date(bakeMs - prefStartAbsHBF * 3600000) : null;
-
-  const prefLabel = prefermentType === 'sourdough' || prefermentType === 'levain'
-    ? t('cardLabels.feedStarter')
-    : prefermentType === 'biga'    ? t('cardLabels.makeBiga')
-    : prefermentType === 'poolish' ? t('cardLabels.makePoolish')
-    : prefermentType;
-
-  const prefTypeName = prefermentType === 'sourdough' || prefermentType === 'levain'
-    ? 'Levain'
-    : prefermentType === 'biga'    ? 'Biga'
-    : 'Poolish';
-
-  // ── Zone renderer ────────────────────────────────────────
-  function renderZone(
-    fromHBF: number, toHBF: number,
-    color: string, label: string, labelY: number,
-    markerId: string,
+  // ── Window lane renderer ─────────────────────────────────
+  // A rounded bar in the event's own colour spanning the range the engine
+  // already computes, with a tick at the optimum. Drawn only where a real
+  // range exists — sourdough starter feeds have none, and get none.
+  function renderWindow(
+    fromHBF: number, toHBF: number, optHBF: number,
+    color: string, solo: boolean,
   ) {
-    const x1 = hToX(fromHBF, W, WH);
-    const x2 = hToX(toHBF,   W, WH);
-    if (x2 <= x1 + 1) return null;
-    // Visible portion of zone clipped to screen
-    const visLeft  = Math.max(x1, 0);
-    const visRight = Math.min(x2, W);
-    const visWidth = visRight - visLeft;
-    // Label aims for center of visible screen portion, stays within zone bounds
-    // If visible zone too narrow → label clips naturally (no orphan floating label)
-    const labelW = label.length * 7;
-    const labelX = Math.min(
-      Math.max((visLeft + visRight) / 2, visLeft + labelW / 2),
-      visRight - labelW / 2
-    );
-    const showLabel = visWidth > labelW * 0.6; // only render if enough visible space
-    // Arrow clamped to visible area
-    const arrowX1 = Math.max(x1 + 4, 2);
-    const arrowX2 = Math.min(x2 - 4, W - 2);
+    const x1 = Math.max(PAD, hToX(fromHBF, W, WH));
+    const x2 = Math.min(W - PAD, hToX(toHBF, W, WH));
+    if (!(x2 > x1 + 2)) return null;
+    const optX = hToX(optHBF, W, WH);
     return (
       <g>
-        {/* Zone fill — clipped to screen */}
-        <rect x={visLeft} y={TOP_PAD} width={visWidth} height={BL - TOP_PAD}
-          fill={`${color}12`} />
-        {/* Left boundary line — only if on screen */}
-        {x1 >= 0 && <line x1={x1} y1={labelY + 9} x2={x1} y2={BL}
-          stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />}
-        {/* Right boundary line */}
-        <line x1={x2} y1={labelY + 9} x2={x2} y2={BL}
-          stroke={color} strokeWidth={0.9} strokeDasharray="3 3" strokeOpacity={0.45} />
-        {/* Label — aims for visible center, within zone bounds */}
-        {showLabel && <text x={labelX} y={labelY} fontSize={11} fill={color}
-          textAnchor="middle" fontFamily="DM Mono, monospace" fillOpacity={0.85} fontWeight="600">
-          {label}
-        </text>}
-        {/* Arrow — clipped to visible area, left arrowhead only if zone left is on screen */}
-        {arrowX2 > arrowX1 + 8 && <line
-          x1={arrowX1} x2={arrowX2}
-          y1={labelY + 9} y2={labelY + 9}
-          stroke={color} strokeWidth={1.2} strokeOpacity={0.7}
-          markerStart={x1 >= 0 ? `url(#arrow-${markerId}-start-${chartId})` : undefined}
-          markerEnd={`url(#arrow-${markerId}-end-${chartId})`}
-        />}
-      </g>
-    );
-  }
-
-  // ── Diamond renderer ─────────────────────────────────────
-  function renderDiamond(
-    cx: number, fill: string, stroke: string, warn: boolean,
-    which: 'mix' | 'pref', disabled = false,
-  ) {
-    const shouldGlow = showZoneLabels && (
-      (which === 'mix' && glowState === 'mix')
-      || (which === 'pref' && glowState === 'pref')
-    );
-    return (
-      <g
-        style={{ cursor: startTimeInPast ? 'default' : (disabled ? 'not-allowed' : dragging === which ? 'grabbing' : 'grab'), opacity: startTimeInPast ? 0.6 : 1 }}
-        onPointerDown={e => onPointerDown(e, which)}
-      >
-        <polygon
-          className={shouldGlow ? 'fc-diamond-glow' : undefined}
-          points={`${cx},${BL - S} ${cx + S},${BL} ${cx},${BL + S} ${cx - S},${BL}`}
-          fill={fill} stroke={stroke} strokeWidth={1.5}
-          style={{ animation: hasDragged ? 'none' : 'diamondPulse 1.8s ease-out 0.5s 2' }}
+        <rect
+          x={x1} y={WIN_LANE_Y} width={x2 - x1} height={WIN_LANE_H} rx={WIN_LANE_H / 2}
+          fill={color} opacity={solo ? 0.6 : 0.26}
         />
-        {warn && (
-          <>
-            <circle cx={cx + S + 3} cy={BL - S} r={5} fill="rgba(107, 68, 35,0.9)" />
-            <text x={cx + S + 3} y={BL - S + 4} fontSize={10} fill="white"
-              textAnchor="middle" fontFamily="DM Mono, monospace">!</text>
-          </>
+        {optX >= x1 && optX <= x2 && (
+          <line
+            x1={optX} y1={WIN_LANE_Y - 1} x2={optX} y2={WIN_LANE_Y + WIN_LANE_H + 1}
+            stroke={color} strokeWidth={1.5} opacity={solo ? 0.9 : 0.45}
+          />
         )}
       </g>
     );
   }
 
-  // ── Drop-line renderer ───────────────────────────────────
-  function renderDropLine(hbf: number, peakHBF: number, sigma: number, color: string, startY?: number) {
-    const x  = hToX(hbf, W, WH);
-    const v  = bell(hbf, peakHBF, sigma) * MAXH;
-    const cy = BL - v;
-    const y1 = startY ?? BL;
+  // ── Diamond renderer ─────────────────────────────────────
+  // Shape carries kind, colour carries curve. A cream stroke always separates
+  // a marker from whatever sits behind it.
+  function renderDiamond(
+    cx: number, fill: string, warn: boolean,
+    which: 'mix' | 'pref', disabled = false, id = which as string,
+    size = S,
+  ) {
+    const focused = focusId === id;
+    const op = opacityFor(id);
     return (
-      <>
-        <line x1={x} y1={y1} x2={x} y2={cy}
-          stroke={color} strokeWidth={1} strokeDasharray="3 4" strokeOpacity={0.5} />
-        <circle cx={x} cy={cy} r={3.5} fill={color} stroke="white" strokeWidth={1} />
-      </>
+      <g
+        style={{
+          cursor: startTimeInPast ? 'default'
+            : (disabled ? 'not-allowed' : dragging === which ? 'grabbing' : 'grab'),
+          opacity: startTimeInPast ? 0.6 : 1,
+        }}
+        onPointerDown={e => onPointerDown(e, which)}
+      >
+        {/* A step inside a busy window gets a dashed ring — shown when the
+            busy layer is on OR whenever that step is in focus, so the
+            conflict is never invisible. */}
+        {warn && (L.busy || focused) && (
+          <circle cx={cx} cy={BL} r={12} fill="none"
+            stroke="#9A7010" strokeWidth={1.2} strokeDasharray="2.5 2.5" opacity={op} />
+        )}
+        {focused && (
+          <circle cx={cx} cy={BL} r={15} fill="none" stroke={fill} strokeWidth={1.5} opacity={0.4} />
+        )}
+        <polygon
+          points={`${cx},${BL - size} ${cx + size},${BL} ${cx},${BL + size} ${cx - size},${BL}`}
+          fill={fill} stroke="var(--cream, #F5F0E8)" strokeWidth={1.6} opacity={op}
+        />
+      </g>
     );
   }
 
@@ -1011,29 +1081,8 @@ export default function FermentChart({
       ref={containerRef}
       style={{ width: '100%', userSelect: 'none', overflow: 'hidden', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
     >
-      {/* ── Curve legend ── */}
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '8px' }}>
-        {hasPref && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <svg width="24" height="10" viewBox="0 0 24 10">
-              <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke={prefColor} strokeWidth="2" fill="none" strokeLinecap="round"/>
-            </svg>
-            <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
-              {prefermentType === 'biga' ? 'Biga' :
-               prefermentType === 'levain' || prefermentType === 'sourdough' ? (isFr ? 'Levain' : 'Starter') :
-               'Poolish'}
-            </span>
-          </div>
-        )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <svg width="24" height="10" viewBox="0 0 24 10">
-            <path d="M0,8 Q6,0 12,5 Q18,10 24,2" stroke="#4A6B3A" strokeWidth="2" fill="none" strokeLinecap="round"/>
-          </svg>
-          <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
-            {isFr ? 'Pâte' : 'Dough'}
-          </span>
-        </div>
-      </div>
+      {/* No permanent legend row — the guide panel below doubles as the
+          legend, with each swatch drawn exactly as it appears here. */}
       <svg
         ref={svgRef}
         width={W}
@@ -1045,36 +1094,20 @@ export default function FermentChart({
       >
         {/* ── Clip paths for blockers ── */}
         <defs>
-          <style>{`
-            @keyframes diamondPulse {
-              0%   { filter: drop-shadow(0 0 0px rgba(61,90,48,0)); }
-              40%  { filter: drop-shadow(0 0 6px rgba(61,90,48,0.7)); }
-              100% { filter: drop-shadow(0 0 0px rgba(61,90,48,0)); }
-            }
-          `}</style>
-          {blocks.map((b, i) => {
-            const { hbfStart, hbfEnd } = blockerHBF(b);
-            const x1 = hToX(hbfStart, W, WH);
-            const x2 = hToX(hbfEnd,   W, WH);
-            return (
-              <clipPath key={i} id={`bc-${chartId}-${i}`}>
-                <rect x={x1} y={BLOCKER_TOP} width={Math.max(0, x2 - x1)} height={AXIS_Y - BLOCKER_TOP} />
-              </clipPath>
-            );
-          })}
-          {/* Bidirectional arrow markers for zone width indicators */}
-          <marker id={`arrow-sage-start-${chartId}`} markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
-            <path d="M6,0 L0,3 L6,6" fill="none" stroke="#6B7A5A" strokeWidth="1.2"/>
-          </marker>
-          <marker id={`arrow-sage-end-${chartId}`} markerWidth="6" markerHeight="6" refX="0" refY="3" orient="auto">
-            <path d="M0,0 L6,3 L0,6" fill="none" stroke="#6B7A5A" strokeWidth="1.2"/>
-          </marker>
-          <marker id={`arrow-pref-start-${chartId}`} markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
-            <path d="M6,0 L0,3 L6,6" fill="none" stroke={prefColor} strokeWidth="1.2"/>
-          </marker>
-          <marker id={`arrow-pref-end-${chartId}`} markerWidth="6" markerHeight="6" refX="0" refY="3" orient="auto">
-            <path d="M0,0 L6,3 L0,6" fill="none" stroke={prefColor} strokeWidth="1.2"/>
-          </marker>
+          {/* Cold casings — ONE clipPath per curve, built from that curve's
+              OWN cold ranges. Cold belongs to a curve, not to a time span: a
+              poolish already mixed in must not pick up a casing for the
+              dough's cold retard. */}
+          <clipPath id={`cold-dough-${chartId}`}>
+            {doughColdRanges.map(([a, b], i) => (
+              <rect key={i} x={Math.min(a, b)} y={0} width={Math.abs(b - a)} height={AXIS_Y} />
+            ))}
+          </clipPath>
+          <clipPath id={`cold-pref-${chartId}`}>
+            {prefColdRanges.map(([a, b], i) => (
+              <rect key={i} x={Math.min(a, b)} y={0} width={Math.abs(b - a)} height={AXIS_Y} />
+            ))}
+          </clipPath>
           {/* Chart area clip — hide anything below axis */}
           <clipPath id={`chart-area-clip-${chartId}`}>
             <rect x={0} y={0} width={W} height={AXIS_Y} />
@@ -1108,46 +1141,28 @@ export default function FermentChart({
             stroke={CHAR} strokeWidth={1} strokeDasharray="3 4" strokeOpacity={0.2} />
         )}
 
-        {/* ── Sweet-spot zones ── */}
-        {showZoneLabels && (() => {
-          const prefWindowLabel =
-            prefermentType === 'biga'      ? t('zoneLabels.makeBigaWindow')    :
-            prefermentType === 'levain'    ? t('zoneLabels.feedStarterWindow') :
-            prefermentType === 'sourdough' ? t('zoneLabels.feedStarterWindow') :
-            t('zoneLabels.makePoolishWindow');
-          return (
-            <>
-              {renderZone(doughZoneFrom, doughZoneTo, SAGE, t('zoneLabels.startDoughWindow'), 12, 'sage')}
-              {hasPref && renderZone(prefZoneFrom, prefZoneTo, prefColor, prefWindowLabel, 38, 'pref')}
-            </>
-          );
-        })()}
+        {/* ── Window lane ──────────────────────────────────
+             Only where the engine already computes a range: Make Poolish from
+             getPrefOptH/prefZoneMax, Start Dough from sweetFrom/sweetTo.
+             Sourdough starter feeds have no such range and get no window. */}
+        {(L.window || focusId === 'mix') && hasDoughWindow && renderWindow(
+          doughZoneFrom, doughZoneTo, DOUGH_SWEET_CENTER, SAGE, focusId === 'mix',
+        )}
+        {(L.window || focusId === 'pref') && hasPrefWindow && renderWindow(
+          prefZoneFrom, prefZoneTo, prefOptWindowHBF, prefColor, focusId === 'pref',
+        )}
 
-        {/* ── Blocker columns ── */}
-        {blocks.map((b, i) => {
+        {/* ── Busy columns ── full height, no WORK / NIGHT text: the labels
+             collided with curve peaks and with `now`, and the layer is only
+             ever visible because the baker just ticked it on. ── */}
+        {L.busy && blocks.map((b, i) => {
           const { hbfStart, hbfEnd } = blockerHBF(b);
-          if (hbfEnd > WH || hbfStart < 0) return null;
-          const x1 = hToX(hbfStart, W, WH);
-          const x2 = hToX(hbfEnd,   W, WH);
+          const x1 = Math.max(PAD, hToX(Math.min(hbfStart, WH), W, WH));
+          const x2 = Math.min(W - PAD, hToX(Math.max(hbfEnd, 0), W, WH));
           if (x2 <= x1) return null;
-          const n = Math.ceil((x2 - x1 + AXIS_Y) / 7) + 2;
           return (
-            <g key={i}>
-              <rect x={x1} y={BLOCKER_TOP} width={x2 - x1} height={AXIS_Y - BLOCKER_TOP} fill="rgba(107, 68, 35,0.09)" />
-              <g clipPath={`url(#bc-${chartId}-${i})`}>
-                {Array.from({ length: n }, (_, j) => {
-                  const ox = x1 + j * 7 - AXIS_Y;
-                  return (
-                    <line key={j}
-                      x1={ox} y1={BLOCKER_TOP} x2={ox + AXIS_Y} y2={AXIS_Y}
-                      stroke="rgba(107, 68, 35,0.16)" strokeWidth={1}
-                    />
-                  );
-                })}
-              </g>
-              <line x1={x1} y1={BLOCKER_TOP} x2={x2} y2={BLOCKER_TOP}
-                stroke="rgba(107, 68, 35,0.5)" strokeWidth={2.5} />
-            </g>
+            <rect key={i} x={x1} y={TOP_PAD} width={x2 - x1} height={BL - TOP_PAD}
+              fill={BUSY_FILL} opacity={0.11} />
           );
         })}
 
@@ -1186,17 +1201,6 @@ export default function FermentChart({
                     height={12}
                     fill="rgba(150,180,210,0.20)"
                   />
-                  {/* Label the region — unlabeled it reads as a rendering
-                      glitch hugging the axis */}
-                  {fridgeOutX - fridgeInX > 40 && (
-                    <text
-                      x={(fridgeInX + fridgeOutX) / 2} y={AXIS_Y - 16}
-                      fontSize={9} fill="rgba(74,127,165,0.75)"
-                      textAnchor="middle" fontFamily="DM Mono, monospace"
-                    >
-                      {isFr ? 'frigo' : 'fridge'}
-                    </text>
-                  )}
                   {/* Fridge-in marker */}
                   <line
                     x1={fridgeInX} y1={AXIS_Y - 12}
@@ -1236,42 +1240,12 @@ export default function FermentChart({
 
             {/* ── Event-driven bells (sourdough, one per starterEvent) ── */}
             {useEventDrivenStarter && (() => {
-              const fridgeIn = starterEvents.find(e => e.kind === 'fridge_in');
-              const fridgeOut = starterEvents.find(e => e.kind === 'fridge_out');
-              const fridgeHasIn = !!fridgeIn;
               return (
                 <>
-                  {/* Cold-storage flat region (Path B): low baseline between fridge_in and fridge_out */}
-                  {fridgeHasIn && fridgeOut && (() => {
-                    const inHBF = (bakeMs - fridgeIn.time.getTime()) / 3600000;
-                    const outHBF = (bakeMs - fridgeOut.time.getTime()) / 3600000;
-                    if (inHBF <= 0 || outHBF <= 0) return null;
-                    const xIn = hToX(inHBF, W, WH);
-                    const xOut = hToX(outHBF, W, WH);
-                    return (
-                      <g>
-                        <rect
-                          x={Math.min(xIn, xOut)}
-                          y={BL - 4}
-                          width={Math.abs(xOut - xIn)}
-                          height={4}
-                          fill="rgba(74,127,165,0.10)"
-                          stroke="rgba(74,127,165,0.25)"
-                          strokeWidth={0.5}
-                          strokeDasharray="2 3"
-                        />
-                        {Math.abs(xOut - xIn) > 40 && (
-                          <text
-                            x={(xIn + xOut) / 2} y={BL - 8}
-                            fontSize={9} fill="rgba(74,127,165,0.75)"
-                            textAnchor="middle" fontFamily="DM Mono, monospace"
-                          >
-                            {isFr ? 'frigo' : 'fridge'}
-                          </text>
-                        )}
-                      </g>
-                    );
-                  })()}
+                  {/* The old baseline cold strip + "fridge" caption lived
+                      here. Cold is now drawn ON the curve it belongs to, as a
+                      casing clipped to that curve's own hold — a condition of
+                      the dough, not an event on the axis. */}
                   {/* Bells — one per event with bellStyle !== 'none' */}
                   {starterEvents.map((ev, idx) => {
                     if (ev.bellStyle === 'none' || !ev.bellPeakTime) return null;
@@ -1368,6 +1342,31 @@ export default function FermentChart({
                         : (ownsHold && fridgeOutHBF_ev !== null) || fridgeHistoryBell
                           ? makeFridgePhaseBellPath(feedHBF, peakHBF, feedToPeakH_ev, feedToPeakH_ev * 0.4, W, WH)
                           : makeBellPath(peakHBF, sigma, W, WH, feedHBF);
+                    // Cold casing for THIS bell's own hold. ownsHold is the
+                    // topology check that already decides which bell the
+                    // fridge_in/out pair belongs to — reusing it means a bell
+                    // can never inherit a neighbour's cold phase.
+                    const coldCasing = L.fridge
+                      && ownsHold && fridgeInHBF_ev !== null && fridgeOutHBF_ev !== null
+                      ? (() => {
+                          const xa = hToX(fridgeInHBF_ev, W, WH);
+                          const xb = hToX(fridgeOutHBF_ev, W, WH);
+                          const cid = `cold-ev-${chartId}-${idx}`;
+                          return (
+                            <>
+                              <defs>
+                                <clipPath id={cid}>
+                                  <rect x={Math.min(xa, xb)} y={0} width={Math.abs(xb - xa)} height={AXIS_Y} />
+                                </clipPath>
+                              </defs>
+                              <g clipPath={`url(#${cid})`}>
+                                <path d={openBell(bellD)} fill="none" stroke={COLD_STROKE}
+                                  strokeWidth={5.5} strokeOpacity={0.32} strokeLinecap="round" />
+                              </g>
+                            </>
+                          );
+                        })()
+                      : null;
                     // Solid (active) bell: the starter is consumed at Start
                     // Dough — fade the curve after mixX so the "what if
                     // unused" tail reads as hypothetical, not as noise.
@@ -1391,6 +1390,7 @@ export default function FermentChart({
                             fill={fillStyle} stroke="none"
                             clipPath={`url(#premix-clip-${chartId}-${idx})`}
                           />
+                          {coldCasing}
                           <path
                             d={openBell(bellD)}
                             fill="none" stroke={strokeStyle}
@@ -1414,6 +1414,7 @@ export default function FermentChart({
                     return (
                       <g key={`ev-bell-${idx}`} clipPath={`url(#chart-area-clip-${chartId})`}>
                         <path d={bellD} fill={fillStyle} stroke="none" />
+                        {coldCasing}
                         <path
                           d={openBell(bellD)}
                           fill="none"
@@ -1673,17 +1674,6 @@ export default function FermentChart({
               strokeWidth={1.5}
               strokeDasharray="4 3"
             />
-            <text
-              x={hToX(compFridgeOutHBF, W, WH)}
-              y={AXIS_Y + 50}
-              fontSize={9}
-              fill="rgba(74,127,165,0.9)"
-              fontFamily="DM Mono, monospace"
-              fontWeight="600"
-              textAnchor="middle"
-            >
-              {isFr ? 'Sortir' : 'Remove'}
-            </text>
           </>
         )}
 
@@ -1698,8 +1688,16 @@ export default function FermentChart({
             ? makePlateauBellPath(doughPeakHBF, DOUGH_SIG, doughPlateauHalfW, W, WH, effectiveMixHBF)
             : makeBellPath(doughPeakHBF, DOUGH_SIG, W, WH, effectiveMixHBF);
           return (
-            <g clipPath={`url(#chart-area-clip-${chartId})`}>
+            <g clipPath={`url(#chart-area-clip-${chartId})`} opacity={opacityFor('mix')}>
               <path d={doughD} fill={`${SAGE}2E`} stroke="none" />
+              {/* Cold casing — same path, clipped to THIS curve's cold ranges,
+                  drawn under the normal stroke which keeps its own colour. */}
+              {L.fridge && doughColdRanges.length > 0 && (
+                <g clipPath={`url(#cold-dough-${chartId})`}>
+                  <path d={openBell(doughD)} fill="none" stroke={COLD_STROKE}
+                    strokeWidth={5.5} strokeOpacity={0.32} strokeLinecap="round" />
+                </g>
+              )}
               <path d={openBell(doughD)} fill="none" stroke={`${SAGE}A5`} strokeWidth={1.5} />
             </g>
           );
@@ -1729,158 +1727,102 @@ export default function FermentChart({
         <line x1={PAD} y1={AXIS_Y} x2={W - PAD} y2={AXIS_Y}
           stroke="var(--border)" strokeWidth={1} />
 
-        {/* ── Ticks — label-aware spacing (fixed 32px gap let 55px-wide
-             labels overlap on narrow screens, and the last tick collided
-             with the Bake label) ── */}
+        {/* ── `now` — a tick on the axis, always visible, never a layer.
+             A small filled triangle plus a lowercase caption. No full-height
+             line: it competed with everything else for the same space. ── */}
+        {nowHBF > 0 && nowHBF < WH && (() => {
+          const nx = hToX(nowHBF, W, WH);
+          return (
+            <g pointerEvents="none">
+              <polygon points={`${nx - 4},${AXIS_Y + 6} ${nx + 4},${AXIS_Y + 6} ${nx},${AXIS_Y + 0.5}`}
+                fill="#9A9089" />
+              <text x={nx} y={AXIS_Y + 16} fontSize={8} fill="#9A9089"
+                fontFamily="DM Mono, monospace" textAnchor="middle"
+                letterSpacing=".08em">{t('nowLabel')}</text>
+            </g>
+          );
+        })()}
+
+        {/* ── Day scale — dividers at midnight, day name for the stretch that
+             starts there. A day name that would collide with the `now`
+             caption is dropped, not overlapped. ── */}
         {(() => {
-          const visible: typeof ticks = [];
-          const labelPx = (s: string) => s.length * 7.2 + 10; // DM Mono 12px ≈ 7.2px/char
-          const bakeClear = (t('bakeLabel').length * 8.4) / 2 + 14; // Bake is 14px semibold
-          for (const tk of ticks) {
-            if (visible.length >= 5) break;
-            // Keep clear of the Bake label at the right edge
-            if (Math.abs(bakeX - tk.x) < labelPx(tk.label) / 2 + bakeClear) continue;
-            const prev = visible[visible.length - 1];
-            const needed = prev ? (labelPx(tk.label) + labelPx(prev.label)) / 2 : 0;
-            if (!prev || Math.abs(tk.x - prev.x) >= needed) visible.push(tk);
-          }
-          return visible;
-        })().map((tk, i) => (
-          <g key={i}>
-            <line x1={tk.x} y1={AXIS_Y} x2={tk.x} y2={AXIS_Y + 3}
-              stroke="var(--border)" strokeWidth={1} />
-            <text x={tk.x} y={AXIS_Y + 20} fontSize={12} fill="var(--smoke)"
-              fontFamily="DM Mono, monospace" textAnchor="middle">
-              {tk.label}
-            </text>
-          </g>
-        ))}
-
-        {/* ── Bake marker (upward triangle) ── */}
-        <polygon
-          points={`${bakeX - 8},${AXIS_Y} ${bakeX},${AXIS_Y - 12} ${bakeX + 8},${AXIS_Y}`}
-          fill={TERRA}
-        />
-        <text
-          // Clamp inside the chart — centred on bakeX the FR "Cuisson" label
-          // ran off the right edge ("Cuisso…")
-          x={Math.min(bakeX, W - (t('bakeLabel').length * 8.4) / 2 - 2)}
-          y={AXIS_Y + 20} fontSize={14} fontWeight="600" fill={TERRA}
-          fontFamily="DM Mono, monospace" textAnchor="middle">{t('bakeLabel')}</text>
-
-        {/* ── Event-driven diamonds + labels (sourdough) ── */}
-        {useEventDrivenStarter && (() => {
-          // Build the list of visible, rendered events first, then assign each
-          // label a stacking ROW based on actual x-proximity — not array-index
-          // parity. Index parity broke when fridge_out was filtered and
-          // fridge_in return-null'd mid-map (their idx still counted), so two
-          // close labels (e.g. Out-of-fridge + Pre-mix within ~1h) could land on
-          // the same row and overlap. Greedy placement: a label drops to the
-          // next row only if it sits within LABEL_MIN_DX of one already placed
-          // on that row. Mirrors the intermediate-refresh block's approach.
-          const ROW_H = 14;
-          const tickPositions = ticks.map(tk => tk.x);
-          // Width-aware spacing — the old fixed 46px gap let long labels like
-          // "Refresh Feed 1" (~90px) overlap neighbours and the green
-          // "Start Dough" mix label.
-          const labelPxW = (s: string) => s.length * 6.2 + 8;
-          const visible = starterEvents
-            .filter(ev => ev.kind !== 'fridge_out' && ev.kind !== 'fridge_in')
-            .map((ev, idx) => {
-              const hbf = (bakeMs - ev.time.getTime()) / 3600000;
-              if (hbf < 0 || hbf > WH) return null;
-              return { ev, idx, x: hToX(hbf, W, WH) };
-            })
-            .filter((v): v is { ev: StarterEvent; idx: number; x: number } => v !== null)
-            .sort((a, b) => a.x - b.x);
-          // Assign rows greedily left-to-right.
-          // Pre-seed the mix diamond's "Start Dough" label (12px font, drawn
-          // in its own block at ~rows 0–1) so event labels keep clear of it.
-          const placed: { x: number; row: number; w: number }[] = [
-            { x: mixX, row: 0, w: 92 },
-            { x: mixX, row: 1, w: 92 },
-          ];
-          const rowFor = (x: number, w: number): number => {
-            let row = 0;
-            // increase row until no already-placed label on that row overlaps
-            // (bounded to 3 rows so labels never march too far down)
-            while (row < 3 && placed.some(p => p.row === row && Math.abs(p.x - x) < (p.w + w) / 2)) {
-              row++;
-            }
-            placed.push({ x, row, w });
-            return row;
-          };
-          return visible.map(({ ev, idx, x: xRaw }) => {
-            // Live drag: the refresh diamond follows the pointer; the bells
-            // and card re-render after the solver commit on release.
-            const x = (ev.kind === 'refresh' && dragging === 'refresh' && localRefreshHBF !== null)
-              ? hToX(localRefreshHBF, W, WH) : xRaw;
-            const isHistorical = ev.kind === 'last_fed' && ev.isPast;
-            const isIntermediate = ev.kind === 'intermediate_refresh';
-            const diamondFill = isHistorical ? 'rgba(74,127,165,0.20)' :
-                                isIntermediate ? 'rgba(74,127,165,0.5)' :
-                                ev.isActive ? prefColor : 'rgba(74,127,165,0.45)';
-            const diamondStroke = isHistorical ? 'rgba(74,127,165,0.45)' :
-                                  isIntermediate ? '#4A7FA5' :
-                                  ev.isActive ? 'white' : 'rgba(74,127,165,0.75)';
-            const diamondSize = isIntermediate ? S * 0.7 : S;
-            const points = `${x},${AXIS_Y - diamondSize} ${x + diamondSize},${AXIS_Y} ${x},${AXIS_Y + diamondSize} ${x - diamondSize},${AXIS_Y}`;
-            // A label whose diamond sits under a day tick drops just enough to
-            // clear the tick text (baseline AXIS_Y+20, ~12px tall) — a small
-            // +8 nudge, NOT a full extra row, so an isolated label (e.g. a
-            // far-left "Refresh Feed" with nothing beside it) stays tucked under
-            // the axis instead of floating ~2 rows down and reading as detached.
-            const collidesWithTick = tickPositions.some(tx => Math.abs(x - tx) < 55);
-            const baseLabelY = (AXIS_Y + S + 22) + (collidesWithTick ? 8 : 0);
-            const finalLabelY = baseLabelY + rowFor(x, labelPxW(ev.label)) * ROW_H;
-            const labelFill = isHistorical ? 'var(--smoke)' :
-                              isIntermediate ? '#4A7FA5' :
-                              ev.isActive ? prefColor : 'rgba(74,127,165,0.75)';
+          const nowX = (nowHBF > 0 && nowHBF < WH) ? hToX(nowHBF, W, WH) : null;
+          const nowHalf = (t('nowLabel').length * 4.4) / 2;
+          return days.map((d, i) => {
+            const labelX = d.x + 4;
+            const clash = nowX !== null
+              && Math.abs((labelX + 12) - nowX) < (20 + nowHalf);
             return (
-              <g key={`ev-diamond-${idx}`} pointerEvents={ev.isDraggable ? 'auto' : 'none'}>
-                <polygon
-                  points={points}
-                  fill={diamondFill}
-                  stroke={diamondStroke}
-                  strokeWidth={1.5}
-                  style={{ cursor: ev.isDraggable ? 'pointer' : 'default' }}
-                  onPointerDown={ev.isDraggable ? (e) => onPointerDown(e, ev.kind === 'refresh' ? 'refresh' : 'pref') : undefined}
-                />
-                <text
-                  x={x}
-                  y={finalLabelY}
-                  fontSize={10}
-                  fill={labelFill}
-                  fontFamily="DM Mono, monospace"
-                  textAnchor="middle"
-                  fontWeight={ev.isActive ? '600' : '500'}
-                >
-                  {ev.label}
-                </text>
+              <g key={i} pointerEvents="none">
+                {d.dividerX !== null && (
+                  <line x1={d.dividerX} y1={AXIS_Y - 2} x2={d.dividerX} y2={AXIS_Y + 4}
+                    stroke="#C9BEAC" strokeWidth={1} />
+                )}
+                {!clash && labelX < W - PAD - 22 && (
+                  <text x={labelX} y={AXIS_Y + 16} fontSize={9.5} fill="var(--smoke)"
+                    fontFamily="DM Mono, monospace" letterSpacing=".06em">{d.name}</text>
+                )}
               </g>
             );
           });
         })()}
 
-        {/* ── Historical feed diamond (muted, Feed 1 in Peak 2 scenario) ── */}
-        {!useEventDrivenStarter && hasPref && isLevain && histPrefX !== null && (() => {
-          const histLabelsClose = histPrefX !== null && Math.abs(activePrefX - (histPrefX ?? 0)) < 90;
+        {/* ── Bake marker (downward triangle sitting on the baseline) ── */}
+        <polygon
+          points={`${bakeX - 7.5},${BL - 10} ${bakeX + 7.5},${BL - 10} ${bakeX},${BL + 2.5}`}
+          fill={TERRA} opacity={opacityFor('bake')}
+        />
+        {focusId === 'bake' && (
+          <circle cx={bakeX} cy={BL} r={15} fill="none" stroke={TERRA} strokeWidth={1.5} opacity={0.4} />
+        )}
+
+        {/* ── Event-driven diamonds (sourdough) ──────────────
+             Labels are no longer drawn here: every label on the chart goes
+             through one packing pass above the axis, so a starter feed and
+             Start Dough can never collide. ── */}
+        {useEventDrivenStarter && visibleStarterEvents.map(({ ev, idx, x }) => {
+          const isHistorical   = ev.kind === 'last_fed' && ev.isPast;
+          const isIntermediate = ev.kind === 'intermediate_refresh';
+          const id   = `ev:${idx}`;
+          const size = isIntermediate ? S * 0.72 : S;
+          const focused = focusId === id;
+          const fill = isHistorical ? 'rgba(74,127,165,0.20)'
+            : isIntermediate ? 'rgba(74,127,165,0.5)'
+            : ev.isActive ? prefColor : 'rgba(74,127,165,0.45)';
+          const inBusyWindow = !ev.isPast && inBlocker((bakeMs - ev.time.getTime()) / 3600000);
           return (
-            <g pointerEvents="none">
-              <polygon
-                points={`${histPrefX},${AXIS_Y - S} ${histPrefX + S},${AXIS_Y} ${histPrefX},${AXIS_Y + S} ${histPrefX - S},${AXIS_Y}`}
-                fill="rgba(74,127,165,0.20)" stroke="rgba(74,127,165,0.45)" strokeWidth={1.5}
-              />
-              {!allClose && (
-                <text x={histPrefX} y={histLabelsClose ? AXIS_Y + 52 : AXIS_Y + 36}
-                  fontSize={11} fill="var(--smoke)"
-                  fontFamily="DM Mono, monospace" textAnchor="middle" fontWeight="600">
-                  {isFr ? 'Dernier rafraîchi' : 'Last fed'}
-                </text>
+            <g key={`ev-diamond-${idx}`} pointerEvents={ev.isDraggable ? 'auto' : 'none'}
+               opacity={opacityFor(id)}>
+              {inBusyWindow && (L.busy || focused) && (
+                <circle cx={x} cy={AXIS_Y} r={12} fill="none"
+                  stroke="#9A7010" strokeWidth={1.2} strokeDasharray="2.5 2.5" />
               )}
+              {focused && (
+                <circle cx={x} cy={AXIS_Y} r={15} fill="none" stroke={fill}
+                  strokeWidth={1.5} opacity={0.4} />
+              )}
+              <polygon
+                points={`${x},${AXIS_Y - size} ${x + size},${AXIS_Y} ${x},${AXIS_Y + size} ${x - size},${AXIS_Y}`}
+                fill={fill}
+                stroke="var(--cream, #F5F0E8)"
+                strokeWidth={1.6}
+                style={{ cursor: ev.isDraggable ? 'grab' : 'default' }}
+                onPointerDown={ev.isDraggable ? (e) => onPointerDown(e, ev.kind === 'refresh' ? 'refresh' : 'pref') : undefined}
+              />
             </g>
           );
-        })()}
+        })}
+
+        {/* ── Historical feed diamond (muted, Feed 1 in Peak 2 scenario) ── */}
+        {!useEventDrivenStarter && hasPref && isLevain && histPrefX !== null && (
+          <g pointerEvents="none">
+            <polygon
+              points={`${histPrefX},${AXIS_Y - S} ${histPrefX + S},${AXIS_Y} ${histPrefX},${AXIS_Y + S} ${histPrefX - S},${AXIS_Y}`}
+              fill="rgba(74,127,165,0.20)" stroke="var(--cream, #F5F0E8)" strokeWidth={1.6}
+            />
+          </g>
+        )}
 
         {/* ── Refeed diamond (depleted state) ── */}
         {!useEventDrivenStarter && isLevain && refeedHBF !== null && depletedAtHBF !== null
@@ -1934,36 +1876,18 @@ export default function FermentChart({
         {/* Active feed diamond — hasFutureFeedPath or Peak2 scenario */}
         {!useEventDrivenStarter && isLevain && activeFeedHBF !== null && histFeedHBF !== null
          && (!knownPeakHBF || starterRedPill || starterFeed2Time)
-         && activeFeedHBF > 0 && (() => {
-          const labelsClose = Math.abs(activePrefX - (histPrefX ?? 0)) < 70;
-          return (
-            <g>
-              <polygon
-                points={`${activePrefX},${AXIS_Y - S} ${activePrefX + S},${AXIS_Y} ${activePrefX},${AXIS_Y + S} ${activePrefX - S},${AXIS_Y}`}
-                fill={prefColor}
-                stroke="white"
-                strokeWidth={1.5}
-                style={{ cursor: 'pointer' }}
-                onPointerDown={e => onPointerDown(e, 'pref')}
-              />
-              {!allClose && (
-                <text
-                  x={activePrefX}
-                  y={labelsClose ? AXIS_Y + 52 : AXIS_Y + 36}
-                  fontSize={10}
-                  fill={prefColor}
-                  fontFamily="DM Mono, monospace"
-                  textAnchor="middle"
-                  fontWeight="600"
-                >
-                  {starterRedPill
-                    ? (isFr ? 'Rafraîchi final' : 'Pre-mix Feed')
-                    : (isFr ? 'Prochain rafraîchi' : 'Next Feed')}
-                </text>
-              )}
-            </g>
-          );
-        })()}
+         && activeFeedHBF > 0 && (
+          <g>
+            <polygon
+              points={`${activePrefX},${AXIS_Y - S} ${activePrefX + S},${AXIS_Y} ${activePrefX},${AXIS_Y + S} ${activePrefX - S},${AXIS_Y}`}
+              fill={prefColor}
+              stroke="var(--cream, #F5F0E8)"
+              strokeWidth={1.6}
+              style={{ cursor: 'grab' }}
+              onPointerDown={e => onPointerDown(e, 'pref')}
+            />
+          </g>
+        )}
 
         {/* Refresh Feed markers — one diamond per intermediate feed cycle */}
         {!useEventDrivenStarter && isLevain && starterIntermediateFeeds.length > 0 && (() => {
@@ -1983,13 +1907,9 @@ export default function FermentChart({
             if (kept.some(k => Math.abs(r.x - k.x) < 35)) continue;
             kept.push(r);
           }
-          const showNumbers = kept.length > 1;
           return (
             <g>
-              {kept.map((r, displayIdx) => {
-                const labelText = showNumbers
-                  ? (isFr ? `Rafraîchi ${displayIdx + 1}` : `Refresh Feed ${displayIdx + 1}`)
-                  : (isFr ? 'Rafraîchi' : 'Refresh Feed');
+              {kept.map((r) => {
                 return (
                   <g key={`refresh-${r.idx}`}>
                     <polygon
@@ -1998,18 +1918,6 @@ export default function FermentChart({
                       stroke="#4A7FA5"
                       strokeWidth={1}
                     />
-                    {(() => {
-                      const tickPositions = ticks.map(tk => tk.x);
-                      const collidesWithTick = tickPositions.some(tx => Math.abs(r.x - tx) < 55);
-                      const activeX = activeFeedHBF !== null ? hToX(activeFeedHBF, W, WH) : null;
-                      const collidesWithActive = activeX !== null && Math.abs(r.x - activeX) < 50;
-                      const labelY = (collidesWithTick || collidesWithActive) ? AXIS_Y + S + 42 : AXIS_Y + S + 22;
-                      return (
-                        <text x={r.x} y={labelY} textAnchor="middle" fontSize="10" fill="#4A7FA5" fontWeight="500" fontFamily="var(--font-ui)">
-                          {labelText}
-                        </text>
-                      );
-                    })()}
                   </g>
                 );
               })}
@@ -2027,7 +1935,7 @@ export default function FermentChart({
           // Mirrors the !useEventDrivenStarter guard on the Path-B bell
           // block (line ~1027) and the legacy intermediate block (~1640).
           const items = [
-            { hbf: fridgeHoldRefreshHBF, label: isFr ? 'Rafraîchi' : 'Refresh', fillColor: '#4A7FA5' },
+            { hbf: fridgeHoldRefreshHBF, fillColor: '#4A7FA5' },
           ];
           return (
             <g>
@@ -2042,16 +1950,6 @@ export default function FermentChart({
                       stroke="#FFF"
                       strokeWidth={1}
                     />
-                    <text
-                      x={x}
-                      y={AXIS_Y + 22}
-                      fill="var(--smoke)"
-                      fontSize="9"
-                      fontFamily="var(--font-ui)"
-                      textAnchor="middle"
-                    >
-                      {item.label}
-                    </text>
                   </g>
                 );
               })}
@@ -2063,178 +1961,220 @@ export default function FermentChart({
         {hasPref && !knownPeakHBF && !isLevain && renderDiamond(
           activePrefX,
           (prefStartAbsHBF > nowHBF || inBlocker(prefStartAbsHBF)) ? '#BBBBBB' : prefColor,
-          (prefStartAbsHBF > nowHBF || inBlocker(prefStartAbsHBF)) ? '#999999' : prefStroke,
-          inBlocker(prefStartAbsHBF) || (isLevain && starterFeed2OutOfZone),
+          inBlocker(prefStartAbsHBF),
           'pref',
           prefStartAbsHBF > nowHBF,
-        )}
-        {hasPref && !knownPeakHBF && !isLevain && (
-          <>
-            <text
-              x={clampLabelX(activePrefX, prefermentType === 'biga' ? t('cardLabels.makeBiga') : t('cardLabels.makePoolish'))}
-              y={allClose ? AXIS_Y + 20 : labelsClose ? AXIS_Y + 50 : AXIS_Y + 36}
-              fontSize={12}
-              fill={prefColor}
-              fontFamily="DM Mono, monospace"
-              textAnchor="middle"
-              fontWeight="600"
-            >
-              {isLevain
-                ? (histFeedHBF !== null
-                    ? (isFr ? 'Prochain repas' : 'Next Feed')
-                    : (isFr ? 'Repas' : 'Feed'))
-                : prefermentType === 'biga'
-                  ? t('cardLabels.makeBiga')
-                  : t('cardLabels.makePoolish')}
-            </text>
-            {/* Protocol indicator — Fridge or RT */}
-            <text
-              x={clampLabelX(activePrefX, 'Fridge', 10)}
-              y={allClose ? AXIS_Y + 34 : labelsClose ? AXIS_Y + 64 : AXIS_Y + 50}
-              fontSize={10}
-              fill={prefNeedsFridge ? '#6A8FAF' : '#C4A030'}
-              fontFamily="DM Mono, monospace"
-              textAnchor="middle"
-              opacity={0.85}
-            >
-              {isLevain
-                ? (starterFridgeOutTime
-                    ? (isFr ? 'Frigo' : 'Fridge')
-                    : (isFr ? 'Temp. ambiante' : 'Room temp'))
-                : (prefNeedsFridge
-                    ? (isFr ? 'Frigo' : 'Fridge')
-                    : (isFr ? 'Temp. ambiante' : 'Room temp'))}
-            </text>
-          </>
         )}
 
         {/* ── Mix diamond ── */}
         {renderDiamond(
           mixX,
           inBlocker(effectiveMixHBF) ? '#aaaaaa' : DARK_SAGE,
-          inBlocker(effectiveMixHBF) ? '#999999' : DARK_SAGE_STR,
           inBlocker(effectiveMixHBF),
           'mix',
         )}
-        {/* ── Mix label ── */}
-        <text
-          x={clampLabelX(mixX, isFr ? 'Pétrissage' : 'Start Dough')} y={allClose ? AXIS_Y + 52 : AXIS_Y + 36}
-          fontSize={12} fill="#3D5A30"
-          fontFamily="DM Mono, monospace"
-          textAnchor="middle" fontWeight="600"
-        >{isFr ? 'Pétrissage' : 'Start Dough'}</text>
 
         {/* ── Ghost diamond (recommended position) ── */}
         {recommendedMixHBF != null &&
          Math.abs(recommendedMixHBF - effectiveMixHBF) > 0.5 && (
-          <g opacity={0.35} pointerEvents="none">
+          <g opacity={0.3} pointerEvents="none">
             <polygon
               points={`${hToX(recommendedMixHBF, W, WH)},${AXIS_Y - S}
                 ${hToX(recommendedMixHBF, W, WH) + S},${AXIS_Y}
                 ${hToX(recommendedMixHBF, W, WH)},${AXIS_Y + S}
                 ${hToX(recommendedMixHBF, W, WH) - S},${AXIS_Y}`}
-              fill="#3D5A30"
-              stroke="white"
-              strokeWidth={1.5}
+              fill="none"
+              stroke={DARK_SAGE}
+              strokeWidth={1.2}
+              strokeDasharray="3 3"
             />
           </g>
         )}
+
+        {/* ── Labels — one packed pass, ABOVE the axis. A 3.5px cream
+             paint-order halo keeps a second-lane label readable where it
+             crosses a curve. ── */}
+        {packLabels(labelItems, W).map(l => (
+          <text
+            key={l.key}
+            x={l.x}
+            y={LABEL_Y - l.lane * LABEL_LANE_H}
+            fontSize={10}
+            fontWeight={500}
+            fill={l.color}
+            opacity={l.dim ? 0.4 : 1}
+            fontFamily="DM Mono, monospace"
+            textAnchor="middle"
+            style={{ paintOrder: 'stroke fill', stroke: 'var(--cream, #F5F0E8)', strokeWidth: '3.5px', strokeLinejoin: 'round' }}
+            pointerEvents="none"
+          >
+            {l.text}
+          </text>
+        ))}
       </svg>
 
-      {/* Optional drag invitation — an offer, not an instruction; sits
-          right under the graph and retires after the first drag */}
-      {!hasDragged && !startTimeInPast && (
-        <div style={{
-          textAlign: 'center', fontSize: '11px', marginTop: '4px',
-          color: '#8A7F78', fontFamily: 'var(--font-ui)',
-          fontStyle: 'italic',
-        }}>
-          {isFr
-            ? 'Envie d’ajuster ? Les losanges ◆ se déplacent'
-            : 'Want to tweak the times? The diamonds ◆ are draggable'}
+      {/* ── Reset ────────────────────────────────────────────
+          Directly under the chart, above the guide link: the baker must SEE
+          the diamond jump back when they press it — that is the confirmation,
+          and it only works while the chart is on screen. ── */}
+      {showReset && onReset && (
+        <div style={{ marginTop: '11px' }}>
+          <button
+            onClick={onReset}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
+              padding: '8px 13px', border: '1.5px solid var(--border, #E8E0D5)',
+              borderRadius: '20px', background: 'var(--warm, #FDFBF7)',
+              color: 'var(--ash, #3D3530)', fontSize: '12px', cursor: 'pointer',
+              fontFamily: 'var(--font-ui)',
+            }}
+          >
+            <span style={{ color: 'var(--terra)', fontSize: '13px' }}>↺</span>
+            {t('reset')}
+          </button>
         </div>
       )}
 
-      {/* ── How to read this chart — one panel: legend, windows toggle,
-          and the "times are a guide" reminder. Nothing else under the chart. ── */}
-      <div style={{ marginTop: '8px' }}>
+      {/* ── The guide — also the legend, which is why nothing permanent
+          sits beside the chart. ── */}
+      <div style={{ marginTop: '12px' }}>
         <button
-          onClick={() => setLegendOpen(o => !o)}
+          onClick={() => {
+            setGuideOpen(o => {
+              const next = !o;
+              // First ever open turns all three layers on so the explanations
+              // have something to point at. After that the baker's ticks are
+              // respected — never re-enabled behind their back.
+              if (next && !everOpened) {
+                setEverOpened(true);
+                setLayers({ fridge: true, busy: true, window: true });
+              }
+              return next;
+            });
+          }}
+          aria-expanded={guideOpen}
           style={{
-            background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0',
-            fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke, #8A7F78)',
-            textDecoration: 'underline', textUnderlineOffset: '2px',
+            background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+            fontFamily: 'var(--font-ui)', fontSize: '12px', textAlign: 'left',
+            color: guideOpen ? 'var(--ash, #3D3530)' : 'var(--smoke, #8A7F78)',
+            textDecoration: guideOpen ? 'none' : 'underline', textUnderlineOffset: '2px',
           }}
         >
-          {legendOpen
-            ? (isFr ? '− Comment lire ce graphique' : '− How to read this chart')
-            : (isFr ? '? Comment lire ce graphique' : '? How to read this chart')}
+          {guideOpen ? t('guide.close') : t('guide.open')}
         </button>
-        {legendOpen && (
+
+        {guideOpen && (
           <div style={{
-            marginTop: '8px', padding: '12px 12px',
-            background: 'rgba(43, 36, 32,0.03)', border: '1px solid var(--border, #E8E0D5)',
-            borderRadius: '16px', fontFamily: 'var(--font-ui)', fontSize: '12px',
-            color: 'var(--ash, #3D3530)', lineHeight: 1.65,
+            marginTop: '9px', background: 'var(--warm, #FDFBF7)',
+            border: '1px solid var(--border, #E8E0D5)', borderRadius: '14px',
+            padding: '13px', fontFamily: 'var(--font-ui)',
           }}>
-            {([
-              [isFr ? 'Les cloches' : 'The bells', isFr
-                ? (isLevain
-                  ? 'chaque courbe monte, culmine, retombe — d’abord votre levain, puis votre pâte.'
-                  : 'chaque courbe monte, culmine, retombe — d’abord votre préferment, puis votre pâte.')
-                : (isLevain
-                  ? 'each curve rises, peaks, falls — first your starter, then your dough.'
-                  : 'each curve rises, peaks, falls — first your preferment, then your dough.')],
-              [isFr ? 'Les losanges ◆' : 'The diamonds ◆', isFr
-                ? 'vos actions — faites-les glisser, les courbes suivent.'
-                : 'your actions — drag them, the curves follow.'],
-              [isFr ? 'Les hachures' : 'The hatched columns', isFr
-                ? 'vos indisponibilités — le plan les contourne.'
-                : 'your busy hours — the plan works around them.'],
-              [isFr ? 'Les plateaux' : 'The flat stretches', isFr
-                ? 'du temps au frigo — la biologie en pause. C’est voulu.'
-                : 'fridge time — biology on pause. That’s by design.'],
-            ] as const).map(([term, body]) => (
-              <div key={term} style={{ marginBottom: '4px' }}>
-                <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>{term}</span>
-                <span> — {body}</span>
-              </div>
-            ))}
+            {/* Leads with the action, before any biology. */}
+            <p style={{ margin: '0 0 11px', fontSize: '11.5px', lineHeight: 1.5, color: 'var(--smoke, #8A7F78)' }}>
+              <b style={{ color: 'var(--ash, #3D3530)', fontWeight: 500 }}>{t('guide.dragLead')}</b>
+              {' '}{t('guide.dragRest')}
+            </p>
 
-            {/* Windows toggle — lives with the legend: turning zones on is
-                chart literacy, not a separate setting */}
-            {onToggleZones && (
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                borderTop: '1px solid var(--border, #E8E0D5)',
-                marginTop: '8px', paddingTop: '8px', cursor: 'pointer',
-              }}>
-                <input
-                  type="checkbox"
-                  checked={!!showZoneLabels}
-                  onChange={e => onToggleZones(e.target.checked)}
-                  style={{ width: '14px', height: '14px', accentColor: 'var(--terra, #6B4423)', cursor: 'pointer', flexShrink: 0 }}
-                />
-                <span>
-                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--terra, #6B4423)', fontWeight: 700 }}>
-                    {isFr ? 'Fenêtres' : 'Timing windows'}
-                  </span>
-                  <span> — {isFr
-                    ? (isLevain ? 'fenêtre de pâte + pic du levain.' : 'la meilleure plage pour chaque action.')
-                    : (isLevain ? 'dough window + starter peak.' : 'best range for each action.')}
-                  </span>
-                </span>
-              </label>
-            )}
+            {(() => {
+              const allOn = (!hasAnyCold || layers.fridge)
+                && layers.busy
+                && (!hasAnyWindow || layers.window);
+              const rows: Array<{
+                key: 'fridge' | 'busy' | 'window';
+                label: string; desc: string; swatch: React.ReactNode;
+              }> = [];
+              if (hasAnyCold) rows.push({
+                key: 'fridge', label: t('guide.fridge'), desc: t('guide.fridgeDesc'),
+                swatch: (
+                  <svg width="26" height="12" style={{ flexShrink: 0, marginTop: 3 }}>
+                    <path d="M2 9 Q9 2 24 5" fill="none" stroke={COLD_STROKE} strokeWidth={5} opacity={0.32} strokeLinecap="round" />
+                    <path d="M2 9 Q9 2 24 5" fill="none" stroke={SAGE} strokeWidth={1.6} />
+                  </svg>
+                ),
+              });
+              rows.push({
+                key: 'busy', label: t('guide.busy'), desc: t('guide.busyDesc'),
+                swatch: (
+                  <svg width="26" height="12" style={{ flexShrink: 0, marginTop: 3 }}>
+                    <rect x="2" y="0" width="8" height="12" fill={BUSY_FILL} opacity={0.16} />
+                    <rect x="16" y="0" width="8" height="12" fill={BUSY_FILL} opacity={0.16} />
+                  </svg>
+                ),
+              });
+              if (hasAnyWindow) rows.push({
+                key: 'window', label: t('guide.window'), desc: t('guide.windowDesc'),
+                swatch: (
+                  <svg width="26" height="12" style={{ flexShrink: 0, marginTop: 3 }}>
+                    <rect x="2" y="4" width="21" height="5" rx="2.5" fill={DARK_SAGE} opacity={0.32} />
+                    <line x1="12" y1="2" x2="12" y2="11" stroke={DARK_SAGE} strokeWidth={1.5} />
+                  </svg>
+                ),
+              });
+              const tick = (
+                <svg width="10" height="8" viewBox="0 0 10 8">
+                  <path d="M1 4 L4 7 L9 1" fill="none" stroke="#FDFBF7" strokeWidth={1.8}
+                    strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              );
+              const box = (on: boolean) => (
+                <span style={{
+                  width: 17, height: 17, borderRadius: 5, flexShrink: 0, marginTop: 1,
+                  border: `1.5px solid ${on ? 'var(--ash, #3D3530)' : '#C4B7A4'}`,
+                  background: on ? 'var(--ash, #3D3530)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>{on ? tick : null}</span>
+              );
+              const rowStyle = (first: boolean): React.CSSProperties => ({
+                display: 'flex', alignItems: 'flex-start', gap: '9px',
+                padding: first ? '0 2px 8px' : '8px 2px',
+                background: 'none', border: 'none',
+                borderTop: first ? 'none' : '1px solid var(--border, #E8E0D5)',
+                width: '100%', textAlign: 'left', cursor: 'pointer',
+                fontFamily: 'var(--font-ui)',
+              });
+              return (
+                <>
+                  <button
+                    onClick={() => {
+                      const v = !allOn;
+                      setLayers({ fridge: v, busy: v, window: v });
+                    }}
+                    aria-pressed={allOn}
+                    style={rowStyle(true)}
+                  >
+                    {box(allOn)}
+                    <span style={{ flex: 1 }}>
+                      <b style={{ display: 'block', fontSize: '12.5px', fontWeight: 500, color: 'var(--ash, #3D3530)' }}>
+                        {t('guide.all')}
+                      </b>
+                    </span>
+                  </button>
+                  {rows.map(r => (
+                    <button
+                      key={r.key}
+                      onClick={() => setLayers(prev => ({ ...prev, [r.key]: !prev[r.key] }))}
+                      aria-pressed={layers[r.key]}
+                      style={rowStyle(false)}
+                    >
+                      {box(layers[r.key])}
+                      <span style={{ flex: 1 }}>
+                        <b style={{ display: 'block', fontSize: '12.5px', fontWeight: 500, color: 'var(--ash, #3D3530)' }}>
+                          {r.label}
+                        </b>
+                        <span style={{ display: 'block', fontSize: '10.5px', color: 'var(--smoke, #8A7F78)', lineHeight: 1.4, marginTop: 1 }}>
+                          {r.desc}
+                        </span>
+                      </span>
+                      {r.swatch}
+                    </button>
+                  ))}
+                </>
+              );
+            })()}
 
-            <div style={{
-              fontSize: '11px', color: 'var(--smoke, #8A7F78)', fontStyle: 'italic',
-              borderTop: '1px solid var(--border, #E8E0D5)', marginTop: '8px', paddingTop: '8px',
-            }}>
-              {isFr
-                ? 'Les horaires sont indicatifs — fiez-vous à votre pâte autant qu’à l’horloge.'
-                : 'Times are a guide — trust your dough as much as the clock.'}
-            </div>
+            <p style={{ margin: '11px 0 0', fontSize: '11.5px', lineHeight: 1.5, color: 'var(--smoke, #8A7F78)' }}>
+              {t('guide.foot')}
+            </p>
           </div>
         )}
       </div>

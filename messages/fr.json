@@ -568,7 +568,19 @@
     "prefTooLate": "Pas prêt — risque de sous-fermentation",
     "prefTooShortTime": "Pas assez de temps — pâte directe recommandée",
     "prefInFridgeReady": "Au frigo — prêt au démarrage",
-    "prefReadyWhenDoughStarts": "Prêt au démarrage de la pâte"
+    "prefReadyWhenDoughStarts": "Prêt au démarrage de la pâte",
+    "eyebrowRecommended": "PLAN DE FERMENTATION RECOMMANDÉ",
+    "eyebrowYours": "VOTRE PLAN DE FERMENTATION",
+    "bakeRow": "Cuisson",
+    "outOfFridge": "Sortie du frigo · après {hours}h au froid",
+    "nowPrefix": "Maintenant",
+    "completedSteps": "{count} étapes déjà faites",
+    "busyEngine": "Vous êtes occupé à ce moment — rien de libre ne convient au plan, on garde.",
+    "busyBakerA": "Vous êtes occupé à ce moment.",
+    "busyBakerB": "est libre si vous préférez.",
+    "movedClear": "Déplacé ici pour éviter vos moments occupés.",
+    "undo": "Annuler",
+    "roomIs": "N’importe quand entre {range} garde le plan sur les rails"
   },
   "recipe": {
     "ingredients": "Ingrédients",
@@ -1601,6 +1613,31 @@
       "legendStarter": "Levain",
       "legendDough": "Pâte",
       "legendTempCaption": "Plus clair = ambiante · Plus foncé = au frigo"
+    },
+    "nowLabel": "maintenant",
+    "reset": "Revenir à la recommandation",
+    "shortLabels": {
+      "poolish": "Poolish",
+      "biga": "Biga",
+      "starter": "Levain",
+      "dough": "Pâte",
+      "fed": "Rafraîchi",
+      "refresh": "Rafraîchi",
+      "preMix": "Final"
+    },
+    "guide": {
+      "open": "Lire et ajuster ce graphique",
+      "close": "Masquer les détails",
+      "dragLead": "Glissez un losange",
+      "dragRest": "pour déplacer l’étape — le plan se réajuste autour. Chaque courbe montre la vitalité de la pâte : plus c’est haut, plus c’est mûr.",
+      "all": "Tout afficher",
+      "fridge": "Au frigo",
+      "fridgeDesc": "Là où la ligne est bleutée, la pâte est au froid et bouge à peine.",
+      "busy": "Vos moments occupés",
+      "busyDesc": "Les heures de travail et de nuit que vous avez bloquées.",
+      "window": "Marge de manœuvre",
+      "windowDesc": "De combien une étape peut bouger sans dérégler le plan.",
+      "foot": "Elles s’activent d’elles-mêmes pendant que vous déplacez, puis s’effacent."
     }
   },
   "prefermentSlider": {
