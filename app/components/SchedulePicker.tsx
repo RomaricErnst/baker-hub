@@ -1692,10 +1692,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [showRatioInfo, setShowRatioInfo]       = useState(false);
   const [showRatioModeInfo, setShowRatioModeInfo] = useState(false);
   const [showTasteInfo, setShowTasteInfo]       = useState(false);
-  // NOTE: the "Signs your starter is ready" and "Reading your dough"
-  // disclosures lived on the two boxed cards and went with them. Their copy is
-  // preserved in git history (b9a9491) — flag for Romaric: the row model has
-  // no place for them, so they need a home (Guide step?) or a deliberate cut.
+  // The "Signs your starter is ready" / "Reading your dough" disclosures lived
+  // on the two boxed cards and were removed with them, deliberately: readiness
+  // cues are protocol, not planning. They belong to BakeGuide's readyWhen
+  // sections and LearnModal (preferment_ready, poke_test, bulk), which already
+  // cover them in more depth. The plan step is for scheduling; the baker is
+  // planning here, not baking.
 
   // Sync sourdough state from props when they change (session restore case).
   // Without this, props restored asynchronously after mount don't reach the
