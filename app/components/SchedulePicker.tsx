@@ -1402,6 +1402,182 @@ function SimpleStartTime({ pendingStart, isFr, onStartChange }: {
   );
 }
 
+// ── Plan list ────────────────────────────────────────────────
+// One stacked list, one row per event, in chronological order. Rows are
+// separated by hairlines — no boxes, no card fill. Shape carries kind,
+// colour carries curve.
+export interface PlanRow {
+  id: string;
+  /** Epoch ms — the list is sorted by this, so a dragged step re-sorts
+   *  itself into chronological place. */
+  at: number;
+  name: string;
+  timeText: string;
+  marker: 'step' | 'history' | 'cold' | 'bake';
+  color: string;
+  /** Steps you DO get a soft time field. Things that follow from them —
+   *  Out of fridge, Last fed — get plain text. That contrast teaches the
+   *  rule with no caption. */
+  editable: boolean;
+  isHistory?: boolean;
+  note?: React.ReactNode;
+}
+
+function PlanMarker({ marker, color }: { marker: PlanRow['marker']; color: string }) {
+  const box: React.CSSProperties = {
+    width: 12, flexShrink: 0, display: 'flex',
+    justifyContent: 'center', alignItems: 'center',
+  };
+  if (marker === 'bake') {
+    return (
+      <span style={box}>
+        <span style={{
+          width: 0, height: 0,
+          borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
+          borderTop: `9px solid ${color}`,
+        }} />
+      </span>
+    );
+  }
+  if (marker === 'cold') {
+    return (
+      <span style={box}>
+        <span style={{ width: 11, height: 4, borderRadius: 2, background: color, opacity: 0.5 }} />
+      </span>
+    );
+  }
+  return (
+    <span style={box}>
+      <span style={{
+        width: 9, height: 9, transform: 'rotate(45deg)',
+        background: marker === 'history' ? 'transparent' : color,
+        border: marker === 'history' ? `1.5px solid ${color}` : 'none',
+        opacity: marker === 'history' ? 0.55 : 1,
+      }} />
+    </span>
+  );
+}
+
+function Chevron() {
+  return (
+    <svg width="9" height="6" viewBox="0 0 9 6" style={{ opacity: 0.45 }}>
+      <path d="M1 1 L4.5 5 L8 1" fill="none" stroke="#1A1612" strokeWidth="1.4"
+        strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PlanList({
+  rows, focusId, onFocus, onEditTime, editingId, editor, collapseLabel,
+}: {
+  rows: PlanRow[];
+  focusId: string | null;
+  onFocus: (id: string) => void;
+  onEditTime: (id: string) => void;
+  editingId: string | null;
+  editor: React.ReactNode;
+  collapseLabel: (n: number) => string;
+}) {
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const history = rows.filter(r => r.isHistory);
+  // Collapse completed steps only at two or more. A fresh sourdough plan has
+  // just "Last fed" behind it, so it stays inline; collapsing a single row is
+  // worse than showing it.
+  const collapse = history.length >= 2 && !historyOpen;
+  const shown = collapse ? rows.filter(r => !r.isHistory) : rows;
+
+  const rowBtn: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: '9px',
+    padding: '10px 4px', background: 'none', border: 'none',
+    fontFamily: 'var(--font-ui)', textAlign: 'left', cursor: 'pointer',
+    borderRadius: '9px', flex: 1, minWidth: 0,
+  };
+
+  return (
+    <div style={{ marginTop: '14px' }}>
+      {collapse && (
+        <div style={{ borderTop: '1px solid var(--border)' }}>
+          <button
+            onClick={() => setHistoryOpen(true)}
+            style={{ ...rowBtn, width: '100%', color: 'var(--smoke)', opacity: 0.75, fontSize: '12px' }}
+          >
+            <PlanMarker marker="history" color="#4A7FA5" />
+            <span style={{ flex: 1 }}>{collapseLabel(history.length)}</span>
+            <span style={{ transform: 'rotate(-90deg)' }}><Chevron /></span>
+          </button>
+        </div>
+      )}
+      {shown.map((r, i) => {
+        const focused = focusId === r.id;
+        const last = i === shown.length - 1;
+        return (
+          <div key={r.id} style={{
+            borderTop: '1px solid var(--border)',
+            borderBottom: last ? '1px solid var(--border)' : undefined,
+          }}>
+            {/* Two targets, two jobs — SIBLING buttons filling the row. A
+                button inside a button is invalid HTML and breaks keyboard
+                and screen-reader navigation. */}
+            <div style={{
+              display: 'flex', alignItems: 'center', width: '100%',
+              background: focused ? 'rgba(232,224,213,.55)' : 'none',
+              borderRadius: '9px',
+            }}>
+              <button
+                onClick={() => { if (r.marker !== 'cold') onFocus(r.id); }}
+                style={{ ...rowBtn, cursor: r.marker === 'cold' ? 'default' : 'pointer' }}
+              >
+                <PlanMarker marker={r.marker} color={r.color} />
+                <span style={{
+                  flex: 1, minWidth: 0,
+                  fontSize: r.isHistory ? '12px' : '12.5px',
+                  color: 'var(--smoke)',
+                  textTransform: r.marker === 'cold' || r.isHistory ? 'none' : 'uppercase',
+                  letterSpacing: r.marker === 'cold' || r.isHistory ? 0 : '.04em',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>{r.name}</span>
+              </button>
+              {editingId === r.id ? (
+                <div style={{ padding: '4px 0', minWidth: '150px' }}>{editor}</div>
+              ) : r.editable ? (
+                <button
+                  onClick={() => onEditTime(r.id)}
+                  style={{
+                    fontFamily: 'var(--font-mono, DM Mono, monospace)', fontSize: '14px',
+                    fontWeight: 500, color: 'var(--char)', whiteSpace: 'nowrap',
+                    border: 'none', cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    padding: '5px 9px', borderRadius: '9px',
+                    background: 'rgba(26,22,18,.045)',
+                    boxShadow: 'inset 0 0 0 1px rgba(26,22,18,.05)',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {r.timeText}<Chevron />
+                </button>
+              ) : (
+                <span style={{
+                  fontFamily: 'var(--font-mono, DM Mono, monospace)', fontSize: '14px',
+                  color: 'var(--smoke)', fontWeight: 400, whiteSpace: 'nowrap',
+                  padding: '2px 0', fontVariantNumeric: 'tabular-nums',
+                }}>{r.timeText}</span>
+              )}
+            </div>
+            {/* One note per row, at most — indented, no left rule, no divider
+                between a row and its own note. */}
+            {r.note && (
+              <div style={{
+                padding: '0 4px 10px 25px', fontSize: '11.5px',
+                lineHeight: 1.5, color: 'var(--smoke)',
+              }}>{r.note}</div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
@@ -1516,8 +1692,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [showRatioInfo, setShowRatioInfo]       = useState(false);
   const [showRatioModeInfo, setShowRatioModeInfo] = useState(false);
   const [showTasteInfo, setShowTasteInfo]       = useState(false);
-  const [showStarterTips, setShowStarterTips] = useState(false);
-  const [showDoughTips, setShowDoughTips] = useState(false);
+  // The "Signs your starter is ready" / "Reading your dough" disclosures lived
+  // on the two boxed cards and were removed with them, deliberately: readiness
+  // cues are protocol, not planning. They belong to BakeGuide's readyWhen
+  // sections and LearnModal (preferment_ready, poke_test, bulk), which already
+  // cover them in more depth. The plan step is for scheduling; the baker is
+  // planning here, not baking.
 
   // Sync sourdough state from props when they change (session restore case).
   // Without this, props restored asynchronously after mount don't reach the
@@ -1652,13 +1832,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const suppressStartReset = useRef(false);
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
-  const [zonesOpen, setZonesOpen] = useState(false);
+  // Plan-list focus: the row whose NAME button was tapped. That step is
+  // highlighted on the chart and everything else drops back.
+  const [focusRow, setFocusRow] = useState<string | null>(null);
+  // One edit at a time. A drag supersedes an applied suggestion rather than
+  // stacking on it — a row showing both "7:30pm" and "Moved to 5:00pm" was
+  // the failure this replaces.
+  const [appliedSuggestion, setAppliedSuggestion] = useState<{ id: string; from: number } | null>(null);
   const [skipPoolishNote, setSkipPoolishNote] = useState(false);
   // True when algo found a poolish slot but scored red (under-fermentation risk).
   // Distinct from skipPoolishNote (window too short). Hides poolish from graph.
   const [prefAlgoRed, setPrefAlgoRed] = useState(false);
-  const [editingMix, setEditingMix]   = useState(false);
-  const [editingPref, setEditingPref] = useState(false);
+  // Which plan-list row has its time field open.
+  const [editingRow, setEditingRow] = useState<string | null>(null);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
   const [localBlocks, setLocalBlocks] = useState<AvailabilityBlock[]>(blocks);
   // Keep localBlocks in sync with the parent's blocks prop. Without this, any
@@ -5440,6 +5626,93 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Handlers ─────────────────────────────────
 
+  // Apply a suggested clear time from a busy-conflict note. One edit at a
+  // time: this IS the baker's edit, so it flips the eyebrow and shows Reset.
+  function applySuggestedTime(id: string, at: Date) {
+    setAppliedSuggestion({ id, from: (id === 'mix' ? pendingStart : pendingEatTime).getTime() });
+    commitRowTime(id, at);
+  }
+
+  function undoSuggestedTime() {
+    const prev = appliedSuggestion;
+    setAppliedSuggestion(null);
+    if (!prev) return;
+    commitRowTime(prev.id, new Date(prev.from));
+  }
+
+  // Commit a new time for one plan-list row. Accepts a Date or the raw
+  // datetime-local string from the inline picker.
+  function commitRowTime(id: string | null, value: Date | string) {
+    if (!id) return;
+    const at = typeof value === 'string' ? new Date(value) : value;
+    if (isNaN(at.getTime())) return;
+    hasManuallyDragged.current = true;
+    setHasDragged(true);
+    ratioApplyHistoryRef.current.length = 0;
+    if (id === 'bake') {
+      setPendingEatTime(at);
+      setEatTimeSet(true);
+      onChange(pendingStart, at, blocks);
+      if (isSourdough) findOptimalPositionSourdough(at, undefined, localBlocks);
+      return;
+    }
+    if (id === 'mix') {
+      if ((pendingEatTime.getTime() - at.getTime()) / 3600000 < 0.5) return;
+      setPendingStart(at);
+      setRecommendedHBF(null);
+      if (isSourdough) {
+        setMixOverride(true);
+        manualMixRef.current = at.getTime();
+      }
+      onChange(at, pendingEatTime, blocks);
+      if (isSourdough) findOptimalPositionSourdough(pendingEatTime, at);
+      return;
+    }
+    if (id === 'pref') {
+      const newPrefOffsetH = (pendingStart.getTime() - at.getTime()) / 3600000;
+      if (newPrefOffsetH >= 0) {
+        setPrefOffsetH(newPrefOffsetH);
+        onPrefOffsetChange?.(newPrefOffsetH);
+      }
+      return;
+    }
+    if (id.startsWith('ev:') && isSourdough) {
+      // Starter feeds go through the same pin the drag path uses — never
+      // rewrite lastFedTime, which survived Reset and made the original
+      // recommendation unreachable (sweep run 1: reset:Next Feed DIVERGED).
+      const step = 15 * 60000;
+      const t = Math.round(at.getTime() / step) * step;
+      manualRefreshRef.current = t;
+      findOptimalPositionSourdough(pendingEatTime, undefined, localBlocks);
+    }
+  }
+
+  // Reset — restores the recommended plan and clears every baker override.
+  // Shared by the chart's Reset (custom mode) and the pill (simple mode).
+  function resetToRecommendation() {
+    hasManuallyDragged.current = false;
+    setHasDragged(false);
+    setAppliedSuggestion(null);
+    setFocusRow(null);
+    // Reset must clear EVERY baker override, or it re-solves into the
+    // overridden plan instead of the original recommendation.
+    manualRefreshRef.current = null;
+    manualFeed2Ref.current = null;
+    manualMixRef.current = null;
+    setNextFeedRatioOverride(null);
+    onNextFeedRatioOverrideChange?.(null);
+    // ...including the ratio oscillation history: the drag-solve pushed the
+    // original ratio into it, so the reset-solve's recommendation (that same
+    // ratio) was vetoed by the guard and the plan stayed at the
+    // drag-influenced ratio.
+    ratioApplyHistoryRef.current.length = 0;
+    const blocksToUse = isSourdough ? localBlocks : blocks;
+    computeAndApplyRecommendation(blocksToUse, pendingEatTime);
+    if (isSourdough) {
+      findOptimalPositionSourdough(pendingEatTime, undefined, blocksToUse);
+    }
+  }
+
   function adjustStart(deltaH: number) {
     const d = new Date(pendingStart.getTime() + deltaH * 3600000);
     setPendingStart(d);
@@ -6564,10 +6837,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             : coldH <= 0
             ? (isFr ? 'Tout à température ambiante — une mie plus légère et plus vive.' : 'All at room temperature — a lighter, brighter crumb.')
             : (isFr ? `Calculé à rebours depuis votre heure de cuisson, à ${kitchenTemp}°C.` : `Timed backwards from your bake time at ${kitchenTemp}°C.`);
+          const planIsBakers = hasDragged || appliedSuggestion !== null;
           return (
-            <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginBottom: '8px', lineHeight: 1.5 }}>
-              {why}
-            </div>
+            <>
+              {/* Eyebrow — flips the moment the plan becomes the baker's, at
+                  the same moment Reset appears under the chart. */}
+              <div style={{
+                fontSize: '10.5px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
+                textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '7px',
+              }}>
+                {planIsBakers
+                  ? tRoot('schedulePicker.eyebrowYours')
+                  : tRoot('schedulePicker.eyebrowRecommended')}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginBottom: '8px', lineHeight: 1.5 }}>
+                {why}
+              </div>
+            </>
           );
         })()}
         {startComputed ? (
@@ -6652,9 +6938,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               scheduleNote={schedule?.scheduleNote ?? null}
               blocks={isSourdough ? localBlocks : blocks}
               recommendedMixHBF={recommendedHBF}
-              showZoneLabels={zonesOpen}
-              onToggleZones={setZonesOpen}
-              hasDragged={hasDragged}
+              focusId={focusRow}
+              showReset={(hasDragged || nextFeedRatioOverride !== null || appliedSuggestion !== null) && !startTimeInPast}
+              onReset={resetToRecommendation}
               onDragStart={() => setIsDragging(true)}
               onDragEnd={() => setIsDragging(false)}
               sweetCenterH={renderSweetCenter}
@@ -6798,32 +7084,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {eatTimeSet && (
         <div style={{ marginTop: '8px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
-          {/* Reset pill — whenever the plan deviates from the solver's
-              recommendation (drag, pin, or ratio override); both engines */}
-          {(hasDragged || nextFeedRatioOverride !== null) && !startTimeInPast && (
+          {/* Reset pill — SIMPLE mode only. In custom mode Reset lives
+              directly under the chart (FermentChart), because the baker has
+              to see the diamond jump back for the press to confirm itself. */}
+          {mode === 'simple' && (hasDragged || nextFeedRatioOverride !== null) && !startTimeInPast && (
             <button
-              onClick={() => {
-                hasManuallyDragged.current = false;
-                setHasDragged(false);
-                // Reset must clear EVERY baker override, or it re-solves into
-                // the overridden plan instead of the original recommendation.
-                manualRefreshRef.current = null;
-                manualFeed2Ref.current = null;
-                manualMixRef.current = null;
-                setNextFeedRatioOverride(null);
-                onNextFeedRatioOverrideChange?.(null);
-                // ...including the ratio oscillation history: the drag-solve
-                // pushed the original ratio into it, so the reset-solve's
-                // recommendation (that same ratio) was vetoed by the guard and
-                // the plan stayed at the drag-influenced ratio (live repro:
-                // mix drag → Reset landed on a different plan than A).
-                ratioApplyHistoryRef.current.length = 0;
-                const blocksToUse = isSourdough ? localBlocks : blocks;
-                computeAndApplyRecommendation(blocksToUse, pendingEatTime);
-                if (isSourdough) {
-                  findOptimalPositionSourdough(pendingEatTime, undefined, blocksToUse);
-                }
-              }}
+              onClick={resetToRecommendation}
               style={{
                 alignSelf: 'flex-start',
                 display: 'inline-flex', alignItems: 'center', gap: '8px',
@@ -7030,42 +7296,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {startComputed && mode !== 'simple' && (() => {
         const isLevainType = prefermentType === 'levain' || isSourdough;
         const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
-        // Single source of truth — same functions used by graph zone and recommendation
-        const prefOptHCard  = getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridge, styleKey ?? 'neapolitan', fridgeTemp);
-        const prefMaxHCard  = prefermentType === 'biga' ? 72 : prefGoesInFridge ? 24 : prefRTPeakH * 1.5;
-        // Fridge: 3h regardless of temp (needs time to cool then start fermenting).
-        // RT: ~25% of peak time — climate-sensitive minimum for meaningful fermentation.
-        // e.g. 30°C peak=4h → min=1h, 22°C peak=9h → min=2h, 18°C peak=13h → min=3h
-        const prefMinHCard = prefGoesInFridge ? 3 : Math.max(1, Math.round(prefRTPeakH * 0.25));
-        // SINGLE SOURCE with solver scoring — see prefZoneConstants.
-        // Green zone = plateau: optH-plateauLowH → optH+plateauH (fridge,
-        // asymmetric) or optH-tol → optH+tolUpper (RT, climate-aware).
-        const { plateauH: fridgePlateauH, plateauLowH: cardPrefPlateauH_LOW,
-                rtTol: RT_PEAK_TOLERANCE, rtTolUpper: RT_PEAK_TOLERANCE_UPPER } =
-          prefZoneConstants(prefermentType, prefGoesInFridge, kitchenTemp);
-        const cardPrefInZone = prefGoesInFridge
-          ? hasPrefActive && prefOffsetH >= prefOptHCard - cardPrefPlateauH_LOW && prefOffsetH <= prefOptHCard + fridgePlateauH
-          : hasPrefActive && prefOffsetH >= prefOptHCard - RT_PEAK_TOLERANCE && prefOffsetH <= prefOptHCard + RT_PEAK_TOLERANCE_UPPER;
-        const cardPrefEarlyOk = prefGoesInFridge
-          ? hasPrefActive && prefOffsetH > prefOptHCard + fridgePlateauH && prefOffsetH <= prefMaxHCard
-          : hasPrefActive && prefOffsetH > prefOptHCard + RT_PEAK_TOLERANCE_UPPER && prefOffsetH <= prefMaxHCard;
-        // Developing = viable but not yet at peak (both fridge and RT)
-        const cardPrefDeveloping = hasPrefActive
-          && prefOffsetH >= prefMinHCard
-          && (prefGoesInFridge
-            ? prefOffsetH < prefOptHCard - cardPrefPlateauH_LOW
-            : prefOffsetH < prefOptHCard);
-        const cardPrefTooEarly  = hasPrefActive && prefOffsetH > prefMaxHCard;
-        const cardPrefLateOk    = hasPrefActive && prefOffsetH >= 0.25 && prefOffsetH < prefMinHCard;
-        // For RT: use cardPrefDeveloping instead of cardPrefLateOk for 3h→peak*0.8 range
-        const cardPrefTooShort  = hasPrefActive && prefOffsetH < 1;
-        // Protocol already shown via /indicator below diamond — not repeated in pill
-        const cardPrefStatus = cardPrefInZone      ? tRoot('schedulePicker.prefReadyAtMix')
-          : cardPrefEarlyOk                        ? tRoot('schedulePicker.prefEarlyOk')
-          : cardPrefDeveloping                     ? tRoot('schedulePicker.prefLateOk')
-          : cardPrefLateOk                         ? tRoot('schedulePicker.prefTooLate')
-          : cardPrefTooShort                        ? tRoot('schedulePicker.prefTooShortTime')
-          :                                          tRoot('schedulePicker.prefTooEarly');
+        // The pref/mix ZONE-TIER computation (green/gold/red bands and their
+        // status strings) lived here and fed the pills on the old boxed cards.
+        // The list has no pills: green pills confirming the engine's own work
+        // were the largest source of noise. The window bounds below are still
+        // needed — they drive the chart's window lane and the "room to move"
+        // note on a selected row.
         const cardPrefTime = hasPrefActive
           ? new Date(pendingEatTime.getTime() - (mixOffsetH + prefOffsetH) * 3600000)
           : null;
@@ -7073,943 +7309,220 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           ? solverResult.sourdoughSweetFrom : renderSweetFrom;
         const doughZoneTo   = isSourdough && solverResult?.sourdoughSweetTo !== null && solverResult?.sourdoughSweetTo !== undefined
           ? solverResult.sourdoughSweetTo : renderSweetTo;
-        const _windowTooShortRender = solverResult?.windowTooShort ?? false;
-        const _planConstrainedRender = solverResult?.planConstrained ?? false;
-        const mixInZone    = mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
-        const sourdoughDoughGreen  = isSourdough && !_windowTooShortRender
-          && mixOffsetH >= doughZoneTo && mixOffsetH <= doughZoneFrom;
-        const sourdoughDoughYellow = isSourdough && !_windowTooShortRender && !sourdoughDoughGreen
-          && mixOffsetH >= doughZoneTo - 2 && mixOffsetH <= doughZoneFrom + 2;
-        // Gold zones: use yellowTo (already computed) for right edge,
-        // mirror symmetrically for left gold
-        const doughGoldRightTo  = renderYellowTo;
-        const doughGoldLeftFrom = doughZoneFrom + (doughZoneFrom - doughZoneTo) * 0.2;
-        const mixEarlyOk  = !mixInZone && mixOffsetH > doughZoneFrom && mixOffsetH <= doughGoldLeftFrom;
-        const mixTooEarly = !mixInZone && mixOffsetH > doughGoldLeftFrom;
-        const mixLateOk   = !mixInZone && mixOffsetH < doughZoneTo && mixOffsetH >= doughGoldRightTo;
-        const mixTooLate  = mixOffsetH < doughGoldRightTo;
-        const mixStatus =
-          mixInZone   ? tRoot('schedulePicker.doughReadyAtBake')
-          : mixEarlyOk  ? tRoot('schedulePicker.doughEarlyOk')
-          : mixTooEarly ? tRoot('schedulePicker.doughPeaksBefore')
-          : mixLateOk   ? tRoot('schedulePicker.doughLateOk')
-          : tRoot('schedulePicker.doughPeaksAfter');
         const bakeMs = pendingEatTime.getTime();
-        // Blocker edges are EXCLUSIVE everywhere in the engine (> and <, never
-        // >= <=). With inclusive edges here, a mix at exactly a blocker
-        // boundary (e.g. 7:00am mix when Night ends at 7am — the solver's
-        // legal first slot) was flagged "Within a blocked window".
-        const mixInBlocker = !mixInZone && mixOffsetH > 0 && blocks.some(b => {
-          const s2 = (bakeMs - b.from.getTime()) / 3600000;
-          const e2 = (bakeMs - b.to.getTime())   / 3600000;
-          return mixOffsetH > Math.min(s2, e2) && mixOffsetH < Math.max(s2, e2);
+        // ── Build the plan list ──────────────────────────────
+        // One row per event in chronological order, including Bake and Out of
+        // fridge — both were previously missing or buried in the cards.
+        const _blocks = isSourdough ? localBlocks : blocks;
+        const inAnyBlocker = (d: Date) => _blocks.some(b =>
+          d.getTime() > b.from.getTime() && d.getTime() < b.to.getTime());
+        // Nearest clear slot: walk outward from the time in 15-minute steps
+        // until outside every blocker. Blocker edges are exclusive (> <),
+        // matching the engine convention everywhere else.
+        const nearestClear = (d: Date): Date | null => {
+          const STEP = 15 * 60000;
+          for (let i = 1; i <= 4 * 12; i++) {
+            for (const dir of [-1, 1]) {
+              const cand = new Date(d.getTime() + dir * i * STEP);
+              if (cand.getTime() < Date.now()) continue;
+              if (!inAnyBlocker(cand)) return cand;
+            }
+          }
+          return null;
+        };
+        const rows: PlanRow[] = [];
+
+        // Estimated history renders day-only — the minute is fiction.
+        const dayOnly = (d: Date) =>
+          `≈ ${d.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' })}`;
+
+        const busyNote = (id: string, at: Date): React.ReactNode | undefined => {
+          if (!inAnyBlocker(at)) return undefined;
+          // Neither case is a warning. The engine one is unavoidable, so it
+          // offers nothing; the baker one was a decision, and warning someone
+          // about their own choice is what the UX rules forbid.
+          if (!hasDragged && appliedSuggestion === null) {
+            return tRoot('schedulePicker.busyEngine');
+          }
+          const alt = nearestClear(at);
+          if (!alt) return tRoot('schedulePicker.busyEngine');
+          return (
+            <>
+              {tRoot('schedulePicker.busyBakerA')}{' '}
+              <button
+                onClick={() => applySuggestedTime(id, alt)}
+                style={{
+                  display: 'inline-block', margin: '0 2px', padding: '2px 10px',
+                  border: '1px solid rgba(156,130,72,.5)', borderRadius: '20px',
+                  fontFamily: 'var(--font-mono, DM Mono, monospace)', fontSize: '11.5px',
+                  color: '#9A7010', cursor: 'pointer', background: 'rgba(156,130,72,.08)',
+                }}
+              >{fmtCardHM(alt, isFr)}</button>{' '}
+              {tRoot('schedulePicker.busyBakerB')}
+            </>
+          );
+        };
+
+        const appliedNote = (id: string): React.ReactNode | undefined => {
+          if (appliedSuggestion?.id !== id) return undefined;
+          return (
+            <span style={{ color: '#4A7A3A' }}>
+              {tRoot('schedulePicker.movedClear')}
+              <button
+                onClick={() => undoSuggestedTime()}
+                style={{
+                  marginLeft: '7px', fontSize: '11px', color: 'var(--smoke)',
+                  textDecoration: 'underline', background: 'none', border: 'none',
+                  cursor: 'pointer', padding: 0, fontFamily: 'var(--font-ui)',
+                }}
+              >{tRoot('schedulePicker.undo')}</button>
+            </span>
+          );
+        };
+
+        // "Anywhere 5:00–9:30pm keeps the plan on track" — only for a
+        // selected row that actually has an engine-computed window.
+        const roomNote = (id: string, fromHBF: number, toHBF: number): React.ReactNode | undefined => {
+          if (focusRow !== id || !(fromHBF > toHBF)) return undefined;
+          const a = new Date(bakeMs - fromHBF * 3600000);
+          const b = new Date(bakeMs - toHBF * 3600000);
+          return tRoot('schedulePicker.roomIs', {
+            range: `${fmtCardHM(a, isFr)}–${fmtCardHM(b, isFr)}`,
+          });
+        };
+
+        // Priority: applied suggestion → busy conflict → room to move.
+        const noteFor = (id: string, at: Date, win?: [number, number]): React.ReactNode | undefined =>
+          appliedNote(id) ?? busyNote(id, at) ?? (win ? roomNote(id, win[0], win[1]) : undefined);
+
+        // 1 — sourdough starter events (history + feeds + fridge consequences)
+        if (isSourdough && solverResult?.starterEvents?.length) {
+          for (const ev of solverResult.starterEvents) {
+            if (ev.kind === 'fridge_in') continue; // the casing on the curve says this
+            const isHist = ev.isPast && !ev.isActive;
+            const timeText = ev.kind === 'fridge_out'
+              ? fmtCardDT(ev.time, isFr)
+              : ev.cardTimeFormat === 'relative'
+                ? (() => {
+                    const fifteen = 15 * 60 * 1000;
+                    const rounded = new Date(Math.ceil(ev.time.getTime() / fifteen) * fifteen);
+                    return `${tRoot('schedulePicker.nowPrefix')} · ${fmtCardHM(rounded, isFr)}`;
+                  })()
+                : ev.timeIsEstimate && ev.isPast
+                  ? dayOnly(ev.time)
+                  : `${ev.timeIsEstimate ? '≈ ' : ''}${fmtCardDT(ev.time, isFr)}`;
+            const isCold = ev.kind === 'fridge_out';
+            rows.push({
+              id: `ev:${solverResult.starterEvents.indexOf(ev)}`,
+              at: ev.time.getTime(),
+              name: ev.label,
+              timeText,
+              marker: isCold ? 'cold' : isHist ? 'history' : 'step',
+              color: isCold ? '#5B87AD' : '#4A7FA5',
+              editable: !isCold && !isHist && ev.isDraggable,
+              isHistory: isHist,
+              note: isCold || isHist ? undefined
+                : noteFor(`ev:${solverResult.starterEvents.indexOf(ev)}`, ev.time),
+            });
+          }
+        }
+
+        // 2 — preferment (poolish / biga)
+        if (!isSourdough && cardPrefTime && !(skipPoolishNote || prefAlgoRed)) {
+          rows.push({
+            id: 'pref',
+            at: cardPrefTime.getTime(),
+            name: prefLabel,
+            timeText: fmtCardDT(cardPrefTime, isFr),
+            marker: 'step',
+            color: cardPrefColor,
+            editable: true,
+            note: noteFor('pref', cardPrefTime),
+          });
+        }
+
+        // 3 — Start Dough
+        rows.push({
+          id: 'mix',
+          at: pendingStart.getTime(),
+          name: tRoot('schedulePicker.startDough'),
+          timeText: fmtCardDT(pendingStart, isFr),
+          marker: 'step',
+          color: '#3D5A30',
+          editable: !startTimeInPast,
+          note: noteFor('mix', pendingStart, [doughZoneFrom, doughZoneTo]),
         });
+
+        // 4 — Out of fridge: a cold consequence, not a step. Plain text, no
+        //     field. Dough retard first; sourdough starter removal otherwise.
+        {
+          const coldOut = (() => {
+            if (hasColdRetard && phases && phases.coldRetardH > 0) {
+              const outHBF = Math.max(0, mixOffsetH - (phases.bulkFermH ?? 0) - phases.coldRetardH);
+              return {
+                at: new Date(bakeMs - outHBF * 3600000),
+                hours: Math.round(phases.coldRetardH),
+              };
+            }
+            return null;
+          })();
+          if (coldOut) {
+            rows.push({
+              id: 'coldout',
+              at: coldOut.at.getTime(),
+              name: tRoot('schedulePicker.outOfFridge', { hours: coldOut.hours }),
+              timeText: fmtCardDT(coldOut.at, isFr),
+              marker: 'cold',
+              color: '#5B87AD',
+              editable: false,
+            });
+          }
+        }
+
+        // 5 — Bake
+        rows.push({
+          id: 'bake',
+          at: pendingEatTime.getTime(),
+          name: tRoot('schedulePicker.bakeRow'),
+          timeText: fmtCardDT(pendingEatTime, isFr),
+          marker: 'bake',
+          color: '#7A4A22',
+          editable: !startTimeInPast,
+        });
+
+        rows.sort((a, b) => a.at - b.at);
+
         return (
-          <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap', justifyContent: (cardPrefTime || isSourdough) ? 'flex-start' : 'center' }}>
-
-            {/* ── Sourdough Starter Plan card ── */}
-            {isSourdough && startComputed && lastFedAge !== null && (() => {
-              const peakH     = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
-              const ratioMult = 1 + 0.5 * Math.log(lastFeedRatio);
-              const ryeF      = starterHasRye ? 0.8 : 1.0;
-              const matF      = starterMature ? 1.0 : 1.2;
-              const adjPeakH  = peakH * ryeF * matF * ratioMult;
-              const troughH   = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * ratioMult;
-              const warmupH   = getStarterFridgeWarmupH(kitchenTemp);
-              const mixTime   = pendingStart;
-
-              // Read from solverResult for consistency
-              const _usingPeak2      = solverResult?.usingPeak2 ?? false;
-              const _feed2Time       = solverResult?.feed2Time ?? null;
-              const _feedTime        = solverResult?.feedTime ?? null;
-              const _hasFutureFeedPath = solverResult?.hasFutureFeedPath ?? false;
-              const _starterPillState  = solverResult?.starterPillState ?? 'yellow';
-              const _driftNote         = solverResult?.driftNote ?? null;
-              const _starterStateNote  = solverResult?.starterStateNote ?? null;
-              const _starterRefeedTime = solverResult?.starterRefeedTime ?? null;
-              const _fridgeSuggestion  = solverResult?.fridgeSuggestion ?? null;
-              const _adjPeakHState     = solverResult?.adjPeakHValue ?? null;
-              const _windowTooShortCard = solverResult?.windowTooShort ?? false;
-              const _planConstrainedCard = solverResult?.planConstrained ?? false;
-              const _suggestedBakeTimeCard = solverResult?.suggestedBakeTime ?? null;
-              const _activeFridgeOutTime = solverResult?.fridgeOutTime ?? fridgeOutTime;
-              const _isFridgeHoldPath        = solverResult?.isFridgeHoldPath ?? false;
-              const _fridgeHoldRefreshTime   = solverResult?.fridgeHoldRefreshTime ?? null;
-              const _fridgeHoldInTime        = solverResult?.fridgeHoldInTime ?? null;
-              const _fridgeHoldOutTime       = solverResult?.fridgeHoldOutTime ?? null;
-
-              // Use pre-computed peakTime from solverResult — same value the chart uses
-              const activePeakTime: Date | null = solverResult?.peakTime ?? null;
-
-              const feedPlan: { ft: Date; label: string; note?: string }[] = [];
-
-              if (planningMode === 'last_fed' && lastFedTime && activePeakTime) {
-                const now = new Date();
-                if (!_usingPeak2) {
-                  if (lastFedTime > now) {
-                    feedPlan.push({
-                      ft: lastFedTime,
-                      label: isFr ? 'Rafraîchi' : 'Feed',
-                      note: undefined,
-                    });
-                  }
-                  const lastFeedNeeded = new Date(mixTime.getTime() - adjPeakH * 3600000);
-                  const gapH = (lastFeedNeeded.getTime() - now.getTime()) / 3600000;
-                  let numExtra: number;
-                  if (starterLocation === 'fridge') {
-                    // Optimal single feed: latest time to feed so starter peaks at mix via fridge
-                    const warmupH2 = 1.5;
-                    const fridgePeakH2 = Math.pow(2, (kitchenTemp - (fridgeTemp ?? 6)) / 10) * adjPeakH;
-                    const optimalFeedTime = new Date(mixTime.getTime() - (warmupH2 + fridgePeakH2) * 3600000);
-                    if (optimalFeedTime.getTime() > now.getTime()) {
-                      feedPlan.length = 0;
-                      const hf = optimalFeedTime.getHours();
-                      const adjustedFeed = new Date(optimalFeedTime);
-                      if (hf < 7) { adjustedFeed.setHours(7, 0, 0, 0); }
-                      else if (hf > 22) { adjustedFeed.setHours(7, 0, 0, 0); adjustedFeed.setDate(adjustedFeed.getDate() + 1); }
-                      feedPlan.push({
-                        ft: adjustedFeed,
-                        label: isFr ? 'Rafraîchir' : 'Feed',
-                        note: isFr
-                          ? 'Rafraîchir puis mettre au frais — pic au moment du pétrissage'
-                          : 'Feed then refrigerate — timed to peak at mix',
-                      });
-                      numExtra = 0;
-                    } else {
-                      // Optimal fridge feed time passed. Check if feeding now + RT peaks near mix.
-                      const rtPeakIfFeedNow = new Date(Date.now() + adjPeakH * 3600000);
-                      const rtGapH = (mixTime.getTime() - rtPeakIfFeedNow.getTime()) / 3600000;
-                      if (Math.abs(rtGapH) <= adjPeakH * 0.15 + 0.5) {
-                        feedPlan.length = 0;
-                        feedPlan.push({
-                          ft: new Date(),
-                          label: isFr ? 'Rafraîchir maintenant' : 'Feed now',
-                          note: isFr
-                            ? 'Votre levain atteindra son pic au moment du pétrissage'
-                            : 'Your starter will peak around mix time',
-                        });
-                        numExtra = 0;
-                      } else {
-                        numExtra = Math.floor(gapH / troughH);
-                      }
-                    }
-                  } else {
-                    numExtra = Math.floor(gapH / troughH);
-                  }
-                  if (numExtra > 0) {
-                    feedPlan.length = 0;
-                    // When hasFutureFeedPath, only generate intermediate feeds (i < numExtra),
-                    // not the final entry — that comes from feed2Time below.
-                    const loopMax = _hasFutureFeedPath ? numExtra - 1 : numExtra;
-                    // Skip i=0 when standalone REFRESH FEED block is shown (avoids duplicate)
-                    const loopStart = (_starterRefeedTime && !_usingPeak2) ? 1 : 0;
-                    for (let i = loopStart; i <= loopMax; i++) {
-                      const ft = new Date(now.getTime() + i * troughH * 3600000);
-                      const h = ft.getHours();
-                      if (h < 7) { ft.setHours(7, 0, 0, 0); }
-                      else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
-                      const isLast = i === numExtra;
-                      const _nextFt = new Date(ft.getTime() + troughH * 3600000); void _nextFt;
-                      feedPlan.push({
-                        ft,
-                        label: isLast
-                          ? (isFr ? 'Rafraîchi final' : 'Pre-mix Feed')
-                          : (isFr ? `Rafraîchi ${i + 1}` : `Refresh Feed ${i + 1}`),
-                        note: isLast
-                          ? (() => {
-                              const stretchFactor = solverResult?.preMixStretchFactor ?? 1.0;
-                              const peakAt = new Date(ft.getTime() + adjPeakH * stretchFactor * 3600000);
-                              return isFr
-                                ? `Pic vers ${fmtCardHM(peakAt, isFr)}`
-                                : `Peak around ${fmtCardHM(peakAt, isFr)}`;
-                            })()
-                          : undefined,
-                      });
-                    }
-                  }
-                  // When solver computed exact feed2Time via future-feed path,
-                  // use it as the pre-mix feed — more accurate than RT numExtra calculation.
-                  if (_hasFutureFeedPath && _feed2Time) {
-                    feedPlan.push({
-                      ft: _feed2Time,
-                      label: isFr ? 'Rafraîchi final' : 'Pre-mix Feed',
-                      note: (() => {
-                        const stretchFactor = solverResult?.preMixStretchFactor ?? 1.0;
-                        const peakAt = new Date(_feed2Time.getTime() + adjPeakH * stretchFactor * 3600000);
-                        return isFr
-                          ? `Pic vers ${fmtCardHM(peakAt, isFr)}`
-                          : `Peak around ${fmtCardHM(peakAt, isFr)}`;
-                      })(),
-                    });
-                  }
-                } else if (_usingPeak2 && _feed2Time) {
-                  feedPlan.push({
-                    ft: _feed2Time,
-                    label: isFr ? 'Prochain rafraîchi' : 'Next Feed',
-                    note: (() => {
-                      const isRefeedNow = Math.abs(_feed2Time.getTime() - Date.now()) < 30 * 60 * 1000;
-                      return isRefeedNow
-                        ? (isFr ? 'Rafraîchir maintenant pour un pic plus fort' : 'Feed now for a stronger peak')
-                        : (isFr ? 'Rafraîchi actif pour cette cuisson' : 'Active feed for this bake');
-                    })(),
-                  });
-                }
-              }
-
-
-              return (
-                <div style={{
-                  flex: 1, minWidth: '140px',
-                  background: 'var(--cream)',
-                  border: '1.5px solid var(--border)',
-                  borderRadius: '16px', padding: '16px 16px',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '8px' }}>
-                    <div style={{ width: 8, height: 8, background: '#4A7FA5', transform: 'rotate(45deg)', flexShrink: 0 }} />
-                    <div style={{
-                      fontSize: '13px', color: 'var(--smoke)',
-                      fontFamily: 'var(--font-ui)',
-                      textTransform: 'uppercase', letterSpacing: '.04em',
-                    }}>
-                      {isFr ? 'LEVAIN' : 'STARTER'}
-                    </div>
-                  </div>
-
-                  {/* Chosen feed ratio — the ratio driving the planned feeds.
-                      In recommend mode this is whatever the engine settled on
-                      (nextFeedRatio after auto-apply); in keep mode it's
-                      lastFeedRatio. Muted DM Mono, not bold. */}
-                  {isSourdough && planningMode !== 'know_peak' && (() => {
-                    const r = nextFeedRatio;
-                    return (
-                      <div style={{
-                        fontSize: '11px', color: 'var(--smoke)',
-                        fontFamily: 'var(--font-ui)',
-                        marginTop: '-.35rem', marginBottom: '8px',
-                      }}>
-                        {isFr ? `Rafraîchi à 1:${r}:${r}` : `Feeding at 1:${r}:${r}`}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Event-driven render (sourdough only) — replaces feedPlan + standalone blocks */}
-                  {isSourdough && solverResult?.starterEvents && solverResult.starterEvents.length > 0 && (() => {
-                    const events = solverResult.starterEvents;
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
-                        {events.map((ev, i) => {
-                          if (ev.kind === 'last_fed' && ev.isPast && !ev.isActive) return null;
-                          const timeStr = ev.cardTimeFormat === 'relative'
-                            ? (() => {
-                                const fifteen = 15 * 60 * 1000;
-                                const rounded = new Date(Math.ceil(ev.time.getTime() / fifteen) * fifteen);
-                                const hm = fmtCardHM(rounded, isFr);
-                                return isFr ? `Maintenant · ${hm}` : `Now · ${hm}`;
-                              })()
-                            // "≈" — times derived from an age chip ("2–3 days
-                            // ago") are estimates, not something we know to
-                            // the minute
-                            : ev.timeIsEstimate && ev.isPast
-                              // Estimated history: day only — the minute is fiction.
-                              ? `≈ ${ev.time.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' })} ${ev.time.getDate()} ${ev.time.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { month: 'short' })}`
-                              : `${ev.timeIsEstimate ? '≈ ' : ''}${fmtCardDT(ev.time, isFr)}`;
-                          const labelUpper = ev.label.toUpperCase();
-                          return (
-                            <div key={`ev-card-${i}`}>
-                              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                                {labelUpper}
-                              </div>
-                              <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-                                {timeStr}
-                              </div>
-                              {ev.cardNote && (
-                                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px' }}>
-                                  {ev.cardNote}
-                                </div>
-                              )}
-                              {/* Blocked-hours disclosure. Blockers bind the
-                                  present too (see isBlockedActionMs), so an
-                                  in-blocker event only survives on fallback
-                                  plans with no clear slot. Name it honestly:
-                                  near-now events get "do it now if you can",
-                                  future ones point at the remedy.
-                                  Observation, not a warning (no red, no glyph). */}
-                              {(() => {
-                                const _t = ev.time.getTime();
-                                // Exclusive edges, per the engine's blocker convention.
-                                const _inBlock = (lastSolvedBlocksRef.current ?? blocks).some(b =>
-                                  _t > b.from.getTime() && _t < b.to.getTime());
-                                if (!_inBlock) return null;
-                                return (
-                                  <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px', fontStyle: 'italic' }}>
-                                    {(Math.abs(_t - Date.now()) <= 15 * 60000)
-                                      ? (isFr
-                                        ? 'Cela tombe dans vos heures bloquées — faites-le maintenant si vous le pouvez, ou ajustez vos heures bloquées pour que le plan le déplace.'
-                                        : 'This falls in your blocked hours — do it now if you can, or adjust your blocked times so the plan can move it.')
-                                      : (isFr
-                                        ? 'Cela tombe dans vos heures bloquées — aucun créneau libre n’était disponible. Si vous n’êtes pas disponible, ajustez vos heures bloquées ou décalez votre fournée.'
-                                        : 'This falls in your blocked hours — no clear slot was available. If you can’t be around then, adjust your blocked times or shift your bake.')}
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Per-card "NEXT FEED RATIO" chips removed — control lives in
-                      the setup section as a Recommend/Keep toggle. The engine
-                      now searches ratios end-to-end (see evaluatePlanForRatio). */}
-
-                  {/* Future feed path: planned Next Feed */}
-                  {!solverResult?.starterEvents?.length && isSourdough && _hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && planningMode !== 'last_fed' && !_isFridgeHoldPath && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                        {isFr ? 'RAFRAÎCHI FINAL' : 'PRE-MIX FEED'}
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-                        {(() => {
-                          const isNow = Math.abs(_feed2Time.getTime() - Date.now()) < 30 * 60 * 1000;
-                          return isNow ? (isFr ? 'Maintenant' : 'Now') : fmtCardDT(_feed2Time, isFr);
-                        })()}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px' }}>
-                        {isFr
-                          ? 'Rafraîchi pour que le levain soit prêt au pétrissage'
-                          : 'Feed so your starter peaks at mix time'}
-                      </div>
-                    </div>
-                  )}
-
-                  {!solverResult?.starterEvents?.length && isSourdough && _starterRefeedTime && !_usingPeak2 && !_isFridgeHoldPath && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
-                        textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                        {isFr ? 'RAFRAÎCHI' : 'REFRESH FEED'}
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)',
-                        fontFamily: 'var(--font-ui)' }}>
-                        {(() => {
-                          const fifteen = 15 * 60 * 1000;
-                          const rounded = new Date(Math.ceil(_starterRefeedTime.getTime() / fifteen) * fifteen);
-                          const timeStr = fmtCardHM(rounded, isFr);
-                          return isFr ? `Maintenant · ${timeStr}` : `Now · ${timeStr}`;
-                        })()}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
-                        lineHeight: 1.4, marginTop: '2px' }}>
-                        {(() => {
-                          const stretchFactor = solverResult?.refreshStretchFactor ?? 1.0;
-                          const adjPeakH_eff = solverResult?.adjPeakHValue ?? null;
-                          if (!adjPeakH_eff || !_starterRefeedTime) {
-                            return isFr ? 'Rafraîchir maintenant pour un pic plus fort' : 'Feed now for a stronger peak';
-                          }
-                          const peakTime = new Date(_starterRefeedTime.getTime() + adjPeakH_eff * stretchFactor * 3600000);
-                          return isFr
-                            ? `Pic vers ${fmtCardHM(peakTime, isFr)}`
-                            : `Peak around ${fmtCardHM(peakTime, isFr)}`;
-                        })()}
-                      </div>
-                    </div>
-                  )}
-
-                  {!solverResult?.starterEvents?.length && _usingPeak2 && _feed2Time && feedPlan.length === 0 && !_isFridgeHoldPath && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                        {isFr ? 'PROCHAIN RAFRAÎCHI' : 'NEXT FEED'}
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-                        {(() => {
-                          const isNow = Math.abs(_feed2Time.getTime() - Date.now()) < 30 * 60 * 1000;
-                          return isNow ? (isFr ? 'Maintenant' : 'Now') : fmtCardDT(_feed2Time, isFr);
-                        })()}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '1px' }}>
-                        {isFr ? 'Rafraîchir pour un pic plus fort' : 'Feed for a stronger peak'}
-                      </div>
-                    </div>
-                  )}
-
-                  {_fridgeSuggestion && starterLocation === 'rt' && (
-                    <div style={{
-                      fontSize: '11px',
-                      color: '#78350F',
-                      fontFamily: 'var(--font-ui)',
-                      lineHeight: 1.5,
-                      marginBottom: '8px',
-                      padding: '8px 8px',
-                      background: '#FEF3C7',
-                      borderRadius: '16px',
-                      border: '1px solid #FDE68A',
-                    }}>
-                      {_fridgeSuggestion}
-                    </div>
-                  )}
-
-                  {!solverResult?.starterEvents?.length && _isFridgeHoldPath && _fridgeHoldRefreshTime && _fridgeHoldInTime && _fridgeHoldOutTime && _feed2Time && (
-                    <>
-                      {/* REFRESH FEED */}
-                      <div style={{ marginBottom: '8px' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                          {isFr ? 'RAFRAÎCHI' : 'REFRESH FEED'}
-                        </div>
-                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-                          {(() => {
-                            const fifteen = 15 * 60 * 1000;
-                            const rounded = new Date(Math.ceil(_fridgeHoldRefreshTime.getTime() / fifteen) * fifteen);
-                            const timeStr = fmtCardHM(rounded, isFr);
-                            return isFr ? `Maintenant · ${timeStr}` : `Now · ${timeStr}`;
-                          })()}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px' }}>
-                          {(() => {
-                            const stretchFactor = solverResult?.refreshStretchFactor ?? 1.0;
-                            const adjPeakH_eff = solverResult?.adjPeakHValue ?? null;
-                            if (!adjPeakH_eff) {
-                              return isFr ? 'Rafraîchir, laisser pousser, puis réfrigérer' : 'Feed, let peak, then refrigerate';
-                            }
-                            const peakTime = new Date(_fridgeHoldRefreshTime.getTime() + adjPeakH_eff * stretchFactor * 3600000);
-                            return isFr
-                              ? `Pic vers ${fmtCardHM(peakTime, isFr)} — puis au frigo`
-                              : `Peak around ${fmtCardHM(peakTime, isFr)} — then refrigerate`;
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* INTO FRIDGE */}
-                      <div style={{ marginBottom: '8px' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                          {isFr ? 'AU FRIGO' : 'INTO FRIDGE'}
-                        </div>
-                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-                          {fmtCardDT(_fridgeHoldInTime, isFr)}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px' }}>
-                          {isFr
-                            ? 'Au pic — ralentit la fermentation'
-                            : 'At peak — slows fermentation'}
-                        </div>
-                      </div>
-
-                      {/* OUT OF FRIDGE */}
-                      <div style={{ marginBottom: '8px' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                          {isFr ? 'SORTIE DU FRIGO' : 'OUT OF FRIDGE'}
-                        </div>
-                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-                          {fmtCardDT(_fridgeHoldOutTime, isFr)}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px' }}>
-                          {(() => {
-                            const warmupMin = Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60);
-                            return isFr
-                              ? `Tempérer ~${warmupMin} min avant le rafraîchi final`
-                              : `Warm up ~${warmupMin} min before pre-mix feed`;
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* PRE-MIX FEED */}
-                      <div style={{ marginBottom: '8px' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                          {isFr ? 'RAFRAÎCHI FINAL' : 'PRE-MIX FEED'}
-                        </div>
-                        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-                          {fmtCardDT(_feed2Time, isFr)}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '2px' }}>
-                          {(() => {
-                            const stretchFactor = solverResult?.preMixStretchFactor ?? 1.0;
-                            const peakAt = new Date(_feed2Time.getTime() + adjPeakH * stretchFactor * 3600000);
-                            return isFr
-                              ? `Pic vers ${fmtCardHM(peakAt, isFr)}`
-                              : `Peak around ${fmtCardHM(peakAt, isFr)}`;
-                          })()}
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {(!isSourdough || !solverResult?.starterEvents?.length) && feedPlan.length > 0 && !_isFridgeHoldPath && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
-                      {feedPlan.map((fp, i) => (
-                        <div key={i}>
-                          <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                            {fp.label}
-                          </div>
-                          <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-                            {fmtCardDT(fp.ft, isFr)}
-                          </div>
-                          {fp.note && (
-                            <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '1px' }}>
-                              {fp.note}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {(!isSourdough || !solverResult?.starterEvents?.length) && starterLocation === 'fridge' && _activeFridgeOutTime && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                        {isFr ? 'SORTIR DU FRIGO' : 'REMOVE FROM FRIDGE'}
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-                        {fmtCardDT(_activeFridgeOutTime, isFr)}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.4, marginTop: '1px' }}>
-                        {isFr
-                          ? `~${Math.round(warmupH * 60)} min pour atteindre la temp. ambiante`
-                          : `~${Math.round(warmupH * 60)} min to reach room temp`}
-                      </div>
-                    </div>
-                  )}
-
-                  {activePeakTime && activePeakTime > new Date() && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                        {isFr ? 'PIC' : 'PEAK'}
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-                        {fmtCardDT(activePeakTime, isFr)}
-                      </div>
-                    </div>
-                  )}
-
-                  {(() => {
-                    // During active drag, compute pill directly from mix position vs peak
-                    // so baker gets immediate feedback without waiting for async solver rerun.
-                    const dragGapH = isSourdough && hasDragged && _adjPeakHState
-                      ? (() => {
-                          const peakMs = (() => {
-                            if (planningMode === 'know_peak' && knownPeakTime) return knownPeakTime.getTime();
-                            const base = (_usingPeak2 || _hasFutureFeedPath) && _feed2Time
-                              ? _feed2Time
-                              : lastFedTime ?? _feedTime;
-                            return base ? base.getTime() + (_adjPeakHState) * 3600000 : null;
-                          })();
-                          return peakMs ? Math.abs((pendingStart.getTime() - peakMs) / 3600000) : null;
-                        })()
-                      : null;
-                    const rtTOLDrag = _adjPeakHState ? Math.max(1.0, Math.min(3.0, _adjPeakHState * 0.15)) : 2.0;
-                    const pillGreen = !_windowTooShortCard && !_planConstrainedCard
-                      && (dragGapH !== null ? dragGapH <= rtTOLDrag : _starterPillState === 'green');
-                    const pillText = pillGreen
-                      ? (isFr ? 'Prêt au mélange' : 'Ready at mix')
-                      : (_windowTooShortCard || _planConstrainedCard)
-                        ? (isFr ? 'Fenêtre courte — voir le plan' : 'Window tight — see plan')
-                        : _hasFutureFeedPath && _feed2Time
-                          ? (isFr
-                              ? `Rafraîchir le ${fmtCardDT(_feed2Time, true)}`
-                              : `Feed ${fmtCardDT(_feed2Time, false)}`)
-                          : _starterPillState === 'yellow' && _activeFridgeOutTime && solverResult?.peakTime
-                            ? (() => {
-                                const gapH = (pendingStart.getTime() - solverResult.peakTime.getTime()) / 3600000;
-                                if (gapH < -0.5) return isFr ? 'En montée au pétrissage — presque au pic' : 'Still rising at mix — nearly at peak';
-                                if (gapH <= 1.5) return isFr ? 'Au pic au mélange' : 'At peak at mix';
-                                if (gapH <= 3.5) return isFr ? 'Légèrement après le pic' : 'Just past peak';
-                                return isFr ? 'Passé le pic — surveiller' : 'Past peak — watch closely';
-                              })()
-                            : (() => {
-                                const adjPeakH2 = _adjPeakHState ?? 8;
-                                const baseFeedMs = (() => {
-                                  if (planningMode === 'know_peak' && knownPeakTime) return knownPeakTime.getTime() - adjPeakH2 * 3600000;
-                                  if (_hasFutureFeedPath && _feed2Time) return _feed2Time.getTime();
-                                  if (_usingPeak2 && _feed2Time) return _feed2Time.getTime();
-                                  if (_starterRefeedTime) return _starterRefeedTime.getTime();
-                                  return lastFedTime?.getTime() ?? _feedTime?.getTime() ?? null;
-                                })();
-                                // Committed peak FIRST — solverResult.peakTime is the unified
-                                // scoring ≡ bell ≡ card value. The local recompute below is a
-                                // last-resort fallback only; it ignored _starterRefeedTime and
-                                // produced "Past peak — watch closely" from the stale last-fed
-                                // cycle while the plan's refresh was still rising (31°C live bug).
-                                const peakMs = solverResult?.peakTime
-                                  ? solverResult.peakTime.getTime()
-                                  : planningMode === 'know_peak' && knownPeakTime
-                                  ? knownPeakTime.getTime()
-                                  : baseFeedMs != null ? baseFeedMs + adjPeakH2 * 3600000 : null;
-                                if (peakMs == null) return isFr ? 'En cours de montée' : 'Still rising';
-                                const gapH = (pendingStart.getTime() - peakMs) / 3600000;
-                                if (gapH < -0.5)  return isFr ? 'En cours de montée' : 'Still rising';
-                                if (gapH <= 1.5)  return isFr ? 'Au pic au mélange' : 'At peak at mix';
-                                if (gapH <= 3.5)  return isFr ? 'Légèrement après le pic' : 'Just past peak';
-                                return isFr ? 'Passé le pic — surveiller' : 'Past peak — watch closely';
-                              })();
-                    return (
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'center',
-                        gap: '4px', marginTop: '4px',
-                        background: pillGreen ? 'rgba(74,122,58,0.1)' : 'rgba(156, 130, 72,0.15)',
-                        border: `1px solid ${pillGreen ? 'rgba(74,122,58,0.3)' : 'rgba(156, 130, 72,0.4)'}`,
-                        borderRadius: '20px',
-                        padding: '.2rem 12px',
-                        fontSize: '12px',
-                        color: pillGreen ? '#4A7A3A' : '#9A7010',
-                        fontFamily: 'var(--font-ui)',
-                      }}>
-                        <div style={{
-                          width: 8, height: 8, borderRadius: '50%',
-                          background: pillGreen ? '#4A7A3A' : '#9A7010',
-                          flexShrink: 0,
-                        }} />
-                        {pillText}
-                      </div>
-                    );
-                  })()}
-
-                  {solverResult?.planExplanation && (
-                    <div style={{
-                      fontSize: '12px',
-                      color: 'var(--char)',
-                      fontFamily: 'var(--font-ui)',
-                      lineHeight: 1.5,
-                      marginTop: '8px',
-                    }}>
-                      {solverResult.planExplanation}
-                    </div>
-                  )}
-                  {!solverResult?.planExplanation && _starterStateNote
-                    && !(_hasFutureFeedPath && _feed2Time && feedPlan.length === 0 && _feed2Time.getTime() - Date.now() > 30 * 60 * 1000)
-                    && (
-                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5, marginTop: '8px' }}>
-                      {_starterStateNote}
-                    </div>
-                  )}
-                  {!solverResult?.planExplanation && _driftNote && (
-                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5, marginTop: '8px' }}>
-                      {_driftNote}
-                    </div>
-                  )}
-
-                  {isSourdough && !solverResult?.planExplanation && feedPlan.length === 0 && (_starterRefeedTime && !_hasFutureFeedPath || _usingPeak2 && _feed2Time || _hasFutureFeedPath && _feed2Time) && (
-                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
-                      lineHeight: 1.5, marginTop: '8px' }}>
-                      {_starterRefeedTime && !_hasFutureFeedPath
-                        ? (() => {
-                            // Honest phrasing: only promise "peak around mix time"
-                            // when the committed peak is actually near mix.
-                            const _p = solverResult?.peakTime;
-                            const _far = _p ? Math.abs(pendingStart.getTime() - _p.getTime()) / 3600000 > 1.5 : false;
-                            return _far && _p
-                              ? (isFr ? `Rafraîchir maintenant — pic vers ${fmtCardHM(_p, true)}. Pétrissez quand il est prêt.`
-                                      : `Feed now — it peaks around ${fmtCardHM(_p, false)}. Mix when it's ready.`)
-                              : (isFr ? 'Rafraîchir maintenant — votre levain atteindra son pic au moment du pétrissage.'
-                                      : 'Feed now — your starter will peak around mix time.');
-                          })()
-                        : _usingPeak2 && _feed2Time
-                          ? (isFr ? `Rafraîchir le ${fmtCardDT(_feed2Time, true)} pour un pic au moment du pétrissage.`
-                                  : `Feed ${fmtCardDT(_feed2Time, false)} — timed to peak at mix.`)
-                          : _hasFutureFeedPath && _feed2Time
-                            ? (isFr ? 'Votre levain actuel ne peut pas atteindre le moment du mélange — un nouveau repas le synchronise.'
-                                    : "Current cycle can't reach mix time — a fresh feed gets it in sync.")
-                            : null}
-                    </div>
-                  )}
-
-                  {isSourdough && (
-                    <div style={{ marginTop: '8px' }}>
-                      <button onClick={() => setShowStarterTips(v => !v)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                          display: 'inline-flex', alignItems: 'center', gap: '4px',
-                          fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
-                        <span style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid var(--smoke)',
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '11px', flexShrink: 0 }}>i</span>
-                        {isFr ? 'Signes que votre levain est prêt' : 'Signs your starter is ready'}
-                      </button>
-                      {showStarterTips && (
-                        <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--smoke)',
-                          fontFamily: 'var(--font-ui)', lineHeight: 1.6,
-                          borderLeft: '2px solid var(--border)', paddingLeft: '8px' }}>
-                          {isFr
-                            ? "Dôme bombé · Odeur alcoolisée et légèrement acide · Texture bulleuse · Flotte dans l'eau"
-                            : 'Domed top · Alcoholic, slightly sour smell · Bubbly texture · Floats in water'}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Pref card */}
-            {!isSourdough && (cardPrefTime || (hasPrefActive && (skipPoolishNote || prefAlgoRed))) && (
-              <div style={{
-                flex: 1, minWidth: '120px',
-                background: 'var(--cream)', border: '1.5px solid var(--border)',
-                borderRadius: '16px', padding: '16px 16px',
-                opacity: (skipPoolishNote || prefAlgoRed) ? 0.7 : 1,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
-                  <div style={{ width: 8, height: 8, background: cardPrefColor, transform: 'rotate(45deg)', flexShrink: 0 }} />
-                  <div style={{
-                    fontSize: '13px', color: 'var(--smoke)',
-                    fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em',
-                  }}>{prefLabel}</div>
-                </div>
-                {(skipPoolishNote || prefAlgoRed) ? (
-                  <div style={{ fontSize: '12px', color: 'var(--smoke)', lineHeight: 1.5, marginTop: '8px' }}>
-                    {locale === 'fr'
-                      ? `Fenêtre trop courte pour un ${prefermentType} — votre pâte fermentera directement et sera délicieuse.`
-                      : `Window too short for ${prefermentType} — your dough will ferment directly and still taste great.`}
-                  </div>
-                ) : editingPref ? (
-                  <input
-                    type="datetime-local"
-                    defaultValue={cardPrefTime && !isNaN(cardPrefTime.getTime()) ? cardPrefTime.toISOString().slice(0,16) : ''}
-                    autoFocus
-                    onBlur={e => {
-                      const t = new Date(e.target.value);
-                      if (!isNaN(t.getTime())) {
-                        const newPrefOffsetH = (pendingStart.getTime() - t.getTime()) / 3600000;
-                        if (newPrefOffsetH >= 0) onPrefOffsetChange?.(newPrefOffsetH);
-                      }
-                      setEditingPref(false);
-                    }}
-                    onKeyDown={e => { if (e.key === 'Escape') setEditingPref(false); }}
-                    style={{
-                      fontSize: '13px', padding: '4px 8px', borderRadius: '8px',
-                      border: '1.5px solid var(--terra)', background: 'var(--warm)',
-                      color: 'var(--char)', fontFamily: 'var(--font-ui)',
-                      width: '100%', outline: 'none',
-                    }}
-                  />
-                ) : (
-                  <div
-                    onClick={() => setEditingPref(true)}
-                    style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)', cursor: 'text' }}
-                  >
-                    {fmtCardDT(cardPrefTime!, isFr)}
-                  </div>
-                )}
-                {!(skipPoolishNote || prefAlgoRed) && (() => {
-                  const isGreen  = cardPrefInZone;
-                  const isGold   = cardPrefEarlyOk || cardPrefLateOk;
-                  const isRed    = cardPrefTooEarly || cardPrefTooShort;
-                  const bg     = isGreen ? 'rgba(74,122,58,0.1)'   : isGold ? 'rgba(156, 130, 72,0.15)' : 'rgba(107, 68, 35,0.1)';
-                  const border = isGreen ? 'rgba(74,122,58,0.3)'   : isGold ? 'rgba(156, 130, 72,0.4)'  : 'rgba(107, 68, 35,0.3)';
-                  const color  = isGreen ? '#4A7A3A'               : isGold ? '#9A7010'               : '#6B4423';
-                  return (
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '4px',
-                      marginTop: '4px',
-                      background: bg, border: `1px solid ${border}`,
-                      borderRadius: '20px', padding: '.2rem 12px',
-                      fontSize: '12px', color, fontFamily: 'var(--font-ui)',
-                    }}>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                      {cardPrefStatus}
-                    </div>
-                  );
+          <PlanList
+            rows={rows}
+            focusId={focusRow}
+            onFocus={(id) => setFocusRow(prev => (prev === id ? null : id))}
+            onEditTime={(id) => setEditingRow(id)}
+            editingId={editingRow}
+            collapseLabel={(n) => tRoot('schedulePicker.completedSteps', { count: n })}
+            editor={editingRow ? (
+              <input
+                type="datetime-local"
+                defaultValue={(() => {
+                  const at = rows.find(r => r.id === editingRow)?.at;
+                  if (at === undefined) return '';
+                  const d = new Date(at);
+                  return !isNaN(d.getTime())
+                    ? new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+                    : '';
                 })()}
-                {/* The old \"remove from fridge falls in your busy window —
-                    moving Start Dough 75 min later would clear it\" note lived
-                    here. It asked the baker to arbitrate a conflict the solver
-                    had already solved. The solver now scores warm-up clearance
-                    itself (findOptimalPosition), and the warm-up is usually 0
-                    because water temperature carries the dough to target — so
-                    there is nothing left to report. Removal time belongs in the
-                    Guide/Timeline as a bake-day action, not in the plan card. */}
-              </div>
-            )}
-
-            {/* Mix card — stretch full width whenever a sibling card exists
-                (preferment OR sourdough starter card above), otherwise the
-                Start Dough card renders narrower than the Starter card */}
-            <div style={{
-              background: 'var(--cream)', border: '1.5px solid var(--border)',
-              borderRadius: '16px', padding: '16px 16px',
-              ...(cardPrefTime || isSourdough ? { flex: 1, minWidth: '120px' } : { minWidth: '160px', maxWidth: '260px' }),
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '.2rem' }}>
-                <div style={{ width: 8, height: 8, background: '#3D5A30', transform: 'rotate(45deg)', flexShrink: 0 }} />
-                <div style={{
-                  fontSize: '13px', color: 'var(--smoke)',
-                  fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em',
-                }}>{tRoot('schedulePicker.startDough')}</div>
-              </div>
-              {editingMix ? (
-                <input
-                  type="datetime-local"
-                  defaultValue={!isNaN(pendingStart.getTime()) ? pendingStart.toISOString().slice(0,16) : ''}
-                  autoFocus
-                  onBlur={e => {
-                    const t = new Date(e.target.value);
-                    if (!isNaN(t.getTime())) {
-                      const newMixOffsetH = (pendingEatTime.getTime() - t.getTime()) / 3600000;
-                      if (newMixOffsetH >= 0.5) {
-                        const newStart = new Date(t);
-                        setPendingStart(newStart);
-                        onChange(newStart, pendingEatTime, blocks);
-                      }
-                    }
-                    setEditingMix(false);
-                  }}
-                  onKeyDown={e => { if (e.key === 'Escape') setEditingMix(false); }}
-                  style={{
-                    fontSize: '13px', padding: '4px 8px', borderRadius: '8px',
-                    border: '1.5px solid var(--terra)', background: 'var(--warm)',
-                    color: 'var(--char)', fontFamily: 'var(--font-ui)',
-                    width: '100%', outline: 'none',
-                  }}
-                />
-              ) : (
-                <div
-                  onClick={() => setEditingMix(true)}
-                  style={{ fontSize: '15px', fontWeight: 500, color: 'var(--char)', fontFamily: 'var(--font-ui)', cursor: 'text' }}
-                >
-                  {fmtCardDT(pendingStart, isFr)}
-                </div>
-              )}
-              {(() => {
-                const pillGreen  = isSourdough ? sourdoughDoughGreen  : mixInZone;
-                const pillYellow = isSourdough
-                  ? (sourdoughDoughYellow || (_planConstrainedRender && !sourdoughDoughGreen))
-                  : (mixEarlyOk || mixLateOk);
-                // Dough peak position relative to bake. HBF = hours before bake:
-                //   _doughPeakHBF > 0 → mix earlier than optimal → dough peaks BEFORE bake → slightly over-fermented at bake
-                //   _doughPeakHBF < 0 → mix later than optimal → dough peaks AFTER bake → still rising at bake
-                //   _doughPeakHBF ≈ 0 → mix at sweetCenter → peak AT bake (sweet spot)
-                // Both yellow-zone messages end "should be fine" because yellow IS the acceptable tier.
-                // The "mix too early — over-fermentation risk" branch below catches the gold/red case.
-                const _doughPeakHBF = mixOffsetH - renderSweetCenter;
-                const pillText   = isSourdough
-                  ? (sourdoughDoughGreen
-                      ? (isFr ? 'Pâte prête à la cuisson' : 'Dough ready at bake')
-                      : sourdoughDoughYellow && _doughPeakHBF > 0.5
-                        ? (isFr ? 'Pic avant la cuisson — devrait être bien'
-                                : 'Dough peaks before bake — should be fine')
-                        : sourdoughDoughYellow && _doughPeakHBF < -0.5
-                        ? (isFr ? 'Encore en fermentation — devrait être bien'
-                                : 'Still rising at bake — should be fine')
-                        : sourdoughDoughYellow
-                        ? (isFr ? 'Proche du pic — devrait être bien'
-                                : 'Near peak — should be fine')
-                        // When the solver flagged the window itself, the pill
-                        // must say that — not "under-fermentation risk", which
-                        // read as alarming (and wrong) for a mix sitting at
-                        // the LONG edge of the zone.
-                        : _planConstrainedRender
-                        ? (isFr ? 'Créneau serré — voir le plan'
-                                : 'Tight fit — see plan')
-                        : _windowTooShortRender
-                        ? (isFr ? 'Créneau trop court — voir la suggestion'
-                                : 'Window too tight — see the suggestion')
-                        : mixOffsetH > doughZoneFrom + 2
-                        ? (isFr ? 'Pétrissage trop tôt — risque de surfermentation'
-                                : 'Mix too early — over-fermentation risk')
-                        : (isFr ? 'Fenêtre de fermentation courte — risque de sous-fermentation'
-                                : 'Short fermentation window — under-fermentation risk'))
-                  : mixStatus;
-                return (
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '4px',
-                    marginTop: '4px',
-                    background: pillGreen ? 'rgba(74,122,58,0.1)' : pillYellow ? 'rgba(156, 130, 72,0.15)' : 'rgba(107, 68, 35,0.1)',
-                    border: `1px solid ${pillGreen ? 'rgba(74,122,58,0.3)' : pillYellow ? 'rgba(156, 130, 72,0.4)' : 'rgba(107, 68, 35,0.3)'}`,
-                    borderRadius: '20px',
-                    padding: '.2rem 12px',
-                    fontSize: '12px',
-                    color: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#6B4423',
-                    fontFamily: 'var(--font-ui)',
-                  }}>
-                    <div style={{
-                      width: 8, height: 8, borderRadius: '50%',
-                      background: pillGreen ? '#4A7A3A' : pillYellow ? '#9A7010' : '#6B4423',
-                      flexShrink: 0,
-                    }} />
-                    {pillText}
-                  </div>
-                );
-              })()}
-              {mixInBlocker && (
-                <div style={{ fontSize: '11px', color: '#7A5A10', marginTop: '4px', lineHeight: 1.4 }}>
-                  {isFr ? 'Dans une plage indisponible — voulu ?' : 'Within a blocked window — intentional?'}
-                </div>
-              )}
-              {blockerNote && !mixInBlocker && (
-                <div style={{ fontSize: '11px', color: '#7A5A10', marginTop: '4px', lineHeight: 1.5 }}>
-                  {blockerNote}
-                </div>
-              )}
-              {isSourdough && _windowTooShortRender && (
-                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--terra)', fontFamily: 'var(--font-ui)' }}>
-                    {isFr ? 'Pas assez de temps pour ce créneau' : 'Not enough time for this bake'}
-                  </div>
-                  {/* Cool kitchens slow the starter a lot — a cold bench is a
-                      common reason the window is tight. Offer the levers a baker
-                      actually has, framed as an observation (no alarm). */}
-                  {kitchenTemp < 20 && (
-                    <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>
-                      {isFr
-                        ? `Votre cuisine est fraîche (${kitchenTemp}°C), donc votre levain met plus de temps à piquer. Réchauffez-le (~24–26°C), rafraîchissez-le à plus petit ratio (1:1:1), ou cuisez un peu plus tard.`
-                        : `Your kitchen is cool (${kitchenTemp}°C), so your starter takes longer to peak. Warm it (~24–26°C), feed a smaller ratio (1:1:1), or bake a little later.`}
-                    </div>
-                  )}
-                  {bakeType === 'bread' && solverResult?.suggestedBakeTime && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
-                        {isFr ? 'Essayez plutôt :' : 'Try instead:'}
-                      </div>
-                      <button
-                        onClick={() => {
-                          const sugBakeTime = solverResult?.suggestedBakeTime;
-                          if (!sugBakeTime) return;
-                          setPendingEatTime(sugBakeTime);
-                          setEatTimeSet(true);
-                          onChange(pendingStart, sugBakeTime, blocks);
-                          setHasDragged(false);
-                        }}
-                        style={{
-                          padding: '.2rem 12px',
-                          borderRadius: '20px',
-                          border: '1.5px solid var(--terra)',
-                          background: '#FEF4EF',
-                          color: 'var(--terra)',
-                          fontFamily: 'var(--font-ui)',
-                          fontSize: '11px',
-                          cursor: 'pointer',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {fmtCardDT(solverResult.suggestedBakeTime, isFr)} →
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-              {/* scheduleNote removed — info available in timeline */}
-
-              {/* Reading your dough — cues to trust over the clock (mirrors the
-                  starter card's "Signs your starter is ready"). Universal:
-                  bread and pizza, sourdough and yeasted. */}
-              <div style={{ marginTop: '8px' }}>
-                <button onClick={() => setShowDoughTips(v => !v)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    display: 'inline-flex', alignItems: 'center', gap: '4px',
-                    fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
-                  <span style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid var(--smoke)',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '11px', flexShrink: 0 }}>i</span>
-                  {isFr ? 'Lire votre pâte' : 'Reading your dough'}
-                </button>
-                {showDoughTips && (
-                  <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--smoke)',
-                    fontFamily: 'var(--font-ui)', lineHeight: 1.6,
-                    borderLeft: '2px solid var(--border)', paddingLeft: '8px' }}>
-                    {isFr
-                      ? 'Le temps donne le cap ; votre pâte donne le feu vert. Prête quand elle a gonflé d’environ moitié, qu’elle est bombée et gonflée de bulles, et qu’une pression légère se retend lentement. Encore dense et sans vie ? Laissez-la un peu. Bulleuse et retombée ? Enfournez sans tarder.'
-                      : 'The clock sets the pace; your dough gives the green light. Ready when it’s risen about half, looks domed and puffy with bubbles, and springs back slowly to a gentle press. Still dense and lifeless? Give it a little longer. Blistered and slack? Bake soon.'}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+                autoFocus
+                onBlur={e => { commitRowTime(editingRow, e.target.value); setEditingRow(null); }}
+                onKeyDown={e => { if (e.key === 'Escape') setEditingRow(null); }}
+                style={{
+                  fontSize: '13px', padding: '4px 8px', borderRadius: '8px',
+                  border: '1.5px solid var(--terra)', background: 'var(--warm)',
+                  color: 'var(--char)', fontFamily: 'var(--font-ui)',
+                  width: '100%', outline: 'none',
+                }}
+              />
+            ) : null}
+          />
         );
       })()}
 

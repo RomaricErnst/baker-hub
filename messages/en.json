@@ -568,7 +568,19 @@
     "prefTooLate": "Not ready — under-fermentation risk",
     "prefTooShortTime": "Not enough time — skip poolish for better results",
     "prefInFridgeReady": "In fridge — ready at Start Dough",
-    "prefReadyWhenDoughStarts": "Ready when dough starts"
+    "prefReadyWhenDoughStarts": "Ready when dough starts",
+    "eyebrowRecommended": "RECOMMENDED FERMENTATION PLAN",
+    "eyebrowYours": "YOUR FERMENTATION PLAN",
+    "bakeRow": "Bake",
+    "outOfFridge": "Out of fridge · after {hours}h cold",
+    "nowPrefix": "Now",
+    "completedSteps": "{count} steps already done",
+    "busyEngine": "You’re busy then — nothing clear fits the plan, so it stays here.",
+    "busyBakerA": "You’re busy then.",
+    "busyBakerB": "is clear if you’d rather.",
+    "movedClear": "Moved here to keep clear of your busy window.",
+    "undo": "Undo",
+    "roomIs": "Anywhere {range} keeps the plan on track"
   },
   "recipe": {
     "ingredients": "Ingredients",
@@ -1601,6 +1613,31 @@
       "legendStarter": "Starter",
       "legendDough": "Dough",
       "legendTempCaption": "Lighter = room temp · Darker = in fridge"
+    },
+    "nowLabel": "now",
+    "reset": "Reset to recommendation",
+    "shortLabels": {
+      "poolish": "Poolish",
+      "biga": "Biga",
+      "starter": "Starter",
+      "dough": "Dough",
+      "fed": "Fed",
+      "refresh": "Refresh",
+      "preMix": "Pre-mix"
+    },
+    "guide": {
+      "open": "Read and adjust this chart",
+      "close": "Hide chart details",
+      "dragLead": "Drag any diamond",
+      "dragRest": "to move that step — the plan works itself out around it. Each curve is how lively that dough is, and higher is riper.",
+      "all": "Show everything",
+      "fridge": "In the fridge",
+      "fridgeDesc": "Where the line glows blue, that dough is cold and barely moving.",
+      "busy": "Your busy times",
+      "busyDesc": "Work and night hours you blocked out.",
+      "window": "Room to move",
+      "windowDesc": "How far a step can shift and still keep the plan on track.",
+      "foot": "These switch on by themselves while you drag, then step back out of the way."
     }
   },
   "prefermentSlider": {
