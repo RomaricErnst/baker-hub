@@ -576,14 +576,8 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
               </button>
             )}
             {answered.map(st => (
-              <button key={st.id} onClick={() => { setOpen(false); flow.onJump(st.id); }} style={sheetRowStyle}>
-                <span style={sheetKeyStyle}>{st.chip}</span>
-                <span style={{ flex: 1, fontSize: '14.5px', fontWeight: 600, textAlign: 'left', color: 'var(--char)' }}>
-                  {st.value}
-                  {st.prefilled && <PrefilledTag fr={fr} />}
-                </span>
-                <SheetChevron />
-              </button>
+              <SetupRow key={st.id} step={st} ok fr={fr}
+                onClick={() => { setOpen(false); flow.onJump(st.id); }} />
             ))}
 
             {/* The road ahead, on demand and only on demand. Not styled as an
@@ -594,14 +588,8 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
                   {fr ? `Reste à faire \u2014 ${pending.length}` : `Still to come \u2014 ${pending.length}`}
                 </div>
                 {pending.map(st => (
-                  <button key={st.id} onClick={() => { setOpen(false); flow.onJump(st.id); }} style={sheetRowStyle}>
-                    <span style={sheetKeyStyle}>{st.chip}</span>
-                    <span style={{
-                      flex: 1, fontSize: '14.5px', textAlign: 'left',
-                      fontWeight: 400, color: '#B0A69B',
-                    }}>{st.gap}</span>
-                    <SheetChevron />
-                  </button>
+                  <SetupRow key={st.id} step={st} ok={false} fr={fr}
+                    onClick={() => { setOpen(false); flow.onJump(st.id); }} />
                 ))}
               </>
             )}
@@ -635,10 +623,10 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe }: {
     .map(g => ({ g, steps: flow.steps.filter(s => (s.group ?? 'dough') === g) }))
     .filter(x => x.steps.length > 0);
 
+  // Only the mode button uses this now; every step row goes through SetupRow.
   const rowStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'baseline', gap: '10px', width: '100%',
-    padding: '13px 15px', borderBottom: '1px solid var(--border)',
-    background: 'none', border: 'none', borderBottomStyle: 'solid',
+    display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
+    padding: '13px 15px', background: 'none', border: 'none',
     cursor: 'pointer', fontFamily: 'var(--font-ui)', textAlign: 'left',
     minHeight: '44px',
   };
@@ -661,8 +649,8 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe }: {
           borderRadius: '18px', marginBottom: '16px',
           boxShadow: '0 2px 12px rgba(26,22,18,0.06)',
         }}>
-          <span style={reviewKeyStyle}>{fr ? 'Mode' : 'Mode'}</span>
-          <span style={{ flex: 1, fontSize: '14px', fontWeight: 600 }}>{modeChip.value}</span>
+          <span style={{ ...sheetKeyStyle, width: '84px' }}>{fr ? 'Mode' : 'Mode'}</span>
+          <span style={{ flex: 1, fontSize: '14.5px', fontWeight: 600, color: 'var(--char)' }}>{modeChip.value}</span>
           <SheetChevron />
         </button>
       )}
@@ -678,36 +666,17 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe }: {
             borderRadius: '18px', overflow: 'hidden',
             boxShadow: '0 2px 12px rgba(26,22,18,0.06)',
           }}>
-            {steps.map((st, i) => {
-              const ok = stepAnswered(st, flow.highestStep, flow.steps);
-              return (
-                <button
-                  key={st.id}
-                  onClick={() => onJump(st.id)}
-                  style={{ ...rowStyle, borderBottom: i === steps.length - 1 ? 'none' : '1px solid var(--border)' }}
-                >
-                  <span style={reviewKeyStyle}>{st.chip}</span>
-                  <span style={{ flex: 1, fontSize: '14px', fontWeight: ok ? 500 : 400, lineHeight: 1.35 }}>
-                    {ok ? (
-                      <>
-                        {st.value}
-                        {st.prefilled && <PrefilledTag fr={fr} />}
-                      </>
-                    ) : (
-                      <span style={{ color: '#9C8248' }}>
-                        <span style={{
-                          display: 'inline-block', width: '6px', height: '6px',
-                          borderRadius: '50%', background: 'var(--gold)',
-                          marginRight: '6px', verticalAlign: '1px',
-                        }} />
-                        {st.gap}
-                      </span>
-                    )}
-                  </span>
-                  <SheetChevron />
-                </button>
-              );
-            })}
+            {steps.map((st, i) => (
+              <SetupRow
+                key={st.id}
+                step={st}
+                ok={stepAnswered(st, flow.highestStep, flow.steps)}
+                fr={fr}
+                inset
+                last={i === steps.length - 1}
+                onClick={() => onJump(st.id)}
+              />
+            ))}
           </div>
         </div>
       ))}
@@ -725,10 +694,49 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe }: {
   );
 }
 
-const reviewKeyStyle: React.CSSProperties = {
-  fontSize: '12px', color: 'var(--smoke)', flex: '0 0 84px',
-  textAlign: 'left', fontFamily: 'var(--font-ui)',
-};
+// One row for both surfaces. The sheet and the review page show the same
+// list; letting each style its own rows is how two visual languages for one
+// idea appear. They differ in how the list is SORTED — the sheet by status,
+// the page by subject — and in nothing else.
+function SetupRow({ step, ok, fr, onClick, inset, last }: {
+  step: StepDef; ok: boolean; fr: boolean; onClick: () => void;
+  inset?: boolean; last?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
+        padding: inset ? '13px 15px' : '14px 2px',
+        background: 'none', border: 'none',
+        borderBottom: last ? 'none' : '1px solid var(--border)',
+        borderBottomStyle: 'solid',
+        cursor: 'pointer', fontFamily: 'var(--font-ui)', minHeight: '44px',
+        textAlign: 'left',
+      }}
+    >
+      <span style={{ ...sheetKeyStyle, width: inset ? '84px' : '96px' }}>{step.chip}</span>
+      <span style={{ flex: 1, fontSize: '14.5px', textAlign: 'left', lineHeight: 1.35 }}>
+        {ok ? (
+          <span style={{ fontWeight: 600, color: 'var(--char)' }}>
+            {step.value}
+            {step.prefilled && <PrefilledTag fr={fr} />}
+          </span>
+        ) : (
+          <span style={{ color: '#9C8248', fontWeight: 400 }}>
+            <span style={{
+              display: 'inline-block', width: '6px', height: '6px',
+              borderRadius: '50%', background: 'var(--gold)',
+              marginRight: '6px', verticalAlign: '1px',
+            }} />
+            {step.gap}
+          </span>
+        )}
+      </span>
+      <SheetChevron />
+    </button>
+  );
+}
 
 const sheetRowStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
