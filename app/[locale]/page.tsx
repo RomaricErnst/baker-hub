@@ -3022,17 +3022,21 @@ export default function Home() {
           ];
           const doneCount = steps.filter(s => s.done).length;
           const fillPct = (doneCount / (steps.length - 1)) * 100;
+          // Compact phase bar. The icons went: a document glyph does not
+          // explain "Recipe" better than the word Recipe does, and the
+          // 32px discs they needed cost two rows of height at the top of
+          // every screen. The words stay — they are what tells a first
+          // timer these are phases and not unrelated tabs — and the node
+          // shrinks to a dot sitting on the connecting line.
           return (
-            <div style={{ position: 'relative', padding: '16px 24px 12px' }}>
-              <div style={{ position: 'absolute', top: '34px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
+            <div style={{ position: 'relative', padding: '8px 24px 8px' }}>
+              <div style={{ position: 'absolute', top: '13px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
                 {steps.map(s => {
                   const isActive = activeTab === s.key;
-                  const nodeBg = s.done ? '#8BA888' : isActive ? '#6B4423' : '#FDFBF7';
-                  const nodeBorder = s.done ? '#8BA888' : isActive ? '#6B4423' : s.locked ? '#E0D8CC' : '#C9BEA9';
-                  const iconColor = (s.done || isActive) ? '#fff' : s.locked ? '#C9BEA9' : '#8C8580';
+                  const dot = s.done ? '#8BA888' : isActive ? '#6B4423' : s.locked ? '#D8D0C2' : '#C9BEA9';
                   const labelColor = s.done ? '#6B7A5A' : isActive ? '#6B4423' : s.locked ? '#B5AC9E' : '#8C8580';
                   return (
                     <button
@@ -3040,41 +3044,23 @@ export default function Home() {
                       onClick={() => !s.locked && setActiveTab(s.key)}
                       style={{
                         background: 'none', border: 'none', cursor: s.locked ? 'default' : 'pointer',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '56px',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+                        width: '56px', padding: 0, minHeight: '44px', justifyContent: 'flex-start',
                       }}
                     >
-                      <div style={{
-                        width: '32px', height: '32px', borderRadius: '50%',
-                        border: `2px solid ${nodeBorder}`, background: nodeBg,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
-                      }}>
-                        {/* A completed node behind the current one is not a
-                            trophy, it is the way back — show the direction of
-                            travel rather than a tick the baker cannot act on. */}
-                        {s.done ? (
-                          <svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                            <line x1="16" y1="10" x2="5" y2="10" stroke="white" strokeWidth="1.7" strokeLinecap="round"/>
-                            <polyline points="9,5 4,10 9,15" stroke="white" strokeWidth="1.7"
-                              strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                          </svg>
-                        ) : s.icon(iconColor)}
-                        {s.locked && (
-                          <span style={{
-                            position: 'absolute', bottom: '-2px', right: '-2px',
-                            width: '13px', height: '13px', borderRadius: '50%',
-                            background: '#B5AC9E', border: '1.5px solid #FDFBF7',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
-                            <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
-                              <rect x="2" y="4.5" width="6" height="4.5" rx="1" stroke="#fff" strokeWidth="1.1"/>
-                              <path d="M3.2 4.5V3a1.8 1.8 0 013.6 0v1.5" stroke="#fff" strokeWidth="1.1" fill="none"/>
-                            </svg>
-                          </span>
-                        )}
-                      </div>
-                      <span style={{ fontSize: '11px', lineHeight: 1, color: labelColor, fontWeight: isActive ? 600 : 400, fontFamily: 'var(--font-ui)' }}>
-                        {s.label}
-                      </span>
+                      {/* A ring for where you are, a filled dot for where you
+                          have been, a pale one for where you cannot go yet. */}
+                      <span style={{
+                        width: '10px', height: '10px', borderRadius: '50%',
+                        background: isActive ? 'var(--cream)' : dot,
+                        border: `2px solid ${dot}`, boxShadow: '0 0 0 3px var(--cream)',
+                        flexShrink: 0,
+                      }} />
+                      <span style={{
+                        fontSize: '11px', lineHeight: 1.15, color: labelColor,
+                        fontWeight: isActive ? 700 : 400, fontFamily: 'var(--font-ui)',
+                        textAlign: 'center',
+                      }}>{s.label}</span>
                     </button>
                   );
                 })}
@@ -3151,17 +3137,21 @@ export default function Home() {
           ];
           const doneCount = steps.filter(s => s.done).length;
           const fillPct = (doneCount / (steps.length - 1)) * 100;
+          // Compact phase bar. The icons went: a document glyph does not
+          // explain "Recipe" better than the word Recipe does, and the
+          // 32px discs they needed cost two rows of height at the top of
+          // every screen. The words stay — they are what tells a first
+          // timer these are phases and not unrelated tabs — and the node
+          // shrinks to a dot sitting on the connecting line.
           return (
-            <div style={{ position: 'relative', padding: '16px 24px 12px' }}>
-              <div style={{ position: 'absolute', top: '34px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
+            <div style={{ position: 'relative', padding: '8px 24px 8px' }}>
+              <div style={{ position: 'absolute', top: '13px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
                 {steps.map(s => {
                   const isActive = pizzaPartyTab === s.key;
-                  const nodeBg = s.done ? '#8BA888' : isActive ? '#C88A52' : '#FDFBF7';
-                  const nodeBorder = s.done ? '#8BA888' : isActive ? '#C88A52' : s.locked ? '#E0D8CC' : '#C9BEA9';
-                  const iconColor = (s.done || isActive) ? '#fff' : s.locked ? '#C9BEA9' : '#8C8580';
+                  const dot = s.done ? '#8BA888' : isActive ? '#C88A52' : s.locked ? '#D8D0C2' : '#C9BEA9';
                   const labelColor = s.done ? '#6B7A5A' : isActive ? '#C88A52' : s.locked ? '#B5AC9E' : '#8C8580';
                   return (
                     <button
@@ -3169,36 +3159,23 @@ export default function Home() {
                       onClick={() => !s.locked && setPizzaPartyTab(s.key)}
                       style={{
                         background: 'none', border: 'none', cursor: s.locked ? 'default' : 'pointer',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '52px',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+                        width: '52px', padding: 0, minHeight: '44px', justifyContent: 'flex-start',
                       }}
                     >
-                      <div style={{
-                        width: '32px', height: '32px', borderRadius: '50%',
-                        border: `2px solid ${nodeBorder}`, background: nodeBg,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
-                      }}>
-                        {s.done ? (
-                          <svg width="9" height="9" viewBox="0 0 7 7" fill="none">
-                            <path d="M1.5 3.5l1.5 1.5 2.5-2.5" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        ) : s.icon(iconColor)}
-                        {s.locked && (
-                          <span style={{
-                            position: 'absolute', bottom: '-2px', right: '-2px',
-                            width: '13px', height: '13px', borderRadius: '50%',
-                            background: '#B5AC9E', border: '1.5px solid #FDFBF7',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
-                            <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
-                              <rect x="2" y="4.5" width="6" height="4.5" rx="1" stroke="#fff" strokeWidth="1.1"/>
-                              <path d="M3.2 4.5V3a1.8 1.8 0 013.6 0v1.5" stroke="#fff" strokeWidth="1.1" fill="none"/>
-                            </svg>
-                          </span>
-                        )}
-                      </div>
-                      <span style={{ fontSize: '11px', lineHeight: 1, color: labelColor, fontWeight: isActive ? 600 : 400, fontFamily: 'var(--font-ui)' }}>
-                        {s.label}
-                      </span>
+                      {/* A ring for where you are, a filled dot for where you
+                          have been, a pale one for where you cannot go yet. */}
+                      <span style={{
+                        width: '10px', height: '10px', borderRadius: '50%',
+                        background: isActive ? 'var(--cream)' : dot,
+                        border: `2px solid ${dot}`, boxShadow: '0 0 0 3px var(--cream)',
+                        flexShrink: 0,
+                      }} />
+                      <span style={{
+                        fontSize: '11px', lineHeight: 1.15, color: labelColor,
+                        fontWeight: isActive ? 700 : 400, fontFamily: 'var(--font-ui)',
+                        textAlign: 'center',
+                      }}>{s.label}</span>
                     </button>
                   );
                 })}
