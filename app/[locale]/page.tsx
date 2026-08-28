@@ -243,6 +243,9 @@ type StepDef = {
   short?: string | null;
   prefilled?: boolean;   // value is a code default, not a baker's decision
   gap: string;           // sentence used by the missing-field CTA
+  // Which of the review page's four questions this step answers. Display
+  // only — the flow, the ids and their order are untouched by it.
+  group?: 'making' | 'kitchen' | 'dough' | 'plan';
 };
 
 type StepFlow = {
@@ -329,6 +332,43 @@ function stepAnswered(s: StepDef, highest: number, list?: StepDef[]): boolean {
 // ── Summary chip carousel ─────────────────────
 // Appears progressively while the baker advances, and becomes the navigation
 // once they come back from the recipe. One mechanic, two uses.
+// ── Step groups ───────────────────────────────
+// The review page asks four questions instead of listing ten settings.
+// Groups are display-only: ids, order and the flow are untouched.
+const GROUP_ORDER = ['making', 'kitchen', 'dough', 'plan'] as const;
+type StepGroup = typeof GROUP_ORDER[number];
+const GROUP_TITLE: Record<StepGroup, { en: string; fr: string }> = {
+  making:  { en: 'What you\u2019re making', fr: 'Ce que vous préparez' },
+  kitchen: { en: 'Your kitchen',          fr: 'Votre cuisine' },
+  dough:   { en: 'What goes in it',       fr: 'Ce qu\u2019il y a dedans' },
+  plan:    { en: 'When you\u2019re baking', fr: 'Quand vous enfournez' },
+};
+
+// A value the baker never chose is worth marking: it tells them which lines
+// deserve a second look and which they already decided.
+function PrefilledTag({ fr }: { fr: boolean }) {
+  return (
+    <span style={{
+      display: 'inline-block', fontFamily: 'var(--font-ui)', fontSize: '9px',
+      letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--smoke)',
+      border: '1px solid var(--border)', borderRadius: '20px',
+      padding: '1px 6px', marginLeft: '7px', verticalAlign: '1.5px',
+      background: 'var(--cream)', whiteSpace: 'nowrap',
+    }}>{fr ? 'par défaut' : 'assumed'}</span>
+  );
+}
+
+// ── Summary chip carousel ─────────────────────
+// Two questions, two controls. The rail shows what the baker has DECIDED —
+// real answers only, never placeholders, because ten grey slots on step one
+// turns a guided flow into a form. The pinned door shows HOW FAR ALONG they
+// are, and opening it shows WHAT IS LEFT. Neither has to compromise.
+//
+// The count is a tally (answers out of total), not a page position. The old
+// objection — that a number at the head of a line naming the current page
+// reads as position — does not apply once it wears a SET caption and sits
+// beside chips that are the very things being counted. The progress rule
+// below fills on the same tally, so the two can never disagree.
 function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
   { flow: StepFlow; topOffset?: number; raised?: boolean;
     modeChip?: { value: string; onClick: () => void } }) {
@@ -342,52 +382,37 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
   const [dragging, setDragging] = React.useState(false);
   const fr = flow.locale === 'fr';
   const answered = flow.steps.filter(s => stepAnswered(s, flow.highestStep, flow.steps));
+  const pending  = flow.steps.filter(s => !stepAnswered(s, flow.highestStep, flow.steps));
 
-  // The mode is a decision but not one of the numbered steps, so it leads the
-  // summary and the sheet without counting toward the total.
-  const all = [
-    ...(modeChip ? [modeChip.value] : []),
-    ...answered.map(s => s.value as string),
-  ];
-  // One line while everything fits; two, on short forms, once it does not.
-  //
-  // The measurements: ten full values run to about 132 characters against a
-  // budget near 44 per line, so one line never holds a finished setup and two
-  // lines of full values still fall short. Ten SHORT values come to 87, which
-  // two lines hold on every iPhone size. The bar therefore grows only when it
-  // has to, and grows into the one form that fits.
-  //
-  // Whatever the case, values are taken whole from the most recent: CSS
-  // ellipsis cuts mid-word, which is how "Spiral Mixer" became "S…".
-  const BUDGET = 44;
-  const short = [
-    ...(modeChip ? [modeChip.value] : []),
-    ...answered.map(s => (s.short ?? s.value) as string),
-  ];
-  const fits = (list: string[], budget: number) => list.join(' · ').length <= budget;
-  const oneLine = fits(all, BUDGET);
-  const source = oneLine ? all : short;
-  const budget = oneLine ? BUDGET : BUDGET * 2;
-
-  const kept: string[] = [];
-  for (let i = source.length - 1; i >= 0; i--) {
-    const next = [source[i], ...kept].join(' · ');
-    if (next.length > budget && kept.length > 0) break;
-    kept.unshift(source[i]);
-  }
-  const parts = kept.length < source.length ? ['…', ...kept] : kept;
-  // Position, not tally. Counting answered steps made "2/10" appear on the
-  // third page — true, but read as "you are on step 2", because a number at
-  // the head of a line naming the current page is read as a position.
-  //
-  // Counting answers was the right call when Suivant skipped profile-answered
-  // steps and the position jumped 1, 2, 4, 7. Nothing is skipped any more —
-  // the profile prefills the page instead — so position is contiguous again
-  // and the reason for the tally has gone. The bar fills by position too, so
-  // the two can never disagree.
   const total = flow.steps.length + (modeChip ? 1 : 0);
-  const count = flow.steps.findIndex(s => s.id === flow.activeId) + 1 + (modeChip ? 1 : 0);
-  const pct = Math.round((count / Math.max(1, total)) * 100);
+  const count = answered.length + (modeChip ? 1 : 0);
+  const pct   = Math.round((count / Math.max(1, total)) * 100);
+
+  // A gap the baker has WALKED PAST is different from a step they simply have
+  // not reached. Only the first goes gold — otherwise the pin screams warning
+  // through the whole first run, when nothing is wrong at all.
+  const walkedPast = pending.find(s => flow.highestStep > s.id) ?? null;
+
+  // The newest chip is the one the baker just earned, and it is the one that
+  // lands off-screen once the rail overflows. Instant, never smooth: smooth
+  // scrolling moves targets under fingers.
+  const railRef = React.useRef<HTMLDivElement | null>(null);
+  React.useEffect(() => {
+    const el = railRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [answered.length]);
+
+  const chipStyle: React.CSSProperties = {
+    flex: '0 0 auto', background: 'var(--warm)', border: '1px solid var(--border)',
+    borderRadius: '20px', padding: '5px 11px', color: 'var(--ash)',
+    fontSize: '12.5px', lineHeight: 1.25, whiteSpace: 'nowrap',
+    fontFamily: 'var(--font-ui)', cursor: 'pointer', textAlign: 'left',
+    minHeight: '38px',
+  };
+  const chipKeyStyle: React.CSSProperties = {
+    color: 'var(--smoke)', fontSize: '9px', display: 'block',
+    letterSpacing: '.05em', textTransform: 'uppercase', lineHeight: 1.3,
+  };
 
   return (
     <>
@@ -397,38 +422,91 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
         background: 'var(--cream)', padding: '8px 0 10px',
         boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
       }}>
-        <button
-          onClick={() => { setDragY(0); setDragging(false); dragFrom.current = null; setOpen(true); }}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+        {count === 0 ? (
+          // A scroller with no chips is a box of nothing. One quiet line
+          // instead — the stepper above already says where they are.
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '9px', minHeight: '38px',
             border: '1px solid var(--border)', background: 'var(--warm)',
-            borderRadius: '20px', padding: '9px 13px', minHeight: '44px',
-            cursor: 'pointer', fontFamily: 'var(--font-ui)', textAlign: 'left',
-          }}
-        >
-          {/* Answered out of total, not page position. The number sits beside
-              a progress bar, so it has to count the same thing the bar fills
-              — "1/6" next to a third-full bar was two different denominators
-              in one control. */}
-          <span style={{
-            fontSize: '10px', letterSpacing: '.09em', color: '#9C8248',
-            fontWeight: 700, flexShrink: 0,
-          }}>{count}/{total}</span>
-          {/* Running text, not chips: the row never scrolls sideways, so
-              nothing is ever half-cut at the screen edge. */}
-          <span style={{
-            flex: 1, minWidth: 0, fontSize: '12.5px', color: 'var(--smoke)',
-            lineHeight: 1.35,
-            ...(oneLine
-              ? { whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }
-              : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }),
-          }}>{parts.length ? parts.join(' · ') : (fr ? 'Rien de choisi pour l\u2019instant' : 'Nothing chosen yet')}</span>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A7F78"
-            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            style={{ flexShrink: 0 }} aria-hidden="true">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
+            borderRadius: '20px', padding: '9px 13px', fontFamily: 'var(--font-ui)',
+          }}>
+            <span style={{ fontSize: '11.5px', color: '#9C8248', fontWeight: 700 }}>0/{total}</span>
+            <span style={{ fontSize: '12.5px', color: 'var(--smoke)' }}>
+              {fr ? 'Vos choix s\u2019afficheront ici' : 'Your choices will collect here'}
+            </span>
+          </div>
+        ) : (
+          <div style={{ position: 'relative' }}>
+            <div
+              ref={railRef}
+              data-noswipe
+              style={{
+                display: 'flex', gap: '6px', overflowX: 'auto', alignItems: 'stretch',
+                padding: '1px 0 2px', scrollbarWidth: 'none',
+                WebkitOverflowScrolling: 'touch',
+              }}
+            >
+              {/* The door. Solid against outlined chips — the fill is what
+                  earns the tap; the chevron only says which way it goes. */}
+              <button
+                onClick={() => { setDragY(0); setDragging(false); dragFrom.current = null; setOpen(true); }}
+                style={{
+                  position: 'sticky', left: 0, zIndex: 4, flex: '0 0 auto',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  borderRadius: '20px', padding: '6px 10px', minHeight: '38px',
+                  fontFamily: 'var(--font-ui)', fontSize: '11.5px', lineHeight: 1.1,
+                  cursor: 'pointer', whiteSpace: 'nowrap', textAlign: 'left',
+                  boxShadow: '8px 0 11px -8px rgba(26,22,18,0.35)',
+                  ...(walkedPast
+                    ? { background: 'var(--cream)', color: '#9C8248', border: '1px solid var(--gold)' }
+                    : { background: 'var(--char)', color: 'var(--cream)', border: '1px solid var(--char)' }),
+                }}
+              >
+                <span>
+                  <span style={{
+                    display: 'block', fontSize: '8.5px', letterSpacing: '.05em',
+                    textTransform: 'uppercase', lineHeight: 1.25,
+                    color: walkedPast ? 'var(--smoke)' : 'rgba(245,240,232,0.6)',
+                  }}>
+                    {walkedPast
+                      ? (fr ? `${pending.length} à faire` : `${pending.length} left`)
+                      : (fr ? 'Choisis' : 'Set')}
+                  </span>
+                  <span style={{ fontWeight: walkedPast ? 600 : 400 }}>
+                    {walkedPast ? walkedPast.chip : `${count}/${total}`}
+                  </span>
+                </span>
+                <svg width="7" height="11" viewBox="0 0 7 11" fill="none" aria-hidden="true"
+                  style={{ flexShrink: 0 }}>
+                  <path d="M1.5 1L5.5 5.5L1.5 10" stroke="currentColor" strokeWidth="1.6"
+                    strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              {modeChip && (
+                <button onClick={modeChip.onClick} style={chipStyle}>
+                  <span style={chipKeyStyle}>{fr ? 'Mode' : 'Mode'}</span>
+                  {modeChip.value}
+                </button>
+              )}
+              {/* Flow order, always. Sorting by what-changes-most would
+                  reshuffle the bar the moment the recipe generates — and
+                  rearranging a row the baker has just spent ten steps
+                  learning costs more than optimal order gains. */}
+              {answered.map(st => (
+                <button key={st.id} onClick={() => flow.onJump(st.id)} style={chipStyle}>
+                  <span style={chipKeyStyle}>{st.chip}</span>
+                  {st.short ?? st.value}
+                </button>
+              ))}
+            </div>
+            <div aria-hidden="true" style={{
+              position: 'absolute', top: 0, bottom: 0, right: 0, width: '22px',
+              pointerEvents: 'none',
+              background: 'linear-gradient(90deg, rgba(245,240,232,0), var(--cream))',
+            }} />
+          </div>
+        )}
         <div style={{ height: '2px', background: '#E2DACD', borderRadius: '2px', marginTop: '8px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${pct}%`, background: '#9C8248', transition: 'width .3s ease' }} />
         </div>
@@ -483,6 +561,10 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
             >
               {fr ? 'Où vous en êtes' : 'Where you are'}
             </h3>
+
+            <div style={sheetHeadStyle}>
+              {fr ? `Choisis \u2014 ${count}` : `Set \u2014 ${count}`}
+            </div>
             {modeChip && (
               <button
                 onClick={() => { setOpen(false); modeChip.onClick(); }}
@@ -493,27 +575,160 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
                 <SheetChevron />
               </button>
             )}
-            {flow.steps.map(st => {
-              const ok = stepAnswered(st, flow.highestStep, flow.steps);
-              return (
-                <button key={st.id} onClick={() => { setOpen(false); flow.onJump(st.id); }} style={sheetRowStyle}>
-                  <span style={sheetKeyStyle}>{st.chip}</span>
-                  <span style={{
-                    flex: 1, fontSize: '14.5px', textAlign: 'left',
-                    fontWeight: ok ? 600 : 400,
-                    color: ok ? 'var(--char)' : '#B0A69B',
-                    fontStyle: ok ? 'normal' : 'italic',
-                  }}>{ok ? st.value : (fr ? 'à choisir' : 'not chosen')}</span>
-                  <SheetChevron />
-                </button>
-              );
-            })}
+            {answered.map(st => (
+              <button key={st.id} onClick={() => { setOpen(false); flow.onJump(st.id); }} style={sheetRowStyle}>
+                <span style={sheetKeyStyle}>{st.chip}</span>
+                <span style={{ flex: 1, fontSize: '14.5px', fontWeight: 600, textAlign: 'left', color: 'var(--char)' }}>
+                  {st.value}
+                  {st.prefilled && <PrefilledTag fr={fr} />}
+                </span>
+                <SheetChevron />
+              </button>
+            ))}
+
+            {/* The road ahead, on demand and only on demand. Not styled as an
+                error: nothing is wrong, the baker simply has not got there. */}
+            {pending.length > 0 && (
+              <>
+                <div style={sheetHeadStyle}>
+                  {fr ? `Reste à faire \u2014 ${pending.length}` : `Still to come \u2014 ${pending.length}`}
+                </div>
+                {pending.map(st => (
+                  <button key={st.id} onClick={() => { setOpen(false); flow.onJump(st.id); }} style={sheetRowStyle}>
+                    <span style={sheetKeyStyle}>{st.chip}</span>
+                    <span style={{
+                      flex: 1, fontSize: '14.5px', textAlign: 'left',
+                      fontWeight: 400, color: '#B0A69B',
+                    }}>{st.gap}</span>
+                    <SheetChevron />
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         </>
       )}
     </>
   );
 }
+
+const sheetHeadStyle: React.CSSProperties = {
+  fontFamily: 'var(--font-ui)', fontSize: '9.5px', letterSpacing: '.09em',
+  textTransform: 'uppercase', color: 'var(--smoke)', padding: '14px 2px 4px',
+};
+
+// ── Setup review ──────────────────────────────
+// Where "← Setup" from the recipe lands. Ten rows become four questions:
+// what am I making, where, with what, and when. The flow itself is the place
+// to answer questions one at a time; this is the place to find the one you
+// came back to change.
+function SetupReview({ flow, modeChip, onJump, onBackToRecipe }: {
+  flow: StepFlow;
+  modeChip?: { value: string; onClick: () => void };
+  onJump: (id: number) => void;
+  onBackToRecipe: () => void;
+}) {
+  const fr = flow.locale === 'fr';
+  const total = flow.steps.length;
+  const done  = flow.steps.filter(s => stepAnswered(s, flow.highestStep, flow.steps)).length;
+  const groups = GROUP_ORDER
+    .map(g => ({ g, steps: flow.steps.filter(s => (s.group ?? 'dough') === g) }))
+    .filter(x => x.steps.length > 0);
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'baseline', gap: '10px', width: '100%',
+    padding: '13px 15px', borderBottom: '1px solid var(--border)',
+    background: 'none', border: 'none', borderBottomStyle: 'solid',
+    cursor: 'pointer', fontFamily: 'var(--font-ui)', textAlign: 'left',
+    minHeight: '44px',
+  };
+
+  return (
+    <div style={{ padding: '4px 0 8px' }}>
+      <h2 style={{
+        fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700,
+        margin: '2px 0 2px', letterSpacing: '-.4px',
+      }}>{fr ? 'Votre configuration' : 'Your setup'}</h2>
+      <p style={{ fontSize: '13px', color: 'var(--smoke)', margin: '0 0 18px' }}>
+        {fr
+          ? `${done} sur ${total} \u00b7 touchez une ligne pour la changer`
+          : `${done} of ${total} set \u00b7 tap any line to change`}
+      </p>
+
+      {modeChip && (
+        <button onClick={modeChip.onClick} style={{
+          ...rowStyle, background: 'var(--warm)', border: '1px solid var(--border)',
+          borderRadius: '18px', marginBottom: '16px',
+          boxShadow: '0 2px 12px rgba(26,22,18,0.06)',
+        }}>
+          <span style={reviewKeyStyle}>{fr ? 'Mode' : 'Mode'}</span>
+          <span style={{ flex: 1, fontSize: '14px', fontWeight: 600 }}>{modeChip.value}</span>
+          <SheetChevron />
+        </button>
+      )}
+
+      {groups.map(({ g, steps }) => (
+        <div key={g}>
+          <div style={{
+            fontFamily: 'var(--font-ui)', fontSize: '10.5px', letterSpacing: '.1em',
+            textTransform: 'uppercase', color: 'var(--smoke)', margin: '18px 4px 7px',
+          }}>{fr ? GROUP_TITLE[g].fr : GROUP_TITLE[g].en}</div>
+          <div style={{
+            background: 'var(--warm)', border: '1px solid var(--border)',
+            borderRadius: '18px', overflow: 'hidden',
+            boxShadow: '0 2px 12px rgba(26,22,18,0.06)',
+          }}>
+            {steps.map((st, i) => {
+              const ok = stepAnswered(st, flow.highestStep, flow.steps);
+              return (
+                <button
+                  key={st.id}
+                  onClick={() => onJump(st.id)}
+                  style={{ ...rowStyle, borderBottom: i === steps.length - 1 ? 'none' : '1px solid var(--border)' }}
+                >
+                  <span style={reviewKeyStyle}>{st.chip}</span>
+                  <span style={{ flex: 1, fontSize: '14px', fontWeight: ok ? 500 : 400, lineHeight: 1.35 }}>
+                    {ok ? (
+                      <>
+                        {st.value}
+                        {st.prefilled && <PrefilledTag fr={fr} />}
+                      </>
+                    ) : (
+                      <span style={{ color: '#9C8248' }}>
+                        <span style={{
+                          display: 'inline-block', width: '6px', height: '6px',
+                          borderRadius: '50%', background: 'var(--gold)',
+                          marginRight: '6px', verticalAlign: '1px',
+                        }} />
+                        {st.gap}
+                      </span>
+                    )}
+                  </span>
+                  <SheetChevron />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      {flow.recipeGenerated && (
+        <button onClick={onBackToRecipe} style={{
+          ...NEXT_CTA, background: 'var(--warm)', color: 'var(--ash)',
+          border: '1px solid var(--border)', boxShadow: 'none',
+          fontSize: '14px', fontWeight: 600, marginTop: '22px',
+        }}>
+          {fr ? 'Retour à la recette' : 'Back to recipe'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+const reviewKeyStyle: React.CSSProperties = {
+  fontSize: '12px', color: 'var(--smoke)', flex: '0 0 84px',
+  textAlign: 'left', fontFamily: 'var(--font-ui)',
+};
 
 const sheetRowStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
@@ -826,6 +1041,11 @@ export default function Home() {
   // Auth
   const [user, setUser] = useState<User | null>(null);
   const [reviewMode, setReviewMode] = useState(false);
+  // Distinct from reviewMode. reviewMode means "any step may be edited" and
+  // is switched on by session restore and by the scheduler jump too; hanging
+  // the overview screen off it would have hidden the step those paths scroll
+  // to. This flag means only: show the overview instead of the step pages.
+  const [setupOverview, setSetupOverview] = useState(false);
   // Set when the baker taps the "X isn't set" CTA on the last page, so the
   // page they land on can offer the way back instead of stranding them.
   const [gapReturnTo, setGapReturnTo] = useState<number | null>(null);
@@ -878,6 +1098,9 @@ export default function Home() {
 
   // P6 — Active tab in two-tab layout
   const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide' | 'pizzaparty'>('setup');
+  // The overview is a destination, not a mode: leaving Setup by any route
+  // closes it, so the tab strip never drops the baker onto it unannounced.
+  useEffect(() => { if (activeTab !== 'setup') setSetupOverview(false); }, [activeTab]);
   const [pizzaPartyTab, setPizzaPartyTab] = useState<'pick' | 'shop' | 'prep' | 'bake'>('pick');
   const [navHidden, setNavHidden] = useState(false);
   const lastScrollY = useRef(0);
@@ -2131,18 +2354,18 @@ export default function Home() {
   };
   const fr = locale === 'fr';
   const SIMPLE_STEPS: StepDef[] = [
-    { id: 1, chip: fr ? 'Style' : 'Style', title: t('steps.2.title'),
+    { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: t('steps.2.title'),
       value: styleKey ? styleDisplayName(styleKey) : null,
       // "Classic Neapolitan" and "New York Style" carry a qualifier the baker
       // does not need re-read on a summary line.
       short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
-    { id: 2, chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
+    { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
       value: `${numItems} × ${itemWeight} g`, prefilled: true,
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
     // Oven and mixing are one page: same nature (your kitchen, not your
     // dough), both single-choice, both remembered by the profile.
-    { id: 3, chip: fr ? 'Équipement' : 'Equipment', title: fr ? 'Votre matériel' : 'Your equipment',
+    { id: 3, group: 'kitchen', chip: fr ? 'Équipement' : 'Equipment', title: fr ? 'Votre matériel' : 'Your equipment',
       value: (ovenType && mixerType)
         ? `${localName(ovenData)} · ${localName(MIXER_TYPES[mixerType])}`
         : null,
@@ -2150,10 +2373,10 @@ export default function Home() {
       short: (ovenType && mixerType) ? localName(ovenData) : null,
       prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
-    { id: 4, chip: fr ? 'Climat' : 'Climate', title: t('steps.5.title'),
+    { id: 4, group: 'kitchen', chip: fr ? 'Climat' : 'Climate', title: t('steps.5.title'),
       value: `${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`, prefilled: true,
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
-    { id: 6, chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
+    { id: 6, group: 'dough', chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
       value: yeastType ? localName(YEAST_TYPES[yeastType]) : null,
       short: yeastType
         ? ({ idy: 'IDY', ady: 'ADY', fresh: fr ? 'Fraîche' : 'Fresh', sourdough: fr ? 'Levain' : 'Sourdough' } as Record<string, string>)[yeastType]
@@ -2161,7 +2384,7 @@ export default function Home() {
         : null,
       prefilled: profileFields.has('yeast'),
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
-    { id: 7, chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
+    { id: 7, group: 'plan', chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
       value: eatTime
         ? `${formatTime(startTime, locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
         : null,
@@ -2180,18 +2403,18 @@ export default function Home() {
     return `${flourBlend.ratio1}% ${f1} + ${f2raw.replace(/^\d+%\s*/, '')}`;
   };
   const CUSTOM_STEPS: StepDef[] = ([
-    { id: 1, chip: fr ? 'Style' : 'Style', title: t('steps.2.title'),
+    { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: t('steps.2.title'),
       value: styleKey ? styleDisplayName(styleKey) : null,
       // "Classic Neapolitan" and "New York Style" carry a qualifier the baker
       // does not need re-read on a summary line.
       short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
-    { id: 2, chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
+    { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
       value: `${numItems} × ${itemWeight} g`, prefilled: true,
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
     // Oven and mixing are one page: same nature (your kitchen, not your
     // dough), both single-choice, both remembered by the profile.
-    { id: 3, chip: fr ? 'Équipement' : 'Equipment', title: fr ? 'Votre matériel' : 'Your equipment',
+    { id: 3, group: 'kitchen', chip: fr ? 'Équipement' : 'Equipment', title: fr ? 'Votre matériel' : 'Your equipment',
       value: (ovenType && mixerType)
         ? `${localName(ovenData)} · ${localName(MIXER_TYPES[mixerType])}`
         : null,
@@ -2199,13 +2422,13 @@ export default function Home() {
       short: (ovenType && mixerType) ? localName(ovenData) : null,
       prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
-    { id: 4, chip: fr ? 'Climat' : 'Climate', title: t('steps.5.title'),
+    { id: 4, group: 'kitchen', chip: fr ? 'Climat' : 'Climate', title: t('steps.5.title'),
       value: `${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`, prefilled: true,
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
-    { id: 6, chip: fr ? 'Farine' : 'Flour', title: t('steps.flour.title'),
+    { id: 6, group: 'dough', chip: fr ? 'Farine' : 'Flour', title: t('steps.flour.title'),
       value: flourSummary(), prefilled: true,
       gap: fr ? 'La farine n\u2019est pas confirmée' : 'Flour not confirmed' },
-    { id: 7, chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
+    { id: 7, group: 'dough', chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
       value: yeastType ? localName(YEAST_TYPES[yeastType]) : null,
       short: yeastType
         ? ({ idy: 'IDY', ady: 'ADY', fresh: fr ? 'Fraîche' : 'Fresh', sourdough: fr ? 'Levain' : 'Sourdough' } as Record<string, string>)[yeastType]
@@ -2214,17 +2437,17 @@ export default function Home() {
       prefilled: profileFields.has('yeast'),
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
     ...(yeastType !== 'sourdough' ? [{
-      id: 8, chip: fr ? 'Préferment' : 'Preferment', title: t('preferment.stepTitle'),
+      id: 8, group: 'dough', chip: fr ? 'Préferment' : 'Preferment', title: t('preferment.stepTitle'),
       value: prefermentType !== 'none' ? localName(PREFERMENT_TYPES[prefermentType]) : t('preferment.direct'),
       prefilled: true,
       gap: fr ? 'Le préferment n\u2019est pas confirmé' : 'Preferment not confirmed',
     } as StepDef] : []),
-    { id: 9, chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
+    { id: 9, group: 'plan', chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
       value: eatTime
         ? `${formatTime(startTime, locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
         : null,
       gap: fr ? 'L\u2019heure de cuisson n\u2019est pas choisie' : 'No bake time chosen yet' },
-    { id: 10, chip: fr ? 'Peaufiner' : 'Fine-tune', title: t('dialIn.title'),
+    { id: 10, group: 'making', chip: fr ? 'Peaufiner' : 'Fine-tune', title: t('dialIn.title'),
       value: manualHydration !== undefined
         ? `${manualHydration}% ${t('dialIn.hydrationSuffix')}`
         : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : null,
@@ -3111,7 +3334,18 @@ export default function Home() {
                    bar at zero is a discouraging way to greet someone. ── */}
             <SummaryBar flow={simpleFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62}
               modeChip={{ value: t('modeCards.simple.title'), onClick: () => setModeChosen(false) }} />
-            <div ref={simpleSwipeRef}>
+            {/* Back from the recipe lands here, not on whichever step
+                was open when they left. "Back" after a recipe exists
+                means "what did I choose", not "where was I typing". */}
+            {setupOverview && (
+              <SetupReview
+                flow={simpleFlow}
+                modeChip={{ value: t('modeCards.simple.title'), onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
+                onJump={id => { setSetupOverview(false); simpleFlow.onJump(id); }}
+                onBackToRecipe={() => { setSetupOverview(false); setActiveTab('plan'); }}
+              />
+            )}
+            <div ref={simpleSwipeRef} style={{ display: setupOverview ? 'none' : undefined }}>
 
             {/* ─── STEP 1: Style picker ────────────── */}
             <StepPage flow={simpleFlow} id={1}>
@@ -3428,7 +3662,7 @@ export default function Home() {
 
                           <RecipeOutput
                             ovenType={ovenType}
-                            onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
+                            onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); setSetupOverview(true); }}
                             onOpenGuide={() => setActiveTab('guide')}
                             onShare={shareCurrentSession}
                             result={displayRecipe ?? recipe}
@@ -3524,7 +3758,7 @@ export default function Home() {
                 <div style={{ marginTop: '12px' }}>
                   <PlanNav
                     variant="cta"
-                    onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
+                    onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); setSetupOverview(true); }}
                     onOpenGuide={() => setActiveTab('guide')}
                     onShare={shareCurrentSession}
                   />
@@ -3677,7 +3911,18 @@ export default function Home() {
                    bar at zero is a discouraging way to greet someone. ── */}
             <SummaryBar flow={customFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62}
               modeChip={{ value: t('modeCards.custom.title'), onClick: () => setModeChosen(false) }} />
-            <div ref={customSwipeRef}>
+            {/* Back from the recipe lands here, not on whichever step
+                was open when they left. "Back" after a recipe exists
+                means "what did I choose", not "where was I typing". */}
+            {setupOverview && (
+              <SetupReview
+                flow={customFlow}
+                modeChip={{ value: t('modeCards.custom.title'), onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
+                onJump={id => { setSetupOverview(false); customFlow.onJump(id); }}
+                onBackToRecipe={() => { setSetupOverview(false); setActiveTab('plan'); }}
+              />
+            )}
+            <div ref={customSwipeRef} style={{ display: setupOverview ? 'none' : undefined }}>
 
             {/* ─── ADV STEP 1: Style picker ────────── */}
             <StepPage flow={customFlow} id={1}>
@@ -4443,7 +4688,7 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                           <RecipeOutput
                             ovenType={ovenType}
-                            onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
+                            onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); setSetupOverview(true); }}
                             onOpenGuide={() => setActiveTab('guide')}
                             onShare={shareCurrentSession}
                             result={advancedDisplayRecipe ?? advancedRecipe}
@@ -4543,7 +4788,7 @@ export default function Home() {
                 <div style={{ marginTop: '12px' }}>
                   <PlanNav
                     variant="cta"
-                    onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); }}
+                    onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); setSetupOverview(true); }}
                     onOpenGuide={() => setActiveTab('guide')}
                     onShare={shareCurrentSession}
                   />
