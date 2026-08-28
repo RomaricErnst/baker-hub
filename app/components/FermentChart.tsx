@@ -697,6 +697,8 @@ export default function FermentChart({
     prefZoneTo   = hasPref ? effectiveMixHBF + 3 : 0;
   }
 
+  const bakeMs = eatTime.getTime();
+
   // ── Visible starter events (sourdough) ───────────────────
   // fridge_in / fridge_out carry no diamond — they are consequences of a
   // step, drawn as the cold casing on the curve and listed as a plain row.
@@ -746,7 +748,6 @@ export default function FermentChart({
   const bakeX = hToX(0, W, WH);
 
   // ── Blocker helpers ──────────────────────────────────────
-  const bakeMs = eatTime.getTime();
 
   // ── Sourdough multi-cycle starter derived values ──────────
   const starterPeakH   = isLevain ? getPrefPeakH_RT('sourdough', kitchenTemp, styleKey) : 0;
