@@ -380,18 +380,25 @@ export const MIXER_TYPES = {
     descFr: 'KitchenAid, Kenwood, Bosch',
     maxHydration: 72,
     kneadMin: 8,
+    // Mixing heat, as a RATE in °C of dough temperature per minute of mixing.
+    // The rise is this times kneadMin, so the app's own mixing instruction is
+    // what sets it — mixing time is the dominant variable, and a rate cannot
+    // be mistaken for a "friction factor" the way a bare number could.
+    //
+    // Rates triangulated across sources, all converted to a true rise first
+    // (published FF is stated for the classic formula, where FF / N is the
+    // real rise):
+    //   King Arthur   stand 7 min, FF 22-24°F -> 0.58-0.63    hand 8 min, FF 6-8°F -> 0.14-0.19
+    //   Hamelman      most mixers, FF 24-28°F -> 0.63-0.74
+    //   Modernist     6-9°C over a ~10 min mix -> 0.60-0.90
+    //   henzwell      planetary 0.69-1.04, spiral 0.42-0.63 (spiral is gentler per minute)
+    //   Perfect Loaf  Ooni spiral -> 0.65-0.74
+    // Migoya's 2°C/min is excluded as an outlier against six other sources.
+    //
+    // Spiral reads hotter than stand overall only because we prescribe a
+    // 14-minute spiral mix against 8 minutes for a stand mixer.
+    frictionRiseCPerMin: 0.60,
     folds: 2,
-    // TRUE dough temperature rise from mixing, in °C — NOT a "friction factor".
-    // Published FF values are stated for the classic formula, where they are
-    // divided by the factor count; FF / N is the real rise. Converted here:
-    //   stand  King Arthur, 7qt KitchenAid, 3 min stir + 4 min speed 2:
-    //          FF 22-24°F / 3 = 4.1-4.4°C. Their own worked bake reproduces
-    //          a measured 78°F exactly at this value.
-    //   hand   King Arthur, 8 min: FF 6-8°F / 3 = 1.1-1.5°C.
-    //   spiral The Perfect Loaf, Ooni Halo Pro: FF 35-40°F / 3 = 6.5-7.4°C.
-    // Anything consuming this must ADD IT WHOLE. Dividing it by three is the
-    // bug that ran every direct dough hot before Aug 2026.
-    frictionRiseC: 4,
     maxDoughG: 1500,
     instructions: 'Speed 1 for 2 min to combine, Speed 2 for 6–8 min until dough clears the bowl.',
   },
@@ -404,8 +411,8 @@ export const MIXER_TYPES = {
     descFr: 'Technique classique',
     maxHydration: 70,
     kneadMin: 10,
+    frictionRiseCPerMin: 0.16,   // King Arthur, 8 min hand knead
     folds: 4,
-    frictionRiseC: 1,
     maxDoughG: 1500,
     instructions: 'Mix until shaggy, rest 20 min (autolyse), then knead 8–10 min until smooth and elastic. Dough passes windowpane test.',
   },
@@ -418,8 +425,8 @@ export const MIXER_TYPES = {
     descFr: 'Le temps fait le travail',
     maxHydration: 100,
     kneadMin: 0,
+    frictionRiseCPerMin: 0,      // a brief stir develops nothing and heats nothing
     folds: 4,
-    frictionRiseC: 0,
     maxDoughG: 3000,
     instructions: 'Mix just until no dry flour remains (~2 min). Time and stretch & folds develop the gluten.',
   },
@@ -432,8 +439,8 @@ export const MIXER_TYPES = {
     descFr: 'Ooni Halo, Famag, Sunmix',
     maxHydration: 100,
     kneadMin: 14,
+    frictionRiseCPerMin: 0.55,   // gentler per minute than a planetary
     folds: 1,
-    frictionRiseC: 7,
     maxDoughG: 5000,
     instructions: '1st speed 3 min, 2nd speed 5–7 min. Handles high hydration effortlessly. In hot kitchens (≥26°C): add ice cubes directly into the mixing bowl with the water — the breaker bar will break them down as mixing progresses. This is the professional technique used in pizzerias in warm climates. Aim for roughly 20–30% ice by weight of your total water. For other mixers use ice-cold water only — ice cubes can damage stand mixer hooks.',
   },

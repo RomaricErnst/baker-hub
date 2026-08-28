@@ -471,6 +471,20 @@ export function prefTempAfterWarmup(
  * at prefTempC. Returns the unclamped ideal and the dough temp actually
  * reachable once the water is clamped to [WATER_TEMP_MIN, WATER_TEMP_MAX].
  */
+/**
+ * Mixing heat for a mixer, in °C of dough temperature rise.
+ *
+ * rate x the mixing time the app itself prescribes. Keeping it derived means
+ * changing a mixing instruction changes the thermal model with it, instead of
+ * the two drifting apart. Returns a TRUE rise, to be ADDED WHOLE — never
+ * divided by a factor count.
+ */
+export function mixerFrictionRiseC(mixerType: MixerType | undefined): number {
+  const m = MIXER_TYPES[mixerType ?? 'hand'];
+  if (!m) return 1.6;   // hand-knead equivalent
+  return m.frictionRiseCPerMin * m.kneadMin;
+}
+
 export function solveWaterTempEnthalpy(p: {
   targetFDT: number; kitchenTemp: number; flourTemp: number; friction: number;
   flourG: number; waterG: number; saltG: number;
@@ -533,7 +547,7 @@ export function requiredPrefWarmupH(o: {
   // midpoint, and a constant rather than a function of the current plan.
   const prefPct = 0.25;
   const targetFDT = o.targetDoughTemp ?? TARGET_FDT[o.styleKey] ?? 24;
-  const friction = MIXER_TYPES[o.mixerType ?? 'hand']?.frictionRiseC ?? 3;
+  const friction = mixerFrictionRiseC(o.mixerType);
 
   const doughTotal = 1000;
   const flourG = doughTotal / (1 + hydPct / 100 + saltPct / 100);
@@ -1056,7 +1070,7 @@ export function calculateRecipe(
   const flourTemp = (mode === 'custom' && flourInFridge)
     ? fridgeTemp
     : kitchenTemp;
-  const frictionRiseC = MIXER_TYPES[mixerType]?.frictionRiseC ?? 3;
+  const frictionRiseC = mixerFrictionRiseC(mixerType);
 
   // Yeast or sourdough
   let yeast: YeastResult | null = null;
