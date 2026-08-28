@@ -1274,41 +1274,25 @@ function SimplePlan({ schedule, isFr, movedNote }: {
   // Same marker vocabulary as the custom-mode plan list: shape carries kind,
   // colour carries curve. Simple mode has no chart and nothing here is
   // editable, so no soft time fields — but the reading is identical.
+  // Setup exists to turn a bake time into a start time, and the recipe falls
+  // out of that. Mix, into the fridge, out of the fridge, final proof and
+  // preheat are all things the baker DOES on the day — they belong to
+  // Protocol, and printing them here made the configuration screen a
+  // read-only rehearsal of a page that already exists.
+  //
+  // What is left is the pair that actually gets set: when the dough starts
+  // and when it bakes. Same two rows Custom shows, same vocabulary.
   type Row = { t: string; s?: string; d: Date; c: string; m: PlanRow['marker'] };
-  const rows: Row[] = [];
-  rows.push({
-    t: isFr ? 'Pétrissage' : 'Mix',
-    s: isFr ? 'puis pointage' : 'then bulk rise',
-    d: schedule.bulkFermStart, c: '#3D5A30', m: 'step',
-  });
-  if (schedule.coldRetardStart && schedule.coldRetardEnd) {
-    rows.push({
-      t: isFr ? 'Au réfrigérateur' : 'Into the fridge',
-      s: `${Math.round(schedule.coldRetardHours)} h`,
-      d: schedule.coldRetardStart, c: '#5B87AD', m: 'step',
-    });
-    rows.push({
-      t: isFr ? 'Sortie du froid' : 'Out of the fridge',
-      s: isFr ? 'retour à température' : 'back to room temperature',
-      d: schedule.coldRetardEnd, c: '#5B87AD', m: 'cold',
-    });
-  }
-  rows.push({
-    t: isFr ? 'Apprêt' : 'Final proof',
-    s: `${schedule.finalProofHours < 1
-      ? `${Math.round(schedule.finalProofHours * 60)} min`
-      : `${Math.round(schedule.finalProofHours * 10) / 10} h`}`,
-    d: schedule.finalProofStart, c: '#9C8248', m: 'step',
-  });
-  rows.push({
-    t: isFr ? 'Préchauffage' : 'Preheat',
-    d: schedule.preheatStart, c: '#8A7F78', m: 'step',
-  });
-  rows.push({
-    t: isFr ? 'Cuisson' : 'Bake',
-    d: schedule.bakeStart, c: '#7A4A22', m: 'bake',
-  });
-
+  const rows: Row[] = [
+    {
+      t: isFr ? 'Début de la pâte' : 'Start dough',
+      d: schedule.bulkFermStart, c: '#3D5A30', m: 'step',
+    },
+    {
+      t: isFr ? 'Cuisson' : 'Bake',
+      d: schedule.bakeStart, c: '#7A4A22', m: 'bake',
+    },
+  ];
   return (
     <div style={{ marginTop: '16px' }}>
       <div style={{ borderTop: '1px solid var(--border)' }}>
