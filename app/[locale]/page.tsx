@@ -379,7 +379,11 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
 
   const total = flow.steps.length + (modeChip ? 1 : 0);
   const count = answered.length + (modeChip ? 1 : 0);
-  const pct   = Math.round((count / Math.max(1, total)) * 100);
+  // No progress rule under the rail. It was the same fact a third time: the
+  // chips say WHICH steps are set, the pin says HOW MANY, and the rule said
+  // how many again as a length — the least informative of the three, since a
+  // bar cannot name a step. The sticky container's own shadow already
+  // separates the bar from the content it floats over.
 
   // A gap the baker has WALKED PAST is different from a step they simply have
   // not reached. Only the first goes gold — otherwise the pin screams warning
@@ -500,9 +504,6 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
             }} />
           </div>
         )}
-        <div style={{ height: '2px', background: '#E2DACD', borderRadius: '2px', marginTop: '8px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${pct}%`, background: '#9C8248', transition: 'width .3s ease' }} />
-        </div>
       </div>
 
       {open && (
