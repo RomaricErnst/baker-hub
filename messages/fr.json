@@ -233,11 +233,7 @@
       "noteHigh": "Territoire haute hydratation. Excellente mie ouverte mais difficile à manipuler."
     },
     "salt": {
-      "veryLow": "Très faible — peut manquer de goût.",
-      "breadRange": "Plage pain — doux.",
-      "classicPizza": "Plage classique pizza.",
-      "fullFlavour": "Bien relevé.",
-      "high": "Élevé — ralentit légèrement la levure."
+      "veryLow": "Très faible — peut manquer de goût."
     },
     "oil": {
       "traditionalHighTemp": "Traditionnel — sans huile. Parfait à haute température (450°C+).",
@@ -261,7 +257,23 @@
     "mixerStand": "sur socle",
     "mixerHand": "à la main",
     "flourFridgeInfo": "La farine froide retire environ 8°C, compensés automatiquement.",
-    "mixingLossInfo": "Une marge pour ce qui reste dans le bol. Les quantités augmentent, le plan ne change pas."
+    "mixingLossInfo": "Une marge pour ce qui reste dans le bol. Les quantités augmentent, le plan ne change pas.",
+    "zone": {
+      "oilBrowning": "dorure",
+      "oilEnriched": "enrichie",
+      "oilNone": "traditionnel",
+      "oilPan": "style pan",
+      "saltClassic": "classique",
+      "saltFlat": "fade",
+      "saltFull": "relevé",
+      "saltMild": "doux",
+      "saltSlows": "ralentit la levure",
+      "sugarBrioche": "niveau brioche",
+      "sugarBrowning": "dorure",
+      "sugarNone": "traditionnel",
+      "sugarSlows": "ralentit la levure",
+      "sugarSubtle": "couleur légère"
+    }
   },
   "preferment": {
     "stepTitle": "Méthode de pré-fermentation",

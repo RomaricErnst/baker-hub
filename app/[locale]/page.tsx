@@ -83,19 +83,23 @@ const CORN_LABELS_FR = ['Fine', 'Classique', 'Généreuse'];
 // no info dot and its own header layout, sugar's "+" had a 8px radius against
 // everyone else's 12px, and only salt showed an inline note.
 //
-// There is no info dot here any more. The guidance is one sentence and it
-// changes as you step, so it is simply shown: a caption that answers the
-// question is better than a target that hides the answer. The note row keeps
-// its reserved height so a longer sentence in one column cannot shove its
-// neighbours.
+// No info dot, and no paragraph either. The guidance is a zone word in the
+// same blue/sage/gold/coral semantics the sliders above already use, so the
+// steppers read the way the rest of the screen does. A full sentence appears
+// only where the value earns one — sugar past 2%, oil in a pizza oven. Both
+// rows keep a reserved height so one column cannot shove its neighbours.
 function PctStepper({
-  label, display, onDec, onInc, reset, note, children,
+  label, display, onDec, onInc, reset, zone, note, children,
 }: {
   label: string;
   display: string;
   onDec: () => void;
   onInc: () => void;
   reset?: { onReset: () => void; label: string };
+  /** One or two words naming where this value sits, in the same colour
+   *  semantics as the sliders above. Always shown. */
+  zone?: { word: string; color: string };
+  /** The exception, not the rule: a sentence only where the value earns one. */
   note?: string;
   children?: React.ReactNode;
 }) {
@@ -135,11 +139,16 @@ function PctStepper({
         }}>{display}</span>
         <button onClick={onInc} style={btn} aria-label="+">+</button>
       </div>
-      {/* Reserved so a note under one column cannot shove its neighbours. */}
       <div style={{
-        fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic',
-        lineHeight: 1.4, marginTop: '4px', minHeight: '17px',
-      }}>{note ?? ''}</div>
+        fontSize: '11px', lineHeight: 1.3, marginTop: '5px', minHeight: '15px',
+        color: zone?.color ?? 'var(--smoke)', fontFamily: 'var(--font-ui)',
+      }}>{zone?.word ?? ''}</div>
+      {note && (
+        <div style={{
+          fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic',
+          lineHeight: 1.4, marginTop: '3px',
+        }}>{note}</div>
+      )}
       {children}
     </div>
   );
@@ -4120,13 +4129,14 @@ export default function Home() {
                           onReset: () => setManualSalt(undefined),
                           label: `${styleSalt}%`,
                         }}
-                        note={
-                          v < 2 ? t('dialIn.salt.veryLow') :
-                          v <= 2.5 ? t('dialIn.salt.breadRange') :
-                          v <= 3 ? t('dialIn.salt.classicPizza') :
-                          v <= 3.2 ? t('dialIn.salt.fullFlavour') :
-                          t('dialIn.salt.high')
+                        zone={
+                          v < 2    ? { word: t('dialIn.zone.saltFlat'),    color: '#A8B8D0' } :
+                          v <= 2.5 ? { word: t('dialIn.zone.saltMild'),    color: '#8BA888' } :
+                          v <= 3   ? { word: t('dialIn.zone.saltClassic'), color: 'var(--sage)' } :
+                          v <= 3.2 ? { word: t('dialIn.zone.saltFull'),    color: '#9C8248' } :
+                                     { word: t('dialIn.zone.saltSlows'),   color: '#9C8248' }
                         }
+                        note={v < 2 ? t('dialIn.salt.veryLow') : undefined}
                       />
                     );
                   })()}
@@ -4144,7 +4154,14 @@ export default function Home() {
                           onReset: () => setManualOil(undefined),
                           label: t('dialIn.none'),
                         }}
-                        note={oilGuidance(v, ovenType ?? '', styleKey ?? '', t)}
+                        zone={
+                          v === 0 ? { word: t('dialIn.zone.oilNone'),     color: 'var(--sage)' } :
+                          v <= 2  ? { word: t('dialIn.zone.oilBrowning'), color: '#8BA888' } :
+                          v <= 5  ? { word: t('dialIn.zone.oilPan'),      color: '#9C8248' } :
+                                    { word: t('dialIn.zone.oilEnriched'), color: '#C4785F' }
+                        }
+                        note={(v > 0 && isHighTemp) ? t('dialIn.oil.highTempNote')
+                          : v > 5 ? t('dialIn.oil.high') : undefined}
                       />
                     );
                   })()}
@@ -4162,7 +4179,14 @@ export default function Home() {
                           onReset: () => setManualSugar(undefined),
                           label: t('dialIn.none'),
                         }}
-                        note={sg.note}
+                        zone={
+                          v === 0 ? { word: t('dialIn.zone.sugarNone'),     color: 'var(--sage)' } :
+                          v <= 1  ? { word: t('dialIn.zone.sugarSubtle'),   color: '#8BA888' } :
+                          v <= 2  ? { word: t('dialIn.zone.sugarBrowning'), color: '#9C8248' } :
+                          v <= 4  ? { word: t('dialIn.zone.sugarSlows'),    color: '#9C8248' } :
+                                    { word: t('dialIn.zone.sugarBrioche'),  color: '#C4785F' }
+                        }
+                        note={v > 2 ? sg.note : undefined}
                       />
                     );
                   })()}
@@ -4190,7 +4214,7 @@ export default function Home() {
                               onReset: () => setTargetDoughTemp(undefined),
                               label: `${styleFDT}°C`,
                             }}
-                            note={t('dialIn.doughTempInfo', {
+                            note={isDefaultDDT ? undefined : t('dialIn.doughTempInfo', {
                               friction: mixerFriction,
                               mixer: t(mixerType === 'spiral' ? 'dialIn.mixerSpiral'
                                 : mixerType === 'stand' ? 'dialIn.mixerStand'
@@ -4228,7 +4252,8 @@ export default function Home() {
                               onReset: () => setWastePct(undefined),
                               label: '1.5%',
                             }}
-                            note={t('dialIn.mixingLossInfo')}
+                            note={wastePct === undefined || wastePct === 1.5
+                              ? undefined : t('dialIn.mixingLossInfo')}
                           />
                         </div>
                       );

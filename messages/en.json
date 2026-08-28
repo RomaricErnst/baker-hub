@@ -233,11 +233,7 @@
       "noteHigh": "High hydration territory. Excellent open crumb but challenging to handle."
     },
     "salt": {
-      "veryLow": "Very low — may taste flat.",
-      "breadRange": "Bread range — mild.",
-      "classicPizza": "Classic pizza range.",
-      "fullFlavour": "Full-flavoured.",
-      "high": "High — slows yeast slightly."
+      "veryLow": "Very low — may taste flat."
     },
     "oil": {
       "traditionalHighTemp": "Traditional — no oil. Works beautifully at high-temp (450°C+).",
@@ -261,7 +257,23 @@
     "mixerStand": "stand",
     "mixerHand": "hand",
     "flourFridgeInfo": "Cold flour removes about 8°C, offset automatically.",
-    "mixingLossInfo": "A buffer for what stays in the bowl. Quantities scale up; the plan does not change."
+    "mixingLossInfo": "A buffer for what stays in the bowl. Quantities scale up; the plan does not change.",
+    "zone": {
+      "oilBrowning": "browning",
+      "oilEnriched": "enriched",
+      "oilNone": "traditional",
+      "oilPan": "pan style",
+      "saltClassic": "classic",
+      "saltFlat": "flat",
+      "saltFull": "full-flavoured",
+      "saltMild": "mild",
+      "saltSlows": "slows yeast",
+      "sugarBrioche": "brioche level",
+      "sugarBrowning": "browning",
+      "sugarNone": "traditional",
+      "sugarSlows": "slows yeast",
+      "sugarSubtle": "subtle colour"
+    }
   },
   "preferment": {
     "stepTitle": "Preferment method",
