@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations, useLocale } from 'next-intl';
 import { type YeastType } from '../data';
@@ -103,22 +103,56 @@ function YeastInfoSheet({ id, onPick, onClose, fr }: {
   // ancestor carrying a transform, and this sits inside the step page, which
   // animates in on translateX — so "fixed" meant fixed to the page, and the
   // sheet painted underneath the summary bar.
-  if (typeof document === 'undefined') return null;
   const y = IDENTIFY(fr).find(v => v.id === id);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  if (typeof document === 'undefined') return null;
   if (!y) return null;
   return createPortal(
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.5)', zIndex: 300 }} />
-      <div style={{
+      <div role="dialog" aria-modal="true" style={{
         position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 301,
         background: 'var(--warm)', borderRadius: '20px 20px 0 0',
         padding: '14px 16px calc(20px + env(safe-area-inset-bottom, 0px))',
         maxHeight: '80vh', overflowY: 'auto',
       }}>
-        <div style={{ width: '38px', height: '4px', borderRadius: '2px', background: '#E0D8CC', margin: '0 auto 12px' }} />
+        {/* The handle closes too — it looks draggable, so a tap on it should
+            do the obvious thing rather than nothing. */}
+        <button
+          onClick={onClose}
+          aria-label={fr ? 'Fermer' : 'Close'}
+          style={{
+            display: 'block', width: '100%', minHeight: '20px', padding: '4px 0 12px',
+            background: 'none', border: 'none', cursor: 'pointer',
+          }}
+        >
+          <span style={{ display: 'block', width: '38px', height: '4px', borderRadius: '2px', background: '#E0D8CC', margin: '0 auto' }} />
+        </button>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '2px' }}>
           <h3 style={{ fontFamily: 'var(--font-ui)', fontSize: '18px', fontWeight: 700, margin: 0 }}>{y.name}</h3>
           <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: '#9C8248' }}>{y.dose}</span>
+          {/* This sheet is reached from the info dot, so most bakers who open
+              it are reading, not choosing. Without a visible way out, the only
+              exit was to pick the yeast they came to read about. */}
+          <button
+            onClick={onClose}
+            aria-label={fr ? 'Fermer' : 'Close'}
+            style={{
+              marginLeft: 'auto', width: '32px', height: '32px', flexShrink: 0,
+              borderRadius: '16px', border: '1px solid var(--border)',
+              background: 'none', cursor: 'pointer', alignSelf: 'center',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+              stroke="var(--smoke)" strokeWidth="1.6" strokeLinecap="round">
+              <path d="M1 1 L11 11 M11 1 L1 11" />
+            </svg>
+          </button>
         </div>
         <p style={{ fontFamily: 'var(--font-ui)', fontSize: '12.5px', color: 'var(--smoke)', margin: '0 0 14px', lineHeight: 1.5 }}>
           {y.look}<br />
