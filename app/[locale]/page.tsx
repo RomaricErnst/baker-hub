@@ -565,7 +565,16 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
 
   let next: React.ReactNode = null;
   if (flow.gapReturn && !isLast) {
-    next = <button onClick={flow.onGapReturn} style={nextStyle}>{fr ? 'Retour au plan →' : 'Back to plan →'}</button>;
+    // Filling one gap should hand the baker straight to the next one. Bouncing
+    // back to the last step to be told what is still missing makes them walk
+    // the same loop once per gap. This step counts as settled the moment they
+    // leave it, so it is excluded when looking for what is next.
+    const lastId = flow.steps[flow.steps.length - 1].id;
+    const found = flow.steps.find(s => s.id !== id && !stepAnswered(s, flow.highestStep, flow.steps));
+    const nextGap = found && found.id !== lastId ? found : undefined;
+    next = nextGap
+      ? <button onClick={flow.onGapReturn} style={missingStyle}>{nextGap.gap} →</button>
+      : <button onClick={flow.onGapReturn} style={nextStyle}>{fr ? 'Retour au plan →' : 'Back to plan →'}</button>;
   } else if (isLast) {
     if (gap) {
       next = <button onClick={() => flow.onGapJump(gap.id)} style={missingStyle}>{gap.gap} →</button>;
@@ -2198,9 +2207,28 @@ export default function Home() {
     // moves past anything, so without this the same step is reported missing
     // for ever and the CTA sends you to the page you just came from.
     onGapReturn: () => {
-      setAdvancedHighestStep(p => Math.max(p, advancedStep + 1));
-      setGapReturnTo(null);
-      setAdvancedStep(CUSTOM_LAST);
+      // Leaving a gap step means the baker has seen it and settled it, so it
+      // counts as answered from here on. `find` returns the FIRST unanswered
+      // step, so everything before it is already answered and raising the
+      // ceiling to reach it cannot silently adopt a step nobody looked at.
+      const settled = Math.max(advancedHighestStep, advancedStep + 1);
+      const found = CUSTOM_STEPS.find(
+        st => st.id !== advancedStep && !stepAnswered(st, settled, CUSTOM_STEPS));
+      // When the next gap IS the last step, that is just going back to the
+      // plan — leaving gapReturnTo set there would strand a stale "back to
+      // plan" button on any step the baker visits afterwards.
+      const nextGap = found && found.id !== CUSTOM_LAST ? found : undefined;
+      if (nextGap) {
+        setAdvancedHighestStep(Math.max(settled, nextGap.id));
+        setAdvancedStep(nextGap.id);   // gapReturnTo stays set: the chain continues
+      } else {
+        // Raise the ceiling to the page we are landing on, as onJump does.
+        // Without it the last step stays unanswered, becomes its own gap, and
+        // its CTA offers to jump to the page it is already showing.
+        setAdvancedHighestStep(Math.max(settled, CUSTOM_LAST));
+        setGapReturnTo(null);
+        setAdvancedStep(CUSTOM_LAST);
+      }
       scrollToStepTop();
     },
   };
@@ -2230,9 +2258,18 @@ export default function Home() {
     recipeGenerated,
     gapReturn: gapReturnTo != null,
     onGapReturn: () => {
-      setHighestStep(p => Math.max(p, activeStep + 1));
-      setGapReturnTo(null);
-      setActiveStep(SIMPLE_LAST);
+      const settled = Math.max(highestStep, activeStep + 1);
+      const found = SIMPLE_STEPS.find(
+        st => st.id !== activeStep && !stepAnswered(st, settled, SIMPLE_STEPS));
+      const nextGap = found && found.id !== SIMPLE_LAST ? found : undefined;
+      if (nextGap) {
+        setHighestStep(Math.max(settled, nextGap.id));
+        setActiveStep(nextGap.id);
+      } else {
+        setHighestStep(Math.max(settled, SIMPLE_LAST));
+        setGapReturnTo(null);
+        setActiveStep(SIMPLE_LAST);
+      }
       scrollToStepTop();
     },
   };
