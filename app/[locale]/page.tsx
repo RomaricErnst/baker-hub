@@ -546,6 +546,47 @@ const NEXT_CTA: React.CSSProperties = {
 };
 
 // ── One step = one page ───────────────────────
+
+// ── Style is not an optional input ───────────────────────────
+// It IS the fermentation biology: Neapolitan is 24h cold + 2h room, Roman is
+// 6h at room temperature and never sees a fridge. Without it there is no
+// dough to schedule, so a plan is not a degraded answer, it is a fabricated
+// one — and it silently rewrites itself the moment a style is picked.
+//
+// Three engines used to disagree about an unset style. The recommender fell
+// back to no cold retard at all, buildSchedule fell back to Neapolitan, and
+// the recipe refused outright. That is how a 4-hour plan appeared under a
+// 26-hour curve. All three now agree: no style, no plan.
+//
+// This is not a new gate. Style is already step 1; the only way to reach the
+// plan without it is jumping backwards. This just makes the plan step honour
+// an order the flow already asserts.
+function NeedsStyleFirst({ fr, onChoose }: { fr: boolean; onChoose: () => void }) {
+  return (
+    <div style={{ padding: '8px 0 4px' }}>
+      <p style={{
+        fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
+        lineHeight: 1.55, margin: '0 0 16px',
+      }}>
+        {fr
+          ? 'Le style décide de la fermentation — une napolitaine passe 24 h au froid, une romaine ne voit jamais le frigo. Choisissez-le et le plan se construit autour.'
+          : 'Your style decides the fermentation — a Neapolitan spends 24h cold, a Roman never sees the fridge. Choose one and the plan builds itself around it.'}
+      </p>
+      <button
+        onClick={onChoose}
+        style={{
+          ...NEXT_CTA,
+          background: 'var(--warm)', color: '#6B4423',
+          border: '1.5px solid #6B4423', boxShadow: 'none',
+          fontFamily: 'var(--font-ui)', fontSize: '14px', fontWeight: 600,
+        }}
+      >
+        {fr ? 'Choisir le style →' : 'Choose your style →'}
+      </button>
+    </div>
+  );
+}
+
 function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children: React.ReactNode }) {
   if (flow.activeId !== id) return null;
   const idx  = flow.steps.findIndex(s => s.id === id);
@@ -1308,8 +1349,13 @@ export default function Home() {
   const schedule = useMemo(() => {
     if (!eatTime || startTime >= eatTime) return null;
     if (!mixerType) return null;
-    return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey ?? 'neapolitan');
-  }, [startTime, eatTime, blocks, kitchenTemp, preheatMin]);
+    // No style, no schedule. This used to fall back to Neapolitan, which built
+    // a 26-hour curve underneath a recommender that had fallen back to no cold
+    // retard at all — two different doughs on one screen, neither of them the
+    // baker's. The recipe already refused without a style; now everything does.
+    if (!styleKey) return null;
+    return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey);
+  }, [startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey]);
 
   // Preferment start time for Timeline step 0 (poolish/biga only)
   const prefStartTime = useMemo(() => {
@@ -1337,7 +1383,7 @@ export default function Home() {
     const rtWarmupH = requiredPrefWarmupH({
       prefermentType: prefermentType ?? 'none',
       prefInFridge: prefGoesInFridge,
-      styleKey: styleKey ?? 'neapolitan',
+      styleKey: styleKey ?? '',
       kitchenTemp, fridgeTemp,
       mixerType: (mixerType ?? 'hand') as MixerType,
       targetDoughTemp,
@@ -3240,6 +3286,9 @@ export default function Home() {
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
             <StepPage flow={simpleFlow} id={7}>
+              {!styleKey ? (
+                <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
+              ) : (
               <SchedulePicker
                 key={eatTime && !isNaN(eatTime.getTime()) ? eatTime.toISOString() : 'no-bake'}
                 mode="simple"
@@ -3289,6 +3338,7 @@ export default function Home() {
                 tang={tang}
                 onTangChange={setTang}
               />
+              )}
             </StepPage>
 
             {/* Generate now lives in the last page's nav bar (StepPage). */}
@@ -3883,6 +3933,9 @@ export default function Home() {
 
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
             <StepPage flow={customFlow} id={9}>
+              {!styleKey ? (
+                <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
+              ) : (
               <SchedulePicker
                 key={eatTime && !isNaN(eatTime.getTime()) ? eatTime.toISOString() : 'no-bake'}
                 mode="custom"
@@ -3933,6 +3986,7 @@ export default function Home() {
                 tang={tang}
                 onTangChange={setTang}
               />
+              )}
             </StepPage>
 
             {/* ─── ADV STEP 11: Dial your dough ────── */}
