@@ -2416,6 +2416,11 @@ export default function Home() {
       value: eatTime
         ? `${formatTime(startTime, locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
         : null,
+      // The chip gets the bake time alone. Start time and busy windows are
+      // consequences of it — the baker picks when to eat, everything else is
+      // derived — and at full length this one chip was wider than the four
+      // beside it put together.
+      short: eatTime ? formatTime(eatTime, locale) : null,
       gap: fr ? 'L\u2019heure de cuisson n\u2019est pas choisie' : 'No bake time chosen yet' },
   ];
   const SIMPLE_LAST = SIMPLE_STEPS[SIMPLE_STEPS.length - 1].id;
@@ -2474,6 +2479,11 @@ export default function Home() {
       value: eatTime
         ? `${formatTime(startTime, locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
         : null,
+      // The chip gets the bake time alone. Start time and busy windows are
+      // consequences of it — the baker picks when to eat, everything else is
+      // derived — and at full length this one chip was wider than the four
+      // beside it put together.
+      short: eatTime ? formatTime(eatTime, locale) : null,
       gap: fr ? 'L\u2019heure de cuisson n\u2019est pas choisie' : 'No bake time chosen yet' },
     { id: 10, group: 'making', chip: fr ? 'Peaufiner' : 'Fine-tune', title: t('dialIn.title'),
       value: manualHydration !== undefined
