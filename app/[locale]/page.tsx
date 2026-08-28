@@ -569,12 +569,18 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
     // back to the last step to be told what is still missing makes them walk
     // the same loop once per gap. This step counts as settled the moment they
     // leave it, so it is excluded when looking for what is next.
+    // FORWARD ONLY. Searching for any unanswered step and merely excluding
+    // this one lets two genuinely-empty steps hand the baker back and forth
+    // for ever — Style → Yeast → Style. Only ever looking at steps after this
+    // one makes the chain monotonic, so it has to end at the plan.
     const lastId = flow.steps[flow.steps.length - 1].id;
-    const found = flow.steps.find(s => s.id !== id && !stepAnswered(s, flow.highestStep, flow.steps));
+    const found = flow.steps.find(s => s.id > id && !stepAnswered(s, flow.highestStep, flow.steps));
     const nextGap = found && found.id !== lastId ? found : undefined;
     next = nextGap
       ? <button onClick={flow.onGapReturn} style={missingStyle}>{nextGap.gap} →</button>
-      : <button onClick={flow.onGapReturn} style={nextStyle}>{fr ? 'Retour au plan →' : 'Back to plan →'}</button>;
+      : <button onClick={flow.onGapReturn} style={nextStyle}>
+          {fr ? 'Terminer →' : 'Finish →'}
+        </button>;
   } else if (isLast) {
     if (gap) {
       next = <button onClick={() => flow.onGapJump(gap.id)} style={missingStyle}>{gap.gap} →</button>;
@@ -2213,7 +2219,7 @@ export default function Home() {
       // ceiling to reach it cannot silently adopt a step nobody looked at.
       const settled = Math.max(advancedHighestStep, advancedStep + 1);
       const found = CUSTOM_STEPS.find(
-        st => st.id !== advancedStep && !stepAnswered(st, settled, CUSTOM_STEPS));
+        st => st.id > advancedStep && !stepAnswered(st, settled, CUSTOM_STEPS));
       // When the next gap IS the last step, that is just going back to the
       // plan — leaving gapReturnTo set there would strand a stale "back to
       // plan" button on any step the baker visits afterwards.
@@ -2260,7 +2266,7 @@ export default function Home() {
     onGapReturn: () => {
       const settled = Math.max(highestStep, activeStep + 1);
       const found = SIMPLE_STEPS.find(
-        st => st.id !== activeStep && !stepAnswered(st, settled, SIMPLE_STEPS));
+        st => st.id > activeStep && !stepAnswered(st, settled, SIMPLE_STEPS));
       const nextGap = found && found.id !== SIMPLE_LAST ? found : undefined;
       if (nextGap) {
         setHighestStep(Math.max(settled, nextGap.id));
