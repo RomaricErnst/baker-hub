@@ -533,7 +533,7 @@ export function requiredPrefWarmupH(o: {
   // midpoint, and a constant rather than a function of the current plan.
   const prefPct = 0.25;
   const targetFDT = o.targetDoughTemp ?? TARGET_FDT[o.styleKey] ?? 24;
-  const friction = MIXER_TYPES[o.mixerType ?? 'hand']?.frictionFactor ?? 3;
+  const friction = MIXER_TYPES[o.mixerType ?? 'hand']?.frictionRiseC ?? 3;
 
   const doughTotal = 1000;
   const flourG = doughTotal / (1 + hydPct / 100 + saltPct / 100);
@@ -1056,7 +1056,7 @@ export function calculateRecipe(
   const flourTemp = (mode === 'custom' && flourInFridge)
     ? fridgeTemp
     : kitchenTemp;
-  const frictionFactor = MIXER_TYPES[mixerType]?.frictionFactor ?? 3;
+  const frictionRiseC = MIXER_TYPES[mixerType]?.frictionRiseC ?? 3;
 
   // Yeast or sourdough
   let yeast: YeastResult | null = null;
@@ -1150,12 +1150,26 @@ export function calculateRecipe(
     : null;
 
   // ── DDT solve ────────────────────────────────────────────────
-  // No preferment, or a preferment already sitting at room temperature:
-  // the classic 3-factor rule is left EXACTLY as it shipped. Only a COLD
-  // preferment gets the enthalpy treatment, so nothing else can regress.
-  const prefIsCold = !!preferment && prefInFridge
-    && (prefermentType === 'poolish' || prefermentType === 'biga');
-  let waterTemp: number;
+  // ONE model for every dough: an enthalpy balance over the masses actually
+  // in the bowl. The classic 3-factor rule that used to run here is gone.
+  //
+  // Why it had to go. It weights flour, room air and water a third each.
+  // Room air is not in the bowl, and the real thermal split at 60%
+  // hydration is water 58% / flour+salt 42%. Those two errors cancel only
+  // when the room sits near the target dough temperature — the bakery
+  // condition the rule was calibrated in — and they do not cancel in a 30°C
+  // tropical kitchen, which is a case this app exists to get right.
+  //
+  // It also divided the mixer constant by three. That constant is a TRUE
+  // temperature rise (MIXER_TYPES.frictionRiseC, validated against King
+  // Arthur's published measurement), so every direct dough was getting about
+  // a third of the mixing heat it really gets and the water came out warm.
+  //
+  // A preferment is always declared, cold or at room temperature: its water
+  // is locked inside it and is not free water to steer the dough with.
+  const isFlourPref = prefermentType === 'poolish' || prefermentType === 'biga';
+  const prefIsCold = !!preferment && prefInFridge && isFlourPref;
+  let prefTempC = kitchenTemp;
   if (prefIsCold && preferment) {
     const prefHydPct = PREFERMENT_TYPES[prefermentType as PrefermentType].hydration;
     const prefWarmupH = requiredPrefWarmupH({
@@ -1164,21 +1178,18 @@ export function calculateRecipe(
       mixerType,
       targetDoughTemp: mode === 'custom' ? targetDoughTemp : undefined,
     });
-    const prefTempC = prefTempAfterWarmup(
+    prefTempC = prefTempAfterWarmup(
       preferment.prefFlour + preferment.prefWater, prefHydPct,
       fridgeTemp, kitchenTemp, prefWarmupH,
     );
-    waterTemp = solveWaterTempEnthalpy({
-      targetFDT, kitchenTemp, flourTemp, friction: frictionFactor,
-      flourG: flour, waterG: water, saltG: salt,
-      prefFlourG: preferment.prefFlour, prefWaterG: preferment.prefWater,
-      prefTempC,
-    }).waterTemp;
-  } else {
-    waterTemp = Math.max(WATER_TEMP_MIN, Math.min(WATER_TEMP_MAX,
-      targetFDT * 3 - flourTemp - kitchenTemp - frictionFactor
-    ));
   }
+  const waterTemp = solveWaterTempEnthalpy({
+    targetFDT, kitchenTemp, flourTemp, friction: frictionRiseC,
+    flourG: flour, waterG: water, saltG: salt,
+    prefFlourG: preferment && isFlourPref ? preferment.prefFlour : 0,
+    prefWaterG: preferment && isFlourPref ? preferment.prefWater : 0,
+    prefTempC,
+  }).waterTemp;
 
   return {
     flour, water, salt, yeast, sourdough,

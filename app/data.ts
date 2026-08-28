@@ -381,7 +381,17 @@ export const MIXER_TYPES = {
     maxHydration: 72,
     kneadMin: 8,
     folds: 2,
-    frictionFactor: 4,
+    // TRUE dough temperature rise from mixing, in °C — NOT a "friction factor".
+    // Published FF values are stated for the classic formula, where they are
+    // divided by the factor count; FF / N is the real rise. Converted here:
+    //   stand  King Arthur, 7qt KitchenAid, 3 min stir + 4 min speed 2:
+    //          FF 22-24°F / 3 = 4.1-4.4°C. Their own worked bake reproduces
+    //          a measured 78°F exactly at this value.
+    //   hand   King Arthur, 8 min: FF 6-8°F / 3 = 1.1-1.5°C.
+    //   spiral The Perfect Loaf, Ooni Halo Pro: FF 35-40°F / 3 = 6.5-7.4°C.
+    // Anything consuming this must ADD IT WHOLE. Dividing it by three is the
+    // bug that ran every direct dough hot before Aug 2026.
+    frictionRiseC: 4,
     maxDoughG: 1500,
     instructions: 'Speed 1 for 2 min to combine, Speed 2 for 6–8 min until dough clears the bowl.',
   },
@@ -395,7 +405,7 @@ export const MIXER_TYPES = {
     maxHydration: 70,
     kneadMin: 10,
     folds: 4,
-    frictionFactor: 1,
+    frictionRiseC: 1,
     maxDoughG: 1500,
     instructions: 'Mix until shaggy, rest 20 min (autolyse), then knead 8–10 min until smooth and elastic. Dough passes windowpane test.',
   },
@@ -409,7 +419,7 @@ export const MIXER_TYPES = {
     maxHydration: 100,
     kneadMin: 0,
     folds: 4,
-    frictionFactor: 0,
+    frictionRiseC: 0,
     maxDoughG: 3000,
     instructions: 'Mix just until no dry flour remains (~2 min). Time and stretch & folds develop the gluten.',
   },
@@ -423,7 +433,7 @@ export const MIXER_TYPES = {
     maxHydration: 100,
     kneadMin: 14,
     folds: 1,
-    frictionFactor: 7,
+    frictionRiseC: 7,
     maxDoughG: 5000,
     instructions: '1st speed 3 min, 2nd speed 5–7 min. Handles high hydration effortlessly. In hot kitchens (≥26°C): add ice cubes directly into the mixing bowl with the water — the breaker bar will break them down as mixing progresses. This is the professional technique used in pizzerias in warm climates. Aim for roughly 20–30% ice by weight of your total water. For other mixers use ice-cold water only — ice cubes can damage stand mixer hooks.',
   },
