@@ -237,8 +237,7 @@
       "breadRange": "Plage pain — doux.",
       "classicPizza": "Plage classique pizza.",
       "fullFlavour": "Bien relevé.",
-      "high": "Élevé — ralentit légèrement la levure.",
-      "what": "Le sel porte le goût et ralentit la fermentation. La pizza classique se situe entre 2,5 et 3 % ; bien en dessous de 2 %, la pâte fermente plus vite et manque de goût."
+      "high": "Élevé — ralentit légèrement la levure."
     },
     "oil": {
       "traditionalHighTemp": "Traditionnel — sans huile. Parfait à haute température (450°C+).",
@@ -257,12 +256,12 @@
       "high": "Taux élevé (niveau brioche) — la levure standard peut peiner. SAF Gold recommandée."
     },
     "none": "Sans",
-    "doughTempInfo": "+{friction}°C de friction avec le pétrin {mixer}. La farine sortie du frigo retire environ 8°C.",
+    "doughTempInfo": "+{friction}°C avec le pétrin {mixer}, compensés dans l’eau.",
     "mixerSpiral": "spiral",
     "mixerStand": "sur socle",
     "mixerHand": "à la main",
-    "flourFridgeInfo": "La farine froide baisse la température de la pâte — environ 8°C, compensés automatiquement dans la température de l’eau.",
-    "mixingLossInfo": "Une marge pour ce qui reste dans le bol et sur les mains. Le plan ne change pas — seules les quantités augmentent."
+    "flourFridgeInfo": "La farine froide retire environ 8°C, compensés automatiquement.",
+    "mixingLossInfo": "Une marge pour ce qui reste dans le bol. Les quantités augmentent, le plan ne change pas."
   },
   "preferment": {
     "stepTitle": "Méthode de pré-fermentation",
@@ -527,8 +526,7 @@
     "discardQuestion": "Que faire du surplus ?",
     "discardNote1": "Jetez le reste avant de rafraîchir — ou utilisez-le pour des pancakes ou crackers",
     "discardNote2": "Ne jetez jamais tout votre levain — gardez toujours au moins 20–30g.",
-    "starterReadyWhen": "Votre levain est prêt quand :",
-    "yeastTooltip": "Moins de levure, plus de temps — une fermentation longue développe plus de goût."
+    "starterReadyWhen": "Votre levain est prêt quand :"
   },
   "schedulePicker": {
     "startDough": "Commencer la pâte",

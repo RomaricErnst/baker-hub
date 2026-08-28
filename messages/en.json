@@ -237,8 +237,7 @@
       "breadRange": "Bread range — mild.",
       "classicPizza": "Classic pizza range.",
       "fullFlavour": "Full-flavoured.",
-      "high": "High — slows yeast slightly.",
-      "what": "Salt carries the flavour and slows fermentation down. Classic pizza sits at 2.5–3%; much below 2% and the dough ferments faster and tastes flat."
+      "high": "High — slows yeast slightly."
     },
     "oil": {
       "traditionalHighTemp": "Traditional — no oil. Works beautifully at high-temp (450°C+).",
@@ -257,12 +256,12 @@
       "high": "High sugar territory (brioche level) — standard yeast may struggle. SAF Gold recommended."
     },
     "none": "None",
-    "doughTempInfo": "+{friction}°C friction from the {mixer} mixer. Flour from the fridge removes about 8°C.",
+    "doughTempInfo": "+{friction}°C from the {mixer} mixer, offset in the water temperature.",
     "mixerSpiral": "spiral",
     "mixerStand": "stand",
     "mixerHand": "hand",
-    "flourFridgeInfo": "Cold flour lowers the dough temperature — about 8°C, offset automatically in the water temperature.",
-    "mixingLossInfo": "A buffer for what stays in the bowl and on your hands. The schedule is unchanged — only the quantities scale up."
+    "flourFridgeInfo": "Cold flour removes about 8°C, offset automatically.",
+    "mixingLossInfo": "A buffer for what stays in the bowl. Quantities scale up; the plan does not change."
   },
   "preferment": {
     "stepTitle": "Preferment method",
@@ -527,8 +526,7 @@
     "discardQuestion": "What to do with the discard?",
     "discardNote1": "Discard the rest before feeding — or use it for pancakes, crackers or flatbread",
     "discardNote2": "Never throw all your starter away — always keep at least 20–30g.",
-    "starterReadyWhen": "Your starter is ready when:",
-    "yeastTooltip": "Less yeast, more time — a longer fermentation builds deeper flavour."
+    "starterReadyWhen": "Your starter is ready when:"
   },
   "schedulePicker": {
     "startDough": "Start Dough",

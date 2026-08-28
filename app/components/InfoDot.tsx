@@ -1,5 +1,4 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
 
 /**
  * The one info affordance, used everywhere.
@@ -51,77 +50,15 @@ export default function InfoDot({ onClick, label, inline = false }: {
   );
 }
 
-/**
- * The one anchored info popover, used everywhere a dot explains a label.
+/*
+ * InfoPopover lived here. It is gone, and so is every dot that opened one.
  *
- * There were four copies of this markup with identical styling and no shared
- * behaviour: none closed on an outside tap, none closed on Escape, and two
- * could sit open at once because each owned a separate boolean. The only way
- * out was to find the dot again and tap it a second time.
+ * The rule that replaced it: if an explanation is one sentence, show it as a
+ * caption under the control it explains. If it needs more than that, it opens
+ * a sheet. Nothing in between. A floating panel was the worst of both — it
+ * hid a sentence behind a tap, needed positioning maths that two separate
+ * clipping bugs came out of, and made `i` mean three different things
+ * depending on where you tapped it.
  *
- * The dismissal rule across the app, by weight of the thing being dismissed:
- *   popover — outside tap, Escape, or the dot again. No close button: an X on
- *             two lines of context is heavier than the context.
- *   sheet   — an explicit close control, plus backdrop and Escape.
- *
- * Owning the open state here also means opening one closes any other, since
- * the outside-tap listener fires on the one already open.
+ * InfoDot itself stays for the one job left: opening a sheet.
  */
-export function InfoPopover({ label, children, inline = true, warn = false }: {
-  label: string;
-  children: React.ReactNode;
-  inline?: boolean;
-  warn?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const [place, setPlace] = useState<{ up: boolean; right: boolean }>({ up: true, right: false });
-  const ref = useRef<HTMLSpanElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: Event) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('pointerdown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-
-  const toggle = () => {
-    setOpen(o => {
-      if (!o && ref.current) {
-        const r = ref.current.getBoundingClientRect();
-        // Open upward by default, but not off the top; align right when a
-        // 220px panel would otherwise run past the screen edge.
-        setPlace({ up: r.top > 190, right: r.left + 220 > window.innerWidth - 12 });
-      }
-      return !o;
-    });
-  };
-
-  return (
-    <span ref={ref} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-      <InfoDot inline={inline} label={label} onClick={toggle} />
-      {open && (
-        <div
-          role="tooltip"
-          style={{
-            position: 'absolute', zIndex: 40,
-            ...(place.up ? { bottom: 'calc(100% + 6px)' } : { top: 'calc(100% + 6px)' }),
-            ...(place.right ? { right: 0 } : { left: 0 }),
-            background: 'var(--warm)', border: '1px solid var(--border)',
-            borderRadius: '16px', padding: '8px 12px', fontSize: '12px',
-            color: warn ? 'var(--terra)' : '#3D3530', lineHeight: 1.5,
-            minWidth: '180px', maxWidth: '220px', width: 'max-content',
-            fontFamily: 'var(--font-ui)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)',
-            whiteSpace: 'normal', textTransform: 'none', letterSpacing: 'normal',
-          }}
-        >{children}</div>
-      )}
-    </span>
-  );
-}

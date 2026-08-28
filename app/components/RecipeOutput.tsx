@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { InfoPopover } from './InfoDot';
 import { useTranslations, useLocale } from 'next-intl';
 import { type RecipeResult, type YeastResult } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
@@ -69,32 +68,11 @@ const D = {
   sub:    'rgba(240, 235, 224,0.38)',  // secondary / column headers
 };
 
-// ── Yeast / flour tooltips ────────────────────
-// These were two more hand-rolled info marks (13px, against InfoDot's 22px)
-// with a third tooltip style of their own — dark panel, cream text, and
-// pointerEvents:none so the panel could not even be tapped away. Both now go
-// through the shared dot and popover like every other explanation.
-function YeastTooltip() {
-  const t = useTranslations();
-  const locale = useLocale();
-  return (
-    <InfoPopover inline label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}>
-      {t('recipeOutput.yeastTooltip')}
-    </InfoPopover>
-  );
-}
-
-function FlourTooltip({ bakeType }: { bakeType?: string }) {
-  const t = useTranslations();
-  const locale = useLocale();
-  return (
-    <InfoPopover inline label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}>
-      {bakeType === 'bread'
-        ? t('recipeOutput.flourTooltipBread')
-        : t('recipeOutput.flourTooltipPizza')}
-    </InfoPopover>
-  );
-}
+// The yeast and flour info dots lived here. Flour's guidance is actionable
+// ("using plain flour? switch to Custom") and now shows as the row's own
+// caption. Yeast's was a principle rather than a fact about that number —
+// "less yeast, more time" — repeated on two rows of a table you cook from. It
+// belongs with the protocol, not in the ingredient list.
 
 // ── Ingredient row ─────────────────────────────
 function IngRow({
@@ -711,7 +689,11 @@ export default function RecipeOutput({
                 grams={wStr(pf.prefFlour)}
                 noPct
                 highlight
-                sub={mode === 'custom' && flourBlend ? (() => {
+                sub={mode === 'simple'
+              ? (bakeType === 'bread'
+                  ? t('recipeOutput.flourTooltipBread')
+                  : t('recipeOutput.flourTooltipPizza'))
+              : mode === 'custom' && flourBlend ? (() => {
                   const f1 = FLOUR_DATA[flourBlend.flour1];
                   const f1DisplayName = flourBlend.brandProduct ?? f1.name;
                   if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
@@ -727,7 +709,7 @@ export default function RecipeOutput({
                 <IngRow
                   label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{t('recipeOutput.ingredientYeast', {
                     type: pf.prefYeastType ? ((YEAST_TYPES as Record<string, { shortName: string }>)[pf.prefYeastType]?.shortName ?? 'IDY') : 'IDY'
-                  })}<YeastTooltip /></span>}
+                  })}</span>}
                   grams={wStr(pf.prefYeastGrams)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
@@ -871,10 +853,7 @@ export default function RecipeOutput({
           </div>
 
           <IngRow
-            label={mode === 'simple'
-              ? <span style={{ display: 'inline-flex', alignItems: 'center' }}>{t('recipeOutput.ingredientFlour')}<FlourTooltip bakeType={bakeType} /></span>
-              : t('recipeOutput.ingredientFlour')
-            }
+            label={t('recipeOutput.ingredientFlour')}
             grams={wStr(flourMain)}
             pct="100%"
             highlight
@@ -917,10 +896,7 @@ export default function RecipeOutput({
           {yeastInfo && (
             <IngRow
               label={
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  {yeastTypeName}
-                  <YeastTooltip />
-                </span>
+                yeastTypeName
               }
               sub={yeastSub}
               grams={wStr(yeastInfo.convertedGrams)}

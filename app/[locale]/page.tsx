@@ -21,7 +21,6 @@ import { getPrefPeakH_RT } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
 const PizzaParty = dynamic(() => import('../components/PizzaParty'), { ssr: false });
 import FlourPicker from '../components/FlourPicker';
-import InfoDot, { InfoPopover } from '../components/InfoDot';
 import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
@@ -82,18 +81,23 @@ const CORN_LABELS_FR = ['Fine', 'Classique', 'Généreuse'];
 // ── Percentage stepper — salt · oil · sugar ─────────────────
 // One definition. These were three near-copies that drifted apart: salt had
 // no info dot and its own header layout, sugar's "+" had a 8px radius against
-// everyone else's 12px, and only salt showed an inline note. Anything that
-// should differ between them is a prop; anything that shouldn't, can't.
+// everyone else's 12px, and only salt showed an inline note.
+//
+// There is no info dot here any more. The guidance is one sentence and it
+// changes as you step, so it is simply shown: a caption that answers the
+// question is better than a target that hides the answer. The note row keeps
+// its reserved height so a longer sentence in one column cannot shove its
+// neighbours.
 function PctStepper({
-  label, display, onDec, onInc, info, reset, note,
+  label, display, onDec, onInc, reset, note, children,
 }: {
   label: string;
   display: string;
   onDec: () => void;
   onInc: () => void;
-  info?: { content: React.ReactNode; warn?: boolean; learnMore: string };
   reset?: { onReset: () => void; label: string };
   note?: string;
+  children?: React.ReactNode;
 }) {
   const btn: React.CSSProperties = {
     width: '28px', height: '28px', borderRadius: '14px', flexShrink: 0,
@@ -112,9 +116,6 @@ function PctStepper({
           fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase',
           letterSpacing: '.06em', fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap',
         }}>{label}</span>
-        {info && (
-          <InfoPopover inline label={info.learnMore} warn={info.warn}>{info.content}</InfoPopover>
-        )}
         {reset && (
           <button
             onClick={reset.onReset}
@@ -139,6 +140,7 @@ function PctStepper({
         fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic',
         lineHeight: 1.4, marginTop: '4px', minHeight: '17px',
       }}>{note ?? ''}</div>
+      {children}
     </div>
   );
 }
@@ -4099,10 +4101,6 @@ export default function Home() {
                         display={`${v}%`}
                         onDec={() => setManualSalt(Math.max(1.5, Math.round((v - STEP) * 10) / 10))}
                         onInc={() => setManualSalt(Math.min(3.5, Math.round((v + STEP) * 10) / 10))}
-                        info={{
-                          learnMore: locale === 'fr' ? 'En savoir plus' : 'Learn more',
-                          content: t('dialIn.salt.what'),
-                        }}
                         reset={isDefault ? undefined : {
                           onReset: () => setManualSalt(undefined),
                           label: `${styleSalt}%`,
@@ -4127,15 +4125,11 @@ export default function Home() {
                         display={v === 0 ? t('dialIn.none') : `${v}%`}
                         onDec={() => setManualOil(Math.max(0, Math.round((v - STEP) * 10) / 10))}
                         onInc={() => setManualOil(Math.min(10, Math.round((v + STEP) * 10) / 10))}
-                        info={{
-                          learnMore: locale === 'fr' ? 'En savoir plus' : 'Learn more',
-                          content: oilGuidance(v, ovenType ?? '', styleKey ?? '', t),
-                          warn: v > 0 && isHighTemp,
-                        }}
                         reset={v === 0 ? undefined : {
                           onReset: () => setManualOil(undefined),
                           label: t('dialIn.none'),
                         }}
+                        note={oilGuidance(v, ovenType ?? '', styleKey ?? '', t)}
                       />
                     );
                   })()}
@@ -4149,15 +4143,11 @@ export default function Home() {
                         display={v === 0 ? t('dialIn.none') : `${v}%`}
                         onDec={() => setManualSugar(Math.max(0, Math.round((v - STEP) * 10) / 10))}
                         onInc={() => setManualSugar(Math.min(10, Math.round((v + STEP) * 10) / 10))}
-                        info={{
-                          learnMore: locale === 'fr' ? 'En savoir plus' : 'Learn more',
-                          content: sg.note,
-                          warn: sg.warn,
-                        }}
                         reset={v === 0 ? undefined : {
                           onReset: () => setManualSugar(undefined),
                           label: t('dialIn.none'),
                         }}
+                        note={sg.note}
                       />
                     );
                   })()}
@@ -4177,45 +4167,35 @@ export default function Home() {
                       const isDefaultDDT = targetDoughTemp === undefined || targetDoughTemp === styleFDT;
                       return (
                         <div style={{ flex: 1, minWidth: '120px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.doughTemp')}</span>
-                              <InfoPopover inline label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}>
-                                {t('dialIn.doughTempInfo', {
-                                  friction: mixerFriction,
-                                  mixer: t(mixerType === 'spiral' ? 'dialIn.mixerSpiral'
-                                    : mixerType === 'stand' ? 'dialIn.mixerStand'
-                                    : 'dialIn.mixerHand'),
-                                })}
-                              </InfoPopover>
-                            </div>
-                            {!isDefaultDDT && (
-                              <button onClick={() => setTargetDoughTemp(undefined)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textDecoration: 'underline', padding: 0 }}>
-                                ↺ {styleFDT}°C
-                              </button>
-                            )}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
-                            <button onClick={() => setTargetDoughTemp(Math.max(18, v - 1))}
-                              style={{ width: '28px', height: '28px', borderRadius: '14px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '15px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                            <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--char)' }}>{v}°C</span>
-                            <button onClick={() => setTargetDoughTemp(Math.min(28, v + 1))}
-                              style={{ width: '28px', height: '28px', borderRadius: '14px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '15px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
-                          </div>
-                          {/* The dot sits OUTSIDE the label: its panel is a
-                              plain div, and inside a label every tap on that
-                              text would have toggled the checkbox. */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                          <PctStepper
+                            label={t('dialIn.doughTemp')}
+                            display={`${v}°C`}
+                            onDec={() => setTargetDoughTemp(Math.max(18, v - 1))}
+                            onInc={() => setTargetDoughTemp(Math.min(28, v + 1))}
+                            reset={isDefaultDDT ? undefined : {
+                              onReset: () => setTargetDoughTemp(undefined),
+                              label: `${styleFDT}°C`,
+                            }}
+                            note={t('dialIn.doughTempInfo', {
+                              friction: mixerFriction,
+                              mixer: t(mixerType === 'spiral' ? 'dialIn.mixerSpiral'
+                                : mixerType === 'stand' ? 'dialIn.mixerStand'
+                                : 'dialIn.mixerHand'),
+                            })}
+                          >
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '8px' }}>
                               <input type="checkbox" checked={flourInFridge} onChange={e => setFlourInFridge(e.target.checked)}
                                 style={{ width: '13px', height: '13px', cursor: 'pointer', accentColor: 'var(--terra)', flexShrink: 0 }} />
                               <span style={{ fontSize: '12px', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>{t('dialIn.flourInFridge')}</span>
                             </label>
-                            <InfoPopover inline label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}>
-                              {t('dialIn.flourFridgeInfo')}
-                            </InfoPopover>
-                          </div>
+                            {/* Shown only once it applies — an unchecked box
+                                needs no explanation of what checking it does. */}
+                            {flourInFridge && (
+                              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '4px' }}>
+                                {t('dialIn.flourFridgeInfo')}
+                              </div>
+                            )}
+                          </PctStepper>
                         </div>
                       );
                     })()}
@@ -4225,29 +4205,17 @@ export default function Home() {
                       const STEP = 0.5;
                       return (
                         <div style={{ flex: 1, minWidth: '120px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.mixingLoss')}</span>
-                              <InfoPopover inline label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}>
-                                {t('dialIn.mixingLossInfo')}
-                              </InfoPopover>
-                            </div>
-                            {wastePct !== undefined && wastePct !== 1.5 && (
-                              <button onClick={() => setWastePct(undefined)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textDecoration: 'underline', padding: 0 }}>
-                                ↺ 1.5%
-                              </button>
-                            )}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <button onClick={() => setWastePct(Math.max(0, Math.round((v - STEP) * 10) / 10))}
-                              style={{ width: '28px', height: '28px', borderRadius: '14px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '15px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                            <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--char)' }}>
-                              {wastePct === 0 ? 'None' : `${v}%`}
-                            </span>
-                            <button onClick={() => setWastePct(Math.min(5, Math.round((v + STEP) * 10) / 10))}
-                              style={{ width: '28px', height: '28px', borderRadius: '14px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '15px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
-                          </div>
+                          <PctStepper
+                            label={t('dialIn.mixingLoss')}
+                            display={wastePct === 0 ? t('dialIn.none') : `${v}%`}
+                            onDec={() => setWastePct(Math.max(0, Math.round((v - STEP) * 10) / 10))}
+                            onInc={() => setWastePct(Math.min(5, Math.round((v + STEP) * 10) / 10))}
+                            reset={wastePct === undefined || wastePct === 1.5 ? undefined : {
+                              onReset: () => setWastePct(undefined),
+                              label: '1.5%',
+                            }}
+                            note={t('dialIn.mixingLossInfo')}
+                          />
                         </div>
                       );
                     })()}

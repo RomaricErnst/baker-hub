@@ -2,7 +2,6 @@
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH } from '../utils';
-import { InfoPopover } from './InfoDot';
 import FermentChart, { getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 
 export type StarterEventKind =
@@ -6173,11 +6172,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       <div style={{ ...STARTER_LABEL_STYLE, marginBottom: 0 }}>
                         {isFr ? 'Ratio du dernier nourrissage' : 'Last feed ratio'}
                       </div>
-                      <InfoPopover inline label={isFr ? 'En savoir plus' : 'Learn more'}>
-                        {isFr
-                          ? "Levain : eau : farine. Le ratio que vous avez utilisé la dernière fois — aide à dessiner la courbe historique correctement."
-                          : 'Starter : water : flour. The ratio you used for your last feed — helps draw the historical curve correctly.'}
-                      </InfoPopover>
+                    </div>
+                    {/* Shown, not hidden behind a dot: it is one line, and it
+                        answers the question the label raises. */}
+                    <div style={{ fontSize: '11.5px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.45, marginBottom: '8px' }}>
+                      {isFr
+                        ? "Levain : eau : farine. Le ratio de votre dernier rafraîchi — il place la courbe historique."
+                        : 'Starter : water : flour. The ratio of your last feed — it places the historical curve.'}
                     </div>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       {([1, 2, 4, 5, 10] as const).map(r => (
@@ -6222,11 +6223,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   <div style={{ ...STARTER_LABEL_STYLE, marginBottom: 0 }}>
                     {isFr ? 'Ratio pour cette fournée' : 'Feed ratio for this bake'}
                   </div>
-                  <InfoPopover inline label={isFr ? 'En savoir plus' : 'Learn more'}>
-                    {isFr
-                      ? "On peut suggérer un ratio plus fort ou plus léger pour que le rafraîchi et le pétrissage évitent vos heures bloquées — même levain, juste un timing qui s'adapte à votre journée."
-                      : 'We may suggest a stronger or lighter feed so your refresh and mix times avoid your blocked hours — same starter, just timed to fit your day.'}
-                  </InfoPopover>
+                </div>
+                <div style={{ fontSize: '11.5px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.45 }}>
+                  {isFr
+                    ? "Un rafraîchi plus fort ou plus léger peut décaler le pétrissage hors de vos heures bloquées — même levain, autre timing."
+                    : 'A stronger or lighter feed can move your mix out of your blocked hours — same starter, different timing.'}
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {([
