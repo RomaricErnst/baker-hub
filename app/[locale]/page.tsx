@@ -3051,7 +3051,21 @@ export default function Home() {
                   return (
                     <button
                       key={s.key}
-                      onClick={() => !s.locked && setActiveTab(s.key)}
+                      onClick={() => {
+                        if (s.locked) return;
+                        // Reaching Setup from here means the same thing as
+                        // reaching it from the recipe: "what did I choose".
+                        // It landed on whichever step happened to be open,
+                        // which is the problem the overview was built for.
+                        if (s.key === 'setup' && recipeGenerated) {
+                          // Same pair the recipe's own back control sets:
+                          // reviewMode frees every step for editing, the
+                          // overview is what gets shown.
+                          setReviewMode(true);
+                          setSetupOverview(true);
+                        }
+                        setActiveTab(s.key);
+                      }}
                       style={{
                         background: 'none', border: 'none', cursor: s.locked ? 'default' : 'pointer',
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
@@ -3066,10 +3080,19 @@ export default function Home() {
                         border: `2px solid ${dot}`, boxShadow: '0 0 0 3px var(--cream)',
                         flexShrink: 0,
                       }} />
+                      {/* Reachable phases wear an underline. Without it the
+                          row reads as a progress readout — three dots and
+                          three words — and nobody tries tapping a readout.
+                          Locked ones stay plain, which is honest: they are
+                          not links yet. */}
                       <span style={{
                         fontSize: '11px', lineHeight: 1.15, color: labelColor,
                         fontWeight: isActive ? 700 : 400, fontFamily: 'var(--font-ui)',
                         textAlign: 'center',
+                        textDecoration: s.locked || isActive ? 'none' : 'underline',
+                        textDecorationColor: '#D3C9B8',
+                        textUnderlineOffset: '3px',
+                        textDecorationThickness: '1px',
                       }}>{s.label}</span>
                     </button>
                   );
@@ -3181,10 +3204,19 @@ export default function Home() {
                         border: `2px solid ${dot}`, boxShadow: '0 0 0 3px var(--cream)',
                         flexShrink: 0,
                       }} />
+                      {/* Reachable phases wear an underline. Without it the
+                          row reads as a progress readout — three dots and
+                          three words — and nobody tries tapping a readout.
+                          Locked ones stay plain, which is honest: they are
+                          not links yet. */}
                       <span style={{
                         fontSize: '11px', lineHeight: 1.15, color: labelColor,
                         fontWeight: isActive ? 700 : 400, fontFamily: 'var(--font-ui)',
                         textAlign: 'center',
+                        textDecoration: s.locked || isActive ? 'none' : 'underline',
+                        textDecorationColor: '#D3C9B8',
+                        textUnderlineOffset: '3px',
+                        textDecorationThickness: '1px',
                       }}>{s.label}</span>
                     </button>
                   );
@@ -3857,6 +3889,22 @@ export default function Home() {
                     </button>
                   </div>
                 )}
+                {/* Protocol is the end of the line and had no way out but the
+                    stepper at the very top of a long page. Every other tab
+                    carries its own return; this one just never got one. */}
+                <button
+                  onClick={() => setActiveTab('plan')}
+                  style={{
+                    display: 'block', width: '100%', marginTop: '18px',
+                    background: 'var(--warm)', color: 'var(--ash)',
+                    border: '1px solid var(--border)', borderRadius: '12px',
+                    padding: '13px 18px', fontFamily: 'var(--font-ui)',
+                    fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                    minHeight: '44px',
+                  }}
+                >
+                  {locale === 'fr' ? '← Retour à la recette' : '← Back to recipe'}
+                </button>
                 </>
 
               )}
@@ -4887,6 +4935,22 @@ export default function Home() {
                     </button>
                   </div>
                 )}
+                {/* Protocol is the end of the line and had no way out but the
+                    stepper at the very top of a long page. Every other tab
+                    carries its own return; this one just never got one. */}
+                <button
+                  onClick={() => setActiveTab('plan')}
+                  style={{
+                    display: 'block', width: '100%', marginTop: '18px',
+                    background: 'var(--warm)', color: 'var(--ash)',
+                    border: '1px solid var(--border)', borderRadius: '12px',
+                    padding: '13px 18px', fontFamily: 'var(--font-ui)',
+                    fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                    minHeight: '44px',
+                  }}
+                >
+                  {locale === 'fr' ? '← Retour à la recette' : '← Back to recipe'}
+                </button>
                 </>
 
               )}
