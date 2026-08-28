@@ -79,19 +79,20 @@ const TOP_PAD   = 30;   // plot top — busy columns and the tallest bell start 
 const MAXH      = 110;  // max bell height (fits within TOP_PAD to BL)
 const BL        = 140;  // baseline
 const AXIS_Y    = 140;  // axis line = same as baseline BL
-const CHART_H   = 164;  // baseline + now tick + day-name row
+const CHART_H   = 182;  // baseline + diamond + now tick + day-name row
 
 // Diamond labels now sit ABOVE the axis (over the curves, with a cream halo),
 // so there are no label rows below the axis to make room for.
-const LABEL_Y      = BL - 17;  // lane 0
-const LABEL_LANE_H = 14;       // lane 1 sits this much higher
+const LABEL_Y      = BL - 22;  // lane 0 — clears the taller diamond
+const LABEL_LANE_H = 16;       // lane 1 sits this much higher
 
 // DOUGH_SIG and DOUGH_SWEET_CENTER are computed inside the component
 // based on hasColdRetard — see derived physics section
 
-// Diamond half-diagonal. Matches the settled prototype's marker size once its
-// 320-unit viewBox is scaled to a 360px phone (21.2 units ≈ 24px across).
-const S = 12;
+// Diamond half-diagonal — 30px across. Larger than both the prototype (~24px
+// at 360) and the old chart (26px): these are drag targets as well as marks,
+// and at 24px they read as decoration rather than something to grab.
+const S = 15;
 
 // Cold casing drawn behind a curve wherever that curve is in the fridge.
 const COLD_STROKE = '#5B87AD';
@@ -208,7 +209,7 @@ interface PackIn  { x: number; text: string; color: string; key: string; dim: bo
   anchor?: boolean }
 interface PackOut extends PackIn { lane: number }
 function packLabels(items: PackIn[], W: number): PackOut[] {
-  const CW = 6.2;   // DM Mono 10px ≈ 6.2px/char
+  const CW = 7.4;   // DM Mono 12px ≈ 7.4px/char
   const GAP = 5;
   const out: PackOut[] = [];
   const lanes: Array<Array<[number, number]>> = [[], []];
@@ -1061,11 +1062,11 @@ export default function FermentChart({
             busy layer is on OR whenever that step is in focus, so the
             conflict is never invisible. */}
         {warn && (L.busy || focused) && (
-          <circle cx={cx} cy={BL} r={12} fill="none"
-            stroke="#9A7010" strokeWidth={1.2} strokeDasharray="2.5 2.5" opacity={op} />
+          <circle cx={cx} cy={BL} r={15} fill="none"
+            stroke="#9A7010" strokeWidth={1.3} strokeDasharray="2.5 2.5" opacity={op} />
         )}
         {focused && (
-          <circle cx={cx} cy={BL} r={15} fill="none" stroke={fill} strokeWidth={1.5} opacity={0.4} />
+          <circle cx={cx} cy={BL} r={19} fill="none" stroke={fill} strokeWidth={1.5} opacity={0.4} />
         )}
         <polygon
           points={`${cx},${BL - size} ${cx + size},${BL} ${cx},${BL + size} ${cx - size},${BL}`}
@@ -1734,9 +1735,9 @@ export default function FermentChart({
           const nx = hToX(nowHBF, W, WH);
           return (
             <g pointerEvents="none">
-              <polygon points={`${nx - 4},${AXIS_Y + 6} ${nx + 4},${AXIS_Y + 6} ${nx},${AXIS_Y + 0.5}`}
+              <polygon points={`${nx - 5},${AXIS_Y + 24} ${nx + 5},${AXIS_Y + 24} ${nx},${AXIS_Y + 17}`}
                 fill="#9A9089" />
-              <text x={nx} y={AXIS_Y + 16} fontSize={8} fill="#9A9089"
+              <text x={nx} y={AXIS_Y + 36} fontSize={10} fill="#9A9089"
                 fontFamily="DM Mono, monospace" textAnchor="middle"
                 letterSpacing=".08em">{t('nowLabel')}</text>
             </g>
@@ -1748,7 +1749,7 @@ export default function FermentChart({
              caption is dropped, not overlapped. ── */}
         {(() => {
           const nowX = (nowHBF > 0 && nowHBF < WH) ? hToX(nowHBF, W, WH) : null;
-          const nowHalf = (t('nowLabel').length * 4.4) / 2;
+          const nowHalf = (t('nowLabel').length * 5.6) / 2;
           return days.map((d, i) => {
             const labelX = d.x + 4;
             const clash = nowX !== null
@@ -1756,11 +1757,11 @@ export default function FermentChart({
             return (
               <g key={i} pointerEvents="none">
                 {d.dividerX !== null && (
-                  <line x1={d.dividerX} y1={AXIS_Y - 2} x2={d.dividerX} y2={AXIS_Y + 4}
+                  <line x1={d.dividerX} y1={AXIS_Y - 2} x2={d.dividerX} y2={AXIS_Y + 22}
                     stroke="#C9BEAC" strokeWidth={1} />
                 )}
                 {!clash && labelX < W - PAD - 22 && (
-                  <text x={labelX} y={AXIS_Y + 16} fontSize={9.5} fill="var(--smoke)"
+                  <text x={labelX} y={AXIS_Y + 36} fontSize={11} fill="var(--smoke)"
                     fontFamily="DM Mono, monospace" letterSpacing=".06em">{d.name}</text>
                 )}
               </g>
@@ -1770,11 +1771,11 @@ export default function FermentChart({
 
         {/* ── Bake marker (downward triangle sitting on the baseline) ── */}
         <polygon
-          points={`${bakeX - 7.5},${BL - 10} ${bakeX + 7.5},${BL - 10} ${bakeX},${BL + 2.5}`}
+          points={`${bakeX - 9.5},${BL - 13} ${bakeX + 9.5},${BL - 13} ${bakeX},${BL + 3}`}
           fill={TERRA} opacity={opacityFor('bake')}
         />
         {focusId === 'bake' && (
-          <circle cx={bakeX} cy={BL} r={15} fill="none" stroke={TERRA} strokeWidth={1.5} opacity={0.4} />
+          <circle cx={bakeX} cy={BL} r={19} fill="none" stroke={TERRA} strokeWidth={1.5} opacity={0.4} />
         )}
 
         {/* ── Event-driven diamonds (sourdough) ──────────────
@@ -1795,11 +1796,11 @@ export default function FermentChart({
             <g key={`ev-diamond-${idx}`} pointerEvents={ev.isDraggable ? 'auto' : 'none'}
                opacity={opacityFor(id)}>
               {inBusyWindow && (L.busy || focused) && (
-                <circle cx={x} cy={AXIS_Y} r={12} fill="none"
-                  stroke="#9A7010" strokeWidth={1.2} strokeDasharray="2.5 2.5" />
+                <circle cx={x} cy={AXIS_Y} r={15} fill="none"
+                  stroke="#9A7010" strokeWidth={1.3} strokeDasharray="2.5 2.5" />
               )}
               {focused && (
-                <circle cx={x} cy={AXIS_Y} r={15} fill="none" stroke={fill}
+                <circle cx={x} cy={AXIS_Y} r={19} fill="none" stroke={fill}
                   strokeWidth={1.5} opacity={0.4} />
               )}
               <polygon
@@ -1999,7 +2000,7 @@ export default function FermentChart({
             key={l.key}
             x={l.x}
             y={LABEL_Y - l.lane * LABEL_LANE_H}
-            fontSize={10}
+            fontSize={12}
             fontWeight={500}
             fill={l.color}
             opacity={l.dim ? 0.4 : 1}

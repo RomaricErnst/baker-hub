@@ -237,7 +237,8 @@
       "breadRange": "Plage pain — doux.",
       "classicPizza": "Plage classique pizza.",
       "fullFlavour": "Bien relevé.",
-      "high": "Élevé — ralentit légèrement la levure."
+      "high": "Élevé — ralentit légèrement la levure.",
+      "what": "Le sel porte le goût et ralentit la fermentation. La pizza classique se situe entre 2,5 et 3 % ; bien en dessous de 2 %, la pâte fermente plus vite et manque de goût."
     },
     "oil": {
       "traditionalHighTemp": "Traditionnel — sans huile. Parfait à haute température (450°C+).",
@@ -254,7 +255,8 @@
       "noticeable": "Douceur perceptible et bonne coloration. Adapté aux styles enrichis.",
       "osmotic": "Au-delà de 2%, le sucre crée un stress osmotique sur la levure — ajoutez 10% de levure en plus.",
       "high": "Taux élevé (niveau brioche) — la levure standard peut peiner. SAF Gold recommandée."
-    }
+    },
+    "none": "Sans"
   },
   "preferment": {
     "stepTitle": "Méthode de pré-fermentation",
@@ -569,8 +571,6 @@
     "prefTooShortTime": "Pas assez de temps — pâte directe recommandée",
     "prefInFridgeReady": "Au frigo — prêt au démarrage",
     "prefReadyWhenDoughStarts": "Prêt au démarrage de la pâte",
-    "eyebrowRecommended": "PLAN DE FERMENTATION RECOMMANDÉ",
-    "eyebrowYours": "VOTRE PLAN DE FERMENTATION",
     "bakeRow": "Cuisson",
     "outOfFridge": "Sortie du frigo · après {hours}h au froid",
     "nowPrefix": "Maintenant",

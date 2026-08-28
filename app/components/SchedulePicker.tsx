@@ -1271,23 +1271,26 @@ function SimplePlan({ schedule, isFr, movedNote }: {
   const when = (d: Date) => d.toLocaleString(isFr ? 'fr-FR' : 'en-US', {
     weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: !isFr,
   });
-  type Row = { t: string; s?: string; d: Date; c: string };
+  // Same marker vocabulary as the custom-mode plan list: shape carries kind,
+  // colour carries curve. Simple mode has no chart and nothing here is
+  // editable, so no soft time fields — but the reading is identical.
+  type Row = { t: string; s?: string; d: Date; c: string; m: PlanRow['marker'] };
   const rows: Row[] = [];
   rows.push({
     t: isFr ? 'Pétrissage' : 'Mix',
     s: isFr ? 'puis pointage' : 'then bulk rise',
-    d: schedule.bulkFermStart, c: '#6B7A5A',
+    d: schedule.bulkFermStart, c: '#3D5A30', m: 'step',
   });
   if (schedule.coldRetardStart && schedule.coldRetardEnd) {
     rows.push({
       t: isFr ? 'Au réfrigérateur' : 'Into the fridge',
       s: `${Math.round(schedule.coldRetardHours)} h`,
-      d: schedule.coldRetardStart, c: '#A8B8D0',
+      d: schedule.coldRetardStart, c: '#5B87AD', m: 'step',
     });
     rows.push({
       t: isFr ? 'Sortie du froid' : 'Out of the fridge',
       s: isFr ? 'retour à température' : 'back to room temperature',
-      d: schedule.coldRetardEnd, c: '#A8B8D0',
+      d: schedule.coldRetardEnd, c: '#5B87AD', m: 'cold',
     });
   }
   rows.push({
@@ -1295,48 +1298,53 @@ function SimplePlan({ schedule, isFr, movedNote }: {
     s: `${schedule.finalProofHours < 1
       ? `${Math.round(schedule.finalProofHours * 60)} min`
       : `${Math.round(schedule.finalProofHours * 10) / 10} h`}`,
-    d: schedule.finalProofStart, c: '#9C8248',
+    d: schedule.finalProofStart, c: '#9C8248', m: 'step',
   });
   rows.push({
     t: isFr ? 'Préchauffage' : 'Preheat',
-    d: schedule.preheatStart, c: '#8A7F78',
+    d: schedule.preheatStart, c: '#8A7F78', m: 'step',
   });
   rows.push({
     t: isFr ? 'Cuisson' : 'Bake',
-    d: schedule.bakeStart, c: '#6B4423',
+    d: schedule.bakeStart, c: '#7A4A22', m: 'bake',
   });
 
   return (
     <div style={{ marginTop: '16px' }}>
-      <div style={{
-        fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.08em',
-        textTransform: 'uppercase', color: 'var(--smoke)', fontWeight: 600, marginBottom: '4px',
-      }}>{isFr ? 'Votre déroulé' : 'Your plan'}</div>
       <div style={{ borderTop: '1px solid var(--border)' }}>
         {rows.map((r, i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'flex-start', gap: '12px',
-            padding: '12px 0', borderBottom: '1px solid var(--border)',
-          }}>
-            <span style={{
-              width: '10px', height: '10px', borderRadius: '50%', marginTop: '5px',
-              background: r.c, flexShrink: 0,
-            }} />
-            <span style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--char)' }}>{r.t}</div>
-              {r.s && <div style={{ fontSize: '12px', color: 'var(--smoke)', marginTop: '2px' }}>{r.s}</div>}
-            </span>
-            <span style={{
-              fontSize: '13px', color: 'var(--ash)', whiteSpace: 'nowrap', paddingTop: '2px',
-            }}>{when(r.d)}</span>
+          <div key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '9px', padding: '10px 4px',
+            }}>
+              <PlanMarker marker={r.m} color={r.c} />
+              <span style={{
+                flex: 1, minWidth: 0, fontFamily: 'var(--font-ui)', fontSize: '12.5px',
+                color: 'var(--smoke)',
+                textTransform: r.m === 'cold' ? 'none' : 'uppercase',
+                letterSpacing: r.m === 'cold' ? 0 : '.04em',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>{r.t}</span>
+              <span style={{
+                fontFamily: 'var(--font-mono, DM Mono, monospace)', fontSize: '14px',
+                fontWeight: r.m === 'cold' ? 400 : 500,
+                color: r.m === 'cold' ? 'var(--smoke)' : 'var(--char)',
+                whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums',
+              }}>{when(r.d)}</span>
+            </div>
+            {r.s && (
+              <div style={{
+                padding: '0 4px 10px 25px', fontSize: '11.5px',
+                lineHeight: 1.5, color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
+              }}>{r.s}</div>
+            )}
           </div>
         ))}
       </div>
       {movedNote && (
         <div style={{
-          background: 'rgba(156,130,72,0.09)', border: '1px solid rgba(156,130,72,0.22)',
-          borderRadius: '12px', padding: '12px 14px', marginTop: '14px',
-          fontSize: '13px', color: '#7A6636', lineHeight: 1.5,
+          marginTop: '12px', padding: '0 4px', fontSize: '11.5px',
+          lineHeight: 1.5, color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
         }}>{movedNote}</div>
       )}
     </div>
@@ -6819,7 +6827,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       )}
       <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem', display: isSourdough && lastFedAge === null ? 'none' : undefined }}>
         <div style={{ fontSize: '11px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
-          {hasDragged ? t('schedulerTitle.yours') : t('schedulerTitle.recommended')}
+          {(hasDragged || appliedSuggestion !== null)
+            ? t('schedulerTitle.yours')
+            : t('schedulerTitle.recommended')}
         </div>
         {/* Why this plan — one calm line naming the main scheduling decision.
             The engine chooses well but silently; naming the reason builds trust. */}
@@ -6837,23 +6847,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             : coldH <= 0
             ? (isFr ? 'Tout à température ambiante — une mie plus légère et plus vive.' : 'All at room temperature — a lighter, brighter crumb.')
             : (isFr ? `Calculé à rebours depuis votre heure de cuisson, à ${kitchenTemp}°C.` : `Timed backwards from your bake time at ${kitchenTemp}°C.`);
-          const planIsBakers = hasDragged || appliedSuggestion !== null;
           return (
-            <>
-              {/* Eyebrow — flips the moment the plan becomes the baker's, at
-                  the same moment Reset appears under the chart. */}
-              <div style={{
-                fontSize: '10.5px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
-                textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '7px',
-              }}>
-                {planIsBakers
-                  ? tRoot('schedulePicker.eyebrowYours')
-                  : tRoot('schedulePicker.eyebrowRecommended')}
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginBottom: '8px', lineHeight: 1.5 }}>
-                {why}
-              </div>
-            </>
+            <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginBottom: '8px', lineHeight: 1.5 }}>
+              {why}
+            </div>
           );
         })()}
         {startComputed ? (

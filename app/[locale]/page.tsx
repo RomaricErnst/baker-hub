@@ -79,6 +79,78 @@ const STYLE_BALL_DEFAULTS: Record<string, number> = {
 const CORN_LABELS = ['Thin', 'Classic', 'Generous'];
 const CORN_LABELS_FR = ['Fine', 'Classique', 'Généreuse'];
 
+// ── Percentage stepper — salt · oil · sugar ─────────────────
+// One definition. These were three near-copies that drifted apart: salt had
+// no info dot and its own header layout, sugar's "+" had a 8px radius against
+// everyone else's 12px, and only salt showed an inline note. Anything that
+// should differ between them is a prop; anything that shouldn't, can't.
+function PctStepper({
+  label, display, onDec, onInc, info, reset, note,
+}: {
+  label: string;
+  display: string;
+  onDec: () => void;
+  onInc: () => void;
+  info?: { open: boolean; onToggle: () => void; content: React.ReactNode; warn?: boolean; learnMore: string };
+  reset?: { onReset: () => void; label: string };
+  note?: string;
+}) {
+  const btn: React.CSSProperties = {
+    width: '28px', height: '28px', borderRadius: '14px', flexShrink: 0,
+    border: '1.5px solid var(--border)', background: 'var(--cream)',
+    fontSize: '15px', cursor: 'pointer', color: 'var(--char)',
+    fontFamily: 'var(--font-ui)', lineHeight: 1, padding: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  };
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div style={{
+        position: 'relative', display: 'flex', alignItems: 'center', gap: '4px',
+        minHeight: '20px', marginBottom: '8px',
+      }}>
+        <span style={{
+          fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase',
+          letterSpacing: '.06em', fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap',
+        }}>{label}</span>
+        {info && <InfoDot inline label={info.learnMore} onClick={info.onToggle} />}
+        {reset && (
+          <button
+            onClick={reset.onReset}
+            style={{
+              marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
+              textDecoration: 'underline', padding: 0, whiteSpace: 'nowrap',
+            }}
+          >↺ {reset.label}</button>
+        )}
+        {info?.open && (
+          <div style={{
+            position: 'absolute', bottom: 'calc(100% + 6px)', left: 0,
+            background: 'var(--warm)', border: '1px solid var(--border)',
+            borderRadius: '16px', padding: '8px 12px', fontSize: '12px',
+            color: info.warn ? 'var(--terra)' : '#3D3530', lineHeight: 1.5,
+            zIndex: 10, minWidth: '180px', maxWidth: '220px',
+            fontFamily: 'var(--font-ui)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)',
+          }}>{info.content}</div>
+        )}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <button onClick={onDec} style={btn} aria-label="−">−</button>
+        <span style={{
+          flex: 1, textAlign: 'center', fontFamily: 'var(--font-ui)',
+          fontSize: '13px', color: 'var(--char)', fontVariantNumeric: 'tabular-nums',
+        }}>{display}</span>
+        <button onClick={onInc} style={btn} aria-label="+">+</button>
+      </div>
+      {/* Reserved so a note under one column cannot shove its neighbours. */}
+      <div style={{
+        fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic',
+        lineHeight: 1.4, marginTop: '4px', minHeight: '17px',
+      }}>{note ?? ''}</div>
+    </div>
+  );
+}
+
 function pizzaWeightFromTable(sk: string, d: number, corn: number): number {
   const table = PIZZA_WEIGHT_TABLE[sk];
   if (!table) return 270;
@@ -688,6 +760,7 @@ export default function Home() {
   const [wastePct, setWastePct]               = useState<number | undefined>(undefined);
 
   // Dial In tooltip visibility
+  const [saltTip, setSaltTip]             = useState(false);
   const [oilTip, setOilTip]               = useState(false);
   const [sugarTip, setSugarTip]           = useState(false);
   const [ddtTip, setDdtTip]               = useState(false);
@@ -4028,115 +4101,84 @@ export default function Home() {
                   display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px',
                   alignItems: 'start',
                 }}>
-                  {/* Salt stepper — first, most important */}
+                  {/* Salt · Oil · Sugar — all three through one component */}
                   {(() => {
                     const styleSalt = styleKey ? (ALL_STYLES[styleKey]?.salt ?? 2.5) : 2.5;
                     const v = manualSalt ?? styleSalt;
                     const STEP = 0.1;
                     const isDefault = manualSalt === undefined || manualSalt === styleSalt;
                     return (
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', minHeight: '17px', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.saltPct')}</span>
-                          {!isDefault && (
-                            <button
-                              onClick={() => setManualSalt(undefined)}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textDecoration: 'underline', padding: 0 }}
-                            >↺ {styleSalt}%</button>
-                          )}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <button
-                            onClick={() => setManualSalt(Math.max(1.5, Math.round((v - STEP) * 10) / 10))}
-                            style={{ width: '24px', height: '24px', borderRadius: '12px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}
-                          >−</button>
-                          <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--char)' }}>{v}%</span>
-                          <button
-                            onClick={() => setManualSalt(Math.min(3.5, Math.round((v + STEP) * 10) / 10))}
-                            style={{ width: '24px', height: '24px', borderRadius: '12px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}
-                          >+</button>
-                        </div>
-                        <div style={{ fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '4px' }}>
-                          {v < 2 ? t('dialIn.salt.veryLow') :
-                           v <= 2.5 ? t('dialIn.salt.breadRange') :
-                           v <= 3 ? t('dialIn.salt.classicPizza') :
-                           v <= 3.2 ? t('dialIn.salt.fullFlavour') :
-                           t('dialIn.salt.high')}
-                        </div>
-                      </div>
+                      <PctStepper
+                        label={t('dialIn.saltPct')}
+                        display={`${v}%`}
+                        onDec={() => setManualSalt(Math.max(1.5, Math.round((v - STEP) * 10) / 10))}
+                        onInc={() => setManualSalt(Math.min(3.5, Math.round((v + STEP) * 10) / 10))}
+                        info={{
+                          open: saltTip,
+                          onToggle: () => setSaltTip(p => !p),
+                          learnMore: locale === 'fr' ? 'En savoir plus' : 'Learn more',
+                          content: t('dialIn.salt.what'),
+                        }}
+                        reset={isDefault ? undefined : {
+                          onReset: () => setManualSalt(undefined),
+                          label: `${styleSalt}%`,
+                        }}
+                        note={
+                          v < 2 ? t('dialIn.salt.veryLow') :
+                          v <= 2.5 ? t('dialIn.salt.breadRange') :
+                          v <= 3 ? t('dialIn.salt.classicPizza') :
+                          v <= 3.2 ? t('dialIn.salt.fullFlavour') :
+                          t('dialIn.salt.high')
+                        }
+                      />
                     );
                   })()}
-                  {/* Oil stepper */}
                   {(() => {
                     const v = manualOil ?? 0;
                     const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
                     const STEP = 0.5;
-                    const oilGuideText = oilGuidance(v, ovenType ?? '', styleKey ?? '', t);
                     return (
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ position: 'relative', marginBottom: '8px', minHeight: '17px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.oilPct')}</span>
-                          <InfoDot
-                            inline
-                            label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}
-                            onClick={() => setOilTip(p => !p)}
-                          />
-                          {oilTip && (
-                            <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '8px 12px', fontSize: '12px', color: v > 0 && isHighTemp ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-ui)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
-                              {oilGuideText}
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <button
-                            onClick={() => setManualOil(Math.max(0, Math.round((v - STEP) * 10) / 10))}
-                            style={{ width: '24px', height: '24px', borderRadius: '12px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}
-                          >−</button>
-                          <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--char)' }}>
-                            {v === 0 ? 'None' : `${v}%`}
-                          </span>
-                          <button
-                            onClick={() => setManualOil(Math.min(10, Math.round((v + STEP) * 10) / 10))}
-                            style={{ width: '24px', height: '24px', borderRadius: '12px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}
-                          >+</button>
-                        </div>
-                      </div>
+                      <PctStepper
+                        label={t('dialIn.oilPct')}
+                        display={v === 0 ? t('dialIn.none') : `${v}%`}
+                        onDec={() => setManualOil(Math.max(0, Math.round((v - STEP) * 10) / 10))}
+                        onInc={() => setManualOil(Math.min(10, Math.round((v + STEP) * 10) / 10))}
+                        info={{
+                          open: oilTip,
+                          onToggle: () => setOilTip(p => !p),
+                          learnMore: locale === 'fr' ? 'En savoir plus' : 'Learn more',
+                          content: oilGuidance(v, ovenType ?? '', styleKey ?? '', t),
+                          warn: v > 0 && isHighTemp,
+                        }}
+                        reset={v === 0 ? undefined : {
+                          onReset: () => setManualOil(undefined),
+                          label: t('dialIn.none'),
+                        }}
+                      />
                     );
                   })()}
-                  {/* Sugar stepper */}
                   {(() => {
                     const v = manualSugar ?? 0;
                     const sg = sugarGuidance(v, ovenType ?? '', t);
                     const STEP = 0.5;
                     return (
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ position: 'relative', marginBottom: '8px', minHeight: '17px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.sugarPct')}</span>
-                          <InfoDot
-                            inline
-                            label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}
-                            onClick={() => setSugarTip(p => !p)}
-                          />
-                          {sugarTip && (
-                            <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '8px 12px', fontSize: '12px', color: sg.warn ? 'var(--terra)' : '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-ui)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
-                              {sg.note}
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <button
-                            onClick={() => setManualSugar(Math.max(0, Math.round((v - STEP) * 10) / 10))}
-                            style={{ width: '24px', height: '24px', borderRadius: '12px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}
-                          >−</button>
-                          <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--char)' }}>
-                            {v === 0 ? 'None' : `${v}%`}
-                          </span>
-                          <button
-                            onClick={() => setManualSugar(Math.min(10, Math.round((v + STEP) * 10) / 10))}
-                            style={{ width: '24px', height: '24px', borderRadius: '8px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}
-                          >+</button>
-                        </div>
-                      </div>
+                      <PctStepper
+                        label={t('dialIn.sugarPct')}
+                        display={v === 0 ? t('dialIn.none') : `${v}%`}
+                        onDec={() => setManualSugar(Math.max(0, Math.round((v - STEP) * 10) / 10))}
+                        onInc={() => setManualSugar(Math.min(10, Math.round((v + STEP) * 10) / 10))}
+                        info={{
+                          open: sugarTip,
+                          onToggle: () => setSugarTip(p => !p),
+                          learnMore: locale === 'fr' ? 'En savoir plus' : 'Learn more',
+                          content: sg.note,
+                          warn: sg.warn,
+                        }}
+                        reset={v === 0 ? undefined : {
+                          onReset: () => setManualSugar(undefined),
+                          label: t('dialIn.none'),
+                        }}
+                      />
                     );
                   })()}
                 </div>
