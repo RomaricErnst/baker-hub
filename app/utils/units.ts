@@ -7,9 +7,12 @@ export function cToF(c: number): number {
 export function fToC(f: number): number {
   return Math.round((f - 32) * 5 / 9);
 }
-// Display a stored °C value in the baker's system
+// Display a stored °C value in the baker's system.
+// Rounds: stored °C can be a solver float (the enthalpy DDT model returns
+// e.g. 10.350770172523642) and a baker sets water by thermometer, not by
+// twelve decimal places. cToF already rounds, so imperial never showed it.
 export function displayTemp(c: number, units: UnitSystem): string {
-  return units === 'imperial' ? `${cToF(c)}°F` : `${c}°C`;
+  return units === 'imperial' ? `${cToF(c)}°F` : `${Math.round(c)}°C`;
 }
 export function tempUnit(units: UnitSystem): string {
   return units === 'imperial' ? '°F' : '°C';
@@ -18,9 +21,10 @@ export function tempUnit(units: UnitSystem): string {
 export function inputTempToC(val: number, units: UnitSystem): number {
   return units === 'imperial' ? fToC(val) : val;
 }
-// Get display value from stored °C
+// Get display value from stored °C — same rounding rule as displayTemp,
+// so a float can never reach a number input or a bare {value}{unit} render.
 export function cToDisplay(c: number, units: UnitSystem): number {
-  return units === 'imperial' ? cToF(c) : c;
+  return units === 'imperial' ? cToF(c) : Math.round(c);
 }
 // Hardcoded single °C reference → display string
 export function tempC(celsius: number, units: UnitSystem): string {
