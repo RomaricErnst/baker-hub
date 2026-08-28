@@ -1648,7 +1648,8 @@
   "prefermentSlider": {
     "longAhead": "16h+ ahead",
     "nightBefore": "Night before",
-    "sameDay": "Same day"
+    "sameDay": "Same day",
+    "flourIn": "Flour in {name}"
   },
   "style": {
     "neapolitan": {

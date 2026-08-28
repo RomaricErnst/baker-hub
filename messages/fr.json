@@ -1648,7 +1648,8 @@
   "prefermentSlider": {
     "longAhead": "16h+ à l'avance",
     "nightBefore": "La veille",
-    "sameDay": "Jour même"
+    "sameDay": "Jour même",
+    "flourIn": "Farine dans le {name}"
   },
   "style": {
     "neapolitan": {
