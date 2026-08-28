@@ -216,9 +216,9 @@
     "doughTemp": "Temp. pâte",
     "flourInFridge": "Farine au frigo",
     "mixingLoss": "Déchet de pétrissage",
-    "saltPct": "Sel %",
-    "oilPct": "Huile %",
-    "sugarPct": "Sucre %",
+    "saltPct": "Sel",
+    "oilPct": "Huile",
+    "sugarPct": "Sucre",
     "hydrationSuffix": "hydratation",
     "hydration": {
       "belowClassic": "En dessous de la plage classique",

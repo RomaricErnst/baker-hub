@@ -2183,7 +2183,17 @@ export default function Home() {
     onSeePlan: () => setActiveTab('plan'),
     recipeGenerated,
     gapReturn: gapReturnTo != null,
-    onGapReturn: () => { setGapReturnTo(null); setAdvancedStep(CUSTOM_LAST); scrollToStepTop(); },
+    // Coming back from a gap step means the baker has now seen it and kept
+    // what was there. A prefilled default only counts as adopted once
+    // `highest > id` — "moved past its page" — and a backwards jump never
+    // moves past anything, so without this the same step is reported missing
+    // for ever and the CTA sends you to the page you just came from.
+    onGapReturn: () => {
+      setAdvancedHighestStep(p => Math.max(p, advancedStep + 1));
+      setGapReturnTo(null);
+      setAdvancedStep(CUSTOM_LAST);
+      scrollToStepTop();
+    },
   };
 
 
@@ -2210,7 +2220,12 @@ export default function Home() {
     onSeePlan: () => setActiveTab('plan'),
     recipeGenerated,
     gapReturn: gapReturnTo != null,
-    onGapReturn: () => { setGapReturnTo(null); setActiveStep(SIMPLE_LAST); scrollToStepTop(); },
+    onGapReturn: () => {
+      setHighestStep(p => Math.max(p, activeStep + 1));
+      setGapReturnTo(null);
+      setActiveStep(SIMPLE_LAST);
+      scrollToStepTop();
+    },
   };
 
   // The scheduler page is excluded: its chart diamonds are dragged sideways,
@@ -4153,11 +4168,10 @@ export default function Home() {
                   })()}
                 </div>
                 </div>
-                {/* Precision — 4th sub-section inside Dial In */}
-                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
-                    Precision
-                  </div>
+                {/* No "Precision" heading: it named a category rather than
+                    telling the baker anything, and the rule stripe already
+                    separates these two from the row above. */}
+                <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                     {/* DDT stepper */}
                     {(() => {

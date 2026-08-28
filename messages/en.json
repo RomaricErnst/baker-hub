@@ -216,9 +216,9 @@
     "doughTemp": "Dough temp",
     "flourInFridge": "Flour in fridge",
     "mixingLoss": "Mixing loss",
-    "saltPct": "Salt %",
-    "oilPct": "Oil %",
-    "sugarPct": "Sugar %",
+    "saltPct": "Salt",
+    "oilPct": "Oil",
+    "sugarPct": "Sugar",
     "hydrationSuffix": "hydration",
     "hydration": {
       "belowClassic": "Below classic range",
