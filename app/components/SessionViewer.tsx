@@ -296,6 +296,14 @@ export default function SessionViewer({
       displaySalt, displayHydration, yeastRounded, prefLabel,
       bakedQtys, localSlots, tRoot]);
 
+  // Escape closes, matching every other sheet. Declared above the early
+  // returns below — a hook after them runs in a different order per render.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   if (!event || !snap) return null;
   if (typeof document === 'undefined') return null;
 

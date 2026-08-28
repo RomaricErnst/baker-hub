@@ -2346,7 +2346,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   : (l === 'fr' ? 'Desserts' : 'Dessert pizzas')}
               </span>
               <button onClick={() => { setSummarySheetOpen(false); setDessertSheetOpen(false); }}
-                style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                aria-label={l === 'fr' ? 'Fermer' : 'Close'}
+                style={{ width: '44px', height: '44px', padding: '8px', margin: '-8px', backgroundClip: 'content-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
             </div>
             <div style={{ overflowY: 'auto', flex: 1 }}>
               {!dessertSheetOpen ? (

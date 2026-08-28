@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useLocale } from 'next-intl';
 
 interface LearnModalProps {
@@ -36,7 +37,7 @@ const TERMS: Record<string, TermContent> = {
   },
   autolyse: {
     title: 'Autolyse',
-    emoji: '⏳',
+    emoji: '',
     explanation: 'Mixing flour and water and letting it rest before adding other ingredients. During this rest, flour hydrates naturally and gluten begins forming without any kneading. The result is more extensible, easier to work dough.',
     tip: '20–30 min is enough for pizza. Bread benefits from up to 1 hour. Keep it covered to prevent drying.',
     videoLabel: 'Read full guide →',
@@ -107,6 +108,12 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
   const locale = useLocale();
   const isFr = locale === 'fr';
   const content = TERMS[term];
+  // Escape closes, as it does on every other sheet in the app.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
   if (!content) return null;
 
   return (
@@ -121,6 +128,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
       }}
     >
       <div
+        role="dialog" aria-modal="true"
         onClick={e => e.stopPropagation()}
         style={{
           background: '#fff',
@@ -149,6 +157,7 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
           </div>
           <button
             onClick={onClose}
+            aria-label={isFr ? 'Fermer' : 'Close'}
             style={{
               background: 'rgba(255,255,255,.1)',
               backgroundClip: 'content-box',

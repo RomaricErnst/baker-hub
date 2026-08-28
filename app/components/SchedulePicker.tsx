@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH } from '../utils';
+import { InfoPopover } from './InfoDot';
 import FermentChart, { getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 
 export type StarterEventKind =
@@ -1697,8 +1698,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [nextFeedRatioOverride, setNextFeedRatioOverride] = useState<1 | 2 | 4 | 5 | 10 | null>(nextFeedRatioOverrideProp ?? null);
   const [ratioMode, setRatioMode] = useState<'recommend' | 'keep'>(ratioModeProp ?? 'recommend');
   const [lastFeedRatioEditing, setLastFeedRatioEditing] = useState(false);
-  const [showRatioInfo, setShowRatioInfo]       = useState(false);
-  const [showRatioModeInfo, setShowRatioModeInfo] = useState(false);
   const [showTasteInfo, setShowTasteInfo]       = useState(false);
   // The "Signs your starter is ready" / "Reading your dough" disclosures lived
   // on the two boxed cards and were removed with them, deliberately: readiness
@@ -6174,28 +6173,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                       <div style={{ ...STARTER_LABEL_STYLE, marginBottom: 0 }}>
                         {isFr ? 'Ratio du dernier nourrissage' : 'Last feed ratio'}
                       </div>
-                      <button
-                        onClick={() => setShowRatioInfo(v => !v)}
-                        aria-label="Info"
-                        style={{
-                          width: 16, height: 16, borderRadius: '50%',
-                          border: '1px solid var(--smoke)',
-                          background: showRatioInfo ? 'var(--smoke)' : 'transparent',
-                          color: showRatioInfo ? 'white' : 'var(--smoke)',
-                          fontSize: '11px', fontFamily: 'var(--font-ui)',
-                          cursor: 'pointer', display: 'inline-flex',
-                          alignItems: 'center', justifyContent: 'center',
-                          padding: 0, lineHeight: 1, flexShrink: 0,
-                        }}
-                      >i</button>
-                    </div>
-                    {showRatioInfo && (
-                      <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5, marginBottom: '8px' }}>
+                      <InfoPopover inline label={isFr ? 'En savoir plus' : 'Learn more'}>
                         {isFr
                           ? "Levain : eau : farine. Le ratio que vous avez utilisé la dernière fois — aide à dessiner la courbe historique correctement."
                           : 'Starter : water : flour. The ratio you used for your last feed — helps draw the historical curve correctly.'}
-                      </div>
-                    )}
+                      </InfoPopover>
+                    </div>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       {([1, 2, 4, 5, 10] as const).map(r => (
                         <button
@@ -6239,28 +6222,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   <div style={{ ...STARTER_LABEL_STYLE, marginBottom: 0 }}>
                     {isFr ? 'Ratio pour cette fournée' : 'Feed ratio for this bake'}
                   </div>
-                  <button
-                    onClick={() => setShowRatioModeInfo(v => !v)}
-                    aria-label="Info"
-                    style={{
-                      width: 16, height: 16, borderRadius: '50%',
-                      border: '1px solid var(--smoke)',
-                      background: showRatioModeInfo ? 'var(--smoke)' : 'transparent',
-                      color: showRatioModeInfo ? 'white' : 'var(--smoke)',
-                      fontSize: '11px', fontFamily: 'var(--font-ui)',
-                      cursor: 'pointer', display: 'inline-flex',
-                      alignItems: 'center', justifyContent: 'center',
-                      padding: 0, lineHeight: 1, flexShrink: 0,
-                    }}
-                  >i</button>
-                </div>
-                {showRatioModeInfo && (
-                  <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>
+                  <InfoPopover inline label={isFr ? 'En savoir plus' : 'Learn more'}>
                     {isFr
                       ? "On peut suggérer un ratio plus fort ou plus léger pour que le rafraîchi et le pétrissage évitent vos heures bloquées — même levain, juste un timing qui s'adapte à votre journée."
                       : 'We may suggest a stronger or lighter feed so your refresh and mix times avoid your blocked hours — same starter, just timed to fit your day.'}
-                  </div>
-                )}
+                  </InfoPopover>
+                </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {([
                     { id: 'recommend', en: 'Optimized',          fr: 'Optimisé' },

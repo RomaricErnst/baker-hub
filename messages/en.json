@@ -256,7 +256,13 @@
       "osmotic": "Above 2%, sugar adds osmotic stress on yeast — fermentation slows. Add extra 10% yeast.",
       "high": "High sugar territory (brioche level) — standard yeast may struggle. SAF Gold recommended."
     },
-    "none": "None"
+    "none": "None",
+    "doughTempInfo": "+{friction}°C friction from the {mixer} mixer. Flour from the fridge removes about 8°C.",
+    "mixerSpiral": "spiral",
+    "mixerStand": "stand",
+    "mixerHand": "hand",
+    "flourFridgeInfo": "Cold flour lowers the dough temperature — about 8°C, offset automatically in the water temperature.",
+    "mixingLossInfo": "A buffer for what stays in the bowl and on your hands. The schedule is unchanged — only the quantities scale up."
   },
   "preferment": {
     "stepTitle": "Preferment method",
@@ -521,7 +527,8 @@
     "discardQuestion": "What to do with the discard?",
     "discardNote1": "Discard the rest before feeding — or use it for pancakes, crackers or flatbread",
     "discardNote2": "Never throw all your starter away — always keep at least 20–30g.",
-    "starterReadyWhen": "Your starter is ready when:"
+    "starterReadyWhen": "Your starter is ready when:",
+    "yeastTooltip": "Less yeast, more time — a longer fermentation builds deeper flavour."
   },
   "schedulePicker": {
     "startDough": "Start Dough",

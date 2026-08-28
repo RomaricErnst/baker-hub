@@ -1195,8 +1195,15 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   </span>
                   <button
                     onClick={() => setPhotoWarn(false)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '14px', lineHeight: 1, flexShrink: 0, padding: 0 }}
-                  >x</button>
+                    aria-label={l === 'fr' ? 'Fermer' : 'Close'}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--smoke)', fontSize: '17px', lineHeight: 1,
+                      width: '44px', height: '44px', flexShrink: 0,
+                      margin: '-11px -11px -11px 0',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >✕</button>
                 </div>
               )}
 

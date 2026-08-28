@@ -21,7 +21,7 @@ import { getPrefPeakH_RT } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
 const PizzaParty = dynamic(() => import('../components/PizzaParty'), { ssr: false });
 import FlourPicker from '../components/FlourPicker';
-import InfoDot from '../components/InfoDot';
+import InfoDot, { InfoPopover } from '../components/InfoDot';
 import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
@@ -91,7 +91,7 @@ function PctStepper({
   display: string;
   onDec: () => void;
   onInc: () => void;
-  info?: { open: boolean; onToggle: () => void; content: React.ReactNode; warn?: boolean; learnMore: string };
+  info?: { content: React.ReactNode; warn?: boolean; learnMore: string };
   reset?: { onReset: () => void; label: string };
   note?: string;
 }) {
@@ -112,7 +112,9 @@ function PctStepper({
           fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase',
           letterSpacing: '.06em', fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap',
         }}>{label}</span>
-        {info && <InfoDot inline label={info.learnMore} onClick={info.onToggle} />}
+        {info && (
+          <InfoPopover inline label={info.learnMore} warn={info.warn}>{info.content}</InfoPopover>
+        )}
         {reset && (
           <button
             onClick={reset.onReset}
@@ -122,16 +124,6 @@ function PctStepper({
               textDecoration: 'underline', padding: 0, whiteSpace: 'nowrap',
             }}
           >↺ {reset.label}</button>
-        )}
-        {info?.open && (
-          <div style={{
-            position: 'absolute', bottom: 'calc(100% + 6px)', left: 0,
-            background: 'var(--warm)', border: '1px solid var(--border)',
-            borderRadius: '16px', padding: '8px 12px', fontSize: '12px',
-            color: info.warn ? 'var(--terra)' : '#3D3530', lineHeight: 1.5,
-            zIndex: 10, minWidth: '180px', maxWidth: '220px',
-            fontFamily: 'var(--font-ui)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)',
-          }}>{info.content}</div>
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -760,12 +752,6 @@ export default function Home() {
   const [wastePct, setWastePct]               = useState<number | undefined>(undefined);
 
   // Dial In tooltip visibility
-  const [saltTip, setSaltTip]             = useState(false);
-  const [oilTip, setOilTip]               = useState(false);
-  const [sugarTip, setSugarTip]           = useState(false);
-  const [ddtTip, setDdtTip]               = useState(false);
-  const [mixLossTip, setMixLossTip]       = useState(false);
-  const [flourFridgeTip, setFlourFridgeTip] = useState(false);
 
   // BakeType card hover state
   const [hoveredBakeType, setHoveredBakeType] = useState<BakeType | null>(null);
@@ -4114,8 +4100,6 @@ export default function Home() {
                         onDec={() => setManualSalt(Math.max(1.5, Math.round((v - STEP) * 10) / 10))}
                         onInc={() => setManualSalt(Math.min(3.5, Math.round((v + STEP) * 10) / 10))}
                         info={{
-                          open: saltTip,
-                          onToggle: () => setSaltTip(p => !p),
                           learnMore: locale === 'fr' ? 'En savoir plus' : 'Learn more',
                           content: t('dialIn.salt.what'),
                         }}
@@ -4144,8 +4128,6 @@ export default function Home() {
                         onDec={() => setManualOil(Math.max(0, Math.round((v - STEP) * 10) / 10))}
                         onInc={() => setManualOil(Math.min(10, Math.round((v + STEP) * 10) / 10))}
                         info={{
-                          open: oilTip,
-                          onToggle: () => setOilTip(p => !p),
                           learnMore: locale === 'fr' ? 'En savoir plus' : 'Learn more',
                           content: oilGuidance(v, ovenType ?? '', styleKey ?? '', t),
                           warn: v > 0 && isHighTemp,
@@ -4168,8 +4150,6 @@ export default function Home() {
                         onDec={() => setManualSugar(Math.max(0, Math.round((v - STEP) * 10) / 10))}
                         onInc={() => setManualSugar(Math.min(10, Math.round((v + STEP) * 10) / 10))}
                         info={{
-                          open: sugarTip,
-                          onToggle: () => setSugarTip(p => !p),
                           learnMore: locale === 'fr' ? 'En savoir plus' : 'Learn more',
                           content: sg.note,
                           warn: sg.warn,
@@ -4200,16 +4180,14 @@ export default function Home() {
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.doughTemp')}</span>
-                              <InfoDot
-                                inline
-                                label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}
-                                onClick={() => setDdtTip(p => !p)}
-                              />
-                              {ddtTip && (
-                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '8px 12px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-ui)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
-                                  +{mixerFriction}°C friction from {mixerType === 'spiral' ? 'spiral' : mixerType === 'stand' ? 'stand' : 'hand'} mixer. Flour from fridge removes ~8°C.
-                                </div>
-                              )}
+                              <InfoPopover inline label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}>
+                                {t('dialIn.doughTempInfo', {
+                                  friction: mixerFriction,
+                                  mixer: t(mixerType === 'spiral' ? 'dialIn.mixerSpiral'
+                                    : mixerType === 'stand' ? 'dialIn.mixerStand'
+                                    : 'dialIn.mixerHand'),
+                                })}
+                              </InfoPopover>
                             </div>
                             {!isDefaultDDT && (
                               <button onClick={() => setTargetDoughTemp(undefined)}
@@ -4220,28 +4198,24 @@ export default function Home() {
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
                             <button onClick={() => setTargetDoughTemp(Math.max(18, v - 1))}
-                              style={{ width: '24px', height: '24px', borderRadius: '12px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>−</button>
+                              style={{ width: '28px', height: '28px', borderRadius: '14px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '15px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                             <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--char)' }}>{v}°C</span>
                             <button onClick={() => setTargetDoughTemp(Math.min(28, v + 1))}
-                              style={{ width: '24px', height: '24px', borderRadius: '12px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>+</button>
+                              style={{ width: '28px', height: '28px', borderRadius: '14px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '15px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
                           </div>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                            <input type="checkbox" checked={flourInFridge} onChange={e => setFlourInFridge(e.target.checked)}
-                              style={{ width: '13px', height: '13px', cursor: 'pointer', accentColor: 'var(--terra)', flexShrink: 0 }} />
-                            <span style={{ fontSize: '12px', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>{t('dialIn.flourInFridge')}</span>
-                            <div style={{ position: 'relative', display: 'inline-flex' }}>
-                              <button
-                                onMouseEnter={() => setFlourFridgeTip(true)} onMouseLeave={() => setFlourFridgeTip(false)}
-                                onClick={e => { e.preventDefault(); setFlourFridgeTip(p => !p); }}
-                                style={{ width: '15px', height: '15px', borderRadius: '50%', border: '1px solid rgba(138,127,120,0.4)', background: 'none', cursor: 'pointer', fontSize: '11px', color: 'var(--smoke)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontFamily: 'var(--font-ui)', flexShrink: 0 }}
-                              >i</button>
-                              {flourFridgeTip && (
-                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '8px 12px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-ui)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)', whiteSpace: 'normal' }}>
-                                  Cold flour lowers FDT. Removes ~8°C, offset automatically in the water temp calculation.
-                                </div>
-                              )}
-                            </div>
-                          </label>
+                          {/* The dot sits OUTSIDE the label: its panel is a
+                              plain div, and inside a label every tap on that
+                              text would have toggled the checkbox. */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                              <input type="checkbox" checked={flourInFridge} onChange={e => setFlourInFridge(e.target.checked)}
+                                style={{ width: '13px', height: '13px', cursor: 'pointer', accentColor: 'var(--terra)', flexShrink: 0 }} />
+                              <span style={{ fontSize: '12px', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>{t('dialIn.flourInFridge')}</span>
+                            </label>
+                            <InfoPopover inline label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}>
+                              {t('dialIn.flourFridgeInfo')}
+                            </InfoPopover>
+                          </div>
                         </div>
                       );
                     })()}
@@ -4254,16 +4228,9 @@ export default function Home() {
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <span style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{t('dialIn.mixingLoss')}</span>
-                              <InfoDot
-                                inline
-                                label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}
-                                onClick={() => setMixLossTip(p => !p)}
-                              />
-                              {mixLossTip && (
-                                <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '8px 12px', fontSize: '12px', color: '#3D3530', lineHeight: 1.5, zIndex: 10, minWidth: '180px', maxWidth: '220px', fontFamily: 'var(--font-ui)', boxShadow: '0 2px 8px rgba(43, 36, 32,0.08)' }}>
-                                  Buffer for bowl residue and transfer losses. Schedule is unchanged — only ingredient quantities scale up.
-                                </div>
-                              )}
+                              <InfoPopover inline label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}>
+                                {t('dialIn.mixingLossInfo')}
+                              </InfoPopover>
                             </div>
                             {wastePct !== undefined && wastePct !== 1.5 && (
                               <button onClick={() => setWastePct(undefined)}
@@ -4274,12 +4241,12 @@ export default function Home() {
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <button onClick={() => setWastePct(Math.max(0, Math.round((v - STEP) * 10) / 10))}
-                              style={{ width: '24px', height: '24px', borderRadius: '12px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>−</button>
+                              style={{ width: '28px', height: '28px', borderRadius: '14px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '15px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                             <span style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--char)' }}>
                               {wastePct === 0 ? 'None' : `${v}%`}
                             </span>
                             <button onClick={() => setWastePct(Math.min(5, Math.round((v + STEP) * 10) / 10))}
-                              style={{ width: '24px', height: '24px', borderRadius: '12px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '14px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>+</button>
+                              style={{ width: '28px', height: '28px', borderRadius: '14px', border: '1.5px solid var(--border)', background: 'var(--cream)', fontSize: '15px', cursor: 'pointer', color: 'var(--char)', fontFamily: 'var(--font-ui)', lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
                           </div>
                         </div>
                       );

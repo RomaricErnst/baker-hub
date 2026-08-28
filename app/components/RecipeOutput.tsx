@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { InfoPopover } from './InfoDot';
 import { useTranslations, useLocale } from 'next-intl';
 import { type RecipeResult, type YeastResult } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
@@ -68,77 +69,30 @@ const D = {
   sub:    'rgba(240, 235, 224,0.38)',  // secondary / column headers
 };
 
-// ── Yeast tooltip ─────────────────────────────
+// ── Yeast / flour tooltips ────────────────────
+// These were two more hand-rolled info marks (13px, against InfoDot's 22px)
+// with a third tooltip style of their own — dark panel, cream text, and
+// pointerEvents:none so the panel could not even be tapped away. Both now go
+// through the shared dot and popover like every other explanation.
 function YeastTooltip() {
-  const [open, setOpen] = useState(false);
+  const t = useTranslations();
+  const locale = useLocale();
   return (
-    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-      <span
-        onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
-        style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: '13px', height: '13px', borderRadius: '50%',
-          border: '1px solid rgba(138,127,120,0.6)',
-          color: 'rgba(138,127,120,0.8)',
-          fontSize: '11px', cursor: 'pointer', flexShrink: 0,
-          fontFamily: 'var(--font-ui)', lineHeight: 1,
-          userSelect: 'none',
-        }}
-      >i</span>
-      {open && (
-        <span style={{
-          position: 'absolute', bottom: '120%', left: 0,
-          background: 'var(--ash)', color: 'var(--cream)',
-          fontSize: '12px', fontFamily: 'var(--font-ui)',
-          padding: '8px 12px', borderRadius: '16px',
-          width: '220px', zIndex: 10,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-          pointerEvents: 'none',
-          lineHeight: 1.5,
-        }}>
-          Less yeast, more time — longer fermentation builds deeper flavour.
-        </span>
-      )}
-    </span>
+    <InfoPopover inline label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}>
+      {t('recipeOutput.yeastTooltip')}
+    </InfoPopover>
   );
 }
 
-// ── Flour tooltip (Simple mode) ────────────────
 function FlourTooltip({ bakeType }: { bakeType?: string }) {
-  const [open, setOpen] = useState(false);
   const t = useTranslations();
-  const msg = bakeType === 'bread'
-    ? t('recipeOutput.flourTooltipBread')
-    : t('recipeOutput.flourTooltipPizza');
+  const locale = useLocale();
   return (
-    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-      <span
-        onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
-        style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: '13px', height: '13px', borderRadius: '50%',
-          border: '1px solid rgba(138,127,120,0.6)',
-          color: 'rgba(138,127,120,0.8)',
-          fontSize: '11px', cursor: 'pointer', flexShrink: 0,
-          fontFamily: 'var(--font-ui)', lineHeight: 1,
-          userSelect: 'none', marginLeft: '.35rem',
-        }}
-      >i</span>
-      {open && (
-        <span style={{
-          position: 'absolute', bottom: '120%', left: 0,
-          background: 'var(--ash)', color: 'var(--cream)',
-          fontSize: '12px', fontFamily: 'var(--font-ui)',
-          lineHeight: 1.5,
-          padding: '8px 12px', borderRadius: '16px',
-          width: '210px', zIndex: 10,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-          pointerEvents: 'none',
-        }}>
-          {msg}
-        </span>
-      )}
-    </span>
+    <InfoPopover inline label={locale === 'fr' ? 'En savoir plus' : 'Learn more'}>
+      {bakeType === 'bread'
+        ? t('recipeOutput.flourTooltipBread')
+        : t('recipeOutput.flourTooltipPizza')}
+    </InfoPopover>
   );
 }
 

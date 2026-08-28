@@ -265,6 +265,13 @@ export default function Header({
 
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  // Escape closes the drawer, as it does on every other sheet.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
   // Share (and future actions) can request the sign-in home: anonymous
   // bakers tapping "Save & Share" get the drawer with the auth block
   // spotlighted and a contextual line — no hunting for where to sign in.
@@ -587,8 +594,14 @@ export default function Header({
             </div>
             <button
               onClick={() => setMenuOpen(false)}
-              style={{ background: 'transparent', border: 'none', color: 'var(--smoke)', fontSize: '20px', cursor: 'pointer', padding: '4px 8px', lineHeight: 1 }}
-            >x</button>
+              aria-label={locale === 'fr' ? 'Fermer' : 'Close'}
+              style={{
+                background: 'transparent', border: 'none', color: 'var(--smoke)',
+                fontSize: '17px', lineHeight: 1, cursor: 'pointer',
+                width: '44px', height: '44px', margin: '-11px -11px -11px 0',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >✕</button>
           </div>
 
           {/* ── Current session — always visible ── */}

@@ -142,17 +142,13 @@ function YeastInfoSheet({ id, onPick, onClose, fr }: {
             onClick={onClose}
             aria-label={fr ? 'Fermer' : 'Close'}
             style={{
-              marginLeft: 'auto', width: '32px', height: '32px', flexShrink: 0,
-              borderRadius: '16px', border: '1px solid var(--border)',
-              background: 'none', cursor: 'pointer', alignSelf: 'center',
+              marginLeft: 'auto', width: '44px', height: '44px', flexShrink: 0,
+              margin: '-11px -11px -11px auto', alignSelf: 'center',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--smoke)', fontSize: '17px', lineHeight: 1,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
-              stroke="var(--smoke)" strokeWidth="1.6" strokeLinecap="round">
-              <path d="M1 1 L11 11 M11 1 L1 11" />
-            </svg>
-          </button>
+          >✕</button>
         </div>
         <p style={{ fontFamily: 'var(--font-ui)', fontSize: '12.5px', color: 'var(--smoke)', margin: '0 0 14px', lineHeight: 1.5 }}>
           {y.look}<br />
