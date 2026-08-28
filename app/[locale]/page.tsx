@@ -344,19 +344,12 @@ const GROUP_TITLE: Record<StepGroup, { en: string; fr: string }> = {
   plan:    { en: 'When you\u2019re baking', fr: 'Quand vous enfournez' },
 };
 
-// A value the baker never chose is worth marking: it tells them which lines
-// deserve a second look and which they already decided.
-function PrefilledTag({ fr }: { fr: boolean }) {
-  return (
-    <span style={{
-      display: 'inline-block', fontFamily: 'var(--font-ui)', fontSize: '9px',
-      letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--smoke)',
-      border: '1px solid var(--border)', borderRadius: '20px',
-      padding: '1px 6px', marginLeft: '7px', verticalAlign: '1.5px',
-      background: 'var(--cream)', whiteSpace: 'nowrap',
-    }}>{fr ? 'par défaut' : 'assumed'}</span>
-  );
-}
+// `prefilled` was never a record of what the baker touched: it is set
+// statically on Quantity, Climate, Flour, Preferment and Fine-tune and stays
+// true after they edit the value. Surfacing it as an ASSUMED badge therefore
+// told bakers that choices they had just made were guesses. The flag keeps
+// its real job inside stepAnswered — a default counts as adopted once the
+// baker moves past its page — and shows nothing.
 
 // ── Summary chip carousel ─────────────────────
 // Two questions, two controls. The rail shows what the baker has DECIDED —
@@ -576,7 +569,7 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
               </button>
             )}
             {answered.map(st => (
-              <SetupRow key={st.id} step={st} ok fr={fr}
+              <SetupRow key={st.id} step={st} ok
                 onClick={() => { setOpen(false); flow.onJump(st.id); }} />
             ))}
 
@@ -588,7 +581,7 @@ function SummaryBar({ flow, topOffset = 62, raised = false, modeChip }:
                   {fr ? `Reste à faire \u2014 ${pending.length}` : `Still to come \u2014 ${pending.length}`}
                 </div>
                 {pending.map(st => (
-                  <SetupRow key={st.id} step={st} ok={false} fr={fr}
+                  <SetupRow key={st.id} step={st} ok={false}
                     onClick={() => { setOpen(false); flow.onJump(st.id); }} />
                 ))}
               </>
@@ -671,7 +664,6 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe }: {
                 key={st.id}
                 step={st}
                 ok={stepAnswered(st, flow.highestStep, flow.steps)}
-                fr={fr}
                 inset
                 last={i === steps.length - 1}
                 onClick={() => onJump(st.id)}
@@ -698,8 +690,8 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe }: {
 // list; letting each style its own rows is how two visual languages for one
 // idea appear. They differ in how the list is SORTED — the sheet by status,
 // the page by subject — and in nothing else.
-function SetupRow({ step, ok, fr, onClick, inset, last }: {
-  step: StepDef; ok: boolean; fr: boolean; onClick: () => void;
+function SetupRow({ step, ok, onClick, inset, last }: {
+  step: StepDef; ok: boolean; onClick: () => void;
   inset?: boolean; last?: boolean;
 }) {
   return (
@@ -720,7 +712,6 @@ function SetupRow({ step, ok, fr, onClick, inset, last }: {
         {ok ? (
           <span style={{ fontWeight: 600, color: 'var(--char)' }}>
             {step.value}
-            {step.prefilled && <PrefilledTag fr={fr} />}
           </span>
         ) : (
           <span style={{ color: '#9C8248', fontWeight: 400 }}>
@@ -840,14 +831,26 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
     const lastId = flow.steps[flow.steps.length - 1].id;
     const found = flow.steps.find(s => s.id > id && !stepAnswered(s, flow.highestStep, flow.steps));
     const nextGap = found && found.id !== lastId ? found : undefined;
+    // Name where the button GOES, never what is absent. A step that is not
+    // set yet is the normal state of almost every step for almost all of the
+    // journey; saying so on every screen turns a guided flow into a list of
+    // failures. The gap sentences still exist on the review page and in the
+    // sheet, where they describe a state rather than block a baker who is
+    // simply walking forward.
     next = nextGap
-      ? <button onClick={flow.onGapReturn} style={missingStyle}>{nextGap.gap} →</button>
+      ? <button onClick={flow.onGapReturn} style={nextStyle}>
+          {fr ? 'Suivant : ' : 'Next: '}{nextGap.chip} →
+        </button>
       : <button onClick={flow.onGapReturn} style={nextStyle}>
           {fr ? 'Terminer →' : 'Finish →'}
         </button>;
   } else if (isLast) {
     if (gap) {
-      next = <button onClick={() => flow.onGapJump(gap.id)} style={missingStyle}>{gap.gap} →</button>;
+      // Outlined here, because on the final step an unfilled one really is
+      // what stands between the baker and a recipe — but named, not accused.
+      next = <button onClick={() => flow.onGapJump(gap.id)} style={missingStyle}>
+        {fr ? 'Suivant : ' : 'Next: '}{gap.chip} →
+      </button>;
     } else if (flow.showGenerate) {
       next = <button onClick={flow.onGenerate} style={nextStyle}>{flow.generateLabel}</button>;
     } else if (flow.recipeGenerated) {
@@ -1106,6 +1109,22 @@ export default function Home() {
 
   // P6 — Active tab in two-tab layout
   const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide' | 'pizzaparty'>('setup');
+  // The summary bar used to pin at a hardcoded 97px (pizza) / 62px (bread),
+  // which is the height the sticky header HAPPENED to be. The header is
+  // z-100 and the bar z-25, so any underestimate does not push the bar down,
+  // it hides it: the chip rail was rendering underneath the tab strip with
+  // its labels sliced off. Measured, so the two can never drift apart again.
+  const stickyHeadRef = useRef<HTMLDivElement | null>(null);
+  const [stickyHeadH, setStickyHeadH] = useState(97);
+  useEffect(() => {
+    const el = stickyHeadRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const sync = () => setStickyHeadH(Math.round(el.getBoundingClientRect().height));
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   // The overview is a destination, not a mode: leaving Setup by any route
   // closes it, so the tab strip never drops the baker onto it unannounced.
   useEffect(() => { if (activeTab !== 'setup') setSetupOverview(false); }, [activeTab]);
@@ -2571,7 +2590,7 @@ export default function Home() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)' }}>
       {/* ── Sticky header + journey bar (autohide on scroll down) ── */}
-      <div style={{
+      <div ref={stickyHeadRef} style={{
         position: 'sticky',
         top: navHidden ? '-100px' : '0',
         zIndex: 100,
@@ -3340,7 +3359,7 @@ export default function Home() {
                    modeChosen gate, so the opening mode page carries no bar —
                    nothing decided yet, nothing to navigate to, and a progress
                    bar at zero is a discouraging way to greet someone. ── */}
-            <SummaryBar flow={simpleFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62}
+            <SummaryBar flow={simpleFlow} raised={navHidden} topOffset={stickyHeadH}
               modeChip={{ value: t('modeCards.simple.title'), onClick: () => setModeChosen(false) }} />
             {/* Back from the recipe lands here, not on whichever step
                 was open when they left. "Back" after a recipe exists
@@ -3917,7 +3936,7 @@ export default function Home() {
                    modeChosen gate, so the opening mode page carries no bar —
                    nothing decided yet, nothing to navigate to, and a progress
                    bar at zero is a discouraging way to greet someone. ── */}
-            <SummaryBar flow={customFlow} raised={navHidden} topOffset={bakeType === 'pizza' ? 97 : 62}
+            <SummaryBar flow={customFlow} raised={navHidden} topOffset={stickyHeadH}
               modeChip={{ value: t('modeCards.custom.title'), onClick: () => setModeChosen(false) }} />
             {/* Back from the recipe lands here, not on whichever step
                 was open when they left. "Back" after a recipe exists
