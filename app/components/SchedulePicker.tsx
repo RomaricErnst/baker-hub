@@ -5789,6 +5789,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const { scenario } = suggestion;
   const startInvalid = startComputed && pendingStart >= pendingEatTime;
   const bulkConflict = schedule?.bulkConflict ?? null;
+  const coldExitConflict = schedule?.coldExitConflict ?? null;
   // A bake time already in the past can't be planned backwards from — show a
   // calm message instead of letting the solver build an impossible schedule
   // (which produced invalid dates and an error screen). 2-min grace so a
@@ -7178,6 +7179,57 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
+      {/* The dough must leave the fridge before it can proof, and that moment
+          is fixed by the bake time — the schedule already stretches the retard
+          to the end of the last busy window and then has to clamp. So this is
+          not a warning about a mistake; it is the one move left, and it is the
+          baker's. An observation with a way to act on it, never an alarm. */}
+      {coldExitConflict && !dismissedConflict && (
+        <div style={{
+          background: 'var(--cream)', borderLeft: '4px solid var(--gold)',
+          borderRadius: '16px', padding: '12px 16px',
+          marginBottom: '12px', fontFamily: 'var(--font-ui)',
+        }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--char)', marginBottom: '.2rem' }}>
+            {isFr
+              ? `Cette pâte sort du froid à ${fmtCardDT(coldExitConflict.at, isFr)}, pendant « ${coldExitConflict.blockLabel} ».`
+              : `This dough comes out of the fridge at ${fmtCardDT(coldExitConflict.at, isFr)}, during ${coldExitConflict.blockLabel}.`}
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '12px' }}>
+            {isFr
+              ? 'La sortie du froid est calée sur l’heure de cuisson : la pâte doit sortir avant de pousser. Cuire plus tard la déplace hors de cette fenêtre.'
+              : 'The fridge exit is set by your bake time — the dough has to come out before it can proof. Baking later moves it clear of the window.'}
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => {
+                onChange(pendingStart, coldExitConflict.suggestedBake, blocks);
+                setPendingEatTime(coldExitConflict.suggestedBake);
+                setDismissedConflict(true);
+              }}
+              style={{
+                background: 'var(--terra)', color: 'white', border: 'none',
+                borderRadius: '12px', padding: '8px 16px',
+                fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                fontFamily: 'var(--font-ui)',
+              }}
+            >
+              {isFr ? 'Cuire à ' : 'Bake at '}{fmtCardDT(coldExitConflict.suggestedBake, isFr)} →
+            </button>
+            <button
+              onClick={() => setDismissedConflict(true)}
+              style={{
+                background: 'transparent', color: 'var(--smoke)',
+                border: '1px solid var(--border)', borderRadius: '12px',
+                padding: '8px 16px', fontSize: '12px', cursor: 'pointer',
+                fontFamily: 'var(--font-ui)',
+              }}
+            >
+              {isFr ? 'Garder cette heure' : 'Keep this time'}
+            </button>
+          </div>
+        </div>
+      )}
       {bulkConflict && !dismissedConflict && (() => {
         const MIN_REASONABLE_HOUR = 7;
         const earlierStart = bulkConflict.suggestedEarlierStart;
@@ -7415,17 +7467,13 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             }
             return null;
           })();
-          if (coldOut) {
-            rows.push({
-              id: 'coldout',
-              at: coldOut.at.getTime(),
-              name: tRoot('schedulePicker.outOfFridge', { hours: coldOut.hours }),
-              timeText: fmtCardDT(coldOut.at, isFr),
-              marker: 'cold',
-              color: '#5B87AD',
-              editable: false,
-            });
-          }
+          // No out-of-fridge row. It is not editable and not a configuration
+          // decision — it is derived from the bake time and belongs to
+          // Protocol with the rest of what the baker does on the day. It
+          // earned its place here only for the case where it lands inside a
+          // busy window, and that case now speaks for itself in the note
+          // below instead of costing a permanent row to cover a rare one.
+          void coldOut;
         }
 
         // 5 — Bake

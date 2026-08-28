@@ -364,6 +364,13 @@ export interface ScheduleResult {
   rtWarmupStart: Date | null;      // tropical warmup start (null if single-phase)
   rtWarmupEnd: Date | null;        // tropical warmup end (null if single-phase)
   bulkConflict: null | { missingMin: number; suggestEarlierByMin: number; suggestedEarlierStart?: Date };
+  // The dough has to leave the fridge before it can proof, and that moment is
+  // pinned to the bake time, not to anything the solver chooses. When it lands
+  // inside a busy window the schedule has already done all it can (it extends
+  // the retard to the end of the last block, then clamps for the final proof),
+  // so the only remaining move belongs to the baker: bake later. Recorded here
+  // so the plan step can say so instead of staying silent.
+  coldExitConflict: null | { at: Date; blockLabel: string; suggestedBake: Date };
   scheduleNote: string | null;
 }
 
@@ -788,6 +795,7 @@ export function buildSchedule(
       rtWarmupStart: r15n(rtWarmupStart),
       rtWarmupEnd: r15n(rtWarmupEnd),
       bulkConflict,
+      coldExitConflict: null,
       scheduleNote,
     };
   }
@@ -825,6 +833,7 @@ export function buildSchedule(
       rtWarmupStart: null,
       rtWarmupEnd: null,
       bulkConflict: null,
+      coldExitConflict: null,
       scheduleNote,
     };
   }
@@ -872,6 +881,27 @@ export function buildSchedule(
     coldRetardEnd = new Date(coldRetardStart.getTime());
   }
 
+  // Did the clamp leave the exit inside a block anyway? With work until 18:00
+  // and a bake at 18:00 no exit can clear it — the dough must come out before
+  // it bakes. Exclusive edges, same convention as every other blocker test.
+  let coldExitConflict: ScheduleResult['coldExitConflict'] = null;
+  {
+    const exitMs = coldRetardEnd.getTime();
+    const hit = relevantBlocks.find(b => exitMs > b.from.getTime() && exitMs < b.to.getTime());
+    if (hit) {
+      // Earliest bake whose exit clears the window: the block ends, then the
+      // dough still needs its rest and proof. Rounded up to the quarter hour
+      // the rest of the app speaks in.
+      const raw = hit.to.getTime() + restH * 3600000;
+      const q = 15 * 60000;
+      coldExitConflict = {
+        at: new Date(exitMs),
+        blockLabel: hit.label,
+        suggestedBake: new Date(Math.ceil(raw / q) * q),
+      };
+    }
+  }
+
   const actualColdH = Math.max(0,
     (coldRetardEnd.getTime() - coldRetardStart.getTime()) / 3600000
   );
@@ -911,6 +941,7 @@ export function buildSchedule(
     rtWarmupStart: null,
     rtWarmupEnd: null,
     bulkConflict,
+    coldExitConflict,
     scheduleNote,
   };
 }
