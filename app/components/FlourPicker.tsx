@@ -281,7 +281,19 @@ function FilterMenu({ label, value, options, onChange, format }: {
   format?: (v: string) => string;
 }) {
   const [open, setOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
+  // These sit low on the page — the second-flour row is the last thing above
+  // the sticky footer. Opening downward there puts the options under the fold.
+  const toggle = () => {
+    setOpen(o => {
+      if (!o && ref.current) {
+        const r = ref.current.getBoundingClientRect();
+        setDropUp(window.innerHeight - r.bottom < 280 && r.top > 280);
+      }
+      return !o;
+    });
+  };
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
@@ -294,7 +306,7 @@ function FilterMenu({ label, value, options, onChange, format }: {
   return (
     <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
       <button
-        onClick={() => setOpen(o => !o)}
+        onClick={toggle}
         style={{
           padding: '11px 14px', minHeight: '44px', borderRadius: '20px',
           border: 'none', cursor: 'pointer',
@@ -308,7 +320,10 @@ function FilterMenu({ label, value, options, onChange, format }: {
       </button>
       {open && (
         <div style={{
-          position: 'absolute', zIndex: 50, top: '100%', left: 0, marginTop: '4px',
+          position: 'absolute', zIndex: 50, left: 0,
+          ...(dropUp
+            ? { bottom: '100%', marginBottom: '4px' }
+            : { top: '100%', marginTop: '4px' }),
           background: 'white', borderRadius: '16px', border: '1px solid #E8E0D5',
           boxShadow: '0 4px 16px rgba(43, 36, 32,0.10)',
           padding: '8px', minWidth: '180px', maxHeight: '260px', overflowY: 'auto',
@@ -1173,7 +1188,13 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
       {/* ── Blend (custom mode only) ────────────────── */}
       {mode === 'custom' && (
-        <div ref={blendRef} style={{ marginTop: '12px', borderRadius: '16px', border: '1px solid #E8E0D5', background: '#F8F4EF', overflow: 'hidden' }}>
+        // No overflow:hidden on this card. It was clipping the filter menus
+        // inside it: the Type/Origin/Brand dropdowns for the SECOND flour
+        // opened into a hidden overflow and could not be used at all, while
+        // the first flour's identical menus worked because its container never
+        // clipped. Nothing inside paints to these corners, so the clip bought
+        // nothing and cost the whole control.
+        <div ref={blendRef} style={{ marginTop: '12px', borderRadius: '16px', border: '1px solid #E8E0D5', background: '#F8F4EF' }}>
           <div
             onClick={() => {
               if (openSection === 'blend') {
