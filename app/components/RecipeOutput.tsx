@@ -515,16 +515,14 @@ export default function RecipeOutput({
     }
     const tempDiff = kitchenT - info.targetTemp;
     const tempColor = tempDiff >= 14 ? 'var(--terra)' : tempDiff >= 8 ? 'var(--gold)' : undefined;
+    // Instructions only. The temperature and the ice split are things the
+    // baker acts on; why the number is what it is belongs in Protocol, not
+    // on a card someone is reading with wet hands.
     return (
       <>
         {t('recipeOutput.waterUseAt') + ' '}
         <span style={{ fontWeight: 700, fontFamily: 'var(--font-ui)', fontSize: '14px', color: tempColor }}>{displayTemp(info.targetTemp, u)}</span>
         {` · ${info.tempGuidance}`}
-        {tempDiff >= 8 && (
-          <span style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '.1rem' }}>
-            {t('recipeOutput.waterKeeperNote')}
-          </span>
-        )}
       </>
     );
   }
