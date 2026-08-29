@@ -1487,6 +1487,13 @@ function PlanList({
   const collapse = history.length >= 2 && !historyOpen;
   const shown = collapse ? rows.filter(r => !r.isHistory) : rows;
 
+  // Every time field gets the width of the widest one. They were sized to
+  // their own content, so "Sat 29 Aug · 11:15pm" and "Sun 30 Aug · 6pm"
+  // drew two different boxes stacked on each other and the column
+  // zig-zagged down the list. Character count is a fair proxy here:
+  // the strings share a structure and the figures are tabular.
+  const timeColCh = shown.reduce((m, r) => Math.max(m, (r.timeText ?? '').length), 0);
+
   const rowBtn: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: '9px',
     padding: '10px 4px', background: 'none', border: 'none',
@@ -1552,6 +1559,8 @@ function PlanList({
                     background: 'rgba(26,22,18,.045)',
                     boxShadow: 'inset 0 0 0 1px rgba(26,22,18,.05)',
                     fontVariantNumeric: 'tabular-nums',
+                    minWidth: `calc(${timeColCh}ch + 34px)`,
+                    justifyContent: 'space-between',
                   }}
                 >
                   {r.timeText}<Chevron />
@@ -1561,6 +1570,8 @@ function PlanList({
                   fontFamily: 'var(--font-mono, DM Mono, monospace)', fontSize: '14px',
                   color: 'var(--smoke)', fontWeight: 400, whiteSpace: 'nowrap',
                   padding: '2px 0', fontVariantNumeric: 'tabular-nums',
+                  minWidth: `calc(${timeColCh}ch + 34px)`,
+                  textAlign: 'right',
                 }}>{r.timeText}</span>
               )}
             </div>

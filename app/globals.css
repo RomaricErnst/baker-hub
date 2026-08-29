@@ -218,3 +218,20 @@ body {
    work, and DM Mono had drifted into 346 declarations it had no business in —
    that spread is what read as "many different fonts". Tabular figures on
    Figtree keep gram and time columns aligned without it. */
+
+/* ── Buttons are not text ─────────────────────
+   A long press on a button was offering Copy, Look Up and Translate, with
+   the label half-highlighted in iOS blue — because a <button>'s text is
+   selectable like any other. On a touch device the gesture that fires a
+   button and the gesture that selects its label are the same gesture held
+   for different lengths, so a slow tap became a selection.
+
+   Site-wide rather than per-component: every button in the app is a control,
+   and none of them has a label worth copying. Inputs and textareas keep
+   their selection, obviously. */
+button,
+[role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
