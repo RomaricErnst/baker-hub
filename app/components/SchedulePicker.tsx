@@ -1263,10 +1263,12 @@ function SimpleColourBar({
 // solver was avoiding them all along, but the only visible consequence was a
 // single start time quietly landing on a different hour. A baker who toggles
 // "Nights" and sees nothing move concludes the control is broken.
-function SimplePlan({ schedule, isFr, movedNote }: {
+function SimplePlan({ schedule, isFr, movedNote, pendingStart, onEditStart }: {
   schedule: ScheduleResult;
   isFr: boolean;
   movedNote: string | null;
+  pendingStart: Date;
+  onEditStart: () => void;
 }) {
   const when = (d: Date) => d.toLocaleString(isFr ? 'fr-FR' : 'en-US', {
     weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: !isFr,
@@ -1282,11 +1284,16 @@ function SimplePlan({ schedule, isFr, movedNote }: {
   //
   // What is left is the pair that actually gets set: when the dough starts
   // and when it bakes. Same two rows Custom shows, same vocabulary.
-  type Row = { t: string; s?: string; d: Date; c: string; m: PlanRow['marker'] };
+  // pendingStart, not schedule.bulkFermStart. bulkFermStart is startTime plus
+  // kneadMin — the moment bulk fermentation begins, fifteen minutes after the
+  // baker actually starts. Labelling it "Start dough" put a time on screen
+  // that was quietly a quarter hour late, and disagreed with the card above
+  // it by exactly that much.
+  type Row = { t: string; s?: string; d: Date; c: string; m: PlanRow['marker']; edit?: boolean };
   const rows: Row[] = [
     {
       t: isFr ? 'Début de la pâte' : 'Start dough',
-      d: schedule.bulkFermStart, c: '#3D5A30', m: 'step',
+      d: pendingStart, c: '#3D5A30', m: 'step', edit: true,
     },
     {
       t: isFr ? 'Cuisson' : 'Bake',
@@ -1298,9 +1305,17 @@ function SimplePlan({ schedule, isFr, movedNote }: {
       <div style={{ borderTop: '1px solid var(--border)' }}>
         {rows.map((r, i) => (
           <div key={i} style={{ borderBottom: '1px solid var(--border)' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '9px', padding: '10px 4px',
-            }}>
+            {/* The editable row is a button in a soft field, the way custom
+                mode draws its editable times. The bake row stays plain text:
+                that contrast is what teaches which one you can move, with no
+                caption spent saying so. */}
+            <div
+              onClick={r.edit ? onEditStart : undefined}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '9px', padding: '10px 4px',
+                cursor: r.edit ? 'pointer' : 'default',
+              }}
+            >
               <PlanMarker marker={r.m} color={r.c} />
               <span style={{
                 flex: 1, minWidth: 0, fontFamily: 'var(--font-ui)', fontSize: '12.5px',
@@ -1309,12 +1324,29 @@ function SimplePlan({ schedule, isFr, movedNote }: {
                 letterSpacing: r.m === 'cold' ? 0 : '.04em',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>{r.t}</span>
-              <span style={{
-                fontFamily: 'var(--font-mono, DM Mono, monospace)', fontSize: '14px',
-                fontWeight: r.m === 'cold' ? 400 : 500,
-                color: r.m === 'cold' ? 'var(--smoke)' : 'var(--char)',
-                whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums',
-              }}>{when(r.d)}</span>
+              {r.edit ? (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '7px',
+                  background: 'var(--warm)', border: '1px solid var(--border)',
+                  borderRadius: '10px', padding: '7px 11px', minHeight: '38px',
+                  fontFamily: 'var(--font-mono, DM Mono, monospace)', fontSize: '15px',
+                  fontWeight: 600, color: 'var(--char)',
+                  whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums',
+                }}>
+                  {when(r.d)}
+                  <svg width="9" height="6" viewBox="0 0 11 7" fill="none" aria-hidden="true">
+                    <path d="M1 1.5L5.5 5.5L10 1.5" stroke="var(--smoke)" strokeWidth="1.6"
+                      strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              ) : (
+                <span style={{
+                  fontFamily: 'var(--font-mono, DM Mono, monospace)', fontSize: '14px',
+                  fontWeight: r.m === 'cold' ? 400 : 500,
+                  color: r.m === 'cold' ? 'var(--smoke)' : 'var(--char)',
+                  whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums',
+                }}>{when(r.d)}</span>
+              )}
             </div>
             {r.s && (
               <div style={{
@@ -1335,61 +1367,38 @@ function SimplePlan({ schedule, isFr, movedNote }: {
   );
 }
 
-function SimpleStartTime({ pendingStart, isFr, onStartChange }: {
+// The editor, with no card around it. It used to render a dated panel whose
+// only content was the start time — the same start time the plan row beneath
+// already showed. Now the row is the display and this is what the row opens.
+function SimpleStartTime({ pendingStart, isFr, onStartChange, editing }: {
   pendingStart: Date;
   isFr: boolean;
   onStartChange: (d: Date) => void;
+  editing: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
   const toLocal = (d: Date) => {
     const p = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
   };
-  const label = pendingStart.toLocaleString(isFr ? 'fr-FR' : 'en-US', {
-    weekday: 'short', day: 'numeric', month: 'short',
-    hour: 'numeric', minute: '2-digit', hour12: !isFr,
-  });
+  if (!editing) return null;
   return (
-    <div style={{
-      background: 'var(--warm)', border: '1px solid var(--border)',
-      borderRadius: '16px', padding: '16px 16px',
-    }}>
-      <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '4px' }}>
-        {isFr ? 'Départ de la pâte' : 'Dough start'}
+    <div style={{ marginTop: '10px' }}>
+      <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginBottom: '6px' }}>
+        {isFr ? 'Choisissez votre départ' : 'Choose your start'}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-        <span style={{ fontFamily: 'var(--font-ui)', fontSize: '20px', fontWeight: 700, color: 'var(--char)' }}>
-          {label}
-        </span>
-        <button
-          onClick={() => setEditing(v => !v)}
-          aria-label={isFr ? 'Modifier' : 'Edit'}
-          style={{
-            width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
-            border: '1px solid var(--border)', background: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="var(--ash)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M13.5 3.5l3 3L7 16l-3.7.7L4 13l9.5-9.5z"/>
-          </svg>
-        </button>
-      </div>
-      {editing && (
-        <input
-          type="datetime-local"
-          step={900}
-          value={toLocal(pendingStart)}
-          onChange={e => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) onStartChange(d); }}
-          style={{
-            width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box',
-            marginTop: '12px', padding: '8px 8px',
-            border: '1.5px solid var(--border)', borderRadius: '8px',
-            background: 'var(--card)', color: 'var(--char)',
-            fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none',
-          }}
-        />
-      )}
+      <input
+        type="datetime-local"
+        step={900}
+        value={toLocal(pendingStart)}
+        onChange={e => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) onStartChange(d); }}
+        style={{
+          width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box',
+          padding: '10px 10px',
+          border: '1.5px solid var(--gold)', borderRadius: '8px',
+          background: 'var(--warm)', color: 'var(--char)',
+          fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none',
+        }}
+      />
     </div>
   );
 }
@@ -1593,6 +1602,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [customTo, setCustomTo] = useState('');
   const [isNarrow, setIsNarrow] = useState(false);
   const [blockerNote, setBlockerNote] = useState<string | null>(null);
+  // Simple mode has no chart, so the start row IS the control. Its open state
+  // lives here rather than inside the editor, because the row that opens it
+  // and the field it opens are siblings now, not parent and child.
+  const [simpleEditingStart, setSimpleEditingStart] = useState(false);
   // Set when a blocker toggle actually shifts the plan, so the baker is told
   // what moved and why instead of watching a time change for no stated reason.
   const [movedNote, setMovedNote] = useState<string | null>(null);
@@ -6809,7 +6822,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         {startComputed ? (
           mode === 'simple' ? (
             <>
+            {/* The dated card is gone. It printed the same start time the row
+                below already carries, so the page said one thing twice — and
+                because the row was reading bulkFermStart the two copies did
+                not even agree. Editing now lives on the row itself, which is
+                also how custom mode does it. */}
+            {schedule && (
+              <SimplePlan
+                schedule={schedule}
+                isFr={isFr}
+                movedNote={movedNote}
+                pendingStart={pendingStart}
+                onEditStart={() => setSimpleEditingStart(v => !v)}
+              />
+            )}
             <SimpleStartTime
+              editing={simpleEditingStart}
               pendingStart={pendingStart}
               isFr={isFr}
               onStartChange={(newStart) => {
@@ -6845,7 +6873,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 }
               }}
             />
-            {schedule && <SimplePlan schedule={schedule} isFr={isFr} movedNote={movedNote} />}
             </>
           ) : (
             <FermentChart
