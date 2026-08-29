@@ -3008,7 +3008,18 @@ export default function Home() {
         )}
 
 {!!bakeType && <div id="bh-top-stepper" style={{
-        background: 'transparent',
+        // THIS is the sticky element, not its children. A sticky box only
+        // stays stuck while its parent is in view, and this wrapper was only
+        // as tall as the bar inside it — so the bar left the screen with its
+        // own container the moment that container scrolled past. No offset
+        // could have fixed that; it was never going to stick.
+        //
+        // Sticky lives here because this div's parent is Main content, which
+        // is the height of the page. It also wraps BOTH modules, so dough and
+        // party get one sticky element between them rather than one each.
+        position: 'sticky', top: `${stickTop}px`, zIndex: 26,
+        background: 'var(--cream)',
+        boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
         margin: '10px 0 4px',
       }}>
         {activeTab !== 'pizzaparty' ? (() => {
@@ -3066,11 +3077,7 @@ export default function Home() {
           // timer these are phases and not unrelated tabs — and the node
           // shrinks to a dot sitting on the connecting line.
           return (
-            <div style={{
-              position: 'sticky', top: `${stickTop}px`, zIndex: 26,
-              background: 'var(--cream)',
-              boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
-            }}>
+            <div>
             <div style={{ padding: '8px 24px 8px', position: 'relative' }}>
               <div style={{ position: 'absolute', top: '14.5px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
@@ -3228,11 +3235,7 @@ export default function Home() {
           // this height it is not worth a fourth listener on a page that
           // already runs three.
           return (
-            <div style={{
-              position: 'sticky', top: `${stickTop}px`, zIndex: 24,
-              background: 'var(--cream)', padding: '8px 24px 8px',
-              boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
-            }}>
+            <div style={{ padding: '8px 24px 8px', position: 'relative' }}>
               <div style={{ position: 'absolute', top: '14.5px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
               </div>
