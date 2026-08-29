@@ -1817,5 +1817,12 @@
     "guide": "Protocole",
     "share": "Partager cette fournée",
     "shareBaked": "Partager cette fournée"
+  },
+  "yeastWarnings": {
+    "poolishSuggestion": "Une fermentation à température ambiante au-delà de {hours} h est difficile à prévoir. Une poolish donne plus de contrôle et plus de goût.",
+    "overFermentRT": "{hours} h à {temp} °C dépasse ce que cette pâte supporte à température ambiante — elle sur-fermentera. Une phase au froid la porterait.",
+    "hotClimateRT": "À {temp} °C, plus de 4 h à température ambiante, cela va vite. Un passage au froid ou une poolish vous laissent plus de marge.",
+    "fridgeWarm": "Un frigo à {temp} °C est plus chaud que la référence de 4 °C — la levure reste plus active que ne le supposent les durées.",
+    "osmoticStress": "Un sucre au-delà de 2 % de la farine freine la levure : la quantité est augmentée de 20 %. Une levure osmotolérante comme la SAF Gold s’en accommode mieux."
   }
 }

@@ -1817,5 +1817,12 @@
     "guide": "Protocol",
     "share": "Share this bake",
     "shareBaked": "Share this bake"
+  },
+  "yeastWarnings": {
+    "poolishSuggestion": "Room temperature fermentation past {hours}h is hard to predict. A poolish gives more control and more flavour.",
+    "overFermentRT": "{hours}h at {temp}°C is longer than this dough will hold at room temperature — it will over-ferment. A cold phase would carry it.",
+    "hotClimateRT": "At {temp}°C, more than 4h at room temperature moves fast. A cold retard or a poolish gives you more room.",
+    "fridgeWarm": "A fridge at {temp}°C is warmer than the 4°C reference — the yeast stays more active than the timings assume.",
+    "osmoticStress": "Sugar above 2% of the flour slows the yeast, so the amount is raised 20%. An osmotolerant yeast such as SAF Gold handles it better."
   }
 }

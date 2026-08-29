@@ -83,6 +83,24 @@ function coldIDY(hours: number, fridgeTemp: number): number {
   return raw / coldActivityFactor(fridgeTemp);
 }
 
+// Warnings travel as keys, not sentences. They used to be English literals
+// built in this file, which meant a French baker read them in English — and
+// the parity check on fr.json could not catch it, because the strings never
+// went through next-intl. The renderer also had to decide WHICH warnings to
+// show by substring-matching that English ("poolish", "not recommended"), so
+// rewording a warning silently changed whether it appeared at all.
+export type YeastWarningKey =
+  | 'poolishSuggestion'   // long RT window — a preferment would give more control
+  | 'overFermentRT'       // RT window longer than the dough will hold
+  | 'hotClimateRT'        // >4h at room temperature in a hot kitchen
+  | 'fridgeWarm'          // fridge warmer than the 4C reference
+  | 'osmoticStress';      // sugar above 2% of flour — dose raised 20%
+
+export interface YeastWarning {
+  key: YeastWarningKey;
+  params?: Record<string, string | number>;
+}
+
 export interface YeastResult {
   pct: number;           // IDY % of flour
   grams: number;         // absolute grams for recipe flour weight
@@ -95,7 +113,7 @@ export interface YeastResult {
   recommendPoolish: boolean;
   notRecommended: boolean;
   explanation: string;
-  warnings: string[];
+  warnings: YeastWarning[];
   osmoticStress: boolean; // true when sugar > 2% — yeast amount increased 20%
 }
 
@@ -109,7 +127,7 @@ function recommendYeast(
   priority: string | null,
   styleKey?: string,        // used to suppress false warnings for RT-only styles
 ): YeastResult {
-  const warnings: string[] = [];
+  const warnings: YeastWarning[] = [];
   let notRecommended = false;
   let recommendPoolish = false;
   let rec: number;
@@ -141,18 +159,12 @@ function recommendYeast(
     // Pure room temperature
     if (totalRTHours > YEAST_RT_MAX_H && !isRTOnlyStyle) {
       recommendPoolish = true;
-      warnings.push(
-        `Room temperature fermentation past ${YEAST_RT_MAX_H}h is hard to predict. ` +
-        `A poolish gives more control and more flavour.`
-      );
+      warnings.push({ key: 'poolishSuggestion', params: { hours: YEAST_RT_MAX_H } });
     }
     const rtRec = rtIDY(totalRTHours, kitchenTemp);
     if (rtRec === null) {
       notRecommended = true;
-      warnings.push(
-        `${totalRTHours}h at ${kitchenTemp}°C is longer than this dough will hold ` +
-        `at room temperature — it will over-ferment. A cold phase would carry it.`
-      );
+      warnings.push({ key: 'overFermentRT', params: { hours: totalRTHours, temp: kitchenTemp } });
       rec = YEAST_MIN_PCT;
     } else {
       rec = Math.max(YEAST_MIN_PCT, rtRec);
@@ -167,10 +179,7 @@ function recommendYeast(
 
   // Hot climate warnings — suppressed for styles that are intentionally RT-only
   if (kitchenTemp >= 28 && totalColdHours === 0 && totalRTHours > 4 && !isRTOnlyStyle) {
-    warnings.push(
-      `At ${kitchenTemp}°C, more than 4h at room temperature moves fast. ` +
-      `A cold retard or a poolish gives you more room.`
-    );
+    warnings.push({ key: 'hotClimateRT', params: { temp: kitchenTemp } });
   }
 
   // Absolute 0.5g IDY floor — never output less than this
@@ -222,10 +231,7 @@ function recommendYeast(
   }
 
   if (fridgeTemp > 8) {
-    warnings.push(
-      `Fridge at ${fridgeTemp}°C is warmer than ideal. ` +
-      `Yeast will be more active than a standard 4°C fridge.`
-    );
+    warnings.push({ key: 'fridgeWarm', params: { temp: fridgeTemp } });
   }
 
   return {
@@ -1195,7 +1201,7 @@ export function calculateRecipe(
         pct: Math.round(yeast.pct * 1.2 * 10000) / 10000,
         convertedPct: Math.round(yeast.convertedPct * 1.2 * 10000) / 10000,
         osmoticStress: true,
-        warnings: [...yeast.warnings, 'Sugar above 2% creates osmotic stress — yeast amount increased 20%. Consider SAF Gold osmotolerant yeast for best results.'],
+        warnings: [...yeast.warnings, { key: 'osmoticStress' as const }],
       };
     }
   }

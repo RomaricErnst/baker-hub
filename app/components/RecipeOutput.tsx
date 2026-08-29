@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { type RecipeResult, type YeastResult } from '../utils';
+import { type RecipeResult, type YeastResult, type YeastWarningKey } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
 import { type UnitSystem, displayWeight, displayTemp } from '../utils/units';
 import PlanNav from './PlanNav';
@@ -557,16 +557,19 @@ export default function RecipeOutput({
   const sachetDilutionNote = null;
 
   // Allowlist approach: only keep warnings about structural issues, never temperature context
-  const WARN_ALLOWLIST = ['precision scale', 'poolish', 'not recommended', 'dilution'];
-  function isAllowedWarning(w: string): boolean {
-    const lw = w.toLowerCase();
-    return WARN_ALLOWLIST.some(term => lw.includes(term));
-  }
+  // Which warnings earn a card here. This was a substring allowlist over the
+  // warning's English text — 'precision scale', 'poolish', 'not recommended',
+  // 'dilution' — and three of those four terms no longer matched anything
+  // any warning said, so display depended on wording rather than intent.
+  //
+  // Behaviour is unchanged: the same two warnings render as before.
+  // 'overFermentRT' stays out because the notRecommended card already says it,
+  // and 'fridgeWarm' stays out as it did. Both are now deliberate rather than
+  // an accident of phrasing.
+  const WARN_SHOWN: YeastWarningKey[] = ['poolishSuggestion', 'hotClimateRT'];
 
   const filteredWarnings = yeastInfo
-    ? yeastInfo.warnings
-        .filter(isAllowedWarning)
-        .filter(w => !yeastInfo.notRecommended || !w.toLowerCase().includes('not recommended'))
+    ? yeastInfo.warnings.filter(w => WARN_SHOWN.includes(w.key))
     : [];
 
   // Suppress explanation if it's purely temperature context
@@ -1231,7 +1234,8 @@ export default function RecipeOutput({
 
           {/* Filtered warnings */}
           {filteredWarnings.map((w, i) => (
-            <InfoCard key={i} icon="" level="warn" title={t('recipeOutput.watchOut')} body={w} />
+            <InfoCard key={i} icon="" level="warn" title={t('recipeOutput.watchOut')}
+              body={t(`yeastWarnings.${w.key}`, w.params)} />
           ))}
         </div>
       )}
