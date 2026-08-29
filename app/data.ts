@@ -397,6 +397,42 @@ export const MIXER_TYPES = {
     //
     // Spiral reads hotter than stand overall only because we prescribe a
     // 14-minute spiral mix against 8 minutes for a stand mixer.
+    //
+    // ── Checked against the industrial literature, Aug 2026. No change. ──
+    // The field measures mixing work as SPECIFIC MECHANICAL ENERGY in kJ/kg,
+    // and since heat capacity is also per kg, the temperature rise is
+    // INDEPENDENT OF BATCH MASS. A rate x minutes model is therefore the right
+    // shape; scaling the rise by dough weight would be wrong. Under 3% of the
+    // work goes into gluten, the rest becomes heat, so friction really is
+    // nearly all of it.
+    //
+    // Converting the rates below at 62% hydration (dough cp 2711 J/kg.K,
+    // against 2750 published) gives:
+    //   hand      4.3 kJ/kg   4 folds
+    //   stand    13.0 kJ/kg   2 folds
+    //   spiral   20.9 kJ/kg   1 fold
+    //   no-knead  0           4 folds
+    // Monotonic: the more work the machine does, the fewer folds finish the
+    // job. Spiral at 20.9 sits on the published threshold for full development
+    // of a standard flour (18 kJ/kg) and is the one that needs a single fold.
+    // Modernist's only measured point — Neapolitan, stand, 21C water, stated
+    // 27C final dough temperature — is 16.3 kJ/kg, between our stand and
+    // spiral. Independent check: the Tweedy industrial mixer's published
+    // 1.22e7 J into 300 kg predicts 14.8C against a reported 15-16C.
+    //
+    // So "stand looks low against 18 kJ/kg" is not a fault: our mixers stop
+    // short of full development ON PURPOSE and the folds field finishes it.
+    //
+    // What is genuinely missing is a STYLE axis. kneadMin is flat per mixer,
+    // and Modernist publishes times per style: stand wants 10 min thin-crust,
+    // 11 Neapolitan, 15 New York, ~20 al taglio against our 8. Those differ
+    // because the development ENDPOINT differs — al taglio leaves the mixer at
+    // medium development and finishes with folds during bulk, which is why its
+    // rise is half Neapolitan's. Fixing that means SME per style, and it moves
+    // kneadMin, which also sets fermStart and the Timeline. Not a constant tweak.
+    //
+    // Hydration enters only through cp and is small: 80% hydration lowers the
+    // rise about 5% against 62%. Real, but below the noise in these rates.
     frictionRiseCPerMin: 0.60,
     folds: 2,
     maxDoughG: 1500,
