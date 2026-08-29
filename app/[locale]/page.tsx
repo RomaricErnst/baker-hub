@@ -363,12 +363,13 @@ const GROUP_TITLE: Record<StepGroup, { en: string; fr: string }> = {
 // reads as position — does not apply once it wears a SET caption and sits
 // beside chips that are the very things being counted. The progress rule
 // below fills on the same tally, so the two can never disagree.
-// topOffset is computed by the caller as "bottom of the header, plus the
-// phase bar" — one number for the whole stack. The old `raised` prop pinned
-// the rail to 0 whenever the header autohid, which is what slid it up behind
-// the tab strip and sliced it in half.
-function SummaryBar({ flow, topOffset = 62, modeChip }:
-  { flow: StepFlow; topOffset?: number;
+// Not sticky. It renders inside the phase bar's sticky box, which is the
+// whole point: one sticky element for the module's navigation, so there is no
+// offset to compute and nothing to disagree with. Every previous version of
+// this — topOffset, raised, stickTop, phaseBarH — was arithmetic trying to
+// keep two independent sticky elements from landing on each other.
+function SummaryBar({ flow, modeChip }:
+  { flow: StepFlow;
     modeChip?: { value: string; onClick: () => void } }) {
   const [open, setOpen] = React.useState(false);
   // A bottom sheet that can only be dismissed by tapping outside is a sheet in
@@ -418,12 +419,7 @@ function SummaryBar({ flow, topOffset = 62, modeChip }:
 
   return (
     <>
-      <div style={{
-        position: 'sticky', top: `${topOffset}px`,
-        transition: 'top 0.25s ease', zIndex: 25,
-        background: 'var(--cream)', padding: '8px 0 10px',
-        boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
-      }}>
+      <div style={{ background: 'var(--cream)', padding: '0 0 10px' }}>
         {count === 0 ? (
           // A scroller with no chips is a box of nothing. One quiet line
           // instead — the stepper above already says where they are.
@@ -1116,25 +1112,10 @@ export default function Home() {
   // its labels sliced off. Measured, so the two can never drift apart again.
   const stickyHeadRef = useRef<HTMLDivElement | null>(null);
   const [stickyHeadH, setStickyHeadH] = useState(97);
-  // The phase bar's height, so the chip rail can pin BELOW it instead of on
-  // top of it. Three sticky layers were each computing their own offset from
-  // the header and two of them landed on the same line: the rail won on
-  // z-index and the phase bar sat behind it, invisible.
-  const phaseBarRef = useRef<HTMLDivElement | null>(null);
-  const [phaseBarH, setPhaseBarH] = useState(50);
   useEffect(() => {
     const el = stickyHeadRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
     const sync = () => setStickyHeadH(Math.round(el.getBoundingClientRect().height));
-    sync();
-    const ro = new ResizeObserver(sync);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  useEffect(() => {
-    const el = phaseBarRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const sync = () => setPhaseBarH(Math.round(el.getBoundingClientRect().height));
     sync();
     const ro = new ResizeObserver(sync);
     ro.observe(el);
@@ -1151,7 +1132,12 @@ export default function Home() {
   // stickyHeadH either floated below a gap or, with the rail's old
   // raised -> top:0 shortcut, jumped up behind the tab strip and got sliced
   // in half. One number, derived from what is actually on screen.
-  const stickTop = Math.max(0, stickyHeadH - (navHidden ? 100 : 0));
+  // The header's real bottom edge. It autohides by sliding to top:-100px
+  // (line ~2628), so a fixed height was right only while it was showing. The
+  // 100 is not a guess — it is the same literal, and the two must move
+  // together if either changes.
+  const HEADER_HIDE_PX = 100;
+  const stickTop = Math.max(0, stickyHeadH - (navHidden ? HEADER_HIDE_PX : 0));
   const lastScrollY = useRef(0);
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -2644,7 +2630,7 @@ export default function Home() {
       {/* ── Sticky header + journey bar (autohide on scroll down) ── */}
       <div ref={stickyHeadRef} style={{
         position: 'sticky',
-        top: navHidden ? '-100px' : '0',
+        top: navHidden ? `-${HEADER_HIDE_PX}px` : '0',
         zIndex: 100,
         transition: 'top 0.25s ease',
       }}>
@@ -3080,11 +3066,12 @@ export default function Home() {
           // timer these are phases and not unrelated tabs — and the node
           // shrinks to a dot sitting on the connecting line.
           return (
-            <div ref={phaseBarRef} style={{
-              position: 'sticky', top: `${stickTop}px`, zIndex: 24,
-              background: 'var(--cream)', padding: '8px 24px 8px',
+            <div style={{
+              position: 'sticky', top: `${stickTop}px`, zIndex: 26,
+              background: 'var(--cream)',
               boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
             }}>
+            <div style={{ padding: '8px 24px 8px', position: 'relative' }}>
               <div style={{ position: 'absolute', top: '14.5px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
               </div>
@@ -3143,6 +3130,19 @@ export default function Home() {
                   );
                 })}
               </div>
+            </div>
+            {/* The rail lives INSIDE the phase bar's sticky box. Two sticky
+                elements each deriving an offset from the header is how they
+                ended up on the same line, and then how one of them ended up
+                behind the tab strip: two computations, two chances to be
+                wrong. One element cannot disagree with itself. */}
+            {activeTab === 'setup' && !!bakeType && modeChosen && (
+              tab === 'simple'
+                ? <SummaryBar flow={simpleFlow}
+                    modeChip={{ value: t('modeCards.simple.title'), onClick: () => setModeChosen(false) }} />
+                : <SummaryBar flow={customFlow}
+                    modeChip={{ value: t('modeCards.custom.title'), onClick: () => setModeChosen(false) }} />
+            )}
             </div>
           );
         })() : (() => {
@@ -3434,8 +3434,6 @@ export default function Home() {
                    modeChosen gate, so the opening mode page carries no bar —
                    nothing decided yet, nothing to navigate to, and a progress
                    bar at zero is a discouraging way to greet someone. ── */}
-            <SummaryBar flow={simpleFlow} topOffset={stickTop + phaseBarH}
-              modeChip={{ value: t('modeCards.simple.title'), onClick: () => setModeChosen(false) }} />
             {/* Back from the recipe lands here, not on whichever step
                 was open when they left. "Back" after a recipe exists
                 means "what did I choose", not "where was I typing". */}
@@ -4046,8 +4044,6 @@ export default function Home() {
                    modeChosen gate, so the opening mode page carries no bar —
                    nothing decided yet, nothing to navigate to, and a progress
                    bar at zero is a discouraging way to greet someone. ── */}
-            <SummaryBar flow={customFlow} topOffset={stickTop + phaseBarH}
-              modeChip={{ value: t('modeCards.custom.title'), onClick: () => setModeChosen(false) }} />
             {/* Back from the recipe lands here, not on whichever step
                 was open when they left. "Back" after a recipe exists
                 means "what did I choose", not "where was I typing". */}
