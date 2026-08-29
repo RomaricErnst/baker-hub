@@ -874,7 +874,7 @@ export default function BakeGuide({
   // Recipe quantity helpers — used in mixing order steps.
   // Sourdough (no preferment object): half the starter is flour, half water —
   // subtract so mixing amounts match the Recipe card's tallying totals.
-  const bgSdMid  = recipe?.sourdough ? Math.round((recipe.sourdough.starterGramsMin + recipe.sourdough.starterGramsMax) / 2 / 5) * 5 : 0;
+  const bgSdMid  = recipe?.sourdough ? recipe.sourdough.starterGramsMid : 0;
   const bgSdHalf = recipe?.sourdough && !recipe?.preferment ? Math.round(bgSdMid / 2) : 0;
   const bgMainFlour = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalFlour : recipe.flour) - bgSdHalf : null;
   const bgMainWater = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalWater : recipe.water) - bgSdHalf : null;

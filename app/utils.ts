@@ -244,6 +244,13 @@ export interface SourdoughResult {
   starterPctMax: number;
   starterGramsMin: number;
   starterGramsMax: number;
+  // The amount the recipe actually calls for, rounded to 5 g. Computed here
+  // because three places need the same number: the enthalpy balance below, the
+  // recipe card (which subtracts half of it back out of flour and water for
+  // display) and the bake guide's feed seeding. It was duplicated in the two
+  // components and utils.ts now needs it too — three sites is the pattern the
+  // multi-engine rule exists to prevent.
+  starterGramsMid: number;
   bulkCues: string[];
   warning: string | null;
 }
@@ -318,11 +325,15 @@ function sourdoughGuidance(
       `Use the lower end of the range and watch the dough, not the clock.`
     : null;
 
+  const gramsMin = Math.round(flour * min / 100);
+  const gramsMax = Math.round(flour * max / 100);
+
   return {
     starterPctMin: min,
     starterPctMax: max,
-    starterGramsMin: Math.round(flour * min / 100),
-    starterGramsMax: Math.round(flour * max / 100),
+    starterGramsMin: gramsMin,
+    starterGramsMax: gramsMax,
+    starterGramsMid: Math.round((gramsMin + gramsMax) / 2 / 5) * 5,
     bulkCues,
     warning,
   };
@@ -1228,12 +1239,32 @@ export function calculateRecipe(
       fridgeTemp, kitchenTemp, prefWarmupH,
     );
   }
+  // The levain's flour and water are ALREADY inside `flour` and `water` — the
+  // recipe card proves it by subtracting half the starter back out of each for
+  // display and printing "+ Xg via the starter = Yg total". So the balance was
+  // not missing mass, it had that mass in the wrong bucket: without this,
+  // half the starter's weight in water was solved as if it arrived at the cold
+  // water temperature, when a ripe levain goes in at room temperature.
+  //
+  // kitchenTemp, not fridgeTemp, even for a fridge starter: the sourdough plan
+  // emits fridge_out ahead of the mix by warmupH, so a levain that reaches the
+  // bowl is at room temperature by construction. If that stops being true,
+  // this is the line that breaks.
+  //
+  // The preferment channel is a single bucket, so this only applies when there
+  // is no poolish or biga — the same guard the recipe card uses for sdActive.
+  const levainForBalance = preferment == null ? sourdough : null;
+  const levainInBalance = levainForBalance != null;
+  const levainHalfG = levainForBalance != null
+    ? Math.round(levainForBalance.starterGramsMid / 2)
+    : 0;
+
   const waterTemp = solveWaterTempEnthalpy({
     targetFDT, kitchenTemp, flourTemp, friction: frictionRiseC,
     flourG: flour, waterG: water, saltG: salt,
-    prefFlourG: preferment && isFlourPref ? preferment.prefFlour : 0,
-    prefWaterG: preferment && isFlourPref ? preferment.prefWater : 0,
-    prefTempC,
+    prefFlourG: levainInBalance ? levainHalfG : (preferment && isFlourPref ? preferment.prefFlour : 0),
+    prefWaterG: levainInBalance ? levainHalfG : (preferment && isFlourPref ? preferment.prefWater : 0),
+    prefTempC: levainInBalance ? kitchenTemp : prefTempC,
   }).waterTemp;
 
   return {

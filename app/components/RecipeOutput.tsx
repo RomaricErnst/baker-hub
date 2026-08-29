@@ -195,8 +195,21 @@ function computeWaterInfo(
   isSpiral: boolean,
   isFr = false,
 ): WaterInfo {
-  // Physics-based ice split
-  const rawIce = waterGrams * (ambientTemp - targetTemp) / (targetTemp + 80);
+  // Physics-based ice split.
+  //
+  //   ice·(L + c·T)            = (W − ice)·c·(amb − T)
+  //   ice·(L/c + T)            = (W − ice)·(amb − T)
+  //   ice·(L/c + T + amb − T)  = W·(amb − T)
+  //   ice                      = W·(amb − T) / (L/c + amb)
+  //
+  // The T cancels. The denominator is L/c + ambient, NOT 80 + target, which is
+  // what stood here and over-prescribed ice by ~20%, worsening with ambient:
+  // at 30 °C targeting 10 °C it asked for 111 g where 91 g is right and landed
+  // the water at 5.6 °C, and at 34 °C targeting 6 °C it asked for more ice than
+  // could melt — the baker strains out the remainder and gets both the wrong
+  // temperature and less water than the hydration calls for.
+  const ICE_LATENT_OVER_CP = 79.8;   // L/c = 334 J/g ÷ 4.186 J/g·K
+  const rawIce = waterGrams * (ambientTemp - targetTemp) / (ICE_LATENT_OVER_CP + ambientTemp);
   const iceGrams = Math.max(0, Math.round(rawIce));
   const tapGrams = waterGrams - iceGrams;
   const tempDiff = ambientTemp - targetTemp;
@@ -436,7 +449,7 @@ export default function RecipeOutput({
   // Sourdough starter accounting: half the starter is flour, half water
   // (100% hydration). Subtract from the main-dough amounts so the card's
   // total actually tallies. Preferment mode has its own accounting already.
-  const sdMid  = sourdough ? Math.round((sourdough.starterGramsMin + sourdough.starterGramsMax) / 2 / 5) * 5 : 0;
+  const sdMid  = sourdough ? sourdough.starterGramsMid : 0;
   const sdHalf = sourdough ? Math.round(sdMid / 2) : 0;
   const sdActive = !!sourdough && result.preferment == null;
   const flourMain = sdActive ? flour - sdHalf : flour;
