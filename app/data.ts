@@ -540,6 +540,51 @@ export const STYLE_STAND_MIX_MIN: Record<string, number> = {
   baguette:     14,
 };
 
+// ── AUTOLYSE ──────────────────────────────
+// A rest between the initial and final mix, so the flour hydrates and the
+// gluten begins to organise without work. Its published purpose is to REDUCE
+// mixing time, which is why the Bake Guide has always prescribed one for hand
+// mixing: less kneading for the same development.
+//
+// ONE number, 30 min. The literature is a plateau, not a peak — 20-30 min for
+// refined flour, "more time won't hurt the dough" (Modernist Bread), "it
+// doesn't really matter as long as it is more than 20". A per-style table
+// would be false precision, and 30 sits on the scheduler's 15-minute grid.
+//
+// WHO GETS ONE, and why the list is short:
+//  - The three bread styles whose Modernist mixing times we adopted. Those
+//    times (7 min country and sourdough, 14 min lean) are measured WITH an
+//    autolyse in the method — without the rest the dough is not hydrated and
+//    those minutes do not develop it. The rest is not optional garnish, it is
+//    what makes the number true.
+//  - Hand mixing of any style, which is the rule the Bake Guide already had.
+//
+// EXCLUDED, each for a reason rather than for lack of data:
+//  - Rye (pain_seigle). Autolyse above ~30% rye degrades the dough; the rye
+//    should go in after. This is a no, not an omission.
+//  - Whole grain (pain_complet). Bran and germ want up to two hours, so the
+//    flat 30 would be wrong in the other direction.
+//  - Enriched (brioche, pain_mie, pain_viennois) — pages not read.
+//  - Machine-mixed pizza. A short autolyse "has virtually no impact on the
+//    final characteristics of the pizza" (PizzaBlab), and Modernist Pizza
+//    prescribes one for al taglio alone.
+//  - No-knead, which develops by time already.
+export const AUTOLYSE_MIN = 30;
+
+const AUTOLYSE_STYLES = new Set(['pain_campagne', 'pain_levain', 'baguette']);
+// Never, on any mixer. Rye degrades with a rest; the flour goes in after.
+const AUTOLYSE_NEVER = new Set(['pain_seigle']);
+
+/** Minutes of autolyse between the initial and final mix. 0 when there is none. */
+export function autolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
+  if (mixerType === 'no_knead') return 0;
+  // Rye first, and before the hand-mixing rule: an autolyse in a rye dough is
+  // harmful, not merely unhelpful, so it must not arrive through a mixer path.
+  if (styleKey && AUTOLYSE_NEVER.has(styleKey)) return 0;
+  if (styleKey && AUTOLYSE_STYLES.has(styleKey)) return AUTOLYSE_MIN;
+  return mixerType === 'hand' ? AUTOLYSE_MIN : 0;
+}
+
 /**
  * Elapsed mixing minutes for a style on a given mixer.
  *

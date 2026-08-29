@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, createContext, useContext } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
-import { MIXER_TYPES, type MixerType } from '../data';
+import { MIXER_TYPES, AUTOLYSE_MIN, autolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
 import PhaseSummary from './PhaseSummary';
@@ -93,6 +93,15 @@ function Bullets({ items }: { items: (string | React.ReactNode)[] }) {
 // Context (not a module flag) because Simple and Custom layouts can both
 // keep a BakeGuide mounted at once with different modes.
 const SimpleModeCtx = createContext(false);
+// One autolyse, one number. The schedule reserves AUTOLYSE_MIN between the
+// initial and the final mix (see autolyseMinFor), so this copy must read from
+// the same constant — it used to say 20 while nothing reserved any time at
+// all, which is two encodings of one fact and the plan winning by silence.
+const AUTOLYSE_NOTE = {
+  en: 'autolyse — gluten forms without kneading',
+  fr: 'autolyse — le gluten se forme sans pétrir',
+};
+
 const JARGON_RE = /windowpane|membrane|pumpkin|citrouille|bassinage|autolyse|\bFDT\b|\bDDT\b|\bTFP\b/i;
 const SIMPLE_HIDDEN_TERMS = new Set(['windowpane', 'pumpkin', 'bassinage', 'autolyse', 'fdt']);
 function easyBold(s: string): string {
@@ -1260,7 +1269,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             <Steps items={hydration > 70 ? [
               // >70%: autolyse, then yeast+salt, brief knead, then bassinage, then full knead
               { bold: bgFlour90Label, note: (l === 'fr' ? 'mélangez jusqu’à absorption de la farine — ~2 min' : 'mix until no dry flour — ~2 min') },
-              { bold: (l === 'fr' ? 'Couvrez et laissez reposer 20 min' : 'Cover and rest 20 min'), note: (l === 'fr' ? 'autolyse — le gluten se forme sans pétrir' : 'autolyse — gluten forms without kneading') },
+              { bold: (l === 'fr' ? `Couvrez et laissez reposer ${AUTOLYSE_MIN} min` : `Cover and rest ${AUTOLYSE_MIN} min`), note: AUTOLYSE_NOTE[l] },
               ...(!hasPref ? [{ bold: bgYeastLabel, note: (l === 'fr' ? 'mélangez pour incorporer — 2 min' : 'mix to combine — 2 min') }] : []),
               { bold: bgSaltLabel, note: (l === 'fr' ? 'mélangez jusqu’à absorption — 2 min' : 'mix until absorbed — 2 min') },
               ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'mélangez jusqu’à incorporation complète' : 'mix until fully incorporated') }] : []),
@@ -1271,7 +1280,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             ] : [
               // ≤70%: autolyse, yeast, salt, remaining water, then full knead
               { bold: bgFlour90Label, note: (l === 'fr' ? 'mélangez jusqu’à absorption de la farine — ~2 min' : 'mix until no dry flour — ~2 min') },
-              { bold: (l === 'fr' ? 'Couvrez et laissez reposer 20 min' : 'Cover and rest 20 min'), note: (l === 'fr' ? 'autolyse — le gluten se forme sans pétrir' : 'autolyse — gluten forms without kneading') },
+              { bold: (l === 'fr' ? `Couvrez et laissez reposer ${AUTOLYSE_MIN} min` : `Cover and rest ${AUTOLYSE_MIN} min`), note: AUTOLYSE_NOTE[l] },
               ...(!hasPref ? [{ bold: bgYeastLabel, note: (l === 'fr' ? 'mélangez pour incorporer — 2 min' : 'mix to combine — 2 min') }] : []),
               { bold: bgSaltLabel, note: (l === 'fr' ? 'mélangez jusqu’à absorption — 2 min' : 'mix until absorbed — 2 min') },
               ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'mélangez jusqu’à incorporation complète' : 'mix until fully incorporated') }] : []),
@@ -1284,6 +1293,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             <Steps items={hydration > 70 ? [
               // >70%: build structure first, then bassinage, then final Speed 2
               { bold: bgFlour90Label, note: (l === 'fr' ? 'Vitesse 1, 2 min pour incorporer' : 'Speed 1, 2 min to combine') },
+              ...(autolyseMinFor(mixerType, styleKey) > 0 ? [{ bold: (l === 'fr' ? `Couvrez et laissez reposer ${AUTOLYSE_MIN} min` : `Cover and rest ${AUTOLYSE_MIN} min`), note: AUTOLYSE_NOTE[l] }] : []),
               ...(!hasPref ? [{ bold: bgYeastLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min' : 'Speed 1, 2 min') }] : []),
               { bold: bgSaltLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min jusqu’à absorption' : 'Speed 1, 2 min until absorbed') },
               ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'Vitesse 1, mélangez jusqu’à incorporation' : 'Speed 1, mix until incorporated') }] : []),
@@ -1294,6 +1304,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             ] : [
               // ≤70%: remaining water before Speed 2
               { bold: bgFlour90Label, note: (l === 'fr' ? 'Vitesse 1, 2 min pour incorporer' : 'Speed 1, 2 min to combine') },
+              ...(autolyseMinFor(mixerType, styleKey) > 0 ? [{ bold: (l === 'fr' ? `Couvrez et laissez reposer ${AUTOLYSE_MIN} min` : `Cover and rest ${AUTOLYSE_MIN} min`), note: AUTOLYSE_NOTE[l] }] : []),
               ...(!hasPref ? [{ bold: bgYeastLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min' : 'Speed 1, 2 min') }] : []),
               { bold: bgSaltLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min jusqu’à absorption' : 'Speed 1, 2 min until absorbed') },
               ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'Vitesse 1, mélangez jusqu’à incorporation' : 'Speed 1, mix until incorporated') }] : []),
@@ -1307,6 +1318,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               <Steps items={hydration > 70 ? [
                 // >70%: pumpkin first, bassinage after
                 { bold: bgMainFlour && bgWater90 ? (l === 'fr' ? `${bgMainFlour}g de farine + ${bgWater90}g d’eau (90%)${!isSourdough && !hasPref ? ' + levure' : ''}` : `${bgMainFlour}g flour + ${bgWater90}g water (90%)${!isSourdough && !hasPref ? ' + yeast' : ''}`) : (l === 'fr' ? 'Farine + 90% de votre eau' : 'Flour + 90% of your water'), note: (l === 'fr' ? 'Vitesse 1, 3 min pour incorporer' : 'Speed 1, 3 min to combine') },
+                ...(autolyseMinFor(mixerType, styleKey) > 0 ? [{ bold: (l === 'fr' ? `Couvrez et laissez reposer ${AUTOLYSE_MIN} min` : `Cover and rest ${AUTOLYSE_MIN} min`), note: AUTOLYSE_NOTE[l] }] : []),
                 ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'Vitesse 1, mélangez jusqu’à incorporation' : 'Speed 1, mix until incorporated') }] : []),
                 { bold: bgSaltLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min' : 'Speed 1, 2 min') },
                 { bold: (l === 'fr' ? 'Vitesse 2 jusqu’à la forme de citrouille' : 'Speed 2 until pumpkin shape forms'), note: l === 'fr' ? `en général 10–15 min — arrêtez si la FDT dépasse ${tempC(28, u)}` : `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
@@ -1315,6 +1327,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               ] : [
                 // ≤70%: remaining water before Speed 2
                 { bold: bgMainFlour && bgWater90 ? (l === 'fr' ? `${bgMainFlour}g de farine + ${bgWater90}g d’eau (90%)${!isSourdough && !hasPref ? ' + levure' : ''}` : `${bgMainFlour}g flour + ${bgWater90}g water (90%)${!isSourdough && !hasPref ? ' + yeast' : ''}`) : (l === 'fr' ? 'Farine + 90% de votre eau' : 'Flour + 90% of your water'), note: (l === 'fr' ? 'Vitesse 1, 3 min pour incorporer' : 'Speed 1, 3 min to combine') },
+                ...(autolyseMinFor(mixerType, styleKey) > 0 ? [{ bold: (l === 'fr' ? `Couvrez et laissez reposer ${AUTOLYSE_MIN} min` : `Cover and rest ${AUTOLYSE_MIN} min`), note: AUTOLYSE_NOTE[l] }] : []),
                 ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'Vitesse 1, mélangez jusqu’à incorporation' : 'Speed 1, mix until incorporated') }] : []),
                 { bold: bgSaltLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min' : 'Speed 1, 2 min') },
                 { bold: bgWater10Label, note: 'Speed 1, mix until absorbed — ~1 min' },

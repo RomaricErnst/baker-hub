@@ -383,7 +383,8 @@
       "preheat": "Préchauffage du four",
       "eat": "Cuisson & Dégustation !",
       "divideShape": "Division & Façonnage",
-      "coldShaped": "Pousse au froid — façonné"
+      "coldShaped": "Pousse au froid — façonné",
+      "autolyse": "Repos"
     },
     "prefSteps": {
       "makePoolish": "Préparer le Poolish",
@@ -456,7 +457,10 @@
       "withoutCold": "Façonnez la pâte et faites l'apprêt couverte à température ambiante. Préchauffez votre four pendant l'apprêt."
     },
     "finalProofCoveredBread": "La pâte est déjà façonnée — couvrez et laissez à température ambiante jusqu'au test du creux.",
-    "finalProofShapeBread": "Façonnez votre pâte si ce n'est pas fait. Couvrez et laissez à température ambiante jusqu'au test du creux."
+    "finalProofShapeBread": "Façonnez votre pâte si ce n'est pas fait. Couvrez et laissez à température ambiante jusqu'au test du creux.",
+    "tips": {
+      "autolyse": "Couvrez et laissez reposer — c’est l’autolyse. La farine s’hydrate et le gluten commence à s’organiser tout seul : le second pétrissage sera plus court et plus doux. Ni pétrissage, ni rabat."
+    }
   },
   "recipeOutput": {
     "totalIngredients": "Total des ingrédients",

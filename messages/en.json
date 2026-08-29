@@ -383,7 +383,8 @@
       "preheat": "Preheat Oven",
       "eat": "Bake & Eat!",
       "divideShape": "Divide & Shape",
-      "coldShaped": "Cold Proof — Shaped"
+      "coldShaped": "Cold Proof — Shaped",
+      "autolyse": "Rest"
     },
     "prefSteps": {
       "makePoolish": "Make your Poolish",
@@ -456,7 +457,10 @@
       "withoutCold": "Shape the dough and proof covered at room temperature. Start preheating your oven during this time."
     },
     "finalProofCoveredBread": "The dough is already shaped — cover and leave at room temperature until the poke test.",
-    "finalProofShapeBread": "Shape your dough if not done. Cover and leave at room temperature until the poke test."
+    "finalProofShapeBread": "Shape your dough if not done. Cover and leave at room temperature until the poke test.",
+    "tips": {
+      "autolyse": "Cover it and leave it alone — this is the autolyse. The flour hydrates and the gluten starts to organise on its own, so the second mix is shorter and gentler. No kneading, no folding."
+    }
   },
   "recipeOutput": {
     "totalIngredients": "Total ingredients",

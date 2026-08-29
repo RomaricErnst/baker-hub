@@ -40,7 +40,7 @@ const TERMS: Record<string, TermContent> = {
     title: 'Autolyse',
     emoji: '',
     explanation: 'Mixing flour and water and letting it rest before adding other ingredients. During this rest, flour hydrates naturally and gluten begins forming without any kneading. The result is more extensible, easier to work dough.',
-    tip: '20–30 min is enough for pizza. Bread benefits from up to 1 hour. Keep it covered to prevent drying.',
+    tip: 'Baker Hub reserves 30 min, which is enough for any refined flour — more will not hurt. Whole grain wants longer. Skip it entirely for rye, where a rest weakens the dough. Keep it covered to prevent drying.',
     videoLabel: 'Read full guide →',
     videoUrl: 'https://www.pizzablab.com/the-encyclopizza/autolyse/',
   },

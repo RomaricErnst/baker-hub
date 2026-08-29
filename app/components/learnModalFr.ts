@@ -32,7 +32,7 @@ export const TERMS_FR: Record<string, TermFr> = {
   autolyse: {
     title: 'Autolyse',
     explanation: 'On incorpore la farine et l\u2019eau, puis on laisse reposer avant d\u2019ajouter le reste. Pendant ce repos, la farine s\u2019hydrate naturellement et le gluten commence à se former sans aucun pétrissage. On obtient une pâte plus extensible et plus agréable à travailler.',
-    tip: '20 à 30 min suffisent pour la pizza. Le pain profite d\u2019une autolyse allant jusqu\u2019à 1 heure. Couvrez pour éviter le croûtage.',
+    tip: 'Baker Hub réserve 30 min, ce qui suffit pour toute farine raffinée — davantage ne nuit pas. La farine complète en demande plus. À éviter totalement avec le seigle, où le repos affaiblit la pâte. Couvrez pour éviter le croûtage.',
     videoLabel: 'Lire le guide complet →',
   },
   bassinage: {

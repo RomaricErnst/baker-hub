@@ -7,7 +7,7 @@ import {
   formatTime,
   hoursLabel,
 } from '../utils';
-import { kneadMinFor, type MixerType } from '../data';
+import { kneadMinFor, autolyseMinFor, type MixerType } from '../data';
 import { StepIcon, IconProof } from './StepIcons';
 import LearnModal from './LearnModal';
 
@@ -34,7 +34,7 @@ interface TimelineProps {
 }
 
 // ── Step kinds ────────────────────────────────
-export type StepKind = 'feed_starter' | 'make_preferment' | 'mixing' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'rt_warmup' | 'preheat' | 'eat';
+export type StepKind = 'feed_starter' | 'make_preferment' | 'mixing' | 'autolyse' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'rt_warmup' | 'preheat' | 'eat';
 
 interface TimelineStep {
   kind: 'step';
@@ -58,6 +58,9 @@ export const THEME: Record<StepKind, {
   feed_starter:    { dot: '#6A7FA8', ring: 'rgba(106,127,168,0.1)', line: '#C4CDE0', pill: '#EEF2FA', pillText: '#3A5A8A', cardBg: '#EEF2FA', cardBorder: '#C4CDE0' },
   make_preferment: { dot: '#C4A030', ring: 'rgba(196,160,48,0.12)', line: '#E8D890', pill: '#FDFBF2', pillText: '#7A5A10', cardBg: '#FDFBF2', cardBorder: '#E8D890' },
   mixing:      { dot: 'var(--ash)',    ring: 'rgba(61,53,48,.1)',    line: 'var(--border)', pill: 'var(--cream)',  pillText: 'var(--ash)' },
+  // Same neutral family as mixing — it is part of the mixing sequence, not a
+  // fermentation phase, and should not compete with bulk for attention.
+  autolyse:    { dot: 'var(--smoke)',  ring: 'rgba(140,133,128,.1)', line: 'var(--border)', pill: 'var(--cream)',  pillText: 'var(--ash)' },
   bulk_ferm:   { dot: 'var(--terra)',  ring: 'rgba(107, 68, 35,.1)',   line: '#F5C4B0',       pill: '#FEF4EF',      pillText: 'var(--terra)', cardBg: '#FEF8F5', cardBorder: '#F5C4B0' },
   divide_ball: { dot: '#8A6A4A',       ring: 'rgba(138,106,74,.1)',  line: '#D4B898',       pill: '#FDF4EA',      pillText: '#6A3A10' },
   final_proof: { dot: '#7A8C6E',       ring: 'rgba(122,140,110,.1)', line: '#C8D4BA',       pill: '#F2F5EF',      pillText: '#4A5A44', cardBg: '#F5F7F2', cardBorder: '#C8D4BA' },
@@ -164,6 +167,7 @@ export function buildItems(
     });
   }
   const kneadMin = kneadMinFor(mixerType, styleKey);
+  const autolyseMin = autolyseMinFor(mixerType, styleKey);
   const isTwoPhase = schedule.coldRetard2Start !== null;
 
   // Divide & ball duration
@@ -214,6 +218,21 @@ export function buildItems(
     // Protocole tab — repeating a one-liner above it was redundant (tester).
     durationH: kneadMin > 0 ? kneadMin / 60 : null,
   });
+
+  // 1b — Autolyse. Its own step rather than padding the mixing block: the
+  // baker does nothing for half an hour, and hiding that inside something
+  // labelled "Mix" misreports the one part of it that is a wait.
+  if (autolyseMin > 0) {
+    items.push({
+      kind: 'step', id: 'autolyse', stepKind: 'autolyse',
+      time: new Date(startTime.getTime() + Math.round(kneadMin / 2) * 60000),
+      label: t('timeline.steps.autolyse'),
+      icon: '',
+      iconKey: 'bulk',
+      tip: t('timeline.tips.autolyse'),
+      durationH: autolyseMin / 60,
+    });
+  }
 
   // 2 — Bulk Fermentation
   if (schedule.bulkFermHours > 0) {

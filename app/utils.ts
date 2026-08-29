@@ -16,6 +16,7 @@ import {
   BREAD_OVEN_TYPES,
   MIXER_TYPES,
   kneadMinFor,
+  autolyseMinFor,
   YEAST_TYPES,
   computeBlendProfile,
   computePrefermentRecipe,
@@ -723,8 +724,15 @@ export function buildSchedule(
   // published constraint cannot calibrate a speed-weighted model, so water
   // temperature and ice are left exactly as they were.
   const kneadMin = kneadMinFor(mixerType, styleKey);
-  const fermStart = new Date(startTime.getTime() + kneadMin * 60000);
-  const mixingDurationH = kneadMin / 60;
+  // The autolyse sits BETWEEN the initial and the final mix, so the window
+  // from Start Dough to the beginning of bulk is mix + rest + mix. Both the
+  // Timeline and the Bake Guide derive the mix start by subtracting
+  // mixingDurationH from bulkFermStart, so folding it in here keeps all three
+  // agreed — they disagreed once before, see the note at BakeGuide ~896.
+  const autolyseMin = autolyseMinFor(mixerType, styleKey);
+  const mixWindowMin = kneadMin + autolyseMin;
+  const fermStart = new Date(startTime.getTime() + mixWindowMin * 60000);
+  const mixingDurationH = mixWindowMin / 60;
   const preheatH = preheatMin / 60;
 
   const r15  = (d: Date) => roundTo15(d) as Date;
