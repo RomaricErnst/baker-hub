@@ -506,13 +506,38 @@ export const MIXER_TYPES = {
 // Deliberately NOT used for friction. See mixerFrictionRiseC in utils.ts.
 const STAND_MIX_REFERENCE_MIN = 11;   // Neapolitan, p47
 
+//
+// Bread comes from Modernist Bread Vol. 6, same method — stand-mixer column
+// only, active mixing minutes, autolyse excluded:
+//
+//   Country-Style Bread (our pain_campagne)   7 min   p105
+//   Sourdough master    (our pain_levain)     7 min   p80
+//   French Lean Bread   (our baguette)       14 min   p61
+//
+// The lean bread is double the other two because its final mix carries a long
+// 8-minute low-speed phase after the autolyse, where the country and sourdough
+// doughs go straight to 4-5 min on medium. Both books repeat the same warning
+// about the big machines — "larger quantities of dough will take longer to
+// mix", spiral multiplied by at least 8 — which is why only this column is
+// used.
+//
+// NOT LISTED, and deliberately so: pain_complet, pain_seigle, fougasse,
+// brioche, pain_mie, pain_viennois. Rye wants less mixing than wheat and the
+// enriched doughs want considerably more to take the butter, so guessing a
+// number from the wheat breads would be wrong in both directions. They fall
+// through to the mixer's base until their pages are read.
 export const STYLE_STAND_MIX_MIN: Record<string, number> = {
+  // Pizza — Modernist Pizza Vol. 4
   pan:           6,
   neapolitan:   11,
   sourdough:    11,   // no separate table; the closest published dough
   pizza_romana: 20,
   roman:        20,
   newyork:      15,
+  // Bread — Modernist Bread Vol. 6
+  pain_campagne: 7,
+  pain_levain:   7,
+  baguette:     14,
 };
 
 /**
