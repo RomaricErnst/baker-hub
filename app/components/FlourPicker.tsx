@@ -494,6 +494,26 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   // `source` says how the W of this addition is known — the caller knows which
   // road it came from, and the blend needs it to decide whether its own W can
   // be printed without a tilde.
+  // FLOUR_DB.type is a MILLING designation — '00', 'T65', 'high_gluten' — and
+  // FlourKey is a behaviour tile — 'pizza00', 'strong00', 'manitoba'. Twelve of
+  // the database's sixteen type values are not FlourKeys at all, so casting one
+  // to the other put a key like '00' into blend.flour2 and every later
+  // FLOUR_DATA lookup came back undefined. That is the crash on selecting a
+  // second flour from the search list.
+  //
+  // The single-flour path never hit it because selectDBEntry derives its tile
+  // from W. Same rule here, with a direct pass for the four designations that
+  // happen to be behaviour tiles too.
+  function dbTypeToFlourKey(f: FlourEntry): FlourKey {
+    const direct: Record<string, FlourKey> = {
+      bread: 'bread', rye: 'rye', semolina: 'semolina', wholemeal: 'wholemeal',
+      all_purpose: 'allpurpose',
+    };
+    const hit = direct[f.type];
+    if (hit) return hit;
+    return f.w >= 270 ? 'strong00' : 'pizza00';
+  }
+
   function assignBlendFlour(entry: FlourEntry, key: FlourKey, label: string, r1ForSlot2 = 85, source?: WSource) {
     // Same rule for additions: default to what the database says it knows.
     source = source ?? (entry.wPublished ? 'exact' : 'typical');
@@ -1518,7 +1538,20 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         );
                       }
                       return (
-                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                        <div style={{ position: 'relative' }}>
+                        {/* The list clips at 200px — about three rows — and said
+                            nothing about it, so a filtered search looked like it
+                            had three results. A count above and a fade at the cut
+                            both say there is more without spending a row on it. */}
+                        <div style={{
+                          fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)',
+                          padding: '2px 0 6px', letterSpacing: '.03em',
+                        }}>
+                          {blendResults.length >= 30
+                            ? (locale === 'fr' ? '30+ farines — faites défiler' : '30+ flours — scroll for more')
+                            : (locale === 'fr' ? `${blendResults.length} farines — faites défiler` : `${blendResults.length} flours — scroll for more`)}
+                        </div>
+                        <div style={{ maxHeight: '200px', overflowY: 'auto', position: 'relative' }}>
                           {blendResults.map(f => (
                             <FlourRow
                               key={f.id}
@@ -1527,10 +1560,16 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                 if (blendSlot === 2) setBlendRatio(85);
                                 setBlendFilterType(null);
                                 setBlendFilterBrand(null);
-                                assignBlendFlour(f, f.type as FlourKey, `${f.brand} ${f.name}`);
+                                assignBlendFlour(f, dbTypeToFlourKey(f), `${f.brand} ${f.name}`);
                               }}
                             />
                           ))}
+                        </div>
+                        <div aria-hidden="true" style={{
+                          position: 'absolute', left: 0, right: 0, bottom: 0, height: '26px',
+                          pointerEvents: 'none',
+                          background: 'linear-gradient(180deg, rgba(245,240,232,0), var(--cream))',
+                        }} />
                         </div>
                       );
                     })()}
