@@ -1357,6 +1357,16 @@ export default function Home() {
     setRecipeGenerated(session.recipeGenerated);
     setModeChosen(session.modeChosen);
 
+    // Prefer what was stored; fall back to the end for older snapshots that
+    // predate the field, because a generated recipe is itself proof that every
+    // input had a value — you cannot reach one otherwise.
+    const restoredHighest = typeof session.highestStep === 'number'
+      ? session.highestStep : (session.recipeGenerated ? 99 : 1);
+    const restoredAdvHighest = typeof session.advancedHighestStep === 'number'
+      ? session.advancedHighestStep : (session.recipeGenerated ? 99 : 1);
+    setHighestStep(restoredHighest);
+    setAdvancedHighestStep(restoredAdvHighest);
+
     if (session.recipeGenerated) {
       setActiveTab(session.activeTab as 'setup' | 'plan' | 'guide' | 'pizzaparty');
       if (session.tab === 'custom') {
@@ -1805,6 +1815,10 @@ export default function Home() {
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
       recipeGenerated, activeTab, modeChosen,
+      // How far the baker got. Without it a resumed session reopened at
+      // highestStep 1, so every step carrying a default read as unset —
+      // "Quantity not confirmed" beside a finished recipe.
+      highestStep, advancedHighestStep,
       pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? {
         qtys: pizzaPartyQtys,
         // Bought / prepped ticks ride along in the snapshot — session-scoped
@@ -2106,6 +2120,7 @@ export default function Home() {
     setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: bakeType === 'bread' ? 'bread' : 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
+    setReviewMode(false); setSetupOverview(false);
     setModeChosen(false);
     setTab('simple'); // full reset — keeping the previous mode made Custom look pre-selected to a fresh user
     setPizzaPartyTab('pick');
@@ -3384,7 +3399,13 @@ export default function Home() {
             {/* Back from the recipe lands here, not on whichever step
                 was open when they left. "Back" after a recipe exists
                 means "what did I choose", not "where was I typing". */}
-            {setupOverview && (
+            {/* Guarded on recipeGenerated, not just the flag. The overview
+                answers "what did I choose" — a question that only exists
+                after there is something to come back to. Any path that
+                left the flag set (a reset, a fresh start after browsing
+                the summary) heals itself here instead of dropping a
+                first-time baker onto a review screen. */}
+            {setupOverview && recipeGenerated && (
               <SetupReview
                 flow={simpleFlow}
                 modeChip={{ value: t('modeCards.simple.title'), onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
@@ -3392,7 +3413,7 @@ export default function Home() {
                 onBackToRecipe={() => { setSetupOverview(false); setActiveTab('plan'); }}
               />
             )}
-            <div ref={simpleSwipeRef} style={{ display: setupOverview ? 'none' : undefined }}>
+            <div ref={simpleSwipeRef} style={{ display: setupOverview && recipeGenerated ? 'none' : undefined }}>
 
             {/* ─── STEP 1: Style picker ────────────── */}
             <StepPage flow={simpleFlow} id={1}>
@@ -3770,6 +3791,10 @@ export default function Home() {
                                 eatTime: eatTime?.getTime() ?? null,
                                 blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                                 recipeGenerated, activeTab, modeChosen,
+      // How far the baker got. Without it a resumed session reopened at
+      // highestStep 1, so every step carrying a default read as unset —
+      // "Quantity not confirmed" beside a finished recipe.
+      highestStep, advancedHighestStep,
                                 pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
                                 bakedDone,
                               };
@@ -3943,6 +3968,10 @@ export default function Home() {
                       eatTime: eatTime?.getTime() ?? null,
                       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                       recipeGenerated, activeTab, modeChosen,
+      // How far the baker got. Without it a resumed session reopened at
+      // highestStep 1, so every step carrying a default read as unset —
+      // "Quantity not confirmed" beside a finished recipe.
+      highestStep, advancedHighestStep,
                       pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
                       bakedDone,
                     };
@@ -3977,7 +4006,13 @@ export default function Home() {
             {/* Back from the recipe lands here, not on whichever step
                 was open when they left. "Back" after a recipe exists
                 means "what did I choose", not "where was I typing". */}
-            {setupOverview && (
+            {/* Guarded on recipeGenerated, not just the flag. The overview
+                answers "what did I choose" — a question that only exists
+                after there is something to come back to. Any path that
+                left the flag set (a reset, a fresh start after browsing
+                the summary) heals itself here instead of dropping a
+                first-time baker onto a review screen. */}
+            {setupOverview && recipeGenerated && (
               <SetupReview
                 flow={customFlow}
                 modeChip={{ value: t('modeCards.custom.title'), onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
@@ -3985,7 +4020,7 @@ export default function Home() {
                 onBackToRecipe={() => { setSetupOverview(false); setActiveTab('plan'); }}
               />
             )}
-            <div ref={customSwipeRef} style={{ display: setupOverview ? 'none' : undefined }}>
+            <div ref={customSwipeRef} style={{ display: setupOverview && recipeGenerated ? 'none' : undefined }}>
 
             {/* ─── ADV STEP 1: Style picker ────────── */}
             <StepPage flow={customFlow} id={1}>
@@ -4816,6 +4851,10 @@ export default function Home() {
                                 eatTime: eatTime?.getTime() ?? null,
                                 blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                                 recipeGenerated, activeTab, modeChosen,
+      // How far the baker got. Without it a resumed session reopened at
+      // highestStep 1, so every step carrying a default read as unset —
+      // "Quantity not confirmed" beside a finished recipe.
+      highestStep, advancedHighestStep,
                                 pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
                                 bakedDone,
                               };
@@ -4989,6 +5028,10 @@ export default function Home() {
                       eatTime: eatTime?.getTime() ?? null,
                       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                       recipeGenerated, activeTab, modeChosen,
+      // How far the baker got. Without it a resumed session reopened at
+      // highestStep 1, so every step carrying a default read as unset —
+      // "Quantity not confirmed" beside a finished recipe.
+      highestStep, advancedHighestStep,
                       pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
                       bakedDone,
                     };

@@ -33,6 +33,10 @@ export interface SessionData {
   eatTime: number | null;
   blocks: unknown[];
   recipeGenerated: boolean;
+  // How far the baker advanced, per flow. Optional: snapshots written before
+  // this field existed restore fine, they just fall back.
+  highestStep?: number;
+  advancedHighestStep?: number;
   activeTab: string;
   modeChosen: boolean;
   pizzaParty?: { qtys: Record<string, number>; bakedQtys?: Record<string, number>; shopTicks?: Record<string, boolean>; prepTicks?: string[] } | null;
