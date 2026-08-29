@@ -345,12 +345,17 @@ const GROUP_TITLE: Record<StepGroup, { en: string; fr: string }> = {
   plan:    { en: 'When you\u2019re baking', fr: 'Quand vous enfournez' },
 };
 
-// `prefilled` was never a record of what the baker touched: it is set
-// statically on Quantity, Climate, Flour, Preferment and Fine-tune and stays
-// true after they edit the value. Surfacing it as an ASSUMED badge therefore
-// told bakers that choices they had just made were guesses. The flag keeps
-// its real job inside stepAnswered — a default counts as adopted once the
-// baker moves past its page — and shows nothing.
+// `prefilled` means one thing now: the value came from the baker's profile
+// rather than from this session. It used to be set statically on Quantity,
+// Climate, Flour, Preferment and Fine-tune and stayed true after an edit,
+// which is why surfacing it as an ASSUMED badge told bakers that choices they
+// had just made were guesses.
+//
+// Quantity, Flour and Preferment no longer carry a static `prefilled` at all.
+// They report `value: null` until qtyChosen / flourChosen / prefermentChosen
+// says the baker or their profile settled them, so `stepAnswered` returns
+// false on its own and the door names the step. Nothing is drawn from
+// `prefilled` today; whether anything ever should be is a separate question.
 
 // ── Summary chip carousel ─────────────────────
 // Two questions, two controls. The rail shows what the baker has DECIDED —
@@ -967,6 +972,39 @@ export default function Home() {
   const [itemWeight, setItemWeight] = useState(270);
   const [pizzaDiameter, setPizzaDiameter] = useState(30);
   const [pizzaCorn, setPizzaCorn] = useState(1);
+
+  // ── Settled, not merely defaulted ─────────────
+  // Quantity, Flour and Preferment each hold a hard-coded starting value (2 x
+  // 270 g, pizza00, 'none'), and until now the flow adopted it the moment the
+  // baker walked past the page: Preferment read "Direct" for someone who never
+  // chose Direct, recorded identically to a style they did choose.
+  //
+  // The rule is: the profile answers the step, or the baker does. Nothing else
+  // counts. The state below keeps its default so the engine always has a
+  // number to work with, but the step reports no value until one of those two
+  // settles it, and Generate waits for all three.
+  //
+  // Deliberately three booleans rather than a general mechanism. Climate and
+  // Fine-tune are NOT in this set and should not be added lightly: Fine-tune's
+  // values are derived from the style the baker chose, so they are a
+  // recommendation rather than an assumption, and kitchen temperature is a
+  // slider with no honest blank state — its provenance belongs with the
+  // weather prefill, which can show a source line instead.
+  const [qtyChosen, setQtyChosen] = useState(false);
+  const [flourChosen, setFlourChosen] = useState(false);
+  const [prefermentChosen, setPrefermentChosen] = useState(false);
+
+  // Wrappers for the quantity controls only. Choosing a style also sets a
+  // default ball count and weight, and that must not count as the baker
+  // answering the question — so those call sites keep the plain setters.
+  const chooseNumItems = (v: number | ((n: number) => number)) => {
+    setQtyChosen(true);
+    setNumItems(v as number);
+  };
+  const chooseItemWeight = (v: number) => {
+    setQtyChosen(true);
+    setItemWeight(v);
+  };
   const [avpnOpen, setAvpnOpen] = useState(false);
 
   // Step 3 — oven
@@ -1142,6 +1180,18 @@ export default function Home() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [activeTab]);
+  // Party sub-tabs are four phases swapping content on one screen, so arriving
+  // at Shopping halfway down the Pizzas list is the same disorientation the
+  // effect above exists to prevent. Instant, per the standing rule against
+  // smooth scrolling — it moves targets under fingers.
+  //
+  // The activeTab guard is load-bearing: setPizzaPartyTab('pick') also fires
+  // from the two reset paths while the baker is somewhere else entirely, and
+  // without it the page jumps under them.
+  useEffect(() => {
+    if (activeTab !== 'pizzaparty') return;
+    window.scrollTo(0, 0);
+  }, [pizzaPartyTab, activeTab]);
   useEffect(() => {
     const el = document.documentElement;
     const onScroll = () => {
@@ -1342,6 +1392,12 @@ export default function Home() {
     setFridgeTemp(session.fridgeTemp);
     if (session.flourBlend) setFlourBlend(session.flourBlend as FlourBlend);
     setPrefermentType(session.prefermentType as PrefermentType);
+    // Sessions written before these flags existed restore as settled: their
+    // values WERE decisions when they were made, and re-asking would be the
+    // same lie in the other direction.
+    setQtyChosen(session.qtyChosen ?? true);
+    setFlourChosen(session.flourChosen ?? true);
+    setPrefermentChosen(session.prefermentChosen ?? true);
     setPrefermentFlourPct(session.prefermentFlourPct);
     setPrefOffsetH(session.prefOffsetH);
     setManualHydration(session.manualHydration);
@@ -1815,6 +1871,7 @@ export default function Home() {
       ovenType, mixerType, yeastType,
       kitchenTemp, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+      qtyChosen, flourChosen, prefermentChosen,
       manualHydration, manualOil, manualSugar, manualSalt,
       targetDoughTemp, flourInFridge, wastePct, addSeeds, priorityOverride,
       prefGoesInFridge,
@@ -1936,7 +1993,11 @@ export default function Home() {
       if (bt !== 'bread' && prof.prefermentType && prof.preferredMode === 'custom'
           && prof.yeastType !== 'sourdough'
           && ['none', 'poolish', 'biga'].includes(prof.prefermentType)) {
-        setPrefermentType(prof.prefermentType as PrefermentType); applied = true; markProfile('preferment');
+        // The profile IS an answer — the baker set it, just not in this
+        // session. That is the whole point of the rule: profile or baker,
+        // never a code default.
+        setPrefermentType(prof.prefermentType as PrefermentType); applied = true;
+        markProfile('preferment'); setPrefermentChosen(true);
       }
       if (prof.fridgeTemp !== undefined) { setFridgeTemp(prof.fridgeTemp); applied = true; }
       if (prof.preferredMode) { setTab(prof.preferredMode); applied = true; }
@@ -2218,6 +2279,10 @@ export default function Home() {
     setKitchenTemp(r.kitchen_temp);
     setHumidity(r.humidity ?? 'normal');
     setFridgeTemp(r.fridge_temp ?? 6);
+    // A saved recipe is a finished decision on every field it carries.
+    setQtyChosen(true);
+    setFlourChosen(true);
+    setPrefermentChosen(true);
 
     // Custom mode fields
     if (isCustom) {
@@ -2300,6 +2365,9 @@ export default function Home() {
     setFridgeTemp(snap.fridgeTemp);
     if (snap.flourBlend) setFlourBlend(snap.flourBlend as FlourBlend);
     setPrefermentType(snap.prefermentType as PrefermentType);
+    setQtyChosen(snap.qtyChosen ?? true);
+    setFlourChosen(snap.flourChosen ?? true);
+    setPrefermentChosen(snap.prefermentChosen ?? true);
     setPrefermentFlourPct(snap.prefermentFlourPct);
     setPrefOffsetH(snap.prefOffsetH);
     setManualHydration(snap.manualHydration);
@@ -2381,8 +2449,14 @@ export default function Home() {
   }
 
   // ── Computed: Generate button / progress ──
-  const simpleRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime);
-  const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend);
+  // Generate waits for the defaulted steps to be settled by the baker or their
+  // profile. Without this the gate never blocked on them: 2 x 270 g, pizza00
+  // and 'none' are all truthy from the first render, so a walk-through that
+  // never opened those pages still produced a recipe built on three guesses.
+  // Preferment and Flour are Custom-only steps; Simple has no page for either.
+  const simpleRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && qtyChosen);
+  const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend
+    && qtyChosen && flourChosen && (yeastType === 'sourdough' || prefermentChosen));
   const canGenerate = tab === 'simple' ? simpleRequiredDone : customRequiredDone;
 
   // ── Styles ────────────────────────────────
@@ -2416,7 +2490,7 @@ export default function Home() {
       short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
     { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
-      value: `${numItems} × ${itemWeight} g`, prefilled: true,
+      value: qtyChosen ? `${numItems} × ${itemWeight} g` : null, prefilled: false,
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
     // Oven and mixing are one page: same nature (your kitchen, not your
     // dough), both single-choice, both remembered by the profile.
@@ -2470,7 +2544,7 @@ export default function Home() {
       short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
     { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
-      value: `${numItems} × ${itemWeight} g`, prefilled: true,
+      value: qtyChosen ? `${numItems} × ${itemWeight} g` : null, prefilled: false,
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
     // Oven and mixing are one page: same nature (your kitchen, not your
     // dough), both single-choice, both remembered by the profile.
@@ -2486,7 +2560,7 @@ export default function Home() {
       value: `${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`, prefilled: true,
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
     { id: 6, group: 'dough', chip: fr ? 'Farine' : 'Flour', title: t('steps.flour.title'),
-      value: flourSummary(), prefilled: true,
+      value: flourChosen ? flourSummary() : null, prefilled: false,
       gap: fr ? 'La farine n\u2019est pas confirmée' : 'Flour not confirmed' },
     { id: 7, group: 'dough', chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
       value: yeastType ? localName(YEAST_TYPES[yeastType]) : null,
@@ -2498,8 +2572,10 @@ export default function Home() {
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
     ...(yeastType !== 'sourdough' ? [{
       id: 8, group: 'dough', chip: fr ? 'Préferment' : 'Preferment', title: t('preferment.stepTitle'),
-      value: prefermentType !== 'none' ? localName(PREFERMENT_TYPES[prefermentType]) : t('preferment.direct'),
-      prefilled: true,
+      value: prefermentChosen
+        ? (prefermentType !== 'none' ? localName(PREFERMENT_TYPES[prefermentType]) : t('preferment.direct'))
+        : null,
+      prefilled: profileFields.has('preferment'),
       gap: fr ? 'Le préferment n\u2019est pas confirmé' : 'Preferment not confirmed',
     } as StepDef] : []),
     { id: 9, group: 'plan', chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
@@ -3498,14 +3574,14 @@ export default function Home() {
                         {isBread ? t('quantity.loaves') : t('quantity.howMany')}
                       </div>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '16px' }}>
-                        <button onClick={() => setNumItems(n => Math.max(1, n - 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                        <button onClick={() => chooseNumItems(n => Math.max(1, n - 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                           <input type="number" min={1} max={24} step={1} value={numItems}
-                            onChange={e => setNumItems(Math.max(1, Math.min(24, Math.round(+e.target.value))))}
+                            onChange={e => chooseNumItems(Math.max(1, Math.min(24, Math.round(+e.target.value))))}
                             style={{ width: '52px', border: 'none', borderBottom: '2px solid var(--char)', background: 'transparent', fontSize: '32px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-ui)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
                           <span style={{ fontSize: '15px', fontWeight: 500, color: 'var(--ash)', fontFamily: 'var(--font-ui)' }}>{isBread ? (numItems === 1 ? 'loaf' : 'loaves') : (numItems === 1 ? 'pizza' : 'pizzas')}</span>
                         </div>
-                        <button onClick={() => setNumItems(n => Math.min(24, n + 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                        <button onClick={() => chooseNumItems(n => Math.min(24, n + 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
                       </div>
                     </div>
 
@@ -3521,7 +3597,7 @@ export default function Home() {
                           ] as { value: number; label: string }[]).map(opt => (
                             <button
                               key={opt.value}
-                              onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
+                              onClick={() => { setPizzaCorn(opt.value); chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
                               style={{
                                 flex: 1, padding: '4px 4px', borderRadius: '12px', whiteSpace: 'nowrap',
                                 border: crustActive === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
@@ -3545,9 +3621,9 @@ export default function Home() {
                         <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
                           <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>◎ {locale === 'fr' ? 'Diamètre' : 'Diameter'}</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                            <button onClick={() => { const d = Math.max(22, pizzaDiameter - 1); setPizzaDiameter(d); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                            <button onClick={() => { const d = Math.max(22, pizzaDiameter - 1); setPizzaDiameter(d); chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                             <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-ui)', minWidth: '48px', textAlign: 'center' }}>{pizzaDiameter}<span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--smoke)', marginLeft: '2px' }}>cm</span></span>
-                            <button onClick={() => { const d = Math.min(35, pizzaDiameter + 1); setPizzaDiameter(d); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                            <button onClick={() => { const d = Math.min(35, pizzaDiameter + 1); setPizzaDiameter(d); chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
                           </div>
                         </div>
                       )}
@@ -3556,14 +3632,14 @@ export default function Home() {
                       <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
                         <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>{isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                          <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); setItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                          <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); chooseItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: itemWeight >= 1000 ? '80px' : '64px', justifyContent: 'center' }}>
                             <input type="number" min={weightBounds.min} max={weightBounds.max} step={weightBounds.step} value={itemWeight}
-                              onChange={e => { const w = Math.max(weightBounds.min, Math.min(weightBounds.max, Math.round(+e.target.value / weightBounds.step) * weightBounds.step)); setItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }}
+                              onChange={e => { const w = Math.max(weightBounds.min, Math.min(weightBounds.max, Math.round(+e.target.value / weightBounds.step) * weightBounds.step)); chooseItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }}
                               style={{ width: itemWeight >= 1000 ? '62px' : '48px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '17px', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-ui)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
                             <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--smoke)' }}>g</span>
                           </div>
-                          <button onClick={() => { const w = Math.min(weightBounds.max, itemWeight + weightBounds.step); setItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                          <button onClick={() => { const w = Math.min(weightBounds.max, itemWeight + weightBounds.step); chooseItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
                         </div>
                       </div>
                     </div>
@@ -4150,14 +4226,14 @@ export default function Home() {
                         {isBread ? t('quantity.loaves') : t('quantity.howMany')}
                       </div>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '16px' }}>
-                        <button onClick={() => setNumItems(n => Math.max(1, n - 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                        <button onClick={() => chooseNumItems(n => Math.max(1, n - 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                           <input type="number" min={1} max={24} step={1} value={numItems}
-                            onChange={e => setNumItems(Math.max(1, Math.min(24, Math.round(+e.target.value))))}
+                            onChange={e => chooseNumItems(Math.max(1, Math.min(24, Math.round(+e.target.value))))}
                             style={{ width: '52px', border: 'none', borderBottom: '2px solid var(--char)', background: 'transparent', fontSize: '32px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-ui)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
                           <span style={{ fontSize: '15px', fontWeight: 500, color: 'var(--ash)', fontFamily: 'var(--font-ui)' }}>{isBread ? (numItems === 1 ? 'loaf' : 'loaves') : (numItems === 1 ? 'pizza' : 'pizzas')}</span>
                         </div>
-                        <button onClick={() => setNumItems(n => Math.min(24, n + 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                        <button onClick={() => chooseNumItems(n => Math.min(24, n + 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
                       </div>
                     </div>
 
@@ -4173,7 +4249,7 @@ export default function Home() {
                           ] as { value: number; label: string }[]).map(opt => (
                             <button
                               key={opt.value}
-                              onClick={() => { setPizzaCorn(opt.value); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
+                              onClick={() => { setPizzaCorn(opt.value); chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
                               style={{
                                 flex: 1, padding: '4px 4px', borderRadius: '12px', whiteSpace: 'nowrap',
                                 border: crustActive === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
@@ -4196,9 +4272,9 @@ export default function Home() {
                         <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
                           <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>◎ {locale === 'fr' ? 'Diamètre' : 'Diameter'}</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                            <button onClick={() => { const d = Math.max(22, pizzaDiameter - 1); setPizzaDiameter(d); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                            <button onClick={() => { const d = Math.max(22, pizzaDiameter - 1); setPizzaDiameter(d); chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                             <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-ui)', minWidth: '48px', textAlign: 'center' }}>{pizzaDiameter}<span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--smoke)', marginLeft: '2px' }}>cm</span></span>
-                            <button onClick={() => { const d = Math.min(35, pizzaDiameter + 1); setPizzaDiameter(d); setItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                            <button onClick={() => { const d = Math.min(35, pizzaDiameter + 1); setPizzaDiameter(d); chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
                           </div>
                         </div>
                       )}
@@ -4206,14 +4282,14 @@ export default function Home() {
                       <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
                         <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>{isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                          <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); setItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
+                          <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); chooseItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: itemWeight >= 1000 ? '80px' : '64px', justifyContent: 'center' }}>
                             <input type="number" min={weightBounds.min} max={weightBounds.max} step={weightBounds.step} value={itemWeight}
-                              onChange={e => { const w = Math.max(weightBounds.min, Math.min(weightBounds.max, Math.round(+e.target.value / weightBounds.step) * weightBounds.step)); setItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }}
+                              onChange={e => { const w = Math.max(weightBounds.min, Math.min(weightBounds.max, Math.round(+e.target.value / weightBounds.step) * weightBounds.step)); chooseItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }}
                               style={{ width: itemWeight >= 1000 ? '62px' : '48px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '17px', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-ui)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
                             <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--smoke)' }}>g</span>
                           </div>
-                          <button onClick={() => { const w = Math.min(weightBounds.max, itemWeight + weightBounds.step); setItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                          <button onClick={() => { const w = Math.min(weightBounds.max, itemWeight + weightBounds.step); chooseItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
                         </div>
                       </div>
                     </div>
@@ -4278,7 +4354,7 @@ export default function Home() {
             <StepPage flow={customFlow} id={6}>
               <FlourPicker
                 blend={flourBlend}
-                onBlendChange={b => setFlourBlend(b)}
+                onBlendChange={b => { setFlourChosen(true); setFlourBlend(b); }}
                 bakeType={bakeType ?? 'pizza'}
                 mode={tab === 'custom' ? 'custom' : 'simple'}
                 styleKey={styleKey}
@@ -4317,7 +4393,7 @@ export default function Home() {
               <StepPage flow={customFlow} id={8}>
                 <PrefermentPicker
                   selected={prefermentType}
-                  onSelect={setPrefermentType}
+                  onSelect={(pt) => { setPrefermentChosen(true); setPrefermentType(pt); }}
                   flourPct={prefermentFlourPct}
                   onFlourPctChange={setPrefermentFlourPct}
                   styleKey={styleKey ?? undefined}

@@ -33,6 +33,13 @@ export interface SessionData {
   eatTime: number | null;
   blocks: unknown[];
   recipeGenerated: boolean;
+  // Which defaulted steps were actually settled — by the baker or by their
+  // profile — rather than walked past. Optional: sessions written before this
+  // existed restore as settled, because their values WERE decisions at the
+  // time and re-asking would be the same lie in the other direction.
+  qtyChosen?: boolean;
+  flourChosen?: boolean;
+  prefermentChosen?: boolean;
   // How far the baker advanced, per flow. Optional: snapshots written before
   // this field existed restore fine, they just fall back.
   highestStep?: number;
