@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { NEXT_CTA, SECONDARY_CTA } from '../lib/navButtons';
 import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { createClient } from '@/app/lib/supabase/client';
@@ -1364,6 +1364,65 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // Style picker popup
   const [showStylePicker, setShowStylePicker] = useState(false);
 
+  // ── Sheet drag ────────────────────────────
+  // These three sheets drew a grab bar and accepted no grab — a sheet
+  // promising a gesture it does not honour. Same mechanic BakeTab shipped in
+  // 3ae7abd: pointer capture on the HANDLE only, so the scrolling body below
+  // never fights the finger, and a 120px threshold so a hesitant pull springs
+  // back rather than counting as a decision.
+  //
+  // One offset per sheet, because two can be open at once (the style picker
+  // sits above the selector) and a shared number would drag both.
+  const [dragY, setDragY] = useState<Record<string, number>>({});
+  const [draggingKey, setDraggingKey] = useState<string | null>(null);
+  const dragFrom = useRef<number | null>(null);
+
+  const closeSummary = () => {
+    setSummarySheetOpen(false);
+    setDessertSheetOpen(false);
+    setDragY(d => ({ ...d, summary: 0 }));
+  };
+  const closeFilterSheet = () => {
+    setFilterSheetKey(null);
+    setDragY(d => ({ ...d, filter: 0 }));
+  };
+  const closeStylePicker = () => {
+    setShowStylePicker(false);
+    setDragY(d => ({ ...d, style: 0 }));
+  };
+
+  // The visible bar is 44x5 to match Bake, inside its own padding — paint and
+  // reach are different sizes.
+  function sheetHandle(key: string, onClose: () => void) {
+    return (
+      <div
+        onPointerDown={e => {
+          dragFrom.current = e.clientY;
+          setDraggingKey(key);
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        }}
+        onPointerMove={e => {
+          if (dragFrom.current === null || draggingKey !== key) return;
+          setDragY(d => ({ ...d, [key]: Math.max(0, e.clientY - dragFrom.current!) }));
+        }}
+        onPointerUp={() => {
+          const shouldClose = (dragY[key] ?? 0) > 120;
+          dragFrom.current = null;
+          setDraggingKey(null);
+          setDragY(d => ({ ...d, [key]: 0 }));
+          if (shouldClose) onClose();
+        }}
+        style={{ padding: '14px 0 10px', touchAction: 'none', cursor: 'grab', flexShrink: 0 }}
+      >
+        <div style={{ width: 44, height: 5, background: '#DED5C7', borderRadius: 3, margin: '0 auto' }} />
+      </div>
+    );
+  }
+  const sheetTransform = (key: string) => ({
+    transform: `translateY(${dragY[key] ?? 0}px)`,
+    transition: draggingKey === key ? 'none' : 'transform .22s ease',
+  });
+
 
   // Name search across the pizza list
   const [nameSearch, setNameSearch] = useState('');
@@ -1732,7 +1791,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           {filterSheetKey !== null && (
             <>
               <div
-                onClick={() => setFilterSheetKey(null)}
+                onClick={closeFilterSheet}
                 style={{ position: 'fixed', inset: 0, background: 'rgba(43, 36, 32,0.5)', zIndex: 150 }}
               />
               <div
@@ -1746,10 +1805,11 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   display: 'flex',
                   flexDirection: 'column',
                   overflow: 'hidden',
+                  ...sheetTransform('filter'),
                 }}
               >
-                <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px 12px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
+                {sheetHandle('filter', closeFilterSheet)}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px 12px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
                   <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-ui)' }}>
                     {filterSheetKey === 'occasion'   ? (l === 'fr' ? 'Occasion' : 'Occasion')
                     : filterSheetKey === 'diet'       ? (l === 'fr' ? 'Régime alimentaire' : 'Diet')
@@ -1759,11 +1819,11 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     : (l === 'fr' ? 'Plus de filtres' : 'More filters')}
                   </span>
                   <button
-                    onClick={() => setFilterSheetKey(null)}
+                    onClick={closeFilterSheet}
                     style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'content-box', padding: '6px', margin: '-6px' }}
                   >✕</button>
                 </div>
-                <div style={{ overflowY: 'auto', flex: 1, paddingBottom: '8px' }}>
+                <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
 
                   {filterSheetKey === 'occasion' && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px 16px' }}>
@@ -2318,7 +2378,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {summarySheetOpen && (
         <>
           <div
-            onClick={() => { setSummarySheetOpen(false); setDessertSheetOpen(false); }}
+            onClick={closeSummary}
             style={{ position: 'fixed', inset: 0, background: 'rgba(43, 36, 32,0.52)', zIndex: 160 }}
           />
           <div
@@ -2327,20 +2387,21 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               position: 'fixed', bottom: 0, left: 0, right: 0,
               background: '#FDFBF7', borderRadius: '20px 20px 0 0',
               maxHeight: '75dvh', zIndex: 161, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+              ...sheetTransform('summary'),
             }}
           >
-            <div style={{ width: '32px', height: '3px', background: '#E0D8CF', borderRadius: '2px', margin: '12px auto 0', flexShrink: 0 }} />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px 12px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
+            {sheetHandle('summary', closeSummary)}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px 12px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
               <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-ui)' }}>
                 {!dessertSheetOpen
                   ? (l === 'fr' ? 'Votre pizza party' : 'Your Pizza Party')
                   : (l === 'fr' ? 'Desserts' : 'Dessert pizzas')}
               </span>
-              <button onClick={() => { setSummarySheetOpen(false); setDessertSheetOpen(false); }}
+              <button onClick={closeSummary}
                 aria-label={l === 'fr' ? 'Fermer' : 'Close'}
                 style={{ width: '44px', height: '44px', padding: '8px', margin: '-8px', backgroundClip: 'content-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
             </div>
-            <div style={{ overflowY: 'auto', flex: 1 }}>
+            <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
               {!dessertSheetOpen ? (
                 <>
                   {Object.entries(qtys).filter(([, q]) => (q as number) > 0).map(([pizzaId, qty]) => {
@@ -2542,7 +2603,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {showStylePicker && (
         <>
           <div
-            onClick={() => setShowStylePicker(false)}
+            onClick={closeStylePicker}
             style={{
               position: 'fixed', inset: 0,
               background: 'rgba(43, 36, 32,0.5)',
@@ -2560,14 +2621,10 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
+              ...sheetTransform('style'),
             }}
           >
-            <div style={{
-              width: '32px', height: '3px',
-              background: '#E0D8CF', borderRadius: '2px',
-              margin: '12px auto 0',
-              flexShrink: 0,
-            }} />
+            {sheetHandle('style', closeStylePicker)}
             <div style={{
               fontFamily: 'var(--font-ui)',
               fontSize: '17px', fontWeight: 700,
@@ -2577,7 +2634,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             }}>
               {l === 'fr' ? 'Choisir un style de pizza' : 'Choose a pizza style'}
             </div>
-            <div style={{ overflowY: 'auto', flex: 1 }}>
+            <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
               {[
                 { key: 'neapolitan' },
                 { key: 'sourdough'  },
@@ -2595,7 +2652,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   <div
                     key={key}
                     onClick={() => {
-                      setShowStylePicker(false);
+                      closeStylePicker();
                       onStyleKeyChange?.(key);
                     }}
                     style={{
@@ -2680,7 +2737,13 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           background: 'var(--warm)',
           borderTop: '1px solid var(--border)',
           boxShadow: '0 -4px 14px -10px rgba(26,22,18,0.5)',
-          padding: '14px 16px calc(18px + env(safe-area-inset-bottom, 0px))',
+          // 18px -> 24px. The inset was already here (and must not be paired
+          // with a bottomNavH offset — see the comment on the scroll container,
+          // that double-counted the same gap). What was too small is the
+          // additive constant against the bar's recast surface. Matched by the
+          // three sheet bodies above, whose last row used to sit under the
+          // home indicator with no inset at all.
+          padding: '14px 16px calc(24px + env(safe-area-inset-bottom, 0px))',
           display: 'flex', alignItems: 'center', gap: '12px',
           justifyContent: 'space-between',
           zIndex: 90,
