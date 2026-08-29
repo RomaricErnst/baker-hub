@@ -42,10 +42,10 @@ export const TERMS_FR: Record<string, TermFr> = {
     secondTip: 'Le bassinage prend tout son sens au-dessus de 70 % d\u2019hydratation. En dessous, ajoutez simplement toute l\u2019eau au départ : la technique ajoute de la complexité sans grand bénéfice.',
   },
   fdt: {
-    title: 'Température de pâte finale',
-    explanation: 'La TPF est la température de votre pâte juste après le pétrissage. Elle commande directement la vitesse de démarrage de la fermentation : trop chaude, la levure part trop vite ; trop froide, elle ne bouge presque pas. Visez 23–25 °C pour la plupart des pâtes à pizza et à pain.',
-    tip: 'Pour atteindre votre TPF, ajustez la température de l\u2019eau avant le pétrissage. Baker Hub la calcule pour vous dans la recette. Cuisine chaude : eau froide ou glacée. Cuisine froide : eau légèrement tiède.',
-    secondTip: 'Ne dépassez jamais 28 °C : au-delà, la levure devient imprévisible et le gluten s\u2019affaiblit. Si la pâte est tiède au toucher après le pétrissage, placez-la 15 min au froid avant le pointage.',
+    title: 'Température de la pâte en fin de pétrissage',
+    explanation: 'C\u2019est la température de votre pâte mesurée en fin de pétrissage. Elle commande directement la vitesse de démarrage de la fermentation : trop chaude, la levure part trop vite ; trop froide, elle ne bouge presque pas. Visez 23–25 °C pour la plupart des pâtes à pizza et à pain. À ne pas confondre avec la température de base (TB), qui est la constante du calcul, pas un objectif.',
+    tip: 'Pour l\u2019atteindre, ajustez la température de l\u2019eau avant le pétrissage. Baker Hub la calcule pour vous dans la recette. Cuisine chaude : eau froide ou glacée. Cuisine froide : eau légèrement tiède.',
+    secondTip: 'Ne dépassez jamais 28 °C en fin de pétrissage : au-delà, la levure devient imprévisible et le gluten s\u2019affaiblit. Si la pâte est tiède au toucher après le pétrissage, placez-la 15 min au froid avant le pointage.',
     videoLabel: 'Lire le guide complet →',
   },
   poke_test: {
@@ -81,7 +81,7 @@ export const TERMS_FR: Record<string, TermFr> = {
   stretch_bake: {
     title: 'Abaisser et enfourner',
     explanation: 'Étirez avec les phalanges et la gravité, jamais au rouleau. Partez du centre et laissez le poids travailler. Préservez la couronne (cornicione). Garnissez vite : sauce, puis fromage, puis le reste.',
-    tip: 'Les garnitures humides passent en dernier, sinon la base détrempe. Enfournez d\u2019une seule poussée franche — l\u2019hésitation fait coller. Guettez le léopardage sur la couronne : les taches sombres signent une bonne fermentation et une bonne chaleur.',
+    tip: 'Les garnitures humides passent en dernier, sinon la base détrempe. Enfournez d\u2019une seule poussée franche — l\u2019hésitation fait coller. Guettez le léopardage sur la couronne — les taches de léopard : ces marques sombres signent une bonne fermentation et une chaleur suffisante.',
     secondTip: 'Si la pâte résiste et revient sur elle-même, couvrez-la et laissez-la reposer 5 min de plus. Une pâte sortant du froid est presque impossible à étirer : ramenez toujours les pâtons à température ambiante d\u2019abord.',
   },
 };
