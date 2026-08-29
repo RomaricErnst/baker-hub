@@ -3888,18 +3888,38 @@ export default function Home() {
                     baking, gold celebration once marked baked. Anonymous
                     tap opens the sign-in drawer. */}
                 {(
-                  <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {pizzaPartyEnabled && (
-                      <button
-                        onClick={() => setActiveTab('pizzaparty')}
-                        style={{ ...NEXT_CTA, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        {locale === 'fr' ? 'Planifier ma Pizza Party →' : 'Plan my Pizza Party →'}
+                  <div style={{ marginTop: '16px' }}>
+                    {/* Back left, forward right, one line — the same grid every
+                        step in the dough flow uses. Three stacked full-width
+                        buttons made the end of the protocol read as three equal
+                        choices when it is one path with a way back.
+                        The label shortens to fit the 1fr column beside Back,
+                        and shortening it also brings it under the naming rule:
+                        a forward control names its destination. */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: pizzaPartyEnabled ? 'auto 1fr' : '1fr',
+                      gap: '10px', alignItems: 'stretch',
+                    }}>
+                      <button onClick={() => setActiveTab('plan')} style={BACK_CTA}>
+                        {locale === 'fr' ? '← Recette' : '← Recipe'}
                       </button>
-                    )}
+                      {pizzaPartyEnabled && (
+                        <button
+                          onClick={() => setActiveTab('pizzaparty')}
+                          // 14px, not the CTA's 16px: this is the one place a
+                          // Next shares its row with a Back AND carries a
+                          // three-word destination. At 16px the French wraps.
+                          style={{ ...NEXT_CTA, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
+                        >
+                          {locale === 'fr' ? 'Suivant : Pizza Party →' : 'Next: Pizza Party →'}
+                        </button>
+                      )}
+                    </div>
                     <button
                       onClick={shareCurrentSession}
                       style={bakedDone ? {
+                        marginTop: '10px',
                         width: '100%',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                         padding: '12px 0', minHeight: '44px', border: 'none', borderRadius: '12px',
@@ -3907,6 +3927,7 @@ export default function Home() {
                         fontSize: '13px', fontWeight: 600,
                         fontFamily: 'var(--font-ui)', cursor: 'pointer',
                       } : {
+                        marginTop: '10px',
                         alignSelf: 'flex-start',
                         display: 'inline-flex', alignItems: 'center', gap: '8px',
                         padding: '8px 16px', border: '1.5px solid var(--border)',
@@ -3923,22 +3944,6 @@ export default function Home() {
                     </button>
                   </div>
                 )}
-                {/* Protocol is the end of the line and had no way out but the
-                    stepper at the very top of a long page. Every other tab
-                    carries its own return; this one just never got one. */}
-                <button
-                  onClick={() => setActiveTab('plan')}
-                  style={{
-                    display: 'block', width: '100%', marginTop: '18px',
-                    background: 'var(--warm)', color: 'var(--ash)',
-                    border: '1px solid var(--border)', borderRadius: '12px',
-                    padding: '13px 18px', fontFamily: 'var(--font-ui)',
-                    fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-                    minHeight: '44px',
-                  }}
-                >
-                  {locale === 'fr' ? '← Retour à la recette' : '← Back to recipe'}
-                </button>
                 </>
 
               )}
@@ -4948,18 +4953,38 @@ export default function Home() {
                     baking, gold celebration once marked baked. Anonymous
                     tap opens the sign-in drawer. */}
                 {(
-                  <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {pizzaPartyEnabled && (
-                      <button
-                        onClick={() => setActiveTab('pizzaparty')}
-                        style={{ ...NEXT_CTA, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        {locale === 'fr' ? 'Planifier ma Pizza Party →' : 'Plan my Pizza Party →'}
+                  <div style={{ marginTop: '16px' }}>
+                    {/* Back left, forward right, one line — the same grid every
+                        step in the dough flow uses. Three stacked full-width
+                        buttons made the end of the protocol read as three equal
+                        choices when it is one path with a way back.
+                        The label shortens to fit the 1fr column beside Back,
+                        and shortening it also brings it under the naming rule:
+                        a forward control names its destination. */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: pizzaPartyEnabled ? 'auto 1fr' : '1fr',
+                      gap: '10px', alignItems: 'stretch',
+                    }}>
+                      <button onClick={() => setActiveTab('plan')} style={BACK_CTA}>
+                        {locale === 'fr' ? '← Recette' : '← Recipe'}
                       </button>
-                    )}
+                      {pizzaPartyEnabled && (
+                        <button
+                          onClick={() => setActiveTab('pizzaparty')}
+                          // 14px, not the CTA's 16px: this is the one place a
+                          // Next shares its row with a Back AND carries a
+                          // three-word destination. At 16px the French wraps.
+                          style={{ ...NEXT_CTA, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
+                        >
+                          {locale === 'fr' ? 'Suivant : Pizza Party →' : 'Next: Pizza Party →'}
+                        </button>
+                      )}
+                    </div>
                     <button
                       onClick={shareCurrentSession}
                       style={bakedDone ? {
+                        marginTop: '10px',
                         width: '100%',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                         padding: '12px 0', minHeight: '44px', border: 'none', borderRadius: '12px',
@@ -4967,6 +4992,7 @@ export default function Home() {
                         fontSize: '13px', fontWeight: 600,
                         fontFamily: 'var(--font-ui)', cursor: 'pointer',
                       } : {
+                        marginTop: '10px',
                         alignSelf: 'flex-start',
                         display: 'inline-flex', alignItems: 'center', gap: '8px',
                         padding: '8px 16px', border: '1.5px solid var(--border)',
@@ -4983,22 +5009,6 @@ export default function Home() {
                     </button>
                   </div>
                 )}
-                {/* Protocol is the end of the line and had no way out but the
-                    stepper at the very top of a long page. Every other tab
-                    carries its own return; this one just never got one. */}
-                <button
-                  onClick={() => setActiveTab('plan')}
-                  style={{
-                    display: 'block', width: '100%', marginTop: '18px',
-                    background: 'var(--warm)', color: 'var(--ash)',
-                    border: '1px solid var(--border)', borderRadius: '12px',
-                    padding: '13px 18px', fontFamily: 'var(--font-ui)',
-                    fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-                    minHeight: '44px',
-                  }}
-                >
-                  {locale === 'fr' ? '← Retour à la recette' : '← Back to recipe'}
-                </button>
                 </>
 
               )}
