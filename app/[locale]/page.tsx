@@ -10,6 +10,7 @@ import { loadProfile, setProfileListener } from '../lib/profile';
 import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import StylePicker from '../components/StylePicker';
+import { NEXT_CTA, BACK_CTA } from '../lib/navButtons';
 import OvenPicker from '../components/OvenPicker';
 import MixerPicker from '../components/MixerPicker';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
@@ -752,13 +753,9 @@ function SheetChevron() {
 // Every forward move in the journey wears the same button: Suivant between
 // step pages, Generer ma recette at the end of setup, Planifier ma Pizza Party
 // at the end of the protocol. They were three different shapes for one idea.
-const NEXT_CTA: React.CSSProperties = {
-  border: 'none', borderRadius: '12px', padding: '15px 18px',
-  background: '#6B4423', color: '#fff',
-  fontFamily: 'var(--font-ui)', fontSize: '16px', fontWeight: 700,
-  cursor: 'pointer', boxShadow: '0 2px 9px rgba(107,68,35,0.22)',
-  lineHeight: 1.2, width: '100%', minHeight: '44px',
-};
+// NEXT_CTA and BACK_CTA now live in app/lib/navButtons so Pizza Party can
+// use the same objects. #6B4423 became var(--terra), which is that exact
+// value — the token was already the crust brown.
 
 // ── One step = one page ───────────────────────
 
@@ -885,11 +882,9 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
         gap: '12px', padding: '24px 0 32px',
       }}>
         {idx > 0 && (
-          <button onClick={() => flow.onPrev(id)} style={{
-            border: '1px solid var(--border)', background: 'transparent', borderRadius: '12px',
-            padding: '16px 20px', fontFamily: 'var(--font-ui)', fontSize: '14px',
-            color: 'var(--ash)', cursor: 'pointer',
-          }}>{fr ? '← Précédent' : '← Back'}</button>
+          <button onClick={() => flow.onPrev(id)} style={BACK_CTA}>
+            {fr ? '← Précédent' : '← Back'}
+          </button>
         )}
         {next}
       </div>

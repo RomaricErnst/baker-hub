@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
+import { NEXT_CTA, SECONDARY_CTA } from '../lib/navButtons';
 import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { createClient } from '@/app/lib/supabase/client';
 import {
@@ -1204,23 +1205,13 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
       <div style={{ padding: '12px 12px 16px', borderTop: '1px solid #E0D8CF', background: '#FDFBF7' }}>
         <button
           onClick={() => onGoPrep?.()}
-          style={{
-            width: '100%', padding: '12px', marginBottom: '8px',
-            background: '#2B2420', color: '#F0EBE0',
-            border: 'none', borderRadius: '12px',
-            fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-            fontFamily: 'var(--font-ui)',
-          }}
+          style={{ ...NEXT_CTA, marginBottom: '8px' }}
         >
-          {l === 'fr' ? 'Courses faites ? Voir le plan de préparation →' : 'Shopping done? See the prep plan →'}
+          {l === 'fr' ? 'Suivant : Préparation →' : 'Next: Prep →'}
         </button>
         <button
           onClick={handleShare}
-          style={{
-            width: '100%', padding: '12px', minHeight: '44px', background: 'transparent', color: '#3D3530',
-            border: '1px solid #D8D0C5', borderRadius: '12px', fontSize: '14px', fontWeight: 500,
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          }}
+          style={SECONDARY_CTA}
         >
           <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#3D3530" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10 3v10M6 7l4-4 4 4"/>
@@ -2756,21 +2747,11 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 <button
                   onClick={e => { e.stopPropagation(); onPillChange('shopping'); }}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    // Same object as every other forward control in the app:
-                    // 12px radius, crust brown, DM Mono, names its destination.
-                    background: 'var(--terra)', border: 'none',
-                    borderRadius: '12px', padding: '13px 18px', minHeight: '44px',
-                    boxShadow: '0 2px 9px rgba(107,68,35,0.22)',
-                    cursor: 'pointer', flexShrink: 0,
+                    ...NEXT_CTA,
+                    width: 'auto', flexShrink: 0, padding: '13px 18px', fontSize: '15px',
                   }}
                 >
-                  <span style={{
-                    fontFamily: 'var(--font-ui)', fontSize: '15px',
-                    color: '#fff', fontWeight: 700,
-                  }}>
-                    {l === 'fr' ? 'Suivant : Courses →' : 'Next: Shopping →'}
-                  </span>
+                  {l === 'fr' ? 'Suivant : Courses →' : 'Next: Shopping →'}
                 </button>
               );
             }
