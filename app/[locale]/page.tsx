@@ -837,7 +837,7 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
     // simply walking forward.
     next = nextGap
       ? <button onClick={flow.onGapReturn} style={nextStyle}>
-          {fr ? 'Suivant : ' : 'Next: '}{nextGap.chip} →
+          {nextGap.chip} →
         </button>
       : <button onClick={flow.onGapReturn} style={nextStyle}>
           {fr ? 'Terminer →' : 'Finish →'}
@@ -847,7 +847,7 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
       // Outlined here, because on the final step an unfilled one really is
       // what stands between the baker and a recipe — but named, not accused.
       next = <button onClick={() => flow.onGapJump(gap.id)} style={missingStyle}>
-        {fr ? 'Suivant : ' : 'Next: '}{gap.chip} →
+        {gap.chip} →
       </button>;
     } else if (flow.showGenerate) {
       next = <button onClick={flow.onGenerate} style={nextStyle}>{flow.generateLabel}</button>;
@@ -860,7 +860,7 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
     // Équipement" was landing on Climat.
     const nx = flow.steps.find(x => x.id === flow.nextIdFor(id)) ?? flow.steps[idx + 1];
     next = <button onClick={() => flow.onNext(id)} style={nextStyle}>
-      {fr ? 'Suivant : ' : 'Next: '}{nx.chip} →
+      {nx.chip} →
     </button>;
   }
 
@@ -3073,8 +3073,11 @@ export default function Home() {
               done: false,
             },
           ];
-          const doneCount = steps.filter(s => s.done).length;
-          const fillPct = (doneCount / (steps.length - 1)) * 100;
+          // No green fill on the connector. The dots already say which
+          // phases are done, in the same sage, on the same line — the bar was
+          // the same fact a third time and the only one of the three that
+          // could be wrong, since it counted `done` flags rather than reading
+          // the dots. Hence a fill stuck at step one with every pizza baked.
           // Compact phase bar. The icons went: a document glyph does not
           // explain "Recipe" better than the word Recipe does, and the
           // 32px discs they needed cost two rows of height at the top of
@@ -3085,7 +3088,6 @@ export default function Home() {
             <div>
             <div style={{ padding: '8px 24px 8px', position: 'relative' }}>
               <div style={{ position: 'absolute', top: '14.5px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
                 {steps.map(s => {
@@ -3225,8 +3227,11 @@ export default function Home() {
               ),
             },
           ];
-          const doneCount = steps.filter(s => s.done).length;
-          const fillPct = (doneCount / (steps.length - 1)) * 100;
+          // No green fill on the connector. The dots already say which
+          // phases are done, in the same sage, on the same line — the bar was
+          // the same fact a third time and the only one of the three that
+          // could be wrong, since it counted `done` flags rather than reading
+          // the dots. Hence a fill stuck at step one with every pizza baked.
           // Compact phase bar. The icons went: a document glyph does not
           // explain "Recipe" better than the word Recipe does, and the
           // 32px discs they needed cost two rows of height at the top of
@@ -3242,7 +3247,6 @@ export default function Home() {
           return (
             <div style={{ padding: '8px 24px 8px', position: 'relative' }}>
               <div style={{ position: 'absolute', top: '14.5px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
                 {steps.map(s => {
@@ -3944,12 +3948,12 @@ export default function Home() {
                       {pizzaPartyEnabled && (
                         <button
                           onClick={() => setActiveTab('pizzaparty')}
-                          // 14px, not the CTA's 16px: this is the one place a
-                          // Next shares its row with a Back AND carries a
-                          // three-word destination. At 16px the French wraps.
-                          style={{ ...NEXT_CTA, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
+                          // Back to the CTA's own size. The 14px override was
+                          // only ever there because "Suivant : Pizza Party"
+                          // wrapped; without the prefix it fits.
+                          style={{ ...NEXT_CTA, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         >
-                          {locale === 'fr' ? 'Suivant : Pizza Party →' : 'Next: Pizza Party →'}
+                          {locale === 'fr' ? 'Pizza Party →' : 'Pizza Party →'}
                         </button>
                       )}
                     </div>
@@ -5007,12 +5011,12 @@ export default function Home() {
                       {pizzaPartyEnabled && (
                         <button
                           onClick={() => setActiveTab('pizzaparty')}
-                          // 14px, not the CTA's 16px: this is the one place a
-                          // Next shares its row with a Back AND carries a
-                          // three-word destination. At 16px the French wraps.
-                          style={{ ...NEXT_CTA, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
+                          // Back to the CTA's own size. The 14px override was
+                          // only ever there because "Suivant : Pizza Party"
+                          // wrapped; without the prefix it fits.
+                          style={{ ...NEXT_CTA, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         >
-                          {locale === 'fr' ? 'Suivant : Pizza Party →' : 'Next: Pizza Party →'}
+                          {locale === 'fr' ? 'Pizza Party →' : 'Pizza Party →'}
                         </button>
                       )}
                     </div>

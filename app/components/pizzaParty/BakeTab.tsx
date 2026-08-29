@@ -1077,7 +1077,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                         <span style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
                           {l === 'fr' ? 'Étirement & Cuisson' : 'Stretch & Bake'}
                         </span>
-                        <button onClick={() => setShowTechSheet(false)} style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--cream)', cursor: 'pointer', fontSize: 16, color: 'var(--smoke)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                        <button onClick={() => setShowTechSheet(false)} style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--cream)', cursor: 'pointer', fontSize: 16, color: 'var(--smoke)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'content-box', padding: 6, margin: -6 }}>×</button>
                       </div>
 
                       {/* Tab chips — mirror of the entry chips on the card */}

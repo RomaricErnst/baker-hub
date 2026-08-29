@@ -1207,7 +1207,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           onClick={() => onGoPrep?.()}
           style={{ ...NEXT_CTA, marginBottom: '8px' }}
         >
-          {l === 'fr' ? 'Suivant : Préparation →' : 'Next: Prep →'}
+          {l === 'fr' ? 'Préparation →' : 'Prep →'}
         </button>
         <button
           onClick={handleShare}
@@ -1760,7 +1760,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   </span>
                   <button
                     onClick={() => setFilterSheetKey(null)}
-                    style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'content-box', padding: '6px', margin: '-6px' }}
                   >✕</button>
                 </div>
                 <div style={{ overflowY: 'auto', flex: 1, paddingBottom: '8px' }}>
@@ -2751,7 +2751,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     width: 'auto', flexShrink: 0, padding: '13px 18px', fontSize: '15px',
                   }}
                 >
-                  {l === 'fr' ? 'Suivant : Courses →' : 'Next: Shopping →'}
+                  {l === 'fr' ? 'Courses →' : 'Shopping →'}
                 </button>
               );
             }
