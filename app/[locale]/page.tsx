@@ -3054,7 +3054,11 @@ export default function Home() {
           // timer these are phases and not unrelated tabs — and the node
           // shrinks to a dot sitting on the connecting line.
           return (
-            <div style={{ position: 'relative', padding: '8px 24px 8px' }}>
+            <div style={{
+              position: 'sticky', top: `${stickyHeadH}px`, zIndex: 24,
+              background: 'var(--cream)', padding: '8px 24px 8px',
+              boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
+            }}>
               <div style={{ position: 'absolute', top: '14.5px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
               </div>
@@ -3191,11 +3195,12 @@ export default function Home() {
           // every screen. The words stay — they are what tells a first
           // timer these are phases and not unrelated tabs — and the node
           // shrinks to a dot sitting on the connecting line.
-          // Sticky, like My Dough's — that one rides inside the sticky
-          // header and this one scrolled away, so the tab you were in
-          // stopped being visible the moment you browsed. No fold on
-          // scroll: at this height it is not worth a fourth listener on
-          // a page that already runs three.
+          // Sticky under the measured header, same as My Dough's. Neither
+          // was sticky before — the claim that the dough bar rode inside the
+          // sticky header was wrong: that header closes well above Main
+          // content and both bars render inside it. No fold on scroll: at
+          // this height it is not worth a fourth listener on a page that
+          // already runs three.
           return (
             <div style={{
               position: 'sticky', top: `${stickyHeadH}px`, zIndex: 24,

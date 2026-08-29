@@ -79,12 +79,10 @@ export default function PlanNav({ variant, onEditSetup, onOpenGuide, onShare }: 
               <line x1="4" y1="12" x2="20" y2="12" /><polyline points="13 5 20 12 13 19" />
             </svg>
           </span>
-          <span style={{
-            fontFamily: 'var(--font-ui)', fontSize: '11px',
-            color: cta ? 'rgba(255,255,255,0.75)' : 'var(--smoke)',
-          }}>
-            {t('guideSub')}
-          </span>
+          {/* No subtitle. "protocol & step-by-step" restated the word above it
+              and then described the page rather than naming it — and it is the
+              only forward control in the app carrying two lines. The label is
+              the destination, which is the whole message. */}
         </button>
       )}
       {onShare && (
