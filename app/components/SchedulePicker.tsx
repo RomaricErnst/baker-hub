@@ -1866,6 +1866,30 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [editingRow, setEditingRow] = useState<string | null>(null);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
   const [localBlocks, setLocalBlocks] = useState<AvailabilityBlock[]>(blocks);
+  // The blocks the solver must see, always current.
+  //
+  // Five call sites used to pass the `blocks` PROP straight into
+  // findOptimalPositionSourdough, with a comment claiming the prop was the
+  // single source of truth. It is not: for sourdough the live source is
+  // localBlocks, and the prop lags by a render (see the note at the
+  // localBlocks sync effect below). At mount that lag is not cosmetic — the
+  // default-nights effect writes night blocks into localBlocks and solves
+  // correctly, then the [pendingEatTime] effect's setTimeout(0) lands and
+  // RE-SOLVES with the still-empty prop, throwing that plan away.
+  //
+  // The result was a first render whose Nights chip read ON while the plan on
+  // screen was the nights-OFF plan. Every toggle afterwards was correct and
+  // deterministic, so the sweep's A -> B -> A read it as a round-trip
+  // divergence when in fact only A was wrong. Measured: state A was
+  // byte-identical to the nights-OFF state B, and pre-seeding the prop with
+  // night blocks made A equal C.
+  //
+  // Written synchronously in applyAndUpdate and refreshed after every commit,
+  // so a deferred solve can never read a stale set.
+  const solverBlocksRef = useRef<AvailabilityBlock[]>(blocks);
+  useEffect(() => {
+    solverBlocksRef.current = isSourdough ? localBlocks : blocks;
+  });
   // Keep localBlocks in sync with the parent's blocks prop. Without this, any
   // sourdough re-solve NOT triggered by a chip toggle (e.g. age/location/
   // taste/ratio change → useEffect re-solve) could read a STALE localBlocks
@@ -2216,7 +2240,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       return;
     }
     setTimeout(() => {
-      computeAndApplyRecommendation(blocks, pendingEatTime);
+      computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime);
       setStartComputed(true);
       onReady?.();
     }, 0);
@@ -2256,7 +2280,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // time can no longer leave the panel hidden, whichever control moved it.
     if (isNaN(pendingEatTime.getTime())) return;
     const t = setTimeout(() => {
-      computeAndApplyRecommendation(blocks, pendingEatTime);
+      computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime);
       setStartComputed(true);
       onReady?.();
     }, 0);
@@ -2306,10 +2330,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     ratioApplyHistoryRef.current.length = 0;
     // findOptimalPositionSourdough now calls deriveStarterPeakTime internally
     // and commits a single atomic setSolverResult at every exit point.
-    // Pass the parent's blocks prop as blocksOverride so the solver NEVER
-    // reads from a stale localBlocks state — the parent prop is the single
-    // source of truth, kept current by the onChange callback.
-    findOptimalPositionSourdough(pendingEatTime, undefined, blocks);
+    // solverBlocksRef, not the prop: for sourdough the live source is
+    // localBlocks and the prop lags a render. The old comment here asserted
+    // the opposite, and that is what let the mount-time solve run without the
+    // default night blockers.
+    findOptimalPositionSourdough(pendingEatTime, undefined, solverBlocksRef.current);
     // Restore startComputed so the plan panel is visible after session restore
     // or bake-time change — the solver ran, so we have a result to show.
     if (lastFedAge !== null || (planningMode === 'know_peak' && knownPeakTime)) {
@@ -2330,7 +2355,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   useEffect(() => {
     if (!isSourdough || !eatTimeSet) return;
     const mixOverride = hasManuallyDragged.current ? pendingStart : undefined;
-    findOptimalPositionSourdough(pendingEatTime, mixOverride, blocks);
+    findOptimalPositionSourdough(pendingEatTime, mixOverride, solverBlocksRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextFeedRatio]);
 
@@ -5772,6 +5797,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const { resolvedStart, moved, resolvedDate: _resolvedDate } = applyBlockerOverlap(pendingStart, newBlocks);
     if (resolvedStart.getTime() !== pendingStart.getTime()) setPendingStart(resolvedStart);
     setBlockerNote(null);
+    // Synchronous, so this solve and any deferred one see the new set.
+    solverBlocksRef.current = newBlocks;
     onChange(resolvedStart, pendingEatTime, newBlocks);
     if (isSourdough && eatTimeSet) {
       setHasDragged(false);
@@ -7063,7 +7090,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     // original (sweep run 1: reset:Next Feed DIVERGED).
                     onFeedTimeChange?.(newFeedTime);
                     manualFeed2Ref.current = newFeedTime.getTime();
-                    findOptimalPositionSourdough(pendingEatTime, undefined, blocks);
+                    findOptimalPositionSourdough(pendingEatTime, undefined, solverBlocksRef.current);
                   }
                 } else {
                   setPrefOffsetH(offsetH);
@@ -7087,7 +7114,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 if (_t < _minT) _t = _minT;
                 if (_t > _maxT) _t = _maxT;
                 manualRefreshRef.current = _t;
-                findOptimalPositionSourdough(pendingEatTime, undefined, blocks);
+                findOptimalPositionSourdough(pendingEatTime, undefined, solverBlocksRef.current);
               }}
             />
           )
