@@ -83,24 +83,12 @@ export default function DecisionHero({
           {tagline}
         </div>
       </div>
-      {isLarge && (
-        <div style={{
-          position: 'absolute',
-          bottom: '16px',
-          right: '16px',
-          width: '32px',
-          height: '32px',
-          background: 'var(--gold)',
-          borderRadius: '50%',
-          color: '#2B2420',
-          fontSize: '17px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          ›
-        </div>
-      )}
+      {/* No gold disc on the large card. The whole card is the tap target and
+          the four smaller ones directly beneath prove that reads without help
+          — they carry no chevron and nobody hesitates over them. It was also
+          the loudest gold on the screen, competing with the badge for the
+          same corner of attention, against a palette that spends accent
+          sparingly on purpose. */}
     </div>
   );
 }
