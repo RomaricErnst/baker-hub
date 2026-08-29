@@ -537,7 +537,8 @@
     "discardQuestion": "What to do with the discard?",
     "discardNote1": "Discard the rest before feeding — or use it for pancakes, crackers or flatbread",
     "discardNote2": "Never throw all your starter away — always keep at least 20–30g.",
-    "starterReadyWhen": "Your starter is ready when:"
+    "starterReadyWhen": "Your starter is ready when:",
+    "dilutionBody": "Too little to weigh directly. Dissolve 1 g of yeast in {waterG} g of the water from your recipe, stir well, then use {solutionG} g of that liquid and the rest of the water as normal. The water is already counted, so your hydration does not change."
   },
   "schedulePicker": {
     "startDough": "Start Dough",

@@ -109,8 +109,8 @@ export interface YeastResult {
   convertedGrams: number;// grams for selected yeast type
   yeastType: YeastType;
   scaleNeeded: string;
-  dilutionTip: string | null;
-  hitMinFloor: boolean;  // true when 0.5g IDY floor was applied
+  dilutionTip: { solutionG: number; waterG: number } | null;
+  hitMinFloor: boolean;  // dose under 0.5 g — needs a 0.1 g precision scale
   // Longest room-temperature window this batch can still be DOSED for, i.e.
   // where the required IDY stays above what a 0.1 g scale can weigh. Null when
   // the schedule has a cold phase (dose is set by the cold leg) or when the
@@ -190,14 +190,33 @@ function recommendYeast(
     warnings.push({ key: 'hotClimateRT', params: { temp: kitchenTemp } });
   }
 
-  // Absolute 0.5g IDY floor — never output less than this
-  const YEAST_FLOOR_GRAMS = 0.5;
-  let rawGrams = flour * rec / 100;
-  const hitMinFloor = rawGrams < YEAST_FLOOR_GRAMS;
-  if (hitMinFloor) {
-    rawGrams = YEAST_FLOOR_GRAMS;
-    rec = rawGrams / flour * 100;
-  }
+  // No grams clamp. There used to be a hard 0.5 g floor here, and it was the
+  // wrong instrument for the job in three ways.
+  //
+  // It over-dosed. A 300 g batch on a 48h retard wants 0.15 g and was given
+  // 0.5 g — 3.3x — so the dough ran ahead of its own schedule. It bound on 9
+  // of 12 common cold-retard cases.
+  //
+  // It made two shipped features unreachable. scaleNeeded's "precision scale"
+  // branch fires below 0.5 g and dilutionTip fires below 0.1 g; with the dose
+  // clamped at 0.5 g neither could ever run. (RecipeOutput's old warning
+  // allowlist even matched on the words 'precision scale' and 'dilution',
+  // which is why those terms never matched anything.)
+  //
+  // And it was fixed grams where the real limit scales with the batch.
+  // YEAST_MIN_PCT (0.05% of flour) is the floor that belongs here: it already
+  // prevents absurd readouts — 0.15 g on 300 g of flour, never 0.001 g — and
+  // it scales, where 0.1 or 0.2 g would over-dose a small batch and be
+  // meaningless for a large one.
+  //
+  // Small amounts are now MEASURED rather than inflated: below 0.1 g the
+  // dilution tip carries them, and 1 g into 100 g of the dough's own water
+  // turns 0.15 g of yeast into 15 g of liquid — weighable to +-0.3% on the
+  // same 0.1 g scale.
+  const rawGrams = flour * rec / 100;
+  // Kept for the recipe card's precision-scale callout: true when the dose is
+  // small enough to need a 0.1 g scale, which is what that card actually says.
+  const hitMinFloor = rawGrams < 0.5;
 
   // The floor is a hardware limit, not a recipe decision: below 0.5 g nothing
   // is weighable on a 0.1 g scale, so the dose is rounded UP and the dough
@@ -209,10 +228,10 @@ function recommendYeast(
   // longest window this batch can still be dosed for rather than silently
   // handing back an over-yeasted plan.
   let maxDosableRTH: number | null = null;
-  if (totalColdHours === 0 && hitMinFloor && flour > 0) {
+  if (totalColdHours === 0 && rawGrams < YEAST_MIN_GRAMS && flour > 0) {
     for (let tenths = Math.round(totalRTHours * 10); tenths >= 5; tenths--) {
       const pct = rtIDY(tenths / 10, kitchenTemp);
-      if (pct !== null && flour * pct / 100 >= YEAST_FLOOR_GRAMS) {
+      if (pct !== null && flour * pct / 100 >= YEAST_MIN_GRAMS) {
         maxDosableRTH = Math.floor(tenths / 10 * 4) / 4;   // report to the quarter hour
         break;
       }
@@ -235,14 +254,23 @@ function recommendYeast(
     ? 'Precision scale (0.1g accuracy) required'
     : 'Standard kitchen scale is fine';
 
-  // Dilution tip
-  let dilutionTip: string | null = null;
-  if (convertedGrams < YEAST_MIN_GRAMS) {
-    const ratio = Math.ceil(1 / convertedGrams * 10) * 10;
-    const waterToUse = Math.round(convertedGrams * ratio * 10) / 10;
-    dilutionTip =
-      `Dissolve 1g yeast in ${ratio}g water. ` +
-      `Use only ${waterToUse}g of that water in your dough.`;
+  // Dilution: 1 g of yeast into 100 g of THE DOUGH'S OWN WATER, giving
+  // 0.01 g of yeast per gram of liquid. 0.15 g of yeast becomes 15 g of
+  // solution, weighable to +-0.3% on a 0.1 g scale.
+  //
+  // The old arithmetic scaled the ratio instead of the volume: 0.07 g asked
+  // the baker to dissolve 1 g of yeast in 1,430 g of water. Nobody has 1.4
+  // litres of water in a pizza dough.
+  //
+  // Taking it from the dough's own water is the load-bearing half — added on
+  // top it would change the hydration.
+  let dilutionTip: { solutionG: number; waterG: number } | null = null;
+  if (convertedGrams < 0.5) {
+    const DILUTION_WATER_G = 100;
+    dilutionTip = {
+      waterG: DILUTION_WATER_G,
+      solutionG: Math.round(convertedGrams * DILUTION_WATER_G * 10) / 10,
+    };
   }
 
   // Explanation

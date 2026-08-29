@@ -537,7 +537,8 @@
     "discardQuestion": "Que faire du surplus ?",
     "discardNote1": "Jetez le reste avant de rafraîchir — ou utilisez-le pour des pancakes ou crackers",
     "discardNote2": "Ne jetez jamais tout votre levain — gardez toujours au moins 20–30g.",
-    "starterReadyWhen": "Votre levain est prêt quand :"
+    "starterReadyWhen": "Votre levain est prêt quand :",
+    "dilutionBody": "Trop peu pour être pesé directement. Dissolvez 1 g de levure dans {waterG} g de l’eau de votre recette, mélangez bien, puis utilisez {solutionG} g de ce liquide et le reste de l’eau normalement. Cette eau est déjà comptée : votre hydratation ne change pas."
   },
   "schedulePicker": {
     "startDough": "Commencer la pâte",

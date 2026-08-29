@@ -1208,7 +1208,10 @@ export default function RecipeOutput({
               icon=""
               level="info"
               title={t('recipeOutput.dilutionTitle')}
-              body={yeastInfo.dilutionTip}
+              body={t('recipeOutput.dilutionBody', {
+                waterG: yeastInfo.dilutionTip.waterG,
+                solutionG: yeastInfo.dilutionTip.solutionG,
+              })}
             />
           )}
 
