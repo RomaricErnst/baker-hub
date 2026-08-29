@@ -15,6 +15,7 @@ import {
   OVEN_TYPES,
   BREAD_OVEN_TYPES,
   MIXER_TYPES,
+  kneadMinFor,
   YEAST_TYPES,
   computeBlendProfile,
   computePrefermentRecipe,
@@ -709,7 +710,19 @@ export function buildSchedule(
   styleKey: string = 'neapolitan',
 ): ScheduleResult {
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
-  const kneadMin = MIXER_TYPES[mixerType].kneadMin;
+  // Elapsed mixing time is style-dependent (Modernist publishes it per style);
+  // see kneadMinFor in data.ts. This drives WHEN bulk fermentation starts and
+  // how long the Timeline's mixing block runs.
+  //
+  // It deliberately does NOT drive friction. mixerFrictionRiseC still uses the
+  // mixer's flat kneadMin, because the rise is not proportional to elapsed
+  // time across styles: al taglio runs ~20 min yet must come off the mixer
+  // below 24 C from 21 C water — under 3 C of rise — because most of that time
+  // is low speed either side of a 30 min autolyse, while Neapolitan's 11 min
+  // to full development is a measured 6 C. One measured point and one
+  // published constraint cannot calibrate a speed-weighted model, so water
+  // temperature and ice are left exactly as they were.
+  const kneadMin = kneadMinFor(mixerType, styleKey);
   const fermStart = new Date(startTime.getTime() + kneadMin * 60000);
   const mixingDurationH = kneadMin / 60;
   const preheatH = preheatMin / 60;

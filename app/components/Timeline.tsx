@@ -7,7 +7,7 @@ import {
   formatTime,
   hoursLabel,
 } from '../utils';
-import { MIXER_TYPES, type MixerType } from '../data';
+import { kneadMinFor, type MixerType } from '../data';
 import { StepIcon, IconProof } from './StepIcons';
 import LearnModal from './LearnModal';
 
@@ -88,6 +88,9 @@ export function buildItems(
   oil?: number,
   t: (key: string, params?: Record<string, string | number>) => string = (k) => k,
   bakeType?: string,
+  // Mixing time is style-dependent — see kneadMinFor. Optional so callers that
+  // predate it still compile; they fall back to the mixer's flat base.
+  styleKey?: string,
 ): TimelineStep[] {
   const items: TimelineStep[] = [];
 
@@ -160,7 +163,7 @@ export function buildItems(
       durationH: null,
     });
   }
-  const kneadMin = MIXER_TYPES[mixerType].kneadMin;
+  const kneadMin = kneadMinFor(mixerType, styleKey);
   const isTwoPhase = schedule.coldRetard2Start !== null;
 
   // Divide & ball duration
@@ -461,7 +464,7 @@ export default function Timeline({
   })();
 
   const items = useMemo(
-    () => buildItems(schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t, bakeType),
+    () => buildItems(schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t, bakeType, styleKey),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, bakeType],
   );

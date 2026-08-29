@@ -1833,6 +1833,7 @@ export default function Home() {
           // session — they then appear verbatim on the share card + caption.
           (key, params) => t(key, params),
           bakeType ?? undefined,
+          styleKey ?? undefined,
         );
         for (const step of steps) {
           if (step.kind === 'step') {

@@ -482,6 +482,58 @@ export const MIXER_TYPES = {
   },
 } as const;
 
+// ── MIXING TIME BY STYLE ──────────────────
+// kneadMin in MIXER_TYPES is flat per mixer. Modernist Pizza publishes mixing
+// times PER STYLE, and the spread is large — a stand mixer's total, read off
+// the Machine Mixing Options pages:
+//
+//   Detroit-style (our `pan`)      6 min   p84
+//   Thin-crust                    10 min   p35
+//   Neapolitan                    11 min   p47
+//   New York                      15 min   p54
+//   High-hydration al taglio     ~20 min   p77  (+ a 30 min autolyse mid-mix)
+//
+// against our flat 8 for everything. So bulk fermentation currently starts up
+// to twelve minutes early on a New York dough and two minutes late on a pan.
+//
+// ONLY the stand-mixer column transfers. Every spiral, fork and diving-arm
+// time in the book assumes at least 8 kg of dough — five times our spiral cap
+// and eight times our stand cap — and the book states plainly that a larger
+// yield takes longer to mix. For the other mixers we keep their own character
+// and carry across only the RELATIVE difference between styles, normalised to
+// Neapolitan, which is the one style whose temperature rise is also published.
+//
+// Deliberately NOT used for friction. See mixerFrictionRiseC in utils.ts.
+const STAND_MIX_REFERENCE_MIN = 11;   // Neapolitan, p47
+
+export const STYLE_STAND_MIX_MIN: Record<string, number> = {
+  pan:           6,
+  neapolitan:   11,
+  sourdough:    11,   // no separate table; the closest published dough
+  pizza_romana: 20,
+  roman:        20,
+  newyork:      15,
+};
+
+/**
+ * Elapsed mixing minutes for a style on a given mixer.
+ *
+ * Stand mixer with a published time uses it directly. Every other mixer keeps
+ * its own base and is scaled by the style's ratio to Neapolitan, because the
+ * book's times for those machines are at batch sizes we do not support.
+ *
+ * Bread styles have no published table and fall through to the mixer's base —
+ * the honest answer until a bread source exists. Do not guess one in.
+ */
+export function kneadMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
+  const base = MIXER_TYPES[mixerType]?.kneadMin ?? 10;
+  if (base === 0) return 0;                       // no-knead stays no-knead
+  const published = styleKey ? STYLE_STAND_MIX_MIN[styleKey] : undefined;
+  if (published === undefined) return base;
+  if (mixerType === 'stand') return published;
+  return Math.round(base * (published / STAND_MIX_REFERENCE_MIN));
+}
+
 // ── YEAST TYPES ───────────────────────────
 export const YEAST_TYPES = {
   instant: {
