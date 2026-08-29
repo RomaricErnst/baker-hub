@@ -2682,8 +2682,13 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           // bottomNavH AND padding by the inset counted the same gap twice,
           // and on a rounded screen the second line still landed in the curve.
           position: 'fixed', bottom: 0, left: 0, right: 0,
-          background: '#2B2420',
-          borderTop: '1px solid var(--terra)',
+          // The only dark surface below the header, which is why this bar read
+          // as belonging to a different product. Sticky is right — you need
+          // the count and the way out while browsing — the costume was not.
+          // Warm surface, hairline top, and the shadow doing the lifting.
+          background: 'var(--warm)',
+          borderTop: '1px solid var(--border)',
+          boxShadow: '0 -4px 14px -10px rgba(26,22,18,0.5)',
           padding: '14px 16px calc(18px + env(safe-area-inset-bottom, 0px))',
           display: 'flex', alignItems: 'center', gap: '12px',
           justifyContent: 'space-between',
@@ -2708,16 +2713,16 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 <div key={i} style={{
                   width: '7px', height: '7px', borderRadius: '50%',
                   background: i < totalQty
-                    ? (doughConfigured && totalQty >= numItems ? '#8BA888' : 'var(--terra)')
-                    : '#3D3530',
+                    ? (doughConfigured && totalQty >= numItems ? '#6B7A5A' : 'var(--terra)')
+                    : '#E0D8CC',
                   transition: 'background 0.2s ease',
                 }} />
               ))}
             </div>
             <span style={{
               fontFamily: 'var(--font-ui)', fontSize: '12px', fontWeight: 600,
-              color: totalQty === 0 ? '#B5AC9E'
-                : (doughConfigured && totalQty >= numItems ? '#8BA888' : 'var(--terra)'),
+              color: totalQty === 0 ? 'var(--smoke)'
+                : (doughConfigured && totalQty >= numItems ? '#6B7A5A' : 'var(--terra)'),
             }}>
               {totalQty === 0
                 ? (l === 'fr'
@@ -2734,8 +2739,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             {totalQty > 0 && (
               <span style={{
                 fontFamily: 'var(--font-ui)', fontSize: '14px', fontWeight: 600,
-                color: '#F0EBE0', textDecoration: 'underline',
-                textUnderlineOffset: '3px', textDecorationColor: 'rgba(240,235,224,0.45)',
+                color: 'var(--ash)', textDecoration: 'underline',
+                textUnderlineOffset: '3px', textDecorationColor: '#C6BCA9',
               }}>
                 {l === 'fr' ? 'Voir mes pizzas →' : 'Review my pizzas →'}
               </span>
@@ -2752,16 +2757,19 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   onClick={e => { e.stopPropagation(); onPillChange('shopping'); }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '8px',
-                    background: '#F0EBE0', border: 'none',
-                    borderRadius: '20px', padding: '12px 20px', minHeight: '44px',
+                    // Same object as every other forward control in the app:
+                    // 12px radius, crust brown, DM Mono, names its destination.
+                    background: 'var(--terra)', border: 'none',
+                    borderRadius: '12px', padding: '13px 18px', minHeight: '44px',
+                    boxShadow: '0 2px 9px rgba(107,68,35,0.22)',
                     cursor: 'pointer', flexShrink: 0,
                   }}
                 >
                   <span style={{
-                    fontFamily: 'var(--font-ui)', fontSize: '14px',
-                    color: '#2B2420', fontWeight: 600,
+                    fontFamily: 'var(--font-ui)', fontSize: '15px',
+                    color: '#fff', fontWeight: 700,
                   }}>
-                    {l === 'fr' ? 'Liste de courses →' : 'Shopping list →'}
+                    {l === 'fr' ? 'Suivant : Courses →' : 'Next: Shopping →'}
                   </span>
                 </button>
               );

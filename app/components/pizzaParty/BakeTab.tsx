@@ -441,6 +441,14 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
   const [techTab, setTechTab] = useState<'tips' | 'faq' | 'maestro'>('tips');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const sheetScrollRef = useRef<HTMLDivElement>(null);
+  // The handle was decorative — a grab bar that accepted no grab, which is a
+  // sheet promising a gesture it does not honour. Same mechanic as the setup
+  // summary sheet: the drag lives on the handle only, so the scrolling body
+  // below it is never fighting the finger.
+  const [sheetDragY, setSheetDragY] = useState(0);
+  const [sheetDragging, setSheetDragging] = useState(false);
+  const sheetDragFrom = useRef<number | null>(null);
+  const closeSheet = () => { setSheetPizzaId(null); setShowTechSheet(false); setSheetDragY(0); };
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [doneCounts, setDoneCounts] = useState<Record<string, number>>({});
 
@@ -764,7 +772,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
           <>
             {/* Scrim */}
             <div
-              onClick={() => { setSheetPizzaId(null); setShowTechSheet(false); }}
+              onClick={closeSheet}
               style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 190 }}
             />
 
@@ -777,14 +785,40 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
               maxHeight: 'calc(100dvh - 60px)',
               overflowY: 'auto',
               animation: 'slideUpSheet 0.3s ease',
+              transform: `translateY(${sheetDragY}px)`,
+              transition: sheetDragging ? 'none' : 'transform .22s ease',
             }}>
-              {/* Drag handle */}
-              <div style={{
-                width: 36, height: 4,
-                background: 'rgba(0,0,0,0.15)',
-                borderRadius: 2,
-                margin: '14px auto 10px',
-              }} />
+              {/* Drag handle — now a real one. 44px of grab zone around a 5px
+                  bar, because the visible mark and the target are different
+                  things. Past a quarter of the way down it closes; short of
+                  that it springs back, so a hesitant pull is not a decision. */}
+              <div
+                onPointerDown={e => {
+                  sheetDragFrom.current = e.clientY;
+                  setSheetDragging(true);
+                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                }}
+                onPointerMove={e => {
+                  if (sheetDragFrom.current !== null) {
+                    setSheetDragY(Math.max(0, e.clientY - sheetDragFrom.current));
+                  }
+                }}
+                onPointerUp={() => {
+                  const shouldClose = sheetDragY > 120;
+                  sheetDragFrom.current = null;
+                  setSheetDragging(false);
+                  setSheetDragY(0);
+                  if (shouldClose) closeSheet();
+                }}
+                style={{ padding: '14px 0 10px', touchAction: 'none', cursor: 'grab' }}
+              >
+                <div style={{
+                  width: 44, height: 5,
+                  background: '#DED5C7',
+                  borderRadius: 3,
+                  margin: '0 auto',
+                }} />
+              </div>
 
               {/* Sheet header */}
               <div style={{
@@ -807,15 +841,20 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   )}
                 </div>
                 <button
-                  onClick={() => { setSheetPizzaId(null); setShowTechSheet(false); }}
+                  onClick={closeSheet}
+                  aria-label={l === 'fr' ? 'Fermer' : 'Close'}
                   style={{
-                    width: 28, height: 28, borderRadius: '50%',
+                    // 32px of paint inside a 44px reach — the mark and the
+                    // target are different sizes, and only one of them has to
+                    // be big enough for a thumb.
+                    width: 32, height: 32, borderRadius: '50%',
                     border: '1px solid var(--border)',
                     background: 'var(--cream)',
                     cursor: 'pointer', fontSize: 16, lineHeight: 1,
                     color: 'var(--smoke)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
+                    boxSizing: 'content-box', padding: '6px', margin: '-6px',
                   }}
                 >×</button>
               </div>
