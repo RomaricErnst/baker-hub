@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useLocale } from 'next-intl';
+import { TERMS_FR } from './learnModalFr';
 
 interface LearnModalProps {
   term: string;
@@ -107,7 +108,19 @@ const TERMS: Record<string, TermContent> = {
 export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
   const locale = useLocale();
   const isFr = locale === 'fr';
-  const content = TERMS[term];
+  const en = TERMS[term];
+  // Fall back per field, not per term: an English paragraph beside a French
+  // one is bad, but a missing paragraph is worse. If a term ever gains
+  // content on one side only, the modal still renders.
+  const fr = TERMS_FR[term];
+  const content = en && {
+    ...en,
+    title: (isFr && fr?.title) || en.title,
+    explanation: (isFr && fr?.explanation) || en.explanation,
+    tip: (isFr && fr?.tip) || en.tip,
+    secondTip: (isFr && fr?.secondTip) || en.secondTip,
+    videoLabel: (isFr && fr?.videoLabel) || en.videoLabel,
+  };
   // Escape closes, as it does on every other sheet in the app.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
