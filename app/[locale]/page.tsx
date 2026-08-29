@@ -2049,10 +2049,15 @@ export default function Home() {
     } else {
       setItemWeight(ALL_STYLES[sk].ballW);
     }
-    // Custom keeps its accordion behaviour until phase A3; the simple flow is
-    // page-based now, where a self-flipping page hides the choice just made.
+    // Both flows move on. Simple used to stay put, collapsing the picker to a
+    // summary card with a CHANGE link — the reasoning being that a
+    // self-flipping page hides the choice just made. The chip rail answers
+    // that now: the style is in the bar the moment it is picked, and stays
+    // there for the rest of the flow. So the collapsed card was showing the
+    // baker a thing they could already see, one tap short of the step they
+    // actually wanted.
     if (tab === 'custom') advanceAdv(1);
-    else setHighestStep(prev => Math.max(prev, 1));
+    else advance(1);
   }
 
   // Page mode: every navigation starts the new page at the top. The old
