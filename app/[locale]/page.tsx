@@ -3021,6 +3021,11 @@ export default function Home() {
         background: 'var(--cream)',
         boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
         margin: '10px 0 4px',
+        // Same easing and duration as the header above it. The header glides
+        // its 100px over 0.25s; this bar's offset changed by state, so it
+        // snapped the same distance instantly and the two came apart mid
+        // scroll. They move as one piece now.
+        transition: 'top 0.25s ease',
       }}>
         {activeTab !== 'pizzaparty' ? (() => {
           const steps = [
