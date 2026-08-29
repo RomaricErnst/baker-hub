@@ -472,12 +472,18 @@ function getNightsInWindow(
   if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return [];
 
   const nights: Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> = [];
-  // Start one day before windowStart to catch nights that began before midnight
-  // e.g. at 1am, tonight's 11pm start was yesterday — cursor must go back one day
+  // Start one day before blockerWindowStart to catch nights that began before
+  // midnight — at 1am, tonight's 11pm start was yesterday, so the cursor must
+  // go back one day.
   const cursor = new Date(start); cursor.setHours(0, 0, 0, 0);
   cursor.setDate(cursor.getDate() - 1);
 
-  for (let i = 0; i < 14 && nights.length < 7; i++) {
+  // Cap at 10, not 7. A six-day window plus the day-before cursor yields at
+  // most 8, so the window test below is the only filter and the set depends on
+  // the window alone. At 7 the cap bit from the front: a window start that
+  // moved earlier pushed a night NEAR THE BAKE out of the array, so which
+  // nights existed depended on where the window began.
+  for (let i = 0; i < 14 && nights.length < 10; i++) {
     // 23:00 — aligned with the profile's sleep blocker default (23:00–07:00)
     const nightStart = new Date(cursor); nightStart.setHours(23, 0, 0, 0);
     const nightEnd   = new Date(cursor); nightEnd.setDate(nightEnd.getDate() + 1); nightEnd.setHours(7, 0, 0, 0);
@@ -2268,8 +2274,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const wasNightActive = blocks.some(b => b.label.endsWith(' night'));
     if (!wasWorkActive && !wasNightActive) return;
 
-    const freshWorkdays = getWorkdaysInWindow(windowStart, pendingEatTime);
-    const freshNights   = getNightsInWindow(windowStart, pendingEatTime);
+    const freshWorkdays = getWorkdaysInWindow(blockerWindowStart, pendingEatTime);
+    const freshNights   = getNightsInWindow(blockerWindowStart, pendingEatTime);
 
     // Keep any custom blocks (non-preset), then re-add active presets
     const customBlocks = blocks.filter(
@@ -2460,30 +2466,35 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }, [isDragging, pendingEatTime, pendingStart, prefOffsetH,
       hasPrefActive, isSourdough, lastFedTime, renderSweetFrom, solverResult]);
 
-  // Fixed window start — always covers 5 days before bake regardless of diamond position
-  const windowStart = useMemo(() => {
-    const fiveDaysBefore = new Date(pendingEatTime.getTime() - 5 * 24 * 3600000);
-    const now = new Date();
-    const base = fiveDaysBefore > now ? fiveDaysBefore : now;
-    if (!isSourdough) return base;
-    // Sourdough: extend back to show hist feed bell (lastFedTime may be in the past)
-    // and active feed bell (feed2Time may be further back than now)
-    const histFeed = solverResult?.starterFeed2Time ?? lastFedTime;
-    const activeFeed = solverResult?.starterFeedTime;
-    let earliest = base;
-    if (histFeed && histFeed < earliest) {
-      earliest = new Date(histFeed.getTime() - 2 * 3600000);
-    }
-    if (activeFeed && activeFeed < earliest) {
-      earliest = new Date(activeFeed.getTime() - 2 * 3600000);
-    }
-    // Never go back more than 6 days
+  // Window the night/workday PRESETS are generated over. It must be a pure
+  // function of the bake time and the calendar, and of nothing else.
+  //
+  // It used to extend backwards on the sourdough path using
+  // solverResult.starterFeedTime / starterFeed2Time. Its only consumers are the
+  // two preset helpers below, so that made the blocker set an output of the
+  // previous solve and an input to the next one: blocks -> solver -> plan ->
+  // window -> blocks. A -> B -> A could not return, which is findings #4 and #6
+  // in SWEEP-RUN-1-RESULTS.md, and it was sourdough-only because that branch
+  // was sourdough-only.
+  //
+  // The old comment claimed the extension existed "to show hist feed bell". It
+  // never reached the chart — FermentChart derives its own axis from bakeMs.
+  //
+  // Floored to local midnight so the set is stable across a toggle round-trip:
+  // an unfloored `now` changes which nights qualify each time it crosses 07:00,
+  // the night end. Blocks that sit in the past cannot bind — every planned
+  // action is >= now.
+  const blockerWindowStart = useMemo(() => {
     const sixDaysBefore = new Date(pendingEatTime.getTime() - 6 * 24 * 3600000);
-    return earliest < sixDaysBefore ? sixDaysBefore : earliest;
-  }, [pendingEatTime, isSourdough, solverResult, lastFedTime]);
+    const now = new Date();
+    const base = sixDaysBefore > now ? sixDaysBefore : now;
+    const floored = new Date(base);
+    floored.setHours(0, 0, 0, 0);
+    return floored;
+  }, [pendingEatTime]);
 
-  const nights   = useMemo(() => getNightsInWindow(windowStart, pendingEatTime), [windowStart, pendingEatTime]);
-  const workdays = useMemo(() => getWorkdaysInWindow(windowStart, pendingEatTime), [windowStart, pendingEatTime]);
+  const nights   = useMemo(() => getNightsInWindow(blockerWindowStart, pendingEatTime), [blockerWindowStart, pendingEatTime]);
+  const workdays = useMemo(() => getWorkdaysInWindow(blockerWindowStart, pendingEatTime), [blockerWindowStart, pendingEatTime]);
   const _effectiveBlocks = isSourdough ? localBlocks : blocks;
   const isWorkActive = _effectiveBlocks.some(b => b.label.startsWith('Work · '));
 
@@ -5784,15 +5795,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     applyAndUpdate(newBlocks);
   }
 
+  // Night preset labels are `<Weekday> night`. Match the suffix, not membership
+  // of the current `nights` array — the same predicate the regeneration effect
+  // already uses, and the mirror of toggleWork's `startsWith('Work · ')`.
+  //
+  // Membership was the asymmetry that made Nights fail the round-trip while
+  // Weekdays passed: a night added under one window is not in `nights` after
+  // the window moves, so OFF left it in place AND isAnyNightActive() reported
+  // false — the chip read off while that block was still constraining the
+  // solver.
   function isAnyNightActive(): boolean {
-    return nights.some(n => _effectiveBlocks.some(b => b.label === n.label));
+    return _effectiveBlocks.some(b => b.label.endsWith(' night'));
   }
 
   function toggleAllNights() {
-    const anyActive = isAnyNightActive();
-    const nightLabels = new Set(nights.map(n => n.label));
-    const withoutNights = _effectiveBlocks.filter(b => !nightLabels.has(b.label));
-    const newBlocks = anyActive
+    const withoutNights = _effectiveBlocks.filter(b => !b.label.endsWith(' night'));
+    const newBlocks = isAnyNightActive()
       ? withoutNights
       : [...withoutNights, ...nights.map(n => ({ from: n.blockStart, to: n.blockEnd, label: n.label }))];
     applyAndUpdate(newBlocks);
