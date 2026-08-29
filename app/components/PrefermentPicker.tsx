@@ -4,7 +4,10 @@ import { useTranslations } from 'next-intl';
 import DecisionList from './DecisionList';
 
 interface PrefermentPickerProps {
-  selected: PrefermentType;
+  // null means the step has not been settled yet — nothing is highlighted and
+  // the follow-on pills stay hidden, because a code default that looks chosen
+  // is exactly what the preset rule exists to stop.
+  selected: PrefermentType | null;
   onSelect: (type: PrefermentType) => void;
   flourPct?: number;
   onFlourPctChange?: (pct: number) => void;
@@ -50,13 +53,13 @@ export default function PrefermentPicker({
           </p>
           <DecisionList
             options={options}
-            selectedId={selected}
+            selectedId={selected ?? ''}
             onSelect={(id) => onSelect(id as PrefermentType)}
           />
       </div>
 
       {/* Hydration / cold-ferment pills when a preferment is active */}
-      {selected !== 'none' && (() => {
+      {selected !== null && selected !== 'none' && (() => {
         const pData = PREFERMENT_TYPES[selected] as { hydration?: number; cold?: boolean };
         if (!pData.hydration && !pData.cold) return null;
         return (

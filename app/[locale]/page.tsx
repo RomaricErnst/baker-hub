@@ -990,6 +990,13 @@ export default function Home() {
   // recommendation rather than an assumption, and kitchen temperature is a
   // slider with no honest blank state — its provenance belongs with the
   // weather prefill, which can show a source line instead.
+  //
+  // Only Preferment renders UNSELECTED while unsettled, because a chip list
+  // has an honest blank state. A flour blend and a numeric stepper do not:
+  // an empty blend is not a thing you can draw, and a stepper showing nothing
+  // is a broken control, not an unanswered question. For those two the page
+  // keeps showing a working value while the STEP reports none — the door goes
+  // gold and names it, and Generate waits. Same reasoning as Climate.
   const [qtyChosen, setQtyChosen] = useState(false);
   const [flourChosen, setFlourChosen] = useState(false);
   const [prefermentChosen, setPrefermentChosen] = useState(false);
@@ -4392,7 +4399,7 @@ export default function Home() {
             {yeastType !== 'sourdough' && (
               <StepPage flow={customFlow} id={8}>
                 <PrefermentPicker
-                  selected={prefermentType}
+                  selected={prefermentChosen ? prefermentType : null}
                   onSelect={(pt) => { setPrefermentChosen(true); setPrefermentType(pt); }}
                   flourPct={prefermentFlourPct}
                   onFlourPctChange={setPrefermentFlourPct}
