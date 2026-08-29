@@ -48,8 +48,18 @@ const YEAST_RT_MAX_H  = 8;      // max RT hours before poolish recommended
 
 // Tropical correction divisor (RT phases only)
 function tropicalFactor(temp: number): number {
-  if (temp >= 33 && temp <= 35) return 1.25;
-  if (temp >= 30 && temp <= 32) return 1.15;
+  // The bands are closed at the top, so anything above 35 C fell through to
+  // 1.0 — a 36 C kitchen got LESS correction than a 33 C one and was dosed
+  // more yeast while fermenting faster. The climate slider goes to 38, so
+  // this was reachable, not theoretical.
+  //
+  // Above 35 C we HOLD the last validated value rather than extrapolate.
+  // 1.25 is certainly too little up there, but it is the highest figure the
+  // sources support and inventing a slope would be guessing into the science.
+  // Open-ended lower bounds also fix fractional temperatures: 32.5 C used to
+  // fall through to 1.0 between the two bands.
+  if (temp >= 33) return 1.25;
+  if (temp >= 30) return 1.15;
   return 1.0;
 }
 
@@ -132,16 +142,16 @@ function recommendYeast(
     if (totalRTHours > YEAST_RT_MAX_H && !isRTOnlyStyle) {
       recommendPoolish = true;
       warnings.push(
-        `Room temp fermentation over ${YEAST_RT_MAX_H}h is unpredictable. ` +
-        `A Poolish preferment gives you better control and more flavour.`
+        `Room temperature fermentation past ${YEAST_RT_MAX_H}h is hard to predict. ` +
+        `A poolish gives more control and more flavour.`
       );
     }
     const rtRec = rtIDY(totalRTHours, kitchenTemp);
     if (rtRec === null) {
       notRecommended = true;
       warnings.push(
-        `${totalRTHours}h at ${kitchenTemp}°C room temp is not recommended — ` +
-        `dough will over-ferment. Add a cold fermentation phase.`
+        `${totalRTHours}h at ${kitchenTemp}°C is longer than this dough will hold ` +
+        `at room temperature — it will over-ferment. A cold phase would carry it.`
       );
       rec = YEAST_MIN_PCT;
     } else {
@@ -158,8 +168,8 @@ function recommendYeast(
   // Hot climate warnings — suppressed for styles that are intentionally RT-only
   if (kitchenTemp >= 28 && totalColdHours === 0 && totalRTHours > 4 && !isRTOnlyStyle) {
     warnings.push(
-      `More than 4h at room temp in a ${kitchenTemp}°C kitchen is risky. ` +
-      `Add a cold retard phase or use a Poolish.`
+      `At ${kitchenTemp}°C, more than 4h at room temperature moves fast. ` +
+      `A cold retard or a poolish gives you more room.`
     );
   }
 
@@ -681,13 +691,13 @@ export function buildSchedule(
   // Schedule note (first match wins)
   let scheduleNote: string | null = null;
   if (coldHRequired && isTropical) {
-    scheduleNote = `🧈 Enriched dough needs the fridge at ${kitchenTemp}°C — cold retard locked in.`;
+    scheduleNote = `Enriched dough needs the fridge at ${kitchenTemp}°C — cold retard locked in.`;
   } else if (hasColdRetard && coldH < preferredColdH) {
-    scheduleNote = `⏱ Cold retard shortened to ${formatHoursSchedule(coldH)} to fit your window — flavour will still develop.`;
+    scheduleNote = `Cold retard shortened to ${formatHoursSchedule(coldH)} to fit your window — flavour will still develop.`;
   } else if (!hasColdRetard && preferredColdH > 0) {
-    scheduleNote = `🌡️ Working within your window — pure room temperature fermentation.`;
+    scheduleNote = `Working within your window — pure room temperature fermentation.`;
   } else if (isTropical && !hasColdRetard) {
-    scheduleNote = `🌴 Tropical kitchen — fermentation times adjusted for your climate.`;
+    scheduleNote = `Tropical kitchen — fermentation times adjusted for your climate.`;
   }
 
   // Warm-up and final proof durations (temp-aware)
