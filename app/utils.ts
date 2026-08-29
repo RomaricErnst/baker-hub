@@ -94,7 +94,8 @@ export type YeastWarningKey =
   | 'overFermentRT'       // RT window longer than the dough will hold
   | 'hotClimateRT'        // >4h at room temperature in a hot kitchen
   | 'fridgeWarm'          // fridge warmer than the 4C reference
-  | 'osmoticStress';      // sugar above 2% of flour — dose raised 20%
+  | 'osmoticStress'       // sugar above 2% of flour — dose raised 20%
+  | 'doseFloorRT';        // RT window longer than the dose can control at this batch size
 
 export interface YeastWarning {
   key: YeastWarningKey;
@@ -110,6 +111,13 @@ export interface YeastResult {
   scaleNeeded: string;
   dilutionTip: string | null;
   hitMinFloor: boolean;  // true when 0.5g IDY floor was applied
+  // Longest room-temperature window this batch can still be DOSED for, i.e.
+  // where the required IDY stays above what a 0.1 g scale can weigh. Null when
+  // the schedule has a cold phase (dose is set by the cold leg) or when the
+  // window is already inside it. Below this, the floor clamps the dose upward
+  // and the dough over-ferments no matter what the timings say — the one case
+  // where climate has to adjust TIMING and not just yeast.
+  maxDosableRTH: number | null;
   recommendPoolish: boolean;
   notRecommended: boolean;
   explanation: string;
@@ -191,6 +199,31 @@ function recommendYeast(
     rec = rawGrams / flour * 100;
   }
 
+  // The floor is a hardware limit, not a recipe decision: below 0.5 g nothing
+  // is weighable on a 0.1 g scale, so the dose is rounded UP and the dough
+  // ferments faster than the plan. On a pure room-temperature schedule that is
+  // the point where "climate adjusts yeast, not timing" stops being true.
+  //
+  // It binds at small batches in hot kitchens — 300 g of flour at 35-38 C — and
+  // not at 500 g and above, which is why it has stayed invisible. We report the
+  // longest window this batch can still be dosed for rather than silently
+  // handing back an over-yeasted plan.
+  let maxDosableRTH: number | null = null;
+  if (totalColdHours === 0 && hitMinFloor && flour > 0) {
+    for (let tenths = Math.round(totalRTHours * 10); tenths >= 5; tenths--) {
+      const pct = rtIDY(tenths / 10, kitchenTemp);
+      if (pct !== null && flour * pct / 100 >= YEAST_FLOOR_GRAMS) {
+        maxDosableRTH = Math.floor(tenths / 10 * 4) / 4;   // report to the quarter hour
+        break;
+      }
+    }
+    warnings.push({ key: 'doseFloorRT', params: {
+      hours: Math.round(totalRTHours * 10) / 10,
+      temp: kitchenTemp,
+      dosable: maxDosableRTH ?? 0,
+    } });
+  }
+
   // Convert to selected yeast type
   const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
   const grams          = Math.round(rawGrams * 1000) / 1000;
@@ -243,6 +276,7 @@ function recommendYeast(
     scaleNeeded,
     dilutionTip,
     hitMinFloor,
+    maxDosableRTH,
     recommendPoolish,
     notRecommended,
     explanation,

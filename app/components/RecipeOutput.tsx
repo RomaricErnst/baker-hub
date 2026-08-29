@@ -566,7 +566,7 @@ export default function RecipeOutput({
   // 'overFermentRT' stays out because the notRecommended card already says it,
   // and 'fridgeWarm' stays out as it did. Both are now deliberate rather than
   // an accident of phrasing.
-  const WARN_SHOWN: YeastWarningKey[] = ['poolishSuggestion', 'hotClimateRT'];
+  const WARN_SHOWN: YeastWarningKey[] = ['poolishSuggestion', 'hotClimateRT', 'doseFloorRT'];
 
   const filteredWarnings = yeastInfo
     ? yeastInfo.warnings.filter(w => WARN_SHOWN.includes(w.key))

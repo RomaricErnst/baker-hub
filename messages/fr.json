@@ -1823,6 +1823,7 @@
     "overFermentRT": "{hours} h à {temp} °C dépasse ce que cette pâte supporte à température ambiante — elle sur-fermentera. Une phase au froid la porterait.",
     "hotClimateRT": "À {temp} °C, plus de 4 h à température ambiante, cela va vite. Un passage au froid ou une poolish vous laissent plus de marge.",
     "fridgeWarm": "Un frigo à {temp} °C est plus chaud que la référence de 4 °C — la levure reste plus active que ne le supposent les durées.",
-    "osmoticStress": "Un sucre au-delà de 2 % de la farine freine la levure : la quantité est augmentée de 20 %. Une levure osmotolérante comme la SAF Gold s’en accommode mieux."
+    "osmoticStress": "Un sucre au-delà de 2 % de la farine freine la levure : la quantité est augmentée de 20 %. Une levure osmotolérante comme la SAF Gold s’en accommode mieux.",
+    "doseFloorRT": "À {temp} °C, cette quantité est assez petite pour que {hours} h à température ambiante demandent moins de levure qu’une balance à 0,1 g ne peut peser : la dose est arrondie vers le haut et la pâte prendra de l’avance sur le plan. Environ {dosable} h est la fenêtre la plus longue dosable pour cette quantité — sinon augmentez la quantité, ou ajoutez une phase au froid."
   }
 }
