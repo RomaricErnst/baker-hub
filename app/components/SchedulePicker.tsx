@@ -1832,7 +1832,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // This is the single source of truth — render-time display reads this,
   // not an independent re-computation from mixOffsetH.
   const [algoChoseFridge, setAlgoChoseFridge] = useState<boolean>(true);
-  const suppressStartReset = useRef(false);
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
   // Plan-list focus: the row whose NAME button was tapped. That step is
@@ -2224,7 +2223,27 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       const sweetCenter = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0)
         + climateRtH(sfDef.rtH, kitchenTemp, isSourdough) + (sfDef.minTotalFermH ?? 12)) / 2;
       setPendingStart(new Date(pendingEatTime.getTime() - sweetCenter * 3600000));
+      // Sourdough re-arms itself in the constraint effect below, which owns
+      // the solver for that path.
+      return;
     }
+
+    // This effect blanks the plan panel on every bake-time change, and until
+    // now the only thing that brought it back was confirmBakeTime's timeout.
+    // That left the invariant living in the callers — four of them plus two
+    // deferred touch paths — so any change that reached setPendingEatTime by
+    // another road reset the panel and never restored it. Coming back from
+    // the recipe and editing the bake time is one of those roads.
+    //
+    // The effect that clears it now also restores it. A valid future bake
+    // time can no longer leave the panel hidden, whichever control moved it.
+    if (isNaN(pendingEatTime.getTime())) return;
+    const t = setTimeout(() => {
+      computeAndApplyRecommendation(blocks, pendingEatTime);
+      setStartComputed(true);
+      onReady?.();
+    }, 0);
+    return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
 
@@ -2487,7 +2506,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const [yyyy, mm, dd] = datePart.split('-').map(Number);
     const [hh, mi] = timePart.split(':').map(Number);
     const et = new Date(yyyy, mm - 1, dd, hh, mi, 0, 0);
-    suppressStartReset.current = true;
     setPendingEatTime(et);
     setEatTimeSet(true);
     hasManuallyDragged.current = false;
@@ -2498,12 +2516,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     setDismissedConflict(false);
     setShowFallbackPopup(false);
     setPhase('start_confirm');
-    setTimeout(() => {
-      computeAndApplyRecommendation(blocks, et);
-      setStartComputed(true);
-      onReady?.();
-      suppressStartReset.current = false;
-    }, 0);
+    // The compute used to live here. It belongs to the pendingEatTime effect
+    // now — the same place that blanks the panel — so it cannot be skipped by
+    // a path that reaches setPendingEatTime without coming through this
+    // function. Running it here too would just solve the same schedule twice.
   }
 
   // Compute RT hours after fridge removal until starter peak, accounting for cold dwell.
