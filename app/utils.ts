@@ -42,6 +42,19 @@ import {
 // ══════════════════════════════════════════
 
 // Practical limits
+// NOT a legacy safety number — checked against Modernist Pizza Vol. 4, which
+// gives 0.050% IDY for 2h at 21C plus a 48h cold retard. Craig's formula
+// returns 0.048% for the same schedule, so this floor sits essentially ON the
+// validated value rather than above it. Two more points from the same
+// comparison: 4h@21C + 18h cold, Craig 0.201% vs Modernist 0.200%; + 24h cold,
+// Craig 0.133% vs Modernist 0.150%.
+//
+// Community yeast tables will look 2-4x higher than this and they are not a
+// counter-example: they vary 3-5x among themselves for identical conditions
+// because "fermentation complete" means full rise in some and the optimal
+// window in others. Modernist is the benchmark here. Do not lower this
+// constant on the strength of recipe blogs — that check was run and it was
+// the blogs that were the wrong ruler.
 const YEAST_MIN_PCT   = 0.05;   // hard floor
 const YEAST_MIN_GRAMS = 0.1;    // minimum weighable on 0.1g scale
 const YEAST_RT_MAX_H  = 8;      // max RT hours before poolish recommended

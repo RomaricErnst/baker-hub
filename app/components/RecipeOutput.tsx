@@ -562,11 +562,16 @@ export default function RecipeOutput({
   // 'dilution' — and three of those four terms no longer matched anything
   // any warning said, so display depended on wording rather than intent.
   //
-  // Behaviour is unchanged: the same two warnings render as before.
-  // 'overFermentRT' stays out because the notRecommended card already says it,
-  // and 'fridgeWarm' stays out as it did. Both are now deliberate rather than
-  // an accident of phrasing.
-  const WARN_SHOWN: YeastWarningKey[] = ['poolishSuggestion', 'hotClimateRT', 'doseFloorRT'];
+  // 'overFermentRT' stays out because the notRecommended card already says it.
+  //
+  // 'fridgeWarm' is IN as of this change. It had been dark for months, not by
+  // decision but because the old substring allowlist never matched its
+  // wording. It fires only above 8 C, so it cannot nag the 6 C default, and
+  // above 8 C cold fermentation genuinely becomes unpredictable — the baker
+  // typed that number themselves, so it is their data and it is actionable.
+  const WARN_SHOWN: YeastWarningKey[] = [
+    'poolishSuggestion', 'hotClimateRT', 'doseFloorRT', 'fridgeWarm',
+  ];
 
   const filteredWarnings = yeastInfo
     ? yeastInfo.warnings.filter(w => WARN_SHOWN.includes(w.key))
