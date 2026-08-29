@@ -2683,7 +2683,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           // and on a rounded screen the second line still landed in the curve.
           position: 'fixed', bottom: 0, left: 0, right: 0,
           background: '#2B2420',
-          borderTop: '1px solid #C88A52',
+          borderTop: '1px solid var(--terra)',
           padding: '14px 16px calc(18px + env(safe-area-inset-bottom, 0px))',
           display: 'flex', alignItems: 'center', gap: '12px',
           justifyContent: 'space-between',
@@ -2708,7 +2708,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 <div key={i} style={{
                   width: '7px', height: '7px', borderRadius: '50%',
                   background: i < totalQty
-                    ? (doughConfigured && totalQty >= numItems ? '#8BA888' : '#C88A52')
+                    ? (doughConfigured && totalQty >= numItems ? '#8BA888' : 'var(--terra)')
                     : '#3D3530',
                   transition: 'background 0.2s ease',
                 }} />
@@ -2717,7 +2717,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             <span style={{
               fontFamily: 'var(--font-ui)', fontSize: '12px', fontWeight: 600,
               color: totalQty === 0 ? '#B5AC9E'
-                : (doughConfigured && totalQty >= numItems ? '#8BA888' : '#C88A52'),
+                : (doughConfigured && totalQty >= numItems ? '#8BA888' : 'var(--terra)'),
             }}>
               {totalQty === 0
                 ? (l === 'fr'
@@ -2725,7 +2725,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   : `Select ${doughConfigured ? numItems : 'your'} pizzas`)
                 : (doughConfigured
                   ? (totalQty > numItems
-                    ? <>{numItems}/{numItems} <span style={{ color: '#C88A52', fontWeight: 700 }}>+{totalQty - numItems}</span></>
+                    ? <>{numItems}/{numItems} <span style={{ color: 'var(--terra)', fontWeight: 700 }}>+{totalQty - numItems}</span></>
                     : `${totalQty}/${numItems}`)
                   : `${totalQty}`)}
             </span>

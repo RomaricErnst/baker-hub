@@ -3060,7 +3060,7 @@ export default function Home() {
           // shrinks to a dot sitting on the connecting line.
           return (
             <div style={{ position: 'relative', padding: '8px 24px 8px' }}>
-              <div style={{ position: 'absolute', top: '13px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
+              <div style={{ position: 'absolute', top: '14.5px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
@@ -3095,7 +3095,7 @@ export default function Home() {
                       {/* A ring for where you are, a filled dot for where you
                           have been, a pale one for where you cannot go yet. */}
                       <span style={{
-                        width: '10px', height: '10px', borderRadius: '50%',
+                        width: '13px', height: '13px', borderRadius: '50%',
                         background: isActive ? 'var(--cream)' : dot,
                         border: `2px solid ${dot}`, boxShadow: '0 0 0 3px var(--cream)',
                         flexShrink: 0,
@@ -3106,7 +3106,7 @@ export default function Home() {
                           Locked ones stay plain, which is honest: they are
                           not links yet. */}
                       <span style={{
-                        fontSize: '11px', lineHeight: 1.15, color: labelColor,
+                        fontSize: '12.5px', lineHeight: 1.15, color: labelColor,
                         fontWeight: isActive ? 700 : 400, fontFamily: 'var(--font-ui)',
                         textAlign: 'center',
                         textDecoration: s.locked || isActive ? 'none' : 'underline',
@@ -3196,16 +3196,25 @@ export default function Home() {
           // every screen. The words stay — they are what tells a first
           // timer these are phases and not unrelated tabs — and the node
           // shrinks to a dot sitting on the connecting line.
+          // Sticky, like My Dough's — that one rides inside the sticky
+          // header and this one scrolled away, so the tab you were in
+          // stopped being visible the moment you browsed. No fold on
+          // scroll: at this height it is not worth a fourth listener on
+          // a page that already runs three.
           return (
-            <div style={{ position: 'relative', padding: '8px 24px 8px' }}>
-              <div style={{ position: 'absolute', top: '13px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
+            <div style={{
+              position: 'sticky', top: `${stickyHeadH}px`, zIndex: 24,
+              background: 'var(--cream)', padding: '8px 24px 8px',
+              boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
+            }}>
+              <div style={{ position: 'absolute', top: '14.5px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${fillPct}%`, background: '#8BA888', transition: 'width .2s' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
                 {steps.map(s => {
                   const isActive = pizzaPartyTab === s.key;
-                  const dot = s.done ? '#8BA888' : isActive ? '#C88A52' : s.locked ? '#D8D0C2' : '#C9BEA9';
-                  const labelColor = s.done ? '#6B7A5A' : isActive ? '#C88A52' : s.locked ? '#B5AC9E' : '#8C8580';
+                  const dot = s.done ? '#8BA888' : isActive ? 'var(--terra)' : s.locked ? '#D8D0C2' : '#C9BEA9';
+                  const labelColor = s.done ? '#6B7A5A' : isActive ? 'var(--terra)' : s.locked ? '#B5AC9E' : '#8C8580';
                   return (
                     <button
                       key={s.key}
@@ -3219,7 +3228,7 @@ export default function Home() {
                       {/* A ring for where you are, a filled dot for where you
                           have been, a pale one for where you cannot go yet. */}
                       <span style={{
-                        width: '10px', height: '10px', borderRadius: '50%',
+                        width: '13px', height: '13px', borderRadius: '50%',
                         background: isActive ? 'var(--cream)' : dot,
                         border: `2px solid ${dot}`, boxShadow: '0 0 0 3px var(--cream)',
                         flexShrink: 0,
@@ -3230,7 +3239,7 @@ export default function Home() {
                           Locked ones stay plain, which is honest: they are
                           not links yet. */}
                       <span style={{
-                        fontSize: '11px', lineHeight: 1.15, color: labelColor,
+                        fontSize: '12.5px', lineHeight: 1.15, color: labelColor,
                         fontWeight: isActive ? 700 : 400, fontFamily: 'var(--font-ui)',
                         textAlign: 'center',
                         textDecoration: s.locked || isActive ? 'none' : 'underline',
