@@ -17,6 +17,11 @@ export function useSessionSave(
   dataRef.current = data;
 
   useEffect(() => {
+    // Nothing is written until the baker has actually chosen something. This
+    // is what keeps autosave from manufacturing a history: no bake type and no
+    // style means there is nothing to resume, and a session written at that
+    // point would be indistinguishable from a completed setup on the next
+    // launch. Load-bearing — do not relax it to "save early, filter later".
     if (!data.bakeType) return;
     if (!data.styleKey && !data.recipeGenerated) return;
     if (timerRef.current) clearTimeout(timerRef.current);

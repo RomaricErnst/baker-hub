@@ -1367,7 +1367,14 @@ export default function Home() {
     const session = loadSession();
     if (!session) {
       // Nothing local at mount — this is the one reliable "fresh device"
-      // moment (autosave will write a default session right after).
+      // moment.
+      //
+      // The old note here said autosave would "write a default session right
+      // after". It does not, and has not: useSessionSave returns early until
+      // BOTH bakeType and styleKey are set (or a recipe has been generated),
+      // so nothing is persisted until the baker has actually chosen something.
+      // Checked rather than trusted — that stale claim is what led to reading
+      // an absent chosen-flag as settled in the restore below.
       freshDeviceRef.current = true;
       isRestoringRef.current = false;
       return;
@@ -1400,10 +1407,11 @@ export default function Home() {
     if (session.flourBlend) setFlourBlend(session.flourBlend as FlourBlend);
     setPrefermentType(session.prefermentType as PrefermentType);
     // Absent means UNSETTLED, not settled. The `?? true` this replaces was
-    // written for sessions saved before these flags existed — but autosave
-    // writes a default session on a fresh device the moment the app opens, so
-    // that backfill turned code defaults into "the baker chose this" on the
-    // second launch. A signed-out baker restarted the app and found Quantity,
+    // written for sessions saved before these flags existed. A session is only
+    // ever written once a bake type and style are chosen, so it is a real
+    // session — but it carries the untouched code defaults for Quantity,
+    // Flour and Preferment alongside them, and the backfill turned those into
+    // "the baker chose this" on the next launch. A signed-out baker restarted the app and found Quantity,
     // Flour and Preferment already in the rail reading 4/10 SET, none of which
     // they had ever touched. That is exactly the fabricated history the flags
     // exist to prevent.
