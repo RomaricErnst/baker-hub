@@ -1399,12 +1399,21 @@ export default function Home() {
     setFridgeTemp(session.fridgeTemp);
     if (session.flourBlend) setFlourBlend(session.flourBlend as FlourBlend);
     setPrefermentType(session.prefermentType as PrefermentType);
-    // Sessions written before these flags existed restore as settled: their
-    // values WERE decisions when they were made, and re-asking would be the
-    // same lie in the other direction.
-    setQtyChosen(session.qtyChosen ?? true);
-    setFlourChosen(session.flourChosen ?? true);
-    setPrefermentChosen(session.prefermentChosen ?? true);
+    // Absent means UNSETTLED, not settled. The `?? true` this replaces was
+    // written for sessions saved before these flags existed — but autosave
+    // writes a default session on a fresh device the moment the app opens, so
+    // that backfill turned code defaults into "the baker chose this" on the
+    // second launch. A signed-out baker restarted the app and found Quantity,
+    // Flour and Preferment already in the rail reading 4/10 SET, none of which
+    // they had ever touched. That is exactly the fabricated history the flags
+    // exist to prevent.
+    //
+    // A preset comes from the profile of a signed-in baker, or from the baker's
+    // own tap. Never from storage. Sessions written since the flags landed
+    // carry the real value; older ones correct themselves on first touch.
+    setQtyChosen(session.qtyChosen ?? false);
+    setFlourChosen(session.flourChosen ?? false);
+    setPrefermentChosen(session.prefermentChosen ?? false);
     setPrefermentFlourPct(session.prefermentFlourPct);
     setPrefOffsetH(session.prefOffsetH);
     setManualHydration(session.manualHydration);
@@ -2373,9 +2382,9 @@ export default function Home() {
     setFridgeTemp(snap.fridgeTemp);
     if (snap.flourBlend) setFlourBlend(snap.flourBlend as FlourBlend);
     setPrefermentType(snap.prefermentType as PrefermentType);
-    setQtyChosen(snap.qtyChosen ?? true);
-    setFlourChosen(snap.flourChosen ?? true);
-    setPrefermentChosen(snap.prefermentChosen ?? true);
+    setQtyChosen(snap.qtyChosen ?? false);
+    setFlourChosen(snap.flourChosen ?? false);
+    setPrefermentChosen(snap.prefermentChosen ?? false);
     setPrefermentFlourPct(snap.prefermentFlourPct);
     setPrefOffsetH(snap.prefOffsetH);
     setManualHydration(snap.manualHydration);
