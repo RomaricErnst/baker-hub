@@ -2186,7 +2186,19 @@ export default function Home() {
     return list[list.length - 1].id;
   }
 
+  // Quantity is step 2 in both flows, Flour 6 and Preferment 8 in Custom.
+  // Simple has neither of the latter two, so the tab guard keeps a Simple
+  // step 6 (Yeast) from settling a Flour page that does not exist there.
+  function markStepSettled(id: number) {
+    if (id === 2) setQtyChosen(true);
+    if (id === 6 && tab === 'custom') setFlourChosen(true);
+    if (id === 8) setPrefermentChosen(true);
+  }
+
   function advance(from: number) {
+    // Same rule as the custom flow — see advanceAdv. Simple has no Flour or
+    // Preferment page, so only Quantity can be settled here.
+    markStepSettled(from);
     const next = nextUnanswered(SIMPLE_STEPS, from, highestStep);
     setActiveStep(next);
     setHighestStep(p => Math.max(p, next));
@@ -2195,6 +2207,21 @@ export default function Home() {
   }
 
   function advanceAdv(from: number) {
+    // Moving forward FROM a step's own page settles it.
+    //
+    // The three defaulted steps show a working value — an empty stepper or a
+    // blank blend is a broken control, not an unanswered question — so a baker
+    // who reads the page and taps forward has accepted what is on it. Treating
+    // that as unanswered was the worst of both worlds: it displayed a value and
+    // then reported "Quantity not confirmed" for it, which is what came back
+    // from the device.
+    //
+    // This is not the old walk-past-adopts rule returning. It fires only when
+    // the baker is ON the page and moves forward from it, so a value restored
+    // from storage or a page never reached still counts for nothing. That was
+    // always the real distinction; highestStep alone could not make it, because
+    // a restored session brings a highestStep the baker never earned.
+    markStepSettled(from);
     const next = nextUnanswered(CUSTOM_STEPS, from, advancedHighestStep);
     setAdvancedStep(next);
     setAdvancedHighestStep(p => Math.max(p, next));
