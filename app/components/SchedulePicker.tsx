@@ -1886,6 +1886,29 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   //
   // Written synchronously in applyAndUpdate and refreshed after every commit,
   // so a deferred solve can never read a stale set.
+  // A generated plan that is being resumed is already decided, and re-solving
+  // it is what moved Start Dough, the poolish and the mix while the bake time
+  // sat still: the solver works backward from the bake time, so it holds
+  // eatTime and re-derives everything else — and because it will not place a
+  // start in the past, it clamps to now and slides the whole protocol forward.
+  // Correct when planning, wrong when the dough is already made.
+  //
+  // Guarded at the two solver entry points rather than on the effects that
+  // call them. There are several such effects — the mount solve, the bake-time
+  // effect, the sourdough constraint effect that "owns the solver for that
+  // path" — and guarding them one by one is how the first attempt at this
+  // missed the sourdough case entirely. One gate, both doors.
+  //
+  // Released a tick after mount, so this only ever suppresses the mount pass.
+  // Everything the baker does afterwards, including editing the bake time,
+  // re-plans normally — that is the escape hatch for someone who had not
+  // actually started.
+  const resumeFrozenRef = useRef(sessionRestored && recipeGenerated);
+  useEffect(() => {
+    const t = setTimeout(() => { resumeFrozenRef.current = false; }, 150);
+    return () => clearTimeout(t);
+  }, []);
+
   const solverBlocksRef = useRef<AvailabilityBlock[]>(blocks);
   useEffect(() => {
     solverBlocksRef.current = isSourdough ? localBlocks : blocks;
@@ -1930,6 +1953,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     currentBlocks: AvailabilityBlock[],
     et: Date,
   ) {
+    if (resumeFrozenRef.current) return;
     // Reset prefAlgoRed at start — prevents stale state from previous run
     setPrefAlgoRed(false);
     setWindowTooShort(false);
@@ -2868,6 +2892,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // ── Sourdough: joint mix+starter solver (scoring loop) ──────
   function findOptimalPositionSourdough(et: Date, manualMixOverride?: Date, blocksOverride?: AvailabilityBlock[]) {
+    if (resumeFrozenRef.current) return;
     // Guard: bail early if required inputs aren't ready yet
     if (planningMode === 'last_fed' && (!lastFedTime || lastFedAge === null)) return;
     if (planningMode === 'know_peak' && !knownPeakTime) return;
