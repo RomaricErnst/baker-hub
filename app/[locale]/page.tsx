@@ -2247,6 +2247,10 @@ export default function Home() {
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
     setReviewMode(false); setSetupOverview(false);
     setModeChosen(false);
+    // Restart means restart. Without these the three settled-flags survived the
+    // wipe, so Quantity, Flour and Preferment came back reading as the baker's
+    // own choices on a flow they had just cleared.
+    setQtyChosen(false); setFlourChosen(false); setPrefermentChosen(false);
     setTab('simple'); // full reset — keeping the previous mode made Custom look pre-selected to a fresh user
     setPizzaPartyTab('pick');
     setPizzasConfirmed(false);
@@ -2258,6 +2262,12 @@ export default function Home() {
       localStorage.removeItem('bh_prep_ticks_v1');
       localStorage.removeItem('bh_guide_done_v1');
     } catch {}
+    // The welcome-back banner silences itself for the rest of the browser
+    // session once answered. On iOS that sessionStorage key survives the app
+    // being backgrounded, so a later restored session came back with no prompt
+    // at all — a silent rehydration, which is indistinguishable from the app
+    // having pre-set everything. Restart clears it too: restart means restart.
+    try { sessionStorage.removeItem('bh_wb_answered'); } catch {}
     setSessionSaved(false);
     setSessionRestored(false);
     setReviewMode(false);
@@ -2643,6 +2653,13 @@ export default function Home() {
     { id: 10, group: 'making', chip: fr ? 'Peaufiner' : 'Fine-tune', title: t('dialIn.title'),
       value: manualHydration !== undefined
         ? `${manualHydration}% ${t('dialIn.hydrationSuffix')}`
+        // The style's BASE hydration is not what the dough is made at — the
+        // engine adjusts it for the oven and the climate, and the Fine-tune
+        // page shows both ("Adjusted from 62% · oven -2%"). The chip was
+        // printing the base, so the rail read 62% while the slider beside it
+        // read 60% and the recipe was built at 60%. One fact, three places,
+        // and the chip was showing the one number nothing used.
+        : advancedRecipe ? `${Math.round(advancedRecipe.hydration * 2) / 2}% ${t('dialIn.hydrationSuffix')}`
         : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : null,
       prefilled: true,
       gap: fr ? 'La pâte n\u2019est pas confirmée' : 'Dough not confirmed' },

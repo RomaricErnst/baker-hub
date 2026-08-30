@@ -665,7 +665,12 @@ export default function RecipeOutput({
                 <div style={{ marginTop: '8px' }}>
                   {[
                     { label: 'Flour', pct: '100%', value: u === 'imperial' ? wStr(totalFlour) : `${Math.round(totalFlour).toLocaleString()}g` },
-                    { label: 'Water', pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalWater) : `${Math.round(totalWater).toLocaleString()}g` },
+                    // The hydration the baker set, not a ratio recomputed from
+                    // grams that have already been rounded for weighing. 60% of
+                    // 639 g is 383.4 g, shown as 383 g to weigh, and 383/639
+                    // reads back as 59.9% — arithmetically honest and wrong to
+                    // print, because the baker chose 60 and the engine used 60.
+                    { label: 'Water', pct: `${hydration}%`, value: u === 'imperial' ? wStr(totalWater) : `${Math.round(totalWater).toLocaleString()}g` },
                     { label: 'Salt',  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalSalt) : `${Math.round(totalSalt).toLocaleString()}g` },
                     ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
                   ].map((row, i) => (
@@ -831,7 +836,7 @@ export default function RecipeOutput({
                     <div style={{ marginTop: '8px' }}>
                       {[
                         { label: t('recipe.flour'), pct: '100%', value: u === 'imperial' ? wStr(totalFlour) : `${Math.round(totalFlour).toLocaleString()}g` },
-                        { label: t('recipe.water'), pct: `${Math.round(totalWater / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalWater) : `${Math.round(totalWater).toLocaleString()}g` },
+                        { label: t('recipe.water'), pct: `${hydration}%`, value: u === 'imperial' ? wStr(totalWater) : `${Math.round(totalWater).toLocaleString()}g` },
                         { label: t('recipe.salt'),  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalSalt) : `${Math.round(totalSalt).toLocaleString()}g` },
                         ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
                       ].map((row, i) => (
