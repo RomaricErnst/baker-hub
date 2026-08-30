@@ -2997,8 +2997,22 @@ export default function Home() {
               color: 'var(--smoke)', textTransform: 'uppercase',
               letterSpacing: '.08em', flex: '1 1 auto',
             }}>
-              {locale === 'fr' ? 'Session précédente chargée' : 'Previous session loaded'}
+              {/* Not "loaded" any more — the session is held until the baker
+                  takes it, so saying it is already in would be the same silent
+                  restore this banner exists to replace. */}
+              {locale === 'fr' ? 'Vous avez une pâte en cours' : 'You have a dough in progress'}
             </span>
+            <button
+              onClick={answerWelcomeBack}
+              style={{
+                background: 'none', border: 'none', color: 'var(--ash)',
+                cursor: 'pointer', fontSize: '13px', fontFamily: 'var(--font-ui)',
+                fontWeight: 600, padding: '12px 8px', minHeight: '44px',
+                whiteSpace: 'nowrap', textDecoration: 'underline',
+              }}
+            >
+              {locale === 'fr' ? 'Nouvelle pâte' : 'Start fresh'}
+            </button>
             <button
               onClick={() => {
                 // This is where the session is APPLIED. Nothing was restored on
