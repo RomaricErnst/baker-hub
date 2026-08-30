@@ -1361,9 +1361,21 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Welcome back — hydrate full wizard state from localStorage on mount
+  // A saved session is OFFERED on mount, never applied silently.
+  //
+  // It used to rehydrate everything the moment the app opened. Nothing was
+  // wrong with the values — ovenType, mixerType and yeastType all start as
+  // null, so nothing is pre-set by code — but restored state that appears
+  // without explanation is indistinguishable from the app having chosen for
+  // you, and that is exactly how it was read on a device: a signed-out baker
+  // finding an oven, a mixer and a ticked yeast they had never picked.
+  //
+  // So the session is held until the baker says which they want. Dismissing
+  // without choosing leaves it unapplied, because a fresh start is the safe
+  // default and the session is still on disk if they change their mind.
+  const [pendingSession, setPendingSession] = useState<SessionData | null>(null);
+
   useEffect(() => {
-    isRestoringRef.current = true;
     const session = loadSession();
     if (!session) {
       // Nothing local at mount — this is the one reliable "fresh device"
@@ -1376,9 +1388,14 @@ export default function Home() {
       // Checked rather than trusted — that stale claim is what led to reading
       // an absent chosen-flag as settled in the restore below.
       freshDeviceRef.current = true;
-      isRestoringRef.current = false;
       return;
     }
+    setPendingSession(session);
+    setShowWelcomeBack(true);
+  }, []);
+
+  function applySession(session: SessionData) {
+    isRestoringRef.current = true;
 
     const restoredEatTimeIsPast = session.eatTime
       ? new Date(session.eatTime) < new Date()
@@ -1521,17 +1538,20 @@ export default function Home() {
     setAdvancedStep(99);
     // Toast respawned on every reload/locale switch until acted on —
     // once dismissed/answered in this browser session, stay quiet.
-    let wbDismissed = false;
-    try { wbDismissed = sessionStorage.getItem('bh_wb_answered') === '1'; } catch {}
-    setShowWelcomeBack(!wbDismissed);
+    setShowWelcomeBack(false);
+    setPendingSession(null);
     setTimeout(() => { isRestoringRef.current = false; }, 200);
-  }, []);
+  }
 
   // Any user answer to the welcome-back toast (resume, start fresh, dismiss)
   // silences it for the rest of the browser session.
   function answerWelcomeBack() {
     try { sessionStorage.setItem('bh_wb_answered', '1'); } catch {}
     setShowWelcomeBack(false);
+    // Dropping the offer without taking it leaves the session unapplied. A
+    // fresh start is the safe default, and the session is still on disk if the
+    // baker changes their mind on the next launch.
+    setPendingSession(null);
   }
 
   // Scroll to results when they appear
@@ -2981,14 +3001,19 @@ export default function Home() {
             </span>
             <button
               onClick={() => {
-                // "Resume" used to only dismiss the banner: the session is
-                // already restored on mount, so it promised an action that had
-                // happened. It now takes the baker where they left off.
+                // This is where the session is APPLIED. Nothing was restored on
+                // mount — see the comment on pendingSession — so Resume now
+                // does the thing it says rather than dismissing a banner over
+                // state that had already appeared by itself.
+                const s = pendingSession;
                 answerWelcomeBack();
-                if (recipeGenerated) setActiveTab('plan');
+                if (!s) return;
+                applySession(s);
+                if (s.recipeGenerated) setActiveTab('plan');
                 else {
-                  const target = firstIncompleteStep(tab === 'custom');
-                  if (tab === 'custom') setAdvancedStep(target); else setActiveStep(target);
+                  const isCustom = s.tab === 'custom';
+                  const target = firstIncompleteStep(isCustom);
+                  if (isCustom) setAdvancedStep(target); else setActiveStep(target);
                   scrollToStepTop();
                 }
               }}
