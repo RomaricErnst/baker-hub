@@ -2983,36 +2983,52 @@ export default function Home() {
           <div style={{
             background: 'var(--warm)',
             border: '1px solid var(--border)',
-            borderRadius: '16px',
-            padding: '12px 16px',
+            borderRadius: '14px',
+            padding: '8px 8px 8px 14px',
             margin: '0 0 14px',
+            minHeight: '56px',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
-            flexWrap: 'wrap',
+            gap: '10px',
             boxShadow: 'var(--card-shadow, 0 2px 12px rgba(43, 36, 32,0.06))',
           }}>
             <span style={{
-              fontFamily: 'var(--font-ui)', fontSize: '11px',
-              color: 'var(--smoke)', textTransform: 'uppercase',
-              letterSpacing: '.08em', flex: '1 1 auto',
+              fontFamily: 'var(--font-ui)', fontSize: '13.5px',
+              color: 'var(--ash)', flex: '1 1 auto', minWidth: 0, lineHeight: 1.35,
             }}>
-              {/* Not "loaded" any more — the session is held until the baker
-                  takes it, so saying it is already in would be the same silent
-                  restore this banner exists to replace. */}
-              {locale === 'fr' ? 'Vous avez une pâte en cours' : 'You have a dough in progress'}
+              {/* Sentence case, not uppercase with letter-spacing: the tracked
+                  caps made the label long enough that the two controls could not
+                  sit beside it, so the row wrapped to three and the banner ate
+                  200px above the hero.
+
+                  It also names what is waiting. "You have a dough in progress"
+                  makes the baker tap Resume to find out whether they want it,
+                  which is a decision without information. Style answers what it
+                  is and the bake time answers whether it is still any use —
+                  those are the two facts that decide it. Progress is left out
+                  on purpose; it speaks to sunk cost, not to fit. */}
+              {(() => {
+                const st = pendingSession?.styleKey
+                  ? styleDisplayName(pendingSession.styleKey as StyleKey)
+                  : null;
+                const when = pendingSession?.eatTime
+                  ? formatTime(new Date(pendingSession.eatTime), locale)
+                  : null;
+                const head = st
+                  ? (locale === 'fr' ? `Reprendre votre ${st}` : `Resume your ${st}`)
+                  : (locale === 'fr' ? 'Vous avez une pâte en cours' : 'You have a dough in progress');
+                return (
+                  <>
+                    <span style={{ color: 'var(--char)', fontWeight: 600 }}>{head}</span>
+                    {when && (
+                      <span style={{ color: 'var(--smoke)' }}>
+                        {locale === 'fr' ? ` · cuisson ${when}` : ` · bake ${when}`}
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
             </span>
-            <button
-              onClick={answerWelcomeBack}
-              style={{
-                background: 'none', border: 'none', color: 'var(--ash)',
-                cursor: 'pointer', fontSize: '13px', fontFamily: 'var(--font-ui)',
-                fontWeight: 600, padding: '12px 8px', minHeight: '44px',
-                whiteSpace: 'nowrap', textDecoration: 'underline',
-              }}
-            >
-              {locale === 'fr' ? 'Nouvelle pâte' : 'Start fresh'}
-            </button>
             <button
               onClick={() => {
                 // This is where the session is APPLIED. Nothing was restored on
@@ -3035,12 +3051,32 @@ export default function Home() {
                 background: 'var(--terra)', border: 'none',
                 color: 'white', cursor: 'pointer', fontSize: '13px',
                 fontFamily: 'var(--font-ui)', fontWeight: 600,
-                padding: '12px 16px', minHeight: '44px', borderRadius: '12px', whiteSpace: 'nowrap',
+                padding: '0 16px', height: '40px', minHeight: '40px',
+                borderRadius: '12px', whiteSpace: 'nowrap', flex: '0 0 auto',
               }}
             >
-              {recipeGenerated
+              {pendingSession?.recipeGenerated
                 ? (locale === 'fr' ? 'Voir ma recette →' : 'See my recipe →')
                 : (locale === 'fr' ? 'Reprendre →' : 'Resume →')}
+            </button>
+            {/* Dismiss as an icon, not a worded button. "Start fresh" was the
+                wrong promise — answerWelcomeBack leaves the session on disk and
+                only silences the offer for this browser session, so a label
+                that sounds like a wipe describes something that does not
+                happen. The real wipe is the reset control in the header, and
+                two things called "start fresh" meaning two different things
+                would surprise someone. 44x44 reach on an 18px glyph. */}
+            <button
+              onClick={answerWelcomeBack}
+              aria-label={locale === 'fr' ? 'Masquer' : 'Dismiss'}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--smoke)', width: '44px', height: '44px', flex: '0 0 auto',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '18px', lineHeight: 1, fontFamily: 'var(--font-ui)',
+              }}
+            >
+              ✕
             </button>
           </div>
         )}
