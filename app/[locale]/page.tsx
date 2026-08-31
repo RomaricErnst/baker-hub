@@ -2249,6 +2249,47 @@ export default function Home() {
     scrollToStepTop();
   }
 
+  // Start fresh is the only destructive action in the app, so it is the only
+  // one that interrupts. An unsaved session gets one question with no silent
+  // path out: keep it, drop it, or back out. A saved session just restarts.
+  const [confirmNewSession, setConfirmNewSession] = useState(false);
+
+  function requestNewSession() {
+    if (recipeGenerated && !sessionSaved) { setConfirmNewSession(true); return; }
+    startOver();
+  }
+
+  async function saveCurrentSession() {
+            const sessionPayload = buildSessionPayload();
+    const currentQtys = pizzaPartyGetQtysRef.current?.() ?? pizzaPartyQtys;
+    saveSession(sessionPayload);
+    // Optimistic - local save just succeeded; cloud write continues
+    // in the background and reverts the pill on failure.
+    setSessionSaved(true);
+    if (user) {
+      try {
+        const { saveNamedSession, savePizzaPartySelections, updateBakeEvent } = await import('../lib/supabase/saveBakeEvent');
+        let id = bakeEventId;
+        if (!id) {
+          id = await saveNamedSession(sessionPayload as SessionData);
+          if (id) setBakeEventId(id);
+        } else {
+          await updateBakeEvent(id, sessionPayload as SessionData);
+        }
+        if (id && Object.keys(currentQtys).length > 0 && styleKey) {
+          await savePizzaPartySelections(id, currentQtys, styleKey);
+        }
+        if (!id) setSessionSaved(false);
+      } catch (e) {
+        console.error('Cloud save failed:', e);
+        setSessionSaved(false);
+      }
+    } else {
+      setShowSignInForSave(true);
+      setTimeout(() => setShowSignInForSave(false), 4000);
+    }
+  }
+
   function startOver() {
     // Fresh session = fresh chance for profile blockers to apply — without
     // this reset, only the first session per page load ever received them.
@@ -2806,7 +2847,7 @@ export default function Home() {
           recipeGenerated={recipeGenerated}
           sessionSaved={sessionSaved}
           sessionRestored={sessionRestored}
-          hideActionBar={bakeTimeIsPast && sessionRestored}
+          hideActionBar={false}
           openSessionId={shareSessionId}
           onShareSessionClose={() => setShareSessionId(null)}
           sessionSummary={(() => {
@@ -2824,41 +2865,12 @@ export default function Home() {
           sessionDoughSpec={tab === 'custom' && manualHydration !== undefined
             ? `${manualHydration}% · ${prefermentType !== 'none' ? prefermentType.charAt(0).toUpperCase() + prefermentType.slice(1) + ' · ' : ''}Custom`
             : ''}
-          onSaveSession={async () => {
-            const sessionPayload = buildSessionPayload();
-            const currentQtys = pizzaPartyGetQtysRef.current?.() ?? pizzaPartyQtys;
-            saveSession(sessionPayload);
-            // Optimistic - local save just succeeded; cloud write continues
-            // in the background and reverts the pill on failure.
-            setSessionSaved(true);
-            if (user) {
-              try {
-                const { saveNamedSession, savePizzaPartySelections, updateBakeEvent } = await import('../lib/supabase/saveBakeEvent');
-                let id = bakeEventId;
-                if (!id) {
-                  id = await saveNamedSession(sessionPayload as SessionData);
-                  if (id) setBakeEventId(id);
-                } else {
-                  await updateBakeEvent(id, sessionPayload as SessionData);
-                }
-                if (id && Object.keys(currentQtys).length > 0 && styleKey) {
-                  await savePizzaPartySelections(id, currentQtys, styleKey);
-                }
-                if (!id) setSessionSaved(false);
-              } catch (e) {
-                console.error('Cloud save failed:', e);
-                setSessionSaved(false);
-              }
-            } else {
-              setShowSignInForSave(true);
-              setTimeout(() => setShowSignInForSave(false), 4000);
-            }
-          }}
+          onSaveSession={saveCurrentSession}
           // Nothing to start over from on the landing page — the baker is
           // already at the start. It appears the moment they pick a bake type,
           // which is also the moment it becomes useful: it is how they switch
           // Pizza <-> Pain.
-          onNewSession={bakeType ? startOver : undefined}
+          onNewSession={bakeType ? requestNewSession : undefined}
           onResumeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event); }}
           onRebakeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event, { rebake: true }); }}
           onOpenProfile={() => setProfileOpen(true)}
@@ -2866,6 +2878,56 @@ export default function Home() {
 
         {profileOpen && (
           <ProfileSheet locale={locale} onClose={() => setProfileOpen(false)} />
+        )}
+
+        {confirmNewSession && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            style={{
+              position: 'fixed', inset: 0, zIndex: 200,
+              background: 'rgba(43,33,24,0.45)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '20px',
+            }}
+            onClick={() => setConfirmNewSession(false)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: 'var(--warm)', borderRadius: '16px', padding: '20px',
+                maxWidth: '360px', width: '100%',
+                display: 'flex', flexDirection: 'column', gap: '10px',
+              }}
+            >
+              <p style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
+                {locale === 'fr' ? 'Ce plan n\u2019est pas enregistr\u00e9' : 'This plan is not saved'}
+              </p>
+              <p style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
+                {locale === 'fr'
+                  ? 'Enregistrez-le dans votre historique avant d\u2019en commencer un nouveau.'
+                  : 'Save it to your history before starting a new one.'}
+              </p>
+              <button
+                onClick={async () => { await saveCurrentSession(); setConfirmNewSession(false); startOver(); }}
+                style={{ width: '100%', padding: '14px', minHeight: '44px', background: 'var(--terra)', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+              >
+                {locale === 'fr' ? 'Enregistrer, puis nouveau plan' : 'Save it, then start fresh'}
+              </button>
+              <button
+                onClick={() => { setConfirmNewSession(false); startOver(); }}
+                style={{ width: '100%', padding: '12px', minHeight: '44px', background: 'none', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '13px', color: 'var(--char)', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+              >
+                {locale === 'fr' ? 'Abandonner ce plan' : 'Discard this plan'}
+              </button>
+              <button
+                onClick={() => setConfirmNewSession(false)}
+                style={{ width: '100%', padding: '12px', minHeight: '44px', background: 'none', border: 'none', borderRadius: '12px', fontSize: '13px', color: 'var(--smoke)', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+            </div>
+          </div>
         )}
 
 
@@ -3967,24 +4029,7 @@ export default function Home() {
               {/* Recipe + Timeline */}
               {recipeGenerated && (
                 <div ref={resultsRef} style={{ marginTop: '16px' }}>
-                  {bakeTimeIsPast && sessionRestored ? (
-                    <PostBakeLanding
-                      styleName={styleDisplayName(styleKey)}
-                      eatTime={eatTime}
-                      bakeEventId={bakeEventId}
-                      onYes={() => {
-                        if (bakeEventId) {
-                          setSessionRestored(false);
-                        } else {
-                          startOver();
-                        }
-                      }}
-                      onNo={() => {
-                        startOver();
-                      }}
-                      locale={locale}
-                    />
-                  ) : (
+                  {(
                     <>
                       {/* Recipe null-guard */}
                       {!recipe ? (
@@ -4033,7 +4078,7 @@ export default function Home() {
               )}
 
               {/* How did it go? card */}
-              {!(bakeTimeIsPast && sessionRestored) && eatTime && new Date() > eatTime && (
+              {eatTime && new Date() > eatTime && (
                 <div style={{ border: '1.5px solid var(--border)', borderRadius: '16px', background: 'var(--warm)', padding: '16px 16px', marginTop: '16px', marginBottom: '4px' }}>
                   <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>How did it go?</p>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -5032,24 +5077,7 @@ export default function Home() {
               {/* Recipe + Timeline */}
               {recipeGenerated && (
                 <div style={{ marginTop: '16px' }}>
-                  {bakeTimeIsPast && sessionRestored ? (
-                    <PostBakeLanding
-                      styleName={styleDisplayName(styleKey)}
-                      eatTime={eatTime}
-                      bakeEventId={bakeEventId}
-                      onYes={() => {
-                        if (bakeEventId) {
-                          setSessionRestored(false);
-                        } else {
-                          startOver();
-                        }
-                      }}
-                      onNo={() => {
-                        startOver();
-                      }}
-                      locale={locale}
-                    />
-                  ) : (
+                  {(
                     <>
                       {!advancedRecipe ? (
                         <div style={{ background: '#FEF4EF', border: '1.5px solid #F5C4B0', borderRadius: '16px', padding: '20px', textAlign: 'center', color: 'var(--terra)', fontSize: '14px' }}>
@@ -5096,7 +5124,7 @@ export default function Home() {
               )}
 
               {/* How did it go? card */}
-              {!(bakeTimeIsPast && sessionRestored) && eatTime && new Date() > eatTime && (
+              {eatTime && new Date() > eatTime && (
                 <div style={{ border: '1.5px solid var(--border)', borderRadius: '16px', background: 'var(--warm)', padding: '16px 16px', marginTop: '16px', marginBottom: '4px' }}>
                   <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>How did it go?</p>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -5388,93 +5416,3 @@ export default function Home() {
   );
 }
 
-function PostBakeLanding({
-  styleName, eatTime, bakeEventId, onYes, onNo, locale,
-}: {
-  styleName: string;
-  eatTime: Date | null;
-  bakeEventId: string | null;
-  onYes: () => void;
-  onNo: () => void;
-  locale: string;
-}) {
-  const l = locale === 'fr' ? 'fr' : 'en';
-  const [saving, setSaving] = useState(false);
-
-  const dateStr = eatTime
-    ? eatTime.toLocaleDateString(
-        l === 'fr' ? 'fr-FR' : 'en-GB',
-        { weekday: 'long', day: 'numeric', month: 'long' },
-      )
-    : '';
-
-  async function handleYes() {
-    setSaving(true);
-    if (bakeEventId) {
-      const { saveBakedStatus } = await import('../lib/supabase/saveBakeEvent');
-      await saveBakedStatus(bakeEventId);
-    }
-    setSaving(false);
-    onYes();
-  }
-
-  return (
-    <div style={{
-      padding: '32px 20px',
-      display: 'flex', flexDirection: 'column', gap: '12px',
-      maxWidth: '480px', margin: '0 auto',
-    }}>
-      <div>
-        <p style={{
-          fontFamily: 'var(--font-ui)', fontSize: '24px',
-          fontWeight: 700, color: 'var(--char)', margin: '0 0 4px',
-          lineHeight: 1.2,
-        }}>
-          {styleName}
-        </p>
-        <p style={{
-          fontFamily: 'var(--font-ui)', fontSize: '12px',
-          color: 'var(--smoke)', margin: 0,
-        }}>
-          {dateStr}
-        </p>
-      </div>
-
-      <p style={{
-        fontFamily: 'var(--font-ui)', fontSize: '17px',
-        fontWeight: 600, color: 'var(--char)',
-        margin: '16px 0 8px',
-      }}>
-        {l === 'fr' ? 'Cette fournée a-t-elle eu lieu ?' : 'Did this bake happen?'}
-      </p>
-
-      <button
-        onClick={handleYes}
-        disabled={saving}
-        style={{
-          width: '100%', padding: '16px',
-          background: saving ? 'var(--smoke)' : 'var(--terra)',
-          color: 'white', border: 'none', borderRadius: '12px',
-          fontFamily: 'var(--font-ui)', fontSize: '15px',
-          fontWeight: 600, cursor: saving ? 'default' : 'pointer',
-          boxShadow: '0 2px 8px rgba(107, 68, 35,0.2)',
-        }}
-      >
-        {saving ? '...' : (l === 'fr' ? 'Oui, je l\'ai fait ✓' : 'Yes, I baked it ✓')}
-      </button>
-
-      <button
-        onClick={onNo}
-        style={{
-          width: '100%', padding: '12px', minHeight: '44px',
-          background: 'none', border: '1px solid var(--border)',
-          borderRadius: '12px', cursor: 'pointer',
-          fontFamily: 'var(--font-ui)', fontSize: '13px',
-          color: 'var(--smoke)',
-        }}
-      >
-        {l === 'fr' ? '← Nouvelle fournée' : '← Start a new bake'}
-      </button>
-    </div>
-  );
-}
