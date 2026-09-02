@@ -160,7 +160,6 @@ export default function StylePicker({ bakeType, selected, onSelect, disabledIds 
           isSelected={styleKey === 'neapolitan'}
           onSelect={() => { onSelect('neapolitan'); setExpanded(false); }}
           size="large"
-          badge={locale === 'fr' ? 'Le plus demandé' : 'Most popular'}
         />
         <div style={{
           display: 'grid',
