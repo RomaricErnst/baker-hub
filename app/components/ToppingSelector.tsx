@@ -491,6 +491,27 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
     ? `/pizzas/${pizza.id}${suffix}.webp`
     : `/pizzas/${pizza.id}.webp`;
 
+  // Drag-to-dismiss. A sheet that only closes via the ✕ reads as a page on a
+  // phone; following the thumb and falling away past a threshold is what makes
+  // it feel like a sheet. Pointer events cover touch and mouse alike, and the
+  // drag only arms from the handle so the quantity controls stay tappable.
+  const [dragY, setDragY] = useState(0);
+  const dragFrom = useRef<number | null>(null);
+
+  function onDragStart(e: React.PointerEvent) {
+    dragFrom.current = e.clientY;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function onDragMove(e: React.PointerEvent) {
+    if (dragFrom.current === null) return;
+    setDragY(Math.max(0, e.clientY - dragFrom.current));
+  }
+  function onDragEnd() {
+    if (dragFrom.current === null) return;
+    dragFrom.current = null;
+    setDragY(y => { if (y > 110) onClose(); return 0; });
+  }
+
   return (
     <div
       style={{
@@ -512,9 +533,25 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          transform: `translateY(${dragY}px)`,
+          transition: dragFrom.current === null ? 'transform 0.22s ease' : 'none',
+          touchAction: 'none',
         }}
         onClick={e => e.stopPropagation()}
       >
+        <div
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+          style={{
+            padding: '10px 0 6px', display: 'flex', justifyContent: 'center',
+            cursor: 'grab', flexShrink: 0, background: '#FDFBF7',
+            position: 'relative', zIndex: 2,
+          }}
+        >
+          <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: '#D9D0C2' }} />
+        </div>
 
         {/* Image — takes all remaining space, shrinks to zero if needed */}
         <div style={{

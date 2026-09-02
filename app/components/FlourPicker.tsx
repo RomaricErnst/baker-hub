@@ -697,7 +697,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     <input
                       type="number"
                       inputMode="numeric"
-                      placeholder={locale === 'fr' ? 'ex. 280' : 'e.g. 280'}
+                      placeholder="280"
                       min={100} max={450}
                       value={manualQWText}
                       onChange={e => {
@@ -717,7 +717,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         }
                       }}
                       style={{
-                        width: '80px', padding: '0 12px',
+                        width: '68px', padding: '0 8px',
                         height: '44px',
                         border: '1.5px solid #E8E0D5', borderRadius: '8px',
                         fontFamily: 'var(--font-ui)', fontSize: '15px',
@@ -1420,6 +1420,40 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     >{locale === 'fr' ? 'saisissez-la directement' : 'enter it directly'}</button>
                     {locale === 'fr' ? ' si vous la connaissez.' : ' if you know it.'}
                   </p>
+
+                  {/* Same placement as the base flour: the field opens under
+                      the sentence that offered it, not under the buttons. */}
+                  {blendRoad === 'w' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '16px', background: '#F0EBE0', marginTop: '12px' }}>
+                      <span style={{ fontSize: '13px', color: '#3D3530', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>{locale === 'fr' ? 'Force (W)' : 'Strength (W)'}</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="380"
+                        min={100} max={450}
+                        style={{
+                          width: '68px', padding: '0 8px', height: '44px',
+                          border: '1.5px solid #E8E0D5', borderRadius: '8px',
+                          fontFamily: 'var(--font-ui)', fontSize: '15px',
+                          fontWeight: 700, color: '#2B2420',
+                          background: 'white', outline: 'none', textAlign: 'center',
+                        }}
+                        onChange={e => {
+                          const v = parseInt(e.target.value);
+                          if (!isNaN(v) && v >= 100 && v <= 450) {
+                            const genericEntry: FlourEntry = {
+                              id: `W${v}`, brand: '', name: `Custom W${v}`,
+                              type: 'bread', country: 'us', w: v, wPublished: true,
+                              protein: 12, hydration: [60, 75],
+                              bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
+                            };
+                            if (blendSlot === 2) setBlendRatio(85);
+                            assignBlendFlour(genericEntry, (v >= 270 ? 'strong00' : 'pizza00') as FlourKey, `Custom W${v}`, undefined, 'manual');
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                     {([
                       { k: 'search' as const, n: locale === 'fr' ? 'Chercher' : 'Search',
@@ -1579,7 +1613,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
                     {/* Type and W are their own roads here too — no header
                         repeating the button that opened them. */}
-                    {(blendRoad === 'type' || blendRoad === 'w') && (
+                    {blendRoad === 'type' && (
                     <div style={{ marginTop: '12px' }}>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                         {(() => {

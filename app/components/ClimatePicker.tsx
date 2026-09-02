@@ -345,21 +345,6 @@ export default function ClimatePicker({
           <span>{tempC(38, u)}</span>
         </div>
 
-        {/* Warm climate nudge */}
-        {kitchenTemp >= 25 && kitchenTemp <= 27 && (
-          <div style={{
-            background: '#FFF8E8',
-            border: '1.5px solid #E8D080',
-            borderRadius: '16px',
-            padding: '8px 16px',
-            fontSize: '12px',
-            color: '#7A5A10',
-            marginTop: '12px',
-            lineHeight: 1.5,
-          }}>
-            {isFr ? <>Sous un climat chaud, les après-midis peuvent dépasser {tempC(28, u)}. Si votre cuisine chauffe en journée, indiquez plutôt la température maximale attendue.</> : <>In a warm climate, afternoon temps can push above {tempC(28, u)}. If your kitchen heats up during the day, consider entering your expected peak temperature instead.</>}
-          </div>
-        )}
       </div>
 
       {/* ── City search ─────────────────────────── */}

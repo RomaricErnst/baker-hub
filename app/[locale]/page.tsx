@@ -143,6 +143,7 @@ function PctStepper({
       <div style={{
         fontSize: '11px', lineHeight: 1.3, marginTop: '5px', minHeight: '15px',
         color: zone?.color ?? 'var(--smoke)', fontFamily: 'var(--font-ui)',
+        textAlign: 'center',
       }}>{zone?.word ?? ''}</div>
       {note && (
         <div style={{
