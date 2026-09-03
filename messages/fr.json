@@ -4,7 +4,18 @@
   },
   "auth": {
     "signIn": "Se connecter",
-    "signOut": "Se déconnecter"
+    "signOut": "Se déconnecter",
+    "google": "Continuer avec Google",
+    "emailEntry": "Se connecter par e-mail",
+    "or": "ou",
+    "emailPlaceholder": "vous@email.com",
+    "sendCode": "Envoyer le code",
+    "codeSent": "Code envoyé à {email}",
+    "codePlaceholder": "Code à 6 chiffres",
+    "verify": "Se connecter",
+    "useAnotherEmail": "Utiliser une autre adresse",
+    "codeRejected": "Ce code ne correspond pas. Les codes expirent au bout d'une heure.",
+    "sendFailed": "Le code n'est pas parti. À réessayer dans un instant."
   },
   "common": {
     "continue": "Continuer →",

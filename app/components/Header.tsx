@@ -258,6 +258,7 @@ export default function Header({
 }) {
   const t = useTranslations('header');
   const tS = useTranslations('session');
+  const tAuth = useTranslations('auth');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -294,6 +295,9 @@ export default function Header({
   const [emailInput, setEmailInput] = useState('');
   const [emailSent, setEmailSent] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authNote, setAuthNote] = useState<'sendFailed' | 'codeRejected' | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [viewingEvent, setViewingEvent] = useState<BakeEvent | null>(null);
   const [viewingEventShowShare, setViewingEventShowShare] = useState(false);
@@ -363,18 +367,47 @@ export default function Header({
     setMenuOpen(false);
   }
 
+  // A one-time code, not a link. The PKCE verifier behind a magic link lives
+  // only in the browser that asked for it, so opening the mail in a webview or
+  // on another device left the baker back on the site, silently signed out.
   async function signInWithEmail() {
-    if (!emailInput.trim()) return;
-    const redirectTo = typeof window !== 'undefined'
-      ? window.location.hostname === 'localhost'
-        ? 'http://localhost:3000/auth/callback'
-        : 'https://www.bakerhub.app/auth/callback'
-      : 'https://www.bakerhub.app/auth/callback';
-    await supabase.auth.signInWithOtp({
-      email: emailInput.trim(),
-      options: { emailRedirectTo: redirectTo },
+    const email = emailInput.trim();
+    if (!email || authBusy) return;
+    setAuthBusy(true);
+    setAuthNote(null);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true },
     });
+    setAuthBusy(false);
+    if (error) { setAuthNote('sendFailed'); return; }
     setEmailSent(true);
+  }
+
+  async function verifyEmailCode() {
+    const token = codeInput.replace(/\D/g, '');
+    if (token.length !== 6 || authBusy) return;
+    setAuthBusy(true);
+    setAuthNote(null);
+    // 'email' covers both signup and sign-in — never branch on which.
+    const { error } = await supabase.auth.verifyOtp({
+      email: emailInput.trim(),
+      token,
+      type: 'email',
+    });
+    setAuthBusy(false);
+    if (error) { setAuthNote('codeRejected'); setCodeInput(''); return; }
+    // onAuthStateChange sets the user.
+    setEmailSent(false);
+    setCodeInput('');
+    setShowEmailForm(false);
+    setEmailInput('');
+  }
+
+  function useAnotherEmail() {
+    setEmailSent(false);
+    setCodeInput('');
+    setAuthNote(null);
   }
 
   function handleFieldBlur(id: string, field: 'recipe_name' | 'notes', value: string) {
@@ -978,11 +1011,62 @@ export default function Header({
                   border: '1.5px solid rgba(255,255,255,0.15)', background: 'transparent',
                   color: 'var(--smoke)', fontSize: '11px', cursor: 'pointer',
                   fontFamily: 'var(--font-ui)',
-                }}>Sign out</button>
+                }}>{tAuth('signOut')}</button>
               </div>
             ) : emailSent ? (
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-ui)', fontStyle: 'italic', textAlign: 'center', padding: '4px 0' }}>
-                Check your inbox — link sent
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{
+                  fontSize: '12px', color: 'rgba(255,255,255,0.6)',
+                  fontFamily: 'var(--font-ui)', fontStyle: 'italic',
+                  textAlign: 'center', padding: '2px 0', lineHeight: 1.45,
+                }}>
+                  {tAuth('codeSent', { email: emailInput.trim() })}
+                </div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  autoFocus
+                  placeholder={tAuth('codePlaceholder')}
+                  value={codeInput}
+                  onChange={e => setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onKeyDown={e => e.key === 'Enter' && verifyEmailCode()}
+                  style={{
+                    width: '100%', padding: '8px', minHeight: '44px', borderRadius: '8px',
+                    border: '1px solid rgba(255,255,255,0.18)',
+                    background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
+                    fontSize: '16px', fontFamily: 'var(--font-ui)', outline: 'none',
+                    textAlign: 'center', letterSpacing: '0.3em',
+                    fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box',
+                  }}
+                />
+                <button
+                  onClick={verifyEmailCode}
+                  disabled={authBusy || codeInput.length !== 6}
+                  style={{
+                    width: '100%', padding: '8px', minHeight: '44px', borderRadius: '8px',
+                    background: 'var(--terra-on-dark)', border: 'none',
+                    color: '#2B2420', fontSize: '13px',
+                    cursor: authBusy || codeInput.length !== 6 ? 'default' : 'pointer',
+                    opacity: authBusy || codeInput.length !== 6 ? 0.45 : 1,
+                    fontFamily: 'var(--font-ui)', fontWeight: 500,
+                    transition: 'opacity .2s',
+                  }}
+                >{tAuth('verify')}</button>
+                {authNote && (
+                  <div style={{
+                    fontSize: '11px', color: 'rgba(255,255,255,0.55)',
+                    fontFamily: 'var(--font-ui)', fontStyle: 'italic',
+                    textAlign: 'center', lineHeight: 1.45,
+                  }}>{tAuth(authNote)}</div>
+                )}
+                <button onClick={useAnotherEmail} style={{
+                  width: '100%', padding: '4px', minHeight: '44px', borderRadius: '12px',
+                  border: 'none', background: 'transparent',
+                  color: 'rgba(255,255,255,0.45)', fontSize: '12px',
+                  cursor: 'pointer', fontFamily: 'var(--font-ui)', textAlign: 'center',
+                }}>{tAuth('useAnotherEmail')}</button>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -992,40 +1076,53 @@ export default function Header({
                   background: 'rgba(255,255,255,0.06)', color: 'var(--cream)',
                   fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)',
                   fontWeight: 500, textAlign: 'center',
-                }}>Sign in with Google</button>
+                }}>{tAuth('google')}</button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-ui)' }}>or</span>
+                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-ui)' }}>{tAuth('or')}</span>
                   <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
                 </div>
                 {showEmailForm ? (
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input
-                      type="email" placeholder="your@email.com"
-                      value={emailInput} onChange={e => setEmailInput(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && signInWithEmail()}
-                      style={{
-                        flex: 1, padding: '8px 8px', borderRadius: '8px',
-                        border: '1px solid rgba(255,255,255,0.18)',
-                        background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
-                        fontSize: '12px', fontFamily: 'var(--font-ui)', outline: 'none',
-                      }}
-                    />
-                    <button onClick={signInWithEmail} style={{
-                      padding: '8px 12px', minHeight: '44px', borderRadius: '8px', flexShrink: 0,
-                      background: 'var(--terra)', border: 'none',
-                      color: '#fff', fontSize: '12px', cursor: 'pointer',
-                      fontFamily: 'var(--font-ui)', fontWeight: 500,
-                    }}>Send</button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="email" placeholder={tAuth('emailPlaceholder')}
+                        value={emailInput} onChange={e => setEmailInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && signInWithEmail()}
+                        style={{
+                          flex: 1, padding: '8px 8px', minHeight: '44px', borderRadius: '8px',
+                          border: '1px solid rgba(255,255,255,0.18)',
+                          background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
+                          fontSize: '16px', fontFamily: 'var(--font-ui)', outline: 'none',
+                          boxSizing: 'border-box', minWidth: 0,
+                        }}
+                      />
+                      <button onClick={signInWithEmail} disabled={authBusy} style={{
+                        padding: '8px 12px', minHeight: '44px', borderRadius: '8px', flexShrink: 0,
+                        background: 'var(--terra-on-dark)', border: 'none',
+                        color: '#2B2420', fontSize: '12px',
+                        cursor: authBusy ? 'default' : 'pointer',
+                        opacity: authBusy ? 0.45 : 1,
+                        fontFamily: 'var(--font-ui)', fontWeight: 500,
+                        transition: 'opacity .2s',
+                      }}>{tAuth('sendCode')}</button>
+                      </div>
+                    {authNote && (
+                      <div style={{
+                        fontSize: '11px', color: 'rgba(255,255,255,0.55)',
+                        fontFamily: 'var(--font-ui)', fontStyle: 'italic',
+                        textAlign: 'center', lineHeight: 1.45,
+                      }}>{tAuth(authNote)}</div>
+                    )}
                   </div>
                 ) : (
                   <button onClick={() => setShowEmailForm(true)} style={{
-                    width: '100%', padding: '8px', borderRadius: '12px',
+                    width: '100%', padding: '8px', minHeight: '44px', borderRadius: '12px',
                     border: '1.5px solid rgba(255,255,255,0.15)',
                     background: 'transparent', color: 'rgba(255,255,255,0.55)',
                     fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)',
                     textAlign: 'center',
-                  }}>Sign in with email</button>
+                  }}>{tAuth('emailEntry')}</button>
                 )}
               </div>
             )}

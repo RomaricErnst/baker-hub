@@ -4,7 +4,18 @@
   },
   "auth": {
     "signIn": "Sign in",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "google": "Sign in with Google",
+    "emailEntry": "Sign in with email",
+    "or": "or",
+    "emailPlaceholder": "your@email.com",
+    "sendCode": "Send code",
+    "codeSent": "Code sent to {email}",
+    "codePlaceholder": "6-digit code",
+    "verify": "Sign in",
+    "useAnotherEmail": "Use a different address",
+    "codeRejected": "That code didn't match. Codes expire after an hour.",
+    "sendFailed": "The code didn't send. Worth trying again in a moment."
   },
   "common": {
     "continue": "Continue →",
