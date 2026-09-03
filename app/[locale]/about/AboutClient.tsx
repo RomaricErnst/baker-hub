@@ -910,7 +910,23 @@ export default function AboutClient() {
         </Link>
 
         <div style={{ borderTop: `1px solid ${BORDER}` }} />
-        <p style={{ ...monoSm, textAlign: 'center', marginTop: '24px', marginBottom: 0 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: '10px', marginTop: '24px',
+        }}>
+          <Link href={locale === 'fr' ? '/fr/privacy' : '/privacy'} style={{
+            ...monoSm, color: SMOKE, textDecoration: 'none',
+          }}>
+            {locale === 'fr' ? 'Confidentialité' : 'Privacy'}
+          </Link>
+          <span style={{ ...monoSm }}>·</span>
+          <Link href={locale === 'fr' ? '/fr/terms' : '/terms'} style={{
+            ...monoSm, color: SMOKE, textDecoration: 'none',
+          }}>
+            {locale === 'fr' ? 'Conditions' : 'Terms'}
+          </Link>
+        </div>
+        <p style={{ ...monoSm, textAlign: 'center', marginTop: '12px', marginBottom: 0 }}>
           {c.footer}
         </p>
 
