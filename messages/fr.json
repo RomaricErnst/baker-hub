@@ -1708,7 +1708,9 @@
     "saved": "Sauvegardé",
     "saveSession": "Sauvegarder",
     "newSession": "Nouvelle session",
-    "newSessionConfirm": "Commencer une nouvelle session ? Vos recettes sauvegardées ne sont pas affectées."
+    "newSessionConfirm": "Commencer une nouvelle session ? Vos recettes sauvegardées ne sont pas affectées.",
+    "savedLocal": "Enregistré sur cet appareil",
+    "savedLocalNote": "Enregistré sur cet appareil — connectez-vous pour le garder"
   },
   "decisionSummary": {
     "change": "CHANGER"

@@ -1708,7 +1708,9 @@
     "saved": "Saved",
     "saveSession": "Save",
     "newSession": "New session",
-    "newSessionConfirm": "Start a new session? Your saved recipes are not affected."
+    "newSessionConfirm": "Start a new session? Your saved recipes are not affected.",
+    "savedLocal": "Saved on this device",
+    "savedLocalNote": "Saved on this device — sign in to keep it"
   },
   "decisionSummary": {
     "change": "CHANGE"

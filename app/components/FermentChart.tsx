@@ -2,6 +2,7 @@
 import { useRef, useEffect, useState, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock } from '../utils';
+import { createClient } from '@/app/lib/supabase/client';
 import type { StarterEvent } from './SchedulePicker';
 
 export interface FermentChartProps {
@@ -533,10 +534,26 @@ export default function FermentChart({
   // (works signed out, no schema) — a later move into the F1 baker profile is
   // a one-line migration of load/save below.
   const [layers, setLayers] = useState<ChartLayers>({ fridge: false, busy: false, window: false });
-  const [everOpened, setEverOpened] = useState(false);
   const layersHydrated = useRef(false);
 
+  // A tick is a preference, and preferences belong to an account. Signed out,
+  // a tick applies to the chart in front of the baker and is not written
+  // down — the app should not be carrying settings for someone it cannot
+  // name. Signed in, it persists (localStorage today, a one-line migration
+  // into the F1 profile later).
+  const [signedIn, setSignedIn] = useState(false);
   useEffect(() => {
+    let alive = true;
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => { if (alive) setSignedIn(!!data.user); });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (alive) setSignedIn(!!session?.user);
+    });
+    return () => { alive = false; sub.subscription.unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    if (!signedIn) { layersHydrated.current = true; return; }
     // Deferred to after paint on purpose. Server and client both render the
     // all-off default, so there is no hydration mismatch; the saved selection
     // is applied on the next frame.
@@ -544,27 +561,30 @@ export default function FermentChart({
       try {
         const raw = window.localStorage.getItem(LAYERS_KEY);
         if (raw) {
-          const p = JSON.parse(raw) as Partial<ChartLayers> & { everOpened?: boolean };
+          const p = JSON.parse(raw) as Partial<ChartLayers>;
           setLayers({ fridge: !!p.fridge, busy: !!p.busy, window: !!p.window });
-          setEverOpened(!!p.everOpened);
         }
       } catch { /* private mode / corrupt value — defaults are fine */ }
       layersHydrated.current = true;
     });
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [signedIn]);
 
   useEffect(() => {
-    if (!layersHydrated.current) return;
+    if (!layersHydrated.current || !signedIn) return;
     try {
-      window.localStorage.setItem(LAYERS_KEY, JSON.stringify({ ...layers, everOpened }));
+      window.localStorage.setItem(LAYERS_KEY, JSON.stringify(layers));
     } catch { /* storage full or blocked — the chart still works */ }
-  }, [layers, everOpened]);
+  }, [layers, signedIn]);
 
-  // While dragging, all three switch on temporarily: that is the one moment
-  // all of them are genuinely needed (still in its window? just dropped into
-  // work hours? after now?). The baker's saved selection is untouched.
-  const revealAll = dragging !== null;
+  // Two temporary reveals, neither of which touches the baker's ticks.
+  // Dragging: the one moment all three are genuinely needed (still in its
+  // window? just dropped into work hours? after now?).
+  // Guide open: the explanations need something to point at. This replaces a
+  // first-open auto-enable that switched all three on permanently — opening a
+  // legend to look is not a tap on "fridge", and it was the same mistake as a
+  // walked-past step recording itself as a choice.
+  const revealAll = dragging !== null || guideOpen;
   const L = {
     fridge: layers.fridge || revealAll,
     busy:   layers.busy   || revealAll,
@@ -2041,19 +2061,7 @@ export default function FermentChart({
           sits beside the chart. ── */}
       <div style={{ marginTop: '12px' }}>
         <button
-          onClick={() => {
-            setGuideOpen(o => {
-              const next = !o;
-              // First ever open turns all three layers on so the explanations
-              // have something to point at. After that the baker's ticks are
-              // respected — never re-enabled behind their back.
-              if (next && !everOpened) {
-                setEverOpened(true);
-                setLayers({ fridge: true, busy: true, window: true });
-              }
-              return next;
-            });
-          }}
+          onClick={() => setGuideOpen(o => !o)}
           aria-expanded={guideOpen}
           style={{
             background: 'none', border: 'none', padding: 0, cursor: 'pointer',
@@ -2064,6 +2072,36 @@ export default function FermentChart({
         >
           {guideOpen ? t('guide.close') : t('guide.open')}
         </button>
+
+        {/* Collapsed does not mean off. Without this the chart carried
+            settings with nothing on screen tying them to the strip that
+            controls them — you could see a fridge casing and have no idea
+            where it came from. */}
+        {!guideOpen && (layers.fridge || layers.busy || layers.window) && (
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            marginLeft: '10px', verticalAlign: 'middle',
+          }}>
+            {layers.fridge && hasAnyCold && (
+              <svg width="18" height="9" aria-label={t('guide.fridge')}>
+                <path d="M1 7 Q6 2 17 4" fill="none" stroke={COLD_STROKE} strokeWidth={4} opacity={0.32} strokeLinecap="round" />
+                <path d="M1 7 Q6 2 17 4" fill="none" stroke={SAGE} strokeWidth={1.3} />
+              </svg>
+            )}
+            {layers.busy && (
+              <span style={{
+                width: '14px', height: '8px', borderRadius: '2px',
+                background: 'rgba(140,133,128,0.28)', display: 'inline-block',
+              }} aria-label={t('guide.busy')} />
+            )}
+            {layers.window && hasAnyWindow && (
+              <span style={{
+                width: '14px', height: '8px', borderRadius: '2px',
+                background: 'rgba(107,122,90,0.28)', display: 'inline-block',
+              }} aria-label={t('guide.window')} />
+            )}
+          </span>
+        )}
 
         {guideOpen && (
           <div style={{

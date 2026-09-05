@@ -534,18 +534,22 @@ export default function Header({
             )}
 
             {/* Save — the icon carries the state, since there is no label to
-                carry it: a floppy while unsaved, a tick once stored. */}
+                carry it: a floppy while unsaved, a tick once stored.
+                Signed out the save is real but local, so it wears gold, not
+                the sage tick. The menu said "Session saved" directly above
+                "Sign in to save your sessions"; a baker who cleared their
+                browser lost a session the app had twice called saved. */}
             {hasWork && (
               <button
                 onClick={() => { if (!sessionSaved) onSaveSession?.(); }}
-                aria-label={sessionSaved ? tS('saved') : tS('saveSession')}
-                title={sessionSaved ? tS('saved') : tS('saveSession')}
+                aria-label={sessionSaved ? (user ? tS('saved') : tS('savedLocal')) : tS('saveSession')}
+                title={sessionSaved ? (user ? tS('saved') : tS('savedLocal')) : tS('saveSession')}
                 style={{
                   width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
-                  border: sessionSaved
+                  border: sessionSaved && user
                     ? '1px solid rgba(107,122,90,0.5)'
                     : '1px solid rgba(200,138,82,0.45)',
-                  background: sessionSaved
+                  background: sessionSaved && user
                     ? 'rgba(107,122,90,0.14)'
                     : 'rgba(200,138,82,0.12)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -553,7 +557,8 @@ export default function Header({
                 }}
               >
                 {sessionSaved ? (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#93A683"
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke={user ? '#93A683' : 'var(--terra-on-dark)'}
                     strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M4 12.5l5 5 11-11" />
                   </svg>
@@ -675,9 +680,10 @@ export default function Header({
                 {sessionSaved ? (
                   <span style={{
                     fontSize: '11px', fontFamily: 'var(--font-ui)',
-                    color: 'var(--sage)', cursor: 'default',
+                    color: user ? 'var(--sage)' : 'rgba(255,255,255,0.5)',
+                    cursor: 'default', lineHeight: 1.4,
                   }}>
-                    {locale === 'fr' ? 'Session enregistree' : 'Session saved'}
+                    {user ? tS('saved') : tS('savedLocalNote')}
                   </span>
                 ) : (
                   <button
