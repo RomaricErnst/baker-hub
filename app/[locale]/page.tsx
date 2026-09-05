@@ -3447,6 +3447,10 @@ export default function Home() {
           // individually require the others to be visited or "done". A baker
           // who's picked their pizzas can jump straight to Bake without ever
           // opening Shop or Prep. Only lock what's actually not usable yet.
+          const sum = (r: Record<string, number>) =>
+            Object.values(r).reduce((a, b) => a + (b || 0), 0);
+          const partyOrdered = sum(pizzaPartyQtys);
+          const partyBaked = sum(bakedPartyQtys);
           const steps = [
             {
               key: 'pick' as const,
@@ -3498,7 +3502,12 @@ export default function Home() {
               key: 'bake' as const,
               label: t('tabs.bake'),
               locked: !pizzasConfirmed,
-              done: false,
+              // The only phase with a completion the page can already see.
+              // Shop and Prep keep their checklist ticks inside their own
+              // components, so their dots stay honest at false until that
+              // state is lifted — a green dot for a phase nobody finished
+              // would be the one encoding of three that could be wrong.
+              done: partyOrdered > 0 && partyBaked >= partyOrdered,
               icon: (color: string) => (
                 <svg width="15" height="15" viewBox="0 0 20 20" fill="none"
                   stroke={color} strokeLinecap="round" strokeLinejoin="round">
@@ -4302,6 +4311,7 @@ export default function Home() {
                   }}
                   sessionSaved={sessionSaved}
                   onBakedQtysChange={setBakedPartyQtys}
+                  bakedQtys={bakedPartyQtys}
                   onShare={shareCurrentSession}
                 />
               </div>
@@ -5348,6 +5358,7 @@ export default function Home() {
                   }}
                   sessionSaved={sessionSaved}
                   onBakedQtysChange={setBakedPartyQtys}
+                  bakedQtys={bakedPartyQtys}
                   onShare={shareCurrentSession}
                 />
               </div>

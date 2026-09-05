@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { NEXT_CTA, SECONDARY_CTA } from '@/app/lib/navButtons';
 import { useTranslations } from 'next-intl';
 import { PIZZAS, DESSERT_PIZZAS, getCustomPizzaList, type Pizza } from '../../lib/toppingDatabase';
 import type { StyleKey, IngredientCategory, Ingredient } from '../../lib/toppingTypes';
@@ -171,6 +172,7 @@ interface BakeTabProps {
   onShare?: () => void;
   sessionSaved?: boolean;
   onBakedQtysChange?: (qtys: Record<string, number>) => void;
+  initialDoneCounts?: Record<string, number>;
 }
 
 function getAllPizzas(): Pizza[] {
@@ -433,7 +435,7 @@ function CoachButton({
   );
 }
 
-export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange }: BakeTabProps) {
+export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
@@ -450,7 +452,13 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
   const sheetDragFrom = useRef<number | null>(null);
   const closeSheet = () => { setSheetPizzaId(null); setShowTechSheet(false); setSheetDragY(0); };
   const [photos, setPhotos] = useState<Record<string, string>>({});
-  const [doneCounts, setDoneCounts] = useState<Record<string, number>>({});
+  // Seeded from the parent, not from {}. BakeTab is mounted conditionally, so
+  // tapping Shopping unmounts it and every baked pizza was lost on the way
+  // back. The count already travels up through onBakedQtysChange; it just had
+  // no way home. Same shape as ToppingSelector's controlledQtys.
+  const [doneCounts, setDoneCounts] = useState<Record<string, number>>(
+    () => initialDoneCounts ?? {}
+  );
 
   useEffect(() => {
     if (Object.values(doneCounts).every(v => v === 0)) return;
@@ -637,26 +645,6 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 transition: 'width 0.3s ease',
               }} />
             </div>
-            {/* Share is always offered — real parties change plans, and a
-                half-baked evening is still worth sharing. */}
-            {onShare && (
-              <button
-                onClick={onShare}
-                style={{
-                  marginTop: '12px', padding: '16px 20px', minHeight: '44px',
-                  background: 'transparent',
-                  border: '1px solid rgba(156, 130, 72,0.5)',
-                  color: '#9C8248',
-                  fontFamily: 'var(--font-ui)', fontSize: '11px',
-                  borderRadius: '12px', cursor: 'pointer',
-                  letterSpacing: '.06em',
-                }}
-              >
-                {sessionSaved
-                  ? (l === 'fr' ? 'Partager cette fournée' : 'Share this bake')
-                  : (l === 'fr' ? 'Sauvegarder & Partager' : 'Save & Share this bake')}
-              </button>
-            )}
           </div>
         )}
       </div>
@@ -755,7 +743,43 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
         </div>
       )}
 
-      {/* ── Bottom sheet ──────────────────────────────────────────────────────── */}
+      {/* Save and Share sit at the end of the phase, in the shared button
+          shapes, not tucked under the progress bar in a gold outline at 11px
+          that matched nothing else in either flow. Save leads while there is
+          something to save; once the session is saved it steps back and Share
+          takes the lead, because that is the only action left. Both are
+          offered from the first baked pizza — real parties change plans, and a
+          half-baked evening is still worth keeping. */}
+      {selectedEntries.length > 0 && totalDone > 0 && (onShare || onEnsureBakeEvent) && (
+        <div style={{ display: 'flex', gap: '10px', padding: '4px 16px 20px' }}>
+          {onEnsureBakeEvent && (
+            <button
+              onClick={() => { if (!sessionSaved) void onEnsureBakeEvent(); }}
+              disabled={sessionSaved}
+              style={{
+                ...(sessionSaved ? SECONDARY_CTA : NEXT_CTA),
+                flex: 1,
+                ...(sessionSaved ? { cursor: 'default', opacity: 0.6 } : {}),
+              }}
+            >
+              {sessionSaved
+                ? (l === 'fr' ? 'Sauvegardé' : 'Saved')
+                : (l === 'fr' ? 'Sauvegarder' : 'Save')}
+            </button>
+          )}
+          {onShare && (
+            <button
+              onClick={onShare}
+              style={{
+                ...(sessionSaved || !onEnsureBakeEvent ? NEXT_CTA : SECONDARY_CTA),
+                flex: 1,
+              }}
+            >
+              {l === 'fr' ? 'Partager' : 'Share'}
+            </button>
+          )}
+        </div>
+      )}
       {sheetPizzaId && sheetEntry && (() => {
         const { pizza, qty } = sheetEntry;
         const beforeIngredients = pizza.ingredients
