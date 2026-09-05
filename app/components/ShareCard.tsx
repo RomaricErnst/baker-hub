@@ -8,6 +8,14 @@ import type { BakePhoto } from '@/app/lib/supabase/fetchBakeEvents';
    CSS variable gives the real family list. Without this the share card would
    have quietly fallen back to a system serif the moment Playfair stopped being
    loaded — a silent typeface change on the one artefact that leaves the app. */
+// Crop is stored per slot as a transform, not as a three-position anchor.
+// centre/top/bottom was a coarse approximation of a continuous problem, and
+// its control was a 20px glyph below the 44px rule.
+type SlotCrop = { scale: number; offsetX: number; offsetY: number };
+const NO_CROP: SlotCrop = { scale: 1, offsetX: 0, offsetY: 0 };
+type CardLine = { key: string; text: string; dim?: boolean };
+type LineGroup = { key: string; name: string; lines: CardLine[] };
+
 function displayFontFamily(): string {
   try {
     const v = getComputedStyle(document.body).getPropertyValue('--font-ui').trim();
@@ -112,14 +120,22 @@ export default function ShareCard({
   const [bakerName, setBakerName] = useState<string>(
     () => (typeof window !== 'undefined' ? localStorage.getItem(LS_BAKER) ?? '' : '')
   );
-  const [template, setTemplate] = useState<'full' | 'two' | 'four' | 'protocol'>('protocol');
-  // Export format for photo templates — IG/FB post (4:5), square (1:1), story (9:16)
+  // Shape only. The Template picker is gone: layout is a consequence of how
+  // many photos are selected, not a second question. The two used to fight —
+  // picking a size rewrote the template, and a caption had to explain that it
+  // had. In French both pickers were even labelled "Format".
   const [format, setFormat] = useState<'post' | 'square' | 'story'>('post');
   const [selectedPhotoUrls, setSelectedPhotoUrls] = useState<string[]>([]);
   const [cameraPhotoUrls, setCameraPhotoUrls] = useState<string[]>([]);
-  // Per-photo vertical crop anchor — auto center-crop beheaded cornicione
-  // close-ups; ⊙/↑/↓ cycles where the slot focuses.
-  const [photoCrops, setPhotoCrops] = useState<Record<string, 'center' | 'top' | 'bottom'>>({});
+  // Crop is per SLOT, not per photo. The same photo cropped as the hero is
+  // wrong once it becomes slot 2, so the key is position.
+  const [slotCrops, setSlotCrops] = useState<Record<number, SlotCrop>>({});
+  // Which content lines are on. Keys come from LINE_GROUPS below.
+  const [lineOn, setLineOn] = useState<Record<string, boolean>>({});
+  const [flowMode, setFlowMode] = useState<'pages' | 'long'>('pages');
+  const [previewPage, setPreviewPage] = useState(0);
+  const [showLines, setShowLines] = useState(false);
+  const [cropSlot, setCropSlot] = useState<number | null>(null);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sharedOk, setSharedOk] = useState(false);
@@ -248,27 +264,129 @@ export default function ShareCard({
           pizzaLines.slice(i * 2, i * 2 + 2).join('  ·  ')
         );
 
-  const bodyLineCount = [
-    true,                    // specLine always
-    flourShareLine,          // optional
-    weightsLine,             // always
-    true,                    // timingLine always
-    gearLine,                // optional
-    ...pizzaDisplayLines,    // 0–n
-  ].filter(Boolean).length;
+  // ── Content, grouped ──
+  // A group is the unit a page break respects. The schedule used to be a
+  // separate card template, which meant every layout change had to be kept
+  // in sync across two kinds of card. It is a group now.
+  const scheduleLines = (protocolLines ?? []).filter(Boolean);
+  const LINE_GROUPS: LineGroup[] = [
+    {
+      key: 'recipe',
+      name: l === 'fr' ? 'Recette' : 'Recipe',
+      lines: [
+        ...(bakeDate ? [{ key: 'date', text: bakeDate, dim: true }] : []),
+        { key: 'spec', text: specLine },
+        ...(flourShareLine ? [{ key: 'flour', text: flourShareLine, dim: true }] : []),
+        ...(weightsLine ? [{ key: 'weights', text: weightsLine }] : []),
+        ...(timingLine ? [{ key: 'timing', text: timingLine, dim: true }] : []),
+        ...(gearLine ? [{ key: 'gear', text: gearLine, dim: true }] : []),
+        ...pizzaDisplayLines.map((t, i) => ({ key: 'pizzas' + i, text: t, dim: true })),
+      ],
+    },
+    ...(scheduleLines.length
+      ? [{
+          key: 'schedule',
+          name: l === 'fr' ? 'Déroulé' : 'Schedule',
+          lines: scheduleLines.map((t, i) => ({ key: 'sched' + i, text: t })),
+        }]
+      : []),
+  ];
 
-  const LINE_H_CALC = 23 + 14; // 37px
-  const panelHeight = Math.max(340,
-    28 +                          // top pad
-    (bakeDate ? 34 : 0) +         // date line
-    44 + 20 +                     // title max + gap
-    18 + 18 +                     // divider + gap
-    bodyLineCount * LINE_H_CALC + // body lines
-    60                            // branding
-  );
-  const EXPORT_H = format === 'story' ? 1920 : format === 'square' ? 1080 : 1350;
-  const photoZoneHeight = EXPORT_H - panelHeight;
-  const photoZoneRatio = photoZoneHeight / EXPORT_H;
+  // Default: recipe on, schedule off. Anything new defaults to its group's
+  // rule rather than silently appearing.
+  const isOn = (groupKey: string, lineKey: string) =>
+    lineOn[lineKey] ?? (groupKey !== 'schedule');
+
+  const liveGroups = LINE_GROUPS
+    .map(g => ({ ...g, lines: g.lines.filter(li => isOn(g.key, li.key)) }))
+    .filter(g => g.lines.length > 0);
+  const totalLines = liveGroups.reduce((a, g) => a + g.lines.length, 0);
+
+  const photoCount = Math.min(4, selectedPhotoUrls.length);
+
+  // ── Geometry ──
+  // Photo zone is a fixed share of the card per photo count; the panel takes
+  // what is left. Body type then sizes itself to fill that panel — few lines
+  // set large, many lines set small, and pagination takes over rather than
+  // letting type fall below readable.
+  const PHOTO_ZONE_RATIO: Record<number, number> =
+    { 0: 0, 1: 0.55, 2: 0.42, 3: 0.52, 4: 0.50 };
+  const BODY_MIN = 18;
+  const BODY_MAX = 27;
+  const LEADING = 14;
+  const baseH = format === 'story' ? 1920 : format === 'square' ? 1080 : 1350;
+  const photoZoneHeight = Math.round(baseH * (PHOTO_ZONE_RATIO[photoCount] ?? 0));
+
+  // Fixed chrome inside the panel: pad, date, title, rule, branding. The date
+  // has to be in this budget — it is drawn above the title and counted in the
+  // block that gets centred, so leaving it out made every dated card overrun
+  // its branding line by exactly 34px worth of slack.
+  const PANEL_CHROME = 28 + (bakeDate ? 34 : 0) + 44 + 20 + 18 + 18 + 60;
+  const basePanelH = baseH - photoZoneHeight;
+  const availBody = Math.max(80, basePanelH - PANEL_CHROME);
+  const capacity = Math.max(2, Math.floor(availBody / (BODY_MIN + LEADING)));
+
+  // Break on group boundaries. A group only splits when it alone overflows —
+  // never to save a line of whitespace, because a schedule cut in half reads
+  // as damage rather than as a second card.
+  const pages: { name: string | null; lines: CardLine[] }[] = (() => {
+    if (flowMode === 'long') {
+      return [{ name: null, lines: liveGroups.flatMap(g => g.lines) }];
+    }
+    const out: { name: string | null; lines: CardLine[] }[] = [];
+    let cur: { name: string | null; lines: CardLine[] } | null = null;
+    for (const g of liveGroups) {
+      if (g.lines.length > capacity) {
+        if (cur) { out.push(cur); cur = null; }
+        for (let i = 0; i < g.lines.length; i += capacity) {
+          out.push({ name: g.name, lines: g.lines.slice(i, i + capacity) });
+        }
+        continue;
+      }
+      if (cur && cur.lines.length + g.lines.length <= capacity) {
+        cur.lines = cur.lines.concat(g.lines);
+        if (cur.name !== g.name) cur.name = null;
+      } else {
+        if (cur) out.push(cur);
+        cur = { name: g.name, lines: g.lines.slice() };
+      }
+    }
+    if (cur) out.push(cur);
+    return out.length ? out : [{ name: null, lines: [] }];
+  })();
+
+  // Would it paginate whatever mode we are in? The overflow control's
+  // visibility must not depend on the control's own value, or choosing "long"
+  // hides the only way back to pages.
+  const wouldPaginate = (() => {
+    let used = 0, n = 1;
+    for (const g of liveGroups) {
+      const k = g.lines.length;
+      if (k > capacity) { if (used) { n++; used = 0; } n += Math.ceil(k / capacity) - 1; used = k % capacity || capacity; continue; }
+      if (used + k <= capacity) used += k; else { n++; used = k; }
+    }
+    return n > 1;
+  })();
+
+  const pageCount = pages.length;
+  const safePage = Math.min(previewPage, pageCount - 1);
+
+  // Long mode grows the panel instead of paginating.
+  const longPanelH = PANEL_CHROME + totalLines * (23 + LEADING);
+  const EXPORT_H = flowMode === 'long'
+    ? photoZoneHeight + Math.max(basePanelH, longPanelH)
+    : baseH;
+  const panelHeight = EXPORT_H - photoZoneHeight;
+
+  // Type size for a given page: fill the panel, never below BODY_MIN or above
+  // BODY_MAX. This is what keeps a four-line card from looking lost and a
+  // twelve-line one from turning into fine print.
+  function bodySizeFor(lineCount: number): number {
+    if (lineCount <= 0) return 23;
+    const avail = Math.max(80, panelHeight - PANEL_CHROME);
+    const perLine = Math.floor(avail / lineCount);
+    return Math.max(BODY_MIN, Math.min(BODY_MAX, perLine - LEADING));
+  }
 
   const displayTitle = (() => {
     const stripped = customTitle
@@ -282,7 +400,7 @@ export default function ShareCard({
     ...cameraPhotoUrls.map(url => ({ url })),
   ];
 
-  const maxPhotos = template === 'four' ? 4 : template === 'two' ? 2 : 1;
+  const maxPhotos = 4;
 
   // Session-card photos flow into the card automatically — dark slots until
   // manual taps was a trap. First 4 pre-select once photos arrive; every
@@ -306,39 +424,35 @@ export default function ShareCard({
   }
 
   // ── Editable caption ──
-  const defaultCaption = template === 'protocol' && protocolLines?.length
-    ? [...protocolLines, '', hashtagLine].join('\n')
-    : [
-        customTitle,
-        '',
-        specLine,
-        ...(flourShareLine ? [flourShareLine] : []),
-        ...(weightsLine ? [weightsLine] : []),
-        timingLine,
-        ...(gearLine ? [gearLine] : []),
-        '',
-        ...(pizzaLines.length > 0 ? [pizzaLines.join(' · ')] : []),
-        '',
-        ...(bakerName ? [`Baked by ${bakerName}`] : []),
-        'Planned with bakerhub.app',
-        '',
-        hashtagLine,
-      ].join('\n');
+  // The caption says what the card says. It used to be one of two fixed
+  // shapes chosen by template; now it follows the lines that are switched on,
+  // so turning the schedule off does not leave it in the text.
+  const defaultCaption = [
+    customTitle,
+    '',
+    ...liveGroups.flatMap(g =>
+      g.key === 'schedule' ? ['', ...g.lines.map(li => li.text)] : g.lines.map(li => li.text)),
+    '',
+    ...(bakerName ? [`Baked by ${bakerName}`] : []),
+    'Planned with bakerhub.app',
+    '',
+    hashtagLine,
+  ].join('\n');
 
   const [editableCaption, setEditableCaption] = useState(defaultCaption);
 
   useEffect(() => {
     setEditableCaption(defaultCaption);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customTitle, bakerName, specLine, weightsLine, timingLine, template, protocolLines]);
+  }, [customTitle, bakerName, specLine, weightsLine, timingLine, lineOn, protocolLines]);
 
   // Re-render preview canvas whenever any input changes
   // Content-derived key: arrays like protocolLines are rebuilt every render;
   // depending on their identity made the effect cancel itself in a loop
   // (permanent 'Aperçu en cours…', stale canvas). Serialise once instead.
-  const previewKey = JSON.stringify([template, format, selectedPhotoUrls, photoCrops, customTitle,
+  const previewKey = JSON.stringify([format, selectedPhotoUrls, slotCrops, customTitle,
     bakerName, editableCaption, protocolLines, specLine, flourLine, weightsLine, timingLine,
-    gearLine, pizzaDisplayLines, bakeDate]);
+    gearLine, pizzaDisplayLines, bakeDate, lineOn, flowMode, safePage]);
     useEffect(() => {
     let cancelled = false;
     const run = async () => {
@@ -352,7 +466,7 @@ export default function ShareCard({
       ]);
       if (cancelled) return;
       try {
-        const canvas = await drawCard();
+        const canvas = await drawPage(safePage);
         if (cancelled || !canvas || !previewCanvasRef.current) return;
         const preview = previewCanvasRef.current;
         // Copy at full export resolution — CSS owns the displayed size
@@ -381,145 +495,26 @@ export default function ShareCard({
   }, [previewKey]);
 
   // ── Canvas draw ──
-  async function drawCard(): Promise<HTMLCanvasElement | null> {
-    // Off-DOM canvas: the hidden ref canvas mounts AFTER the preview effect's
-    // first run, so drawing into it returned null on open and — with the
-    // stable previewKey no longer thrashing retries — the preview stayed a
-    // default 300x150. An owned canvas has no mount-order race.
-    const canvas = canvasRef.current ?? document.createElement('canvas');
+  // One renderer. The preview is this exact canvas copied pixel for pixel,
+  // so what is previewed is what is exported — there is no second drawing
+  // path that can drift.
+  async function drawPage(pageIdx: number): Promise<HTMLCanvasElement | null> {
+    const canvas = pageIdx === 0
+      ? (canvasRef.current ?? document.createElement('canvas'))
+      : document.createElement('canvas');
     const ctxOrNull = canvas.getContext('2d');
     if (!ctxOrNull) return null;
     const ctx = ctxOrNull;
-
-    if (template === 'protocol') {
-      const lines: string[] = protocolLines?.length
-        ? protocolLines
-        : [
-            customTitle, '',
-            specLine,
-            ...(flourShareLine ? [flourShareLine] : []),
-            ...(weightsLine ? [weightsLine] : []),
-            timingLine,
-            ...(gearLine ? [gearLine] : []),
-          ];
-
-      const FONT         = '"DM Mono", monospace';
-      const MARGIN       = 72;
-      const CONTENT_W_P  = 1080 - MARGIN * 2;
-      const BODY_SIZE_P  = 23;
-      const INDENT_SIZE  = 21;
-      const LINE_GAP     = 14;
-      const W            = 1080;
-
-      // Calculate total height
-      let totalH = 60;          // top pad
-      totalH += bakeDate ? 34 : 0; // date line
-      totalH += 44 + 22;        // title + gap
-      totalH += 20 + 22;        // divider + gap
-      for (const ln of lines) {
-        if (ln === '') { totalH += 16; continue; }
-        totalH += (ln.startsWith('  ') ? INDENT_SIZE : BODY_SIZE_P) + LINE_GAP;
-      }
-      totalH += 60;             // bottom branding
-      totalH = Math.max(600, totalH);
-
-      canvas.width  = W;
-      canvas.height = totalH;
-
-      ctx.fillStyle = '#2B2420';
-      ctx.fillRect(0, 0, W, totalH);
-
-      let y = 52;
-
-      // Bake date
-      if (bakeDate) {
-        ctx.font      = `400 22px ${FONT}`;
-        ctx.fillStyle = 'rgba(156, 130, 72,0.55)';
-        ctx.textAlign = 'left';
-        ctx.fillText(`Bake: ${bakeDate}`, MARGIN, y);
-        y += 34;
-      }
-
-      // Title — single line, shrink to fit; ellipsis when even the floor
-      // size overflows (long titles used to clip off the card edge)
-      {
-        let titleSize = 44;
-        ctx.font = `bold ${titleSize}px ${displayFontFamily()}`;
-        while (ctx.measureText(displayTitle).width > CONTENT_W_P && titleSize > 26) {
-          titleSize--;
-          ctx.font = `bold ${titleSize}px ${displayFontFamily()}`;
-        }
-        let shownTitle = displayTitle;
-        while (shownTitle.length > 4 && ctx.measureText(shownTitle === displayTitle ? shownTitle : `${shownTitle}…`).width > CONTENT_W_P) {
-          shownTitle = shownTitle.slice(0, -1).trimEnd();
-        }
-        if (shownTitle !== displayTitle) shownTitle = `${shownTitle}…`;
-        ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'left';
-        ctx.fillText(shownTitle, MARGIN, y + titleSize);
-        y += titleSize + 22;
-      }
-
-      // Divider
-      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-      ctx.lineWidth   = 1;
-      ctx.beginPath();
-      ctx.moveTo(MARGIN, y);
-      ctx.lineTo(W - MARGIN, y);
-      ctx.stroke();
-      y += 22;
-
-      // Protocol lines
-      for (const ln of lines) {
-        if (ln === '') { y += 16; continue; }
-
-        const isIndented = ln.startsWith('  ');
-        const isHeader   = !isIndented && /^\w{3}\s\d{2}:\d{2}/.test(ln);
-        const baseSize   = isIndented ? INDENT_SIZE : BODY_SIZE_P;
-        const weight     = isHeader ? '600' : '400';
-        const opacity    = isHeader ? 0.92 : isIndented ? 0.60 : 0.80;
-
-        // Shrink-to-fit long lines; y-advance keeps the base rhythm so the
-        // precomputed totalH stays valid.
-        let size = baseSize;
-        const maxW = CONTENT_W_P - (isIndented ? 24 : 0);
-        ctx.font = `${weight} ${size}px ${FONT}`;
-        while (ctx.measureText(ln.trimStart()).width > maxW && size > 14) {
-          size--;
-          ctx.font = `${weight} ${size}px ${FONT}`;
-        }
-        ctx.fillStyle = `rgba(255,255,255,${opacity})`;
-        ctx.textAlign = 'left';
-        ctx.fillText(ln.trimStart(), MARGIN + (isIndented ? 24 : 0), y);
-        y += baseSize + LINE_GAP;
-      }
-
-      // Bottom divider
-      y += 16;
-      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
-      ctx.lineWidth   = 1;
-      ctx.beginPath();
-      ctx.moveTo(MARGIN, y);
-      ctx.lineTo(W - MARGIN, y);
-      ctx.stroke();
-      y += 28;
-
-      // Branding
-      ctx.font      = `400 20px ${FONT}`;
-      ctx.fillStyle = 'rgba(255,255,255,0.25)';
-      ctx.textAlign = 'left';
-      if (bakerName) ctx.fillText(`Baked by ${bakerName}`, MARGIN, y);
-      ctx.textAlign = 'right';
-      ctx.fillText('Planned with bakerhub.app', W - MARGIN, y);
-
-      return canvas;
-    }
+    const page = pages[Math.min(pageIdx, pages.length - 1)] ?? { name: null, lines: [] };
+    const showPhotos = pageIdx === 0 && photoCount > 0;
+    const zoneH = showPhotos ? photoZoneHeight : 0;
+    const panelH = EXPORT_H - zoneH;
 
     canvas.width = 1080;
-    canvas.height = EXPORT_H;
+    canvas.height = zoneH + panelH;
 
     ctx.fillStyle = '#2B2420';
-    ctx.fillRect(0, 0, 1080, EXPORT_H);
+    ctx.fillRect(0, 0, 1080, zoneH + panelH);
 
     const imgCache = imgCacheRef.current;
     async function loadImg(url: string): Promise<HTMLImageElement | null> {
@@ -539,95 +534,104 @@ export default function ShareCard({
     } catch { return null; }
     }
 
-    function drawCover(img: HTMLImageElement, x: number, y: number, w: number, h: number, anchor: 'center' | 'top' | 'bottom' = 'center') {
-      const scale = Math.max(w / img.width, h / img.height);
+    // Cover-fit, then apply the slot's own zoom and offset. Offsets are
+    // fractions of the slot so a crop survives a change of shape.
+    function drawSlot(img: HTMLImageElement, x: number, y: number, w: number, h: number, c: SlotCrop) {
+      const base = Math.max(w / img.width, h / img.height);
+      const scale = base * (c.scale || 1);
       const iw = img.width * scale;
       const ih = img.height * scale;
-      const dy = anchor === 'top' ? 0 : anchor === 'bottom' ? (h - ih) : (h - ih) / 2;
-      ctx.drawImage(img, x + (w - iw) / 2, y + dy, iw, ih);
+      const cx = x + (w - iw) / 2 + (c.offsetX || 0) * w;
+      const cy = y + (h - ih) / 2 + (c.offsetY || 0) * h;
+      ctx.drawImage(img, cx, cy, iw, ih);
+    }
+    async function paint(i: number, x: number, y: number, w: number, h: number) {
+      ctx.fillStyle = '#2D2420';
+      ctx.fillRect(x, y, w, h);
+      const url = selectedPhotoUrls[i];
+      if (!url) return;
+      const img = await loadImg(url);
+      if (!img) return;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.clip();
+      drawSlot(img, x, y, w, h, slotCrops[i] ?? NO_CROP);
+      ctx.restore();
     }
 
-    // Photo zone
-    if (template === 'full') {
-      if (selectedPhotoUrls[0]) {
-        const img = await loadImg(selectedPhotoUrls[0]);
-        if (img) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(0, 0, 1080, photoZoneHeight);
-          ctx.clip();
-          drawCover(img, 0, 0, 1080, photoZoneHeight, photoCrops[selectedPhotoUrls[0]] ?? 'center');
-          ctx.restore();
+    // Layout follows the count. Three is the only asymmetric case: a hero
+    // plus a pair, because three equal bands crop a round pizza top and
+    // bottom and three equal columns turn it into a slice. Square puts the
+    // hero on the left, where the zone is short and wide.
+    if (showPhotos) {
+      const G = 2;
+      if (photoCount === 1) {
+        await paint(0, 0, 0, 1080, zoneH);
+      } else if (photoCount === 2) {
+        const w = (1080 - G) / 2;
+        await paint(0, 0, 0, w, zoneH);
+        await paint(1, w + G, 0, w, zoneH);
+      } else if (photoCount === 3) {
+        if (format === 'square') {
+          const heroW = Math.round((1080 - G) * 0.57);
+          const sideW = 1080 - G - heroW;
+          const sideH = (zoneH - G) / 2;
+          await paint(0, 0, 0, heroW, zoneH);
+          await paint(1, heroW + G, 0, sideW, sideH);
+          await paint(2, heroW + G, sideH + G, sideW, sideH);
+        } else {
+          const heroH = Math.round((zoneH - G) * 0.57);
+          const restH = zoneH - G - heroH;
+          const w = (1080 - G) / 2;
+          await paint(0, 0, 0, 1080, heroH);
+          await paint(1, 0, heroH + G, w, restH);
+          await paint(2, w + G, heroH + G, w, restH);
+        }
+      } else {
+        const w = (1080 - G) / 2;
+        const h = (zoneH - G) / 2;
+        for (let i = 0; i < 4; i++) {
+          await paint(i, (i % 2) * (w + G), Math.floor(i / 2) * (h + G), w, h);
         }
       }
-      const g = ctx.createLinearGradient(0, photoZoneHeight * 0.5, 0, photoZoneHeight);
-      g.addColorStop(0, 'rgba(0,0,0,0)');
-      g.addColorStop(1, 'rgba(0,0,0,0.72)');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, 1080, photoZoneHeight);
-    } else if (template === 'two') {
-      const slotW = (1080 - 2) / 2;
-      for (let i = 0; i < 2; i++) {
-        const x = i * (slotW + 2);
-        ctx.fillStyle = '#2D2420';
-        ctx.fillRect(x, 0, slotW, photoZoneHeight);
-        if (selectedPhotoUrls[i]) {
-          const img = await loadImg(selectedPhotoUrls[i]);
-          if (img) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(x, 0, slotW, photoZoneHeight);
-            ctx.clip();
-            drawCover(img, x, 0, slotW, photoZoneHeight, photoCrops[selectedPhotoUrls[i]] ?? 'center');
-            ctx.restore();
-          }
-        }
-      }
-      const g2 = ctx.createLinearGradient(0, photoZoneHeight * 0.65, 0, photoZoneHeight);
-      g2.addColorStop(0, 'rgba(0,0,0,0)');
-      g2.addColorStop(1, 'rgba(0,0,0,0.6)');
-      ctx.fillStyle = g2;
-      ctx.fillRect(0, 0, 1080, photoZoneHeight);
-    } else if (template === 'four') {
-      const slotW = (1080 - 2) / 2;
-      const slotH = (photoZoneHeight - 2) / 2;
-      for (let i = 0; i < 4; i++) {
-        const x = (i % 2) * (slotW + 2);
-        const y = Math.floor(i / 2) * (slotH + 2);
-        ctx.fillStyle = '#2D2420';
-        ctx.fillRect(x, y, slotW, slotH);
-        if (selectedPhotoUrls[i]) {
-          const img = await loadImg(selectedPhotoUrls[i]);
-          if (img) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(x, y, slotW, slotH);
-            ctx.clip();
-            drawCover(img, x, y, slotW, slotH, photoCrops[selectedPhotoUrls[i]] ?? 'center');
-            ctx.restore();
-          }
-        }
-      }
-      const g4 = ctx.createLinearGradient(0, photoZoneHeight * 0.72, 0, photoZoneHeight);
-      g4.addColorStop(0, 'rgba(0,0,0,0)');
-      g4.addColorStop(1, 'rgba(0,0,0,0.55)');
-      ctx.fillStyle = g4;
-      ctx.fillRect(0, 0, 1080, photoZoneHeight);
+      const grad = ctx.createLinearGradient(0, zoneH * 0.6, 0, zoneH);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.66)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1080, zoneH);
     }
 
     // Dark panel
     ctx.fillStyle = '#2B2420';
-    ctx.fillRect(0, photoZoneHeight, 1080, panelHeight);
+    ctx.fillRect(0, zoneH, 1080, panelH);
 
     // ── Panel content ───────────────────────────────────
     const CONTENT_W  = 1080 - 144; // 936px
-    const BODY_SIZE  = 23;
-    const LINE_H     = BODY_SIZE + 14; // 37px
+    // Type sizes itself to the panel: a four-line card sets large, a twelve
+    // line one sets small, and below BODY_MIN the content paginates instead
+    // of shrinking into fine print.
+    const BODY_SIZE  = bodySizeFor(page.lines.length);
+    const LINE_H     = BODY_SIZE + 14;
 
-    let y = photoZoneHeight + 28;
+    let y = zoneH + 28;
 
-    // Bake date — gold, subtle
-    if (bakeDate) {
+    // Type stops growing at BODY_MAX, so a short card leaves slack — a
+    // no-photo protocol card has room for 36 lines and may carry six. Top
+    // aligning it stranded the text under the title with a third of the card
+    // empty beneath. Centre the block in the space it actually has; the
+    // branding stays pinned to the bottom either way.
+    {
+      const bodyCount = page.lines.filter(li => li.key !== 'date').length;
+      const hasDate = pageIdx === 0 && !!bakeDate && page.lines.some(li => li.key === 'date');
+      const contentH = (hasDate ? 34 : 0) + 44 + 20 + 18 + 18 + bodyCount * LINE_H;
+      const slack = (panelH - 60) - contentH;
+      if (slack > 0) y = zoneH + 28 + Math.floor(slack / 2);
+    }
+
+    // Bake date — gold, subtle. Page one only; it belongs to the bake, not
+    // to every card the bake produced.
+    if (bakeDate && pageIdx === 0 && page.lines.some(li => li.key === 'date')) {
       ctx.font      = '400 26px "DM Mono", monospace';
       ctx.fillStyle = 'rgba(156, 130, 72,0.70)';
       ctx.textAlign = 'left';
@@ -638,17 +642,22 @@ export default function ShareCard({
     // Title — display face, single line, shrink to fit; ellipsis when even the
     // floor size overflows (long titles used to clip off the card edge)
     {
+      // Page two is named by what it holds, never "continued". A schedule
+      // card that gets forwarded on its own has to read as a schedule.
+      const pageTitle = pageIdx === 0 || !page.name
+        ? displayTitle
+        : `${displayTitle} · ${page.name}`;
       let titleSize = 44;
       ctx.font = `bold ${titleSize}px ${displayFontFamily()}`;
-      while (ctx.measureText(displayTitle).width > CONTENT_W && titleSize > 26) {
+      while (ctx.measureText(pageTitle).width > CONTENT_W && titleSize > 26) {
         titleSize--;
         ctx.font = `bold ${titleSize}px ${displayFontFamily()}`;
       }
-      let shownTitle = displayTitle;
-      while (shownTitle.length > 4 && ctx.measureText(shownTitle === displayTitle ? shownTitle : `${shownTitle}…`).width > CONTENT_W) {
+      let shownTitle = pageTitle;
+      while (shownTitle.length > 4 && ctx.measureText(shownTitle === pageTitle ? shownTitle : `${shownTitle}…`).width > CONTENT_W) {
         shownTitle = shownTitle.slice(0, -1).trimEnd();
       }
-      if (shownTitle !== displayTitle) shownTitle = `${shownTitle}…`;
+      if (shownTitle !== pageTitle) shownTitle = `${shownTitle}…`;
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'left';
       ctx.fillText(shownTitle, 72, y + titleSize);
@@ -680,21 +689,13 @@ export default function ShareCard({
       y += LINE_H;
     }
 
-    drawBodyLine(specLine, 0.85);
-    if (flourShareLine) drawBodyLine(flourShareLine, 0.60);
-    if (weightsLine) drawBodyLine(weightsLine, 0.85);
-    drawBodyLine(timingLine, 0.70);
-    if (gearLine) drawBodyLine(gearLine, 0.70);
-
-    if (pizzaDisplayLines.length > 0) {
-      y += 4;
-      for (const pl of pizzaDisplayLines) {
-        drawBodyLine(pl, 0.55);
-      }
+    for (const li of page.lines) {
+      if (li.key === 'date') continue; // already drawn above the title
+      drawBodyLine(li.text, li.dim ? 0.60 : 0.85);
     }
 
     // Branding — pinned to bottom of panel
-    const brandY = photoZoneHeight + panelHeight - 36;
+    const brandY = zoneH + panelH - 36;
     ctx.font      = '400 22px "DM Mono", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.textAlign = 'left';
@@ -705,29 +706,44 @@ export default function ShareCard({
     return canvas;
   }
 
-  async function handleShare() {
-    setGenerating(true);
-    try {
-      const canvas = await drawCard();
-      if (!canvas) return;
+  async function renderAllPages(): Promise<Blob[]> {
+    const out: Blob[] = [];
+    for (let i = 0; i < pages.length; i++) {
+      const canvas = await drawPage(i);
+      if (!canvas) continue;
       const blob = await new Promise<Blob | null>(resolve =>
         canvas.toBlob(resolve, 'image/png')
       );
-      if (!blob) return;
-      const file = new File([blob], 'my-bake.png', { type: 'image/png' });
+      if (blob) out.push(blob);
+    }
+    return out;
+  }
+
+  async function handleShare() {
+    setGenerating(true);
+    try {
+      const blobs = await renderAllPages();
+      if (!blobs.length) return;
+      const files = blobs.map((b, i) => new File(
+        [b], blobs.length > 1 ? `my-bake-${i + 1}.png` : 'my-bake.png',
+        { type: 'image/png' },
+      ));
+      // Multi-file share is native, and Instagram reads it as a carousel —
+      // which is the whole reason overflow paginates rather than producing
+      // one tall image a feed would crop.
       if (typeof navigator !== 'undefined' && navigator.share &&
-          navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: customTitle });
-        setSharedOk(true);
-        setTimeout(() => setSharedOk(false), 4000);
+          navigator.canShare && navigator.canShare({ files })) {
+        await navigator.share({ files, title: customTitle });
       } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'my-bake.png'; a.click();
-        URL.revokeObjectURL(url);
-        setSharedOk(true);
-        setTimeout(() => setSharedOk(false), 4000);
+        files.forEach(f => {
+          const url = URL.createObjectURL(f);
+          const a = document.createElement('a');
+          a.href = url; a.download = f.name; a.click();
+          URL.revokeObjectURL(url);
+        });
       }
+      setSharedOk(true);
+      setTimeout(() => setSharedOk(false), 4000);
     } catch (e) { console.error('share error:', e); }
     setGenerating(false);
   }
@@ -735,7 +751,8 @@ export default function ShareCard({
   async function handleCopyImage() {
     setCopyingImg(true);
     try {
-      const canvas = await drawCard();
+      // The clipboard holds one image; copy the page on screen.
+      const canvas = await drawPage(safePage);
       if (!canvas) return;
       const blob = await new Promise<Blob | null>(resolve =>
         canvas.toBlob(resolve, 'image/png')
@@ -749,6 +766,37 @@ export default function ShareCard({
     } catch (e) { console.error('copy image error:', e); }
     setCopyingImg(false);
   }
+
+  // Where each page starts, so the editor can show the break in place
+  // rather than making the baker discover it from the preview.
+  const pageStartKey: Record<string, number> = {};
+  if (flowMode === 'pages') {
+    pages.forEach((pg, i) => { if (i > 0 && pg.lines[0]) pageStartKey[pg.lines[0].key] = i + 1; });
+  }
+
+  const cropOf = (i: number): SlotCrop => slotCrops[i] ?? NO_CROP;
+  function setCrop(i: number, next: Partial<SlotCrop>) {
+    setSlotCrops(prev => ({ ...prev, [i]: { ...(prev[i] ?? NO_CROP), ...next } }));
+  }
+
+  // The slot this photo will actually fill, so the crop frame is the real
+  // shape and not a generic square that lies about the result.
+  function slotAspect(i: number): number {
+    const shape = format === 'story' ? 9 / 16 : format === 'square' ? 1 : 4 / 5;
+    const zone = PHOTO_ZONE_RATIO[photoCount] ?? 0.5;
+    if (photoCount === 1) return shape / zone;
+    if (photoCount === 2) return (shape / 2) / zone;
+    if (photoCount === 3) {
+      if (format === 'square') return i === 0 ? (shape * 0.57) / zone : (shape * 0.43) / (zone / 2);
+      return i === 0 ? shape / (zone * 0.57) : (shape / 2) / (zone * 0.43);
+    }
+    return (shape / 2) / (zone / 2);
+  }
+
+  const sheetStyle: React.CSSProperties = {
+    position: 'absolute', inset: 0, background: 'var(--cream)', zIndex: 20,
+    display: 'flex', flexDirection: 'column', borderRadius: '20px 20px 0 0',
+  };
 
   const inputStyle: React.CSSProperties = {
     fontFamily: 'var(--font-ui)', fontSize: '12px',
@@ -814,9 +862,9 @@ export default function ShareCard({
               // height, so they use the canvas's intrinsic ratio instead.
               width: 'auto', height: 'auto',
               maxWidth: '100%', maxHeight: '58dvh',
-              ...(template !== 'protocol'
-                ? { aspectRatio: `1080 / ${EXPORT_H}` }
-                : {}),
+              // Long cards have a computed height, so let the canvas's own
+              // ratio drive the box rather than asserting a shape it is not.
+              ...(flowMode === 'long' ? {} : { aspectRatio: `1080 / ${EXPORT_H}` }),
             }}
           />
           {previewLoading && (
@@ -831,6 +879,53 @@ export default function ShareCard({
             </div>
           )}
           </div>
+
+          {/* Pager — only when there is more than one card */}
+          {pageCount > 1 && flowMode === 'pages' && (
+            <div style={{
+              display: 'flex', gap: '6px', justifyContent: 'center',
+              alignItems: 'center', marginTop: '10px',
+            }}>
+              {pages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPreviewPage(i)}
+                  aria-current={i === safePage}
+                  aria-label={`${l === 'fr' ? 'Carte' : 'Card'} ${i + 1}`}
+                  style={{
+                    width: '44px', height: '44px', border: 'none', background: 'none',
+                    cursor: 'pointer', padding: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <span style={{
+                    width: '8px', height: '8px', borderRadius: '50%',
+                    background: i === safePage ? 'var(--gold)' : 'var(--border)',
+                    display: 'block',
+                  }} />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* The preview is the way in to editing. Tapping the card itself
+              would need 44px targets on lines that are ~12px at this scale,
+              so the card opens the editor rather than becoming one. */}
+          <button
+            onClick={() => setShowLines(true)}
+            style={{
+              width: '100%', minHeight: '44px', marginTop: '6px',
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-ui)', fontSize: '11px',
+              color: 'var(--smoke)', letterSpacing: '.04em',
+            }}
+          >
+            {pageCount > 1 && flowMode === 'pages'
+              ? (l === 'fr'
+                  ? `${pageCount} images — choisir le contenu`
+                  : `Shares as ${pageCount} images — choose what it says`)
+              : (l === 'fr' ? 'Choisir ce que dit la carte' : 'Choose what the card says')}
+          </button>
         </div>
 
         {/* Controls column */}
@@ -869,125 +964,94 @@ export default function ShareCard({
           </div>
         </div>
 
-        {/* Template picker */}
+        {/* Shape. One question, one label — the Template/Size pair both read
+            "Format" in French and one silently rewrote the other. */}
         <div>
-          <div style={sectionLbl}>{l === 'fr' ? 'Format' : 'Template'}</div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            {(['protocol', 'full', 'two', 'four'] as const).map(t => (
-              <div key={t} onClick={() => setTemplate(t)} style={{ flex: 1, cursor: 'pointer' }}>
-                <div style={{
-                  aspectRatio: '1', background: '#2B2420', borderRadius: '8px',
-                  border: template === t ? '2px solid var(--gold)' : '1.5px solid rgba(255,255,255,0.1)',
-                  overflow: 'hidden', position: 'relative',
-                }}>
-                  {t === 'full' && (
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.5) 100%)', display: 'flex', alignItems: 'flex-end', padding: '8px' }}>
-                      <div style={{ width: '100%', height: '30%', background: 'rgba(255,255,255,0.08)', borderRadius: '2px' }} />
-                    </div>
-                  )}
-                  {t === 'two' && (
-                    <div style={{ position: 'absolute', inset: 0 }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', height: '50%' }}>
-                        <div style={{ background: 'rgba(255,255,255,0.07)' }} />
-                        <div style={{ background: 'rgba(255,255,255,0.07)' }} />
-                      </div>
-                      <div style={{ padding: '4px 8px', marginTop: '4px' }}>
-                        <div style={{ height: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px', marginBottom: '3px' }} />
-                        <div style={{ height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', width: '70%' }} />
-                      </div>
-                    </div>
-                  )}
-                  {t === 'four' && (
-                    <div style={{ position: 'absolute', inset: 0 }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '1px', height: '55%' }}>
-                        {[0,1,2,3].map(i => <div key={i} style={{ background: 'rgba(255,255,255,0.07)' }} />)}
-                      </div>
-                      <div style={{ padding: '4px 8px', marginTop: '4px' }}>
-                        <div style={{ height: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px', marginBottom: '3px' }} />
-                        <div style={{ height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', width: '60%' }} />
-                      </div>
-                    </div>
-                  )}
-                  {t === 'protocol' && (
-                    <div style={{ position: 'absolute', inset: 0, padding: '8px 8px', display: 'flex', flexDirection: 'column', gap: '3px', justifyContent: 'center' }}>
-                      {[100, 70, 85, 55].map((w, i) => (
-                        <div key={i} style={{ height: '3px', background: 'rgba(255,255,255,0.18)', borderRadius: '2px', width: `${w}%` }} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', textAlign: 'center', marginTop: '4px' }}>
-                  {t === 'full' ? '1 photo' : t === 'two' ? '2 photos' : t === 'four' ? '4 photos' : (l === 'fr' ? 'Protocole' : 'Protocol')}
-                </div>
-              </div>
+          <div style={sectionLbl}>{l === 'fr' ? 'Destination' : 'Where it is going'}</div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {([
+              ['post',   'Post 4:5'],
+              ['square', l === 'fr' ? 'Carré 1:1' : 'Square 1:1'],
+              ['story',  'Story 9:16'],
+            ] as const).map(([key, lbl]) => (
+              <button
+                key={key}
+                onClick={() => { setFormat(key); setPreviewPage(0); }}
+                aria-pressed={format === key}
+                style={{
+                  flex: 1, padding: '8px', minHeight: '44px', borderRadius: '20px',
+                  border: format === key ? '1.5px solid var(--gold)' : '1px solid var(--border)',
+                  background: format === key ? 'rgba(156, 130, 72,0.10)' : 'transparent',
+                  color: format === key ? 'var(--char)' : 'var(--smoke)',
+                  fontFamily: 'var(--font-ui)', fontSize: '11px',
+                  cursor: 'pointer', transition: 'all 0.15s ease',
+                }}
+              >{lbl}</button>
             ))}
           </div>
         </div>
 
-        {/* Format picker — photo templates only */}
-        {template !== 'protocol' && (
+        {/* Overflow — only when there is overflow. A permanent control asking
+            what to do if it does not fit is a question with no stakes on most
+            sessions. The test is "would it paginate", not "is it paginated":
+            keying off the current mode would hide the way back out of long. */}
+        {wouldPaginate && (
           <div>
-            <div style={sectionLbl}>{l === 'fr' ? 'Format' : 'Size'}</div>
+            <div style={sectionLbl}>
+              {flowMode === 'long'
+                ? (l === 'fr' ? 'Trop long pour une carte' : 'Too tall for one card')
+                : (l === 'fr' ? `${pageCount} cartes nécessaires` : `Needs ${pageCount} cards`)}
+            </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               {([
-                ['post',   l === 'fr' ? 'Post 4:5' : 'Post 4:5'],
-                ['square', l === 'fr' ? 'Carré 1:1' : 'Square 1:1'],
-                ['story',  'Story 9:16'],
+                ['pages', l === 'fr' ? 'Plusieurs cartes' : 'Pages'],
+                ['long',  l === 'fr' ? 'Une carte longue' : 'One long card'],
               ] as const).map(([key, lbl]) => (
                 <button
                   key={key}
-                  onClick={() => {
-                    setFormat(key);
-                    // Smart default — free to override: story favours 4 (or 1)
-                    // photos, square favours 2, post favours 2 (or 1).
-                    const n = allPhotos.length;
-                    if (key === 'story') setTemplate(n >= 4 ? 'four' : 'full');
-                    else setTemplate(n >= 2 ? 'two' : 'full');
-                  }}
+                  onClick={() => { setFlowMode(key); setPreviewPage(0); }}
+                  aria-pressed={flowMode === key}
                   style={{
-                    flex: 1, padding: '8px 8px', borderRadius: '20px',
-                    border: format === key ? '1.5px solid var(--gold)' : '1px solid var(--border)',
-                    background: format === key ? 'rgba(156, 130, 72,0.10)' : 'transparent',
-                    color: format === key ? 'var(--char)' : 'var(--smoke)',
-                    fontFamily: 'var(--font-ui)', fontSize: '11px',
-                    cursor: 'pointer', transition: 'all 0.15s ease',
+                    flex: 1, padding: '8px', minHeight: '44px', borderRadius: '20px',
+                    border: flowMode === key ? '1.5px solid var(--gold)' : '1px solid var(--border)',
+                    background: flowMode === key ? 'rgba(156, 130, 72,0.10)' : 'transparent',
+                    color: flowMode === key ? 'var(--char)' : 'var(--smoke)',
+                    fontFamily: 'var(--font-ui)', fontSize: '11px', cursor: 'pointer',
                   }}
-                >
-                  {lbl}
-                </button>
+                >{lbl}</button>
               ))}
             </div>
-            {/* Why the layout just changed — the size picks a suggested
-                photo count; the templates above remain free to override */}
             <div style={{
               fontFamily: 'var(--font-ui)', fontSize: '11px',
-              color: 'var(--smoke)', opacity: 0.6, marginTop: '8px',
-              lineHeight: 1.5,
+              color: 'var(--smoke)', opacity: 0.6, marginTop: '8px', lineHeight: 1.5,
             }}>
-              {l === 'fr'
-                ? 'Chaque format suggère sa mise en page — Story 4 photos, Post & Carré 2. Modifiable au-dessus.'
-                : 'Each size suggests a layout — Story favours 4 photos, Post & Square 2. Change it above.'}
+              {flowMode === 'long'
+                ? (l === 'fr'
+                    ? 'Une seule image haute. Parfait dans WhatsApp ; un post la recadrera.'
+                    : 'One tall image. Good in WhatsApp and Messages; a feed post will crop it.')
+                : (l === 'fr'
+                    ? 'Se poursuit sur une seconde carte, même format. Publié en carrousel.'
+                    : 'Spills onto a second card, same shape. Posts as a carousel.')}
             </div>
           </div>
         )}
 
-        {/* Photo picker */}
-        {template !== 'protocol' && (
+        {/* Photo picker. Always shown: no photos is a valid card, not a
+            template you have to go and choose. */}
+        {(
           <div>
             <div style={sectionLbl}>
               {l === 'fr' ? 'Photos' : 'Photos'}
               <span style={{ opacity: 0.5, marginLeft: '6px', textTransform: 'none' as const, letterSpacing: 0 }}>
-                {maxPhotos === 1
-                  ? (l === 'fr' ? '(1 photo)' : '(pick 1)')
-                  : (l === 'fr' ? `(${maxPhotos} max)` : `(pick up to ${maxPhotos})`)}
+                {photoCount === 0
+                  ? (l === 'fr' ? '(aucune — carte protocole)' : '(none — protocol card)')
+                  : (l === 'fr' ? `(${photoCount} sur ${maxPhotos})` : `(${photoCount} of ${maxPhotos})`)}
               </span>
             </div>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {allPhotos.map((p, i) => {
                 const selIdx = selectedPhotoUrls.indexOf(p.url);
                 const isSel = selIdx !== -1;
-                const crop = photoCrops[p.url] ?? 'center';
-                const cropGlyph = crop === 'top' ? '↑' : crop === 'bottom' ? '↓' : '⊙';
                 const miniBtn: React.CSSProperties = {
                   position: 'absolute', width: '20px', height: '20px',
                   borderRadius: '12px', border: 'none', cursor: 'pointer',
@@ -1027,18 +1091,14 @@ export default function ShareCard({
                           style={{ ...miniBtn, bottom: '3px', left: '3px' }}
                         ></button>
                       )}
-                      {/* Crop anchor cycle: center → top → bottom */}
+                      {/* Opens the slot's own crop pane. The old ⊙/↑/↓ cycle
+                          was three positions for a continuous problem, on a
+                          20px target. */}
                       <button
-                        title={l === 'fr' ? 'Cadrage : centre / haut / bas' : 'Crop: centre / top / bottom'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPhotoCrops(prev => ({
-                            ...prev,
-                            [p.url]: crop === 'center' ? 'top' : crop === 'top' ? 'bottom' : 'center',
-                          }));
-                        }}
+                        title={l === 'fr' ? 'Recadrer' : 'Reframe'}
+                        onClick={(e) => { e.stopPropagation(); setCropSlot(selIdx); }}
                         style={{ ...miniBtn, bottom: '3px', right: '3px' }}
-                      >{cropGlyph}</button>
+                      >⤢</button>
                     </>
                   )}
                 </div>
@@ -1069,8 +1129,8 @@ export default function ShareCard({
                       const url = URL.createObjectURL(file);
                       setCameraPhotoUrls(prev => [...prev, url]);
                       setSelectedPhotoUrls(prev => {
-                        const max = template === 'four' ? 4 : template === 'two' ? 2 : 1;
-                        return [...prev.slice(-(max - 1)), url];
+                        if (prev.length < 4) return [...prev, url];
+                        return [...prev.slice(1), url];
                       });
                     });
                     e.target.value = '';
@@ -1195,6 +1255,309 @@ export default function ShareCard({
                 : 'Native share on iOS/Android · Downloads PNG on desktop')}
         </p>
       </div>
+
+      {/* ── What the card says ─────────────────────────────── */}
+      {showLines && (
+        <div style={sheetStyle}>
+          <div style={{
+            padding: '16px 20px 10px', display: 'flex',
+            justifyContent: 'space-between', alignItems: 'center',
+            borderBottom: '1px solid var(--border)', flexShrink: 0,
+          }}>
+            <p style={{ margin: 0, fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--char)' }}>
+              {l === 'fr' ? 'Ce que dit la carte' : 'What the card says'}
+            </p>
+            <button onClick={() => setShowLines(false)} aria-label="Done" style={{
+              background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)',
+              fontSize: '17px', width: '44px', height: '44px',
+            }}>✕</button>
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px 18px' }}>
+            <div style={{ background: '#2B2420', borderRadius: '15px', padding: '14px 12px' }}>
+              {/* Title, edited in place on the card. 16px so iOS does not
+                  zoom the viewport on focus. */}
+              <input
+                value={customTitle}
+                onChange={e => setCustomTitle(e.target.value)}
+                placeholder={styleName}
+                aria-label={l === 'fr' ? 'Titre' : 'Title'}
+                style={{
+                  width: '100%', minHeight: '44px', padding: '9px 10px',
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.16)', borderRadius: '8px',
+                  color: '#fff', fontFamily: 'var(--font-ui)', fontSize: '16px',
+                  fontWeight: 700, outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+              <div style={{ height: '1px', background: 'rgba(156, 130, 72,0.3)', margin: '10px 6px 8px' }} />
+
+              {LINE_GROUPS.map(g => (
+                <div key={g.key}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 8px 4px', gap: '10px',
+                  }}>
+                    <span style={{
+                      fontFamily: 'var(--font-ui)', fontSize: '10px',
+                      color: 'rgba(156, 130, 72,0.9)', textTransform: 'uppercase',
+                      letterSpacing: '.09em',
+                    }}>{g.name}</span>
+                    <button
+                      onClick={() => {
+                        const allOn = g.lines.every(li => isOn(g.key, li.key));
+                        setLineOn(prev => {
+                          const next = { ...prev };
+                          g.lines.forEach(li => { next[li.key] = !allOn; });
+                          return next;
+                        });
+                        setPreviewPage(0);
+                      }}
+                      style={{
+                        background: 'none', border: '1px solid rgba(255,255,255,0.2)',
+                        color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--font-ui)',
+                        fontSize: '11px', borderRadius: '8px', padding: '0 10px',
+                        minHeight: '34px', cursor: 'pointer', flexShrink: 0,
+                      }}
+                    >
+                      {g.lines.every(li => isOn(g.key, li.key))
+                        ? (l === 'fr' ? 'Tout retirer' : 'Turn off')
+                        : (l === 'fr' ? 'Tout ajouter' : 'Turn on')}
+                    </button>
+                  </div>
+
+                  {g.lines.map(li => {
+                    const on = isOn(g.key, li.key);
+                    const startsPage = pageStartKey[li.key];
+                    return (
+                      <div key={li.key}>
+                        {on && startsPage && (
+                          <div style={{
+                            fontFamily: 'var(--font-ui)', fontSize: '10px',
+                            color: 'rgba(156, 130, 72,0.85)', letterSpacing: '.06em',
+                            padding: '12px 8px 2px', marginTop: '8px',
+                            borderTop: '1px dashed rgba(156, 130, 72,0.3)',
+                          }}>
+                            {l === 'fr' ? `CARTE ${startsPage} À PARTIR D’ICI` : `CARD ${startsPage} STARTS HERE`}
+                          </div>
+                        )}
+                        {/* Off is not deleted — the line stays legible and
+                            struck through, so what was left out is visible
+                            and can come back. */}
+                        <button
+                          onClick={() => {
+                            setLineOn(prev => ({ ...prev, [li.key]: !on }));
+                            setPreviewPage(0);
+                          }}
+                          aria-pressed={on}
+                          style={{
+                            minHeight: '44px', display: 'flex', alignItems: 'center',
+                            gap: '10px', width: '100%', padding: '5px 8px',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            textAlign: 'left', borderRadius: '8px', fontFamily: 'var(--font-ui)',
+                          }}
+                        >
+                          <span style={{
+                            width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
+                            border: on ? '1.5px solid var(--gold)' : '1.5px solid rgba(255,255,255,0.28)',
+                            background: on ? 'var(--gold)' : 'transparent',
+                            color: '#2B2420', fontSize: '11px', fontWeight: 700,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>{on ? '✓' : ''}</span>
+                          <span style={{
+                            flex: 1, fontSize: '12.5px', lineHeight: 1.35,
+                            color: on ? '#fff' : 'rgba(255,255,255,0.22)',
+                            textDecoration: on ? 'none' : 'line-through',
+                          }}>{li.text}</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+
+            <p style={{
+              fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)',
+              lineHeight: 1.55, marginTop: '12px',
+            }}>
+              {flowMode === 'long'
+                ? (l === 'fr' ? 'Une seule carte longue : tout sur une image.' : 'One long card: everything on a single tall image.')
+                : pageCount > 1
+                  ? (l === 'fr'
+                      ? `${pageCount} cartes actuellement. Retirez des lignes pour revenir à une seule.`
+                      : `Currently ${pageCount} cards. Turn lines off to bring it back to one.`)
+                  : (l === 'fr' ? 'Tout tient sur une carte.' : 'Everything fits on one card.')}
+            </p>
+          </div>
+
+          <div style={{
+            padding: '11px 20px', flexShrink: 0, background: 'var(--warm)',
+            borderTop: '1px solid var(--border)',
+            paddingBottom: 'calc(11px + env(safe-area-inset-bottom, 0px))',
+          }}>
+            <button onClick={() => setShowLines(false)} style={{
+              width: '100%', minHeight: '44px', padding: '14px', border: 'none',
+              borderRadius: '12px', background: 'var(--terra)', color: '#fff',
+              fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
+            }}>{l === 'fr' ? 'Terminé' : 'Done'}</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Reframe a slot ─────────────────────────────────── */}
+      {cropSlot !== null && selectedPhotoUrls[cropSlot] && (
+        <div style={sheetStyle}>
+          <div style={{
+            padding: '16px 20px 10px', display: 'flex',
+            justifyContent: 'space-between', alignItems: 'center',
+            borderBottom: '1px solid var(--border)', flexShrink: 0,
+          }}>
+            <p style={{ margin: 0, fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--char)' }}>
+              {photoCount === 3 && cropSlot === 0
+                ? (l === 'fr' ? 'Photo principale' : 'Hero photo')
+                : (l === 'fr' ? `Photo ${cropSlot + 1} sur ${photoCount}` : `Photo ${cropSlot + 1} of ${photoCount}`)}
+            </p>
+            <button onClick={() => setCropSlot(null)} aria-label="Done" style={{
+              background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)',
+              fontSize: '17px', width: '44px', height: '44px',
+            }}>✕</button>
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+            <CropFrame
+              url={selectedPhotoUrls[cropSlot]}
+              aspect={slotAspect(cropSlot)}
+              crop={cropOf(cropSlot)}
+              onChange={next => setCrop(cropSlot, next)}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '14px' }}>
+              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', width: '34px' }}>
+                {l === 'fr' ? 'Zoom' : 'Zoom'}
+              </span>
+              <input
+                type="range" min={100} max={260}
+                value={Math.round(cropOf(cropSlot).scale * 100)}
+                onChange={e => setCrop(cropSlot, { scale: Number(e.target.value) / 100 })}
+                aria-label="Zoom"
+                style={{ flex: 1, height: '44px', accentColor: 'var(--gold)' }}
+              />
+              <span style={{
+                fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)',
+                width: '34px', fontVariantNumeric: 'tabular-nums',
+              }}>{cropOf(cropSlot).scale.toFixed(1)}×</span>
+            </div>
+            <p style={{
+              fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)',
+              lineHeight: 1.55, marginTop: '12px',
+            }}>
+              {l === 'fr'
+                ? 'Faites glisser pour cadrer, pincez ou utilisez le curseur pour zoomer. Le cadre est la place que cette photo occupera.'
+                : 'Drag to position, pinch or use the slider to zoom. The frame is the slot this photo will fill.'}
+            </p>
+          </div>
+
+          <div style={{
+            padding: '11px 20px', flexShrink: 0, background: 'var(--warm)',
+            borderTop: '1px solid var(--border)', display: 'flex', gap: '10px',
+            paddingBottom: 'calc(11px + env(safe-area-inset-bottom, 0px))',
+          }}>
+            <button
+              onClick={() => setSlotCrops(prev => ({ ...prev, [cropSlot]: { ...NO_CROP } }))}
+              style={{
+                flex: 1, minHeight: '44px', padding: '13px',
+                border: '1px solid var(--border)', borderRadius: '12px',
+                background: 'var(--cream)', color: 'var(--ash)',
+                fontFamily: 'var(--font-ui)', fontSize: '14px', cursor: 'pointer',
+              }}
+            >{l === 'fr' ? 'Réinitialiser' : 'Reset'}</button>
+            <button onClick={() => setCropSlot(null)} style={{
+              flex: 1, minHeight: '44px', padding: '14px', border: 'none',
+              borderRadius: '12px', background: 'var(--terra)', color: '#fff',
+              fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
+            }}>{l === 'fr' ? 'Terminé' : 'Done'}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Drag to position, pinch to zoom. The same {scale, offsetX, offsetY} the
+// canvas consumes, so the frame here and the slot there cannot disagree.
+function CropFrame({ url, aspect, crop, onChange }: {
+  url: string;
+  aspect: number;
+  crop: SlotCrop;
+  onChange: (next: Partial<SlotCrop>) => void;
+}) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const pts = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const dragFrom = useRef<{ x: number; y: number; c: SlotCrop } | null>(null);
+  const pinchFrom = useRef<{ d: number; scale: number } | null>(null);
+
+  const W = 300;
+  const H = Math.max(120, Math.min(320, Math.round(W / Math.max(0.35, aspect))));
+
+  function onDown(e: React.PointerEvent<HTMLDivElement>) {
+    pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    boxRef.current?.setPointerCapture(e.pointerId);
+    const list = [...pts.current.values()];
+    if (list.length === 1) {
+      dragFrom.current = { x: e.clientX, y: e.clientY, c: { ...crop } };
+    } else if (list.length === 2) {
+      dragFrom.current = null;
+      pinchFrom.current = {
+        d: Math.hypot(list[0].x - list[1].x, list[0].y - list[1].y),
+        scale: crop.scale,
+      };
+    }
+  }
+  function onMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!pts.current.has(e.pointerId)) return;
+    pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const list = [...pts.current.values()];
+    if (list.length >= 2 && pinchFrom.current) {
+      const d = Math.hypot(list[0].x - list[1].x, list[0].y - list[1].y);
+      const next = pinchFrom.current.scale * (d / (pinchFrom.current.d || 1));
+      onChange({ scale: Math.max(1, Math.min(2.6, next)) });
+    } else if (dragFrom.current) {
+      onChange({
+        offsetX: dragFrom.current.c.offsetX + (e.clientX - dragFrom.current.x) / W,
+        offsetY: dragFrom.current.c.offsetY + (e.clientY - dragFrom.current.y) / H,
+      });
+    }
+  }
+  function onUp(e: React.PointerEvent<HTMLDivElement>) {
+    pts.current.delete(e.pointerId);
+    dragFrom.current = null;
+    pinchFrom.current = null;
+  }
+
+  return (
+    <div
+      ref={boxRef}
+      onPointerDown={onDown}
+      onPointerMove={onMove}
+      onPointerUp={onUp}
+      onPointerCancel={onUp}
+      style={{
+        position: 'relative', overflow: 'hidden', borderRadius: '12px',
+        background: '#2B2420', margin: '0 auto', touchAction: 'none',
+        width: `${W}px`, height: `${H}px`, cursor: 'grab',
+      }}
+    >
+      <div style={{
+        position: 'absolute', inset: 0,
+        backgroundImage: `url(${url})`,
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: `${crop.scale * 100}% auto`,
+        backgroundPosition: `calc(50% + ${crop.offsetX * W}px) calc(50% + ${crop.offsetY * H}px)`,
+      }} />
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.28)',
+      }} />
     </div>
   );
 }
