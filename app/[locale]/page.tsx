@@ -1105,6 +1105,16 @@ export default function Home() {
   const [sessionSaved, setSessionSaved] = useState(false);
   const [sessionRestored, setSessionRestored] = useState(false);
   const [showSignInForSave, setShowSignInForSave] = useState(false);
+  // Ce que le baker voulait faire quand on lui a demandé de se connecter.
+  // Sans ça, saveCurrentSession affichait « connectez-vous pour sauvegarder »,
+  // le baker se connectait, et rien ne repartait vers le compte : la promesse
+  // du message n'était jamais tenue.
+  const pendingAuthIntent = useRef<'save' | 'share' | null>(null);
+  // Le listener d'auth est monté une seule fois : sans refs il fermerait sur
+  // le tout premier rendu et rejouerait une session vide.
+  const saveCurrentSessionRef = useRef<(() => Promise<void>) | null>(null);
+  const shareCurrentSessionRef = useRef<(() => Promise<void>) | null>(null);
+  const [savedToCloudName, setSavedToCloudName] = useState<string | null>(null);
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
   const [pizzaPartyQtys, setPizzaPartyQtys] = useState<Record<string, number>>({});
@@ -1290,6 +1300,18 @@ export default function Home() {
       if (newUid && newUid !== uid) void pullAndMergeProfile(newUid).then(() => setProfilePullTick(t => t + 1));
       uid = newUid;
       setProtocolStale(false);
+      // Une connexion lancée depuis Sauver ou Partager est une continuation,
+      // pas une bifurcation : on termine ce que le baker avait demandé.
+      if (newUid && pendingAuthIntent.current) {
+        const intent = pendingAuthIntent.current;
+        pendingAuthIntent.current = null;
+        setCloudResume(null);   // surtout ne rien proposer d'autre à cet instant
+        setShowSignInForSave(false);
+        void (async () => {
+          await saveCurrentSessionRef.current?.();
+          if (intent === 'share') await shareCurrentSessionRef.current?.();
+        })();
+      }
     });
     return () => {
       subscription.unsubscribe(); setProfileListener(null);
@@ -2065,6 +2087,16 @@ export default function Home() {
   // ── Share the CURRENT session — saves (signed-in) then opens the share
   // sheet via Header's openSessionId plumbing. Single source for the party
   // Bake tab, the Recipe-tab PlanNav pill and the Guide-end chip. ──
+  // Du travail à l'écran : des pizzas choisies ou cuites comptent autant
+  // qu'une recette générée.
+  const hasWorkInProgress =
+    Object.keys(pizzaPartyQtys).length > 0 ||
+    Object.keys(bakedPartyQtys).length > 0 ||
+    sessionSaved;
+
+  saveCurrentSessionRef.current = () => saveCurrentSession();
+  shareCurrentSessionRef.current = () => shareCurrentSession();
+
   async function shareCurrentSession() {
     let id = bakeEventId;
     if (!id && user) {
@@ -2084,9 +2116,13 @@ export default function Home() {
       if (id) { setBakeEventId(id); setSessionSaved(true); }
     }
     if (id) { setShareSessionId(id); return; }
-    // Anonymous and unsaved — invite sign-in (the drawer hosts it) instead
-    // of a tap that silently does nothing.
-    if (!user) window.dispatchEvent(new Event('bh-open-auth'));
+    // Anonyme et non sauvegardé — on invite à se connecter, en retenant que
+    // c'était « partager » : la feuille s'ouvrira toute seule au retour, sur
+    // la fournée qui vient d'être faite et pas sur une autre.
+    if (!user) {
+      pendingAuthIntent.current = 'share';
+      window.dispatchEvent(new Event('bh-open-auth'));
+    }
   }
 
   function firstIncompleteStep(isCustom: boolean): number {
@@ -2281,14 +2317,36 @@ export default function Home() {
           await savePizzaPartySelections(id, currentQtys, styleKey);
         }
         if (!id) setSessionSaved(false);
+        else {
+          const label = sessionLabel();
+          setSavedToCloudName(label);
+          setTimeout(() => setSavedToCloudName(c => (c === label ? null : c)), 5000);
+        }
       } catch (e) {
         console.error('Cloud save failed:', e);
         setSessionSaved(false);
       }
     } else {
+      // L'intention est retenue : à la connexion, la sauvegarde repart seule.
+      if (pendingAuthIntent.current !== 'share') pendingAuthIntent.current = 'save';
       setShowSignInForSave(true);
       setTimeout(() => setShowSignInForSave(false), 4000);
     }
+  }
+
+  // Nomme la fournée. « Session enregistrée » ne disait pas de quoi il
+  // s'agissait, d'où le doute : est-ce bien la pizza que je viens de faire ?
+  // Même source que bakeEventTitle, pour que le message d'enregistrement et
+  // la carte dans « Mes sessions » ne puissent pas se contredire.
+  function sessionLabel(): string {
+    const style = (ALL_STYLES as Record<string, { name: string }>)[styleKey ?? ''];
+    const styleName = style?.name ?? styleKey ?? '';
+    const n = numItems ?? 0;
+    const noun = bakeType === 'bread'
+      ? (locale === 'fr' ? (n === 1 ? 'pain' : 'pains') : (n === 1 ? 'loaf' : 'loaves'))
+      : (n === 1 ? 'pizza' : 'pizzas');
+    const parts = [styleName, n ? `${n} ${noun}` : ''].filter(Boolean);
+    return parts.join(' · ') || (locale === 'fr' ? 'Votre fournée' : 'Your bake');
   }
 
   function startOver() {
@@ -3146,7 +3204,13 @@ export default function Home() {
 
         {/* Cloud « Reprendre » — same banner, but the session lives only in
             the account (fresh device); hydrates on tap via restoreFromBakeEvent */}
-        {!showWelcomeBack && cloudResume && !modeChosen && !sessionRestored && activeTab === 'setup' && (
+        {/* Rien ne s'offre par-dessus du travail en cours. La garde ne
+            regardait que le setup (!modeChosen) ; après une soirée entière,
+            « Session trouvée sur votre compte » proposait une AUTRE fournée
+            au moment précis où celle-ci venait de finir — et Reprendre
+            l'aurait écrasée. */}
+        {!showWelcomeBack && cloudResume && !modeChosen && !sessionRestored
+          && !recipeGenerated && !hasWorkInProgress && activeTab === 'setup' && (
           <div style={{
             background: 'var(--warm)',
             border: '1px solid var(--border)',
@@ -5372,6 +5436,29 @@ export default function Home() {
       {/* ── Bottom nav ── */}
       
       {/* ── Sign-in nudge toast ── */}
+      {/* Confirmation qui nomme la fournée. Le doute venait d'un message qui
+          ne disait pas de quoi il parlait. */}
+      {savedToCloudName && (
+        <div
+          onClick={() => setSavedToCloudName(null)}
+          style={{
+            position: 'fixed', bottom: `${bottomNavH + 12}px`, right: '16px',
+            zIndex: 999, background: '#2B2420', color: 'var(--cream)',
+            fontFamily: 'var(--font-ui)', fontSize: '14px',
+            borderRadius: '16px', padding: '12px 16px', maxWidth: '280px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            display: 'flex', alignItems: 'flex-start', gap: '12px',
+            cursor: 'pointer', animation: 'fadeInUp 0.3s ease',
+          }}
+        >
+          <span style={{ flex: 1, lineHeight: 1.4 }}>
+            <b style={{ fontWeight: 600 }}>{savedToCloudName}</b>
+            {locale === 'fr' ? ' enregistrée sur votre compte' : ' saved to your account'}
+          </span>
+          <span style={{ color: 'var(--smoke)', fontSize: '15px', lineHeight: 1, flexShrink: 0 }}>×</span>
+        </div>
+      )}
+
       {showSignInForSave && (
         <div
           onClick={() => setShowSignInForSave(false)}
