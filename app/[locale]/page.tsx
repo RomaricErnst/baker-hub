@@ -1110,6 +1110,12 @@ export default function Home() {
   const saveCurrentSessionRef = useRef<(() => Promise<void>) | null>(null);
   const shareCurrentSessionRef = useRef<(() => Promise<void>) | null>(null);
   const [savedToCloudName, setSavedToCloudName] = useState<string | null>(null);
+  const [cloudSaveState, setCloudSaveState] = useState<'idle' | 'saving' | 'failed'>('idle');
+  // Vrai dès qu'on sait où on en est : session locale réappliquée, ou rien à
+  // réappliquer. Un ref, parce que l'effet de rejeu doit le lire avant le
+  // prochain rendu ; authTick le réveille, un ref seul ne rend pas.
+  const restoreSettledRef = useRef(false);
+  const [authTick, setAuthTick] = useState(0);
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
   const [pizzaPartyQtys, setPizzaPartyQtys] = useState<Record<string, number>>({});
@@ -1394,13 +1400,19 @@ export default function Home() {
       // Checked rather than trusted — that stale claim is what led to reading
       // an absent chosen-flag as settled in the restore below.
       freshDeviceRef.current = true;
+      restoreSettledRef.current = true;   // rien à restaurer : c'est réglé
+      setAuthTick(t => t + 1);
       return;
     }
     setPendingSession(session);
     // Revenir d'une connexion n'est pas « revenir plus tard ». Le baker était
     // au milieu de quelque chose il y a dix secondes : on le remet où il
     // était au lieu de lui proposer de reprendre ce qu'il n'a jamais quitté.
-    if (readAuthIntent()) applySession(session);
+    if (readAuthIntent()) {
+      applySession(session);
+      restoreSettledRef.current = true;
+      setAuthTick(t => t + 1);
+    }
     else setShowWelcomeBack(true);
   }, []);
 
@@ -2085,6 +2097,36 @@ export default function Home() {
 
   saveCurrentSessionRef.current = () => saveCurrentSession();
   shareCurrentSessionRef.current = () => shareCurrentSession();
+
+  // Le baker avait demandé Sauvegarder ou Partager, on lui a demandé de se
+  // connecter : il n'a pas à redemander. Le rejeu vit ici et pas dans
+  // onAuthStateChange, qui se déclenche avant que la session locale soit
+  // réappliquée — on aurait enregistré une session vide sur le compte.
+  const replayedRef = useRef(false);
+  useEffect(() => {
+    if (!user || replayedRef.current) return;
+    const intent = readAuthIntent();
+    if (!intent) return;
+    if (!restoreSettledRef.current) return;   // restauration en vol
+    replayedRef.current = true;
+    clearAuthIntent();
+    setShowWelcomeBack(false);
+    setCloudResume(null);        // rien d'autre ne s'offre à cet instant
+    setShowSignInForSave(false);
+    void (async () => {
+      // Rendu visible : sans ça le baker revient connecté, ne voit rien
+      // bouger, et croit devoir réappuyer sur Sauvegarder.
+      setCloudSaveState('saving');
+      try {
+        await saveCurrentSessionRef.current?.();
+        setCloudSaveState('idle');
+        if (intent === 'share') await shareCurrentSessionRef.current?.();
+      } catch (e) {
+        console.error('Replay after sign-in failed:', e);
+        setCloudSaveState('failed');
+      }
+    })();
+  }, [user, authTick]);
 
   async function shareCurrentSession() {
     let id = bakeEventId;
@@ -5428,6 +5470,24 @@ export default function Home() {
       {/* ── Sign-in nudge toast ── */}
       {/* Confirmation qui nomme la fournée. Le doute venait d'un message qui
           ne disait pas de quoi il parlait. */}
+      {/* Le rejeu est visible pendant qu'il se produit, et son échec est dit.
+          Sinon le baker revient connecté, ne voit rien, et réappuie. */}
+      {cloudSaveState !== 'idle' && (
+        <div style={{
+          position: 'fixed', bottom: `${bottomNavH + 12}px`, right: '16px',
+          zIndex: 999, background: '#2B2420', color: 'var(--cream)',
+          fontFamily: 'var(--font-ui)', fontSize: '14px',
+          borderRadius: '16px', padding: '12px 16px', maxWidth: '280px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)', lineHeight: 1.4,
+        }}>
+          {cloudSaveState === 'saving'
+            ? (locale === 'fr' ? 'Enregistrement de votre fournée…' : 'Saving your bake…')
+            : (locale === 'fr'
+                ? 'L’enregistrement n’est pas passé. Votre fournée est sur cet appareil — réessayez avec Sauvegarder.'
+                : 'That didn’t save. Your bake is on this device — try Save again.')}
+        </div>
+      )}
+
       {savedToCloudName && (
         <div
           onClick={() => setSavedToCloudName(null)}
