@@ -45,6 +45,7 @@ export interface SessionData {
   highestStep?: number;
   advancedHighestStep?: number;
   activeTab: string;
+  pizzaPartyTab?: string;
   modeChosen: boolean;
   pizzaParty?: { qtys: Record<string, number>; bakedQtys?: Record<string, number>; shopTicks?: Record<string, boolean>; prepTicks?: string[] } | null;
   bakedDone?: boolean;
@@ -104,4 +105,26 @@ export function loadSession(): SessionData | null {
 
 export function clearSession(): void {
   try { localStorage.removeItem(SESSION_KEY); } catch {}
+}
+
+
+// ── Intention d'authentification ──────────────────────────────
+// sessionStorage, pas un ref : signInWithOAuth quitte réellement la page
+// (Google, puis /auth/callback, puis retour). Un ref meurt avec React, donc
+// le baker revenait connecté et rien ne reprenait ce qu'il avait demandé.
+// sessionStorage se vide à la fermeture de l'onglet — aucun résidu.
+const AUTH_INTENT_KEY = 'bh_auth_intent';
+export type AuthIntent = 'save' | 'share';
+
+export function stashAuthIntent(intent: AuthIntent) {
+  try { window.sessionStorage.setItem(AUTH_INTENT_KEY, intent); } catch { /* mode privé */ }
+}
+export function readAuthIntent(): AuthIntent | null {
+  try {
+    const v = window.sessionStorage.getItem(AUTH_INTENT_KEY);
+    return v === 'save' || v === 'share' ? v : null;
+  } catch { return null; }
+}
+export function clearAuthIntent() {
+  try { window.sessionStorage.removeItem(AUTH_INTENT_KEY); } catch { /* mode privé */ }
 }

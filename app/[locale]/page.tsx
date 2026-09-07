@@ -25,7 +25,7 @@ import FlourPicker from '../components/FlourPicker';
 import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
-import { clearSession, loadSession, saveSession, type SessionData } from '../lib/session';
+import { clearSession, loadSession, saveSession, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
@@ -1105,11 +1105,6 @@ export default function Home() {
   const [sessionSaved, setSessionSaved] = useState(false);
   const [sessionRestored, setSessionRestored] = useState(false);
   const [showSignInForSave, setShowSignInForSave] = useState(false);
-  // Ce que le baker voulait faire quand on lui a demandé de se connecter.
-  // Sans ça, saveCurrentSession affichait « connectez-vous pour sauvegarder »,
-  // le baker se connectait, et rien ne repartait vers le compte : la promesse
-  // du message n'était jamais tenue.
-  const pendingAuthIntent = useRef<'save' | 'share' | null>(null);
   // Le listener d'auth est monté une seule fois : sans refs il fermerait sur
   // le tout premier rendu et rejouerait une session vide.
   const saveCurrentSessionRef = useRef<(() => Promise<void>) | null>(null);
@@ -1300,18 +1295,6 @@ export default function Home() {
       if (newUid && newUid !== uid) void pullAndMergeProfile(newUid).then(() => setProfilePullTick(t => t + 1));
       uid = newUid;
       setProtocolStale(false);
-      // Une connexion lancée depuis Sauver ou Partager est une continuation,
-      // pas une bifurcation : on termine ce que le baker avait demandé.
-      if (newUid && pendingAuthIntent.current) {
-        const intent = pendingAuthIntent.current;
-        pendingAuthIntent.current = null;
-        setCloudResume(null);   // surtout ne rien proposer d'autre à cet instant
-        setShowSignInForSave(false);
-        void (async () => {
-          await saveCurrentSessionRef.current?.();
-          if (intent === 'share') await shareCurrentSessionRef.current?.();
-        })();
-      }
     });
     return () => {
       subscription.unsubscribe(); setProfileListener(null);
@@ -1414,7 +1397,11 @@ export default function Home() {
       return;
     }
     setPendingSession(session);
-    setShowWelcomeBack(true);
+    // Revenir d'une connexion n'est pas « revenir plus tard ». Le baker était
+    // au milieu de quelque chose il y a dix secondes : on le remet où il
+    // était au lieu de lui proposer de reprendre ce qu'il n'a jamais quitté.
+    if (readAuthIntent()) applySession(session);
+    else setShowWelcomeBack(true);
   }, []);
 
   function applySession(session: SessionData) {
@@ -1496,6 +1483,8 @@ export default function Home() {
 
     if (session.recipeGenerated) {
       setActiveTab(session.activeTab as 'setup' | 'plan' | 'guide' | 'pizzaparty');
+    if (session.pizzaPartyTab)
+      setPizzaPartyTab(session.pizzaPartyTab as 'pick' | 'shop' | 'prep' | 'bake');
       if (session.tab === 'custom') {
         setAdvancedStep(99);
       } else {
@@ -1946,7 +1935,7 @@ export default function Home() {
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-      recipeGenerated, activeTab, modeChosen,
+      recipeGenerated, activeTab, pizzaPartyTab, modeChosen,
       // How far the baker got. Without it a resumed session reopened at
       // highestStep 1, so every step carrying a default read as unset —
       // "Quantity not confirmed" beside a finished recipe.
@@ -2120,7 +2109,7 @@ export default function Home() {
     // c'était « partager » : la feuille s'ouvrira toute seule au retour, sur
     // la fournée qui vient d'être faite et pas sur une autre.
     if (!user) {
-      pendingAuthIntent.current = 'share';
+      stashAuthIntent('share');
       window.dispatchEvent(new Event('bh-open-auth'));
     }
   }
@@ -2327,10 +2316,11 @@ export default function Home() {
         setSessionSaved(false);
       }
     } else {
-      // L'intention est retenue : à la connexion, la sauvegarde repart seule.
-      if (pendingAuthIntent.current !== 'share') pendingAuthIntent.current = 'save';
-      setShowSignInForSave(true);
-      setTimeout(() => setShowSignInForSave(false), 4000);
+      // Le message disait « connectez-vous » sans dire où, et n'ouvrait rien :
+      // une impasse. On ouvre le tiroir, et on retient l'intention dans
+      // sessionStorage pour qu'elle survive à la redirection Google.
+      stashAuthIntent('save');
+      window.dispatchEvent(new Event('bh-open-auth'));
     }
   }
 
