@@ -1119,6 +1119,13 @@ export default function Home() {
   // Incremente a chaque restauration : dit au selecteur de pizzas de relire
   // les quantites, que son etat interne ne peut pas deviner tout seul.
   const [partyRestoreToken, setPartyRestoreToken] = useState(0);
+  // La liste des 150 pizzas est chargee paresseusement, donc les quantites
+  // d'une session reprise arrivent APRES la restauration, souvent bien apres
+  // la fenetre de 200 ms. Pendant ce trou, pizzaPartyQtys vaut {} et
+  // buildPizzaPartySnapshot renvoie null : l'autosave ecrasait la soiree
+  // enregistree — pizzas, courses et preparation — par un null, et seules les
+  // quantites revenaient ensuite. C'est ce qui faisait disparaitre les coches.
+  const partyHydratingRef = useRef(false);
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
   const [pizzaPartyQtys, setPizzaPartyQtys] = useState<Record<string, number>>({});
@@ -1419,6 +1426,14 @@ export default function Home() {
     else setShowWelcomeBack(true);
   }, []);
 
+  // La restauration ne se termine que quand la soiree pizza est arrivee.
+  // Rendre la main avant, c'est laisser l'autosave photographier un etat
+  // a moitie restaure et l'ecrire par-dessus la vraie session.
+  function endRestore() {
+    if (partyHydratingRef.current) return;
+    isRestoringRef.current = false;
+  }
+
   function applySession(session: SessionData) {
     isRestoringRef.current = true;
 
@@ -1522,6 +1537,7 @@ export default function Home() {
       try { localStorage.setItem('bh_prep_ticks_v1', JSON.stringify(session.pizzaParty.prepTicks)); } catch {}
     }
     if (session.pizzaParty?.qtys) {
+      partyHydratingRef.current = true;
       const rawQtys = session.pizzaParty.qtys;
       // Lazy — keeps the 150-pizza database out of the first-load bundle
       void import('../lib/toppingDatabase').then(({ getPizzaById }) => {
@@ -1531,7 +1547,9 @@ export default function Home() {
         });
         setPizzaPartyQtys(validQtys);
         setPartyRestoreToken(v => v + 1);
-      });
+        partyHydratingRef.current = false;
+        endRestore();
+      }).catch(() => { partyHydratingRef.current = false; endRestore(); });
     }
     if (session.bakedDone) setBakedDone(true);
     if (session.starterState) setStarterState(session.starterState as 'rt_fed' | 'fridge_unfed' | 'fridge_fed');
@@ -1568,7 +1586,7 @@ export default function Home() {
     // once dismissed/answered in this browser session, stay quiet.
     setShowWelcomeBack(false);
     setPendingSession(null);
-    setTimeout(() => { isRestoringRef.current = false; }, 200);
+    setTimeout(endRestore, 200);
   }
 
   // Any user answer to the welcome-back toast (resume, start fresh, dismiss)
@@ -2663,10 +2681,11 @@ export default function Home() {
       if (rb || !savedTab) setActiveTab('setup');
       else if (savedTab === 'pizzaparty' && snap.bakeType !== 'pizza') setActiveTab('plan');
       else setActiveTab(savedTab);
-      setTimeout(() => { isRestoringRef.current = false; }, 200);
+      setTimeout(endRestore, 200);
     }
     // Restore pizza selections from DB if available
     if (event.pizza_party_id) {
+      partyHydratingRef.current = true;
       const { fetchPizzaPartySlots } = await import('../lib/supabase/fetchBakeEvents');
       const slotsMap = await fetchPizzaPartySlots([event.id]);
       const slots = slotsMap[event.id] ?? [];
@@ -2678,6 +2697,8 @@ export default function Home() {
         setPizzaPartyQtys(qtys);
         setPartyRestoreToken(v => v + 1);
       }
+      partyHydratingRef.current = false;
+      endRestore();
     }
     // Ticks travel in the snapshot (manual saves) — hydrate before tabs read
     if (snap.pizzaParty?.shopTicks) {
