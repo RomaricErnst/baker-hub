@@ -20,6 +20,7 @@ interface PizzaPartyProps {
   onHasSelection?: (hasSelection: boolean) => void;
   bakeEventId?: string | null;
   initialQtys?: Record<string, number>;
+  restoreToken?: number;
   onQtysSnapshot?: (qtys: Record<string, number>) => void;
   getQtysRef?: React.MutableRefObject<() => Record<string, number>>;
   onGoToMyDough?: () => void;
@@ -43,8 +44,20 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange, bakedQtys, recipeIngredients }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients }: PizzaPartyProps) {
+  // initialQtys ne sert qu'au tout premier montage : un useState ne relit pas
+  // sa valeur initiale. A la reprise d'une session, les pizzas etaient bien
+  // dans l'etat de la page — donc dans le resume — mais le selecteur gardait
+  // son {} de depart. restoreToken est incremente a chaque restauration et
+  // resynchronise, sans jamais ecraser une modification du baker.
   const [qtys, setQtys] = useState<Record<string, number>>(initialQtys ?? {});
+  const seenRestore = useRef(restoreToken ?? 0);
+  useEffect(() => {
+    if (restoreToken === undefined || restoreToken === seenRestore.current) return;
+    seenRestore.current = restoreToken;
+    setQtys(initialQtys ?? {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restoreToken]);
   const [styleKey, setStyleKey] = useState<string | undefined>(initialStyleKey);
   const [pickStyleKey, setPickStyleKey] = useState<string | undefined>(initialStyleKey);
 

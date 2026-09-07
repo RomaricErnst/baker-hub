@@ -1116,6 +1116,9 @@ export default function Home() {
   // prochain rendu ; authTick le réveille, un ref seul ne rend pas.
   const restoreSettledRef = useRef(false);
   const [authTick, setAuthTick] = useState(0);
+  // Incremente a chaque restauration : dit au selecteur de pizzas de relire
+  // les quantites, que son etat interne ne peut pas deviner tout seul.
+  const [partyRestoreToken, setPartyRestoreToken] = useState(0);
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [bakeEventId, setBakeEventId] = useState<string | null>(null);
   const [pizzaPartyQtys, setPizzaPartyQtys] = useState<Record<string, number>>({});
@@ -1527,6 +1530,7 @@ export default function Home() {
           if (getPizzaById(id)) validQtys[id] = qty as number;
         });
         setPizzaPartyQtys(validQtys);
+        setPartyRestoreToken(v => v + 1);
       });
     }
     if (session.bakedDone) setBakedDone(true);
@@ -1952,13 +1956,7 @@ export default function Home() {
       // highestStep 1, so every step carrying a default read as unset —
       // "Quantity not confirmed" beside a finished recipe.
       highestStep, advancedHighestStep,
-      pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? {
-        qtys: pizzaPartyQtys,
-        // Bought / prepped ticks ride along in the snapshot — session-scoped
-        // like the party itself, synced to bake_events on save.
-        shopTicks: (() => { try { return JSON.parse(localStorage.getItem('bh_shop_ticks_v1') ?? '{}'); } catch { return {}; } })(),
-        prepTicks: (() => { try { return JSON.parse(localStorage.getItem('bh_prep_ticks_v1') ?? '[]'); } catch { return []; } })(),
-      } : null,
+      pizzaParty: buildPizzaPartySnapshot(),
       bakedDone,
       computedRecipe: buildComputedRecipe(),
       starterState, starterLocation, planningMode,
@@ -2095,6 +2093,33 @@ export default function Home() {
     Object.keys(bakedPartyQtys).length > 0 ||
     sessionSaved;
 
+  // Une seule construction de l'instantané Pizza Party. Il en existait six,
+  // dont cinq perdaient bakedQtys et toutes les six perdaient les cases
+  // cochées — alors que SessionData les declare et qu'applySession sait deja
+  // les relire. Le type et la lecture les attendaient, rien ne les ecrivait.
+  //
+  // Les ticks vivent dans localStorage (bh_shop_ticks_v1 / bh_prep_ticks_v1),
+  // ecrits par ShoppingList et PrepTab. On les lit ici a l'enregistrement :
+  // c'est la meme paire de cles qu'applySession reecrit a la restauration,
+  // donc aucune migration Supabase — dough_snapshot est du jsonb.
+  function buildPizzaPartySnapshot() {
+    if (Object.keys(pizzaPartyQtys).length === 0) return null;
+    let shopTicks: Record<string, boolean> | undefined;
+    let prepTicks: string[] | undefined;
+    try {
+      const rawShop = localStorage.getItem('bh_shop_ticks_v1');
+      if (rawShop) shopTicks = JSON.parse(rawShop) as Record<string, boolean>;
+      const rawPrep = localStorage.getItem('bh_prep_ticks_v1');
+      if (rawPrep) prepTicks = JSON.parse(rawPrep) as string[];
+    } catch { /* mode prive : la fournee se sauve quand meme */ }
+    return {
+      qtys: pizzaPartyQtys,
+      bakedQtys: Object.keys(bakedPartyQtys).length > 0 ? bakedPartyQtys : undefined,
+      shopTicks,
+      prepTicks,
+    };
+  }
+
   saveCurrentSessionRef.current = () => saveCurrentSession();
   shareCurrentSessionRef.current = () => shareCurrentSession();
 
@@ -2140,7 +2165,7 @@ export default function Home() {
         flourInFridge, wastePct, addSeeds, priorityOverride,
         eatTime: eatTime?.getTime() ?? null,
         blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-        pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys, bakedQtys: Object.keys(bakedPartyQtys).length > 0 ? bakedPartyQtys : undefined } : null,
+        pizzaParty: buildPizzaPartySnapshot(),
         bakedDone,
         computedRecipe: buildComputedRecipe(),
       } as SessionData);
@@ -2651,6 +2676,7 @@ export default function Home() {
           qtys[slot.preset_id] = (qtys[slot.preset_id] ?? 0) + (slot.qty ?? 1);
         }
         setPizzaPartyQtys(qtys);
+        setPartyRestoreToken(v => v + 1);
       }
     }
     // Ticks travel in the snapshot (manual saves) — hydrate before tabs read
@@ -4216,7 +4242,7 @@ export default function Home() {
       // highestStep 1, so every step carrying a default read as unset —
       // "Quantity not confirmed" beside a finished recipe.
       highestStep, advancedHighestStep,
-                                pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+                                pizzaParty: buildPizzaPartySnapshot(),
                                 bakedDone,
                               };
                               evId = await upsertBakeEvent({ session: payload as SessionData });
@@ -4398,7 +4424,7 @@ export default function Home() {
       // highestStep 1, so every step carrying a default read as unset —
       // "Quantity not confirmed" beside a finished recipe.
       highestStep, advancedHighestStep,
-                      pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+                      pizzaParty: buildPizzaPartySnapshot(),
                       bakedDone,
                     };
                     const id = await upsertBakeEvent({ session: payload as SessionData });
@@ -4408,6 +4434,7 @@ export default function Home() {
                   sessionSaved={sessionSaved}
                   onBakedQtysChange={setBakedPartyQtys}
                   bakedQtys={bakedPartyQtys}
+                  restoreToken={partyRestoreToken}
                   onShare={shareCurrentSession}
                 />
               </div>
@@ -5263,7 +5290,7 @@ export default function Home() {
       // highestStep 1, so every step carrying a default read as unset —
       // "Quantity not confirmed" beside a finished recipe.
       highestStep, advancedHighestStep,
-                                pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+                                pizzaParty: buildPizzaPartySnapshot(),
                                 bakedDone,
                               };
                               evId = await upsertBakeEvent({ session: payload as SessionData });
@@ -5445,7 +5472,7 @@ export default function Home() {
       // highestStep 1, so every step carrying a default read as unset —
       // "Quantity not confirmed" beside a finished recipe.
       highestStep, advancedHighestStep,
-                      pizzaParty: Object.keys(pizzaPartyQtys).length > 0 ? { qtys: pizzaPartyQtys } : null,
+                      pizzaParty: buildPizzaPartySnapshot(),
                       bakedDone,
                     };
                     const id = await upsertBakeEvent({ session: payload as SessionData });
@@ -5455,6 +5482,7 @@ export default function Home() {
                   sessionSaved={sessionSaved}
                   onBakedQtysChange={setBakedPartyQtys}
                   bakedQtys={bakedPartyQtys}
+                  restoreToken={partyRestoreToken}
                   onShare={shareCurrentSession}
                 />
               </div>
